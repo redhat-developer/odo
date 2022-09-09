@@ -35,7 +35,9 @@ Your application is now running on the cluster
  - Forwarding from 127.0.0.1:40001 -> 3000
 
 Watching for changes in the current directory /Users/user/nodejs
-Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
 ```
 
 In the above example, three things have happened:
@@ -45,6 +47,22 @@ In the above example, three things have happened:
 
 You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
 will first delete all resources deployed into the cluster for this session before terminating.
+
+### Applying local changes to the application on the cluster
+
+By default, the changes made by the user to the Devfile and source files are applied directly.
+
+The flag `--no-watch` can be used to change this behaviour: when the user changes the devfile or any source file, the changes
+won't be applied immediately, but the next time the user presses the `p` key.
+
+Depending on the local changes, different events can occur on the cluster:
+
+- if source files are modified, they are pushed to the container running the application, and:
+  - if the `run` command is marked as `HotReloadCapable`, the application is responsible for applying the new changes
+  - if the `run` command is not marked as `HotReloadCapable`, the application is stopped, then restarted by odo using the `build` and `run` commands again.
+- if the Devfile is modified, the deployment of the application is modified with the new changes. In some circumstances, this may
+  cause the restart of the container running the application and therefore the application itself.
+
 
 ### Running an alternative command
 

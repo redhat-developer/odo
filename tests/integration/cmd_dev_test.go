@@ -255,11 +255,6 @@ ComponentSettings:
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			AfterEach(func() {
-				devSession.Kill()
-				devSession.WaitEnd()
-			})
-
 			When("odo dev is stopped", func() {
 				BeforeEach(func() {
 					devSession.Stop()
@@ -270,6 +265,62 @@ ComponentSettings:
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
+		When("odo dev is executed and Ephemeral is set to false", func() {
+
+			var devSession helper.DevSession
+			BeforeEach(func() {
+				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			When("killing odo dev and running odo delete component --wait", func() {
+				BeforeEach(func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
+				})
+
+				It("should have deleted all resources before returning", func() {
+					By("deleting the service", func() {
+						services := commonVar.CliRunner.GetServices(commonVar.Project)
+						Expect(services).To(BeEmpty())
+					})
+					By("deleting the PVC", func() {
+						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+						Expect(pvcs).To(BeEmpty())
+					})
+					By("deleting the pod", func() {
+						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+						Expect(pods).To(BeEmpty())
+					})
+				})
+			})
+
+			When("stopping odo dev normally", func() {
+				BeforeEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should have deleted all resources before returning", func() {
+					By("deleting the service", func() {
+						services := commonVar.CliRunner.GetServices(commonVar.Project)
+						Expect(services).To(BeEmpty())
+					})
+					By("deleting the PVC", func() {
+						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+						Expect(pvcs).To(BeEmpty())
+					})
+					By("deleting the pod", func() {
+						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+						Expect(pods).To(BeEmpty())
+					})
 				})
 			})
 		})
@@ -319,51 +370,6 @@ ComponentSettings:
 					Expect(string(output)).To(ContainSubstring(fmt.Sprintf("Deployment/%s-app", cmpName)))
 				})
 			})
-
-			When("killing odo dev and running odo delete component --wait", func() {
-				BeforeEach(func() {
-					devSession.Kill()
-					devSession.WaitEnd()
-					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
-				})
-
-				It("should have deleted all resources before returning", func() {
-					By("deleting the service", func() {
-						services := commonVar.CliRunner.GetServices(commonVar.Project)
-						Expect(services).To(BeEmpty())
-					})
-					By("deleting the PVC", func() {
-						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-						Expect(pvcs).To(BeEmpty())
-					})
-					By("deleting the pod", func() {
-						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-						Expect(pods).To(BeEmpty())
-					})
-				})
-			})
-
-			When("stopping odo dev normally", func() {
-				BeforeEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should have deleted all resources before returning", func() {
-					By("deleting the service", func() {
-						services := commonVar.CliRunner.GetServices(commonVar.Project)
-						Expect(services).To(BeEmpty())
-					})
-					By("deleting the PVC", func() {
-						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-						Expect(pvcs).To(BeEmpty())
-					})
-					By("deleting the pod", func() {
-						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-						Expect(pods).To(BeEmpty())
-					})
-				})
-			})
 		})
 
 		When("odo is executed with --no-watch flag", func() {
@@ -382,13 +388,36 @@ ComponentSettings:
 			})
 
 			When("a file in component directory is modified", func() {
-				It("should not trigger a push", func() {
+
+				BeforeEach(func() {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+				})
+
+				It("should not trigger a push", func() {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/server.js")
 					Expect(execResult).To(ContainSubstring("App started"))
 					Expect(execResult).ToNot(ContainSubstring("App is super started"))
 
+				})
+
+				When("p is pressed", func() {
+
+					BeforeEach(func() {
+						if os.Getenv("SKIP_KEY_PRESS") == "true" {
+							Skip("This is a unix-terminal specific scenario, skipping")
+						}
+
+						devSession.PressKey('p')
+					})
+
+					It("should trigger a push", func() {
+						_, _, _, err := devSession.WaitSync()
+						Expect(err).ToNot(HaveOccurred())
+						podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+						execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/server.js")
+						Expect(execResult).To(ContainSubstring("App is super started"))
+					})
 				})
 			})
 		})
@@ -435,152 +464,113 @@ ComponentSettings:
 		})
 	})
 
-	Context("port-forwarding for the component", func() {
-		When("devfile has single endpoint", func() {
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-			})
-
-			When("running odo dev", func() {
-				var devSession helper.DevSession
-				var ports map[string]string
+	for _, manual := range []bool{false, true} {
+		manual := manual
+		Context("port-forwarding for the component", func() {
+			When("devfile has single endpoint", func() {
 				BeforeEach(func() {
-					var err error
-					devSession, _, _, ports, err = helper.StartDevMode(nil)
-					Expect(err).ToNot(HaveOccurred())
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				})
 
-				AfterEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should expose the endpoint on localhost", func() {
-					url := fmt.Sprintf("http://%s", ports["3000"])
-					resp, err := http.Get(url)
-					Expect(err).ToNot(HaveOccurred())
-					defer resp.Body.Close()
-
-					body, _ := io.ReadAll(resp.Body)
-					helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				When("modifying memoryLimit for container in Devfile", func() {
+				When("running odo dev", func() {
+					var devSession helper.DevSession
+					var ports map[string]string
 					BeforeEach(func() {
-						src := "memoryLimit: 1024Mi"
-						dst := "memoryLimit: 1023Mi"
-						helper.ReplaceString("devfile.yaml", src, dst)
 						var err error
-						_, _, ports, err = devSession.WaitSync()
-						Expect(err).Should(Succeed())
+						opts := []string{}
+						if manual {
+							opts = append(opts, "--no-watch")
+						}
+						devSession, _, _, ports, err = helper.StartDevMode(nil, opts...)
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
 					})
 
 					It("should expose the endpoint on localhost", func() {
-						By("updating the pod", func() {
-							podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-							bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
-							output := string(bufferOutput)
-							Expect(output).To(ContainSubstring("1023Mi"))
+						url := fmt.Sprintf("http://%s", ports["3000"])
+						resp, err := http.Get(url)
+						Expect(err).ToNot(HaveOccurred())
+						defer resp.Body.Close()
+
+						body, _ := io.ReadAll(resp.Body)
+						helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					When("modifying memoryLimit for container in Devfile", func() {
+						BeforeEach(func() {
+							src := "memoryLimit: 1024Mi"
+							dst := "memoryLimit: 1023Mi"
+							helper.ReplaceString("devfile.yaml", src, dst)
+							if manual {
+								if os.Getenv("SKIP_KEY_PRESS") == "true" {
+									Skip("This is a unix-terminal specific scenario, skipping")
+								}
+
+								devSession.PressKey('p')
+							}
+							var err error
+							_, _, ports, err = devSession.WaitSync()
+							Expect(err).Should(Succeed())
 						})
 
-						By("exposing the endpoint", func() {
-							url := fmt.Sprintf("http://%s", ports["3000"])
-							resp, err := http.Get(url)
-							Expect(err).ToNot(HaveOccurred())
-							defer resp.Body.Close()
+						It("should expose the endpoint on localhost", func() {
+							By("updating the pod", func() {
+								podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+								bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
+								output := string(bufferOutput)
+								Expect(output).To(ContainSubstring("1023Mi"))
+							})
 
-							body, _ := io.ReadAll(resp.Body)
-							helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-							Expect(err).ToNot(HaveOccurred())
+							By("exposing the endpoint", func() {
+								url := fmt.Sprintf("http://%s", ports["3000"])
+								resp, err := http.Get(url)
+								Expect(err).ToNot(HaveOccurred())
+								defer resp.Body.Close()
+
+								body, _ := io.ReadAll(resp.Body)
+								helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+								Expect(err).ToNot(HaveOccurred())
+							})
 						})
 					})
 				})
 			})
-		})
 
-		When("devfile has multiple endpoints", func() {
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
-			})
-
-			When("running odo dev", func() {
-				var devSession helper.DevSession
-				var ports map[string]string
+			When("devfile has multiple endpoints", func() {
 				BeforeEach(func() {
-					var err error
-					devSession, _, _, ports, err = helper.StartDevMode(nil)
-					Expect(err).ToNot(HaveOccurred())
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+					helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 				})
 
-				AfterEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should expose two endpoints on localhost", func() {
-					url1 := fmt.Sprintf("http://%s", ports["3000"])
-					url2 := fmt.Sprintf("http://%s", ports["4567"])
-
-					resp1, err := http.Get(url1)
-					Expect(err).ToNot(HaveOccurred())
-					defer resp1.Body.Close()
-
-					resp2, err := http.Get(url2)
-					Expect(err).ToNot(HaveOccurred())
-					defer resp2.Body.Close()
-
-					body1, _ := io.ReadAll(resp1.Body)
-					helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
-
-					body2, _ := io.ReadAll(resp2.Body)
-					helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
-
-					helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
-
-					_, _, _, err = devSession.WaitSync()
-					Expect(err).Should(Succeed())
-
-					Eventually(func() bool {
-						resp3, err := http.Get(url1)
-						if err != nil {
-							return false
-						}
-						defer resp3.Body.Close()
-
-						resp4, err := http.Get(url2)
-						if err != nil {
-							return false
-						}
-						defer resp4.Body.Close()
-
-						body3, _ := io.ReadAll(resp3.Body)
-						if string(body3) != "H3110 from Node.js Starter Application!" {
-							return false
-						}
-
-						body4, _ := io.ReadAll(resp4.Body)
-						return string(body4) == "H3110 from Node.js Starter Application!"
-					}, 180, 10).Should(Equal(true))
-				})
-
-				When("an endpoint is added after first run of odo dev", func() {
-
+				When("running odo dev", func() {
+					var devSession helper.DevSession
+					var ports map[string]string
 					BeforeEach(func() {
-						helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
+						opts := []string{}
+						if manual {
+							opts = append(opts, "--no-watch")
+						}
 						var err error
-						_, _, ports, err = devSession.WaitSync()
-						Expect(err).Should(Succeed())
-
+						devSession, _, _, ports, err = helper.StartDevMode(nil, opts...)
+						Expect(err).ToNot(HaveOccurred())
 					})
-					It("should expose three endpoints on localhost", func() {
+
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should expose two endpoints on localhost", func() {
 						url1 := fmt.Sprintf("http://%s", ports["3000"])
 						url2 := fmt.Sprintf("http://%s", ports["4567"])
-						url3 := fmt.Sprintf("http://%s", ports["7890"])
 
 						resp1, err := http.Get(url1)
 						Expect(err).ToNot(HaveOccurred())
@@ -590,24 +580,98 @@ ComponentSettings:
 						Expect(err).ToNot(HaveOccurred())
 						defer resp2.Body.Close()
 
-						resp3, err := http.Get(url3)
-						Expect(err).ToNot(HaveOccurred())
-						defer resp3.Body.Close()
-
 						body1, _ := io.ReadAll(resp1.Body)
 						helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
 
 						body2, _ := io.ReadAll(resp2.Body)
 						helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
 
-						body3, _ := io.ReadAll(resp3.Body)
-						helper.MatchAllInOutput(string(body3), []string{"Hello from Node.js Starter Application!"})
+						helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
+
+						if manual {
+							if os.Getenv("SKIP_KEY_PRESS") == "true" {
+								Skip("This is a unix-terminal specific scenario, skipping")
+							}
+
+							devSession.PressKey('p')
+						}
+
+						_, _, _, err = devSession.WaitSync()
+						Expect(err).Should(Succeed())
+
+						Eventually(func() bool {
+							resp3, err := http.Get(url1)
+							if err != nil {
+								return false
+							}
+							defer resp3.Body.Close()
+
+							resp4, err := http.Get(url2)
+							if err != nil {
+								return false
+							}
+							defer resp4.Body.Close()
+
+							body3, _ := io.ReadAll(resp3.Body)
+							if string(body3) != "H3110 from Node.js Starter Application!" {
+								return false
+							}
+
+							body4, _ := io.ReadAll(resp4.Body)
+							return string(body4) == "H3110 from Node.js Starter Application!"
+						}, 180, 10).Should(Equal(true))
+					})
+
+					When("an endpoint is added after first run of odo dev", func() {
+
+						BeforeEach(func() {
+							helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
+
+							if manual {
+								if os.Getenv("SKIP_KEY_PRESS") == "true" {
+									Skip("This is a unix-terminal specific scenario, skipping")
+								}
+
+								devSession.PressKey('p')
+							}
+
+							var err error
+							_, _, ports, err = devSession.WaitSync()
+							Expect(err).Should(Succeed())
+
+						})
+						It("should expose three endpoints on localhost", func() {
+							url1 := fmt.Sprintf("http://%s", ports["3000"])
+							url2 := fmt.Sprintf("http://%s", ports["4567"])
+							url3 := fmt.Sprintf("http://%s", ports["7890"])
+
+							resp1, err := http.Get(url1)
+							Expect(err).ToNot(HaveOccurred())
+							defer resp1.Body.Close()
+
+							resp2, err := http.Get(url2)
+							Expect(err).ToNot(HaveOccurred())
+							defer resp2.Body.Close()
+
+							resp3, err := http.Get(url3)
+							Expect(err).ToNot(HaveOccurred())
+							defer resp3.Body.Close()
+
+							body1, _ := io.ReadAll(resp1.Body)
+							helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
+
+							body2, _ := io.ReadAll(resp2.Body)
+							helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
+
+							body3, _ := io.ReadAll(resp3.Body)
+							helper.MatchAllInOutput(string(body3), []string{"Hello from Node.js Starter Application!"})
+						})
 					})
 				})
-			})
 
+			})
 		})
-	})
+	}
 
 	for _, devfileHandlerCtx := range []struct {
 		name           string
@@ -1291,10 +1355,6 @@ ComponentSettings:
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				session, sessionOut, sessionErr, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
 				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
 			})
 			It("should execute the composite apply commands successfully", func() {
 				checkDeploymentExists := func() {
@@ -2354,6 +2414,34 @@ CMD ["npm", "start"]
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		When("odo dev is stopped", func() {
+			BeforeEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			It("should remove forwarded ports from state file", func() {
+				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
+				contentJSON, err := ioutil.ReadFile(stateFile)
+				Expect(err).ToNot(HaveOccurred())
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
+			})
+		})
+	})
+
+	When("a component with multiple endpoints is run", func() {
+		stateFile := ".odo/devstate.json"
+		var devSession helper.DevSession
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+			helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
+			var err error
+			devSession, _, _, _, err = helper.StartDevMode(nil)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		AfterEach(func() {
 			// We stop the process so the process does not remain after the end of the tests
 			devSession.Kill()
@@ -2372,20 +2460,6 @@ CMD ["npm", "start"]
 			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
 			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
 			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
-		})
-
-		When("odo dev is stopped", func() {
-			BeforeEach(func() {
-				devSession.Stop()
-				devSession.WaitEnd()
-			})
-
-			It("should remove forwarded ports from state file", func() {
-				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
-				contentJSON, err := ioutil.ReadFile(stateFile)
-				Expect(err).ToNot(HaveOccurred())
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
-			})
 		})
 	})
 

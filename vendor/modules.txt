@@ -385,7 +385,6 @@ github.com/hashicorp/go-multierror
 github.com/hashicorp/go-version
 # github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 ## explicit; go 1.14
-github.com/hinshun/vt10x
 # github.com/imdario/mergo v0.3.12
 ## explicit; go 1.13
 github.com/imdario/mergo

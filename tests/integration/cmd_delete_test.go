@@ -261,7 +261,7 @@ var _ = Describe("odo delete command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml")).ShouldPass()
 			session := helper.CmdRunner("odo", "dev", "--random-ports")
 			defer session.Kill()
-			helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
+			helper.WaitForOutputToContain("[Ctrl+c] - Exit", 180, 10, session)
 			// Ensure that the pod is in running state
 			Eventually(string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Out.Contents()), 60, 3).Should(ContainSubstring(cmpName))
 			// running in verbosity since the preStop events information is only printed in v4

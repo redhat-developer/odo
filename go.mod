@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/ActiveState/termtest v0.7.1
+	github.com/ActiveState/termtest/expect v0.7.0
 	github.com/AlecAivazis/survey/v2 v2.3.5
-	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/api/v2 v2.0.0-20220309195345-48ebbf1e51cf
@@ -19,9 +19,7 @@ require (
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.6.0
-	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/jedib0t/go-pretty/v6 v6.3.5
-	github.com/kr/pty v1.1.8
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.9
@@ -68,7 +66,6 @@ require (
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/ActiveState/termtest/conpty v0.5.0 // indirect
-	github.com/ActiveState/termtest/expect v0.7.0 // indirect
 	github.com/ActiveState/termtest/xpty v0.6.0 // indirect
 	github.com/ActiveState/vt10x v1.3.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -81,6 +78,7 @@ require (
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/Microsoft/go-winio v0.5.0 // indirect
 	github.com/Microsoft/hcsshim v0.8.20 // indirect
+	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/RangelReale/osincli v0.0.0-20160924135400-fababb0555f2 // indirect
@@ -129,6 +127,7 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.4.0 // indirect
+	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
@@ -138,6 +137,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/klauspost/compress v1.11.13 // indirect
+	github.com/kr/pty v1.1.8 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect

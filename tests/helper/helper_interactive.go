@@ -101,6 +101,10 @@ func SendLine(ctx InteractiveContext, line string) {
 	ctx.cp.Send(line)
 }
 
+func PressKey(ctx InteractiveContext, c byte) {
+	ctx.cp.SendUnterminated(string(c))
+}
+
 func ExpectString(ctx InteractiveContext, line string) {
 	res, err := ctx.cp.Expect(line, 120*time.Second)
 	fmt.Fprint(ctx.buffer, res)

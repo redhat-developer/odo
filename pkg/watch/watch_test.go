@@ -131,8 +131,15 @@ func Test_eventWatcher(t *testing.T) {
 				State: StateReady,
 			}
 
-			o := WatchClient{}
-			err := o.eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, fakeWatcher{}, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, componentStatus)
+			o := WatchClient{
+				sourcesWatcher:    watcher,
+				deploymentWatcher: fakeWatcher{},
+				podWatcher:        fakeWatcher{},
+				warningsWatcher:   fakeWatcher{},
+				devfileWatcher:    fileWatcher,
+				keyWatcher:        make(chan byte),
+			}
+			err := o.eventWatcher(ctx, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

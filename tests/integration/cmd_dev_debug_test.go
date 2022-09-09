@@ -171,10 +171,6 @@ var _ = Describe("odo dev debug command tests", func() {
 			session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"}, "--debug")
 			Expect(err).ToNot(HaveOccurred())
 		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
 		It("should execute the composite apply commands successfully", func() {
 			checkDeploymentExists := func() {
 				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
