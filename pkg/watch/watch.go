@@ -203,12 +203,15 @@ func (o *WatchClient) eventWatcher(
 	sourcesTimer := time.NewTimer(time.Millisecond)
 	<-sourcesTimer.C
 
+	// devfileTimer has the same usage as sourcesTimer, for file events coming from devfileWatcher
 	devfileTimer := time.NewTimer(time.Millisecond)
 	<-devfileTimer.C
 
+	// deployTimer has the same usage as sourcesTimer, for events coming from watching Deployments, from deploymentWatcher
 	deployTimer := time.NewTimer(time.Millisecond)
 	<-deployTimer.C
 
+	// retryTimer is a timer used to retry later a sync that has failed
 	retryTimer := time.NewTimer(time.Millisecond)
 	<-retryTimer.C
 
