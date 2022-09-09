@@ -237,7 +237,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "Describe a component",
 		Long:    "Describe a component",
-		Args:    cobra.NoArgs,
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(describeExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)

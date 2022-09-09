@@ -233,3 +233,12 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
 	}
 	return nil
 }
+
+// NoArgsAndSilenceJSON returns the NoArgs value, and silence output when JSON output is activated
+func NoArgsAndSilenceJSON(cmd *cobra.Command, args []string) error {
+	if log.IsJSON() {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+	}
+	return cobra.NoArgs(cmd, args)
+}

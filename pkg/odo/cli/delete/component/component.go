@@ -216,7 +216,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "Delete component",
 		Long:    "Delete component",
-		Args:    cobra.NoArgs,
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)

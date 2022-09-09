@@ -260,6 +260,11 @@ func ShowSubcommands(cmd *cobra.Command, args []string) error {
 			strs = append(strs, subcmd.Name())
 		}
 	}
+
+	if log.IsJSON() {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+	}
 	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 	return fmt.Errorf("Subcommand not found, use one of the available commands: %s", strings.Join(strs, ", "))
 	//revive:enable:error-strings
@@ -282,6 +287,11 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 	}
 
 	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+	if log.IsJSON() {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+		return errors.New("Invalid command - see available commands/subcommands by running `odo`")
+	}
 	return errors.New("Invalid command - see available commands/subcommands above")
 	//revive:enable:error-strings
 }

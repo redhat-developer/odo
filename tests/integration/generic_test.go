@@ -52,6 +52,36 @@ var _ = Describe("odo generic", func() {
 		Expect(output).To(ContainSubstring("Invalid command - see available commands/subcommands above"))
 	})
 
+	It("returns JSON error", func() {
+		By("using an invalid command with JSON output", func() {
+			res := helper.Cmd("odo", "unknown-command", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+		})
+
+		By("using an invalid describe sub-command with JSON output", func() {
+			res := helper.Cmd("odo", "describe", "unknown-sub-command", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+		})
+
+		By("using an invalid list sub-command with JSON output", func() {
+			res := helper.Cmd("odo", "list", "unknown-sub-command", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+		})
+
+		By("omitting required subcommand with JSON output", func() {
+			res := helper.Cmd("odo", "describe", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+		})
+	})
+
 	It("returns error when using an invalid command with --help", func() {
 		output := helper.Cmd("odo", "hello", "--help").ShouldFail().Err()
 		Expect(output).To(ContainSubstring("unknown command 'hello', type --help for a list of all commands"))
