@@ -8,7 +8,7 @@ import (
 )
 
 func FakeKubeService(componentName, serviceName string) corev1.Service {
-	labels := odolabels.GetLabels(componentName, "app", odolabels.ComponentDevMode, false)
+	labels := odolabels.GetLabels(componentName, "app", "", odolabels.ComponentDevMode, false)
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   serviceName,

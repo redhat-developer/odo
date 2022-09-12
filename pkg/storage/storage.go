@@ -29,12 +29,14 @@ type generic struct {
 	appName             string
 	componentName       string
 	localConfigProvider localConfigProvider.LocalConfigProvider
+	runtime             string
 }
 
 type ClientOptions struct {
 	Client              kclient.ClientInterface
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 	Deployment          *v1.Deployment
+	Runtime             string
 }
 
 type Client interface {
@@ -55,6 +57,7 @@ func NewClient(componentName string, appName string, options ClientOptions) Clie
 
 	genericInfo.componentName = componentName
 	genericInfo.appName = appName
+	genericInfo.runtime = options.Runtime
 
 	return kubernetesClient{
 		generic:    genericInfo,

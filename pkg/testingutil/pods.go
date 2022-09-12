@@ -12,7 +12,7 @@ func CreateFakePod(componentName, podName string) *corev1.Pod {
 	fakePod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   podName,
-			Labels: odolabels.GetLabels(componentName, "app", odolabels.ComponentDevMode, false),
+			Labels: odolabels.GetLabels(componentName, "app", "", odolabels.ComponentDevMode, false),
 		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,

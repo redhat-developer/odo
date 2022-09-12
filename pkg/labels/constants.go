@@ -20,6 +20,8 @@ const (
 	// kubernetesStorageNameLabel is applied to all storage resources that are created
 	kubernetesStorageNameLabel = "app.kubernetes.io/storage-name"
 
+	openshiftRunTimeLabel = "app.openshift.io/runtime"
+
 	// odoModeLabel indicates which command were used to create the component, either dev or deploy
 	odoModeLabel = "odo.dev/mode"
 
