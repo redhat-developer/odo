@@ -1,4 +1,4 @@
-`odo` - Fast iterative application development deployed immediately to your Kubernetes cluster
+`odo` - Developer-focused CLI for fast & interative application development on Kubernetes
 ---
 
 [![GitHub release](https://img.shields.io/github/v/release/redhat-developer/odo?style=for-the-badge)](https://github.com/redhat-developer/odo/releases/latest)
@@ -16,10 +16,10 @@
 
 Why use `odo`?
 
-* **Fast:** Spend less time maintaining your deployment infrastructure and more time coding. Immediately have your application running each time you compile.
-* **Standalone client:** `odo` is a standalone tool that communicates directly with the Kubernetes API. There is no requirement for a daemon or server process.
-* **No needed configuration:** There is no need to dive into complex Kubernetes yaml configuration files. `odo` abstracts those concepts away and lets you focus on what matters most: code.
-* **Containers first:** We provide first class support for both Kubernetes and OpenShift. Choose your favourite container orchestrator and deploy your application.
+* **Fast:** Spend less time maintaining your application deployment infrastructure and more time coding. Immediately have your application running each time you save.
+* **Standalone:** `odo` is a standalone tool that communicates directly with the Kubernetes API. There is no requirement for a daemon or server process.
+* **No configuration needed:** There is no need to dive into complex Kubernetes yaml configuration files. `odo` abstracts those concepts away and lets you focus on what matters most: code.
+* **Containers first:** We provide first class support for both Kubernetes and OpenShift. Choose your favourite container orchestrator and develop your application.
 * **Easy to learn:** Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
 
 Learn more about the features provided by odo on [odo.dev](https://odo.dev/docs/overview/features).
@@ -56,6 +56,8 @@ If you find an issue with `odo`, please [file it here](https://github.com/redhat
 
 * Code: We are currently working on updating our code contribution guide.
 * Documentation: To contribute to the documentation, please have a look at our [Documentation Guide](https://github.com/redhat-developer/odo/wiki).
+
+We are an open community who welcomes any concerns, changes or ideas for `odo`! Come join the chat and hang out, ask or give feedback and just generally have a good time.
 
 #### Meetings
 
