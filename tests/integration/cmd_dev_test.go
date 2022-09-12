@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/storage"
@@ -2573,4 +2574,111 @@ CMD ["npm", "start"]
 			})
 		})
 	})
+
+	for _, t := range []struct {
+		whenTitle string
+		devfile   string
+		check     func(cmpName string)
+	}{
+		{
+			whenTitle: "Devfile contains metadata.language",
+			devfile:   "devfile-with-metadata-language.yaml",
+			check: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"javascript",
+				)
+				commonVar.CliRunner.AssertContainsLabel(
+					"service",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"javascript",
+				)
+			},
+		},
+
+		{
+			whenTitle: "Devfile contains metadata.projectType",
+			devfile:   "devfile-with-metadata-project-type.yaml",
+			check: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"nodejs",
+				)
+				commonVar.CliRunner.AssertContainsLabel(
+					"service",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"nodejs",
+				)
+			},
+		},
+
+		{
+			whenTitle: "Devfile contains neither metadata.language nor metadata.projectType",
+			devfile:   "devfile-with-metadata-no-language-project-type.yaml",
+			check: func(cmpName string) {
+				commonVar.CliRunner.AssertNoContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+				)
+				commonVar.CliRunner.AssertNoContainsLabel(
+					"service",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+				)
+			},
+		},
+	} {
+		t := t
+		When(t.whenTitle, func() {
+
+			var cmpName = "nodejs-prj" // from devfile
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", t.devfile),
+					filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+
+			When("running odo dev", func() {
+				var devSession helper.DevSession
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(nil)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+				})
+
+				It("should set the correct value in labels of resources", func() {
+					t.check(cmpName)
+				})
+			})
+		})
+	}
 })

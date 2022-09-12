@@ -51,4 +51,6 @@ type CliRunner interface {
 	GetBindableKinds() (string, string)
 	GetServiceBinding(name, projectName string) (string, string)
 	GetLogs(podName string) string
+	AssertContainsLabel(kind, namespace, componentName, appName, mode, key, value string)
+	AssertNoContainsLabel(kind, namespace, componentName, appName, mode, key string)
 }
