@@ -44,6 +44,18 @@ In the interactive mode, you will be guided to choose:
 # Add binding between a service, and the component present in the working directory in the interactive mode
 odo add binding
 ```
+```shell
+$ odo add binding
+? Do you want to list services from: current namespace
+? Select service instance you want to bind to: cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)
+? Enter the Binding's name: my-go-app-cluster-sample
+? How do you want to bind the service? Bind As Files
+? Select naming strategy for binding names: DEFAULT
+ ✓  Successfully added the binding to the devfile.
+Run `odo dev` to create it on the cluster.
+You can automate this command by executing:
+  odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name my-go-app-cluster-sample
+```
 
 ### Non-interactive mode
 In the non-interactive mode, you will have to specify the following required information through the command-line:
@@ -60,7 +72,12 @@ In the non-interactive mode, you will have to specify the following required inf
 ```shell
 # Add binding between a service named 'cluster-sample',
 # and the component present in the working directory in the non-interactive mode
-odo add binding --name mybinding --service cluster-sample
+odo add binding --service cluster-sample --name mybinding
+```
+```shell
+$   odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name my-go-app-cluster-sample
+ ✓  Successfully added the binding to the devfile.
+Run `odo dev` to create it on the cluster.
 ```
 
 #### Understanding Bind as Files
