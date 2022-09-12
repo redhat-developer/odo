@@ -14,6 +14,16 @@ For each component, the command displays:
 defined in the local Devfile,
 - by which application the component has been deployed.
 
+### Running the command
+```shell
+$ odo list component
+ ✓  Listing components from namespace 'my-percona-server-mongodb-operator' [292ms]
+ NAME              PROJECT TYPE  RUNNING IN  MANAGED                         
+ my-nodejs         nodejs        Deploy      odo (v3.0.0-rc1)                
+ my-go-app         go            Dev         odo (v3.0.0-rc1)                
+ mongodb-instance  Unknown       None        percona-server-mongodb-operator 
+```
+
 ## Available flags
 
 * `--namespace` - Namespace to list the components from (optional). By default, the current namespace defined in kubeconfig is used

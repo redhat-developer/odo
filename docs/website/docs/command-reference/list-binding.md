@@ -29,8 +29,8 @@ odo list binding
 ```
 ```console
 $ odo list binding
- NAME                              APPLICATION                     SERVICES                                                                            RUNNING IN 
+ NAME                              APPLICATION                     SERVICES                                                                            RUNNING IN
  binding-to-redis                  my-nodejs-app-app (Deployment)  redis (Service)                                                                     Dev
- * my-nodejs-app-cluster-sample    my-nodejs-app-app (Deployment)  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)    Dev       
- * my-nodejs-app-cluster-sample-2  my-nodejs-app-app (Deployment)  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io)                           Dev       
+ * my-nodejs-app-cluster-sample    my-nodejs-app-app (Deployment)  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)    Dev
+ * my-nodejs-app-cluster-sample-2  my-nodejs-app-app (Deployment)  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io)                           Dev
 ```

@@ -12,7 +12,30 @@ There are 2 ways to describe a component:
 ```shell
 odo describe component
 ```
+```shell
+$ odo describe component
+Name: my-nodejs
+Display Name: Node.js Runtime
+Project Type: nodejs
+Language: javascript
+Version: 1.0.1
+Description: Stack with Node.js 14
+Tags: NodeJS, Express, ubi8
 
+Running in: Deploy
+
+Supported odo features:
+ •  Dev: true
+ •  Deploy: true
+ •  Debug: true
+
+Container components:
+ •  runtime
+
+Kubernetes components:
+ •  outerloop-deploy
+
+```
 This command returns information extracted from the Devfile:
 - metadata (name, display name, project type, language, version, description and tags)
 - supported odo features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
@@ -25,7 +48,24 @@ The command also displays if the component is currently running in the cluster o
 ```shell
 odo describe component --name <component_name> [--namespace <namespace>]
 ```
+```shell
+$ odo describe component --name my-nodejs
+Name: my-nodejs
+Display Name: Unknown
+Project Type: nodejs
+Language: Unknown
+Version: Unknown
+Description: Unknown
+Tags: 
 
+Running in: Deploy
+
+Supported odo features:
+ •  Dev: Unknown
+ •  Deploy: Unknown
+ •  Debug: Unknown
+ 
+```
 The command extracts information from the labels and annotations attached to the deployed component to display the known metadata of the Devfile used to deploy the component.
 
 The command also displays if the component is currently running in the cluster on Dev and/or Deploy mode.
