@@ -12,7 +12,7 @@ Building on top of the [Go quickstart guide](../quickstart/go.md), we will exten
 
 2. Install Percona Server Mongodb operator on your cluster. See [installation instruction](https://operatorhub.io/operator/percona-server-mongodb-operator).
 :::note
-The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and for the sake of simplicity, we will use this namespace for this guide. 
+The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and will be usable from that namespace only.
 :::
 3. Create a mongodb service.
 
