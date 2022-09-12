@@ -67,6 +67,58 @@ components:
 
 Note that the `uri` for the Dockerfile could also be an HTTP or HTTPS URL.
 
+### Running the command
+```shell
+odo deploy
+```
+```shell
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-nodejs Devfile
+ \__/  \    Namespace: my-percona-server-mongodb-operator
+ /  \__/    odo version: v3.0.0-rc1
+ \__/
+
+↪ Building & Pushing Container: quay.io/pvala18/myimage
+ •  Building image locally  ...
+STEP 1/7: FROM quay.io/phmartin/node:17
+STEP 2/7: WORKDIR /usr/src/app
+--> Using cache b18c8d9f4c739a91e5430f235b7beaac913250bec8bfcae531a8e93c750cea87
+--> b18c8d9f4c7
+STEP 3/7: COPY package*.json ./
+--> Using cache cd151181cd9b2c69fc938eb89f3f71d0327d27ffba53c54247a105733cb36217
+--> cd151181cd9
+STEP 4/7: RUN npm install
+--> Using cache 72b79a4f76ab0f9665653a974f5c667b1cb964c89c58e71aa4817b1055b1c473
+--> 72b79a4f76a
+STEP 5/7: COPY . .
+--> 5c81f92690e
+STEP 6/7: EXPOSE 8080
+--> 9892b562a8a
+STEP 7/7: CMD [ "node", "server.js" ]
+COMMIT quay.io/pvala18/myimage
+--> 7578e3e3667
+Successfully tagged quay.io/pvala18/myimage:latest
+7578e3e36676418853c579063dd190c9d736114ca414e28c8646880b446a1618
+ ✓  Building image locally [2s]
+ •  Pushing image to container registry  ...
+Getting image source signatures
+Copying blob 0b3c02b5d746 skipped: already exists
+Copying blob 62a747bf1719 skipped: already exists
+Copying blob 650b52851ab5 done
+Copying blob 013fc0144002 skipped: already exists
+Copying blob aef6a4d33347 skipped: already exists
+Copying config 7578e3e366 done
+Writing manifest to image destination
+Storing signatures
+ ✓  Pushing image to container registry [22s]
+
+↪ Deploying Kubernetes Component: my-component
+ ✓  Creating kind Deployment 
+
+Your Devfile has been successfully deployed
+
+```
 ## Substituting variables
 
 The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
