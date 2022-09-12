@@ -31,6 +31,16 @@ commands:
       kind: test
     workingDir: /project
   id: test
+- id: deploy
+  composite:
+    commands:
+      - deploy-nginx
+    group:
+      kind: deploy
+      isDefault: true
+- id: deploy-nginx
+  apply:
+    component: nginx
 components:
 - container:
     endpoints:
@@ -41,6 +51,29 @@ components:
     mountSources: true
     sourceMapping: /project
   name: runtime
+- name: nginx
+  kubernetes:
+    inlined: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        labels:
+          app: nginx
+        name: nginx
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: nginx
+        template:
+          metadata:
+            creationTimestamp: null
+            labels:
+              app: nginx
+          spec:
+            containers:
+            - image: nginx
+              name: nginx
 metadata:
   description: Stack with Node.js 14
   displayName: Node.js Runtime
@@ -51,7 +84,7 @@ metadata:
   - Express
   - ubi8
   version: 1.0.1
-schemaVersion: 2.0.0
+schemaVersion: 2.2.0
 starterProjects:
 - git:
     remotes:

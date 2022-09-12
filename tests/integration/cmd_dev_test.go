@@ -2576,14 +2576,15 @@ CMD ["npm", "start"]
 	})
 
 	for _, t := range []struct {
-		whenTitle string
-		devfile   string
-		check     func(cmpName string)
+		whenTitle   string
+		devfile     string
+		checkDev    func(cmpName string)
+		checkDeploy func(cmpName string)
 	}{
 		{
 			whenTitle: "Devfile contains metadata.language",
 			devfile:   "devfile-with-metadata-language.yaml",
-			check: func(cmpName string) {
+			checkDev: func(cmpName string) {
 				commonVar.CliRunner.AssertContainsLabel(
 					"deployment",
 					commonVar.Project,
@@ -2599,6 +2600,17 @@ CMD ["npm", "start"]
 					cmpName,
 					"app",
 					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"javascript",
+				)
+			},
+			checkDeploy: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDeployMode,
 					"app.openshift.io/runtime",
 					"javascript",
 				)
@@ -2608,7 +2620,7 @@ CMD ["npm", "start"]
 		{
 			whenTitle: "Devfile contains metadata.projectType",
 			devfile:   "devfile-with-metadata-project-type.yaml",
-			check: func(cmpName string) {
+			checkDev: func(cmpName string) {
 				commonVar.CliRunner.AssertContainsLabel(
 					"deployment",
 					commonVar.Project,
@@ -2628,12 +2640,23 @@ CMD ["npm", "start"]
 					"nodejs",
 				)
 			},
+			checkDeploy: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDeployMode,
+					"app.openshift.io/runtime",
+					"nodejs",
+				)
+			},
 		},
 
 		{
 			whenTitle: "Devfile contains neither metadata.language nor metadata.projectType",
 			devfile:   "devfile-with-metadata-no-language-project-type.yaml",
-			check: func(cmpName string) {
+			checkDev: func(cmpName string) {
 				commonVar.CliRunner.AssertNoContainsLabel(
 					"deployment",
 					commonVar.Project,
@@ -2648,6 +2671,16 @@ CMD ["npm", "start"]
 					cmpName,
 					"app",
 					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+				)
+			},
+			checkDeploy: func(cmpName string) {
+				commonVar.CliRunner.AssertNoContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDeployMode,
 					"app.openshift.io/runtime",
 				)
 			},
@@ -2676,7 +2709,21 @@ CMD ["npm", "start"]
 				})
 
 				It("should set the correct value in labels of resources", func() {
-					t.check(cmpName)
+					t.checkDev(cmpName)
+				})
+			})
+
+			When("odo deploy is executed", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "deploy").ShouldPass()
+				})
+
+				AfterEach(func() {
+					helper.Cmd("odo", "delete", "component", "--force")
+				})
+
+				It("should set the correct value in labels of deployed resources", func() {
+					t.checkDeploy(cmpName)
 				})
 			})
 		})
