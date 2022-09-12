@@ -193,7 +193,7 @@ func (o DevSession) WaitEnd() {
 // since the end of the dev mode or the last time WaitSync/GetInfo has been called
 func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
 	WaitForOutputToContainOne([]string{"Pushing files...", "Updating Component..."}, 180, 10, o.session)
-	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, o.session)
+	WaitForOutputToContain("Dev mode", 240, 10, o.session)
 	return o.GetInfo()
 }
 
