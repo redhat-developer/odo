@@ -25,7 +25,7 @@ import CreateMongodbService from './_create-mongodb-service.mdx';
 If you're already running `odo dev` in a terminal, exit it and start afresh.
 :::
 
-The new code is simple. We obtain the connection information(username, password, and host) from the environment, and use it to connect to the mongodb service and ping it. 
+The new code is simple. We obtain the connection information (username, password, and host) from the environment, and use it to connect to the mongodb service and ping it. 
 
 Replace the content of your `main.go` with the following content:
 ```go
@@ -139,7 +139,10 @@ Let's now connect our application to the mongodb service with `odo add binding`.
 
 From a new terminal, run the following command that will add necessary data to devfile.yaml:
 ```shell
-odo add binding --service mongodb-instance/PerconaServerMongoDB --name my-go-app-mongodb-instance --bind-as-files=false
+odo add binding \
+  --service mongodb-instance/PerconaServerMongoDB \
+  --name my-go-app-mongodb-instance \
+  --bind-as-files=false
 ```
 ```shell
 $ odo add binding --service mongodb-instance/PerconaServerMongoDB --name my-go-app-mongodb-instance --bind-as-files=false
