@@ -475,7 +475,7 @@ func processEvents(
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		printInfoMessage(out, parameters.Path)
+		printInfoMessage(out, parameters.Path, parameters.WatchFiles)
 	}
 	return nil, nil
 }
@@ -544,9 +544,22 @@ func removeDuplicates(input []string) []string {
 	return result
 }
 
-func printInfoMessage(out io.Writer, path string) {
+func printInfoMessage(out io.Writer, path string, watchFiles bool) {
 	log.Sectionf("Dev mode")
-	fmt.Fprintf(out, " %s\n Watching for changes in the current directory %s\n\n %s%s", log.Sbold("Status:"), path, log.Sbold("Keyboard Commands:"), PromptMessage)
+	if watchFiles {
+		fmt.Fprintf(
+			out,
+			" %s\n Watching for changes in the current directory %s\n\n",
+			log.Sbold("Status:"),
+			path,
+		)
+	}
+	fmt.Fprintf(
+		out,
+		" %s%s",
+		log.Sbold("Keyboard Commands:"),
+		PromptMessage,
+	)
 }
 
 func isFatal(err error) bool {
