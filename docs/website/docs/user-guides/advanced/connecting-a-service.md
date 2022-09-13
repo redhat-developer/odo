@@ -89,6 +89,9 @@ Run this application on the cluster with `odo dev`.
 ```shell
 odo dev
 ```
+<details>
+<summary>Sample output:</summary>
+
 ```shell
 $ odo dev
   __
@@ -98,13 +101,13 @@ $ odo dev
  \__/
 
 ↪ Deploying to the cluster in developer mode
- •  Waiting for Kubernetes resources  ...
- ⚠  Pod is Pending
- ✓  Pod is Running
- ✓  Syncing files into the container [152ms]
- ✓  Building your application in container on cluster (command: build) [15s]
- •  Executing the application (command: run)  ...
- -  Forwarding from 127.0.0.1:40001 -> 8080
+•  Waiting for Kubernetes resources  ...
+⚠  Pod is Pending
+✓  Pod is Running
+✓  Syncing files into the container [152ms]
+✓  Building your application in container on cluster (command: build) [15s]
+•  Executing the application (command: run)  ...
+-  Forwarding from 127.0.0.1:40001 -> 8080
 
 
 Watching for changes in the current directory /tmp/go
@@ -114,12 +117,14 @@ Pushing files...
 
 
 File /tmp/go/.odo changed
- •  Waiting for Kubernetes resources  ...
- ✓  Syncing files into the container [1ms]
+•  Waiting for Kubernetes resources  ...
+✓  Syncing files into the container [1ms]
 
 Watching for changes in the current directory /tmp/go
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
+</details>
+
 
 ### Check the connection
 
@@ -127,10 +132,15 @@ Once the application is running, query the URL and check the response.
 ```shell
 curl 127.0.0.1:40001
 ```
+<details>
+<summary>Sample output:</summary>
+
 ```shell
 $ curl 127.0.0.1:40001
 failed to connect: error validating uri: username required if URI contains user info
 ```
+</details>
+
 
 This response is expected because we have not yet exposed the connection information to our cluster environment and hence have failed to connect to the mongodb service.
 
@@ -144,17 +154,27 @@ odo add binding \
   --name my-go-app-mongodb-instance \
   --bind-as-files=false
 ```
+
+<details>
+<summary>Sample output:</summary>
+
 ```shell
 $ odo add binding --service mongodb-instance/PerconaServerMongoDB --name my-go-app-mongodb-instance --bind-as-files=false
  ✓  Successfully added the binding to the devfile.
 Run `odo dev` to create it on the cluster.
 ```
+</details>
+
 
 :::note
 `--binding-as-files=false` because our code logic relies on obtaining environment variables from the system instead of reading data from files.
 :::
 
 Wait for `odo dev` to detect the new changes to `devfile.yaml`. 
+
+<details>
+<summary>Sample output:</summary>
+
 ```shell
 $ odo dev
   __                                                                                                                                              
@@ -163,33 +183,53 @@ $ odo dev
  /  \__/    odo version: v3.0.0-rc1
  \__/
 
-...
-...
-...
+↪ Deploying to the cluster in developer mode
+•  Waiting for Kubernetes resources  ...
+⚠  Pod is Pending
+✓  Pod is Running
+✓  Syncing files into the container [152ms]
+✓  Building your application in container on cluster (command: build) [15s]
+•  Executing the application (command: run)  ...
+-  Forwarding from 127.0.0.1:40001 -> 8080
+
+
+Watching for changes in the current directory /tmp/go
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+Pushing files...
+
+
+File /tmp/go/.odo changed
+•  Waiting for Kubernetes resources  ...
+✓  Syncing files into the container [1ms]
+
+Watching for changes in the current directory /tmp/go
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
 Pushing files...
 
 
 File /tmp/go/devfile.yaml changed
- •  Waiting for Kubernetes resources  ...
- ✓  Creating kind ServiceBinding 
+•  Waiting for Kubernetes resources  ...
+✓  Creating kind ServiceBinding
 Error occurred on Push - watch command was unable to push component: some servicebindings are not injected
 
 Updating Component...
 
- •  Waiting for Kubernetes resources  ...
+•  Waiting for Kubernetes resources  ...
 Error occurred on Push - watch command was unable to push component: some servicebindings are not injected
 
- ⚠  Pod is Terminating
- •  Waiting for Kubernetes resources  ...
- ✗  Finished executing the application (command: run) [1m]
- ⚠  No pod exists
- ⚠  Pod is Pending
- ✓  Pod is Running
- ✓  Syncing files into the container [170ms]
- ✓  Building your application in container on cluster (command: build) [192ms]
- •  Executing the application (command: run)  ...
- -  Forwarding from 127.0.0.1:40001 -> 8080
-                                                                                                                                                  
+⚠  Pod is Terminating
+•  Waiting for Kubernetes resources  ...
+✗  Finished executing the application (command: run) [1m]
+⚠  No pod exists
+⚠  Pod is Pending
+✓  Pod is Running
+✓  Syncing files into the container [170ms]
+✓  Building your application in container on cluster (command: build) [192ms]
+•  Executing the application (command: run)  ...
+-  Forwarding from 127.0.0.1:40001 -> 8080
+
 
 Watching for changes in the current directory /tmp/go
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
@@ -200,24 +240,32 @@ Pushing files...
 File /tmp/go/devfile.yaml changed
 
 File /tmp/go/.odo/devstate.json changed
- •  Waiting for Kubernetes resources  ...
- ✓  Syncing files into the container [1ms]
+•  Waiting for Kubernetes resources  ...
+✓  Syncing files into the container [1ms]
 
 Watching for changes in the current directory /tmp/go
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 
 
 ```
+</details>
+
 
 ### Check the connection again
 Query the URL again for a successful connection: 
 ```shell
 curl 127.0.0.1:40001
 ```
+
+<details>
+<summary>Sample output:</summary>
+
 ```shell
 $ curl 127.0.0.1:40001
 Successfully connected and pinged.
 ```
+</details>
+
 
 ### Exit and cleanup
 Press `Ctrl+c` to exit `odo dev`.
