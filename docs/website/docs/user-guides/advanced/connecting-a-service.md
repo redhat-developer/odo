@@ -1,5 +1,5 @@
 ---
-title: Connecting to a service
+title: Connecting to a Service
 sidebar_position: 1
 ---
 
@@ -7,8 +7,8 @@ This tutorial will show you how you can connect your Go application to a mongodb
 
 Building on top of the [Go quickstart guide](../quickstart/go.md), we will extend the application to check if it is connected to a mongodb service.
 
-### Pre-requisites
-1. Install Service Binding Operator on your cluster.  See [installation instruction](https://operatorhub.io/operator/service-binding-operator).
+## Prerequisites
+1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator).
 
 2. Install Percona Server Mongodb operator on your cluster. See [installation instruction](https://operatorhub.io/operator/percona-server-mongodb-operator).
 :::note
@@ -79,7 +79,7 @@ func HelloServer(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Successfully connected and pinged.")
 }
 ```
-We will be using the mongodb client library, so let's update the go.mod with this dependency by running the following command: 
+We will be using the MongoDB client library. Update the go.mod dependency by running the following command: 
 ```shell
 go get go.mongodb.org/mongo-driver/mongo
 ```
@@ -123,7 +123,7 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 
 ### Check the connection
 
-Once the application is running, try calling the URL and check the response.
+Once the application is running, query the URL and check the response.
 ```shell
 curl 127.0.0.1:40001
 ```
@@ -154,7 +154,7 @@ Run `odo dev` to create it on the cluster.
 `--binding-as-files=false` because our code logic relies on obtaining environment variables from the system instead of reading data from files.
 :::
 
-Wait for `odo dev` to detect the new changes to the devfile.yaml. 
+Wait for `odo dev` to detect the new changes to `devfile.yaml`. 
 ```shell
 $ odo dev
   __                                                                                                                                              
@@ -210,7 +210,7 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
 
 ### Check the connection again
-Once it is done, call the URL again. We should now be connected.
+Query the URL again for a successful connection: 
 ```shell
 curl 127.0.0.1:40001
 ```
