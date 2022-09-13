@@ -80,6 +80,7 @@ metadata:
   icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
   name: nodejs-prj
   projectType: nodejs
+  language: javascript
   tags:
   - NodeJS
   - Express
