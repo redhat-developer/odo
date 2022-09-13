@@ -294,7 +294,7 @@ func (o *BindingClient) checkServiceBindingOperatorInstalled() error {
 	if !isServiceBindingInstalled {
 		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 		return fmt.Errorf("Service Binding Operator is not installed on the cluster, please ensure it is installed before proceeding. " +
-			"See installation instructions: https://odo.dev/docs/overview/cluster-setup/")
+			"See installation instructions: https://odo.dev/docs/command-reference/add-binding#installing-the-service-binding-operator")
 		//revive:enable:error-strings
 	}
 	return nil

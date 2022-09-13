@@ -19,7 +19,7 @@ then
 fi
 
 MIRROR="https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/$2/"
-INSTALLATION_GUIDE="https://odo.dev/docs/getting-started/installation"
+INSTALLATION_GUIDE="https://odo.dev/docs/overview/installation"
 
 echo -e "# Installation of $2
 To install odo, follow our installation guide at [odo.dev]($INSTALLATION_GUIDE)
