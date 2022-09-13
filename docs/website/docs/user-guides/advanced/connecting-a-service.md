@@ -6,9 +6,9 @@ sidebar_position: 1
 Building on top of the [Go quickstart guide](../quickstart/go.md), this guide will extend the application to connect it to a deployable MongoDB service.
 
 ## Prerequisites
-1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator).
+1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator). Read [here](../../command-reference/add-binding.md#description) to know why this is required.
 
-2. Install Percona Server Mongodb operator on your cluster. See [installation instruction](https://operatorhub.io/operator/percona-server-mongodb-operator).
+2. [Install Percona Server Mongodb Operator via Operator Hub](https://operatorhub.io/operator/percona-server-mongodb-operator).
 :::note
 The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and will be usable from that namespace only.
 :::
@@ -165,7 +165,7 @@ Run `odo dev` to create it on the cluster.
 
 
 :::note
-`--binding-as-files=false` because our code logic relies on obtaining environment variables from the system instead of reading data from files.
+Our code logic relies on obtaining connection information from the environment variables in the system and `--binding-as-files=false` ensures that. Read [here](../../command-reference/add-binding.md#understanding-bind-as-files) to know more about this flag.
 :::
 
 Wait for `odo dev` to detect the new changes to `devfile.yaml`. 
