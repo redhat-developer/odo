@@ -18,7 +18,7 @@ import CreateMongodbService from './_create-mongodb-service.mdx';
 
 <CreateMongodbService/>
 
-### Implement the code logic
+## Step 0. Implement the code logic
 :::note
 If you're already running `odo dev` in a terminal, exit it and start afresh.
 :::
@@ -82,7 +82,7 @@ We will be using the MongoDB client library. Update the go.mod dependency by run
 go get go.mongodb.org/mongo-driver/mongo
 ```
 
-### Run the application
+## Step 1. Run the application
 Run this application on the cluster with `odo dev`.
 ```shell
 odo dev
@@ -142,7 +142,7 @@ failed to connect: error validating uri: username required if URI contains user 
 
 The error is expected as we have not yet exposed the connection information to our cluster environment.
 
-### Connect the application to the MongoDB service
+## Step 2. Connect the application to the MongoDB service
 Connect the application to the MongoDB service with `odo add binding`.
 
 From a new terminal, run the following command that will add necessary data to `devfile.yaml`:
@@ -249,7 +249,7 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 </details>
 
 
-### Check the connection again
+## Step 3. Check the connection again
 Query the URL again for a successful connection: 
 ```shell
 curl 127.0.0.1:40001
@@ -265,7 +265,7 @@ Successfully connected and pinged.
 </details>
 
 
-### Exit and cleanup
+## Step 4. Exit and cleanup
 Press `Ctrl+c` to exit `odo dev`.
 
 Delete the MongoDB instance that we had created.
