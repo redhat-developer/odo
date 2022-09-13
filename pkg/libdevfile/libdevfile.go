@@ -269,7 +269,7 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 	return nil
 }
 
-// GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int) with exposure status other than none
+// GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int)
 func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]int {
 	ceMapping := make(map[string][]int)
 	for _, container := range containers {
@@ -284,9 +284,7 @@ func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]i
 
 		endpoints := container.Container.Endpoints
 		for _, e := range endpoints {
-			if e.Exposure != v1alpha2.NoneEndpointExposure {
-				ceMapping[k] = append(ceMapping[k], e.TargetPort)
-			}
+			ceMapping[k] = append(ceMapping[k], e.TargetPort)
 		}
 	}
 	return ceMapping
