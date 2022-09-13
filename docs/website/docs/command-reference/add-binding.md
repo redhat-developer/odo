@@ -28,7 +28,7 @@ To know about the Operators supported by the Service Binding Operator, read its 
 #### Installing the Service Binding Operator
 Service Binding Operator is required to bind an application with microservices.
 
-Visit the [official documentation](https://redhat-developer.github.io/service-binding-operator/userguide/getting-started/installing-service-binding.html#installing-the-service-binding-operator-from-the-openshift-container-platform-web-ui) of Service Binding Operator to see how you can install it on your OpenShift cluster.
+Visit the [official documentation](https://redhat-developer.github.io/service-binding-operator/userguide/getting-started/installing-service-binding.html) of Service Binding Operator to see how you can install it on your OpenShift or Kubernetes cluster.
 
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
