@@ -3,9 +3,9 @@ title: Connecting to a Service
 sidebar_position: 1
 ---
 
-This tutorial will show you how you can connect your Go application to a mongodb service.
+This tutorial will show you how you can connect your Go application to a MongoDB service.
 
-Building on top of the [Go quickstart guide](../quickstart/go.md), we will extend the application to check if it is connected to a mongodb service.
+Building on top of the [Go quickstart guide](../quickstart/go.md), we will extend the application to check if it is connected to a MongoDB service.
 
 ## Prerequisites
 1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator).
@@ -14,7 +14,7 @@ Building on top of the [Go quickstart guide](../quickstart/go.md), we will exten
 :::note
 The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and will be usable from that namespace only.
 :::
-3. Create a mongodb service.
+3. Create a MongoDB service.
 
 import CreateMongodbService from './_create-mongodb-service.mdx';
 
@@ -25,7 +25,7 @@ import CreateMongodbService from './_create-mongodb-service.mdx';
 If you're already running `odo dev` in a terminal, exit it and start afresh.
 :::
 
-The new code is simple. We obtain the connection information (username, password, and host) from the environment, and use it to connect to the mongodb service and ping it. 
+The new code is simple. We obtain the connection information (username, password, and host) from the environment, and use it to connect to the MongoDB service and ping it. 
 
 Replace the content of your `main.go` with the following content:
 ```go
@@ -142,10 +142,10 @@ failed to connect: error validating uri: username required if URI contains user 
 </details>
 
 
-This response is expected because we have not yet exposed the connection information to our cluster environment and hence have failed to connect to the mongodb service.
+This response is expected because we have not yet exposed the connection information to our cluster environment and hence have failed to connect to the MongoDB service.
 
-### Connect the application to the mongodb service
-Let's now connect our application to the mongodb service with `odo add binding`.
+### Connect the application to the MongoDB service
+Let's now connect our application to the MongoDB service with `odo add binding`.
 
 From a new terminal, run the following command that will add necessary data to devfile.yaml:
 ```shell
@@ -270,7 +270,7 @@ Successfully connected and pinged.
 ### Exit and cleanup
 Press `Ctrl+c` to exit `odo dev`.
 
-Delete the mongodb instance that we had created.
+Delete the MongoDB instance that we had created.
 
 import DeleteMongodbService from './_delete-mongodb-service.mdx';
 
