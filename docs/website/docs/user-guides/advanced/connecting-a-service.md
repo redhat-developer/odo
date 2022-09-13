@@ -3,9 +3,7 @@ title: Connecting to a Service
 sidebar_position: 1
 ---
 
-This tutorial will show you how you can connect your Go application to a MongoDB service.
-
-Building on top of the [Go quickstart guide](../quickstart/go.md), we will extend the application to check if it is connected to a MongoDB service.
+Building on top of the [Go quickstart guide](../quickstart/go.md), this guide will extend the application to connect it to a deployable MongoDB service.
 
 ## Prerequisites
 1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator).
@@ -25,7 +23,7 @@ import CreateMongodbService from './_create-mongodb-service.mdx';
 If you're already running `odo dev` in a terminal, exit it and start afresh.
 :::
 
-The new code is simple. We obtain the connection information (username, password, and host) from the environment, and use it to connect to the MongoDB service and ping it. 
+The below code simply obtains the connection information (username, password, and host) from the environment and then uses it to connect to the MongoDB service and ping it.
 
 Replace the content of your `main.go` with the following content:
 ```go
@@ -84,7 +82,7 @@ We will be using the MongoDB client library. Update the go.mod dependency by run
 go get go.mongodb.org/mongo-driver/mongo
 ```
 
-### Run the application on the cluster
+### Run the application
 Run this application on the cluster with `odo dev`.
 ```shell
 odo dev
@@ -142,12 +140,12 @@ failed to connect: error validating uri: username required if URI contains user 
 </details>
 
 
-This response is expected because we have not yet exposed the connection information to our cluster environment and hence have failed to connect to the MongoDB service.
+The error is expected as we have not yet exposed the connection information to our cluster environment.
 
 ### Connect the application to the MongoDB service
-Let's now connect our application to the MongoDB service with `odo add binding`.
+Connect the application to the MongoDB service with `odo add binding`.
 
-From a new terminal, run the following command that will add necessary data to devfile.yaml:
+From a new terminal, run the following command that will add necessary data to `devfile.yaml`:
 ```shell
 odo add binding \
   --service mongodb-instance/PerconaServerMongoDB \
