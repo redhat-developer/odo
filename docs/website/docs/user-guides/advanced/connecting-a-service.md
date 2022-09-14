@@ -6,7 +6,7 @@ sidebar_position: 1
 Building on top of the [Go quickstart guide](../quickstart/go.md), this guide will connect a service to the Go application.
 
 ## Prerequisites
-1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator). Read [here](../../command-reference/add-binding.md#description) to know why this is required.
+1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator). [Read why this is required.](../../command-reference/add-binding.md#description)
 
 2. [Install Percona Server Mongodb Operator via Operator Hub](https://operatorhub.io/operator/percona-server-mongodb-operator).
 :::note
