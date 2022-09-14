@@ -146,7 +146,8 @@ func ApplyKubernetes(mode, appName string, componentName string, devfile parser.
 
 	// Get the most common labels that's applicable to all resources being deployed.
 	// Set the mode. Regardless of what Kubernetes resource we are deploying.
-	labels := odolabels.GetLabels(componentName, appName, mode, false)
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(devfile.Data.GetMetadata())
+	labels := odolabels.GetLabels(componentName, appName, runtime, mode, false)
 
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
 

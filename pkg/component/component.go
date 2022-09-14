@@ -42,6 +42,15 @@ func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) strin
 	return componentType
 }
 
+// GetComponentRuntimeFromDevfileMetadata returns the Project Type defined in the Devfile metadata
+// or if not set, the Language
+func GetComponentRuntimeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
+	if metadata.ProjectType != "" {
+		return metadata.ProjectType
+	}
+	return metadata.Language
+}
+
 // GatherName computes and returns what should be used as name for the Devfile object specified.
 //
 // If a non-blank name is available in the Devfile metadata (which is optional), it is sanitized and returned.

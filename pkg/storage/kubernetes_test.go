@@ -428,7 +428,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				t.Errorf("failed to create quantity by calling resource.ParseQuantity(%v)", tt.args.storage.Spec.Size)
 			}
 
-			wantLabels := odolabels.GetLabels(tt.fields.generic.componentName, tt.fields.generic.appName, odolabels.ComponentDevMode, false)
+			wantLabels := odolabels.GetLabels(tt.fields.generic.componentName, tt.fields.generic.appName, "", odolabels.ComponentDevMode, false)
 			odolabels.AddStorageInfo(wantLabels, tt.args.storage.Name, strings.Contains(tt.args.storage.Name, OdoSourceVolume))
 
 			// created PVC should be labeled with labels passed to CreatePVC

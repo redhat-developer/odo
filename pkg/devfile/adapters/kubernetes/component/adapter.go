@@ -114,7 +114,8 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
-	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
+	labels := odolabels.GetLabels(a.ComponentName, a.AppName, runtime, odolabels.ComponentDevMode, false)
 
 	var updated bool
 	deployment, updated, err = a.createOrUpdateComponent(deploymentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
@@ -327,9 +328,12 @@ func (a *Adapter) createOrUpdateComponent(
 	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
+
 	storageClient := storagepkg.NewClient(componentName, a.AppName, storagepkg.ClientOptions{
 		Client:              a.kubeClient,
 		LocalConfigProvider: &ei,
+		Runtime:             runtime,
 	})
 
 	// handle the ephemeral storage
@@ -345,7 +349,7 @@ func (a *Adapter) createOrUpdateComponent(
 	}
 
 	// Set the labels
-	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode, true)
+	labels := odolabels.GetLabels(componentName, a.AppName, runtime, odolabels.ComponentDevMode, true)
 
 	annotations := make(map[string]string)
 	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))

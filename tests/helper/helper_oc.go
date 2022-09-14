@@ -528,7 +528,7 @@ func (oc OcRunner) doAsAdmin(clusterType string) string {
 	return token
 }
 
-//  doAsDeveloper logins as developer to perform some task
+// doAsDeveloper logins as developer to perform some task
 func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 
 	if clusterType == "IBM" {
@@ -598,4 +598,16 @@ func (oc OcRunner) GetAllNamespaceProjects() []string {
 func (oc OcRunner) GetLogs(podName string) string {
 	output := Cmd(oc.path, "logs", podName).ShouldPass().Out()
 	return output
+}
+
+func (oc OcRunner) AssertContainsLabel(kind, namespace, componentName, appName, mode, key, value string) {
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).WithMode(mode).SelectorFlag()
+	all := Cmd(oc.path, "get", kind, selector, "-n", namespace, "-o", "jsonpath={.items[0].metadata.labels}").ShouldPass().Out()
+	Expect(all).To(ContainSubstring(fmt.Sprintf(`"%s":"%s"`, key, value)))
+}
+
+func (oc OcRunner) AssertNoContainsLabel(kind, namespace, componentName, appName, mode, key string) {
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).WithMode(mode).SelectorFlag()
+	all := Cmd(oc.path, "get", kind, selector, "-n", namespace, "-o", "jsonpath={.items[0].metadata.labels}").ShouldPass().Out()
+	Expect(all).ToNot(ContainSubstring(fmt.Sprintf(`"%s"`, key)))
 }

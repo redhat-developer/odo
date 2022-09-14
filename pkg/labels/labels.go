@@ -12,8 +12,11 @@ import (
 // if you need labels to filter component then use GetSelector instead
 // Note: isPartOfComponent denotes if the label is required for a core resource(deployment, svc, pvc, pv) of a given component deployed with `odo dev`;
 // it is the only thing that sets it apart from the resources created via other ways (`odo deploy`, deploying resource with apply command during `odo dev`)
-func GetLabels(componentName string, applicationName string, mode string, isPartOfComponent bool) map[string]string {
+func GetLabels(componentName string, applicationName string, runtime string, mode string, isPartOfComponent bool) map[string]string {
 	labels := getLabels(componentName, applicationName, mode, true, isPartOfComponent)
+	if runtime != "" {
+		labels[openshiftRunTimeLabel] = runtime
+	}
 	return labels
 }
 

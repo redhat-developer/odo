@@ -291,11 +291,11 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 
 	// labeledOuterloopResource is the deployment with labels set
 	labeledOuterloopResource := *outerLoopResourceUnstructured.DeepCopy()
-	labeledOuterloopResource.SetLabels(odolabels.GetLabels(compName, appName, odolabels.ComponentDeployMode, false))
+	labeledOuterloopResource.SetLabels(odolabels.GetLabels(compName, appName, "", odolabels.ComponentDeployMode, false))
 
 	// innerLoopResourceUnstructured is the deployment that will be deployed by apply command with `odo dev`
 	innerLoopResourceUnstructured := *outerLoopResourceUnstructured.DeepCopy()
-	innerLoopResourceUnstructured.SetLabels(odolabels.GetLabels(compName, appName, odolabels.ComponentDevMode, false))
+	innerLoopResourceUnstructured.SetLabels(odolabels.GetLabels(compName, appName, "", odolabels.ComponentDevMode, false))
 
 	deploymentRESTMapping := meta.RESTMapping{
 		Resource: getGVR("apps", "v1", "Deployment"),

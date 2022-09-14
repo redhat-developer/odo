@@ -12,7 +12,6 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
@@ -41,7 +40,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 		return err
 	}
 
-	labels := odolabels.GetLabels(k.componentName, k.appName, odolabels.ComponentDevMode, false)
+	labels := odolabels.GetLabels(k.componentName, k.appName, k.runtime, odolabels.ComponentDevMode, false)
 	odolabels.AddStorageInfo(labels, storage.Name, strings.Contains(storage.Name, OdoSourceVolume))
 
 	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetCurrentNamespace(), labels, nil)
@@ -138,7 +137,7 @@ func (k kubernetesClient) List() (StorageList, error) {
 		return StorageList{}, nil
 	}
 
-	selector := labels.SelectorBuilder().WithComponent(k.componentName).WithoutSourcePVC(OdoSourceVolume).Selector()
+	selector := odolabels.SelectorBuilder().WithComponent(k.componentName).WithoutSourcePVC(OdoSourceVolume).Selector()
 	pvcs, err := k.client.ListPVCs(selector)
 	if err != nil {
 		return StorageList{}, fmt.Errorf("unable to get PVC using selector %q: %w", selector, err)

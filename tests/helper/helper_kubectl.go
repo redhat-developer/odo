@@ -407,3 +407,15 @@ func (kubectl KubectlRunner) GetLogs(podName string) string {
 	output := Cmd(kubectl.path, "logs", podName).ShouldPass().Out()
 	return output
 }
+
+func (kubectl KubectlRunner) AssertContainsLabel(kind, namespace, componentName, appName, mode, key, value string) {
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).WithMode(mode).SelectorFlag()
+	all := Cmd(kubectl.path, "get", kind, selector, "-n", namespace, "-o", "jsonpath={.items[0].metadata.labels}").ShouldPass().Out()
+	Expect(all).To(ContainSubstring(fmt.Sprintf(`"%s":"%s"`, key, value)))
+}
+
+func (kubectl KubectlRunner) AssertNoContainsLabel(kind, namespace, componentName, appName, mode, key string) {
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).WithMode(mode).SelectorFlag()
+	all := Cmd(kubectl.path, "get", kind, selector, "-n", namespace, "-o", "jsonpath={.items[0].metadata.labels}").ShouldPass().Out()
+	Expect(all).ToNot(ContainSubstring(fmt.Sprintf(`"%s"`, key)))
+}
