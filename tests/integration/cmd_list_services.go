@@ -51,7 +51,7 @@ var _ = Describe("odo list services tests", func() {
 	It("should list bindable services in JSON format", func() {
 		// from current namespace
 		out := helper.Cmd("odo", "list", "services", "-o", "json", "-n", commonVar.Project).ShouldPass().Out()
-		Expect(gjson.Get(out, "bindableServices.0.name").String()).To(Equal("cluster-sample"))
+		Expect(gjson.Get(out, "bindableServices.0.name").String()).To(ContainSubstring("cluster-sample"))
 		Expect(gjson.Get(out, "bindableServices.0.namespace").String()).To(Equal(commonVar.Project))
 
 		// from all namespaces

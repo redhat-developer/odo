@@ -656,3 +656,58 @@ odo preference view -o json
 	]
 }
 ```
+
+## odo list services -o json
+
+The `odo list services` command lists all the bindable Opeartor backed services available in the current 
+project/namespace.
+```shell
+odo list services -o json
+```
+```shell
+$ odo list services -o json   
+{
+	"bindableServices": [
+		{
+			"name": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io",
+			"namespace": "myproject"
+		}
+	]
+}
+```
+You can also list all the bindable Operator backed services from a different project/namespace that you have access to:
+```shell
+odo list services -o json -n <project-name>
+```
+```shell
+$ odo list services -o json -n newproject
+{
+	"bindableServices": [
+		{
+			"name": "hello-world/RabbitmqCluster.rabbitmq.com",
+			"namespace": "newproject"
+		}
+	]
+}
+```
+Finally, if you want to list all bindable Operator backed services from all projects/namespaces you have access to, 
+use `-A` or `--all-namespaces` flag:
+```shell
+odo list services -o json -A
+```
+```shell
+$ odo list services -o json -A
+{
+	"bindableServices": [
+		{
+			"name": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io",
+			"namespace": "myproject"
+		},
+		{
+			"name": "hello-world/RabbitmqCluster.rabbitmq.com",
+			"namespace": "newproject"
+		}
+	]
+}
+
+```

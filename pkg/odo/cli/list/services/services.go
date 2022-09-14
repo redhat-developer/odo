@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 	"os"
-	"reflect"
 	"strings"
 )
 
@@ -104,18 +103,18 @@ func (o *ServiceListOptions) Run(_ context.Context) error {
 	return nil
 }
 
-func (o *ServiceListOptions) run() ([]unstructured.Unstructured, error) {
+func (o *ServiceListOptions) run() (api.ResourcesList, error) {
 	services := []unstructured.Unstructured{}
 
 	if o.allNamespacesFlag {
 		projects, err := o.clientset.ProjectClient.List()
 		if err != nil {
-			return services, err
+			return api.ResourcesList{}, err
 		}
 		for _, project := range projects.Items {
 			svcs, err := o.clientset.BindingClient.GetServiceInstances(project.Name)
 			if err != nil {
-				return services, err
+				return api.ResourcesList{}, err
 			}
 			for k := range svcs {
 				services = append(services, svcs[k])
@@ -124,53 +123,39 @@ func (o *ServiceListOptions) run() ([]unstructured.Unstructured, error) {
 	} else {
 		svcs, err := o.clientset.BindingClient.GetServiceInstances(o.namespaceFlag)
 		if err != nil {
-			return services, err
+			return api.ResourcesList{}, err
 		}
 		for k := range svcs {
 			services = append(services, svcs[k])
 		}
 	}
-	return services, nil
-
-}
-
-func (o *ServiceListOptions) RunForJsonOutput(_ context.Context) (out interface{}, err error) {
-	services, err := o.run()
-	if err != nil {
-		return nil, err
-	}
 
 	var servicesList []api.BindableService
 	for _, svc := range services {
-		servicesList = append(servicesList, api.BindableService{Name: svc.GetName(), Namespace: svc.GetNamespace()})
+		servicesList = append(servicesList, api.BindableService{
+			Name:      fmt.Sprintf("%s/%s.%s", svc.GetName(), svc.GetKind(), strings.Split(string(svc.GetAPIVersion()), "/")[0]),
+			Namespace: svc.GetNamespace(),
+		})
 	}
-	return map[string]interface{}{"bindableServices": servicesList}, nil
+	return api.ResourcesList{BindableServices: servicesList}, nil
 }
 
-func HumanReadable(services []unstructured.Unstructured) {
-	if isServiceSliceEmpty(services) {
+func (o *ServiceListOptions) RunForJsonOutput(_ context.Context) (out interface{}, err error) {
+	return o.run()
+}
+
+func HumanReadable(services api.ResourcesList) {
+	if len(services.BindableServices) == 0 {
 		log.Error("no bindable Operator backed services found")
 		return
 	}
 	fmt.Println()
 	t := ui.NewTable()
 	t.AppendHeader(table.Row{"NAME", "NAMESPACE"})
-	for _, svc := range services {
-		t.AppendRow(table.Row{fmt.Sprintf("%s/%s.%s", svc.GetName(), svc.GetKind(), strings.Split(svc.GetAPIVersion(), "/")[0]), svc.GetNamespace()})
+	for _, svc := range services.BindableServices {
+		t.AppendRow(table.Row{svc.Name, svc.Namespace})
 	}
 	t.Render()
-}
-
-func isServiceSliceEmpty(services []unstructured.Unstructured) bool {
-	if len(services) == 0 {
-		return true
-	}
-	if len(services) == 1 {
-		if reflect.DeepEqual(services[0], unstructured.Unstructured{}) {
-			return true
-		}
-	}
-	return false
 }
 
 func NewServicesListOptions() *ServiceListOptions {

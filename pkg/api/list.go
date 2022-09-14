@@ -11,4 +11,7 @@ type ResourcesList struct {
 	BindingsInDevfile []string `json:"bindingsInDevfile,omitempty"`
 	// Bindings is a list of bindings in the local devfile and/or cluster
 	Bindings []ServiceBinding `json:"bindings,omitempty"`
+
+	// BindableServices is the list of bindable services that could be bound to the component
+	BindableServices []BindableService `json:"bindableServices,omitempty"`
 }
