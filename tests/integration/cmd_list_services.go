@@ -53,10 +53,12 @@ var _ = Describe("odo list services tests", func() {
 		out := helper.Cmd("odo", "list", "services", "-o", "json", "-n", commonVar.Project).ShouldPass().Out()
 		Expect(gjson.Get(out, "bindableServices.0.name").String()).To(ContainSubstring("cluster-sample"))
 		Expect(gjson.Get(out, "bindableServices.0.namespace").String()).To(Equal(commonVar.Project))
+		Expect(gjson.Get(out, "bindableServices.0.kind").String()).To(Equal("Cluster"))
+		Expect(gjson.Get(out, "bindableServices.0.group").String()).To(Equal("postgresql.k8s.enterprisedb.io"))
 
 		// from all namespaces
 		out = helper.Cmd("odo", "list", "services", "-A", "-o", "json").ShouldPass().Out()
-		helper.MatchAllInOutput(out, []string{"cluster-sample", commonVar.Project, randomProject})
+		helper.MatchAllInOutput(out, []string{"cluster-sample", commonVar.Project, randomProject, "Cluster", "postgresql.k8s.enterprisedb.io"})
 
 		// fail if -A and -n flags are used together
 		out = helper.Cmd("odo", "list", "services", "-o", "json", "-A", "-n", commonVar.Project).ShouldFail().Err()
