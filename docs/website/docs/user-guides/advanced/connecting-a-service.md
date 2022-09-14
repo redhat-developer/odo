@@ -20,7 +20,7 @@ import CreateMongodbService from './_create-mongodb-service.mdx';
 
 ## Step 0. Implement the code logic
 :::note
-If you're already running `odo dev` in a terminal, exit it and start afresh.
+If you are already running `odo dev` in the terminal, press "Ctrl+c" and exit.
 :::
 
 The below code simply obtains the connection information (username, password, and host) from the environment and then uses it to connect to the MongoDB service and ping it.
