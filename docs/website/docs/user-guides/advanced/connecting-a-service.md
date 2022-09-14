@@ -3,7 +3,7 @@ title: Connecting to a Service
 sidebar_position: 1
 ---
 
-Building on top of the [Go quickstart guide](../quickstart/go.md), this guide will extend the application to connect it to a deployable MongoDB service.
+Building on top of the [Go quickstart guide](../quickstart/go.md), this guide will connect a service to the Go application.
 
 ## Prerequisites
 1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator). Read [here](../../command-reference/add-binding.md#description) to know why this is required.
