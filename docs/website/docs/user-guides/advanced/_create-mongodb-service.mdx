@@ -10,27 +10,38 @@ apiVersion: psmdb.percona.com/v1-11-0
 kind: PerconaServerMongoDB
 metadata:
   name: mongodb-instance
+  namespace: my-percona-server-mongodb-operator
 spec:
   crVersion: 1.11.0
-  image: percona/percona-server-mongodb:4.4.10-11
-  allowUnsafeConfigurations: true
-  upgradeOptions:
-    apply: 4.4-recommended
-    schedule: "0 2 * * *"
+  image: 'percona/percona-server-mongodb:4.4.10-11'
   secrets:
-    users: mongo-cluster-secrets
+    users: mongodb-instance-secrets
   replsets:
-  - name: rs0
-    size: 1
-    volumeSpec:
-      persistentVolumeClaim:
-        resources:
-          requests:
-            storage: 1Gi
+    - name: rs0
+      size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
+      volumeSpec:
+        persistentVolumeClaim:
+          resources:
+            requests:
+              storage: 1Gi
   sharding:
     enabled: true
     configsvrReplSet:
       size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
       volumeSpec:
         persistentVolumeClaim:
           resources:
@@ -50,27 +61,38 @@ apiVersion: psmdb.percona.com/v1-11-0
 kind: PerconaServerMongoDB
 metadata:
   name: mongodb-instance
+  namespace: my-percona-server-mongodb-operator
 spec:
   crVersion: 1.11.0
-  image: percona/percona-server-mongodb:4.4.10-11
-  allowUnsafeConfigurations: true
-  upgradeOptions:
-    apply: 4.4-recommended
-    schedule: "0 2 * * *"
+  image: 'percona/percona-server-mongodb:4.4.10-11'
   secrets:
-    users: mongo-cluster-secrets
+    users: mongodb-instance-secrets
   replsets:
-  - name: rs0
-    size: 1
-    volumeSpec:
-      persistentVolumeClaim:
-        resources:
-          requests:
-            storage: 1Gi
+    - name: rs0
+      size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
+      volumeSpec:
+        persistentVolumeClaim:
+          resources:
+            requests:
+              storage: 1Gi
   sharding:
     enabled: true
     configsvrReplSet:
       size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
       volumeSpec:
         persistentVolumeClaim:
           resources:

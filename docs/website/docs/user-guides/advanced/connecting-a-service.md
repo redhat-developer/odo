@@ -10,15 +10,15 @@ Building on top of the [Go quickstart guide](../quickstart/go.md), this guide wi
 
 2. [Install Percona Server Mongodb Operator via Operator Hub](https://operatorhub.io/operator/percona-server-mongodb-operator).
 :::note
-The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and will be usable from that namespace only.
+The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and the service can only be deployed in this namespace.
 :::
-3. Create a MongoDB service.
+3. Create a MongoDB service. This service has been created with a minimal
 
 import CreateMongodbService from './_create-mongodb-service.mdx';
 
 <CreateMongodbService/>
 
-## Step 0. Implement the code logic
+## Step 1. Implement the code logic
 :::note
 If you are already running `odo dev` in the terminal, press "Ctrl+c" and exit.
 :::
@@ -82,8 +82,8 @@ We will be using the MongoDB client library. Update the go.mod dependency by run
 go get go.mongodb.org/mongo-driver/mongo
 ```
 
-## Step 1. Run the application
-Run this application on the cluster with `odo dev`.
+## Step 2. Run the application
+Run the application on the cluster with `odo dev`.
 ```shell
 odo dev
 ```
@@ -94,7 +94,7 @@ odo dev
 $ odo dev
   __
  /  \__     Developing using the my-go-app Devfile
- \__/  \    Namespace: my-percona-server-mongodb-operator
+ \__/  \    Namespace: odo-dev
  /  \__/    odo version: v3.0.0-rc1
  \__/
 
@@ -142,13 +142,14 @@ failed to connect: error validating uri: username required if URI contains user 
 
 The error is expected as we have not yet exposed the connection information to our cluster environment.
 
-## Step 2. Connect the application to the MongoDB service
+## Step 3. Connect the application to the MongoDB service
 Connect the application to the MongoDB service with `odo add binding`.
 
 From a new terminal, run the following command that will add necessary data to `devfile.yaml`:
 ```shell
 odo add binding \
   --service mongodb-instance/PerconaServerMongoDB \
+  --service-namespace=my-percona-server-mongodb-operator \
   --name my-go-app-mongodb-instance \
   --bind-as-files=false
 ```
@@ -175,9 +176,9 @@ Wait for `odo dev` to detect the new changes to `devfile.yaml`.
 
 ```shell
 $ odo dev
-  __                                                                                                                                              
- /  \__     Developing using the my-go-app Devfile                                                                                                
- \__/  \    Namespace: my-percona-server-mongodb-operator                                                                                         
+  __
+ /  \__     Developing using the my-go-app Devfile
+ \__/  \    Namespace: odo-dev
  /  \__/    odo version: v3.0.0-rc1
  \__/
 
@@ -249,7 +250,7 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 </details>
 
 
-## Step 3. Check the connection again
+## Step 4. Check the connection again
 Query the URL again for a successful connection: 
 ```shell
 curl 127.0.0.1:40001
@@ -265,7 +266,7 @@ Successfully connected and pinged.
 </details>
 
 
-## Step 4. Exit and cleanup
+## Step 5. Exit and cleanup
 Press `Ctrl+c` to exit `odo dev`.
 
 Delete the MongoDB instance that we had created.
