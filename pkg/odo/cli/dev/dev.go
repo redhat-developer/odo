@@ -307,7 +307,7 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: "Deploy component to development cluster",
 		Long: `odo dev is a long running command that will automatically sync your source to the cluster.
-It forwards endpoints with exposure values 'public' or 'internal' to a port on localhost.`,
+It forwards endpoints with any exposure values ('public', 'internal' or 'none') to a port on localhost.`,
 		Example: fmt.Sprintf(devExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {

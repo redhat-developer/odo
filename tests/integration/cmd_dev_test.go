@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -568,23 +569,23 @@ ComponentSettings:
 						devSession.WaitEnd()
 					})
 
-					It("should expose two endpoints on localhost", func() {
-						url1 := fmt.Sprintf("http://%s", ports["3000"])
-						url2 := fmt.Sprintf("http://%s", ports["4567"])
+					It("should expose all endpoints on localhost regardless of exposure", func() {
+						getServerResponse := func(p int) string {
+							resp, err := http.Get(fmt.Sprintf("http://%s", ports[strconv.Itoa(p)]))
+							Expect(err).ToNot(HaveOccurred())
+							defer resp.Body.Close()
 
-						resp1, err := http.Get(url1)
-						Expect(err).ToNot(HaveOccurred())
-						defer resp1.Body.Close()
+							body, _ := io.ReadAll(resp.Body)
+							return string(body)
+						}
+						containerPorts := []int{3000, 4567, 7890}
 
-						resp2, err := http.Get(url2)
-						Expect(err).ToNot(HaveOccurred())
-						defer resp2.Body.Close()
-
-						body1, _ := io.ReadAll(resp1.Body)
-						helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
-
-						body2, _ := io.ReadAll(resp2.Body)
-						helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
+						for _, p := range containerPorts {
+							By(fmt.Sprintf("exposing a port targeting container port %d", p), func() {
+								r := getServerResponse(p)
+								helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
+							})
+						}
 
 						helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
 
@@ -596,76 +597,17 @@ ComponentSettings:
 							devSession.PressKey('p')
 						}
 
-						_, _, _, err = devSession.WaitSync()
+						_, _, _, err := devSession.WaitSync()
 						Expect(err).Should(Succeed())
 
-						Eventually(func() bool {
-							resp3, err := http.Get(url1)
-							if err != nil {
-								return false
-							}
-							defer resp3.Body.Close()
-
-							resp4, err := http.Get(url2)
-							if err != nil {
-								return false
-							}
-							defer resp4.Body.Close()
-
-							body3, _ := io.ReadAll(resp3.Body)
-							if string(body3) != "H3110 from Node.js Starter Application!" {
-								return false
-							}
-
-							body4, _ := io.ReadAll(resp4.Body)
-							return string(body4) == "H3110 from Node.js Starter Application!"
-						}, 180, 10).Should(Equal(true))
-					})
-
-					When("an endpoint is added after first run of odo dev", func() {
-
-						BeforeEach(func() {
-							helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
-
-							if manual {
-								if os.Getenv("SKIP_KEY_PRESS") == "true" {
-									Skip("This is a unix-terminal specific scenario, skipping")
-								}
-
-								devSession.PressKey('p')
-							}
-
-							var err error
-							_, _, ports, err = devSession.WaitSync()
-							Expect(err).Should(Succeed())
-
-						})
-						It("should expose three endpoints on localhost", func() {
-							url1 := fmt.Sprintf("http://%s", ports["3000"])
-							url2 := fmt.Sprintf("http://%s", ports["4567"])
-							url3 := fmt.Sprintf("http://%s", ports["7890"])
-
-							resp1, err := http.Get(url1)
-							Expect(err).ToNot(HaveOccurred())
-							defer resp1.Body.Close()
-
-							resp2, err := http.Get(url2)
-							Expect(err).ToNot(HaveOccurred())
-							defer resp2.Body.Close()
-
-							resp3, err := http.Get(url3)
-							Expect(err).ToNot(HaveOccurred())
-							defer resp3.Body.Close()
-
-							body1, _ := io.ReadAll(resp1.Body)
-							helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
-
-							body2, _ := io.ReadAll(resp2.Body)
-							helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
-
-							body3, _ := io.ReadAll(resp3.Body)
-							helper.MatchAllInOutput(string(body3), []string{"Hello from Node.js Starter Application!"})
-						})
+						for _, p := range containerPorts {
+							By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
+								func() {
+									Eventually(func() string {
+										return getServerResponse(p)
+									}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
+								})
+						}
 					})
 				})
 

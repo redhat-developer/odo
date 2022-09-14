@@ -530,6 +530,17 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 		},
 	})
 
+	containerWithOneNoneInternalEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name: "container-none-endpoint",
+		Endpoints: []v1alpha2.Endpoint{
+			{
+				Name:       "debug",
+				TargetPort: 9099,
+				Exposure:   v1alpha2.NoneEndpointExposure,
+			},
+		},
+	})
+
 	tests := []struct {
 		name string
 		args args
@@ -552,16 +563,37 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 		{
 			name: "multiple containers with varying types of endpoints",
 			args: args{
-				containers: []v1alpha2.Component{containerWithNoEndpoints, containerWithOnePublicEndpoint, containerWithOneInternalEndpoint},
+				containers: []v1alpha2.Component{
+					containerWithNoEndpoints,
+					containerWithOnePublicEndpoint,
+					containerWithOneInternalEndpoint,
+					containerWithOneNoneInternalEndpoint,
+				},
 			},
-			want: map[string][]int{containerWithNoEndpoints.Name: {}, containerWithOnePublicEndpoint.Name: {8080}, containerWithOneInternalEndpoint.Name: {9090}},
+			want: map[string][]int{
+				containerWithNoEndpoints.Name:             {},
+				containerWithOnePublicEndpoint.Name:       {8080},
+				containerWithOneInternalEndpoint.Name:     {9090},
+				containerWithOneNoneInternalEndpoint.Name: {9099},
+			},
 		},
 		{
 			name: "invalid input - one image component with rest being containers",
 			args: args{
-				containers: []v1alpha2.Component{containerWithNoEndpoints, containerWithOnePublicEndpoint, containerWithOneInternalEndpoint, imageComponent},
+				containers: []v1alpha2.Component{
+					containerWithNoEndpoints,
+					containerWithOnePublicEndpoint,
+					containerWithOneInternalEndpoint,
+					containerWithOneNoneInternalEndpoint,
+					imageComponent,
+				},
 			},
-			want: map[string][]int{containerWithNoEndpoints.Name: {}, containerWithOnePublicEndpoint.Name: {8080}, containerWithOneInternalEndpoint.Name: {9090}},
+			want: map[string][]int{
+				containerWithNoEndpoints.Name:             {},
+				containerWithOnePublicEndpoint.Name:       {8080},
+				containerWithOneInternalEndpoint.Name:     {9090},
+				containerWithOneNoneInternalEndpoint.Name: {9099},
+			},
 		},
 	}
 	for _, tt := range tests {
