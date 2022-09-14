@@ -60,13 +60,14 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	coreGet := c.GetClient().CoreV1().RESTClient().Get()
 	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do(context.TODO()).Raw()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get OpenShift Version: %w", err)
+		klog.V(3).Info("Unable to get OpenShift Version: ", err)
+	} else {
+		var openShiftVersion version.Info
+		if e := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); e != nil {
+			return nil, fmt.Errorf("unable to unmarshal OpenShift version %v: %w", string(rawOpenShiftVersion), e)
+		}
+		info.OpenShiftVersion = openShiftVersion.GitVersion
 	}
-	var openShiftVersion version.Info
-	if e := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); e != nil {
-		return nil, fmt.Errorf("unable to unmarshal OpenShift version %v: %w", string(rawOpenShiftVersion), e)
-	}
-	info.OpenShiftVersion = openShiftVersion.GitVersion
 
 	// This will fetch the information about Kubernetes Version
 	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do(context.TODO()).Raw()
