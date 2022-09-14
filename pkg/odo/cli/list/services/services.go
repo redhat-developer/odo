@@ -104,8 +104,8 @@ func (o *ServiceListOptions) Run(_ context.Context) error {
 	return nil
 }
 
-func (o *ServiceListOptions) run() ([]map[string]unstructured.Unstructured, error) {
-	services := []map[string]unstructured.Unstructured{}
+func (o *ServiceListOptions) run() ([]unstructured.Unstructured, error) {
+	services := []unstructured.Unstructured{}
 
 	if o.allNamespacesFlag {
 		projects, err := o.clientset.ProjectClient.List()
@@ -117,14 +117,18 @@ func (o *ServiceListOptions) run() ([]map[string]unstructured.Unstructured, erro
 			if err != nil {
 				return services, err
 			}
-			services = append(services, svcs)
+			for k := range svcs {
+				services = append(services, svcs[k])
+			}
 		}
 	} else {
 		svcs, err := o.clientset.BindingClient.GetServiceInstances(o.namespaceFlag)
 		if err != nil {
 			return services, err
 		}
-		services = append(services, svcs)
+		for k := range svcs {
+			services = append(services, svcs[k])
+		}
 	}
 	return services, nil
 
@@ -138,14 +142,12 @@ func (o *ServiceListOptions) RunForJsonOutput(_ context.Context) (out interface{
 
 	var servicesList []api.BindableService
 	for _, svc := range services {
-		for _, unstruct := range svc {
-			servicesList = append(servicesList, api.BindableService{Name: unstruct.GetName(), Namespace: unstruct.GetNamespace()})
-		}
+		servicesList = append(servicesList, api.BindableService{Name: svc.GetName(), Namespace: svc.GetNamespace()})
 	}
 	return map[string]interface{}{"bindableServices": servicesList}, nil
 }
 
-func HumanReadable(services []map[string]unstructured.Unstructured) {
+func HumanReadable(services []unstructured.Unstructured) {
 	if isServiceSliceEmpty(services) {
 		log.Error("no bindable Operator backed services found")
 		return
@@ -154,19 +156,17 @@ func HumanReadable(services []map[string]unstructured.Unstructured) {
 	t := ui.NewTable()
 	t.AppendHeader(table.Row{"NAME", "NAMESPACE"})
 	for _, svc := range services {
-		for _, unstruct := range svc {
-			t.AppendRow(table.Row{fmt.Sprintf("%s/%s.%s", unstruct.GetName(), unstruct.GetKind(), strings.Split(unstruct.GetAPIVersion(), "/")[0]), unstruct.GetNamespace()})
-		}
+		t.AppendRow(table.Row{fmt.Sprintf("%s/%s.%s", svc.GetName(), svc.GetKind(), strings.Split(svc.GetAPIVersion(), "/")[0]), svc.GetNamespace()})
 	}
 	t.Render()
 }
 
-func isServiceSliceEmpty(services []map[string]unstructured.Unstructured) bool {
+func isServiceSliceEmpty(services []unstructured.Unstructured) bool {
 	if len(services) == 0 {
 		return true
 	}
 	if len(services) == 1 {
-		if reflect.DeepEqual(services[0], map[string]unstructured.Unstructured{}) {
+		if reflect.DeepEqual(services[0], unstructured.Unstructured{}) {
 			return true
 		}
 	}
