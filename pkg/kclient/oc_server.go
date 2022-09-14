@@ -9,9 +9,6 @@ import (
 	"time"
 
 	dfutil "github.com/devfile/library/pkg/util"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
 )
@@ -59,25 +56,17 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 		return nil, errors.New("unable to connect to OpenShift cluster, it may be down")
 	}
 
-	// fail fast if user is not connected (same logic as `oc whoami`)
-	_, err = c.userClient.Users().Get(context.TODO(), "~", metav1.GetOptions{})
-	if err != nil && !kerrors.IsNotFound(err) {
-		return nil, err
-	}
-
 	// This will fetch the information about OpenShift Version
 	coreGet := c.GetClient().CoreV1().RESTClient().Get()
 	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do(context.TODO()).Raw()
 	if err != nil {
-		// when using Minishift (or plain 'oc cluster up' for that matter) with OKD 3.11, the version endpoint is missing...
-		klog.V(3).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
-	} else {
-		var openShiftVersion version.Info
-		if e := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); e != nil {
-			return nil, fmt.Errorf("unable to unmarshal OpenShift version %v: %w", string(rawOpenShiftVersion), e)
-		}
-		info.OpenShiftVersion = openShiftVersion.GitVersion
+		return nil, fmt.Errorf("unable to get OpenShift Version: %w", err)
 	}
+	var openShiftVersion version.Info
+	if e := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); e != nil {
+		return nil, fmt.Errorf("unable to unmarshal OpenShift version %v: %w", string(rawOpenShiftVersion), e)
+	}
+	info.OpenShiftVersion = openShiftVersion.GitVersion
 
 	// This will fetch the information about Kubernetes Version
 	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do(context.TODO()).Raw()

@@ -74,7 +74,7 @@ func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 			}
 			o.serverInfo, err = client.GetServerVersion(timeout)
 			if err != nil {
-				klog.V(4).Info("an error occured while fetching server version", err)
+				klog.V(4).Info("unable to fetch the server version: ", err)
 			}
 		}
 	}
