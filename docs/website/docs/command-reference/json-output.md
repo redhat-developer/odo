@@ -659,7 +659,7 @@ odo preference view -o json
 
 ## odo list services -o json
 
-The `odo list services` command lists all the bindable Opeartor backed services available in the current 
+The `odo list services` command lists all the bindable Operator backed services available in the current 
 project/namespace.
 ```shell
 odo list services -o json

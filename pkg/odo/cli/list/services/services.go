@@ -36,7 +36,7 @@ var (
 	%[1]s -A -o json`)
 
 	listLongDesc = ktemplates.LongDesc(`
-	List the bindable Operator backed services that could bound to the odo component 
+	List the bindable Operator backed services that could be bound to the odo component 
 `)
 )
 
