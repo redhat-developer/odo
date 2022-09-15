@@ -16,6 +16,9 @@ defined in the local Devfile,
 
 ### Running the command
 ```shell
+odo list component
+```
+```shell
 $ odo list component
  ✓  Listing components from namespace 'my-percona-server-mongodb-operator' [292ms]
  NAME              PROJECT TYPE  RUNNING IN  MANAGED                         
@@ -23,11 +26,6 @@ $ odo list component
  my-go-app         go            Dev         odo (v3.0.0-rc1)                
  mongodb-instance  Unknown       None        percona-server-mongodb-operator 
 ```
-
-## Available flags
-
-* `--namespace` - Namespace to list the components from (optional). By default, the current namespace defined in kubeconfig is used
-* `-o json` - Outputs the list in JSON format. See [JSON output](json-output.md) for more information
 
 :::tip use of cache
 

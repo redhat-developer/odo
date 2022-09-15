@@ -4,11 +4,12 @@ title: odo describe component
 
 `odo describe component` command is useful for getting information about a component managed by `odo`. 
 
+## Running the command
 There are 2 ways to describe a component:
 - [Describe with access to Devfile](#describe-with-access-to-devfile)
 - [Describe without access to Devfile](#describe-without-access-to-devfile)
 
-## Describe with access to Devfile
+### Describe with access to Devfile
 ```shell
 odo describe component
 ```
@@ -44,7 +45,7 @@ This command returns information extracted from the Devfile:
 
 The command also displays if the component is currently running in the cluster on Dev and/or Deploy mode.
 
-## Describe without access to Devfile
+### Describe without access to Devfile
 ```shell
 odo describe component --name <component_name> [--namespace <namespace>]
 ```

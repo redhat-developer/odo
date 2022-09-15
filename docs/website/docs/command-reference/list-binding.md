@@ -2,7 +2,6 @@
 title: odo list binding
 ---
 
-## Description
 
 You can use `odo list binding` to list all the Service Bindings declared in the current namespace and, if present, 
 in the Devfile of the current directory.
@@ -15,11 +14,6 @@ to the Devfile, using a `ServiceBinding` resource from one of these apiVersion:
 The name of the service binding is prefixed with `*` when the service binding is declared in the Devfile present in the current directory.
 
 To get more information about a specific service binding, you can run the command `odo describe binding --name <name>` (see [`odo describe binding` command reference](./describe-binding.md)).
-
-## Available flags
-
-* `--namespace` - Namespace to list the bindings from (optional). By default, the current namespace defined in kubeconfig is used
-* `-o json` - Outputs the list in JSON format. See [JSON output](json-output.md) for more information
 
 ## Running the Command
 

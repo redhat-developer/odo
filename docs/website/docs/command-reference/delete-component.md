@@ -4,12 +4,12 @@ title: odo delete component
 
 `odo delete component` command is useful for deleting resources that are managed by `odo`. It deletes the component and its related innerloop, and outerloop resources from the cluster.
 
+## Running the command
 There are 2 ways to delete a component:
 - [Delete with access to Devfile](#delete-with-access-to-devfile)
 - [Delete without access to Devfile](#delete-without-access-to-devfile)
-- [Available Flags](#available-flags)
 
-## Delete with access to Devfile
+### Delete with access to Devfile
 ```shell
 odo delete component
 ```
@@ -33,7 +33,7 @@ You can delete these resources by running the command in the [next section](#del
 
 `odo` does not delete the Devfile, the `odo` configuration files, or the source code.
 
-## Delete without access to Devfile
+### Delete without access to Devfile
 ```shell
 odo delete component --name <component_name> [--namespace <namespace>]
 ```
@@ -56,8 +56,3 @@ Otherwise, `odo` will exit with a message stating that it could not find the res
 :::info
 In both cases, `odo` does not wait for resources to be deleted.
 :::
-
-## Available Flags
-* `-f`, `--force` - Use this flag to avoid being prompted for confirmation.
-* `--name` - Name of the component to delete (optional). By default, the component described in the local devfile is deleted
-* `--namespace` - Namespace to find the component to delete (optional). By default, the current namespace defined in kubeconfig is used

@@ -26,23 +26,13 @@ This flag lets you change the content of the output:
 * `--details` to display details about the Devfile stacks
 * `-o json` to output the information in a JSON format
 
-## Examples
+## Running the command
 
 For these examples, we consider we have two registries in our preferences:
 
 ```console
-odo preference view
-```
-```console
 $ odo preference view
-Preference parameters:
- PARAMETER           VALUE
- ConsentTelemetry    true
- Ephemeral
- PushTimeout
- RegistryCacheTime
- Timeout             5
- UpdateNotification  true (default)
+[...]
 
 Devfile registries:
  NAME                       URL                                   SECURE

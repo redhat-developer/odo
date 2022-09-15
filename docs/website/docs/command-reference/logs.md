@@ -2,8 +2,6 @@
 title: odo logs
 ---
 
-## Description
-
 `odo logs` is used to display the logs for all the containers odo created for the component under current working 
 directory.
 

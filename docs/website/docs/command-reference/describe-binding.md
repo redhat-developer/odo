@@ -2,8 +2,6 @@
 title: odo describe binding
 ---
 
-## Description
-
 `odo describe binding` command is useful for getting information about service bindings.
 
 This command supports the service bindings added with the command `odo add binding` and bindings added manually to the Devfile, using a `ServiceBinding` resource from one of these apiVersion:

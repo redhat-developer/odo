@@ -2,8 +2,6 @@
 title: odo dev
 ---
 
-## Description
-
 `odo dev` is used in order to quickly and effectively iterate through your development process for building an application.
 
 This is [inner loop](../introduction#what-is-inner-loop-and-outer-loop) development and allows you to code, build, run and test the application in a continuous workflow.
