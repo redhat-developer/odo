@@ -26,6 +26,7 @@ type CliRunner interface {
 
 	// HasNamespaceProject returns whether the specified namespace or project exists in the cluster
 	HasNamespaceProject(name string) bool
+	// ListNamespaceProject checks if the namespace is present in the list of namespaces
 	ListNamespaceProject(name string)
 
 	GetActiveNamespace() string
