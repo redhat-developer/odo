@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"regexp"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -114,12 +112,9 @@ var _ = Describe("odo generic", func() {
 		})
 
 		It("should show the version of odo major components including server login URL", func() {
-			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`)
-			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
-			Expect(odoVersionStringMatch).Should(BeTrue())
-			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
-			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
-			Expect(kubernetesVersionStringMatch).Should(BeTrue())
+			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
+			rekubernetesVersion := `Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
+			Expect(odoVersion).Should(SatisfyAll(MatchRegexp(reOdoVersion), MatchRegexp(rekubernetesVersion)))
 			serverURL := oc.GetCurrentServerURL()
 			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 		})
