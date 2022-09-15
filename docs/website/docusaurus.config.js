@@ -14,29 +14,33 @@ module.exports = {
   organizationName: 'redhat-developer', // Usually your GitHub org/user name.
   projectName: 'odo', // Usually your repo name.
   plugins: [
-      [
-          path.resolve(__dirname, 'docusaurus-odo-plugin-segment'),
-        {
-          apiKey: 'seYXMF0tyHs5WcPsaNXtSEmQk3FqzTz0',
-          options: {
-            context: {ip: '0.0.0.0'}
-          }
+    [
+      path.resolve(__dirname, 'docusaurus-odo-plugin-segment'),
+      {
+        apiKey: 'seYXMF0tyHs5WcPsaNXtSEmQk3FqzTz0',
+        options: {
+          context: { ip: '0.0.0.0' }
         }
-      ]
+      }
+    ]
   ],
   themeConfig: {
-        autoCollapseSidebarCategories: false,
-        announcementBar: {
-        id: 'announcementBar-2', // Increment on change
-        content: `⭐️ Love odo? Support us by giving it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/redhat-developer/odo">GitHub</a>! ⭐️`,
+    docs: {
+      sidebar: {
+        autoCollapseCategories: false
       },
+    },
+    announcementBar: {
+      id: 'announcementBar-2', // Increment on change
+      content: `⭐️ Love odo? Support us by giving it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/redhat-developer/odo">GitHub</a>! ⭐️`,
+    },
     navbar: {
       title: 'odo',
-       logo: {
-         alt: 'odo Logo',
-         src: 'img/logo.png',
-         srcDark: 'img/logo_dark.png',
-       },
+      logo: {
+        alt: 'odo Logo',
+        src: 'img/logo.png',
+        srcDark: 'img/logo_dark.png',
+      },
       items: [
         {
           type: 'doc',
@@ -44,13 +48,13 @@ module.exports = {
           position: 'left',
           label: 'Docs',
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
+        { to: '/blog', label: 'Blog', position: 'left' },
         {
           href: 'https://github.com/redhat-developer/odo',
           label: 'GitHub',
           position: 'right',
         },
-                {
+        {
           type: 'docsVersionDropdown',
           position: 'right',
           dropdownActiveClassDisabled: true,
@@ -105,7 +109,7 @@ module.exports = {
           ],
         },
       ],
-       copyright: `Copyright © ${new Date().getFullYear()} odo Authors -- All Rights Reserved <br> Apache License 2.0 open source project`,
+      copyright: `Copyright © ${new Date().getFullYear()} odo Authors -- All Rights Reserved <br> Apache License 2.0 open source project`,
     },
     prism: {
       theme: lightCodeTheme,
@@ -141,13 +145,13 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-          'https://github.com/redhat-developer/odo/edit/main/docs/website/',
+            'https://github.com/redhat-developer/odo/edit/main/docs/website/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-          'https://github.com/redhat-developer/odo/edit/main/docs/website/',
+            'https://github.com/redhat-developer/odo/edit/main/docs/website/',
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
           postsPerPage: 5,
