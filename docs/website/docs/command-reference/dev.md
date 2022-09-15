@@ -15,6 +15,9 @@ Afterwards, run `odo dev`:
 ```console
 odo dev
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo dev
   __
@@ -37,6 +40,8 @@ Watching for changes in the current directory /Users/user/nodejs
 [Ctrl+c] - Exit and delete resources from the cluster
      [p] - Manually apply local changes to the application on the cluster
 ```
+</details>
+
 
 In the above example, three things have happened:
   * Your application has been built and deployed to the cluster
@@ -95,6 +100,10 @@ For example, given the following excerpt from a Devfile:
 ```console
 odo dev --build-command my-build-with-version
 ```
+
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo dev --build-command my-build-with-version
 
@@ -114,9 +123,12 @@ Your application is now running on the cluster
  - Forwarding from 127.0.0.1:40001 -> 8080
 
 Watching for changes in the current directory /path/to/my/sources/go-app
-Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
 ```
+</details>
+
 
 #### Running an alternative run command
 
@@ -151,6 +163,9 @@ For example, given the following excerpt from a Devfile:
 ```console
 odo dev --run-command my-run-with-postgres
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo dev --run-command my-run-with-postgres
 
@@ -172,9 +187,13 @@ Your application is now running on the cluster
  - Forwarding from 127.0.0.1:40002 -> 8080
 
 Watching for changes in the current directory /path/to/my/sources/java-springboot-app
-Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
 
 ```
+</details>
+
 
 ### Substituting variables
 

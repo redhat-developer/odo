@@ -51,6 +51,11 @@ The required `--name` flag indicates how the component initialized by this comma
 #### Non-interactive mode from any registry of the list
 
 In this example, the devfile will be downloaded from the **Staging** registry, which is the first one in the list containing the `nodejs-react` devfile.
+```shell
+odo init --name <component-name> --devfile <devfile> [--starter STARTER]
+```
+<details>
+<summary>Example</summary>
 
 ```console
 $ odo preference view
@@ -60,40 +65,27 @@ Devfile registries:
  NAME                       URL                                   SECURE
  Staging                    https://registry.stage.devfile.io     No
  DefaultDevfileRegistry     https://registry.devfile.io           No
-
-$ odo init --name my-react-app --devfile nodejs-react --starter nodejs-react-starter
- ✓  Downloading devfile "nodejs-react" [997ms]
- ✓  Downloading starter project "nodejs-react-starter" [506ms]
-
-Your new component "my-react-app" is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
 ```
+</details>
+
 
 #### Non-interactive mode from a specific registry of the list
 
 In this example, the devfile will be downloaded from the **DefaultDevfileRegistry** registry, as explicitly indicated by the `--devfile-registry` flag.
+<details>
+<summary>Example</summary>
 
 ```console
-odo preference view
-```
-```console
 $ odo preference view
-Preference parameters:
- PARAMETER           VALUE
- ConsentTelemetry    true
- Ephemeral
- PushTimeout
- RegistryCacheTime
- Timeout             5
- UpdateNotification  true (default)
+[...]
 
 Devfile registries:
  NAME                       URL                                   SECURE
  Staging                    https://registry.stage.devfile.io     No
  DefaultDevfileRegistry     https://registry.devfile.io           No
+```
 
+```shell
 $ odo init --name my-spring-app --devfile java-springboot --devfile-registry DefaultDevfileRegistry --starter springbootproject
  ✓  Downloading devfile "java-springboot" from registry "DefaultDevfileRegistry" [980ms]
  ✓  Downloading starter project "springbootproject" [399ms]
@@ -103,12 +95,17 @@ To start editing your component, use "odo dev" and open this folder in your favo
 Changes will be directly reflected on the cluster.
 To deploy your component to a cluster use "odo deploy".
 ```
+</details>
+
 
 #### Non-interactive mode from a URL
 
 ```console
-odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
+odo init --devfile-path <URL> --name <component-name> [--starter STARTER]
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
  ✓  Downloading devfile from "https://registry.devfile.io/devfiles/nodejs-angular" [415ms]
@@ -119,3 +116,5 @@ To start editing your component, use "odo dev" and open this folder in your favo
 Changes will be directly reflected on the cluster.
 To deploy your component to a cluster use "odo deploy".
 ```
+</details>
+

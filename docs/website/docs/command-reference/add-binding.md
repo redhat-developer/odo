@@ -43,6 +43,9 @@ In the interactive mode, you will be guided to choose:
 # Add binding between a service, and the component present in the working directory in the interactive mode
 odo add binding
 ```
+<details>
+<summary>Example</summary>
+
 ```shell
 $ odo add binding
 ? Do you want to list services from: current namespace
@@ -55,6 +58,8 @@ Run `odo dev` to create it on the cluster.
 You can automate this command by executing:
   odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name my-go-app-cluster-sample
 ```
+</details>
+
 
 ### Non-interactive mode
 In the non-interactive mode, you will have to specify the following required information through the command-line:
@@ -69,13 +74,18 @@ In the non-interactive mode, you will have to specify the following required inf
   Refer to [this page](https://docs.openshift.com/container-platform/4.10/applications/connecting_applications_to_services/binding-workloads-using-sbo.html#sbo-naming-strategies_binding-workloads-using-sbo) for more details on naming strategies.
 
 ```shell
-odo add binding --name <name> --service <service-name>
+odo add binding --name <name> --service <service-name> [--service-namespace NAMESPACE] [--bind-as-files] [--naming-strategy [none | lowercase | uppercase]]
 ```
+<details>
+<summary>Example</summary>
+
 ```shell
 $ odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name my-go-app-cluster-sample
  ✓  Successfully added the binding to the devfile.
 Run `odo dev` to create it on the cluster.
 ```
+</details>
+
 
 #### Understanding Bind as Files
 To connect your component with a service, you need to store some data (e.g. username, password, host address) on your component's container.

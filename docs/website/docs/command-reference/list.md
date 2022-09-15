@@ -9,6 +9,10 @@ title: odo list
 ```shell
 odo list
 ```
+
+<details>
+<summary>Example</summary>
+
 ```shell
 $ odo list
  ✓  Listing resources from the namespace "my-percona-server-mongodb-operator" [302ms]
@@ -21,3 +25,4 @@ Bindings:
  NAME                        APPLICATION                 SERVICES                                                   RUNNING IN 
  my-go-app-mongodb-instance  my-go-app-app (Deployment)  mongodb-instance (PerconaServerMongoDB.psmdb.percona.com)  Dev
 ```
+</details>

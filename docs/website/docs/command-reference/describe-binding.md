@@ -31,11 +31,14 @@ For each of these resources, the following information is displayed:
 - the naming strategy used for binding names, if any,
 - if the binding information is auto-detected.
 
-When the service binding are not deployed yet to the cluster:
-
 ```console
 odo describe binding
 ```
+When the service binding are not deployed yet to the cluster:
+
+<details>
+<summary>Example(not deployed)</summary>
+
 ```console
 $ odo describe binding
 ServiceBinding used by the current component:
@@ -58,12 +61,15 @@ Available binding information: unknown
 Binding information for one or more ServiceBinding is not available because they don't exist on the cluster yet.
 Start "odo dev" first to see binding information.
 ```
+</details>
+
 
 When the resources have been deployed to the cluster, the command also extracts information from the status of the resources to display information about the variables that can be used from the component.
 
-```console
-odo describe binding 
-```
+
+<details>
+<summary>Example(after deploying on the cluster)</summary>
+
 ```console
 $ odo describe binding 
 ServiceBinding used by the current component:
@@ -99,6 +105,8 @@ Available binding information:
  •  REDIS_PASSWORD
  •  REDIS_TYPE
 ```
+</details>
+
 
 ### Describe without access to Devfile
 

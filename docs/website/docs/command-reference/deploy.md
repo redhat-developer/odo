@@ -71,6 +71,9 @@ Note that the `uri` for the Dockerfile could also be an HTTP or HTTPS URL.
 ```shell
 odo deploy
 ```
+<details>
+<summary>Example</summary>
+
 ```shell
 $ odo deploy
   __
@@ -119,6 +122,8 @@ Storing signatures
 Your Devfile has been successfully deployed
 
 ```
+</details>
+
 ## Substituting variables
 
 The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 

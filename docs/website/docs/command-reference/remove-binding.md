@@ -14,7 +14,6 @@ odo remove binding --name <ServiceBinding_name>
 ```
 
 ```shell
-odo remove binding --name redis-service-my-nodejs-app
+$ odo remove binding --name redis-service-my-nodejs-app
+ ✓  Successfully removed the binding from the devfile. You can now run `odo dev` or `odo deploy` to delete it from the cluster.
 ```
-
-There is no interactive mode for this command at the moment.

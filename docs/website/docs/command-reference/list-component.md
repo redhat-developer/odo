@@ -18,6 +18,9 @@ defined in the local Devfile,
 ```shell
 odo list component
 ```
+<details>
+<summary>Example</summary>
+
 ```shell
 $ odo list component
  ✓  Listing components from namespace 'my-percona-server-mongodb-operator' [292ms]
@@ -26,6 +29,8 @@ $ odo list component
  my-go-app         go            Dev         odo (v3.0.0-rc1)                
  mongodb-instance  Unknown       None        percona-server-mongodb-operator 
 ```
+</details>
+
 
 :::tip use of cache
 

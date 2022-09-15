@@ -33,10 +33,13 @@ If the `--push` flag is passed to the command, the images will be pushed to thei
 ```shell
 odo build-images
 ```
+<details>
+<summary>Example</summary>
+
 ```shell
 $ odo build-images
 
-↪ Building & Pushing Container: quay.io/pvala18/myimage
+↪ Building & Pushing Container: quay.io/user/myimage
  •  Building image locally  ...
 STEP 1/7: FROM quay.io/phmartin/node:17
 STEP 2/7: WORKDIR /usr/src/app
@@ -53,12 +56,14 @@ STEP 5/7: COPY . .
 STEP 6/7: EXPOSE 8080
 --> 12af8468cd0
 STEP 7/7: CMD [ "node", "server.js" ]
-COMMIT quay.io/pvala18/myimage
+COMMIT quay.io/user/myimage
 --> 58c0731e9a1
-Successfully tagged quay.io/pvala18/myimage:latest
+Successfully tagged quay.io/user/myimage:latest
 58c0731e9a110e8dbb2dbe4bdb55a15bdbbce1b78e121d350e23de79f33c3dde
  ✓  Building image locally [2s]
 ```
+</details>
+
 
 ### Faking the image build
 You can also fake the image build by exporting `PODMAN_CMD=echo` to your environment.

@@ -28,7 +28,7 @@ This flag lets you change the content of the output:
 
 ## Running the command
 
-For these examples, we consider we have two registries in our preferences:
+Let us consider we have two registries in our preferences:
 
 ```console
 $ odo preference view
@@ -45,6 +45,9 @@ To get the complete list of accessible Devfile stacks:
 ```console
 odo registry
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo registry
  NAME                          REGISTRY                DESCRIPTION                                 
@@ -60,12 +63,18 @@ $ odo registry
  java-maven                    DefaultDevfileRegistry  Upstream Maven and OpenJDK 11               
 [...]
 ```
+</details>
 
-To list the Devfile stacks from the Staging registry only:
+
+To list the Devfile stacks from a specific registry only:
 
 ```console
-odo registry --devfile-registry Staging
+odo registry --devfile-registry <registry>
 ```
+
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo registry --devfile-registry Staging
  NAME                          REGISTRY                DESCRIPTION                                 
@@ -76,12 +85,17 @@ $ odo registry --devfile-registry Staging
  java-maven                    Staging                 Upstream Maven and OpenJDK 11               
 [...]
 ```
+</details>
 
-To list the Devfile stacks related to Maven:
+
+To list the Devfile stacks related to a specific keyword:
 
 ```console
-odo registry --filter Maven
+odo registry --filter <keyword>
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo registry --filter Maven
  NAME                       REGISTRY                DESCRIPTION                                 
@@ -94,12 +108,17 @@ $ odo registry --filter Maven
  java-wildfly-bootable-jar  Staging                 Java stack with WildFly in bootable Jar ... 
  java-wildfly-bootable-jar  DefaultDevfileRegistry  Java stack with WildFly in bootable Jar ... 
 ```
+</details>
 
-To get the details of the `java-maven` Devfile in the Staging registry:
+
+To get the details of a specific Devfile from a specific registry:
 
 ```console
-odo registry --devfile java-maven --devfile-registry Staging --details
+odo registry --devfile <devfile> --devfile-registry <registry> --details
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo registry --devfile java-maven --devfile-registry Staging --details
 Name: java-maven
@@ -118,3 +137,5 @@ Supported odo Features:
   - Deploy: N
   - Debug: Y
 ```
+</details>
+

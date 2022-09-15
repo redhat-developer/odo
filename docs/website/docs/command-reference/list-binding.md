@@ -21,6 +21,9 @@ To list all the service bindings, you can run `odo list binding`:
 ```console
 odo list binding
 ```
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo list binding
  NAME                              APPLICATION                     SERVICES                                                                            RUNNING IN
@@ -28,3 +31,4 @@ $ odo list binding
  * my-nodejs-app-cluster-sample    my-nodejs-app-app (Deployment)  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)    Dev
  * my-nodejs-app-cluster-sample-2  my-nodejs-app-app (Deployment)  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io)                           Dev
 ```
+</details>
