@@ -69,7 +69,8 @@ port 3000 is the application port and 5858 is the debug port:
     endpoints:
     - name: "3000-tcp"
       targetPort: 3000
-    - name: "5858-tcp"
+    - name: debug
+      exposure: none
       targetPort: 5858
 ```
 ### Changes to default configurations
