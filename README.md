@@ -12,7 +12,7 @@
 
 ### Overview
 
-`odo`  is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on Kubernetes and OpenShift.
+`odo` is a fast, and iterative CLI tool for developers who write, build, and deploy applications on Kubernetes and OpenShift.
 
 Why use `odo`?
 
