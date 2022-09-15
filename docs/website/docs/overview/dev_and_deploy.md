@@ -18,7 +18,7 @@ For example, you should use `odo dev` when you are:
 * Want to preview any changes
 * Testing initial Kubernetes support for your application
 * Want to debug and run tests
-* Deploy privately on a local development environment
+* Run the application on a local development environment
 
 ## When should I use `odo deploy`?
 
