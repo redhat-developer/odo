@@ -72,7 +72,10 @@ func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 				// when the value is not readable from preference
 				timeout = preference.DefaultTimeout
 			}
-			o.serverInfo, _ = client.GetServerVersion(timeout)
+			o.serverInfo, err = client.GetServerVersion(timeout)
+			if err != nil {
+				klog.V(4).Info("unable to fetch the server version: ", err)
+			}
 		}
 	}
 	return nil

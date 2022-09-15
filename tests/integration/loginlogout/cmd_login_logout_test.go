@@ -39,6 +39,11 @@ var _ = Describe("odo login and logout command tests", func() {
 		})
 	})
 
+	It("should show cluster version when not logged in", func() {
+		version := helper.Cmd("odo", "version").ShouldPass().Out()
+		helper.MatchAllInOutput(version, []string{"odo", "Server", "Kubernetes"})
+	})
+
 	Context("when running login tests", func() {
 		It("should successful with correct credentials and fails with incorrect token", func() {
 			// skip if requested
