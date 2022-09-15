@@ -1,8 +1,6 @@
 ---
-title: Deploying to Production
+title: Deploying application
 ---
-
-# Deploying to Production
 
 In this guide, we will be using odo to create deploy to production a "Hello World" application.
 
