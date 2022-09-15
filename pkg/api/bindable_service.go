@@ -5,4 +5,5 @@ type BindableService struct {
 	Namespace string `json:"namespace,omitempty"`
 	Kind      string `json:"kind,omitempty"`
 	Group     string `json:"group,omitempty"`
+	Service   string `json:"service,omitempty"`
 }

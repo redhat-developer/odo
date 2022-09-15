@@ -665,12 +665,15 @@ project/namespace.
 odo list services -o json
 ```
 ```shell
-$ odo list services -o json   
+$ odo list services -o json
 {
 	"bindableServices": [
 		{
-			"name": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io",
-			"namespace": "myproject"
+			"name": "cluster-sample",
+			"namespace": "myproject",
+			"kind": "Cluster",
+			"group": "postgresql.k8s.enterprisedb.io",
+			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io"
 		}
 	]
 }
@@ -684,13 +687,16 @@ $ odo list services -o json -n newproject
 {
 	"bindableServices": [
 		{
-			"name": "hello-world/RabbitmqCluster.rabbitmq.com",
-			"namespace": "newproject"
+			"name": "hello-world",
+			"namespace": "newproject",
+			"kind": "RabbitmqCluster",
+			"group": "rabbitmq.com",
+			"service": "hello-world/RabbitmqCluster.rabbitmq.com"
 		}
 	]
 }
+
 ```
-Finally, if you want to list all bindable Operator backed services from all projects/namespaces you have access to, 
 use `-A` or `--all-namespaces` flag:
 ```shell
 odo list services -o json -A
@@ -700,14 +706,19 @@ $ odo list services -o json -A
 {
 	"bindableServices": [
 		{
-			"name": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io",
-			"namespace": "myproject"
+			"name": "cluster-sample",
+			"namespace": "myproject",
+			"kind": "Cluster",
+			"group": "postgresql.k8s.enterprisedb.io",
+			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io"
 		},
 		{
-			"name": "hello-world/RabbitmqCluster.rabbitmq.com",
-			"namespace": "newproject"
+			"name": "hello-world",
+			"namespace": "newproject",
+			"kind": "RabbitmqCluster",
+			"group": "rabbitmq.com",
+			"service": "hello-world/RabbitmqCluster.rabbitmq.com"
 		}
 	]
 }
-
 ```

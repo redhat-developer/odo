@@ -132,12 +132,15 @@ func (o *ServiceListOptions) run() (api.ResourcesList, error) {
 
 	var servicesList []api.BindableService
 	for _, svc := range services {
-		servicesList = append(servicesList, api.BindableService{
+		s := api.BindableService{
 			Name:      svc.GetName(),
 			Namespace: svc.GetNamespace(),
 			Kind:      svc.GetKind(),
 			Group:     strings.Split(svc.GetAPIVersion(), "/")[0],
-		})
+		}
+		s.Service = fmt.Sprintf("%s/%s.%s", s.Name, s.Kind, s.Group)
+		servicesList = append(servicesList, s)
+
 	}
 	return api.ResourcesList{BindableServices: servicesList}, nil
 }
@@ -155,7 +158,7 @@ func HumanReadable(services api.ResourcesList) {
 	t := ui.NewTable()
 	t.AppendHeader(table.Row{"NAME", "NAMESPACE"})
 	for _, svc := range services.BindableServices {
-		t.AppendRow(table.Row{fmt.Sprintf("%s/%s.%s", svc.Name, svc.Kind, svc.Group), svc.Namespace})
+		t.AppendRow(table.Row{svc.Service, svc.Namespace})
 	}
 	t.Render()
 }
