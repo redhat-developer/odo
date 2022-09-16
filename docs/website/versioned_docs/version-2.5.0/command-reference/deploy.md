@@ -12,7 +12,7 @@ The kind `deploy` is supported by the devfile format starting from version 2.2.0
 
 The `deploy` command is typically a *composite* command, composed of several *apply* commands:
 - a command referencing an `image` component that, when applied, will build the image of the container to deploy, and push it to its registry,
-- a command referencing a [`kubernetes` component](https://devfile.io/docs/devfile/2.2.0/user-guide/adding-kubernetes-component-to-a-devfile.html) that, when applied, will create a Kubernetes resource in the cluster.
+- a command referencing a [`kubernetes` component](https://devfile.io/docs/2.2.0-alpha/defining-kubernetes-resources) that, when applied, will create a Kubernetes resource in the cluster.
 
 With the following example `devfile.yaml` file, a container image will be built by using the `Dockerfile` present in the directory,
 the image will be pushed to its registry and a Kubernetes Deployment will be created in the cluster, using this freshly built image.

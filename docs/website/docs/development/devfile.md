@@ -7,7 +7,7 @@ sidebar_position: 30
 
 ### Overview
 
-We use the latest [Devfile 2.2.0 reference](https://devfile.io/docs/devfile/2.2.0/user-guide/api-reference/) in `odo`.
+We use the latest [Devfile 2.2.0 reference](https://devfile.io/docs/2.2.0-alpha/devfile-schema) in `odo`.
 
 Below are `odo`-specific examples regarding the Devfile reference. Everything we have listed below is implemented in the current version of `odo`.
 
@@ -98,7 +98,7 @@ We use practical approach outlining the details of Devfile. The example is a mod
 
 In this example, we are deploying a full Node.js application that is available through both `odo dev` and `odo deploy`. 
 
-For a more in-depth detailed outline of Devfile, please refer to the official [Devfile 2.2.0 reference](https://devfile.io/docs/devfile/2.2.0/user-guide/api-reference/).
+For a more in-depth detailed outline of Devfile, please refer to the official [Devfile 2.2.0 reference](https://devfile.io/docs/2.2.0-alpha/devfile-schema).
 
 **NOTE:** Some portions of the Devfile examples are commented out to show what is *available* but it does not apply to the practical example.
 
@@ -686,7 +686,7 @@ components:
 ### Not Yet Implemented
 
 
-All full descriptions of missing specification features can be found on the [2.2.0 API Specification](https://devfile.io/docs/devfile/2.2.0/user-guide/api-reference/).
+All full descriptions of missing specification features can be found on the [2.2.0 API Specification](https://devfile.io/docs/2.2.0-alpha/devfile-schema).
 
 List of Devfile spec features not yet implemented in `odo`:
 
@@ -737,7 +737,7 @@ components:
 - name: outerloop-deployment
   kubernetes:
     # NOT YET IMPLEMENTED
-    # See: https://devfile.io/docs/devfile/2.2.0/user-guide/api-reference/
+    # See: https://devfile.io/docs/2.2.0-alpha/devfile-schema
     # for full details
     # endpoints:
 
