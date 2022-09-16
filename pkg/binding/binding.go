@@ -2,7 +2,7 @@ package binding
 
 import (
 	"fmt"
-	"k8s.io/klog/v2"
+	"k8s.io/klog"
 	"path/filepath"
 
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
