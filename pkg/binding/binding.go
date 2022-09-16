@@ -2,6 +2,7 @@ package binding
 
 import (
 	"fmt"
+	"k8s.io/klog/v2"
 	"path/filepath"
 
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
@@ -93,6 +94,7 @@ func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstru
 		if err != nil {
 			if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) {
 				// Assume the namespace is deleted or being terminated, hence user can't list its resources
+				klog.V(3).Infoln(err)
 				continue
 			}
 			return nil, err
