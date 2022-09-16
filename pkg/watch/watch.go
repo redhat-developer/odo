@@ -474,7 +474,11 @@ func (o *WatchClient) processEvents(
 				fmt.Fprintf(out, "Updated Kubernetes config\n")
 			}
 		} else {
-			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+			if parameters.WatchFiles {
+				fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+			} else {
+				return nil, err
+			}
 		}
 		wait := backoff.Delay()
 		return &wait, nil
