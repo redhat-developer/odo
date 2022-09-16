@@ -582,6 +582,12 @@ func (oc OcRunner) HasNamespaceProject(name string) bool {
 	return strings.Contains(out, name)
 }
 
+func (oc OcRunner) ListNamespaceProject(name string) {
+	Eventually(func() string {
+		return Cmd(oc.path, "get", "project").ShouldRun().Out()
+	}, 30, 1).Should(ContainSubstring(name))
+}
+
 func (oc OcRunner) GetActiveNamespace() string {
 	return Cmd(oc.path, "config", "view", "--minify", "-ojsonpath={..namespace}").ShouldPass().Out()
 }
