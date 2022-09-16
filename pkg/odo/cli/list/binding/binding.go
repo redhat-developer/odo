@@ -134,6 +134,7 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
+		Aliases: []string{"bindings"},
 	}
 	clientset.Add(bindingListCmd, clientset.KUBERNETES, clientset.BINDING)
 	bindingListCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for bindings")

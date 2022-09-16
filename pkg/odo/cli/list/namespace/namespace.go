@@ -82,7 +82,7 @@ func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
-		Aliases: []string{"project"},
+		Aliases: []string{"namespaces", "project", "projects"},
 	}
 	clientset.Add(projectListCmd, clientset.PROJECT)
 	return projectListCmd

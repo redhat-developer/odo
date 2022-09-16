@@ -141,6 +141,7 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
+		Aliases: []string{"components"},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES)
 

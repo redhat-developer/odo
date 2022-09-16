@@ -656,3 +656,69 @@ odo preference view -o json
 	]
 }
 ```
+
+## odo list services -o json
+
+The `odo list services` command lists all the bindable Operator backed services available in the current 
+project/namespace.
+```shell
+odo list services -o json
+```
+```shell
+$ odo list services -o json
+{
+	"bindableServices": [
+		{
+			"name": "cluster-sample",
+			"namespace": "myproject",
+			"kind": "Cluster",
+			"group": "postgresql.k8s.enterprisedb.io",
+			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io"
+		}
+	]
+}
+```
+You can also list all the bindable Operator backed services from a different project/namespace that you have access to:
+```shell
+odo list services -o json -n <project-name>
+```
+```shell
+$ odo list services -o json -n newproject
+{
+	"bindableServices": [
+		{
+			"name": "hello-world",
+			"namespace": "newproject",
+			"kind": "RabbitmqCluster",
+			"group": "rabbitmq.com",
+			"service": "hello-world/RabbitmqCluster.rabbitmq.com"
+		}
+	]
+}
+
+```
+use `-A` or `--all-namespaces` flag:
+```shell
+odo list services -o json -A
+```
+```shell
+$ odo list services -o json -A
+{
+	"bindableServices": [
+		{
+			"name": "cluster-sample",
+			"namespace": "myproject",
+			"kind": "Cluster",
+			"group": "postgresql.k8s.enterprisedb.io",
+			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io"
+		},
+		{
+			"name": "hello-world",
+			"namespace": "newproject",
+			"kind": "RabbitmqCluster",
+			"group": "rabbitmq.com",
+			"service": "hello-world/RabbitmqCluster.rabbitmq.com"
+		}
+	]
+}
+```

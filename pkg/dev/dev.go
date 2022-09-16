@@ -12,7 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"k8s.io/klog/v2"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	k8sComponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
