@@ -5,3 +5,4 @@ const InteractiveModeEnabled = "Interactive mode enabled, please answer the foll
 const InitializingNewComponent = "Initializing new component"
 const SourceCodeDetected = "Files: Source code detected, a Devfile will be determined based upon source code autodetection"
 const NoSourceCodeDetected = "Files: No source code detected, a starter project will be created in the current directory"
+const InitializeExistingComponent = "Dev mode ran, but no Devfile was found. Initializing a Devfile in the current directory"
