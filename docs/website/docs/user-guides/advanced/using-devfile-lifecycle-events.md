@@ -1,6 +1,6 @@
 ---
 title: Using Devfile Lifecycle Events
-sidebar_position: 5
+sidebar_position: 3
 ---
 
 odo uses devfile to build and deploy components. You can also use devfile events with a component during its lifecycle. The four different types of devfile events are `preStart`, `postStart`, `preStop` and `postStop`

@@ -1,6 +1,6 @@
 ---
 title: Deploying to IBM-Z and Power Architectures
-sidebar_position: 3
+sidebar_position: 4
 ---
 [//]: # (Add prerequisite section)
 
