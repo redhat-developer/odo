@@ -1236,6 +1236,21 @@ func (mr *MockClientInterfaceMockRecorder) PodWatcher(ctx, selector interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWatcher), ctx, selector)
 }
 
+// Refresh mocks base method.
+func (m *MockClientInterface) Refresh() (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Refresh")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Refresh indicates an expected call of Refresh.
+func (mr *MockClientInterfaceMockRecorder) Refresh() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockClientInterface)(nil).Refresh))
+}
+
 // RunLogout mocks base method.
 func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
 	m.ctrl.T.Helper()

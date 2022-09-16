@@ -76,6 +76,7 @@ type ClientInterface interface {
 	SetDiscoveryInterface(client discovery.DiscoveryInterface)
 	IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error)
 	IsSSASupported() bool
+	Refresh() (newConfig bool, err error)
 
 	// namespace.go
 	GetCurrentNamespace() string
