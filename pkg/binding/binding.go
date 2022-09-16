@@ -91,6 +91,10 @@ func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstru
 		// List all the instances of the restMapping object
 		resources, err := o.kubernetesClient.ListDynamicResources(namespace, restMapping.Resource)
 		if err != nil {
+			if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) {
+				// Assume the namespace is deleted or being terminated, hence user can't list its resources
+				continue
+			}
 			return nil, err
 		}
 
