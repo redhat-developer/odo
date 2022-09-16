@@ -90,6 +90,9 @@ github.com/PuerkitoBio/urlesc
 # github.com/RangelReale/osincli v0.0.0-20160924135400-fababb0555f2
 ## explicit
 github.com/RangelReale/osincli
+# github.com/Shopify/toxiproxy/v2 v2.5.0
+## explicit; go 1.17
+github.com/Shopify/toxiproxy/v2/client
 # github.com/Xuanwo/go-locale v1.1.0
 ## explicit; go 1.13
 github.com/Xuanwo/go-locale
@@ -448,11 +451,11 @@ github.com/liggitt/tabwriter
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/mattn/go-colorable v0.1.9
-## explicit; go 1.13
+# github.com/mattn/go-colorable v0.1.13
+## explicit; go 1.15
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.14
-## explicit; go 1.12
+# github.com/mattn/go-isatty v0.0.16
+## explicit; go 1.15
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.13
 ## explicit; go 1.9
@@ -637,8 +640,8 @@ github.com/pmezard/go-difflib/difflib
 github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
-# github.com/prometheus/client_golang v1.12.1
-## explicit; go 1.13
+# github.com/prometheus/client_golang v1.13.0
+## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/collectors
 github.com/prometheus/client_golang/prometheus/internal
@@ -646,13 +649,13 @@ github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.2.0
 ## explicit; go 1.9
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.32.1
-## explicit; go 1.13
+# github.com/prometheus/common v0.37.0
+## explicit; go 1.16
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.7.3
-## explicit; go 1.13
+# github.com/prometheus/procfs v0.8.0
+## explicit; go 1.17
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
@@ -837,7 +840,7 @@ golang.org/x/oauth2/jwt
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
+# golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -846,7 +849,7 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+# golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
 ## explicit; go 1.17
 golang.org/x/term
 # golang.org/x/text v0.3.7
@@ -914,7 +917,7 @@ google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/grpc/codes
 google.golang.org/grpc/internal/status
 google.golang.org/grpc/status
-# google.golang.org/protobuf v1.28.0
+# google.golang.org/protobuf v1.28.1
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
