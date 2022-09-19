@@ -496,7 +496,7 @@ func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, componen
 	fmt.Fprintln(out, "Cleaning resources, please wait")
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", componentName, labels.ComponentDevMode)
 	if err != nil {
-		if kerrors.IsUnauthorized(err) {
+		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
 			fmt.Fprintf(out, "Error connecting to the cluster, the resources were not cleaned up.\nPlease log in again and cleanup the resource with `odo delete component`\n\n")
 		} else {
 			fmt.Fprintf(out, "Failed to delete inner loop resources: %v\n", err)
