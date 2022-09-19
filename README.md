@@ -1,4 +1,4 @@
-`odo` - Developer-focused CLI for fast & interative application development on Kubernetes
+`odo` - Developer-focused CLI for fast & iterative application development on Kubernetes
 ---
 
 [![GitHub release](https://img.shields.io/github/v/release/redhat-developer/odo?style=for-the-badge)](https://github.com/redhat-developer/odo/releases/latest)
