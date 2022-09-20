@@ -115,7 +115,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
-				log.Title(messages.InitializeExistingComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION)
+				log.Title(messages.DevInitializeExistingComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION)
 				log.Info("\n" + messages.InteractiveModeEnabled)
 			}
 		},

@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -81,8 +82,8 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
-				fmt.Println("The current directory already contains source code. " +
-					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
+				log.Title(messages.DeployInitializeExistingComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION)
+				log.Info("\n" + messages.InteractiveModeEnabled)
 			}
 		},
 		func(newDevfileObj parser.DevfileObj) error {
