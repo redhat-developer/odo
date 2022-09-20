@@ -27,6 +27,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
@@ -175,7 +176,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 
 	o.keyWatcher = getKeyWatcher(ctx, out)
-	return o.eventWatcher(ctx, parameters, out, evaluateFileChanges, processEvents, componentStatus)
+	return o.eventWatcher(ctx, parameters, out, evaluateFileChanges, o.processEvents, componentStatus)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
@@ -424,7 +425,7 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 	return changedFiles, deletedPaths
 }
 
-func processEvents(
+func (o *WatchClient) processEvents(
 	changedFiles, deletedPaths []string,
 	parameters WatchParameters,
 	out io.Writer,
@@ -461,12 +462,23 @@ func processEvents(
 			return nil, err
 		}
 		klog.V(4).Infof("Error from Push: %v", err)
-		if parameters.WatchFiles {
-			// Log and output, but intentionally not exiting on error here.
-			// We don't want to break watch when push failed, it might be fixed with the next change.
-			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+		// Log and output, but intentionally not exiting on error here.
+		// We don't want to break watch when push failed, it might be fixed with the next push.
+		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
+			fmt.Fprintf(out, "Error connecting to the cluster. Please log in again\n\n")
+			var refreshed bool
+			refreshed, err = o.kubeClient.Refresh()
+			if err != nil {
+				fmt.Fprintf(out, "Error updating Kubernetes config: %s\n", err)
+			} else if refreshed {
+				fmt.Fprintf(out, "Updated Kubernetes config\n")
+			}
 		} else {
-			return nil, err
+			if parameters.WatchFiles {
+				fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+			} else {
+				return nil, err
+			}
 		}
 		wait := backoff.Delay()
 		return &wait, nil
@@ -484,7 +496,11 @@ func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, componen
 	fmt.Fprintln(out, "Cleaning resources, please wait")
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", componentName, labels.ComponentDevMode)
 	if err != nil {
-		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
+		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
+			fmt.Fprintf(out, "Error connecting to the cluster, the resources were not cleaned up.\nPlease log in again and cleanup the resource with `odo delete component`\n\n")
+		} else {
+			fmt.Fprintf(out, "Failed to delete inner loop resources: %v\n", err)
+		}
 		return err
 	}
 	// if innerloop deployment resource is present, then execute preStop events
