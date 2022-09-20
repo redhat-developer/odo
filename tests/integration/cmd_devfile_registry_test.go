@@ -67,10 +67,10 @@ var _ = Describe("odo devfile registry command tests", func() {
 	})
 
 	It("Should list python specifically", func() {
-		args := []string{"registry", "--devfile", "python", "--devfile-registry", "DefaultDevfileRegistry"}
+		args := []string{"registry", "--devfile", "python-flask", "--devfile-registry", "DefaultDevfileRegistry"}
 		By("using human readable output", func() {
 			output := helper.Cmd("odo", args...).ShouldPass().Out()
-			helper.MatchAllInOutput(output, []string{"python"})
+			helper.MatchAllInOutput(output, []string{"python-flask"})
 		})
 		By("using JSON output", func() {
 			args = append(args, "-o", "json")
@@ -78,12 +78,12 @@ var _ = Describe("odo devfile registry command tests", func() {
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stderr).To(BeEmpty())
 			Expect(helper.IsJSON(stdout)).To(BeTrue())
-			helper.JsonPathContentIs(stdout, "0.name", "python")
-			helper.JsonPathContentContain(stdout, "0.displayName", "Python")
-			helper.JsonPathContentContain(stdout, "0.description", "Python")
-			helper.JsonPathContentContain(stdout, "0.language", "python")
-			helper.JsonPathContentContain(stdout, "0.projectType", "python")
-			helper.JsonPathContentContain(stdout, "0.starterProjects.0", "python-example")
+			helper.JsonPathContentIs(stdout, "0.name", "python-flask")
+			helper.JsonPathContentContain(stdout, "0.displayName", "Flask")
+			helper.JsonPathContentContain(stdout, "0.description", "Flask is a web framework")
+			helper.JsonPathContentContain(stdout, "0.language", "Python")
+			helper.JsonPathContentContain(stdout, "0.projectType", "Flask")
+			helper.JsonPathContentContain(stdout, "0.starterProjects.0", "flask-example")
 			helper.JsonPathContentContain(stdout, "0.devfileData", "")
 
 		})
