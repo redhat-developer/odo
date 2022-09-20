@@ -39,7 +39,6 @@ type Client interface {
 		variables map[string]string,
 		out io.Writer,
 		errOut io.Writer,
-		handler Handler,
 	) error
 }
 

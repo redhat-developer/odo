@@ -188,9 +188,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, componentName)
 
-	handler := Handler{
-		clientset: o.clientset,
-	}
 	log.Section("Deploying to the cluster in developer mode")
 	return o.clientset.DevClient.Start(
 		o.ctx,
@@ -207,7 +204,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		o.variables,
 		o.out,
 		o.errOut,
-		&handler,
 	)
 }
 

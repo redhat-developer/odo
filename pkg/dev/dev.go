@@ -2,6 +2,7 @@ package dev
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/redhat-developer/odo/pkg/binding"
@@ -12,10 +13,13 @@ import (
 	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	k8sComponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -63,7 +67,6 @@ func (o *DevClient) Start(
 	variables map[string]string,
 	out io.Writer,
 	errOut io.Writer,
-	handler Handler,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
 
@@ -106,7 +109,7 @@ func (o *DevClient) Start(
 		Path:                path,
 		ComponentName:       componentName,
 		ApplicationName:     "app",
-		DevfileWatchHandler: handler.RegenerateAdapterAndPush,
+		DevfileWatchHandler: o.regenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         ignorePaths,
 		InitialDevfileObj:   devfileObj,
@@ -120,4 +123,42 @@ func (o *DevClient) Start(
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+}
+
+// RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
+func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+	var adapter component.ComponentAdapter
+
+	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
+	if err != nil {
+		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
+	}
+
+	err = adapter.Push(pushParams, componentStatus)
+	if err != nil {
+		return fmt.Errorf("watch command was unable to push component: %w", err)
+	}
+
+	return nil
+}
+
+func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (component.ComponentAdapter, error) {
+	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
+	if err != nil {
+		return nil, err
+	}
+
+	return component.NewKubernetesAdapter(
+		o.kubernetesClient,
+		o.prefClient,
+		o.portForwardClient,
+		o.bindingClient,
+		component.AdapterContext{
+			ComponentName: parameters.ComponentName,
+			Context:       parameters.Path,
+			AppName:       parameters.ApplicationName,
+			Devfile:       devObj,
+			FS:            o.filesystem,
+		},
+	), nil
 }
