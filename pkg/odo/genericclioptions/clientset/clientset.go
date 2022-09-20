@@ -84,7 +84,6 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, EXEC, FILESYSTEM, KUBERNETES, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
 	EXEC:             {KUBERNETES},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES},
@@ -99,10 +98,11 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
-	AlizerClient      alizer.Client
-	BindingClient     binding.Client
-	DeleteClient      _delete.Client
-	DeployClient      deploy.Client
+	AlizerClient  alizer.Client
+	BindingClient binding.Client
+	DeleteClient  _delete.Client
+	DeployClient  deploy.Client
+	// DevClient will be instantiated from pkg/odo/cli/dev, depending on runOn option
 	DevClient         dev.Client
 	ExecClient        exec.Client
 	FS                filesystem.Filesystem
@@ -208,9 +208,6 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, PORT_FORWARD) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
-	}
-	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.SyncClient, dep.FS, dep.ExecClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

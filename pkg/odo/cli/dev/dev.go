@@ -12,6 +12,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/dev/kubedev"
+	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -143,6 +145,23 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetDevfileName(ctx, componentName)
 
 	log.Section("Deploying to the cluster in developer mode")
+
+	runOnFlag := fcontext.GetRunOn(ctx)
+	switch runOnFlag {
+	case commonflags.RunOnCluster:
+		o.clientset.DevClient = kubedev.NewDevClient(
+			o.clientset.KubernetesClient,
+			o.clientset.PreferenceClient,
+			o.clientset.PortForwardClient,
+			o.clientset.WatchClient,
+			o.clientset.BindingClient,
+			o.clientset.SyncClient,
+			o.clientset.FS,
+			o.clientset.ExecClient,
+		)
+	case commonflags.RunOnPodman:
+		o.clientset.DevClient = podmandev.NewDevClient()
+	}
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		o.out,
@@ -197,7 +216,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	clientset.Add(devCmd,
 		clientset.BINDING,
-		clientset.DEV,
+		clientset.EXEC,
 		clientset.FILESYSTEM,
 		clientset.INIT,
 		clientset.KUBERNETES,
