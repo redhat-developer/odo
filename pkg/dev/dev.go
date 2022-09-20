@@ -48,7 +48,6 @@ func NewDevClient(
 func (o *DevClient) Start(
 	devfileObj parser.DevfileObj,
 	componentName string,
-	namespace string,
 	ignorePaths []string,
 	path string,
 	debug bool,
@@ -68,8 +67,7 @@ func (o *DevClient) Start(
 			AppName:       "app",
 			Devfile:       devfileObj,
 			FS:            fs,
-		},
-		namespace)
+		})
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {

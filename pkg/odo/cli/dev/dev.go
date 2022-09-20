@@ -155,13 +155,12 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
 		devFileObj  = o.Context.EnvSpecificInfo.GetDevfileObj()
 		path        = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-		namespace   = o.GetProject()
 		devfileName = o.GetComponentName()
 	)
 
 	// Output what the command is doing / information
 	log.Title("Developing using the "+devfileName+" Devfile",
-		"Namespace: "+namespace,
+		"Namespace: "+o.GetProject(),
 		"odo version: "+version.VERSION)
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
@@ -188,7 +187,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	componentStatus, err := o.clientset.DevClient.Start(
 		devFileObj,
 		devfileName,
-		namespace,
 		o.ignorePaths,
 		path,
 		o.debugFlag,

@@ -56,6 +56,5 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 			Devfile:       devObj,
 			FS:            o.clientset.FS,
 		},
-		o.clientset.KubernetesClient.GetCurrentNamespace(),
 	), nil
 }

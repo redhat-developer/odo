@@ -20,7 +20,6 @@ type Client interface {
 	Start(
 		devfileObj parser.DevfileObj,
 		componentName string,
-		namespace string,
 		ignorePaths []string,
 		path string,
 		debug bool,

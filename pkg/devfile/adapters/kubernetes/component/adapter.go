@@ -71,13 +71,7 @@ func NewKubernetesAdapter(
 	portForwardClient portForward.Client,
 	bindingClient binding.Client,
 	context AdapterContext,
-	namespace string,
 ) Adapter {
-
-	if namespace != "" {
-		kubernetesClient.SetNamespace(namespace)
-	}
-
 	return Adapter{
 		kubeClient:        kubernetesClient,
 		prefClient:        prefClient,
