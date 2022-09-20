@@ -52,7 +52,7 @@ export default function Home(): JSX.Element {
             Version 3 of odo is arriving 🚀<br></br> <Link to="/docs/overview/installation">Install</Link> and <Link to="/docs/user-guides/quickstart/">try out</Link> our new features ⭐️
           </div>
         </div>
-        <div className={styles.overview}>
+        <div className={clsx(styles.overview, styles.overviewAlt)}>
           <div className="container text--center margin-top--md">
             <div className="row">
               <div className="col col--5 col--offset-1">
@@ -72,6 +72,31 @@ export default function Home(): JSX.Element {
                 <p className="padding-horiz--md">
     Spend less time maintaining your deployment infrastructure and more time coding. Immediately have your application running each time you compile.
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className={styles.overview}>
+          <div className="container text--center margin-top--md">
+          <h1>A developer-focused CLI for blazingly fast Kubernetes application development</h1>
+            <div className="row">
+            <div className="col col--6">
+                <h2 className={clsx(styles.featureHeading)}>
+                  Initialize and develop your application
+                </h2>
+                <p className="padding-horiz--md">
+                  Only two commands away from deploying on a cluster! Use <code>odo</code> to initialize and then develop your application directly on the cluster.
+                </p>
+                <img className={styles.terminalImage} alt="init" src={useBaseUrl('/img/init.png')}/>
+              </div>
+              <div className="col col--6">
+                <h2 className={clsx(styles.featureHeading)}>
+                  Build, push, and deploy your application seamlessly
+                </h2>
+                <p className="padding-horiz--md">
+                  Go further with development. Deploy your application seamlessly to Kubernetes. <code>odo</code> can easily manage the build, pushing, and deployment of your application. 
+                </p>
+                <img className={styles.terminalImage} alt="deploy" src={useBaseUrl('/img/deploy.png')}/>
               </div>
             </div>
           </div>
