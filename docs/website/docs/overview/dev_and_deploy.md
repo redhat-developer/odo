@@ -24,7 +24,7 @@ For example, you should use `odo dev` when you are:
 
 `odo deploy` should be the deploy stage of development when you are ready for a "production ready" environment.
 
-For example, you should use `odo deploy` when you are:
+For example, you should use `odo deploy` when you are working with a production environment and:
 * Ready for the application to be viewed publically
 * Require building and pushing the container
 * Needing custom Kubernetes YAML for your production environment
