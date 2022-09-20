@@ -189,9 +189,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetDevfileName(ctx, componentName)
 
 	handler := Handler{
-		clientset:   *o.clientset,
-		randomPorts: o.randomPortsFlag,
-		errOut:      o.errOut,
+		clientset: o.clientset,
 	}
 	log.Section("Deploying to the cluster in developer mode")
 	return o.clientset.DevClient.Start(

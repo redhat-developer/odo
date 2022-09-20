@@ -2,7 +2,6 @@ package dev
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/redhat-developer/odo/pkg/dev"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
@@ -14,9 +13,7 @@ import (
 )
 
 type Handler struct {
-	clientset   clientset.Clientset
-	randomPorts bool
-	errOut      io.Writer
+	clientset *clientset.Clientset
 }
 
 var _ dev.Handler = (*Handler)(nil)
