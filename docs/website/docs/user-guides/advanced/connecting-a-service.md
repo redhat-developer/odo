@@ -9,10 +9,17 @@ Building on top of the [Go quickstart guide](../quickstart/go.md), this guide wi
 1. [Install the Service Binding Operator via Operator Hub](https://operatorhub.io/operator/service-binding-operator). [Read why this is required.](../../command-reference/add-binding.md#description)
 
 2. [Install Percona Server Mongodb Operator via Operator Hub](https://operatorhub.io/operator/percona-server-mongodb-operator).
+
+    :::note
+    This operator is namespace scoped, so it will only be accessible in the namespace where it has been installed.
+
+    When you install the operator by following Operator Hub instructions, the operator will be installed in a new namespace called "my-percona-server-mongodb-operator".
+    :::
+
+3. Create a MongoDB service.
 :::note
-The operator will be installed in a new namespace called "my-percona-server-mongodb-operator" and the service can only be deployed in this namespace.
+The service should be created in the namespace where Percona Server Mongodb Operator is installed, in this case, it will be "my-percona-server-mongodb-operator".
 :::
-3. Create a MongoDB service. This service has been created with a minimal
 
 import CreateMongodbService from './_create-mongodb-service.mdx';
 
@@ -23,7 +30,9 @@ import CreateMongodbService from './_create-mongodb-service.mdx';
 If you are already running `odo dev` in the terminal, press "Ctrl+c" and exit.
 :::
 
-The below code simply obtains the connection information (username, password, and host) from the environment and then uses it to connect to the MongoDB service and ping it.
+We will extend the current code logic to obtain the connection information (username, password, and host) from the environment and then use it to connect to the MongoDB service and ping it.
+
+The environment variables will be exposed when we link our application with the MongoDB service.
 
 Replace the content of your `main.go` with the following content:
 ```go
@@ -140,7 +149,7 @@ failed to connect: error validating uri: username required if URI contains user 
 </details>
 
 
-The error is expected as we have not yet exposed the connection information to our cluster environment.
+You should have received an error in response which is expected as we have not yet exposed the connection information in our application.
 
 ## Step 3. Connect the application to the MongoDB service
 Connect the application to the MongoDB service with `odo add binding`.
@@ -249,6 +258,39 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
 </details>
 
+Once `odo dev` has completed its task, you can run `odo describe binding` from a new terminal to obtain all the MongoDB service related information that has been exposed to your application:
+```shell
+odo describe binding --name my-go-app-mongodb-instance
+```
+<details>
+<summary>Sample output:</summary>
+
+```shell
+$ odo describe binding --name my-go-app-mongodb-instance
+Service Binding Name: my-go-app-mongodb-instance
+Services:
+ •  mongodb-instance (PerconaServerMongoDB.psmdb.percona.com) (namespace: my-percona-server-mongodb-operator)
+Bind as files: false
+Detect binding resources: true
+Available binding information:
+ •  PERCONASERVERMONGODB_MONGODB-KEY
+ •  PERCONASERVERMONGODB_MONGODB_CLUSTER_MONITOR_USER
+ •  PERCONASERVERMONGODB_USERNAME
+ •  PERCONASERVERMONGODB_CLUSTERIP
+ •  PERCONASERVERMONGODB_MONGODB_CLUSTER_MONITOR_PASSWORD
+ •  PERCONASERVERMONGODB_MONGODB_USER_ADMIN_USER
+ •  PERCONASERVERMONGODB_PASSWORD
+ •  PERCONASERVERMONGODB_HOST
+ •  PERCONASERVERMONGODB_MONGODB_USER_ADMIN_PASSWORD
+ •  PERCONASERVERMONGODB_PROVIDER
+ •  PERCONASERVERMONGODB_TYPE
+ •  PERCONASERVERMONGODB_MONGODB_BACKUP_PASSWORD
+ •  PERCONASERVERMONGODB_MONGODB_BACKUP_USER
+ •  PERCONASERVERMONGODB_MONGODB_CLUSTER_ADMIN_PASSWORD
+ •  PERCONASERVERMONGODB_MONGODB_CLUSTER_ADMIN_USER
+
+```
+</details>
 
 ## Step 4. Check the connection again
 Query the URL again for a successful connection: 
@@ -267,9 +309,14 @@ Successfully connected and pinged.
 
 
 ## Step 5. Exit and cleanup
-Press `Ctrl+c` to exit `odo dev`.
+* Press `Ctrl+c` to exit `odo dev`.
 
-Delete the MongoDB instance that we had created.
+* Remove the binding from `devfile.yaml` with `odo remove binding`.
+    ```shell
+    odo remove binding --name my-go-app-mongodb-instance
+    ```
+
+* Delete the MongoDB instance that we created at the beginning.
 
 import DeleteMongodbService from './_delete-mongodb-service.mdx';
 

@@ -5,13 +5,13 @@ import TabItem from '@theme/TabItem';
   <TabItem value="kubernetes" label="Kubernetes">
 
 ```sh
-kubectl delete PerconaServerMongoDB mongodb-instance
+kubectl delete PerconaServerMongoDB mongodb-instance --namespace my-percona-server-mongodb-operator
 ```
 </TabItem>
 <TabItem value="openshift" label="OpenShift">
 
 ```sh
-oc delete PerconaServerMongoDB mongodb-instance
+oc delete PerconaServerMongoDB mongodb-instance --namespace my-percona-server-mongodb-operator
 ```
 </TabItem>
 
