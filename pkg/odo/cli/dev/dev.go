@@ -13,6 +13,8 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/dev/kubedev"
+	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -211,6 +213,20 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetDevfileName(ctx, componentName)
 
 	log.Section("Deploying to the cluster in developer mode")
+
+	switch o.runOnFlag {
+	case runOnCluster:
+		o.clientset.DevClient = kubedev.NewDevClient(
+			o.clientset.KubernetesClient,
+			o.clientset.PreferenceClient,
+			o.clientset.PortForwardClient,
+			o.clientset.WatchClient,
+			o.clientset.BindingClient,
+			o.clientset.FS,
+		)
+	case runOnPodman:
+		o.clientset.DevClient = podmandev.NewDevClient()
+	}
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		devFileObj,
@@ -270,7 +286,6 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().StringVar(&o.runOnFlag, "run-on", "cluster", "Develop on cluster (default) or podman")
 	clientset.Add(devCmd,
 		clientset.BINDING,
-		clientset.DEV,
 		clientset.FILESYSTEM,
 		clientset.INIT,
 		clientset.KUBERNETES,

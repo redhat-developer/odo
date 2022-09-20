@@ -1,4 +1,4 @@
-package dev
+package kubedev
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/redhat-developer/odo/pkg/binding"
+	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -32,7 +33,7 @@ type DevClient struct {
 	filesystem        filesystem.Filesystem
 }
 
-var _ Client = (*DevClient)(nil)
+var _ dev.Client = (*DevClient)(nil)
 
 func NewDevClient(
 	kubernetesClient kclient.ClientInterface,
