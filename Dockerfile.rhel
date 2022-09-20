@@ -16,7 +16,7 @@ LABEL com.redhat.component=atomic-openshift-odo-cli-artifacts-container \
     summary="This image contains the Linux, Mac and Windows version of odo"
 
 # Change version as needed. Note no "-" is allowed
-LABEL version=3.0.0-rc1
+LABEL version=3.0.0-rc2
 
 COPY --from=builder /go/src/github.com/redhat-developer/odo/dist/bin/darwin-amd64/odo /usr/share/redhat-developer/odo/mac/odo
 COPY --from=builder /go/src/github.com/redhat-developer/odo/dist/bin/windows-amd64/odo.exe /usr/share/redhat-developer/odo/windows/odo.exe
