@@ -104,8 +104,7 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 
 // NamespaceKubernetesObjectWithTrim hyphenates applicationName and componentName
 // if the resultant name is greater than 63 characters
-// it trims each to 31 characters
-// <31-characters>+"-"+<31-characters> = 63 characters
+// it trims app name then component name
 func NamespaceKubernetesObjectWithTrim(componentName, applicationName string) (string, error) {
 	value, err := NamespaceKubernetesObject(componentName, applicationName)
 	if err != nil {
