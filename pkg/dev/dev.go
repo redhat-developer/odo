@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog"
@@ -25,6 +25,7 @@ type DevClient struct {
 	portForwardClient portForward.Client
 	watchClient       watch.Client
 	bindingClient     binding.Client
+	filesystem        filesystem.Filesystem
 }
 
 var _ Client = (*DevClient)(nil)
@@ -35,6 +36,7 @@ func NewDevClient(
 	portForwardClient portForward.Client,
 	watchClient watch.Client,
 	bindingClient binding.Client,
+	filesystem filesystem.Filesystem,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
@@ -42,6 +44,7 @@ func NewDevClient(
 		portForwardClient: portForwardClient,
 		watchClient:       watchClient,
 		bindingClient:     bindingClient,
+		filesystem:        filesystem,
 	}
 }
 
@@ -55,7 +58,6 @@ func (o *DevClient) Start(
 	runCommand string,
 	randomPorts bool,
 	errOut io.Writer,
-	fs filesystem.Filesystem,
 ) (watch.ComponentStatus, error) {
 	klog.V(4).Infoln("Creating new adapter")
 
@@ -66,7 +68,7 @@ func (o *DevClient) Start(
 			Context:       path,
 			AppName:       "app",
 			Devfile:       devfileObj,
-			FS:            fs,
+			FS:            o.filesystem,
 		})
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)

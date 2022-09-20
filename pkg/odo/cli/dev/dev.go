@@ -194,7 +194,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		o.runCommandFlag,
 		o.randomPortsFlag,
 		o.errOut,
-		o.clientset.FS,
 	)
 	if err != nil {
 		return err
