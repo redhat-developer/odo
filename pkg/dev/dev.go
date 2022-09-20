@@ -49,16 +49,22 @@ func NewDevClient(
 }
 
 func (o *DevClient) Start(
+	ctx context.Context,
 	devfileObj parser.DevfileObj,
 	componentName string,
-	ignorePaths []string,
 	path string,
+	devfilePath string,
+	ignorePaths []string,
 	debug bool,
 	buildCommand string,
 	runCommand string,
 	randomPorts bool,
+	watchFiles bool,
+	variables map[string]string,
+	out io.Writer,
 	errOut io.Writer,
-) (watch.ComponentStatus, error) {
+	handler Handler,
+) error {
 	klog.V(4).Infoln("Creating new adapter")
 
 	adapter := k8sComponent.NewKubernetesAdapter(
@@ -73,7 +79,7 @@ func (o *DevClient) Start(
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
-		return watch.ComponentStatus{}, err
+		return err
 	}
 
 	pushParameters := adapters.PushParameters{
@@ -91,41 +97,16 @@ func (o *DevClient) Start(
 	componentStatus := watch.ComponentStatus{}
 	err = adapter.Push(pushParameters, &componentStatus)
 	if err != nil {
-		return watch.ComponentStatus{}, err
-	}
-	klog.V(4).Infoln("Successfully created inner-loop resources")
-	return componentStatus, nil
-}
-
-func (o *DevClient) Watch(
-	devfilePath string,
-	devfileObj parser.DevfileObj,
-	componentName string,
-	path string,
-	ignorePaths []string,
-	out io.Writer,
-	h Handler,
-	ctx context.Context,
-	debug bool,
-	buildCommand string,
-	runCommand string,
-	variables map[string]string,
-	randomPorts bool,
-	watchFiles bool,
-	errOut io.Writer,
-	componentStatus watch.ComponentStatus,
-) error {
-	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
-	if err != nil {
 		return err
 	}
+	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
 		DevfilePath:         devfilePath,
 		Path:                path,
 		ComponentName:       componentName,
 		ApplicationName:     "app",
-		DevfileWatchHandler: h.RegenerateAdapterAndPush,
+		DevfileWatchHandler: handler.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         ignorePaths,
 		InitialDevfileObj:   devfileObj,

@@ -153,13 +153,13 @@ func (o *DevOptions) Validate() error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj  = o.Context.EnvSpecificInfo.GetDevfileObj()
-		path        = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-		devfileName = o.GetComponentName()
+		devFileObj    = o.Context.EnvSpecificInfo.GetDevfileObj()
+		path          = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+		componentName = o.GetComponentName()
 	)
 
 	// Output what the command is doing / information
-	log.Title("Developing using the "+devfileName+" Devfile",
+	log.Title("Developing using the "+componentName+" Devfile",
 		"Namespace: "+o.GetProject(),
 		"odo version: "+version.VERSION)
 
@@ -183,51 +183,34 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	// Ignore the devfile, as it will be handled independently
 	o.ignorePaths = ignores
 
-	log.Section("Deploying to the cluster in developer mode")
-	componentStatus, err := o.clientset.DevClient.Start(
-		devFileObj,
-		devfileName,
-		o.ignorePaths,
-		path,
-		o.debugFlag,
-		o.buildCommandFlag,
-		o.runCommandFlag,
-		o.randomPortsFlag,
-		o.errOut,
-	)
-	if err != nil {
-		return err
-	}
-
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
-	scontext.SetDevfileName(ctx, devfileName)
+	scontext.SetDevfileName(ctx, componentName)
 
-	d := Handler{
+	handler := Handler{
 		clientset:   *o.clientset,
 		randomPorts: o.randomPortsFlag,
 		errOut:      o.errOut,
 	}
-	err = o.clientset.DevClient.Watch(
-		o.GetDevfilePath(),
-		devFileObj,
-		devfileName,
-		path,
-		o.ignorePaths,
-		o.out,
-		&d,
+	log.Section("Deploying to the cluster in developer mode")
+	return o.clientset.DevClient.Start(
 		o.ctx,
+		devFileObj,
+		componentName,
+		path,
+		o.GetDevfilePath(),
+		o.ignorePaths,
 		o.debugFlag,
 		o.buildCommandFlag,
 		o.runCommandFlag,
-		o.variables,
 		o.randomPortsFlag,
 		!o.noWatchFlag,
+		o.variables,
+		o.out,
 		o.errOut,
-		componentStatus,
+		&handler,
 	)
-	return err
 }
 
 func (o *DevOptions) HandleSignal() error {
