@@ -29,7 +29,9 @@ import (
 )
 
 // RecommendedCommandName is the recommended command name
-const RecommendedCommandName = "dev"
+const (
+	RecommendedCommandName = "dev"
+)
 
 type DevOptions struct {
 	// Clients
