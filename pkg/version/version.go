@@ -12,7 +12,7 @@ Changing these values will change the versioning information when releasing odo.
 
 var (
 	// VERSION  is version number that will be displayed when running ./odo version
-	VERSION = "v3.0.0-rc1"
+	VERSION = "v3.0.0-rc2"
 
 	// GITCOMMIT is hash of the commit that will be displayed when running ./odo version
 	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/redhat-developer/odo/cmd.GITCOMMIT=$(GITCOMMIT)"
