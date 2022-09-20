@@ -25,6 +25,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/podman"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -160,7 +161,9 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			o.clientset.ExecClient,
 		)
 	case commonflags.RunOnPodman:
-		o.clientset.DevClient = podmandev.NewDevClient()
+		o.clientset.DevClient = podmandev.NewDevClient(
+			podman.NewPodmanCli(),
+		)
 	}
 	return o.clientset.DevClient.Start(
 		o.ctx,
