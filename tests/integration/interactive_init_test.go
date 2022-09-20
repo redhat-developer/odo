@@ -46,7 +46,7 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 
 			helper.ExpectString(ctx, "Select language")
-			helper.SendLine(ctx, "go")
+			helper.SendLine(ctx, "Go")
 
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
@@ -70,7 +70,7 @@ var _ = Describe("odo init interactive command tests", func() {
 		_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
 			helper.ExpectString(ctx, "Select language")
-			helper.SendLine(ctx, "go")
+			helper.SendLine(ctx, "Go")
 
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
@@ -102,7 +102,7 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 
 			helper.ExpectString(ctx, "Select language")
-			helper.SendLine(ctx, "go")
+			helper.SendLine(ctx, "Go")
 
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
@@ -156,7 +156,7 @@ var _ = Describe("odo init interactive command tests", func() {
 			Expect(len(lines)).To(BeNumerically(">", len(msgs)))
 			Expect(lines[0:len(msgs)]).To(Equal(msgs))
 			Expect(lines).To(
-				ContainElement(fmt.Sprintf("Your new component 'my-%s-app' is ready in the current directory", language)))
+				ContainElement(fmt.Sprintf("Your new component 'my-%s-app' is ready in the current directory", strings.ToLower(language))))
 
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 
@@ -172,7 +172,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				// message displayed to the end user. So we do not want any potential debug lines to be printed first.
 				// Using envvars here (and not via the -v flag), because of https://github.com/redhat-developer/odo/issues/5513
 				[]string{"ODO_LOG_LEVEL=0"},
-				testFunc(language, welcomingMsgs, tester))
+				testFunc(strings.ToLower(language), welcomingMsgs, tester))
 		}
 
 		When("directory is empty", func() {
@@ -203,7 +203,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "")
 				})
 
-				assertBehavior(language, output, err, welcomingMsgs, nil)
+				assertBehavior(strings.ToLower(language), output, err, welcomingMsgs, nil)
 			})
 		})
 
@@ -223,7 +223,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					Skip("This is a Unix specific scenario, skipping")
 				}
 
-				language := "python"
+				language := "Python"
+				projectType := "Django"
+				devfileName := "python-django"
 				welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
@@ -231,10 +233,10 @@ var _ = Describe("odo init interactive command tests", func() {
 
 					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
 
-					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
+						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "")
@@ -243,7 +245,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "")
 				})
 
-				assertBehavior(language, output, err, welcomingMsgs, func() {
+				assertBehavior(strings.ToLower(language), output, err, welcomingMsgs, func() {
 					// Make sure the original source code files are still present
 					Expect(helper.ListFilesInDir(commonVar.Context)).To(
 						SatisfyAll(

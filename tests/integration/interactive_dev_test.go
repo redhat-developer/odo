@@ -38,7 +38,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 		})
 		It("should run alizer to download devfile successfully even with -v flag", func() {
 
-			language := "python"
+			language := "Python"
+			projectType := "Django"
+			devfileName := "python-django"
 			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "-v", "4"},
 				nil,
 				func(ctx helper.InteractiveContext) {
@@ -46,10 +48,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
 
-					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
+						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "")
@@ -69,7 +71,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 		It("should run alizer to download devfile", func() {
 
-			language := "python"
+			language := "Python"
+			projectType := "Django"
+			devfileName := "python-django"
 			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
 				nil,
 				func(ctx helper.InteractiveContext) {
@@ -77,10 +81,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
 
-					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
+						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "")
@@ -104,7 +108,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 				Skip("This is a Unix specific scenario, skipping")
 			}
 
-			language := "python"
+			language := "Python"
+			projectType := "Django"
+			devfileName := "python-django"
 			output, _ := helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
 				// Setting verbosity level to 0, because we would be asserting the welcoming message is the first
 				// message displayed to the end user. So we do not want any potential debug lines to be printed first.
@@ -115,10 +121,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
 
-					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
+						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "")
