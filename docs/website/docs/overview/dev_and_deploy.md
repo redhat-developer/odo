@@ -13,7 +13,7 @@ In some situations, you'd want to use [`odo dev`](/docs/command-reference/dev) o
 
 `odo dev` should be used in the initial development process of your application. 
 
-For example, you should use `odo dev` when you are:
+For example, you should use `odo dev` when you are working with a local development environment and:
 * Making changes constantly
 * Want to preview any changes
 * Testing initial Kubernetes support for your application
