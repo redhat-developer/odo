@@ -28,7 +28,12 @@ import (
 )
 
 // RecommendedCommandName is the recommended command name
-const RecommendedCommandName = "dev"
+const (
+	RecommendedCommandName = "dev"
+
+	runOnPodman  = "podman"
+	runOnCluster = "cluster"
+)
 
 type DevOptions struct {
 	// Context
@@ -60,6 +65,7 @@ type DevOptions struct {
 	varsFlag         []string
 	buildCommandFlag string
 	runCommandFlag   string
+	runOnFlag        string
 
 	// Variables to override Devfile variables
 	variables map[string]string
@@ -92,6 +98,8 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
+
+	fmt.Printf("Run On: %s\n", o.runOnFlag)
 
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(context.Background())
@@ -148,7 +156,21 @@ func (o *DevOptions) Validate() error {
 	if o.debugFlag && !libdevfile.HasDebugCommand(o.initialDevfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("debug")
 	}
+
+	if err := checkRunOnFlag(o.runOnFlag); err != nil {
+		return err
+	}
 	return nil
+}
+
+func checkRunOnFlag(runOn string) error {
+	switch runOn {
+	case runOnCluster:
+		fallthrough
+	case runOnPodman:
+		return nil
+	}
+	return fmt.Errorf("value for flag --run-on is invalid. Should be %q or %q", runOnCluster, runOnPodman)
 }
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
@@ -245,6 +267,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Alternative build command. The default one will be used if this flag is not set.")
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
+	devCmd.Flags().StringVar(&o.runOnFlag, "run-on", "cluster", "Develop on cluster (default) or podman")
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
