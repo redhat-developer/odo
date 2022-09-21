@@ -222,7 +222,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.EXEC,
 		clientset.FILESYSTEM,
 		clientset.INIT,
-		clientset.KUBERNETES,
+		clientset.KUBERNETES_NULLABLE,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
 		clientset.WATCH,
