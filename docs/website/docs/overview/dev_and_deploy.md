@@ -13,18 +13,18 @@ In some situations, you'd want to use [`odo dev`](/docs/command-reference/dev) o
 
 `odo dev` should be used in the initial development process of your application. 
 
-For example, you should use `odo dev` when you are working with a local development environment and:
-* Making changes constantly
-* Want to preview any changes
-* Testing initial Kubernetes support for your application
-* Want to debug and run tests
-* Run the application on a local development environment
+For example, you should use `odo dev` when you are working with a local development environment and are:
+* making changes constantly
+* want to preview any changes
+* testing initial Kubernetes support for your application
+* want to debug and run tests
+* deploy privately on a local development environment
 
 ## When should I use `odo deploy`?
 
 `odo deploy` should be the deploy stage of development when you are ready for a "production ready" environment.
 
-For example, you should use `odo deploy` when you are working with a production environment and:
-* Ready for the application to be viewed publically
-* Require building and pushing the container
-* Needing custom Kubernetes YAML for your production environment
+For example, you should use `odo deploy` when you are working with a production environment and are:
+* ready for the application to be viewed publically
+* require building and pushing the container
+* needing custom Kubernetes YAML for your production environment
