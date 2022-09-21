@@ -1061,7 +1061,7 @@ spec:
 <details>
 <summary>Example of Devfile and resulting Kubernetes resources</summary>
 
-<u>Devfile</u>:
+Given this Devfile:
 
 ```yaml
 schemaVersion: 2.2.0
@@ -1153,18 +1153,9 @@ components:
 
 ```
 
----
+`odo` will generate the following Kubernetes Resources:
 
-<table>
-<thead>
-<tr>
-<td>Deployment</td>
-<td>Service</td>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
+* Deployment:
 
 ```yaml
 apiVersion: apps/v1
@@ -1275,8 +1266,8 @@ spec:
         name: odo-shared-data
 
 ```
-</td>
-<td>
+
+* Service:
 
 ```yaml
 apiVersion: v1
@@ -1319,10 +1310,73 @@ spec:
   type: ClusterIP
 ```
 
-</td>
-</tr>
-</tbody>
-</table>
+* PersistentVolumeClaim for the project source code (because of `Ephemeral` Setting set to `false` (default)):
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  finalizers:
+  - kubernetes.io/pvc-protection
+  labels:
+    app: app
+    app.kubernetes.io/instance: my-sample-java-springboot
+    app.kubernetes.io/managed-by: odo
+    app.kubernetes.io/managed-by-version: v3.0.0-rc1
+    app.kubernetes.io/part-of: app
+    app.kubernetes.io/storage-name: odo-projects
+    app.openshift.io/runtime: spring
+    component: my-sample-java-springboot
+    odo-source-pvc: odo-projects
+    odo.dev/mode: Dev
+    storage-name: odo-projects
+  name: odo-projects-my-sample-java-springboot-app
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    kind: Deployment
+    name: my-sample-java-springboot-app
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+```
+
+* PersistentVolumeClaim for the `volume` component:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  finalizers:
+  - kubernetes.io/pvc-protection
+  labels:
+    app: app
+    app.kubernetes.io/instance: my-sample-java-springboot
+    app.kubernetes.io/managed-by: odo
+    app.kubernetes.io/managed-by-version: v3.0.0-rc1
+    app.kubernetes.io/part-of: app
+    app.kubernetes.io/storage-name: m2
+    app.openshift.io/runtime: spring
+    component: my-sample-java-springboot
+    odo.dev/mode: Dev
+    storage-name: m2
+  name: m2-my-sample-java-springboot-app
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    kind: Deployment
+    name: my-sample-java-springboot-app
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+```
 
 </details>
 
