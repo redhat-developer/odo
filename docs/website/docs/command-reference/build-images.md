@@ -66,4 +66,4 @@ Successfully tagged quay.io/user/myimage:latest
 
 
 ### Faking the image build
-You can also fake the image build by exporting `PODMAN_CMD=echo` to your environment.
+You can also fake the image build by exporting `PODMAN_CMD=echo` or `DOCKER_CMD=echo` to your environment. Read [environment variables controlling odo behaviour](../overview/configure.md#environment-variables-controlling-odo-behavior) for more information.

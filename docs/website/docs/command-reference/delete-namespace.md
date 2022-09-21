@@ -14,6 +14,7 @@ odo delete namespace <name> [--wait] [--force]
 
 ```shell
 $ odo delete namespace mynamespace
+? Are you sure you want to delete namespace "mynamespace"? Yes
  ✓  Namespace "mynamespace" deleted
 ```
 </details>
@@ -29,6 +30,7 @@ odo delete project <name> [--wait] [--force]
 
 ```shell
 $ odo delete project myproject
+? Are you sure you want to delete project "myproject"? Yes
 ✓  Project "myproject" deleted
 ```
 </details>

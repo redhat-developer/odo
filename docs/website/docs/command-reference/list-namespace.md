@@ -40,9 +40,9 @@ odo list project
 <details>
 <summary>Example</summary>
 
- ```console
- $ odo list project
- ACTIVE     NAME
+```console
+$ odo list project
+ACTIVE     NAME
 *          default
            kube-node-lease
            kube-public

@@ -24,9 +24,9 @@ odo list component
 ```shell
 $ odo list component
  ✓  Listing components from namespace 'my-percona-server-mongodb-operator' [292ms]
- NAME              PROJECT TYPE  RUNNING IN  MANAGED                         
- my-nodejs         nodejs        Deploy      odo (v3.0.0-rc1)                
- my-go-app         go            Dev         odo (v3.0.0-rc1)                
+ NAME              PROJECT TYPE  RUNNING IN  MANAGED
+ * my-nodejs         nodejs        Deploy      odo (v3.0.0-rc1)
+ my-go-app         go            Dev         odo (v3.0.0-rc1)
  mongodb-instance  Unknown       None        percona-server-mongodb-operator 
 ```
 </details>

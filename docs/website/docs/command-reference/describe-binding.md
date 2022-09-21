@@ -37,7 +37,7 @@ odo describe binding
 When the service binding are not deployed yet to the cluster:
 
 <details>
-<summary>Example(not deployed)</summary>
+<summary>Example (not deployed)</summary>
 
 ```console
 $ odo describe binding
@@ -68,7 +68,7 @@ When the resources have been deployed to the cluster, the command also extracts 
 
 
 <details>
-<summary>Example(after deploying on the cluster)</summary>
+<summary>Example (after deploying on the cluster)</summary>
 
 ```console
 $ odo describe binding 
@@ -113,6 +113,24 @@ Available binding information:
 ```console
 odo describe binding --name <component_name>
 ```
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo describe binding --name my-nodejs-app-redis-standalone
+Service Binding Name: my-nodejs-app-redis-standalone
+Services:
+ •  redis-standalone (Redis.redis.redis.opstreelabs.in)
+Bind as files: false
+Detect binding resources: true
+Available binding information:
+ •  REDIS_CLUSTERIP
+ •  REDIS_HOST
+ •  REDIS_PASSWORD
+ •  REDIS_TYPE
+```
+</details>
 
 The command extracts information from the cluster.
 

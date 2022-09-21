@@ -21,6 +21,10 @@ In interactive mode, you will be guided to:
 ```console
 odo init
 ```
+
+<details>
+<summary>Example</summary>
+
 ```console
 $ odo init
 ? Select language: java
@@ -35,6 +39,8 @@ To start editing your component, use "odo dev" and open this folder in your favo
 Changes will be directly reflected on the cluster.
 To deploy your component to a cluster use "odo deploy".
 ```
+</details>
+
 
 ### Non-interactive mode
 
