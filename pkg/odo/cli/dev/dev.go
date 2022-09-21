@@ -140,15 +140,20 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return err
 	}
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables)
+	if o.runOnFlag != runOnCluster {
+		params = params.IsOffline()
+	}
+	o.Context, err = genericclioptions.New(params)
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
 	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
 
-	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
-
+	if o.runOnFlag == runOnCluster {
+		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
+	}
 	return nil
 }
 
@@ -291,7 +296,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.BINDING,
 		clientset.FILESYSTEM,
 		clientset.INIT,
-		clientset.KUBERNETES,
+		clientset.KUBERNETES_NULLABLE,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
 		clientset.WATCH,

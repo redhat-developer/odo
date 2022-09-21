@@ -73,16 +73,16 @@ const (
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
-	DELETE_COMPONENT: {KUBERNETES},
+	DELETE_COMPONENT: {KUBERNETES_NULLABLE},
 	DEPLOY:           {KUBERNETES},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
-	LOGS:             {KUBERNETES},
-	PORT_FORWARD:     {KUBERNETES, STATE},
+	LOGS:             {KUBERNETES_NULLABLE},
+	PORT_FORWARD:     {KUBERNETES_NULLABLE, STATE},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
-	WATCH:            {KUBERNETES, DELETE_COMPONENT, STATE},
-	BINDING:          {PROJECT, KUBERNETES},
+	WATCH:            {KUBERNETES_NULLABLE, DELETE_COMPONENT, STATE},
+	BINDING:          {PROJECT, KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
