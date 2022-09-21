@@ -1,0 +1,106 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs groupId="advanced-guide">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+```yaml
+cat << EOF | kubectl apply -f -
+apiVersion: psmdb.percona.com/v1-11-0
+kind: PerconaServerMongoDB
+metadata:
+  name: mongodb-instance
+  namespace: my-percona-server-mongodb-operator
+spec:
+  crVersion: 1.11.0
+  image: 'percona/percona-server-mongodb:4.4.10-11'
+  secrets:
+    users: mongodb-instance-secrets
+  replsets:
+    - name: rs0
+      size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
+      volumeSpec:
+        persistentVolumeClaim:
+          resources:
+            requests:
+              storage: 1Gi
+  sharding:
+    enabled: true
+    configsvrReplSet:
+      size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
+      volumeSpec:
+        persistentVolumeClaim:
+          resources:
+            requests:
+              storage: 1Gi
+    mongos:
+      size: 1
+EOF
+
+```
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+```yaml
+cat << EOF | oc apply -f -
+apiVersion: psmdb.percona.com/v1-11-0
+kind: PerconaServerMongoDB
+metadata:
+  name: mongodb-instance
+  namespace: my-percona-server-mongodb-operator
+spec:
+  crVersion: 1.11.0
+  image: 'percona/percona-server-mongodb:4.4.10-11'
+  secrets:
+    users: mongodb-instance-secrets
+  replsets:
+    - name: rs0
+      size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
+      volumeSpec:
+        persistentVolumeClaim:
+          resources:
+            requests:
+              storage: 1Gi
+  sharding:
+    enabled: true
+    configsvrReplSet:
+      size: 1
+      resources:
+        limits:
+          cpu: 300m
+          memory: 0.5G
+        requests:
+          cpu: 300m
+          memory: 0.5G
+      volumeSpec:
+        persistentVolumeClaim:
+          resources:
+            requests:
+              storage: 1Gi
+    mongos:
+      size: 1
+EOF
+```
+  </TabItem>
+</Tabs>
