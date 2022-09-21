@@ -127,7 +127,8 @@ module.exports = {
       '@docusaurus/preset-classic',
       {
         docs: {
-          sidebarCollapsible: false,
+          breadcrumbs: true,
+          sidebarCollapsible: true,
           lastVersion: 'current',
           versions: {
             current: {
