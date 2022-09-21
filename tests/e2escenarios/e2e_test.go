@@ -49,7 +49,8 @@ var _ = Describe("E2E Test", func() {
 		resp, err := http.Post(fmt.Sprintf("http://%s/api/newuser", url), "application/json", bytes.NewBuffer(json_data))
 		Expect(err).To(BeNil())
 		var res map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&res)
+		err = json.NewDecoder(resp.Body).Decode(&res)
+		Expect(err).To(BeNil())
 		return res
 	}
 	receiveData := func(url string) string {
@@ -309,7 +310,7 @@ var _ = Describe("E2E Test", func() {
 			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 		})
 
-		FIt("should verify developer workflow of using binding as env in innerloop", func() {
+		It("should verify developer workflow of using binding as env in innerloop", func() {
 			bindingName := helper.RandString(6)
 
 			command := []string{"odo", "init"}
@@ -369,7 +370,8 @@ var _ = Describe("E2E Test", func() {
 			// remove bindings and check devfile to not contain binding info
 			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 
-			devSession, _, _, ports, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(nil)
+			Expect(err).To(BeNil())
 			stdout = helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("No ServiceBinding used by the current component"))
 
