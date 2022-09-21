@@ -2571,6 +2571,15 @@ func TestNamespaceKubernetesObjectWithTrim(t *testing.T) {
 			want:    "veryveryveryveryLongComponentGo-veryveryveryveryLongAppNameInGo",
 			wantErr: false,
 		},
+		{
+			name: "case 4: component name is more than 63 characters",
+			args: args{
+				componentName:   "123456789012345678901234567890123456789012345678901234567890ComponentName",
+				applicationName: "app",
+			},
+			want:    "12345678901234567890123456789012345678901234567890123456789-app",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
