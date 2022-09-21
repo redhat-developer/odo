@@ -106,27 +106,30 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 // if the resultant name is greater than 63 characters
 // it trims app name then component name
 func NamespaceKubernetesObjectWithTrim(componentName, applicationName string) (string, error) {
+	var (
+		maxLen = 63
+	)
 	value, err := NamespaceKubernetesObject(componentName, applicationName)
 	if err != nil {
 		return "", err
 	}
 
 	// doesn't require trim
-	if len(value) <= 63 {
+	if len(value) <= maxLen {
 		return value, nil
 	}
 
 	// trim app name to max 31 characters
 	appNameLen := len(applicationName)
-	if appNameLen > 31 {
-		appNameLen = 31
+	if appNameLen > maxLen/2 {
+		appNameLen = maxLen / 2
 	}
 	applicationName = applicationName[:appNameLen]
 
 	// trim component name with remaining length
 	minComponentLen := len(componentName)
-	if minComponentLen > 62-appNameLen {
-		minComponentLen = 62 - appNameLen
+	if minComponentLen > maxLen-appNameLen-1 {
+		minComponentLen = maxLen - appNameLen - 1
 	}
 	componentName = componentName[:minComponentLen]
 
