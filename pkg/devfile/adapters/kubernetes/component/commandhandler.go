@@ -35,7 +35,7 @@ type adapterHandler struct {
 
 var _ libdevfile.Handler = (*adapterHandler)(nil)
 var _ ComponentAdapter = (*adapterHandler)(nil)
-var _ sync.SyncClient = (*adapterHandler)(nil)
+var _ sync.SyncExtracter = (*adapterHandler)(nil)
 
 func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
 	return image.BuildPushSpecificImage(a.FS, a.parameters.Path, img, true)

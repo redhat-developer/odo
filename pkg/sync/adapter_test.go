@@ -110,7 +110,7 @@ func TestSyncFiles(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		client             SyncClient
+		client             SyncExtracter
 		syncParameters     adapters.SyncParameters
 		wantErr            bool
 		wantIsPushRequired bool
@@ -246,7 +246,7 @@ func TestPushLocal(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		client      SyncClient
+		client      SyncExtracter
 		path        string
 		files       []string
 		delFiles    []string

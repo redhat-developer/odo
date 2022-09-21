@@ -61,7 +61,7 @@ type AdapterContext struct {
 	FS            filesystem.Filesystem // FS is the object used for building image component if present
 }
 
-var _ sync.SyncClient = (*Adapter)(nil)
+var _ sync.SyncExtracter = (*Adapter)(nil)
 var _ ComponentAdapter = (*Adapter)(nil)
 
 // NewKubernetesAdapter returns a Devfile adapter for the targeted platform

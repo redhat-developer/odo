@@ -18,7 +18,7 @@ import (
 	"k8s.io/klog"
 )
 
-type SyncClient interface {
+type SyncExtracter interface {
 	ExtractProjectToComponent(adapters.ComponentInfo, string, io.Reader) error
 }
 
@@ -27,7 +27,7 @@ type SyncClient interface {
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func CopyFile(client SyncClient, localPath string, compInfo adapters.ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
+func CopyFile(extracter SyncExtracter, localPath string, compInfo adapters.ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
 
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.
@@ -48,7 +48,7 @@ func CopyFile(client SyncClient, localPath string, compInfo adapters.ComponentIn
 
 	}()
 
-	err := client.ExtractProjectToComponent(compInfo, targetPath, reader)
+	err := extracter.ExtractProjectToComponent(compInfo, targetPath, reader)
 	if err != nil {
 		return err
 	}

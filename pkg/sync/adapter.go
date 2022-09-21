@@ -18,10 +18,10 @@ import (
 )
 
 // New instantiates a component adapter
-func New(syncClient SyncClient, kubeClient kclient.ClientInterface, componentName string) Adapter {
+func New(syncClient SyncExtracter, kubeClient kclient.ClientInterface, componentName string) Adapter {
 	return Adapter{
 		kubeClient:    kubeClient,
-		SyncClient:    syncClient,
+		SyncExtracter: syncClient,
 		ComponentName: componentName,
 	}
 }
@@ -29,7 +29,7 @@ func New(syncClient SyncClient, kubeClient kclient.ClientInterface, componentNam
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
 	kubeClient    kclient.ClientInterface
-	SyncClient    SyncClient
+	SyncExtracter SyncExtracter
 	ComponentName string
 }
 
@@ -211,7 +211,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.SyncClient, path, compInfo, syncFolder, files, globExps, ret)
+		err = CopyFile(a.SyncExtracter, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			return fmt.Errorf("unable push files to pod: %w", err)
 		}
