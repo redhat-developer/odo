@@ -4,6 +4,8 @@
 package e2escenarios
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,6 +37,27 @@ var _ = Describe("E2E Test", func() {
 			body, _ := io.ReadAll(resp.Body)
 			return string(body)
 		}, 120*time.Second, 15*time.Second).Should(Equal(assertString))
+	}
+
+	sendDataEntry := func(url string) map[string]interface{} {
+		values := map[string]interface{}{"name": "joe",
+			"location": "tokyo",
+			"age":      23,
+		}
+		json_data, err := json.Marshal(values)
+		Expect(err).To(BeNil())
+		resp, err := http.Post(fmt.Sprintf("http://%s/api/newuser", url), "application/json", bytes.NewBuffer(json_data))
+		Expect(err).To(BeNil())
+		var res map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&res)
+		return res
+	}
+	receiveData := func(url string) string {
+		resp, err := http.Get(fmt.Sprintf("http://%s", url))
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return string(body)
 	}
 
 	Context("starting with empty Directory", func() {
@@ -270,6 +293,7 @@ var _ = Describe("E2E Test", func() {
 			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
 		})
 	})
+
 	Context("starting with non-empty Directory add Binding", func() {
 		componentName := helper.RandString(6)
 		var _ = BeforeEach(func() {
@@ -280,23 +304,20 @@ var _ = Describe("E2E Test", func() {
 				return out
 			}, 120, 3).Should(ContainSubstring("Cluster"))
 			helper.Chdir(commonVar.Context)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "go"), commonVar.Context)
+			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("source", "devfiles", "go", "cluster.yaml"))
 			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 		})
-		It("should verify developer workflow of using binding as file in innerloop", func() {
-			deploymentName := "my-component"
-			serviceName := "my-cs"
+
+		FIt("should verify developer workflow of using binding as env in innerloop", func() {
 			bindingName := helper.RandString(6)
-			getDeployArgs := []string{"get", "deployment", "-n", commonVar.Project}
-			getSVCArgs := []string{"get", "svc", "-n", commonVar.Project}
 
 			command := []string{"odo", "init"}
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
 				// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
-				helper.ExpectString(ctx, "Language: javascript")
-				helper.ExpectString(ctx, "Project type: nodejs")
+				helper.ExpectString(ctx, "Language: Go")
+				helper.ExpectString(ctx, "Project type: Go")
 				helper.ExpectString(ctx, "Is this correct")
 
 				helper.SendLine(ctx, "\n")
@@ -316,182 +337,52 @@ var _ = Describe("E2E Test", func() {
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
 
 			//add binding information (binding as file)
-			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-sample").ShouldPass()
+			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
 
-			// "execute odo dev and add changes to application"
+			// // "execute odo dev and add changes to application"
 			var devSession helper.DevSession
 			var ports map[string]string
 
 			devSession, _, _, ports, err = helper.StartDevMode(nil)
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
 
-			_, _, _, err = devSession.WaitSync()
-			Expect(err).ToNot(HaveOccurred())
+			// "send data"
+			data := sendDataEntry(ports["8080"])
+			Expect(data["message"]).To(Equal("User created successfully"))
 
-			// "should update the changes"
-			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
+			// "get all data"
+			rec := receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			helper.MatchAllInOutput(rec, []string{"id", "1", "name", "joe", "location", "tokyo", "age", "23"})
 
 			// check odo describe to check for env
-			stdout := helper.Cmd("odo", "describe", "binding", "-o", "json").ShouldPass().Out()
-			Expect(helper.IsJSON(stdout)).To(BeTrue())
-			helper.JsonPathContentIs(stdout, "0.name", bindingName)
-			helper.JsonPathContentIs(stdout, "0.spec.application.kind", "Deployment")
-			helper.JsonPathContentIs(stdout, "0.spec.application.name", componentName+"-app")
-			helper.JsonPathContentIs(stdout, "0.spec.application.apiVersion", "apps/v1")
-			helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-			helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-			helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-			helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
-			helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
-			helper.JsonPathContentContain(stdout, "0.status.bindingFiles", fmt.Sprintf("%q", "${SERVICE_BINDING_ROOT}/"+bindingName+"/password"))
-
-			// check if secrets are mounted in
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-			stdout = commonVar.CliRunner.Exec(podName, commonVar.Project, "bash", "-c", "ls", "'${SERVICE_BINDING_ROOT}/"+bindingName+"/password'")
-			Expect(stdout).Should(Not(BeEmpty()))
-
-			// "changes are made made to the applications"
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			_, _, _, err = devSession.WaitSync()
-			Expect(err).ToNot(HaveOccurred())
-
-			// "should deploy new changes"
-			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
+			stdout := helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
+			helper.MatchAllInOutput(stdout, []string{"Available binding information:", "CLUSTER_HOST", "CLUSTER_PASSWORD", "CLUSTER_USERNAME"})
 
 			// "running odo list"
 			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev"})
-
-			// remove bindings and check devfile to not contain binding info
-			helper.Cmd("odo", "remove", "binding").ShouldPass()
+			helper.MatchAllInOutput(stdout, []string{componentName, "Go", "Dev", bindingName})
 
 			// "exit dev mode and run odo deploy"
 			devSession.Stop()
 			devSession.WaitEnd()
 
-			// all resources should be deleted from the namespace
-			services := commonVar.CliRunner.GetServices(commonVar.Project)
-			Expect(services).To(BeEmpty())
-			pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-			Expect(pvcs).To(BeEmpty())
-			pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-			Expect(pods).To(BeEmpty())
-
-			command = []string{"odo", "delete", "component"}
-			_, err = helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
-				helper.ExpectString(ctx, "Are you sure you want to delete \""+componentName+"\" and all its resources?")
-				helper.SendLine(ctx, "y")
-				helper.ExpectString(ctx, "successfully deleted")
-			})
-			Expect(err).To(BeNil())
-			Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
-		})
-
-		It("should verify developer workflow of using binding as env in innerloop", func() {
-			deploymentName := "my-component"
-			serviceName := "my-cs"
-			bindingName := helper.RandString(6)
-			getDeployArgs := []string{"get", "deployment", "-n", commonVar.Project}
-			getSVCArgs := []string{"get", "svc", "-n", commonVar.Project}
-
-			command := []string{"odo", "init"}
-			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
-
-				// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
-				helper.ExpectString(ctx, "Language: javascript")
-				helper.ExpectString(ctx, "Project type: nodejs")
-				helper.ExpectString(ctx, "Is this correct")
-
-				helper.SendLine(ctx, "\n")
-
-				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-
-				helper.SendLine(ctx, "\n")
-
-				helper.ExpectString(ctx, "Enter component name")
-
-				helper.SendLine(ctx, componentName)
-
-				helper.ExpectString(ctx, "Your new component '"+componentName+"' is ready in the current directory")
-
-			})
-			Expect(err).To(BeNil())
-			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
-
-			//add binding information (binding as file)
-			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-sample", "--bind-as-files=false").ShouldPass()
-
-			// "execute odo dev and add changes to application"
-			var devSession helper.DevSession
-			var ports map[string]string
+			// remove bindings and check devfile to not contain binding info
+			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 
 			devSession, _, _, ports, err = helper.StartDevMode(nil)
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
-			Expect(err).ToNot(HaveOccurred())
+			stdout = helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("No ServiceBinding used by the current component"))
 
-			_, _, _, err = devSession.WaitSync()
-			Expect(err).ToNot(HaveOccurred())
-
-			// "should update the changes"
-			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
-
-			// check odo describe to check for env
-			stdout := helper.Cmd("odo", "describe", "binding", "-o", "json").ShouldPass().Out()
-			Expect(helper.IsJSON(stdout)).To(BeTrue())
-			helper.JsonPathContentIs(stdout, "0.name", bindingName)
-			helper.JsonPathContentIs(stdout, "0.spec.application.kind", "Deployment")
-			helper.JsonPathContentIs(stdout, "0.spec.application.name", componentName+"-app")
-			helper.JsonPathContentIs(stdout, "0.spec.application.apiVersion", "apps/v1")
-			helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-			helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-			helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-			helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
-			helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "false")
-			helper.JsonPathContentContain(stdout, "0.status.bindingEnvVars", fmt.Sprintf("%q", "CLUSTER_PASSWORD"))
-
-			// check if secrets are mounted in
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-			stdout = commonVar.CliRunner.Exec(podName, commonVar.Project, "bash", "-c", "echo", "$CLUSTER_PASSWORD")
-			Expect(stdout).Should(Not(BeEmpty()))
-
-			// "changes are made made to the applications"
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			_, _, _, err = devSession.WaitSync()
-			Expect(err).ToNot(HaveOccurred())
-
-			// "should deploy new changes"
-			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
-
-			// "running odo list"
-			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev"})
-
-			// remove bindings and check devfile to not contain binding info
-			helper.Cmd("odo", "remove", "binding").ShouldPass()
-
-			// "exit dev mode and run odo deploy"
 			devSession.Stop()
 			devSession.WaitEnd()
 
 			// all resources should be deleted from the namespace
 			services := commonVar.CliRunner.GetServices(commonVar.Project)
-			Expect(services).To(BeEmpty())
+			Expect(services).NotTo(ContainSubstring(componentName))
 			pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-			Expect(pvcs).To(BeEmpty())
+			Expect(pvcs).NotTo(ContainElement(componentName)) //To(Not(ContainSubstring(componentName)))
 			pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-			Expect(pods).To(BeEmpty())
-
-			command = []string{"odo", "delete", "component"}
-			_, err = helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
-				helper.ExpectString(ctx, "Are you sure you want to delete \""+componentName+"\" and all its resources?")
-				helper.SendLine(ctx, "y")
-				helper.ExpectString(ctx, "successfully deleted")
-			})
-			Expect(err).To(BeNil())
-			Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
+			Expect(pods).NotTo(ContainElement(componentName))
 		})
 	})
 })
