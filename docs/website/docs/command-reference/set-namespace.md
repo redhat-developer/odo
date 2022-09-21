@@ -4,6 +4,7 @@ title: odo set namespace
 
 `odo set namespace` lets you set a namespace/project as the current active one in your local `kubeconfig` configuration.
 
+## Running the command
 To set the current active namespace you can run `odo set namespace <name>`:
 ```console
 odo set namespace mynamespace

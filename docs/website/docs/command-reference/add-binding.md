@@ -2,7 +2,6 @@
 title: odo add binding
 ---
 
-## Description
 The `odo add binding` command adds a link between an Operator-backed service and a component. odo uses the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/) to create this link. 
 
 Running this command from a directory containing a Devfile will modify the Devfile, and once pushed (using `odo dev`) to the cluster, it creates an instance of the `ServiceBinding` resource.
@@ -44,6 +43,23 @@ In the interactive mode, you will be guided to choose:
 # Add binding between a service, and the component present in the working directory in the interactive mode
 odo add binding
 ```
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo add binding
+? Do you want to list services from: current namespace
+? Select service instance you want to bind to: cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)
+? Enter the Binding's name: my-go-app-cluster-sample
+? How do you want to bind the service? Bind As Files
+? Select naming strategy for binding names: DEFAULT
+ ✓  Successfully added the binding to the devfile.
+Run `odo dev` to create it on the cluster.
+You can automate this command by executing:
+  odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name my-go-app-cluster-sample
+```
+</details>
+
 
 ### Non-interactive mode
 In the non-interactive mode, you will have to specify the following required information through the command-line:
@@ -58,10 +74,18 @@ In the non-interactive mode, you will have to specify the following required inf
   Refer to [this page](https://docs.openshift.com/container-platform/4.10/applications/connecting_applications_to_services/binding-workloads-using-sbo.html#sbo-naming-strategies_binding-workloads-using-sbo) for more details on naming strategies.
 
 ```shell
-# Add binding between a service named 'cluster-sample',
-# and the component present in the working directory in the non-interactive mode
-odo add binding --name mybinding --service cluster-sample
+odo add binding --name <name> --service <service-name> [--service-namespace NAMESPACE] [--bind-as-files] [--naming-strategy [none | lowercase | uppercase]]
 ```
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name my-go-app-cluster-sample
+ ✓  Successfully added the binding to the devfile.
+Run `odo dev` to create it on the cluster.
+```
+</details>
+
 
 #### Understanding Bind as Files
 To connect your component with a service, you need to store some data (e.g. username, password, host address) on your component's container.
@@ -84,19 +108,3 @@ The `--workload` flag supports the following formats to specify the workload nam
 * `<name>/<kind>.<apigroup>`
 
 The above formats are helpful when multiple services with the same name exist on the cluster.
-
-### Using different formats
-```shell
-# Add binding between a service named 'cluster-sample', and the component present in the working directory
-odo add binding --service cluster-sample --name restapi-cluster-sample
-
-# Add binding between service named 'cluster-sample' of kind 'Cluster', and APIGroup 'postgresql.k8s.enterprisedb.io',
-# and the component present in the working directory 
-odo add binding --service cluster-sample/Cluster.postgresql.k8s.enterprisedb.io --name restapi-cluster-sample
-odo add binding --service cluster-sample.Cluster.postgresql.k8s.enterprisedb.io --name restapi-cluster-sample
-
-# Add binding between service named 'cluster-sample' of kind 'Cluster',
-# and the component present in the working directory
-odo add binding --service cluster-sample/Cluster --name restapi-cluster-sample
-odo add binding --service cluster-sample.Cluster --name restapi-cluster-sample
-```
