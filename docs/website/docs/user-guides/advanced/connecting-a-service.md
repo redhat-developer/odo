@@ -167,7 +167,7 @@ odo add binding \
 <summary>Sample output:</summary>
 
 ```shell
-$ odo add binding --service mongodb-instance/PerconaServerMongoDB --name my-go-app-mongodb-instance --bind-as-files=false
+$ odo add binding --service mongodb-instance/PerconaServerMongoDB --service-namespace=my-percona-server-mongodb-operator --name my-go-app-mongodb-instance --bind-as-files=false
  ✓  Successfully added the binding to the devfile.
 Run `odo dev` to create it on the cluster.
 ```
