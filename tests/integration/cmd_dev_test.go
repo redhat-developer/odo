@@ -468,6 +468,47 @@ ComponentSettings:
 		})
 	})
 
+	When("odo dev is executed to run a devfile containing a k8s resource", func() {
+		var (
+			devSession    helper.DevSession
+			err           error
+			getDeployArgs = []string{"get", "deployments", "-n", commonVar.Project}
+		)
+
+		const (
+			deploymentName = "my-component" // hard-coded from the devfile-with-k8s-resource.yaml
+		)
+
+		BeforeEach(
+			func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-k8s-resource.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devSession, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).To(BeNil())
+			})
+		AfterEach(func() {
+			devSession.Stop()
+			devSession.WaitEnd()
+		})
+
+		It("should have created the k8s resource", func() {
+			Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(deploymentName))
+		})
+
+		When("a new k8s resource is added to the devfile", func() {
+			const newDeploymentName = "changed-component"
+			BeforeEach(func() {
+				// instead of adding a new resource, we will simply change the resource name to make it act as a new one
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), deploymentName, newDeploymentName)
+				devSession.WaitSync()
+			})
+			It("should have deleted the old resource and created the new resource", func() {
+				getDeployments := commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()
+				Expect(getDeployments).ToNot(ContainSubstring(deploymentName))
+				Expect(getDeployments).To(ContainSubstring(newDeploymentName))
+			})
+		})
+	})
 	for _, manual := range []bool{false, true} {
 		manual := manual
 		Context("port-forwarding for the component", func() {
