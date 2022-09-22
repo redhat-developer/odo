@@ -39,17 +39,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(ctx context.Context, devfileObj parser.DevfileObj, componentName, path, devfilePath string, ignorePaths []string, debug bool, buildCommand, runCommand string, randomPorts, watchFiles bool, variables map[string]string, out, errOut io.Writer) error {
+func (m *MockClient) Start(ctx context.Context, devfileObj parser.DevfileObj, componentName, path, devfilePath string, out, errOut io.Writer, options StartOptions) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", ctx, devfileObj, componentName, path, devfilePath, ignorePaths, debug, buildCommand, runCommand, randomPorts, watchFiles, variables, out, errOut)
+	ret := m.ctrl.Call(m, "Start", ctx, devfileObj, componentName, path, devfilePath, out, errOut, options)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(ctx, devfileObj, componentName, path, devfilePath, ignorePaths, debug, buildCommand, runCommand, randomPorts, watchFiles, variables, out, errOut interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Start(ctx, devfileObj, componentName, path, devfilePath, out, errOut, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), ctx, devfileObj, componentName, path, devfilePath, ignorePaths, debug, buildCommand, runCommand, randomPorts, watchFiles, variables, out, errOut)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), ctx, devfileObj, componentName, path, devfilePath, out, errOut, options)
 }
 
 // MockHandler is a mock of Handler interface.

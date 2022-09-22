@@ -6,19 +6,18 @@ import (
 	"io"
 
 	"github.com/redhat-developer/odo/pkg/binding"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
-	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
-	k8sComponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
@@ -58,21 +57,15 @@ func (o *DevClient) Start(
 	componentName string,
 	path string,
 	devfilePath string,
-	ignorePaths []string,
-	debug bool,
-	buildCommand string,
-	runCommand string,
-	randomPorts bool,
-	watchFiles bool,
-	variables map[string]string,
 	out io.Writer,
 	errOut io.Writer,
+	options StartOptions,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
 
-	adapter := k8sComponent.NewKubernetesAdapter(
+	adapter := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient,
-		k8sComponent.AdapterContext{
+		component.AdapterContext{
 			ComponentName: componentName,
 			Context:       path,
 			AppName:       "app",
@@ -88,11 +81,11 @@ func (o *DevClient) Start(
 	pushParameters := adapters.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
 		Path:            path,
-		IgnoredFiles:    ignorePaths,
-		Debug:           debug,
-		DevfileBuildCmd: buildCommand,
-		DevfileRunCmd:   runCommand,
-		RandomPorts:     randomPorts,
+		IgnoredFiles:    options.IgnorePaths,
+		Debug:           options.Debug,
+		DevfileBuildCmd: options.BuildCommand,
+		DevfileRunCmd:   options.RunCommand,
+		RandomPorts:     options.RandomPorts,
 		ErrOut:          errOut,
 	}
 
@@ -111,14 +104,14 @@ func (o *DevClient) Start(
 		ApplicationName:     "app",
 		DevfileWatchHandler: o.regenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
-		FileIgnores:         ignorePaths,
+		FileIgnores:         options.IgnorePaths,
 		InitialDevfileObj:   devfileObj,
-		Debug:               debug,
-		DevfileBuildCmd:     buildCommand,
-		DevfileRunCmd:       runCommand,
-		Variables:           variables,
-		RandomPorts:         randomPorts,
-		WatchFiles:          watchFiles,
+		Debug:               options.Debug,
+		DevfileBuildCmd:     options.BuildCommand,
+		DevfileRunCmd:       options.RunCommand,
+		Variables:           options.Variables,
+		RandomPorts:         options.RandomPorts,
+		WatchFiles:          options.WatchFiles,
 		ErrOut:              errOut,
 	}
 
@@ -143,7 +136,7 @@ func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters,
 }
 
 func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (component.ComponentAdapter, error) {
-	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
 	if err != nil {
 		return nil, err
 	}

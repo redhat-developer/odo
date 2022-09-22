@@ -13,6 +13,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -195,15 +196,17 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		componentName,
 		path,
 		o.GetDevfilePath(),
-		o.ignorePaths,
-		o.debugFlag,
-		o.buildCommandFlag,
-		o.runCommandFlag,
-		o.randomPortsFlag,
-		!o.noWatchFlag,
-		o.variables,
 		o.out,
 		o.errOut,
+		dev.StartOptions{
+			IgnorePaths:  o.ignorePaths,
+			Debug:        o.debugFlag,
+			BuildCommand: o.buildCommandFlag,
+			RunCommand:   o.runCommandFlag,
+			RandomPorts:  o.randomPortsFlag,
+			WatchFiles:   !o.noWatchFlag,
+			Variables:    o.variables,
+		},
 	)
 }
 
