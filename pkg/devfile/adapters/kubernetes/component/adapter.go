@@ -200,7 +200,13 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		SyncFolder:    syncFolder,
 	}
 	syncParams := adapters.SyncParameters{
-		PushParams:      parameters,
+		Path:                     parameters.Path,
+		WatchFiles:               parameters.WatchFiles,
+		WatchDeletedFiles:        parameters.WatchDeletedFiles,
+		IgnoredFiles:             parameters.IgnoredFiles,
+		ForceBuild:               parameters.ForceBuild,
+		DevfileScanIndexForWatch: parameters.DevfileScanIndexForWatch,
+
 		CompInfo:        compInfo,
 		ComponentExists: deploymentExists,
 		PodChanged:      podChanged,

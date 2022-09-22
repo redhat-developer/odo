@@ -48,9 +48,8 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 
 	var deletedFiles []string
 	var changedFiles []string
-	pushParameters := syncParameters.PushParams
-	isForcePush := pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
-	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
+	isForcePush := syncParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
+	isWatch := len(syncParameters.WatchFiles) > 0 || len(syncParameters.WatchDeletedFiles) > 0
 
 	// When this function is invoked by watch, the logic is:
 	// 1) If this is the first time that watch has called Push (in this OS process), then generate the file index
@@ -73,17 +72,17 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 
 	// If watch files are specified _and_ this is not the first call (by this process) to SyncFiles by the watch command, then insert the
 	// changed files into the existing file index, and delete removed files from the index
-	if isWatch && !syncParameters.PushParams.DevfileScanIndexForWatch {
+	if isWatch && !syncParameters.DevfileScanIndexForWatch {
 
-		err := updateIndexWithWatchChanges(pushParameters)
+		err := updateIndexWithWatchChanges(syncParameters)
 
 		if err != nil {
 			return false, err
 		}
 
-		changedFiles = pushParameters.WatchFiles
-		deletedFiles = pushParameters.WatchDeletedFiles
-		deletedFiles, err = dfutil.RemoveRelativePathFromFiles(deletedFiles, pushParameters.Path)
+		changedFiles = syncParameters.WatchFiles
+		deletedFiles = syncParameters.WatchDeletedFiles
+		deletedFiles, err = dfutil.RemoveRelativePathFromFiles(deletedFiles, syncParameters.Path)
 		if err != nil {
 			return false, fmt.Errorf("unable to remove relative path from list of changed/deleted files: %w", err)
 		}
@@ -95,10 +94,10 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
 		// if it is a forced push (isForcePush) reset the index to do a full sync
-		absIgnoreRules := dfutil.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
+		absIgnoreRules := dfutil.GetAbsGlobExps(syncParameters.Path, syncParameters.IgnoredFiles)
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
-		odoFolder := filepath.Join(pushParameters.Path, ".odo")
+		odoFolder := filepath.Join(syncParameters.Path, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
@@ -110,7 +109,7 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 		// tree and resync all local files.
 		// If it is a new component, reset index to make sure any previously existing file is cleaned up
 		if syncParameters.PodChanged || !syncParameters.ComponentExists {
-			err := util.DeleteIndexFile(pushParameters.Path)
+			err := util.DeleteIndexFile(syncParameters.Path)
 			if err != nil {
 				return false, fmt.Errorf("unable to reset the index file: %w", err)
 			}
@@ -118,7 +117,7 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 
 		// Run the indexer and find the modified/added/deleted/renamed files
 		var err error
-		ret, err = util.RunIndexerWithRemote(pushParameters.Path, pushParameters.IgnoredFiles, syncParameters.Files)
+		ret, err = util.RunIndexerWithRemote(syncParameters.Path, syncParameters.IgnoredFiles, syncParameters.Files)
 
 		if err != nil {
 			return false, fmt.Errorf("unable to run indexer: %w", err)
@@ -147,11 +146,11 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 		}
 	}
 
-	err := a.pushLocal(pushParameters.Path,
+	err := a.pushLocal(syncParameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		pushParameters.IgnoredFiles,
+		syncParameters.IgnoredFiles,
 		syncParameters.CompInfo,
 		ret,
 	)
@@ -222,11 +221,11 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 // updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
 // the existing index file; the index file is required to exist when this function is called.
-func updateIndexWithWatchChanges(pushParameters adapters.PushParameters) error {
-	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)
+func updateIndexWithWatchChanges(syncParameters adapters.SyncParameters) error {
+	indexFilePath, err := util.ResolveIndexFilePath(syncParameters.Path)
 
 	if err != nil {
-		return fmt.Errorf("unable to resolve path: %s: %w", pushParameters.Path, err)
+		return fmt.Errorf("unable to resolve path: %s: %w", syncParameters.Path, err)
 	}
 
 	// Check that the path exists
@@ -247,10 +246,10 @@ func updateIndexWithWatchChanges(pushParameters adapters.PushParameters) error {
 		return fmt.Errorf("unable to read index from path: %s: %w", indexFilePath, err)
 	}
 
-	rootDir := pushParameters.Path
+	rootDir := syncParameters.Path
 
 	// Remove deleted files from the existing index
-	for _, deletedFile := range pushParameters.WatchDeletedFiles {
+	for _, deletedFile := range syncParameters.WatchDeletedFiles {
 
 		relativePath, err := util.CalculateFileDataKeyFromPath(deletedFile, rootDir)
 
@@ -263,7 +262,7 @@ func updateIndexWithWatchChanges(pushParameters adapters.PushParameters) error {
 	}
 
 	// Add changed files to the existing index
-	for _, addedOrModifiedFile := range pushParameters.WatchFiles {
+	for _, addedOrModifiedFile := range syncParameters.WatchFiles {
 		relativePath, fileData, err := util.GenerateNewFileDataEntry(addedOrModifiedFile, rootDir)
 
 		if err != nil {

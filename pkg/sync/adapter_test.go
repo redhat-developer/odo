@@ -119,13 +119,11 @@ func TestSyncFiles(t *testing.T) {
 			name:   "Case 1: Component does not exist",
 			client: syncClient,
 			syncParameters: adapters.SyncParameters{
-				PushParams: adapters.PushParameters{
-					Path:              directory,
-					WatchFiles:        []string{},
-					WatchDeletedFiles: []string{},
-					IgnoredFiles:      []string{},
-					ForceBuild:        false,
-				},
+				Path:              directory,
+				WatchFiles:        []string{},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				ForceBuild:        false,
 				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
@@ -138,13 +136,11 @@ func TestSyncFiles(t *testing.T) {
 			name:   "Case 2: Component does exist",
 			client: syncClient,
 			syncParameters: adapters.SyncParameters{
-				PushParams: adapters.PushParameters{
-					Path:              directory,
-					WatchFiles:        []string{},
-					WatchDeletedFiles: []string{},
-					IgnoredFiles:      []string{},
-					ForceBuild:        false,
-				},
+				Path:              directory,
+				WatchFiles:        []string{},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				ForceBuild:        false,
 				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
@@ -157,13 +153,11 @@ func TestSyncFiles(t *testing.T) {
 			name:   "Case 3: FakeErrorClient error",
 			client: errorSyncClient,
 			syncParameters: adapters.SyncParameters{
-				PushParams: adapters.PushParameters{
-					Path:              directory,
-					WatchFiles:        []string{},
-					WatchDeletedFiles: []string{},
-					IgnoredFiles:      []string{},
-					ForceBuild:        true,
-				},
+				Path:              directory,
+				WatchFiles:        []string{},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				ForceBuild:        true,
 				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
@@ -176,13 +170,11 @@ func TestSyncFiles(t *testing.T) {
 			name:   "Case 4: File change",
 			client: syncClient,
 			syncParameters: adapters.SyncParameters{
-				PushParams: adapters.PushParameters{
-					Path:              directory,
-					WatchFiles:        []string{path.Join(directory, "test.log")},
-					WatchDeletedFiles: []string{},
-					IgnoredFiles:      []string{},
-					ForceBuild:        false,
-				},
+				Path:              directory,
+				WatchFiles:        []string{path.Join(directory, "test.log")},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				ForceBuild:        false,
 				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
@@ -414,14 +406,14 @@ func TestUpdateIndexWithWatchChanges(t *testing.T) {
 				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write index file: %v", err)
 			}
 
-			pushParams := adapters.PushParameters{
+			syncParams := adapters.SyncParameters{
 				Path: directory,
 			}
 
 			// Add deleted files to pushParams (also delete the files)
 			for _, deletedFile := range tt.watchDeletedFiles {
 				deletedFilePath := filepath.Join(directory, deletedFile)
-				pushParams.WatchDeletedFiles = append(pushParams.WatchDeletedFiles, deletedFilePath)
+				syncParams.WatchDeletedFiles = append(syncParams.WatchDeletedFiles, deletedFilePath)
 
 				if err := os.Remove(deletedFilePath); err != nil {
 					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to delete file %s %v", deletedFilePath, err)
@@ -431,14 +423,14 @@ func TestUpdateIndexWithWatchChanges(t *testing.T) {
 			// Add added files to pushParams (also create the files)
 			for _, addedFile := range tt.watchAddedFiles {
 				addedFilePath := filepath.Join(directory, addedFile)
-				pushParams.WatchFiles = append(pushParams.WatchFiles, addedFilePath)
+				syncParams.WatchFiles = append(syncParams.WatchFiles, addedFilePath)
 
 				if err := ioutil.WriteFile(addedFilePath, []byte("non-empty-string"), 0644); err != nil {
 					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
 				}
 			}
 
-			if err := updateIndexWithWatchChanges(pushParams); err != nil {
+			if err := updateIndexWithWatchChanges(syncParams); err != nil {
 				t.Fatalf("TestUpdateIndexWithWatchChangesLocal: unexpected error: %v", err)
 			}
 
