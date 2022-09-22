@@ -19,7 +19,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/service"
-	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/task"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -35,7 +34,6 @@ type adapterHandler struct {
 
 var _ libdevfile.Handler = (*adapterHandler)(nil)
 var _ ComponentAdapter = (*adapterHandler)(nil)
-var _ sync.SyncExtracter = (*adapterHandler)(nil)
 
 func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
 	return image.BuildPushSpecificImage(a.FS, a.parameters.Path, img, true)

@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"errors"
+	io "io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -100,22 +102,18 @@ func TestSyncFiles(t *testing.T) {
 	// Assert that Bar() is invoked.
 	defer ctrl.Finish()
 
-	syncClient := NewMockSyncExtracter(ctrl)
-	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
-	errorSyncClient := NewMockSyncExtracter(ctrl)
-	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	syncClient := func(ComponentInfo, string, io.Reader) error {
+		return nil
+	}
 
 	tests := []struct {
 		name               string
-		client             SyncExtracter
 		syncParameters     SyncParameters
 		wantErr            bool
 		wantIsPushRequired bool
 	}{
 		{
-			name:   "Case 1: Component does not exist",
-			client: syncClient,
+			name: "Case 1: Component does not exist",
 			syncParameters: SyncParameters{
 				Path:              directory,
 				WatchFiles:        []string{},
@@ -126,13 +124,13 @@ func TestSyncFiles(t *testing.T) {
 					ContainerName: "abcd",
 				},
 				ComponentExists: false,
+				SyncExtracter:   syncClient,
 			},
 			wantErr:            false,
 			wantIsPushRequired: true,
 		},
 		{
-			name:   "Case 2: Component does exist",
-			client: syncClient,
+			name: "Case 2: Component does exist",
 			syncParameters: SyncParameters{
 				Path:              directory,
 				WatchFiles:        []string{},
@@ -143,13 +141,13 @@ func TestSyncFiles(t *testing.T) {
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
+				SyncExtracter:   syncClient,
 			},
 			wantErr:            false,
 			wantIsPushRequired: false, // always false after case 1
 		},
 		{
-			name:   "Case 3: FakeErrorClient error",
-			client: errorSyncClient,
+			name: "Case 3: FakeErrorClient error",
 			syncParameters: SyncParameters{
 				Path:              directory,
 				WatchFiles:        []string{},
@@ -160,13 +158,13 @@ func TestSyncFiles(t *testing.T) {
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
+				SyncExtracter:   syncClient,
 			},
 			wantErr:            true,
 			wantIsPushRequired: false,
 		},
 		{
-			name:   "Case 4: File change",
-			client: syncClient,
+			name: "Case 4: File change",
 			syncParameters: SyncParameters{
 				Path:              directory,
 				WatchFiles:        []string{path.Join(directory, "test.log")},
@@ -178,6 +176,7 @@ func TestSyncFiles(t *testing.T) {
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
+				SyncExtracter:   syncClient,
 			},
 			wantErr:            false,
 			wantIsPushRequired: true,
@@ -185,7 +184,7 @@ func TestSyncFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncAdapter := New(tt.client, kc)
+			syncAdapter := New(kc)
 			isPushRequired, err := syncAdapter.SyncFiles(tt.syncParameters)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestSyncFiles error: unexpected error when syncing files %v", err)
@@ -229,11 +228,13 @@ func TestPushLocal(t *testing.T) {
 	// Assert that Bar() is invoked.
 	defer ctrl.Finish()
 
-	syncClient := NewMockSyncExtracter(ctrl)
-	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	syncClient := func(ComponentInfo, string, io.Reader) error {
+		return nil
+	}
 
-	errorSyncClient := NewMockSyncExtracter(ctrl)
-	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	errorSyncClient := func(ComponentInfo, string, io.Reader) error {
+		return errors.New("err")
+	}
 
 	tests := []struct {
 		name        string
@@ -322,8 +323,8 @@ func TestPushLocal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncAdapter := New(syncClient, kc)
-			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
+			syncAdapter := New(kc)
+			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, syncClient, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)
 			}

@@ -17,10 +17,6 @@ import (
 	"k8s.io/klog"
 )
 
-type SyncExtracter interface {
-	ExtractProjectToComponent(ComponentInfo, string, io.Reader) error
-}
-
 // CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
 // copyFiles is list of changed files captured during `odo watch` as well as binary file path
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
@@ -47,7 +43,7 @@ func CopyFile(extracter SyncExtracter, localPath string, compInfo ComponentInfo,
 
 	}()
 
-	err := extracter.ExtractProjectToComponent(compInfo, targetPath, reader)
+	err := extracter(compInfo, targetPath, reader)
 	if err != nil {
 		return err
 	}

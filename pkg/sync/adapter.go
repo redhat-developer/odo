@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	io "io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,17 +17,17 @@ import (
 	"k8s.io/klog"
 )
 
+type SyncExtracter func(ComponentInfo, string, io.Reader) error
+
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
-	kubeClient    kclient.ClientInterface
-	SyncExtracter SyncExtracter
+	kubeClient kclient.ClientInterface
 }
 
 // New instantiates a component adapter
-func New(syncClient SyncExtracter, kubeClient kclient.ClientInterface) Adapter {
+func New(kubeClient kclient.ClientInterface) Adapter {
 	return Adapter{
-		kubeClient:    kubeClient,
-		SyncExtracter: syncClient,
+		kubeClient: kubeClient,
 	}
 }
 
@@ -46,6 +47,7 @@ type SyncParameters struct {
 	IgnoredFiles             []string // IgnoredFiles is the list of files to not push up to a component
 	ForceBuild               bool     // ForceBuild determines whether or not to push all of the files up to a component or just files that have changed, added or removed.
 	DevfileScanIndexForWatch bool     // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See 'pkg/sync/adapter.go' for details
+	SyncExtracter            SyncExtracter
 
 	CompInfo        ComponentInfo
 	PodChanged      bool
@@ -172,6 +174,7 @@ func (a Adapter) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		isForcePush,
 		syncParameters.IgnoredFiles,
 		syncParameters.CompInfo,
+		syncParameters.SyncExtracter,
 		ret,
 	)
 	if err != nil {
@@ -188,7 +191,7 @@ func (a Adapter) SyncFiles(syncParameters SyncParameters) (bool, error) {
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, ret util.IndexerRet) error {
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, extracter SyncExtracter, ret util.IndexerRet) error {
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", compInfo.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -230,7 +233,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.SyncExtracter, path, compInfo, syncFolder, files, globExps, ret)
+		err = CopyFile(extracter, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			return fmt.Errorf("unable push files to pod: %w", err)
 		}
