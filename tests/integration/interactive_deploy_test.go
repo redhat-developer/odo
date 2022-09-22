@@ -145,7 +145,7 @@ var _ = Describe("odo deploy interactive command tests", func() {
 			lines, err := helper.ExtractLines(output)
 			Expect(err).To(BeNil())
 			Expect(lines).To(Not(BeEmpty()))
-			Expect(lines[1]).To(ContainSubstring("Deploy mode ran, but no Devfile was found. Initializing a Devfile in the current directory"))
+			Expect(lines[1]).To(ContainSubstring("Deploy mode ran, but no Devfile was found. Initializing a component in the current directory"))
 		})
 	})
 })

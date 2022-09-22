@@ -161,7 +161,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	)
 
 	// Output what the command is doing / information
-	log.Title("Developing using the "+componentName+" Devfile",
+	log.Title("Developing using the \""+componentName+"\" Devfile",
 		"Namespace: "+o.GetProject(),
 		"odo version: "+version.VERSION)
 
