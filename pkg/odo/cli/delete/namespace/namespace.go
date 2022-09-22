@@ -6,11 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -83,7 +84,7 @@ func (do *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the 'odo delete namespace' command
 func (do *DeleteOptions) Run(ctx context.Context) error {
-	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete namespace %q?", do.namespaceName)) {
+	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %s %q?", do.commandName, do.namespaceName)) {
 		// Create the "spinner"
 		s := &log.Status{}
 
@@ -105,7 +106,7 @@ func (do *DeleteOptions) Run(ctx context.Context) error {
 
 		return nil
 	}
-	log.Error("Aborting namespace deletion")
+	log.Errorf("Aborting %s deletion", do.commandName)
 	return nil
 }
 
