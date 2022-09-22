@@ -12,7 +12,6 @@ type PushParameters struct {
 	WatchFiles               []string                // Optional: WatchFiles is the list of changed files detected by odo watch. If empty or nil, odo will check .odo/odo-file-index.json to determine changed files
 	WatchDeletedFiles        []string                // Optional: WatchDeletedFiles is the list of deleted files detected by odo watch. If empty or nil, odo will check .odo/odo-file-index.json to determine deleted files
 	IgnoredFiles             []string                // IgnoredFiles is the list of files to not push up to a component
-	ForceBuild               bool                    // ForceBuild determines whether or not to push all of the files up to a component or just files that have changed, added or removed.
 	Show                     bool                    // Show tells whether the devfile command output should be shown on stdout
 	DevfileBuildCmd          string                  // DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileRunCmd            string                  // DevfileRunCmd takes the run command through the command line and overwrites devfile run command

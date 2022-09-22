@@ -201,19 +201,18 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
+
 	syncParams := sync.SyncParameters{
 		Path:                     parameters.Path,
 		WatchFiles:               parameters.WatchFiles,
 		WatchDeletedFiles:        parameters.WatchDeletedFiles,
 		IgnoredFiles:             parameters.IgnoredFiles,
-		ForceBuild:               parameters.ForceBuild,
 		DevfileScanIndexForWatch: parameters.DevfileScanIndexForWatch,
 		SyncExtracter:            a.ExtractProjectToComponent,
 
-		CompInfo:        compInfo,
-		ComponentExists: deploymentExists,
-		PodChanged:      podChanged,
-		Files:           getSyncFilesFromAttributes(pushDevfileCommands),
+		CompInfo:  compInfo,
+		ForcePush: !deploymentExists || podChanged,
+		Files:     getSyncFilesFromAttributes(pushDevfileCommands),
 	}
 
 	execRequired, err := a.syncClient.SyncFiles(syncParams)

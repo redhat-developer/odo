@@ -45,7 +45,6 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 
 	var deletedFiles []string
 	var changedFiles []string
-	isForcePush := syncParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
 	isWatch := len(syncParameters.WatchFiles) > 0 || len(syncParameters.WatchDeletedFiles) > 0
 
 	// When this function is invoked by watch, the logic is:
@@ -90,7 +89,7 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 	if !indexRegeneratedByWatch {
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
-		// if it is a forced push (isForcePush) reset the index to do a full sync
+		// if it is a forced push (ForcePush) reset the index to do a full sync
 		absIgnoreRules := dfutil.GetAbsGlobExps(syncParameters.Path, syncParameters.IgnoredFiles)
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
@@ -105,7 +104,7 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		// If the pod changed, reset the index, which will cause the indexer to walk the directory
 		// tree and resync all local files.
 		// If it is a new component, reset index to make sure any previously existing file is cleaned up
-		if syncParameters.PodChanged || !syncParameters.ComponentExists {
+		if syncParameters.ForcePush {
 			err := util.DeleteIndexFile(syncParameters.Path)
 			if err != nil {
 				return false, fmt.Errorf("unable to reset the index file: %w", err)
@@ -134,11 +133,11 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		changedFiles = filesChangedFiltered
 		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
-		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !isForcePush {
+		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !syncParameters.ForcePush {
 			return false, nil
 		}
 
-		if isForcePush {
+		if syncParameters.ForcePush {
 			deletedFiles = append(deletedFiles, "*")
 		}
 	}
@@ -146,7 +145,7 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 	err := a.pushLocal(syncParameters.Path,
 		changedFiles,
 		deletedFiles,
-		isForcePush,
+		syncParameters.ForcePush,
 		syncParameters.IgnoredFiles,
 		syncParameters.CompInfo,
 		syncParameters.SyncExtracter,

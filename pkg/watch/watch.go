@@ -445,7 +445,6 @@ func (o *WatchClient) processEvents(
 		WatchFiles:               changedFiles,
 		WatchDeletedFiles:        deletedPaths,
 		IgnoredFiles:             parameters.FileIgnores,
-		ForceBuild:               false,
 		DevfileBuildCmd:          parameters.DevfileBuildCmd,
 		DevfileRunCmd:            parameters.DevfileRunCmd,
 		DevfileDebugCmd:          parameters.DevfileDebugCmd,
