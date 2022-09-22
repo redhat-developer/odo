@@ -2,9 +2,11 @@ package dev
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/redhat-developer/odo/pkg/binding"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -15,7 +17,8 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	k8sComponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -25,6 +28,7 @@ type DevClient struct {
 	portForwardClient portForward.Client
 	watchClient       watch.Client
 	bindingClient     binding.Client
+	filesystem        filesystem.Filesystem
 }
 
 var _ Client = (*DevClient)(nil)
@@ -35,6 +39,7 @@ func NewDevClient(
 	portForwardClient portForward.Client,
 	watchClient watch.Client,
 	bindingClient binding.Client,
+	filesystem filesystem.Filesystem,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
@@ -42,48 +47,45 @@ func NewDevClient(
 		portForwardClient: portForwardClient,
 		watchClient:       watchClient,
 		bindingClient:     bindingClient,
+		filesystem:        filesystem,
 	}
 }
 
 func (o *DevClient) Start(
+	ctx context.Context,
 	devfileObj parser.DevfileObj,
 	componentName string,
-	namespace string,
-	ignorePaths []string,
 	path string,
-	debug bool,
-	buildCommand string,
-	runCommand string,
-	randomPorts bool,
+	devfilePath string,
+	out io.Writer,
 	errOut io.Writer,
-	fs filesystem.Filesystem,
-) (watch.ComponentStatus, error) {
+	options StartOptions,
+) error {
 	klog.V(4).Infoln("Creating new adapter")
 
-	adapter := k8sComponent.NewKubernetesAdapter(
+	adapter := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient,
-		k8sComponent.AdapterContext{
+		component.AdapterContext{
 			ComponentName: componentName,
 			Context:       path,
 			AppName:       "app",
 			Devfile:       devfileObj,
-			FS:            fs,
-		},
-		namespace)
+			FS:            o.filesystem,
+		})
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
-		return watch.ComponentStatus{}, err
+		return err
 	}
 
 	pushParameters := adapters.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
 		Path:            path,
-		IgnoredFiles:    ignorePaths,
-		Debug:           debug,
-		DevfileBuildCmd: buildCommand,
-		DevfileRunCmd:   runCommand,
-		RandomPorts:     randomPorts,
+		IgnoredFiles:    options.IgnorePaths,
+		Debug:           options.Debug,
+		DevfileBuildCmd: options.BuildCommand,
+		DevfileRunCmd:   options.RunCommand,
+		RandomPorts:     options.RandomPorts,
 		ErrOut:          errOut,
 	}
 
@@ -91,52 +93,65 @@ func (o *DevClient) Start(
 	componentStatus := watch.ComponentStatus{}
 	err = adapter.Push(pushParameters, &componentStatus)
 	if err != nil {
-		return watch.ComponentStatus{}, err
-	}
-	klog.V(4).Infoln("Successfully created inner-loop resources")
-	return componentStatus, nil
-}
-
-func (o *DevClient) Watch(
-	devfilePath string,
-	devfileObj parser.DevfileObj,
-	componentName string,
-	path string,
-	ignorePaths []string,
-	out io.Writer,
-	h Handler,
-	ctx context.Context,
-	debug bool,
-	buildCommand string,
-	runCommand string,
-	variables map[string]string,
-	randomPorts bool,
-	watchFiles bool,
-	errOut io.Writer,
-	componentStatus watch.ComponentStatus,
-) error {
-	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
-	if err != nil {
 		return err
 	}
+	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
 		DevfilePath:         devfilePath,
 		Path:                path,
 		ComponentName:       componentName,
 		ApplicationName:     "app",
-		DevfileWatchHandler: h.RegenerateAdapterAndPush,
+		DevfileWatchHandler: o.regenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
-		FileIgnores:         ignorePaths,
+		FileIgnores:         options.IgnorePaths,
 		InitialDevfileObj:   devfileObj,
-		Debug:               debug,
-		DevfileBuildCmd:     buildCommand,
-		DevfileRunCmd:       runCommand,
-		Variables:           variables,
-		RandomPorts:         randomPorts,
-		WatchFiles:          watchFiles,
+		Debug:               options.Debug,
+		DevfileBuildCmd:     options.BuildCommand,
+		DevfileRunCmd:       options.RunCommand,
+		Variables:           options.Variables,
+		RandomPorts:         options.RandomPorts,
+		WatchFiles:          options.WatchFiles,
 		ErrOut:              errOut,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+}
+
+// RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
+func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+	var adapter component.ComponentAdapter
+
+	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
+	if err != nil {
+		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
+	}
+
+	err = adapter.Push(pushParams, componentStatus)
+	if err != nil {
+		return fmt.Errorf("watch command was unable to push component: %w", err)
+	}
+
+	return nil
+}
+
+func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (component.ComponentAdapter, error) {
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
+	if err != nil {
+		return nil, err
+	}
+
+	return component.NewKubernetesAdapter(
+		o.kubernetesClient,
+		o.prefClient,
+		o.portForwardClient,
+		o.bindingClient,
+		component.AdapterContext{
+			ComponentName: parameters.ComponentName,
+			Context:       parameters.Path,
+			AppName:       parameters.ApplicationName,
+			Devfile:       devObj,
+			FS:            o.filesystem,
+		},
+	), nil
 }

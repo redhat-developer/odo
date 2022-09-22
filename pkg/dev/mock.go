@@ -12,7 +12,6 @@ import (
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	adapters "github.com/redhat-developer/odo/pkg/devfile/adapters"
-	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	watch "github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -40,32 +39,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(devfileObj parser.DevfileObj, componentName, namespace string, ignorePaths []string, path string, debug bool, buildCommand, runCommand string, randomPorts bool, errOut io.Writer, fs filesystem.Filesystem) (watch.ComponentStatus, error) {
+func (m *MockClient) Start(ctx context.Context, devfileObj parser.DevfileObj, componentName, path, devfilePath string, out, errOut io.Writer, options StartOptions) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", devfileObj, componentName, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut, fs)
-	ret0, _ := ret[0].(watch.ComponentStatus)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(devfileObj, componentName, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut, fs interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, componentName, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut, fs)
-}
-
-// Watch mocks base method.
-func (m *MockClient) Watch(devfilePath string, devfileObj parser.DevfileObj, componentName, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string, randomPorts, watchFiles bool, errOut io.Writer, componentStatus watch.ComponentStatus) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfilePath, devfileObj, componentName, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
+	ret := m.ctrl.Call(m, "Start", ctx, devfileObj, componentName, path, devfilePath, out, errOut, options)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfilePath, devfileObj, componentName, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus interface{}) *gomock.Call {
+// Start indicates an expected call of Start.
+func (mr *MockClientMockRecorder) Start(ctx, devfileObj, componentName, path, devfilePath, out, errOut, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfilePath, devfileObj, componentName, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), ctx, devfileObj, componentName, path, devfilePath, out, errOut, options)
 }
 
 // MockHandler is a mock of Handler interface.
