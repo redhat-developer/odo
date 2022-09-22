@@ -47,6 +47,7 @@ type Adapter struct {
 	prefClient        preference.Client
 	portForwardClient portForward.Client
 	bindingClient     binding.Client
+	syncClient        sync.Client
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -69,6 +70,7 @@ func NewKubernetesAdapter(
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
 	bindingClient binding.Client,
+	syncClient sync.Client,
 	context AdapterContext,
 ) Adapter {
 	return Adapter{
@@ -76,6 +78,7 @@ func NewKubernetesAdapter(
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
 		bindingClient:     bindingClient,
+		syncClient:        syncClient,
 		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 	}
@@ -192,7 +195,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	podChanged := componentStatus.State == watch.StateWaitDeployment
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(a.kubeClient)
 	compInfo := sync.ComponentInfo{
 		ComponentName: a.ComponentName,
 		ContainerName: containerName,
@@ -214,7 +216,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		Files:           getSyncFilesFromAttributes(pushDevfileCommands),
 	}
 
-	execRequired, err := syncAdapter.SyncFiles(syncParams)
+	execRequired, err := a.syncClient.SyncFiles(syncParams)
 	if err != nil {
 		componentStatus.State = watch.StateReady
 		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
