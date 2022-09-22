@@ -1,36 +1,32 @@
 ---
 title: How odo works
 sidebar_position: 30
-# Display h2 to h5 headings
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 ---
 
 ## How `odo dev` works
 
-In a nutshell, when running [`odo dev`](../../command-reference/dev), `odo` will do the following:
+In a nutshell, when running [`odo dev`](../../command-reference/dev):
 
-1. It reads and validates the Devfile in the current directory.
-   For example, it makes sure a `command` of the right kind (`run` or `debug` if running `odo dev --debug`) is defined.
-2. It determines the resources it needs to create (or update) and manage, and instructs the Kubernetes API Server to create all necessary resources.
-   Specifically, `odo` creates the following resources:
-   - [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) for running the containers. See [below](#deployment) for further details.
-   - [Service](https://kubernetes.io/docs/concepts/services-networking/service/) for accessibility. See [below](#service) for further details.
-
-   If the Devfile contains any [`Kubernetes` components](../../development/devfile#components) not referenced by any [`apply` command](https://devfile.io/docs/2.2.0-alpha/adding-apply-commands),
-   `odo dev` automatically applies them.
-   This is the mechanism used by [`odo add binding`](../../command-reference/add-binding) to have `ServiceBinding` resources created by `odo dev`. 
-3. Once the resources are ready, `odo` executes any `build` (optional) and `run` (or `debug`) commands defined in the Devfile into the right containers.   
-4. It reacts to events occurring in the cluster and that might affect the resources managed.
-5. Unless told otherwise (when running `odo dev --no-watch`), `odo` watches for local changes
-   and synchronizes changed files into the running container.
-   If the local Devfile is modified, `odo` may need to change the resources it previously created, which might result in recreating the
-   running containers.
+1. `odo` **reads and validates the Devfile** in the current directory.
+   For example, it makes sure a `command` of the right kind (`run` when running `odo dev`, or `debug` when running `odo dev --debug`) is defined.
+2. `odo` **creates resources in the cluster and manages them**. Specifically, it creates the following resources:
+   - [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) for running the containers. See [the section on Deployment](#deployment) for further details.
+   - [Service](https://kubernetes.io/docs/concepts/services-networking/service/) for accessibility. See [the section on Service](#service) for further details.
+3. Once the resources are ready, `odo` **executes any `build` (optional) and `run` (or `debug`) commands** defined in the Devfile into the dedicated containers.
+   It then maintains a connection to the process launched inside the container, and representing the `run` or `debug` command defined.
+4. `odo` **reacts to events occurring in the cluster** that might affect the resources managed.
+5. `odo` **watches for local changes and synchronizes changed files** into the running container, unless told otherwise (when running `odo dev --no-watch`).
+   If the local Devfile is modified, `odo` may need to change the resources it previously created, which might result in recreating the running containers.
    Note that synchronization and push to the cluster can also be triggered on demand by pressing `p` at any time.
-   See [this page](../../command-reference/dev#applying-local-changes-to-the-application-on-the-cluster) for more details.
-6. `odo` optionally restarts the running application (if the command is not marked as `hotReloadCapable` in the Devfile).
-7. `odo` then sets up port-forwarding, starting from 40001 as the local port and incrementing by 1 until it finds a free local port.
-8. When `odo dev` is stopped (via `Ctrl+C`), it deletes all the resources created previously and stops port-forwarding and code synchronization.
+   See [the command reference on `odo dev`](../../command-reference/dev#applying-local-changes-to-the-application-on-the-cluster) for more details.
+6. `odo` **optionally restarts the running application** if the command is not marked as `hotReloadCapable` in the Devfile.
+   If the command is marked as `hotReloadCapable`, the application is supposed to handle source code changes on its own; so `odo` does not restart the application.
+   Otherwise, `odo` restarts the running application by stopping the process started previously, then executes the command again in the container.
+   Again, it maintains a connection to that process as long as it is running in the container.
+7. `odo` then **sets up port-forwarding** for each endpoint declared in the Devfile, and reports the local port in its output.
+8. When `odo dev` is stopped via `Ctrl+C`, it **deletes all the resources created previously** and stops port-forwarding and code synchronization.
 
 :::caution
 It is strongly discouraged to run multiple `odo dev` processes in parallel from the same component directory.
@@ -55,8 +51,25 @@ metadata:
 :::info NOTE
 Per the Devfile specification, the `metadata.name` field is optional.
 If it is not defined, `odo` will try to autodetect the name from the project source code (based on information from files like `package.json` or `pom.xml`).
-As a last resort, if a name cannot be determined automatically, it will use the current directory name.
+As a last resort, it will use the current directory name.
 :::
+
+### Resource Labels
+
+By default, `odo` adds the following labels to all the resources it creates:
+You can find more information about some of those common labels in the [Openshift](https://github.com/redhat-developer/app-labels/blob/master/labels-annotation-for-openshift.adoc#labels) and [Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/) documentations.
+
+| Key                                    | Description                                                                                                                                                                                                | Example Value       |
+|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
+| `app`                                  | the application; always `app`.                                                                                                                                                                             | `app`               |
+| `app.kubernetes.io/instance`           | the component name.                                                                                                                                                                                        | `my-component-name` |
+| `app.kubernetes.io/managed-by`         | the tool used to create this resource; always `odo`.                                                                                                                                                       | `odo`               |
+| `app.kubernetes.io/managed-by-version` | the version of the odo binary used to create this resource.                                                                                                                                                | `v3.0.0`            |
+| `app.kubernetes.io/part-of`            | the higher-level application using this resource; always `app`.                                                                                                                                            | `app`               |
+| `app.openshift.io/runtime`             | the application runtime, if available. Value is read in order from the `metadata.projectType` or `metadata.language` fields in the Devfile. As both metadata are optional, this annotation can be omitted. | `spring`            |
+| `component`                            | the component name.                                                                                                                                                                                        | `my-component-name` |
+| `odo.dev/mode`                         | in which mode the component is running. Possible values: `Dev` (if running [`odo dev`](../../command-reference/dev)), `Deploy` (if running [`odo deploy`](../../command-reference/deploy)).                | `Dev`               |
+
 
 ### Deployment
 
@@ -66,9 +79,9 @@ As a last resort, if a name cannot be determined automatically, it will use the 
 
 By default, `odo` adds the following annotations to the Deployment:
 
-| Key                                    | Description                                                                                                                                           | Example Value       |
-|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
-| `odo.dev/project-type `                | the application runtime, if available. Optional. Value is read in order from the `metadata.projectType` or `metadata.language` fields in the Devfile  | `spring`            |
+| Key                                    | Description                                                                                                                                                                                                 | Example Value       |
+|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
+| `odo.dev/project-type `                | the application runtime, if available. Value is read in order from the `metadata.projectType` or `metadata.language` fields in the Devfile. As both metadata are optional, this annotation can be omitted.  | `spring`            |
 
 Notes:
 - Any additional annotations defined via the `components[].container.annotation.deployment` field will also be added to this resource.
@@ -140,18 +153,7 @@ spec:
 
 #### Labels
 
-By default, `odo` adds the following labels to the Deployment:
-
-| Key                                    | Description                                                                                                                                          | Example Value       |
-|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
-| `app`                                  | the application; always `app`                                                                                                                        | `app`               |
-| `app.kubernetes.io/instance`           | the component name                                                                                                                                   | `my-component-name` |
-| `app.kubernetes.io/managed-by`         | the tool used to create this resource; always `odo`                                                                                                  | `odo`               |
-| `app.kubernetes.io/managed-by-version` | the version of the odo binary used to create this resource                                                                                           | `v3.0.0-rc1`        |
-| `app.kubernetes.io/part-of`            | the higher-level application using this resource; always `app`                                                                                       | `app`               |
-| `app.openshift.io/runtime`             | the application runtime, if available. Optional. Value is read in order from the `metadata.projectType` or `metadata.language` fields in the Devfile | `spring`            |
-| `component`                            | the component name                                                                                                                                   | `my-component-name` |
-| `odo.dev/mode`                         | in which mode the component is running. Possible values: `Dev`, `Deploy`                                                                             | `Dev`               |
+By default, `odo` adds the labels mentioned in the [Resource Labels](#resource-labels) section.
 
 Note that the same labels are added to the underlying Pods managed by this Deployment.
 
@@ -197,7 +199,7 @@ metadata:
       app: app
       app.kubernetes.io/instance: my-sample-java-springboot
       app.kubernetes.io/managed-by: odo
-      app.kubernetes.io/managed-by-version: v3.0.0-rc1
+      app.kubernetes.io/managed-by-version: v3.0.0
       app.kubernetes.io/part-of: app
       app.openshift.io/runtime: spring
       component: my-sample-java-springboot
@@ -213,7 +215,7 @@ spec:
                 app: app
                 app.kubernetes.io/instance: my-sample-java-springboot
                 app.kubernetes.io/managed-by: odo
-                app.kubernetes.io/managed-by-version: v3.0.0-rc1
+                app.kubernetes.io/managed-by-version: v3.0.0
                 app.kubernetes.io/part-of: app
                 app.openshift.io/runtime: spring
                 component: my-sample-java-springboot
@@ -240,14 +242,14 @@ Each `components[].container` block is translated into a dedicated `container` d
 
 ##### Environment variables
 
-Each `components[].container.env` section defined in the Devfile translates into the same container environment variable in the Pod container.
+Each entry in the `components[].container.env` section translates into the same environment variable in the corresponding Pod container.
 
-Additionally, the following environment variables are reserved and injected into the container definition: 
+Additionally, the following environment variables are reserved and injected into the container definition if `mountSources` is defined as `true` for the component's container: 
 
-| Key              | Description                                                                                                                        | Example Value  |
-|------------------|------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| `PROJECTS_ROOT`  | A path where projects sources are mounted as defined by container component's `sourceMapping`                                      | `/projects`    |
-| `PROJECT_SOURCE` | A path to a project source (`$PROJECTS_ROOT/`). If there are multiple projects, this will point to the directory of the first one  | `/projects`    |
+| Key              | Description                                                                                                                                                                                                                 | Example Value  |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
+| `PROJECTS_ROOT`  | A path where the project sources are mounted as defined by container component's [`sourceMapping`](https://devfile.io/docs/2.2.0-alpha/devfile-schema#components-container-source-mapping). Default value is `/projects`.   | `/projects`    |
+| `PROJECT_SOURCE` | A path to a project source (`$PROJECTS_ROOT/`). If there are multiple projects, this will point to the directory of the first one. Default value is `/projects`.                                                            | `/projects`    |
 
 
 <details>
@@ -273,10 +275,24 @@ components:
 - name: tools
   container:
      image: quay.io/eclipse/che-java11-maven
+     # highlight-start
+     mountSources: true
+     sourceMapping: /my-code
+     # highlight-end
      env:
      # highlight-start
      - name: DEBUG_PORT
        value: "5858"
+     # highlight-end
+- name: another-container
+  container:
+     image: alpine:latest
+     # highlight-next-line
+     mountSources: false
+     env:
+     # highlight-start
+     - name: MY_ENV_VAR
+       value: "some value"
      # highlight-end
 ```
 </td>
@@ -302,12 +318,21 @@ spec:
                   - name: DEBUG_PORT
                     value: "5858"
                   - name: PROJECTS_ROOT
-                    value: /projects
+                    value: /my-code
                   - name: PROJECT_SOURCE
-                    value: /projects
+                    value: /my-code
                   # highlight-end
                  image: quay.io/eclipse/che-java11-maven
                  imagePullPolicy: Always
+               - name: another-container
+                 env:
+                    # highlight-start
+                    - name: MY_ENV_VAR
+                      value: "some value"
+                    # highlight-end
+                 image: alpine:latest
+                 imagePullPolicy: Always
+
 ```
 </td>
 </tr>
@@ -321,13 +346,13 @@ spec:
 `odo` will use the specified `components[].container.command` or `components[].container.args` fields as is 
 for the Kubernetes container `command` and `args` definitions.
 The only requirement is that those fields should result in a non-terminating container, 
-so `odo` can execute the commands it needs to manage the application. 
+so `odo` can execute the commands it needs to manage the application.
+If the container is terminating, the Deployment will not reach the desired state, and `odo` will not be able to run the commands and start the application.
 
-If both fields are missing, `odo` defaults to:
-- setting the container `command` to `tail`.
+If both fields are missing, `odo` defaults to setting:
+- the container `command` to `tail`.
   This assumes that the container image (set in the Devfile) contains the `tail` executable.
-- setting the container `args` to `[-f, /dev/null]`
-
+- the container `args` to `[-f, /dev/null]`
 
 <details>
 <summary>Example</summary>
@@ -433,12 +458,11 @@ spec:
 
 ##### Image Pull Policy
 
-At this time, the image pull policy for all containers is `Always`.
+At this time, the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) for all containers is fixed to `Always` and cannot be modified.
 
 ##### Resources Limits and Requests
 
 `odo` maps each `components[].container.{cpu,memory}{Limit,Request}` to corresponding `resources.{limits,requests}.{cpu,memory}` fields with the respective values.
-
 
 <details>
 <summary>Example</summary>
@@ -509,7 +533,7 @@ spec:
 
 ##### Ports
 
-`odo` translates each element in the `components[].container.endpoints[]` block into a dedicated `containerPort` with the same name and port.
+`odo` translates each element in the `components[].container.endpoints[]` block into a dedicated `containerPort` with the same name and port, regardless of the `exposure`.
 
 <details>
 <summary>Example</summary>
@@ -591,15 +615,17 @@ spec:
 
 `odo` creates the following volumes and mounts them in the containers:
 
-| Volume name       | Volume Type                                                                                                                                                                                                                                                                                             | Mount Path   | Description                                                                              |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|------------------------------------------------------------------------------------------|
-| `odo-shared-data` | [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir)                                                                                                                                                                                                                             | `/opt/odo`   | Internal. Contain files (like PIDs for commands) necessary for `odo`.                    |
-| `odo-projects`    | [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) if [`Ephemeral`](../../overview/configure#preference-key-table) preference is `false`.<br/>[`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) otherwise. | `/projects`  | Used for syncing files. Mounted only if container component has `mountSources: true` set |
+| Volume name       | Volume Type                                                                                                                                                                                                                                                                                              | Mount Path   | Description                                                                                    |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|------------------------------------------------------------------------------------------------|
+| `odo-shared-data` | [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir)                                                                                                                                                                                                                              | `/opt/odo`   | Internal Purpose. Contains files (like PIDs for commands) necessary for `odo`.                 |
 
-Every `volume` component in the Devfile is translated into a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) (with the default storage class) 
-and a Volume referencing that PVC in the Deployment.
-If the Volume is mounted in the Devfile container component, the corresponding Kubernetes container will also contain a `VolumeMount` referencing that Volume.
 
+##### Devfile Volume Components
+
+The [Devfile specification](https://devfile.io/docs/2.2.0-alpha/adding-a-volume-component) allows to define `volume` components to share files among container components.
+Such `volume` components can be marked as `ephemeral` or not.
+- If `ephemeral` is set to `false`, which is the default value, `odo` creates a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) (with the default storage class).
+- If `ephemeral` is set to `true`, `odo` translates it into an [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume, tied to the lifetime of the Pod.
 
 <details>
 <summary>Example</summary>
@@ -618,21 +644,36 @@ If the Volume is mounted in the Devfile container component, the corresponding K
 
 ```yaml
 metadata:
-  # highlight-next-line
-  name: my-sample-java-springboot
+   # highlight-next-line
+   name: my-sample-java-springboot
 components:
-- name: tools
-  container:
-     image: quay.io/eclipse/che-java11-maven
-     # highlight-next-line
-     mountSources: true
+   - name: tools
+     container:
+        # highlight-start
+        volumeMounts:
+           - name: ephemeral-data
+             path: /tmp
+           - name: m2
+             path: /home/user/.m2
+        # highlight-end
+        image: quay.io/eclipse/che-java11-maven
+        mountSources: false
+   - name: m2
+      # highlight-start
+     volume:
+        size: 3Gi
+      # highlight-end
+   - name: ephemeral-data
+      # highlight-start
+     volume:
+        ephemeral: true
+        size: 1Gi
+        # highlight-end
 ```
 </td>
 <td> => </td>
 <td>
 
-* With `Ephemeral` Setting set to `false` (default)
-
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -649,10 +690,13 @@ spec:
                # highlight-start
                - name: odo-shared-data
                  emptyDir: {}
-               - name: odo-projects
+               - name: ephemeral-data
+                 emptyDir:
+                    sizeLimit: 1Gi
+               - name: m2-my-sample-java-springboot-app-vol
                  persistentVolumeClaim:
                     # odo also creates and manages this PVC
-                    claimName: odo-projects-my-sample-java-springboot-app
+                    claimName: m2-my-sample-java-springboot-app
                # highlight-end
             containers:
                - name: tools
@@ -660,79 +704,70 @@ spec:
                  volumeMounts:
                     - name: odo-shared-data
                       mountPath: /opt/odo/
-                    - name: odo-projects
-                      mountPath: /projects
+                    - name: ephemeral-data
+                      mountPath: /tmp
+                    - name: m2-my-sample-java-springboot-app-vol
+                      mountPath: /home/user/.m2
                  # highlight-end
 ```
-
----
-
-* With `Ephemeral` Setting set to `true`
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-   # highlight-next-line
-   name: my-sample-java-springboot-app
-spec:
-    template:
-        metadata:
-            # highlight-next-line
-            name: my-sample-java-springboot-app
-        spec:
-            volumes:
-               # highlight-start
-               - name: odo-shared-data
-                 emptyDir: {}
-               - name: odo-projects
-                 emptyDir: {}
-               # highlight-end
-            containers:
-               - name: tools
-                 # highlight-start
-                 volumeMounts:
-                    - name: odo-shared-data
-                      mountPath: /opt/odo/
-                    - name: odo-projects
-                      mountPath: /projects
-                 # highlight-end
-```
-
 </td>
 </tr>
+</tbody>
+</table>
 
+</details>
+
+
+##### Project Sources
+
+As mentioned in [how `odo dev` works](#how-odo-dev-works), `odo` is able to perform a one-way synchronization of the local source code, i.e., from the developer machine to the development pod running in the cluster.
+This is done via a Volume, named `odo-projects`, mounted in the container.
+
+However, this is subject to two things:
+- the value of the `mountSources` flag (default value is `true`) in the Devfile container component. Project sources are not mounted in the container if this is set to `false`.
+  Note that odo requires at least one component in the Devfile to set `mountSources: true` in order to synchronize files.
+- the type of volume created depends on the [configuration of `odo`](../../overview/configure#preference-key-table), and more specifically on the value of the `Ephemeral` setting:
+  - if `Ephemeral` is `false`, which is the default setting, `odo` creates a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) (with the default storage class)
+  - if `Ephemeral` is `true`, `odo` creates an [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume, tied to the lifetime of the Pod.
+
+| Volume name      | Volume Type                                                                                                                                                                                                                                                                                              | Mount Path                                                                     | Description                                   |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|-----------------------------------------------|
+| `odo-projects`   | [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) if [`Ephemeral`](../../overview/configure#preference-key-table) preference is `false`, <br/>[`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) otherwise. | Value of `component[].container.sourceMapping` (default value is `/projects`). | Used for project source code synchronization. |
+
+<details>
+<summary>Examples</summary>
+
+* with `mountSources: true` and `Ephemeral` preference set to `false` (default value):
+
+<table>
+<thead>
+<tr>
+<td>Devfile</td>
+<td></td>
+<td>Kubernetes Deployment</td>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td>
 
-* With a `volume` component
-
 ```yaml
 metadata:
-  # highlight-next-line
-  name: my-sample-java-springboot
+   # highlight-next-line
+   name: my-sample-java-springboot
 components:
-- name: tools
-  container:
-     # highlight-start
-     volumeMounts:
-        - name: m2
-          path: /home/user/.m2
-     # highlight-end
-     image: quay.io/eclipse/che-java11-maven
-     mountSources: true
-- name: m2
-  # highlight-start
-  volume:
-     size: 3Gi
-  # highlight-end
+   - name: tools
+     container:
+        image: quay.io/eclipse/che-java11-maven
+        # highlight-start
+        mountSources: true
+        sourceMapping: /my-code
+        # highlight-end
 ```
 </td>
 <td> => </td>
 <td>
 
-* With `Ephemeral` Setting set to `false` (default)
-
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -745,75 +780,236 @@ spec:
             # highlight-next-line
             name: my-sample-java-springboot-app
         spec:
-            volumes:
-               # highlight-start
-               - name: odo-shared-data
-                 emptyDir: {}
-               - name: odo-projects
-                 persistentVolumeClaim:
-                    # odo also creates and manages this PVC
-                    claimName: odo-projects-my-sample-java-springboot-app
-               - name: m2-my-sample-java-springboot-app-vol
-                 persistentVolumeClaim:
-                    # odo also creates and manages this PVC
-                    claimName: m2-my-sample-java-springboot-app
-               # highlight-end
-            containers:
-               - name: tools
+           volumes:
+              # highlight-start
+              - name: odo-shared-data
+                emptyDir: {}
+              - name: odo-projects
+                persistentVolumeClaim:
+                   # odo also creates and manages this PVC
+                   claimName: odo-projects-my-sample-java-springboot-app
+              # highlight-end
+           containers:
+              - name: tools
+                env:
+                   - name: PROJECTS_ROOT
+                     value: /my-code
+                   - name: PROJECT_SOURCE
+                     value: /my-code
                  # highlight-start
-                 volumeMounts:
-                    - name: odo-shared-data
-                      mountPath: /opt/odo/
-                    - name: odo-projects
-                      mountPath: /projects
-                    - name: m2-my-sample-java-springboot-app-vol
-                      mountPath: /home/user/.m2
+                volumeMounts:
+                   - name: odo-shared-data
+                     mountPath: /opt/odo/
+                   - name: odo-projects
+                     mountPath: /my-code
                  # highlight-end
 ```
-
----
-
-* With `Ephemeral` Setting set to `true`
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-   # highlight-next-line
-   name: my-sample-java-springboot-app
-spec:
-    template:
-        metadata:
-            # highlight-next-line
-            name: my-sample-java-springboot-app
-        spec:
-            volumes:
-               # highlight-start
-               - name: odo-shared-data
-                 emptyDir: {}
-               - name: odo-projects
-                 emptyDir: {}
-               - name: m2-my-sample-java-springboot-app-vol
-                 persistentVolumeClaim:
-                    # odo also creates and manages this PVC
-                    claimName: m2-my-sample-java-springboot-app
-               # highlight-end
-            containers:
-               - name: tools
-                 # highlight-start
-                 volumeMounts:
-                    - name: odo-shared-data
-                      mountPath: /opt/odo/
-                    - name: odo-projects
-                      mountPath: /projects
-                    - name: m2-my-sample-java-springboot-app-vol
-                      mountPath: /home/user/.m2
-                 # highlight-end
-```
-
 </td>
 </tr>
+</tbody>
+</table>
 
+
+---
+* with `mountSources: true` and `Ephemeral` setting set to `true`:
+
+<table>
+<thead>
+<tr>
+<td>Devfile</td>
+<td></td>
+<td>Kubernetes Deployment</td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+
+```yaml
+metadata:
+   # highlight-next-line
+   name: my-sample-java-springboot
+components:
+   - name: tools
+     container:
+        image: quay.io/eclipse/che-java11-maven
+        # highlight-start
+        mountSources: true
+        sourceMapping: /my-code
+        # highlight-end
+```
+</td>
+<td> => </td>
+<td>
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   # highlight-next-line
+   name: my-sample-java-springboot-app
+spec:
+    template:
+        metadata:
+            # highlight-next-line
+            name: my-sample-java-springboot-app
+        spec:
+           volumes:
+              # highlight-start
+              - name: odo-shared-data
+                emptyDir: {}
+              - name: odo-projects
+                emptyDir: {}
+              # highlight-end
+           containers:
+              - name: tools
+                env:
+                   - name: PROJECTS_ROOT
+                     value: /my-code
+                   - name: PROJECT_SOURCE
+                     value: /my-code
+                 # highlight-start
+                volumeMounts:
+                   - name: odo-shared-data
+                     mountPath: /opt/odo/
+                   - name: odo-projects
+                     mountPath: /my-code
+                 # highlight-end
+```
+</td>
+</tr>
+</tbody>
+</table>
+
+---
+* with `mountSources: false` and `Ephemeral` preference set to `false`. 
+Note that odo requires at least one component in the Devfile to set `mountSources: true` in order to synchronize files.
+
+<table>
+<thead>
+<tr>
+<td>Devfile</td>
+<td></td>
+<td>Kubernetes Deployment</td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+
+```yaml
+metadata:
+   # highlight-next-line
+   name: my-sample-java-springboot
+components:
+   - name: tools
+     container:
+        image: quay.io/eclipse/che-java11-maven
+        # highlight-start
+        mountSources: false
+        sourceMapping: /my-code
+        # highlight-end
+```
+</td>
+<td> => </td>
+<td>
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   # highlight-next-line
+   name: my-sample-java-springboot-app
+spec:
+    template:
+        metadata:
+            # highlight-next-line
+            name: my-sample-java-springboot-app
+        spec:
+           volumes:
+              # highlight-start
+              - name: odo-shared-data
+                emptyDir: {}
+              - name: odo-projects
+                persistentVolumeClaim:
+                   # odo also creates and manages this PVC
+                   claimName: odo-projects-my-sample-java-springboot-app
+              # highlight-end
+           containers:
+              - name: tools
+                 # highlight-start
+                volumeMounts:
+                   - name: odo-shared-data
+                     mountPath: /opt/odo/
+                 # highlight-end
+```
+</td>
+</tr>
+</tbody>
+</table>
+
+---
+* with `mountSources: false` and `Ephemeral` preference set to `true`.
+Note that odo requires at least one component in the Devfile to set `mountSources: true` in order to synchronize files.
+
+<table>
+<thead>
+<tr>
+<td>Devfile</td>
+<td></td>
+<td>Kubernetes Deployment</td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+
+```yaml
+metadata:
+   # highlight-next-line
+   name: my-sample-java-springboot
+components:
+   - name: tools
+     container:
+        image: quay.io/eclipse/che-java11-maven
+        # highlight-start
+        mountSources: false
+        sourceMapping: /my-code
+        # highlight-end
+```
+</td>
+<td> => </td>
+<td>
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   # highlight-next-line
+   name: my-sample-java-springboot-app
+spec:
+    template:
+        metadata:
+            # highlight-next-line
+            name: my-sample-java-springboot-app
+        spec:
+           volumes:
+              # highlight-start
+              - name: odo-shared-data
+                emptyDir: {}
+              - name: odo-projects
+                emptyDir: {}
+              # highlight-end
+           containers:
+              - name: tools
+                 # highlight-start
+                volumeMounts:
+                   - name: odo-shared-data
+                     mountPath: /opt/odo/
+                 # highlight-end
+```
+</td>
+</tr>
 </tbody>
 </table>
 
@@ -827,10 +1023,12 @@ spec:
 
 By default, `odo` adds the following annotations to the Service:
 
-| Key                                 | Value                                                                                             | Description                                                                                                                                                                                                                                                                                       |
-|-------------------------------------|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `service.binding/backend_ip`        | `path={.spec.clusterIP}`                                                                          | exposes the Service `clusterIP` address as binding data, so this can be used as a backing service via the Service Binding Operator (SBO). More details on [SBO documentation](https://redhat-developer.github.io/service-binding-operator/userguide/exposing-binding-data/adding-annotation.html) |
-| `service.binding/backend_port`      | `path={.spec.ports},`<br/>`elementType=sliceOfMaps,`<br/>`sourceKey=name,`<br/>`sourceValue=port` | exposes the Service ports as binding data, so this can be used as a backing service via the Service Binding Operator (SBO). More details on [SBO documentation](https://redhat-developer.github.io/service-binding-operator/userguide/exposing-binding-data/adding-annotation.html)               |
+| Key                                 | Value                                                                                             | Description                                                                                                                                                                                                                                                                                             |
+|-------------------------------------|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `service.binding/backend_ip`        | `path={.spec.clusterIP}`                                                                          | exposes the Service `clusterIP` address as binding data, so that this can be used as a backing service via the Service Binding Operator (SBO). More details on [SBO documentation](https://redhat-developer.github.io/service-binding-operator/userguide/exposing-binding-data/adding-annotation.html). |
+| `service.binding/backend_port`      | `path={.spec.ports},`<br/>`elementType=sliceOfMaps,`<br/>`sourceKey=name,`<br/>`sourceValue=port` | exposes the Service ports as binding data, so this can be used as a backing service via the Service Binding Operator (SBO). More details on [SBO documentation](https://redhat-developer.github.io/service-binding-operator/userguide/exposing-binding-data/adding-annotation.html).                    |
+
+See [this blog post](/blog/binding-external-service-with-odo-v3/#adding-sbo-annotations-to-the-service-resource) for more details about binding external services.
 
 Note that any additional annotations defined via the `components[].container.annotation.service` Devfile field will also be added to this resource.
 
@@ -854,8 +1052,8 @@ Note that any additional annotations defined via the `components[].container.ann
 metadata:
   # highlight-start
   name: my-sample-java-springboot
-  projectType: spring
   # highlight-end
+  projectType: spring
   language: java
 components:
 - name: tools
@@ -885,7 +1083,6 @@ metadata:
 spec:
    type: ClusterIP
    selector:
-      # highlight-next-line
       component: my-sample-java-springboot-app
 ```
 </td>
@@ -898,19 +1095,7 @@ spec:
 
 #### Labels
 
-By default, `odo` adds the following labels to the Service:
-
-| Key                                    | Description                                                                                                                                          | Example Value       |
-|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
-| `app`                                  | the application; always `app`                                                                                                                        | `app`               |
-| `app.kubernetes.io/instance`           | the component name                                                                                                                                   | `my-component-name` |
-| `app.kubernetes.io/managed-by`         | the tool used to create this resource; always `odo`                                                                                                  | `odo`               |
-| `app.kubernetes.io/managed-by-version` | the version of the odo binary used to create this resource                                                                                           | `v3.0.0-rc1`        |
-| `app.kubernetes.io/part-of`            | the higher-level application using this resource; always `app`                                                                                       | `app`               |
-| `app.openshift.io/runtime`             | the application runtime, if available. Optional. Value is read in order from the `metadata.projectType` or `metadata.language` fields in the Devfile | `spring`            |
-| `component`                            | the component name                                                                                                                                   | `my-component-name` |
-| `odo.dev/mode`                         | in which mode the component is running. Possible values: `Dev`, `Deploy`                                                                             | `Dev`               |
-
+By default, `odo` adds the labels mentioned in the [Resource Labels](#resource-labels) section.
 
 <details>
 <summary>Example</summary>
@@ -954,7 +1139,7 @@ metadata:
       app: app
       app.kubernetes.io/instance: my-sample-java-springboot
       app.kubernetes.io/managed-by: odo
-      app.kubernetes.io/managed-by-version: v3.0.0-rc1
+      app.kubernetes.io/managed-by-version: v3.0.0
       app.kubernetes.io/part-of: app
       app.openshift.io/runtime: spring
       component: my-sample-java-springboot
@@ -1169,7 +1354,7 @@ metadata:
     app: app
     app.kubernetes.io/instance: my-sample-java-springboot
     app.kubernetes.io/managed-by: odo
-    app.kubernetes.io/managed-by-version: v3.0.0-rc1
+    app.kubernetes.io/managed-by-version: v3.0.0
     app.kubernetes.io/part-of: app
     app.openshift.io/runtime: spring
     component: my-sample-java-springboot
@@ -1193,7 +1378,7 @@ spec:
         app: app
         app.kubernetes.io/instance: my-sample-java-springboot
         app.kubernetes.io/managed-by: odo
-        app.kubernetes.io/managed-by-version: v3.0.0-rc1
+        app.kubernetes.io/managed-by-version: v3.0.0
         app.kubernetes.io/part-of: app
         app.openshift.io/runtime: spring
         component: my-sample-java-springboot
@@ -1282,7 +1467,7 @@ metadata:
     app: app
     app.kubernetes.io/instance: my-sample-java-springboot
     app.kubernetes.io/managed-by: odo
-    app.kubernetes.io/managed-by-version: v3.0.0-rc1
+    app.kubernetes.io/managed-by-version: v3.0.0
     app.kubernetes.io/part-of: app
     app.openshift.io/runtime: spring
     component: my-sample-java-springboot
@@ -1322,7 +1507,7 @@ metadata:
     app: app
     app.kubernetes.io/instance: my-sample-java-springboot
     app.kubernetes.io/managed-by: odo
-    app.kubernetes.io/managed-by-version: v3.0.0-rc1
+    app.kubernetes.io/managed-by-version: v3.0.0
     app.kubernetes.io/part-of: app
     app.kubernetes.io/storage-name: odo-projects
     app.openshift.io/runtime: spring
@@ -1345,7 +1530,7 @@ spec:
       storage: 2Gi
 ```
 
-* PersistentVolumeClaim for the `volume` component:
+* PersistentVolumeClaim for the non-ephemeral `volume` component:
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -1356,7 +1541,7 @@ metadata:
     app: app
     app.kubernetes.io/instance: my-sample-java-springboot
     app.kubernetes.io/managed-by: odo
-    app.kubernetes.io/managed-by-version: v3.0.0-rc1
+    app.kubernetes.io/managed-by-version: v3.0.0
     app.kubernetes.io/part-of: app
     app.kubernetes.io/storage-name: m2
     app.openshift.io/runtime: spring
