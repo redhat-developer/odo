@@ -16,26 +16,23 @@ import (
 	"k8s.io/klog"
 )
 
-// New instantiates a component adapter
-func New(syncClient SyncExtracter, kubeClient kclient.ClientInterface, componentName string) Adapter {
-	return Adapter{
-		kubeClient:    kubeClient,
-		SyncExtracter: syncClient,
-		ComponentName: componentName,
-	}
-}
-
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
 	kubeClient    kclient.ClientInterface
 	SyncExtracter SyncExtracter
-	ComponentName string
 }
 
-//var _ SyncExtracter = (*Adapter)(nil)
+// New instantiates a component adapter
+func New(syncClient SyncExtracter, kubeClient kclient.ClientInterface) Adapter {
+	return Adapter{
+		kubeClient:    kubeClient,
+		SyncExtracter: syncClient,
+	}
+}
 
 // ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and source mount (if applicable)
 type ComponentInfo struct {
+	ComponentName string
 	PodName       string
 	ContainerName string
 	SyncFolder    string
@@ -178,7 +175,7 @@ func (a Adapter) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		ret,
 	)
 	if err != nil {
-		return false, fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
+		return false, fmt.Errorf("failed to sync to component with name %s: %w", syncParameters.CompInfo.ComponentName, err)
 	}
 	if forceWrite {
 		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
@@ -192,7 +189,7 @@ func (a Adapter) SyncFiles(syncParameters SyncParameters) (bool, error) {
 
 // pushLocal syncs source code from the user's disk to the component
 func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, ret util.IndexerRet) error {
-	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
+	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", compInfo.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := dfutil.IsEmpty(path)

@@ -192,8 +192,9 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	podChanged := componentStatus.State == watch.StateWaitDeployment
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
+	syncAdapter := sync.New(&a, a.kubeClient)
 	compInfo := sync.ComponentInfo{
+		ComponentName: a.ComponentName,
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,

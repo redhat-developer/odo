@@ -174,6 +174,7 @@ func TestSyncFiles(t *testing.T) {
 				IgnoredFiles:      []string{},
 				ForceBuild:        false,
 				CompInfo: ComponentInfo{
+					ComponentName: testComponentName,
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
@@ -184,7 +185,7 @@ func TestSyncFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncAdapter := New(tt.client, kc, testComponentName)
+			syncAdapter := New(tt.client, kc)
 			isPushRequired, err := syncAdapter.SyncFiles(tt.syncParameters)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestSyncFiles error: unexpected error when syncing files %v", err)
@@ -312,6 +313,7 @@ func TestPushLocal(t *testing.T) {
 			delFiles:    []string{},
 			isForcePush: false,
 			compInfo: ComponentInfo{
+				ComponentName: testComponentName,
 				ContainerName: "abcd",
 				SyncFolder:    "/some/path",
 			},
@@ -320,7 +322,7 @@ func TestPushLocal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncAdapter := New(syncClient, kc, testComponentName)
+			syncAdapter := New(syncClient, kc)
 			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)
