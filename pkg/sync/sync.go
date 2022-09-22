@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -19,7 +18,7 @@ import (
 )
 
 type SyncExtracter interface {
-	ExtractProjectToComponent(adapters.ComponentInfo, string, io.Reader) error
+	ExtractProjectToComponent(ComponentInfo, string, io.Reader) error
 }
 
 // CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
@@ -27,7 +26,7 @@ type SyncExtracter interface {
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func CopyFile(extracter SyncExtracter, localPath string, compInfo adapters.ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
+func CopyFile(extracter SyncExtracter, localPath string, compInfo ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
 
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.

@@ -9,7 +9,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -33,12 +32,36 @@ type Adapter struct {
 	ComponentName string
 }
 
+//var _ SyncExtracter = (*Adapter)(nil)
+
+// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and source mount (if applicable)
+type ComponentInfo struct {
+	PodName       string
+	ContainerName string
+	SyncFolder    string
+}
+
+// SyncParameters is a struct containing the parameters to be used when syncing a devfile component
+type SyncParameters struct {
+	Path                     string   // Path refers to the parent folder containing the source code to push up to a component
+	WatchFiles               []string // Optional: WatchFiles is the list of changed files detected by odo watch. If empty or nil, odo will check .odo/odo-file-index.json to determine changed files
+	WatchDeletedFiles        []string // Optional: WatchDeletedFiles is the list of deleted files detected by odo watch. If empty or nil, odo will check .odo/odo-file-index.json to determine deleted files
+	IgnoredFiles             []string // IgnoredFiles is the list of files to not push up to a component
+	ForceBuild               bool     // ForceBuild determines whether or not to push all of the files up to a component or just files that have changed, added or removed.
+	DevfileScanIndexForWatch bool     // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See 'pkg/sync/adapter.go' for details
+
+	CompInfo        ComponentInfo
+	PodChanged      bool
+	ComponentExists bool
+	Files           map[string]string
+}
+
 // SyncFiles does a couple of things:
 // if files changed/deleted are passed in from watch, it syncs them to the component
 // otherwise, it checks which files have changed and syncs the delta
 // it returns a boolean execRequired and an error. execRequired tells us if files have
 // changed and devfile execution is required
-func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error) {
+func (a Adapter) SyncFiles(syncParameters SyncParameters) (bool, error) {
 
 	// Whether to write the indexer content to the index file path (resolvePath)
 	forceWrite := false
@@ -168,7 +191,7 @@ func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error)
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo adapters.ComponentInfo, ret util.IndexerRet) error {
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, ret util.IndexerRet) error {
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -221,7 +244,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 // updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
 // the existing index file; the index file is required to exist when this function is called.
-func updateIndexWithWatchChanges(syncParameters adapters.SyncParameters) error {
+func updateIndexWithWatchChanges(syncParameters SyncParameters) error {
 	indexFilePath, err := util.ResolveIndexFilePath(syncParameters.Path)
 
 	if err != nil {

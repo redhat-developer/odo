@@ -61,7 +61,6 @@ type AdapterContext struct {
 	FS            filesystem.Filesystem // FS is the object used for building image component if present
 }
 
-var _ sync.SyncExtracter = (*Adapter)(nil)
 var _ ComponentAdapter = (*Adapter)(nil)
 
 // NewKubernetesAdapter returns a Devfile adapter for the targeted platform
@@ -194,12 +193,12 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
-	compInfo := adapters.ComponentInfo{
+	compInfo := sync.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
-	syncParams := adapters.SyncParameters{
+	syncParams := sync.SyncParameters{
 		Path:                     parameters.Path,
 		WatchFiles:               parameters.WatchFiles,
 		WatchDeletedFiles:        parameters.WatchDeletedFiles,
@@ -583,7 +582,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a Adapter) ExtractProjectToComponent(componentInfo adapters.ComponentInfo, targetPath string, stdin io.Reader) error {
+func (a Adapter) ExtractProjectToComponent(componentInfo sync.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }
 
