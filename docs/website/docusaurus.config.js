@@ -131,7 +131,7 @@ module.exports = {
           lastVersion: 'current',
           versions: {
             current: {
-              label: '3.0.0 (RC 1) 🚧',
+              label: '3.0.0 (RC 2) 🚧',
               badge: true,
               banner: 'none',
             },
