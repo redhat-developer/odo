@@ -9,8 +9,8 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	dfutil "github.com/devfile/library/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
@@ -19,14 +19,16 @@ import (
 // SyncClient is a Kubernetes implementationn for sync
 type SyncClient struct {
 	kubeClient kclient.ClientInterface
+	execClient exec.Client
 }
 
 var _ Client = (*SyncClient)(nil)
 
 // NewSyncClient instantiates a new SyncClient
-func NewSyncClient(kubeClient kclient.ClientInterface) *SyncClient {
+func NewSyncClient(kubeClient kclient.ClientInterface, execClient exec.Client) *SyncClient {
 	return &SyncClient{
 		kubeClient: kubeClient,
+		execClient: execClient,
 	}
 }
 
@@ -184,7 +186,7 @@ func (a SyncClient) pushLocal(path string, files []string, delFiles []string, is
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
+		_, _, err = a.execClient.ExecuteCommand(cmdArr, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -193,7 +195,7 @@ func (a SyncClient) pushLocal(path string, files []string, delFiles []string, is
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
+		_, _, err = a.execClient.ExecuteCommand(cmdArr, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}

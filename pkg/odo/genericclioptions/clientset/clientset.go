@@ -89,7 +89,7 @@ var subdeps map[string][]string = map[string][]string{
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
-	SYNC:             {KUBERNETES},
+	SYNC:             {EXEC, KUBERNETES},
 	WATCH:            {KUBERNETES, DELETE_COMPONENT, STATE},
 	BINDING:          {PROJECT, KUBERNETES},
 	/* Add sub-dependencies here, if any */
@@ -185,7 +185,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.StateClient = state.NewStateClient(dep.FS)
 	}
 	if isDefined(command, SYNC) {
-		dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient)
+		dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient, dep.ExecClient)
 	}
 	if isDefined(command, WATCH) {
 		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.DeleteClient, dep.StateClient)
@@ -197,7 +197,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
 	}
 	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.SyncClient, dep.FS, , dep.ExecClient)
+		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.SyncClient, dep.FS, dep.ExecClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
