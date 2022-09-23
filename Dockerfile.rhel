@@ -1,7 +1,7 @@
 # This Dockerfile builds an image containing the Linux, Mac and Windows version of odo
 # layered on top of the ubi7/ubi image.
 
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.19 AS builder
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.18 AS builder
 
 COPY . /go/src/github.com/redhat-developer/odo
 WORKDIR /go/src/github.com/redhat-developer/odo
