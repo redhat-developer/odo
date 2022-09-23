@@ -1,4 +1,4 @@
-FROM golang:1.17
+FROM golang:1.19
 
 RUN curl -fsSL https://clis.cloud.ibm.com/install/linux | sh && \
     curl -sLO https://github.com/cli/cli/releases/download/v2.1.0/gh_2.1.0_linux_amd64.deb && \

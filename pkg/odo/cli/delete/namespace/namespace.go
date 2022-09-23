@@ -3,19 +3,18 @@ package namespace
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"os"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const RecommendedCommandName = "namespace"
@@ -93,8 +92,9 @@ func (do *DeleteOptions) Run(ctx context.Context) error {
 		}
 		s.End(true)
 
+		caser := cases.Title(language.Und)
 		successMessage := fmt.Sprintf(`%s %q deleted`,
-			strings.Title(do.commandName), do.namespaceName)
+			caser.String(do.commandName), do.namespaceName)
 		log.Successf(successMessage)
 
 		return nil

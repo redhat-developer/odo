@@ -2,8 +2,9 @@ package integration
 
 import (
 	"fmt"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/redhat-developer/odo/tests/helper"
@@ -68,8 +69,9 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 					if nsCheckerFunc != nil {
 						nsCheckerFunc()
 					}
+					caser := cases.Title(language.Und)
 					Expect(out).To(
-						ContainSubstring(fmt.Sprintf("%s %q deleted", strings.Title(commandName), namespace)))
+						ContainSubstring(fmt.Sprintf("%s %q deleted", caser.String(commandName), namespace)))
 				}
 
 				It(fmt.Sprintf("should successfully delete the %s asynchronously", commandName), func() {
