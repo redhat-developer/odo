@@ -10,6 +10,39 @@ directory.
 If you haven't already done so, you must [initialize](../command-reference/init) your source code with the `odo 
 init` command. 
 
+```shell
+odo logs [--follow] [--dev | --deploy]
+```
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo logs
+runtime: npm WARN nodejs-starter@1.0.0 No repository field.
+runtime:
+runtime: added 64 packages from 57 contributors and audited 64 packages in 7.761s
+runtime: found 0 vulnerabilities
+runtime:
+runtime:
+runtime: > nodejs-starter@1.0.0 start /projects
+runtime: > node server.js
+runtime:
+runtime: App started on PORT 3000
+main: Wed Sep 21 08:26:27 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:26:32 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:26:37 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:26:42 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:26:47 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:26:52 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:26:57 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:27:02 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:27:07 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:27:12 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:27:17 UTC 2022 - this is infinite while loop
+main: Wed Sep 21 08:27:22 UTC 2022 - this is infinite while loop
+```
+</details>
+
 `odo logs` command can be used with the following flags:
 * Use `odo logs --dev` to see the logs for the containers created by `odo dev` command.
 * Use `odo logs --deploy` to see the logs for the containers created by `odo deploy` command.

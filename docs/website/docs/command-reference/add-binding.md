@@ -74,7 +74,7 @@ In the non-interactive mode, you will have to specify the following required inf
   Refer to [this page](https://docs.openshift.com/container-platform/4.10/applications/connecting_applications_to_services/binding-workloads-using-sbo.html#sbo-naming-strategies_binding-workloads-using-sbo) for more details on naming strategies.
 
 ```shell
-odo add binding --name <name> --service <service-name> [--service-namespace NAMESPACE] [--bind-as-files] [--naming-strategy [none | lowercase | uppercase]]
+odo add binding --name <name> --service <service-name> [--service-namespace NAMESPACE] [--bind-as-files {true, false}] [--naming-strategy {none, lowercase, uppercase}]
 ```
 <details>
 <summary>Example</summary>
