@@ -224,8 +224,8 @@ var _ = Describe("odo init interactive command tests", func() {
 				}
 
 				language := "Python"
-				projectType := "Django"
-				devfileName := "python-django"
+				projectType := "Flask"
+				devfileName := "python"
 				welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
