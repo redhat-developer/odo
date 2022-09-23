@@ -151,6 +151,7 @@ func TestSetFlags(t *testing.T) {
 				flags: func() *pflag.FlagSet {
 					f := &pflag.FlagSet{}
 					f.String("flag1", "", "")
+					//nolint:errcheck
 					f.Set("flag1", "value1")
 					return f
 				}(),
@@ -165,6 +166,7 @@ func TestSetFlags(t *testing.T) {
 					f := &pflag.FlagSet{}
 					f.String("flag1", "", "")
 					f.String("flag2", "", "")
+					//nolint:errcheck
 					f.Set("flag2", "value1")
 					return f
 				}(),
@@ -179,7 +181,9 @@ func TestSetFlags(t *testing.T) {
 					f := &pflag.FlagSet{}
 					f.String("flag1", "", "")
 					f.String("flag2", "", "")
+					//nolint:errcheck
 					f.Set("flag1", "value1")
+					//nolint:errcheck
 					f.Set("flag2", "value1")
 					return f
 				}(),
