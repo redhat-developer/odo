@@ -47,6 +47,7 @@ type Adapter struct {
 	prefClient        preference.Client
 	portForwardClient portForward.Client
 	bindingClient     binding.Client
+	syncClient        sync.Client
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -61,7 +62,6 @@ type AdapterContext struct {
 	FS            filesystem.Filesystem // FS is the object used for building image component if present
 }
 
-var _ sync.SyncClient = (*Adapter)(nil)
 var _ ComponentAdapter = (*Adapter)(nil)
 
 // NewKubernetesAdapter returns a Devfile adapter for the targeted platform
@@ -70,6 +70,7 @@ func NewKubernetesAdapter(
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
 	bindingClient binding.Client,
+	syncClient sync.Client,
 	context AdapterContext,
 ) Adapter {
 	return Adapter{
@@ -77,6 +78,7 @@ func NewKubernetesAdapter(
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
 		bindingClient:     bindingClient,
+		syncClient:        syncClient,
 		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 	}
@@ -193,21 +195,27 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	podChanged := componentStatus.State == watch.StateWaitDeployment
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
-	compInfo := adapters.ComponentInfo{
+	compInfo := sync.ComponentInfo{
+		ComponentName: a.ComponentName,
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
-	syncParams := adapters.SyncParameters{
-		PushParams:      parameters,
-		CompInfo:        compInfo,
-		ComponentExists: deploymentExists,
-		PodChanged:      podChanged,
-		Files:           getSyncFilesFromAttributes(pushDevfileCommands),
+
+	syncParams := sync.SyncParameters{
+		Path:                     parameters.Path,
+		WatchFiles:               parameters.WatchFiles,
+		WatchDeletedFiles:        parameters.WatchDeletedFiles,
+		IgnoredFiles:             parameters.IgnoredFiles,
+		DevfileScanIndexForWatch: parameters.DevfileScanIndexForWatch,
+		SyncExtracter:            a.ExtractProjectToComponent,
+
+		CompInfo:  compInfo,
+		ForcePush: !deploymentExists || podChanged,
+		Files:     getSyncFilesFromAttributes(pushDevfileCommands),
 	}
 
-	execRequired, err := syncAdapter.SyncFiles(syncParams)
+	execRequired, err := a.syncClient.SyncFiles(syncParams)
 	if err != nil {
 		componentStatus.State = watch.StateReady
 		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
@@ -577,7 +585,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a Adapter) ExtractProjectToComponent(componentInfo adapters.ComponentInfo, targetPath string, stdin io.Reader) error {
+func (a Adapter) ExtractProjectToComponent(componentInfo sync.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }
 

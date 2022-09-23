@@ -1,367 +1,448 @@
 package sync
 
 import (
-	taro "archive/tar"
-	"bytes"
-	"io"
+	"errors"
+	io "io"
+	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/golang/mock/gomock"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
-func Test_linearTar(t *testing.T) {
-	// FileType custom type to indicate type of file
-	type FileType int
-
-	const (
-		// RegularFile enum to represent regular file
-		RegularFile FileType = 0
-		// Directory enum to represent directory
-		Directory FileType = 1
-	)
-
-	fs := filesystem.NewFakeFs()
-
-	type args struct {
-		srcBase  string
-		srcFile  string
-		destBase string
-		destFile string
-		data     string
-	}
+func TestGetCmdToCreateSyncFolder(t *testing.T) {
 	tests := []struct {
-		name          string
-		args          args
-		fileType      FileType
-		notExistError bool
-		wantErr       bool
+		name       string
+		syncFolder string
+		want       []string
 	}{
 		{
-			name: "case 1: write a regular file",
-			args: args{
-				srcBase:  filepath.Join("tmp", "dir1"),
-				srcFile:  "red.js",
-				destBase: filepath.Join("tmp1", "dir2"),
-				destFile: "red.js",
-				data:     "hi",
-			},
-			fileType: RegularFile,
-			wantErr:  false,
+			name:       "Case 1: Sync to /projects",
+			syncFolder: generator.DevfileSourceVolumeMount,
+			want:       []string{"mkdir", "-p", generator.DevfileSourceVolumeMount},
 		},
 		{
-			name: "case 2: write a folder",
-			args: args{
-				srcBase:  filepath.Join("tmp", "dir1"),
-				srcFile:  "dir0",
-				destBase: filepath.Join("tmp1", "dir2"),
-				destFile: "dir2",
-			},
-			fileType: Directory,
-			wantErr:  false,
-		},
-		{
-			name: "case 3: file source doesn't exist",
-			args: args{
-				srcBase:  filepath.Join("tmp", "dir1"),
-				srcFile:  "red.js",
-				destBase: filepath.Join("tmp1", "dir2"),
-				destFile: "red.js",
-				data:     "hi",
-			},
-			fileType:      RegularFile,
-			notExistError: true,
-			wantErr:       true,
-		},
-		{
-			name: "case 4: folder source doesn't exist",
-			args: args{
-				srcBase:  filepath.Join("tmp", "dir1"),
-				srcFile:  "dir0",
-				destBase: filepath.Join("tmp1", "dir2"),
-				destFile: "dir2",
-			},
-			fileType:      Directory,
-			notExistError: true,
-			wantErr:       true,
-		},
-		{
-			name: "case 5: dest is empty",
-			args: args{
-				srcBase:  filepath.Join("tmp", "dir1"),
-				srcFile:  "dir0",
-				destBase: "",
-				destFile: "",
-			},
-			fileType: Directory,
-			wantErr:  true,
+			name:       "Case 2: Sync subdir of /projects",
+			syncFolder: generator.DevfileSourceVolumeMount + "/someproject",
+			want:       []string{"mkdir", "-p", generator.DevfileSourceVolumeMount + "/someproject"},
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			filepath := path.Join(tt.args.srcBase, tt.args.srcFile)
-
-			if tt.fileType == RegularFile {
-				f, err := fs.Create(filepath)
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				if _, err := io.Copy(f, bytes.NewBuffer([]byte(tt.args.data))); err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				defer f.Close()
-			} else {
-				if err := fs.MkdirAll(filepath, 0755); err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-			}
-
-			if tt.notExistError == true {
-				tt.args.srcBase += "blah"
-			}
-
-			reader, writer := io.Pipe()
-			defer reader.Close()
-			defer writer.Close()
-
-			tarWriter := taro.NewWriter(writer)
-
-			go func() {
-				defer tarWriter.Close()
-				if err := linearTar(tt.args.srcBase, tt.args.srcFile, tt.args.destBase, tt.args.destFile, tarWriter, fs); (err != nil) != tt.wantErr {
-					t.Errorf("linearTar() error = %v, wantErr %v", err, tt.wantErr)
-				}
-			}()
-
-			tarReader := taro.NewReader(reader)
-			for {
-				hdr, err := tarReader.Next()
-				if err == io.EOF {
-					break
-				} else if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-
-				if hdr.Name != tt.args.destFile {
-					t.Errorf("expected %q as destination filename, saw: %q", tt.args.destFile, hdr.Name)
-				}
-			}
-		})
+		cmdArr := getCmdToCreateSyncFolder(tt.syncFolder)
+		if !reflect.DeepEqual(tt.want, cmdArr) {
+			t.Errorf("Expected %s, got %s", tt.want, cmdArr)
+		}
 	}
 }
 
-func Test_makeTar(t *testing.T) {
-	fs := filesystem.NewFakeFs()
+func TestGetCmdToDeleteFiles(t *testing.T) {
+	syncFolder := "/projects/hello-world"
 
-	dir0, err := fs.TempDir("", "dir0")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	_, err = fs.Create(filepath.Join(dir0, "red.js"))
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	_, err = fs.Create(filepath.Join(dir0, "README.txt"))
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	err = fs.MkdirAll(filepath.Join(dir0, "views"), 0644)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	_, err = fs.Create(filepath.Join(dir0, "views", "view.html"))
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	type args struct {
-		srcPath  string
-		destPath string
-		files    []string
-		globExps []string
-		ret      util.IndexerRet
-	}
 	tests := []struct {
-		name      string
-		args      args
-		wantFiles map[string]bool
-		wantErr   bool
+		name       string
+		delFiles   []string
+		syncFolder string
+		want       []string
 	}{
 		{
-			name: "case 1: normal tar making",
-			args: args{
-				srcPath:  dir0,
-				destPath: filepath.Join("tmp", "dir1"),
-				files: []string{
-					filepath.Join(dir0, "red.js"),
-					filepath.Join(dir0, "README.txt"),
-					filepath.Join(dir0, "views"),
-					filepath.Join(dir0, "views", "view.html")},
-				globExps: []string{},
-				ret: util.IndexerRet{
-					NewFileMap: map[string]util.FileData{
-						"red.js": {
-							RemoteAttribute: "red.js",
-						},
-						"README.txt": {
-							RemoteAttribute: "README.txt",
-						},
-						"views": {
-							RemoteAttribute: "views",
-						},
-						filepath.Join("views", "view.html"): {
-							RemoteAttribute: "views/view.html",
-						},
-					},
-				},
-			},
-			wantFiles: map[string]bool{
-				"red.js":          true,
-				"views/view.html": true,
-				"README.txt":      true,
-			},
+			name:       "Case 1: One deleted file",
+			delFiles:   []string{"test.txt"},
+			syncFolder: generator.DevfileSourceVolumeMount,
+			want:       []string{"rm", "-rf", generator.DevfileSourceVolumeMount + "/test.txt"},
 		},
 		{
-			name: "case 2: normal tar making with matching glob expression",
-			args: args{
-				srcPath:  dir0,
-				destPath: filepath.Join("tmp", "dir1"),
-				files: []string{
-					filepath.Join(dir0, "red.js"),
-					filepath.Join(dir0, "README.txt"),
-					filepath.Join(dir0, "views"),
-					filepath.Join(dir0, "views", "view.html")},
-				globExps: []string{"README.txt"},
-				ret: util.IndexerRet{
-					NewFileMap: map[string]util.FileData{
-						"red.js": {
-							RemoteAttribute: "red.js",
-						},
-						"README.txt": {
-							RemoteAttribute: "README.txt",
-						},
-						"views": {
-							RemoteAttribute: "views",
-						},
-						filepath.Join("views", "view.html"): {
-							RemoteAttribute: "views/view.html",
-						},
-					},
-				},
-			},
-			wantFiles: map[string]bool{
-				"red.js":          true,
-				"views/view.html": true,
-			},
+			name:       "Case 2: Multiple deleted files, default sync folder",
+			delFiles:   []string{"test.txt", "hello.c"},
+			syncFolder: generator.DevfileSourceVolumeMount,
+			want:       []string{"rm", "-rf", generator.DevfileSourceVolumeMount + "/test.txt", generator.DevfileSourceVolumeMount + "/hello.c"},
 		},
 		{
-			name: "case 3: normal tar making different remote than local",
-			args: args{
-				srcPath:  dir0,
-				destPath: filepath.Join("tmp", "dir1"),
-				files: []string{
-					filepath.Join(dir0, "red.js"),
-					filepath.Join(dir0, "README.txt"),
-					filepath.Join(dir0, "views"),
-					filepath.Join(dir0, "views", "view.html")},
-				globExps: []string{},
-				ret: util.IndexerRet{
-					NewFileMap: map[string]util.FileData{
-						"red.js": {
-							RemoteAttribute: "red.js",
-						},
-						"README.txt": {
-							RemoteAttribute: "text/README.txt",
-						},
-						"views": {
-							RemoteAttribute: "views",
-						},
-						filepath.Join("views", "view.html"): {
-							RemoteAttribute: "views/view.html",
-						},
-					},
+			name:       "Case 2: Multiple deleted files, different sync folder",
+			delFiles:   []string{"test.txt", "hello.c"},
+			syncFolder: syncFolder,
+			want:       []string{"rm", "-rf", syncFolder + "/test.txt", syncFolder + "/hello.c"},
+		},
+	}
+	for _, tt := range tests {
+		cmdArr := getCmdToDeleteFiles(tt.delFiles, tt.syncFolder)
+		if !reflect.DeepEqual(tt.want, cmdArr) {
+			t.Errorf("Expected %s, got %s", tt.want, cmdArr)
+		}
+	}
+}
+
+func TestSyncFiles(t *testing.T) {
+
+	testComponentName := "test"
+
+	// create a temp dir for the file indexer
+	directory, e := ioutil.TempDir("", "")
+	if e != nil {
+		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", e)
+	}
+
+	jsFile, e := os.Create(filepath.Join(directory, "red.js"))
+	if e != nil {
+		t.Errorf("TestSyncFiles error: error creating temporary file for the indexer: %v", e)
+	}
+
+	ctrl := gomock.NewController(t)
+	kc := kclient.NewMockClientInterface(ctrl)
+	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
+
+	// Assert that Bar() is invoked.
+	defer ctrl.Finish()
+
+	syncClient := func(ComponentInfo, string, io.Reader) error {
+		return nil
+	}
+
+	tests := []struct {
+		name               string
+		syncParameters     SyncParameters
+		wantErr            bool
+		wantIsPushRequired bool
+	}{
+		{
+			name: "Case 1: Component does not exist",
+			syncParameters: SyncParameters{
+				Path:              directory,
+				WatchFiles:        []string{},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				CompInfo: ComponentInfo{
+					ContainerName: "abcd",
 				},
+				ForcePush:     true,
+				SyncExtracter: syncClient,
 			},
-			wantFiles: map[string]bool{
-				"red.js":          true,
-				"views/view.html": true,
-				"text/README.txt": true,
-			},
+			wantErr:            false,
+			wantIsPushRequired: true,
 		},
 		{
-			name: "case 4: ignore no existent file or folder",
-			args: args{
-				srcPath:  dir0,
-				destPath: filepath.Join("tmp", "dir1"),
-				files: []string{
-					filepath.Join(dir0, "red.js"),
-					filepath.Join(dir0, "README.txt"),
-					filepath.Join("blah", "views"),
-					filepath.Join(dir0, "views", "view.html")},
-				globExps: []string{},
-				ret: util.IndexerRet{
-					NewFileMap: map[string]util.FileData{
-						"red.js": {
-							RemoteAttribute: "red.js",
-						},
-						"README.txt": {
-							RemoteAttribute: "text/README.txt",
-						},
-						"views": {
-							RemoteAttribute: "views",
-						},
-						filepath.Join("views", "view.html"): {
-							RemoteAttribute: "views/view.html",
-						},
-					},
+			name: "Case 2: Component does exist",
+			syncParameters: SyncParameters{
+				Path:              directory,
+				WatchFiles:        []string{},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				CompInfo: ComponentInfo{
+					ContainerName: "abcd",
 				},
+				ForcePush:     false,
+				SyncExtracter: syncClient,
 			},
-			wantFiles: map[string]bool{
-				"red.js":          true,
-				"views/view.html": true,
-				"text/README.txt": true,
+			wantErr:            false,
+			wantIsPushRequired: false, // always false after case 1
+		},
+		{
+			name: "Case 3: FakeErrorClient error",
+			syncParameters: SyncParameters{
+				Path:              directory,
+				WatchFiles:        []string{},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				CompInfo: ComponentInfo{
+					ContainerName: "abcd",
+				},
+				ForcePush:     false,
+				SyncExtracter: syncClient,
 			},
+			wantErr:            true,
+			wantIsPushRequired: false,
+		},
+		{
+			name: "Case 4: File change",
+			syncParameters: SyncParameters{
+				Path:              directory,
+				WatchFiles:        []string{path.Join(directory, "test.log")},
+				WatchDeletedFiles: []string{},
+				IgnoredFiles:      []string{},
+				CompInfo: ComponentInfo{
+					ComponentName: testComponentName,
+					ContainerName: "abcd",
+				},
+				ForcePush:     false,
+				SyncExtracter: syncClient,
+			},
+			wantErr:            false,
+			wantIsPushRequired: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, writer := io.Pipe()
-			defer reader.Close()
-			defer writer.Close()
+			syncAdapter := NewSyncClient(kc)
+			isPushRequired, err := syncAdapter.SyncFiles(tt.syncParameters)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestSyncFiles error: unexpected error when syncing files %v", err)
+			} else if !tt.wantErr && isPushRequired != tt.wantIsPushRequired {
+				t.Errorf("TestSyncFiles error: isPushRequired mismatch, wanted: %v, got: %v", tt.wantIsPushRequired, isPushRequired)
+			}
+		})
+	}
 
-			tarWriter := taro.NewWriter(writer)
-			go func() {
-				defer tarWriter.Close()
-				wantErr := tt.wantErr
-				if err := makeTar(tt.args.srcPath, tt.args.destPath, writer, tt.args.files, tt.args.globExps, tt.args.ret, fs); (err != nil) != wantErr {
-					t.Errorf("makeTar() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-			}()
+	err := jsFile.Close()
+	if err != nil {
+		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
+	}
+	// Remove the temp dir created for the file indexer
+	err = os.RemoveAll(directory)
+	if err != nil {
+		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
+	}
+}
 
-			gotFiles := make(map[string]bool)
-			tarReader := taro.NewReader(reader)
-			for {
-				hdr, err := tarReader.Next()
-				if err == io.EOF {
-					break
-				} else if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
+func TestPushLocal(t *testing.T) {
 
-				if _, ok := tt.wantFiles[hdr.Name]; !ok {
-					t.Errorf("unexpected file name in tar, : %q", hdr.Name)
-				}
+	testComponentName := "test"
 
-				gotFiles[hdr.Name] = true
+	// create a temp dir for the file indexer
+	directory, e := ioutil.TempDir("", "")
+	if e != nil {
+		t.Errorf("TestPushLocal error: error creating temporary directory for the indexer: %v", e)
+	}
+
+	newFilePath := filepath.Join(directory, "foobar.txt")
+	if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
+		t.Errorf("TestPushLocal error: the foobar.txt file was not created: %v", err)
+	}
+
+	ctrl := gomock.NewController(t)
+	kc := kclient.NewMockClientInterface(ctrl)
+	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
+
+	// Assert that Bar() is invoked.
+	defer ctrl.Finish()
+
+	syncClient := func(ComponentInfo, string, io.Reader) error {
+		return nil
+	}
+
+	errorSyncClient := func(ComponentInfo, string, io.Reader) error {
+		return errors.New("err")
+	}
+
+	tests := []struct {
+		name        string
+		client      SyncExtracter
+		path        string
+		files       []string
+		delFiles    []string
+		isForcePush bool
+		compInfo    ComponentInfo
+		wantErr     bool
+	}{
+		{
+			name:        "Case 1: File change",
+			client:      syncClient,
+			path:        directory,
+			files:       []string{path.Join(directory, "test.log")},
+			delFiles:    []string{},
+			isForcePush: false,
+			compInfo: ComponentInfo{
+				ContainerName: "abcd",
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 2: File change with fake error client",
+			client:      errorSyncClient,
+			path:        directory,
+			files:       []string{path.Join(directory, "test.log")},
+			delFiles:    []string{},
+			isForcePush: false,
+			compInfo: ComponentInfo{
+				ContainerName: "abcd",
+			},
+			wantErr: true,
+		},
+		{
+			name:        "Case 3: No file change",
+			client:      syncClient,
+			path:        directory,
+			files:       []string{},
+			delFiles:    []string{},
+			isForcePush: false,
+			compInfo: ComponentInfo{
+				ContainerName: "abcd",
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 4: Deleted file",
+			client:      syncClient,
+			path:        directory,
+			files:       []string{},
+			delFiles:    []string{path.Join(directory, "test.log")},
+			isForcePush: false,
+			compInfo: ComponentInfo{
+				ContainerName: "abcd",
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 5: Force push",
+			client:      syncClient,
+			path:        directory,
+			files:       []string{},
+			delFiles:    []string{},
+			isForcePush: true,
+			compInfo: ComponentInfo{
+				ContainerName: "abcd",
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 6: Source mapping folder set",
+			client:      syncClient,
+			path:        directory,
+			files:       []string{},
+			delFiles:    []string{},
+			isForcePush: false,
+			compInfo: ComponentInfo{
+				ComponentName: testComponentName,
+				ContainerName: "abcd",
+				SyncFolder:    "/some/path",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			syncAdapter := NewSyncClient(kc)
+			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, syncClient, util.IndexerRet{})
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestPushLocal error: error pushing files: %v", err)
 			}
 
-			for fileName := range tt.wantFiles {
-				if _, ok := gotFiles[fileName]; !ok {
-					t.Errorf("missed file, : %q", fileName)
+		})
+	}
+
+	// Remove the temp dir created for the file indexer
+	err := os.RemoveAll(directory)
+	if err != nil {
+		t.Errorf("TestPushLocal error: error deleting the temp dir %s", directory)
+	}
+}
+
+func TestUpdateIndexWithWatchChanges(t *testing.T) {
+
+	tests := []struct {
+		name                 string
+		initialFilesToCreate []string
+		watchDeletedFiles    []string
+		watchAddedFiles      []string
+		expectedFilesInIndex []string
+	}{
+		{
+			name:                 "Case 1 - Watch file deleted should remove file from index",
+			initialFilesToCreate: []string{"file1", "file2"},
+			watchDeletedFiles:    []string{"file1"},
+			expectedFilesInIndex: []string{"file2"},
+		},
+		{
+			name:                 "Case 2 - Watch file added should add file to index",
+			initialFilesToCreate: []string{"file1"},
+			watchAddedFiles:      []string{"file2"},
+			expectedFilesInIndex: []string{"file1", "file2"},
+		},
+		{
+			name:                 "Case 3 - No watch changes should mean no index changes",
+			initialFilesToCreate: []string{"file1"},
+			expectedFilesInIndex: []string{"file1"},
+		},
+	}
+	for _, tt := range tests {
+
+		// create a temp dir for the fake component
+		directory, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: error creating temporary directory for the indexer: %v", err)
+		}
+
+		fileIndexPath, err := util.ResolveIndexFilePath(directory)
+		if err != nil {
+			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to resolve index file path: %v", err)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(fileIndexPath), 0750); err != nil {
+			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to create directories for %s: %v", fileIndexPath, err)
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			indexData := map[string]util.FileData{}
+
+			// Create initial files
+			for _, fileToCreate := range tt.initialFilesToCreate {
+				filePath := filepath.Join(directory, fileToCreate)
+
+				if err := ioutil.WriteFile(filePath, []byte("non-empty-string"), 0644); err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
+				}
+
+				key, fileDatum, err := util.GenerateNewFileDataEntry(filePath, directory)
+				if err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to generate new file: %v", err)
+				}
+				indexData[key] = *fileDatum
+			}
+
+			// Write the index based on those files
+			if err := util.WriteFile(indexData, fileIndexPath); err != nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write index file: %v", err)
+			}
+
+			syncParams := SyncParameters{
+				Path: directory,
+			}
+
+			// Add deleted files to pushParams (also delete the files)
+			for _, deletedFile := range tt.watchDeletedFiles {
+				deletedFilePath := filepath.Join(directory, deletedFile)
+				syncParams.WatchDeletedFiles = append(syncParams.WatchDeletedFiles, deletedFilePath)
+
+				if err := os.Remove(deletedFilePath); err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to delete file %s %v", deletedFilePath, err)
+				}
+			}
+
+			// Add added files to pushParams (also create the files)
+			for _, addedFile := range tt.watchAddedFiles {
+				addedFilePath := filepath.Join(directory, addedFile)
+				syncParams.WatchFiles = append(syncParams.WatchFiles, addedFilePath)
+
+				if err := ioutil.WriteFile(addedFilePath, []byte("non-empty-string"), 0644); err != nil {
+					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
+				}
+			}
+
+			if err := updateIndexWithWatchChanges(syncParams); err != nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal: unexpected error: %v", err)
+			}
+
+			postFileIndex, err := util.ReadFileIndex(fileIndexPath)
+			if err != nil || postFileIndex == nil {
+				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: read new file index: %v", err)
+			}
+
+			// Locate expected files
+			if len(postFileIndex.Files) != len(tt.expectedFilesInIndex) {
+				t.Fatalf("Mismatch between number expected files and actual files in index, post-index: %v   expected: %v", postFileIndex.Files, tt.expectedFilesInIndex)
+			}
+			for _, expectedFile := range tt.expectedFilesInIndex {
+				if _, exists := postFileIndex.Files[expectedFile]; !exists {
+					t.Fatalf("Unable to find '%s' in post index file, %v", expectedFile, postFileIndex.Files)
 				}
 			}
 		})

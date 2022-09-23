@@ -1,216 +1,293 @@
 package sync
 
 import (
-	taro "archive/tar"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-	"github.com/redhat-developer/odo/pkg/util"
-
+	"github.com/devfile/library/pkg/devfile/generator"
 	dfutil "github.com/devfile/library/pkg/util"
-	gitignore "github.com/sabhiram/go-gitignore"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/remotecmd"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
 )
 
-type SyncClient interface {
-	ExtractProjectToComponent(adapters.ComponentInfo, string, io.Reader) error
+// SyncClient is a Kubernetes implementationn for sync
+type SyncClient struct {
+	kubeClient kclient.ClientInterface
 }
 
-// CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
-// copyFiles is list of changed files captured during `odo watch` as well as binary file path
-// During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
-// During copying local source components, localPath represent base directory path whereas copyFiles is empty
-// During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func CopyFile(client SyncClient, localPath string, compInfo adapters.ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
+var _ Client = (*SyncClient)(nil)
 
-	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
-	// Linux based and thus: "\opt\app-root\src" would not work correctly.
-	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
-	targetPath = filepath.ToSlash(targetPath)
+// NewSyncClient instantiates a new SyncClient
+func NewSyncClient(kubeClient kclient.ClientInterface) *SyncClient {
+	return &SyncClient{
+		kubeClient: kubeClient,
+	}
+}
 
-	klog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, targetPath %s, copyFiles %s, globalExps %s", localPath, dest, targetPath, copyFiles, globExps)
-	reader, writer := io.Pipe()
-	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
-	go func() {
-		defer writer.Close()
+// SyncFiles does a couple of things:
+// if files changed/deleted are passed in from watch, it syncs them to the component
+// otherwise, it checks which files have changed and syncs the delta
+// it returns a boolean execRequired and an error. execRequired tells us if files have
+// changed and devfile execution is required
+func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 
-		err := makeTar(localPath, dest, writer, copyFiles, globExps, ret, filesystem.DefaultFs{})
+	// Whether to write the indexer content to the index file path (resolvePath)
+	forceWrite := false
+
+	// Ret from Indexer function
+	var ret util.IndexerRet
+
+	var deletedFiles []string
+	var changedFiles []string
+	isWatch := len(syncParameters.WatchFiles) > 0 || len(syncParameters.WatchDeletedFiles) > 0
+
+	// When this function is invoked by watch, the logic is:
+	// 1) If this is the first time that watch has called Push (in this OS process), then generate the file index
+	//    using the file indexer, and use that to sync files (eg don't use changed/deleted files list from watch at
+	//    this stage; these will be found by the indexer run).
+	//    - In the watch scenario, we need to first run the indexer for two reasons:
+	// 	    - In cases where the index doesn't initially exist, we need to create it (so we can ADD to it in
+	//        later calls to SyncFiles(...) )
+	// 	    - Even if it does initially exist, there is no guarantee that the remote pod is consistent with it; so
+	//        on our first invocation we need to compare the index with the remote pod (by regenerating the index
+	//        and using the changes files list from that to sync the results.)
+	//
+	// 2) For every other push/sync call after the first, don't run the file indexer, instead we use
+	//    the watch events to determine what changed, and ensure that the index is then updated based
+	//    on the watch events (to ensure future calls are correct)
+
+	// True if the index was updated based on the deleted/changed files values from the watch (and
+	// thus the indexer doesn't need to run), false otherwise
+	indexRegeneratedByWatch := false
+
+	// If watch files are specified _and_ this is not the first call (by this process) to SyncFiles by the watch command, then insert the
+	// changed files into the existing file index, and delete removed files from the index
+	if isWatch && !syncParameters.DevfileScanIndexForWatch {
+
+		err := updateIndexWithWatchChanges(syncParameters)
+
 		if err != nil {
-			log.Errorf("Error while creating tar: %#v", err)
-			os.Exit(1)
+			return false, err
 		}
 
-	}()
+		changedFiles = syncParameters.WatchFiles
+		deletedFiles = syncParameters.WatchDeletedFiles
+		deletedFiles, err = dfutil.RemoveRelativePathFromFiles(deletedFiles, syncParameters.Path)
+		if err != nil {
+			return false, fmt.Errorf("unable to remove relative path from list of changed/deleted files: %w", err)
+		}
+		indexRegeneratedByWatch = true
 
-	err := client.ExtractProjectToComponent(compInfo, targetPath, reader)
+	}
+
+	if !indexRegeneratedByWatch {
+		// Calculate the files to sync
+		// Tries to sync the deltas unless it is a forced push
+		// if it is a forced push (ForcePush) reset the index to do a full sync
+		absIgnoreRules := dfutil.GetAbsGlobExps(syncParameters.Path, syncParameters.IgnoredFiles)
+
+		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
+		odoFolder := filepath.Join(syncParameters.Path, ".odo")
+		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
+			err = os.Mkdir(odoFolder, 0750)
+			if err != nil {
+				return false, fmt.Errorf("unable to create directory: %w", err)
+			}
+		}
+
+		// If the pod changed, reset the index, which will cause the indexer to walk the directory
+		// tree and resync all local files.
+		// If it is a new component, reset index to make sure any previously existing file is cleaned up
+		if syncParameters.ForcePush {
+			err := util.DeleteIndexFile(syncParameters.Path)
+			if err != nil {
+				return false, fmt.Errorf("unable to reset the index file: %w", err)
+			}
+		}
+
+		// Run the indexer and find the modified/added/deleted/renamed files
+		var err error
+		ret, err = util.RunIndexerWithRemote(syncParameters.Path, syncParameters.IgnoredFiles, syncParameters.Files)
+
+		if err != nil {
+			return false, fmt.Errorf("unable to run indexer: %w", err)
+		}
+
+		if len(ret.FilesChanged) > 0 || len(ret.FilesDeleted) > 0 {
+			forceWrite = true
+		}
+
+		// apply the glob rules from the .gitignore/.odoignore file
+		// and ignore the files on which the rules apply and filter them out
+		filesChangedFiltered, filesDeletedFiltered := dfutil.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
+
+		deletedFiles = append(filesDeletedFiltered, ret.RemoteDeleted...)
+		deletedFiles = append(deletedFiles, ret.RemoteDeleted...)
+		klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+		changedFiles = filesChangedFiltered
+		klog.V(4).Infof("List of files changed: +%v", changedFiles)
+
+		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 && !syncParameters.ForcePush {
+			return false, nil
+		}
+
+		if syncParameters.ForcePush {
+			deletedFiles = append(deletedFiles, "*")
+		}
+	}
+
+	err := a.pushLocal(syncParameters.Path,
+		changedFiles,
+		deletedFiles,
+		syncParameters.ForcePush,
+		syncParameters.IgnoredFiles,
+		syncParameters.CompInfo,
+		syncParameters.SyncExtracter,
+		ret,
+	)
 	if err != nil {
-		return err
+		return false, fmt.Errorf("failed to sync to component with name %s: %w", syncParameters.CompInfo.ComponentName, err)
 	}
-
-	return nil
-}
-
-// checkFileExist check if given file exists or not
-func checkFileExistWithFS(fileName string, fs filesystem.Filesystem) bool {
-	_, err := fs.Stat(fileName)
-	return !os.IsNotExist(err)
-}
-
-// makeTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L309
-// srcPath is ignored if files is set
-func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExps []string, ret util.IndexerRet, fs filesystem.Filesystem) error {
-	// TODO: use compression here?
-	tarWriter := taro.NewWriter(writer)
-	defer tarWriter.Close()
-	srcPath = filepath.Clean(srcPath)
-
-	// "ToSlash" is used as all containers within OpenShift are Linux based
-	// and thus \opt\app-root\src would be an invalid path. Backward slashes
-	// are converted to forward.
-	destPath = filepath.ToSlash(filepath.Clean(destPath))
-	uniquePaths := make(map[string]bool)
-	klog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
-	if len(files) != 0 {
-		ignoreMatcher := gitignore.CompileIgnoreLines(globExps...)
-		for _, fileName := range files {
-
-			if _, ok := uniquePaths[fileName]; ok {
-				continue
-			} else {
-				uniquePaths[fileName] = true
-			}
-
-			if checkFileExistWithFS(fileName, fs) {
-
-				rel, err := filepath.Rel(srcPath, fileName)
-				if err != nil {
-					return err
-				}
-
-				matched := ignoreMatcher.MatchesPath(rel)
-				if matched {
-					continue
-				}
-
-				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
-				// which uses path relative to base path for taro header to correctly identify file location when untarred
-
-				// now that the file exists, now we need to get the absolute path
-				fileAbsolutePath, err := dfutil.GetAbsPath(fileName)
-				if err != nil {
-					return err
-				}
-				klog.V(4).Infof("Got abs path: %s", fileAbsolutePath)
-				klog.V(4).Infof("Making %s relative to %s", srcPath, fileAbsolutePath)
-
-				// We use "FromSlash" to make this OS-based (Windows uses \, Linux & macOS use /)
-				// we get the relative path by joining the two
-				destFile, err := filepath.Rel(filepath.FromSlash(srcPath), filepath.FromSlash(fileAbsolutePath))
-				if err != nil {
-					return err
-				}
-
-				// Now we get the source file and join it to the base directory.
-				srcFile := filepath.Join(filepath.Base(srcPath), destFile)
-
-				if value, ok := ret.NewFileMap[destFile]; ok && value.RemoteAttribute != "" {
-					destFile = value.RemoteAttribute
-				}
-
-				klog.V(4).Infof("makeTar srcFile: %s", srcFile)
-				klog.V(4).Infof("makeTar destFile: %s", destFile)
-
-				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				err = linearTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile, tarWriter, fs)
-				if err != nil {
-					return err
-				}
-			}
+	if forceWrite {
+		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
+		if err != nil {
+			return false, fmt.Errorf("failed to write file: %w", err)
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
-// linearTar function is a modified version of https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
-func linearTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, fs filesystem.Filesystem) error {
-	if destFile == "" {
-		return fmt.Errorf("linear Tar error, destFile cannot be empty")
-	}
+// pushLocal syncs source code from the user's disk to the component
+func (a SyncClient) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, extracter SyncExtracter, ret util.IndexerRet) error {
+	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", compInfo.ComponentName, path, files, delFiles, isForcePush)
 
-	klog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
-
-	// The destination is a LINUX container and thus we *must* use ToSlash in order
-	// to get the copying over done correctly..
-	destBase = filepath.ToSlash(destBase)
-	destFile = filepath.ToSlash(destFile)
-	klog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
-
-	joinedPath := filepath.Join(srcBase, srcFile)
-
-	stat, err := fs.Stat(joinedPath)
+	// Edge case: check to see that the path is NOT empty.
+	emptyDir, err := dfutil.IsEmpty(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to check directory: %s: %w", path, err)
+	} else if emptyDir {
+		return fmt.Errorf("directory/file %s is empty", path)
 	}
 
-	if stat.IsDir() {
-		files, err := fs.ReadDir(joinedPath)
+	// Sync the files to the pod
+	syncFolder := compInfo.SyncFolder
+
+	if syncFolder != generator.DevfileSourceVolumeMount {
+		// Need to make sure the folder already exists on the component or else sync will fail
+		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
+		cmdArr := getCmdToCreateSyncFolder(syncFolder)
+
+		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
-		if len(files) == 0 {
-			// case empty directory
-			hdr, _ := taro.FileInfoHeader(stat, joinedPath)
-			hdr.Name = destFile
-			if err := tw.WriteHeader(hdr); err != nil {
-				return err
-			}
-		}
-		return nil
-	} else if stat.Mode()&os.ModeSymlink != 0 {
-		// case soft link
-		hdr, _ := taro.FileInfoHeader(stat, joinedPath)
-		target, err := os.Readlink(joinedPath)
+	}
+	// If there were any files deleted locally, delete them remotely too.
+	if len(delFiles) > 0 {
+		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
+
+		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
+	}
 
-		hdr.Linkname = target
-		hdr.Name = destFile
-		if err := tw.WriteHeader(hdr); err != nil {
-			return err
+	if !isForcePush {
+		if len(files) == 0 && len(delFiles) == 0 {
+			return nil
 		}
-	} else {
-		// case regular file or other file type like pipe
-		hdr, err := taro.FileInfoHeader(stat, joinedPath)
+	}
+
+	if isForcePush || len(files) > 0 {
+		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		err = CopyFile(extracter, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable push files to pod: %w", err)
 		}
-		hdr.Name = destFile
-
-		err = tw.WriteHeader(hdr)
-		if err != nil {
-			return err
-		}
-
-		f, err := fs.Open(joinedPath)
-		if err != nil {
-			return err
-		}
-		defer f.Close() // #nosec G307
-
-		if _, err := io.Copy(tw, f); err != nil {
-			return err
-		}
-
-		return f.Close()
 	}
 
 	return nil
+}
+
+// updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
+// the existing index file; the index file is required to exist when this function is called.
+func updateIndexWithWatchChanges(syncParameters SyncParameters) error {
+	indexFilePath, err := util.ResolveIndexFilePath(syncParameters.Path)
+
+	if err != nil {
+		return fmt.Errorf("unable to resolve path: %s: %w", syncParameters.Path, err)
+	}
+
+	// Check that the path exists
+	_, err = os.Stat(indexFilePath)
+	if err != nil {
+		// This shouldn't happen: in the watch case, SyncFiles should first be called with 'DevfileScanIndexForWatch' set to true, which
+		// will generate the index. Then, all subsequent invocations of SyncFiles will run with 'DevfileScanIndexForWatch' set to false,
+		// which will not regenerate the index (merely updating it based on changed files.)
+		//
+		// If you see this error it means somehow watch's SyncFiles was called without the index being first generated (likely because the
+		// above mentioned pushParam wasn't set). See SyncFiles(...) for details.
+		return fmt.Errorf("resolved path doesn't exist: %s: %w", indexFilePath, err)
+	}
+
+	// Parse the existing index
+	fileIndex, err := util.ReadFileIndex(indexFilePath)
+	if err != nil {
+		return fmt.Errorf("unable to read index from path: %s: %w", indexFilePath, err)
+	}
+
+	rootDir := syncParameters.Path
+
+	// Remove deleted files from the existing index
+	for _, deletedFile := range syncParameters.WatchDeletedFiles {
+
+		relativePath, err := util.CalculateFileDataKeyFromPath(deletedFile, rootDir)
+
+		if err != nil {
+			klog.V(4).Infof("Error occurred for %s: %v", deletedFile, err)
+			continue
+		}
+		delete(fileIndex.Files, relativePath)
+		klog.V(4).Infof("Removing watch deleted file from index: %s", relativePath)
+	}
+
+	// Add changed files to the existing index
+	for _, addedOrModifiedFile := range syncParameters.WatchFiles {
+		relativePath, fileData, err := util.GenerateNewFileDataEntry(addedOrModifiedFile, rootDir)
+
+		if err != nil {
+			klog.V(4).Infof("Error occurred for %s: %v", addedOrModifiedFile, err)
+			continue
+		}
+		fileIndex.Files[relativePath] = *fileData
+		klog.V(4).Infof("Added/updated watched file in index: %s", relativePath)
+	}
+
+	// Write the result
+	return util.WriteFile(fileIndex.Files, indexFilePath)
+
+}
+
+// getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
+func getCmdToCreateSyncFolder(syncFolder string) []string {
+	return []string{"mkdir", "-p", syncFolder}
+}
+
+// getCmdToDeleteFiles returns the command used to delete the remote files on the container that are marked for deletion
+func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
+	rmPaths := dfutil.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
+	klog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
+	cmdArr := []string{"rm", "-rf"}
+
+	for _, remote := range rmPaths {
+		cmdArr = append(cmdArr, filepath.ToSlash(remote))
+	}
+	return cmdArr
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/portForward"
+	"github.com/redhat-developer/odo/pkg/sync"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/dev"
@@ -64,6 +65,8 @@ const (
 	REGISTRY = "DEP_REGISTRY"
 	// STATE instantiates client for pkg/state
 	STATE = "DEP_STATE"
+	// SYNC instantiates client for pkg/sync
+	SYNC = "DEP_SYNC"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
 	/* Add key for new package here */
@@ -75,13 +78,14 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
-	DEV:              {BINDING, KUBERNETES, PORT_FORWARD, PREFERENCE, WATCH, FILESYSTEM},
+	DEV:              {BINDING, FILESYSTEM, KUBERNETES, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES},
 	PORT_FORWARD:     {KUBERNETES, STATE},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
+	SYNC:             {KUBERNETES},
 	WATCH:            {KUBERNETES, DELETE_COMPONENT, STATE},
 	BINDING:          {PROJECT, KUBERNETES},
 	/* Add sub-dependencies here, if any */
@@ -102,6 +106,7 @@ type Clientset struct {
 	ProjectClient     project.Client
 	RegistryClient    registry.Client
 	StateClient       state.Client
+	SyncClient        sync.Client
 	WatchClient       watch.Client
 	/* Add client by alphabetic order */
 }
@@ -171,6 +176,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, STATE) {
 		dep.StateClient = state.NewStateClient(dep.FS)
 	}
+	if isDefined(command, SYNC) {
+		dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient)
+	}
 	if isDefined(command, WATCH) {
 		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.DeleteClient, dep.StateClient)
 	}
@@ -181,7 +189,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
 	}
 	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.FS)
+		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.SyncClient, dep.FS)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +40,7 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 	labels map[string]string,
 	mode string,
 	reference metav1.OwnerReference,
-) ([]v1alpha2.Component, error) {
+) ([]devfilev1.Component, error) {
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of ServiceBinding
 	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
