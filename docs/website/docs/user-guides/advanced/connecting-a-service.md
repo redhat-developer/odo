@@ -1,6 +1,6 @@
 ---
 title: Connecting to a Service
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 Building on top of the [Go quickstart guide](../quickstart/go.md), this guide will connect a service to the Go application.
