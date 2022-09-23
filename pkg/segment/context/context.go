@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/spf13/pflag"
 
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -22,6 +24,7 @@ const (
 	ProjectType     = "projectType"
 	NOTFOUND        = "not-found"
 	InteractiveMode = "interactive"
+	Flags           = "flags"
 )
 
 type contextKey struct{}
@@ -109,6 +112,22 @@ func SetProjectType(ctx context.Context, projectType string) {
 
 func SetInteractive(ctx context.Context, interactive bool) {
 	setContextProperty(ctx, InteractiveMode, interactive)
+}
+
+// SetFlags sets flags property for telemetry to record what flags were used
+func SetFlags(ctx context.Context, flags *pflag.FlagSet) {
+	var changedFlags []string
+	flags.VisitAll(func(f *pflag.Flag) {
+		if f.Changed {
+			if f.Name == "logtostderr" {
+				// skip "logtostderr" flag, for some reason it is showing as changed even when it is not
+				return
+			}
+			changedFlags = append(changedFlags, f.Name)
+		}
+	})
+	// the flags can't have spaces, so the output is space separated list of the flag names
+	setContextProperty(ctx, Flags, strings.Join(changedFlags, " "))
 }
 
 // GetTelemetryStatus gets the telemetry status that is set before a command is run
