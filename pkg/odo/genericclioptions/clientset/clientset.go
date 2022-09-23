@@ -163,14 +163,14 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, ALIZER) {
 		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
 	}
+	if isDefined(command, EXEC) {
+		dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
+	}
 	if isDefined(command, DELETE_COMPONENT) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.ExecClient)
 	}
 	if isDefined(command, DEPLOY) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient)
-	}
-	if isDefined(command, EXEC) {
-		dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
 	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
