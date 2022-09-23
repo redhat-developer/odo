@@ -39,8 +39,8 @@ var _ = Describe("odo dev interactive command tests", func() {
 		It("should run alizer to download devfile successfully even with -v flag", func() {
 
 			language := "Python"
-			projectType := "Django"
-			devfileName := "python-django"
+			projectType := "Flask"
+			devfileName := "python"
 			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "-v", "4"},
 				nil,
 				func(ctx helper.InteractiveContext) {
@@ -72,8 +72,8 @@ var _ = Describe("odo dev interactive command tests", func() {
 		It("should run alizer to download devfile", func() {
 
 			language := "Python"
-			projectType := "Django"
-			devfileName := "python-django"
+			projectType := "Flask"
+			devfileName := "python"
 			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
 				nil,
 				func(ctx helper.InteractiveContext) {
@@ -109,8 +109,8 @@ var _ = Describe("odo dev interactive command tests", func() {
 			}
 
 			language := "Python"
-			projectType := "Django"
-			devfileName := "python-django"
+			projectType := "Flask"
+			devfileName := "python"
 			output, _ := helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
 				// Setting verbosity level to 0, because we would be asserting the welcoming message is the first
 				// message displayed to the end user. So we do not want any potential debug lines to be printed first.
