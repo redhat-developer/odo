@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
+
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -31,7 +32,7 @@ var (
   # ZSH
 
 	## Load into your current shell environment
-  source <(odo zsh)
+  source <(%[1]s zsh)
 
 	## Load persistently
 	%[1]s zsh > "${fpath[1]}/_odo"
