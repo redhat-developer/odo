@@ -6,16 +6,17 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/remotecmd/kube"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type execHandler struct {
 	kubeClient    kclient.ClientInterface
+	execClient    exec.Client
 	appName       string
 	componentName string
 	podName       string
@@ -27,9 +28,10 @@ var _ libdevfile.Handler = (*execHandler)(nil)
 
 const ShellExecutable string = "/bin/sh"
 
-func NewExecHandler(kubeClient kclient.ClientInterface, appName, cmpName, podName, msg string, show bool) *execHandler {
+func NewExecHandler(kubeClient kclient.ClientInterface, execClient exec.Client, appName, cmpName, podName, msg string, show bool) *execHandler {
 	return &execHandler{
 		kubeClient:    kubeClient,
+		execClient:    execClient,
 		appName:       appName,
 		componentName: cmpName,
 		podName:       podName,
@@ -60,7 +62,7 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
 	cmdline := getCmdline(command)
-	_, _, err := kube.ExecuteCommand(cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
+	_, _, err := o.execClient.ExecuteCommand(cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 

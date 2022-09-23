@@ -44,7 +44,7 @@ func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
-	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
+	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler(a.execClient)
 
 	statusHandlerFunc := func(s *log.Status) remotecmd.CommandOutputHandler {
 		return func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
@@ -192,7 +192,7 @@ func devfileCommandToRemoteCmdDefinition(devfileCmd devfilev1.Command) (remotecm
 
 // isRemoteProcessForCommandRunning returns true if the command is running
 func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Command, podName string) (bool, error) {
-	remoteProcess, err := remotecmd.NewKubeExecProcessHandler().GetProcessInfoForCommand(
+	remoteProcess, err := remotecmd.NewKubeExecProcessHandler(a.execClient).GetProcessInfoForCommand(
 		remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return false, err
@@ -204,7 +204,7 @@ func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Comm
 // checkRemoteCommandStatus checks if the command is running .
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
 func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command, podName string, notRunningMessage string) error {
-	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
+	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler(a.execClient)
 	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return err

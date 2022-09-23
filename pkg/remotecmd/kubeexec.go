@@ -8,7 +8,7 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/remotecmd/kube"
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/task"
 )
@@ -19,14 +19,18 @@ import (
 // then fires the exec command in the background.
 // The goroutine started can then be stopped by killing the process stored in the state file (_startCmdProcessPidFile)
 // in the container.
-type kubeExecProcessHandler struct{}
+type kubeExecProcessHandler struct {
+	execClient exec.Client
+}
 
 // This allows to verify interface compliance at compile-time.
 // See https://github.com/redhat-developer/odo/wiki/Dev:-Coding-Conventions#verify-interface-compliance
 var _ RemoteProcessHandler = (*kubeExecProcessHandler)(nil)
 
-func NewKubeExecProcessHandler() *kubeExecProcessHandler {
-	return &kubeExecProcessHandler{}
+func NewKubeExecProcessHandler(execClient exec.Client) *kubeExecProcessHandler {
+	return &kubeExecProcessHandler{
+		execClient: execClient,
+	}
 }
 
 // GetProcessInfoForCommand returns information about the process representing the given Devfile command.
@@ -38,7 +42,7 @@ func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
 ) (RemoteProcessInfo, error) {
 	klog.V(4).Infof("GetProcessInfoForCommand for %q", def.Id)
 
-	pid, exitStatus, err := getRemoteProcessPID(def, podName, containerName)
+	pid, exitStatus, err := k.getRemoteProcessPID(def, podName, containerName)
 	if err != nil {
 		return RemoteProcessInfo{}, err
 	}
@@ -96,7 +100,7 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 			outputHandler(Starting, nil, nil, nil)
 		}
 
-		stdout, stderr, err := kube.ExecuteCommand(cmd, podName, containerName, false, nil, nil)
+		stdout, stderr, err := k.execClient.ExecuteCommand(cmd, podName, containerName, false, nil, nil)
 		if err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
 		}
@@ -126,7 +130,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	klog.V(4).Infof("StopProcessForCommand for %q", def.Id)
 	defer func() {
 		pidFile := getPidFileForCommand(def)
-		_, _, err := kube.ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
+		_, _, err := k.execClient.ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
 			podName, containerName, false, nil, nil)
 		if err != nil {
 			klog.V(2).Infof("Could not remove file %q: %v", pidFile, err)
@@ -134,7 +138,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	}()
 
 	kill := func(p int) error {
-		_, _, err := kube.ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
+		_, _, err := k.execClient.ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
 			podName, containerName, false, nil, nil)
 		if err != nil {
 			return err
@@ -162,7 +166,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		return nil
 	}
 
-	ppid, _, err := getRemoteProcessPID(def, podName, containerName)
+	ppid, _, err := k.getRemoteProcessPID(def, podName, containerName)
 	if err != nil {
 		return err
 	}
@@ -170,7 +174,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		return nil
 	}
 
-	children, err := getProcessChildren(ppid, podName, containerName)
+	children, err := k.getProcessChildren(ppid, podName, containerName)
 	if err != nil {
 		return err
 	}
@@ -192,9 +196,9 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	return nil
 }
 
-func getRemoteProcessPID(def CommandDefinition, podName string, containerName string) (int, int, error) {
+func (k *kubeExecProcessHandler) getRemoteProcessPID(def CommandDefinition, podName string, containerName string) (int, int, error) {
 	pidFile := getPidFileForCommand(def)
-	stdout, stderr, err := kube.ExecuteCommand(
+	stdout, stderr, err := k.execClient.ExecuteCommand(
 		[]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile)},
 		podName, containerName, false, nil, nil)
 
@@ -254,7 +258,7 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	}
 
 	//Now check that the PID value is a valid process
-	stdout, _, err := kube.ExecuteCommand(
+	stdout, _, err := k.execClient.ExecuteCommand(
 		[]string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid)},
 		podName, containerName, false, nil, nil)
 
@@ -285,12 +289,12 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 
 // getProcessChildren returns the children of the specified process in the given container.
 // It works by reading the /proc/<pid>/task/<pid>/children file, which is a space-separated list of children
-func getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
+func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
 	if pid <= 0 {
 		return nil, fmt.Errorf("invalid pid: %d", pid)
 	}
 
-	stdout, _, err := kube.ExecuteCommand(
+	stdout, _, err := k.execClient.ExecuteCommand(
 		[]string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid)},
 		podName, containerName, false, nil, nil)
 	if err != nil {

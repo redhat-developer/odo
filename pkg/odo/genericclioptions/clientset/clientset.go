@@ -14,6 +14,7 @@ package clientset
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/sync"
@@ -45,6 +46,8 @@ const (
 	DEPLOY = "DEP_DEPLOY"
 	// DEV instantiates client for pkg/dev
 	DEV = "DEP_DEV"
+	// EXEC instantiates client for pkg/exec
+	EXEC = "DEP_EXEC"
 	// FILESYSTEM instantiates client for pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
 	// INIT instantiates client for pkg/init
@@ -76,9 +79,10 @@ const (
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
-	DELETE_COMPONENT: {KUBERNETES},
+	DELETE_COMPONENT: {KUBERNETES, EXEC},
 	DEPLOY:           {KUBERNETES},
-	DEV:              {BINDING, FILESYSTEM, KUBERNETES, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
+	DEV:              {BINDING, EXEC, FILESYSTEM, KUBERNETES, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
+	EXEC:             {KUBERNETES},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES},
 	PORT_FORWARD:     {KUBERNETES, STATE},
@@ -97,6 +101,7 @@ type Clientset struct {
 	DeleteClient      _delete.Client
 	DeployClient      deploy.Client
 	DevClient         dev.Client
+	ExecClient        exec.Client
 	FS                filesystem.Filesystem
 	InitClient        _init.Client
 	KubernetesClient  kclient.ClientInterface
@@ -159,10 +164,13 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
 	}
 	if isDefined(command, DELETE_COMPONENT) {
-		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient)
+		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.ExecClient)
 	}
 	if isDefined(command, DEPLOY) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient)
+	}
+	if isDefined(command, EXEC) {
+		dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
 	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
@@ -189,7 +197,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
 	}
 	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.SyncClient, dep.FS)
+		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient, dep.SyncClient, dep.FS, , dep.ExecClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

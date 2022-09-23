@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -31,6 +32,7 @@ type DevClient struct {
 	bindingClient     binding.Client
 	syncClient        sync.Client
 	filesystem        filesystem.Filesystem
+	execClient        exec.Client
 }
 
 var _ Client = (*DevClient)(nil)
@@ -43,6 +45,7 @@ func NewDevClient(
 	bindingClient binding.Client,
 	syncClient sync.Client,
 	filesystem filesystem.Filesystem,
+	execClient exec.Client,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
@@ -52,6 +55,7 @@ func NewDevClient(
 		bindingClient:     bindingClient,
 		syncClient:        syncClient,
 		filesystem:        filesystem,
+		execClient:        execClient,
 	}
 }
 
@@ -68,7 +72,7 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Creating new adapter")
 
 	adapter := component.NewKubernetesAdapter(
-		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient, o.syncClient,
+		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient, o.syncClient, o.execClient,
 		component.AdapterContext{
 			ComponentName: componentName,
 			Context:       path,
@@ -151,6 +155,7 @@ func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.W
 		o.portForwardClient,
 		o.bindingClient,
 		o.syncClient,
+		o.execClient,
 		component.AdapterContext{
 			ComponentName: parameters.ComponentName,
 			Context:       parameters.Path,
