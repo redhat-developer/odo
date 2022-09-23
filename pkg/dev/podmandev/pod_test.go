@@ -192,7 +192,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      40001,
+					HostPort:      39001,
 				})
 				return pod
 			},
@@ -226,13 +226,13 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      40001,
+					HostPort:      39001,
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 5858,
 					Protocol:      "TCP",
-					HostPort:      40002,
+					HostPort:      39002,
 				})
 				return pod
 			},

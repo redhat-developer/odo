@@ -56,7 +56,7 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 	go func() {
 		for {
 			tmp := make([]byte, 1024)
-			_, err := stdout.Read(tmp)
+			_, err = stdout.Read(tmp)
 			fmt.Print(string(tmp))
 			if err != nil {
 				break
