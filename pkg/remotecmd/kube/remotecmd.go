@@ -1,4 +1,4 @@
-package remotecmd
+package kube
 
 import (
 	"bufio"
@@ -17,7 +17,6 @@ import (
 // writing the output to the specified respective pipe writers
 func ExecuteCommand(
 	command []string,
-	client kclient.ClientInterface,
 	podName string,
 	containerName string,
 	show bool,
@@ -33,6 +32,7 @@ func ExecuteCommand(
 	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, stdoutWriter)
 	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, stderrWriter)
 
+	client, _ := kclient.New() // TODO inject
 	err = client.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
 
 	// Block until we have received all the container output from each stream

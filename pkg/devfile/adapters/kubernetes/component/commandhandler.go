@@ -76,12 +76,12 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			err = remoteProcessHandler.StopProcessForCommand(cmdDef, a.kubeClient, a.podName, devfileCmd.Exec.Component)
+			err = remoteProcessHandler.StopProcessForCommand(cmdDef, a.podName, devfileCmd.Exec.Component)
 			if err != nil {
 				return err
 			}
 
-			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
+			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 				return err
 			}
 		} else {
@@ -93,7 +93,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 			return err
 		}
 
-		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
+		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 			return err
 		}
 	}
@@ -111,7 +111,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	_, err := task.NewRetryable(fmt.Sprintf("process for command %q", devfileCmd.Id), func() (bool, interface{}, error) {
 		klog.V(4).Infof("checking if process for command %q is running", devfileCmd.Id)
 		remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(
-			remotecmd.CommandDefinition{Id: devfileCmd.Id}, a.kubeClient, a.podName, devfileCmd.Exec.Component)
+			remotecmd.CommandDefinition{Id: devfileCmd.Id}, a.podName, devfileCmd.Exec.Component)
 		if err != nil {
 			return false, nil, err
 		}
@@ -193,7 +193,7 @@ func devfileCommandToRemoteCmdDefinition(devfileCmd devfilev1.Command) (remotecm
 // isRemoteProcessForCommandRunning returns true if the command is running
 func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Command, podName string) (bool, error) {
 	remoteProcess, err := remotecmd.NewKubeExecProcessHandler().GetProcessInfoForCommand(
-		remotecmd.CommandDefinition{Id: command.Id}, a.kubeClient, podName, command.Exec.Component)
+		remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return false, err
 	}
@@ -205,7 +205,7 @@ func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Comm
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
 func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command, podName string, notRunningMessage string) error {
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
-	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(remotecmd.CommandDefinition{Id: command.Id}, a.kubeClient, podName, command.Exec.Component)
+	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return err
 	}

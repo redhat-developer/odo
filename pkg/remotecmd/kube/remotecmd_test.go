@@ -1,4 +1,4 @@
-package remotecmd
+package kube
 
 import (
 	"errors"

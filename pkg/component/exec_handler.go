@@ -10,7 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/remotecmd"
+	"github.com/redhat-developer/odo/pkg/remotecmd/kube"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -60,7 +60,7 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
 	cmdline := getCmdline(command)
-	_, _, err := remotecmd.ExecuteCommand(cmdline, o.kubeClient, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
+	_, _, err := kube.ExecuteCommand(cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
