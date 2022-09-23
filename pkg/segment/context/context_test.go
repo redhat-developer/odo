@@ -2,7 +2,6 @@ package context
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -172,10 +171,24 @@ func TestSetFlags(t *testing.T) {
 			},
 			want: "flag2",
 		},
+		{
+			name: "two changed flags",
+			args: args{
+				ctx: NewContext(context.Background()),
+				flags: func() *pflag.FlagSet {
+					f := &pflag.FlagSet{}
+					f.String("flag1", "", "")
+					f.String("flag2", "", "")
+					f.Set("flag1", "value1")
+					f.Set("flag2", "value1")
+					return f
+				}(),
+			},
+			want: "flag1 flag2",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fmt.Println(tt.args.flags)
 			SetFlags(tt.args.ctx, tt.args.flags)
 			got := GetContextProperties(tt.args.ctx)[Flags]
 			if got != tt.want {
