@@ -68,11 +68,9 @@ func main() {
 		go version.GetLatestReleaseInfo(updateInfo)
 
 		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")
-		select {
-		case message := <-updateInfo:
+		message := <-updateInfo
+		if message != "" {
 			log.Info(message)
-		default:
-			klog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
 		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")

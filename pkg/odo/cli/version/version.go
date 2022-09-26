@@ -156,5 +156,8 @@ If you wish to disable this notification, run:
 odo preference set UpdateNotification false
 ---`, fmt.Sprint(newTag), OdoReleasesPage)
 
+	} else {
+		klog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+		info <- ""
 	}
 }
