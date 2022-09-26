@@ -114,7 +114,7 @@ clean:
 
 .PHONY: goget-tools
 goget-tools:
-	(curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/v$(GOLANGCI_LINT_VERSION)/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)) || go install -mod=readonly github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
+	go install -mod=readonly github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
