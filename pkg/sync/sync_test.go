@@ -13,6 +13,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/tests/helper"
@@ -180,7 +181,8 @@ func TestSyncFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncAdapter := NewSyncClient(kc)
+			execClient := exec.NewExecClient(kc)
+			syncAdapter := NewSyncClient(kc, execClient)
 			isPushRequired, err := syncAdapter.SyncFiles(tt.syncParameters)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestSyncFiles error: unexpected error when syncing files %v", err)
@@ -319,7 +321,8 @@ func TestPushLocal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncAdapter := NewSyncClient(kc)
+			execClient := exec.NewExecClient(kc)
+			syncAdapter := NewSyncClient(kc, execClient)
 			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, syncClient, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)

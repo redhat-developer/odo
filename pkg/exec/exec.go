@@ -1,4 +1,4 @@
-package remotecmd
+package exec
 
 import (
 	"bufio"
@@ -13,11 +13,20 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 )
 
+type ExecClient struct {
+	kubeClient kclient.ClientInterface
+}
+
+func NewExecClient(kubeClient kclient.ClientInterface) *ExecClient {
+	return &ExecClient{
+		kubeClient: kubeClient,
+	}
+}
+
 // ExecuteCommand executes the given command in the pod's container,
 // writing the output to the specified respective pipe writers
-func ExecuteCommand(
+func (o ExecClient) ExecuteCommand(
 	command []string,
-	client kclient.ClientInterface,
 	podName string,
 	containerName string,
 	show bool,
@@ -33,7 +42,7 @@ func ExecuteCommand(
 	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, stdoutWriter)
 	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, stderrWriter)
 
-	err = client.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
+	err = o.kubeClient.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
 
 	// Block until we have received all the container output from each stream
 	_ = soutWriter.Close()

@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -48,6 +49,7 @@ type Adapter struct {
 	portForwardClient portForward.Client
 	bindingClient     binding.Client
 	syncClient        sync.Client
+	execClient        exec.Client
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -71,6 +73,7 @@ func NewKubernetesAdapter(
 	portForwardClient portForward.Client,
 	bindingClient binding.Client,
 	syncClient sync.Client,
+	execClient exec.Client,
 	context AdapterContext,
 ) Adapter {
 	return Adapter{
@@ -79,6 +82,7 @@ func NewKubernetesAdapter(
 		portForwardClient: portForwardClient,
 		bindingClient:     bindingClient,
 		syncClient:        syncClient,
+		execClient:        execClient,
 		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 	}
@@ -226,7 +230,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.Devfile) {
 		err = libdevfile.ExecPostStartEvents(a.Devfile,
-			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, pod.Name, "", parameters.Show))
+			component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name, "", parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -280,7 +284,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, pod.Name,
+			execHandler := component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name,
 				"Building your application in container on cluster", parameters.Show)
 			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}

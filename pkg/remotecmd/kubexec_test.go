@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
@@ -148,8 +149,9 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			k := NewKubeExecProcessHandler()
-			got, err := k.GetProcessInfoForCommand(cmdDef, kubeClient, _podName, _containerName)
+			execClient := exec.NewExecClient(kubeClient)
+			k := NewKubeExecProcessHandler(execClient)
+			got, err := k.GetProcessInfoForCommand(cmdDef, _podName, _containerName)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -258,12 +260,13 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			k := NewKubeExecProcessHandler()
+			execClient := exec.NewExecClient(kubeClient)
+			k := NewKubeExecProcessHandler(execClient)
 
 			var wg sync.WaitGroup
 			wg.Add(2) //number of invocations of outputHandler
 			var statusesReported []RemoteProcessStatus
-			err := k.StartProcessForCommand(tt.cmdDef, kubeClient, _podName, _containerName,
+			err := k.StartProcessForCommand(tt.cmdDef, _podName, _containerName,
 				func(status RemoteProcessStatus, stdout []string, stderr []string, err error) {
 					defer wg.Done()
 					statusesReported = append(statusesReported, status)
@@ -433,8 +436,9 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			k := NewKubeExecProcessHandler()
-			err := k.StopProcessForCommand(cmdDef, kubeClient, _podName, _containerName)
+			execClient := exec.NewExecClient(kubeClient)
+			k := NewKubeExecProcessHandler(execClient)
+			err := k.StopProcessForCommand(cmdDef, _podName, _containerName)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -541,8 +545,9 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			k := NewKubeExecProcessHandler()
-			got, err := k.getProcessInfoFromPid(tt.pid, tt.lastKnownExitStatus, kubeClient, _podName, _containerName)
+			execClient := exec.NewExecClient(kubeClient)
+			k := NewKubeExecProcessHandler(execClient)
+			got, err := k.getProcessInfoFromPid(tt.pid, tt.lastKnownExitStatus, _podName, _containerName)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -691,7 +696,9 @@ func Test_getRemoteProcessPID(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			got, lastKnownExitStatus, err := getRemoteProcessPID(kubeClient, cmdDef, _podName, _containerName)
+			execClient := exec.NewExecClient(kubeClient)
+			kubeExecClient := NewKubeExecProcessHandler(execClient)
+			got, lastKnownExitStatus, err := kubeExecClient.getRemoteProcessPID(cmdDef, _podName, _containerName)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
@@ -827,7 +834,9 @@ func Test_getProcessChildren(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			got, err := getProcessChildren(tt.ppid, kubeClient, _podName, _containerName)
+			execClient := exec.NewExecClient(kubeClient)
+			kubeExecClient := NewKubeExecProcessHandler(execClient)
+			got, err := kubeExecClient.getProcessChildren(tt.ppid, _podName, _containerName)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}

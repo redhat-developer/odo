@@ -11,8 +11,6 @@ import (
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
-	adapters "github.com/redhat-developer/odo/pkg/devfile/adapters"
-	watch "github.com/redhat-developer/odo/pkg/watch"
 )
 
 // MockClient is a mock of Client interface.
@@ -50,41 +48,4 @@ func (m *MockClient) Start(ctx context.Context, devfileObj parser.DevfileObj, co
 func (mr *MockClientMockRecorder) Start(ctx, devfileObj, componentName, path, devfilePath, out, errOut, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), ctx, devfileObj, componentName, path, devfilePath, out, errOut, options)
-}
-
-// MockHandler is a mock of Handler interface.
-type MockHandler struct {
-	ctrl     *gomock.Controller
-	recorder *MockHandlerMockRecorder
-}
-
-// MockHandlerMockRecorder is the mock recorder for MockHandler.
-type MockHandlerMockRecorder struct {
-	mock *MockHandler
-}
-
-// NewMockHandler creates a new mock instance.
-func NewMockHandler(ctrl *gomock.Controller) *MockHandler {
-	mock := &MockHandler{ctrl: ctrl}
-	mock.recorder = &MockHandlerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockHandler) EXPECT() *MockHandlerMockRecorder {
-	return m.recorder
-}
-
-// RegenerateAdapterAndPush mocks base method.
-func (m *MockHandler) RegenerateAdapterAndPush(arg0 adapters.PushParameters, arg1 watch.WatchParameters, arg2 *watch.ComponentStatus) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegenerateAdapterAndPush", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RegenerateAdapterAndPush indicates an expected call of RegenerateAdapterAndPush.
-func (mr *MockHandlerMockRecorder) RegenerateAdapterAndPush(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegenerateAdapterAndPush", reflect.TypeOf((*MockHandler)(nil).RegenerateAdapterAndPush), arg0, arg1, arg2)
 }

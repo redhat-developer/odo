@@ -1,4 +1,4 @@
-package remotecmd
+package exec
 
 import (
 	"errors"
@@ -9,6 +9,11 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+)
+
+const (
+	_podName       = "my-pod"
+	_containerName = "my-container"
 )
 
 func TestExecuteCommand(t *testing.T) {
@@ -58,7 +63,8 @@ func TestExecuteCommand(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			stdout, stderr, err := ExecuteCommand(tt.cmd, kubeClient, _podName, _containerName, false, nil, nil)
+			execClient := NewExecClient(kubeClient)
+			stdout, stderr, err := execClient.ExecuteCommand(tt.cmd, _podName, _containerName, false, nil, nil)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
