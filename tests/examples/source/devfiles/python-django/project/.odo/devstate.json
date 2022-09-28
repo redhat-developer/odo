@@ -1,0 +1,10 @@
+{
+ "forwardedPorts": [
+  {
+   "containerName": "py-web",
+   "localAddress": "127.0.0.1",
+   "localPort": 40001,
+   "containerPort": 8000
+  }
+ ]
+}

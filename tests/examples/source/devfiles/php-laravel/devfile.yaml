@@ -1,0 +1,96 @@
+schemaVersion: 2.1.0
+metadata:
+  description: 'Laravel is an open-source PHP framework, which is robust and easy to understand.
+    It follows a model-view-controller design pattern.
+    Laravel reuses the existing components of different frameworks which helps in creating a web application.
+    The web application thus designed is more structured and pragmatic.'
+  displayName: Laravel
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/laravel.svg
+  name: php-laravel
+  projectType: Laravel
+  provider: Red Hat
+  language: PHP
+  tags:
+    - PHP
+    - Composer
+    - Laravel
+  version: 1.0.1
+starterProjects:
+  - name: php-laravel-starter
+    git:
+      checkoutFrom:
+        revision: main
+      remotes:
+        origin: https://github.com/devfile-samples/devfile-stack-php-laravel.git
+components:
+  - container:
+      endpoints:
+        - name: http-laravel
+          targetPort: 8000
+      image: quay.io/devfile/composer:2.1.11
+      args: ["tail", "-f", "/dev/null"]
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+commands:
+  - exec:
+      commandLine: composer install
+      component: runtime
+      group:
+        isDefault: false
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: install
+  - exec:
+      commandLine: cp .env.example .env
+      component: runtime
+      group:
+        isDefault: false
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: cp-env
+  - exec:
+      commandLine: php artisan config:clear
+      component: runtime
+      group:
+        isDefault: false
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: clear-config
+  - exec:
+      commandLine: php artisan key:generate
+      component: runtime
+      group:
+        isDefault: false
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: gen-new-app-key
+  - exec:
+      commandLine: composer dump-autoload
+      component: runtime
+      group:
+        isDefault: false
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: composer-dump
+  - composite:
+      commands:
+        - install
+        - cp-env
+        - clear-config
+        - gen-new-app-key
+        - composer-dump
+      group:
+        isDefault: true
+        kind: build
+      label: Provision Laravel Server
+      parallel: false
+    id: init-server
+  - exec:
+      commandLine: php artisan serve --host=0.0.0.0
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: run

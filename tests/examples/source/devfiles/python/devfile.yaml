@@ -1,0 +1,57 @@
+schemaVersion: 2.1.0
+metadata:
+  name: python
+  version: 2.0.1
+  displayName: Flask
+  description:
+    'Flask is a web framework, it’s a Python module that lets you develop web applications easily.
+    It’s has a small and easy-to-extend core: it’s a microframework that doesn’t include an ORM (Object Relational Manager) or such features.'
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/flask.svg
+  projectType: Flask
+  provider: Red Hat
+  language: Python
+  tags:
+    - Flask
+    - Python
+    - Pip
+starterProjects:
+  - name: flask-example
+    git:
+      remotes:
+        origin: https://github.com/devfile-samples/python-ex
+components:
+  - name: py-web
+    container:
+      image: registry.access.redhat.com/ubi9/python-39:latest
+      args: ['tail', '-f', '/dev/null']
+      mountSources: true
+      endpoints:
+        - name: http-python
+          targetPort: 8080
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+commands:
+  - id: pip-install-requirements
+    exec:
+      commandLine: pip install -r requirements.txt
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+      component: py-web
+  - id: run-app
+    exec:
+      commandLine: 'python app.py'
+      workingDir: ${PROJECT_SOURCE}
+      component: py-web
+      group:
+        kind: run
+        isDefault: true
+  - id: debugpy
+    exec:
+      commandLine: 'pip install debugpy && python -m debugpy --listen 0.0.0.0:${DEBUG_PORT} app.py'
+      workingDir: ${PROJECT_SOURCE}
+      component: py-web
+      group:
+        kind: debug

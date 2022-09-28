@@ -1,0 +1,63 @@
+schemaVersion: 2.1.0
+metadata:
+  name: python-django
+  version: 2.0.1
+  displayName: Django
+  description:
+    'Django is a high-level Python web framework that enables rapid development of secure and maintainable websites.
+    Built by experienced developers, Django takes care of much of the hassle of web development, so you can focus on writing your app without needing to reinvent the wheel.
+    It is free and open source, has a thriving and active community, great documentation, and many options for free and paid-for support.'
+  icon: https://static.djangoproject.com/img/logos/django-logo-positive.svg
+  projectType: Django
+  provider: Red Hat
+  language: Python
+  tags:
+    - Django
+    - Python
+    - Pip
+starterProjects:
+  - name: django-example
+    git:
+      remotes:
+        origin: https://github.com/devfile-samples/python-django-ex
+components:
+  - name: py-web
+    container:
+      image: registry.access.redhat.com/ubi9/python-39:latest
+      args: ["tail", "-f", "/dev/null"]
+      mountSources: true
+      endpoints:
+        - name: http-django
+          targetPort: 8000
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+commands:
+  - id: pip-install-requirements
+    exec:
+      commandLine: pip install -r requirements.txt
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+      component: py-web
+  - id: run-app
+    exec:
+      commandLine: 'python manage.py runserver 0.0.0.0:8000'
+      workingDir: ${PROJECT_SOURCE}
+      component: py-web
+      group:
+        kind: run
+        isDefault: true
+  - id: run-migrations
+    exec:
+      commandLine: 'python manage.py migrate'
+      workingDir: ${PROJECT_SOURCE}
+      component: py-web
+  - id: debug
+    exec:
+      commandLine: 'pip install debugpy && export DEBUG_MODE=True && python -m debugpy --listen 0.0.0.0:${DEBUG_PORT} manage.py runserver 0.0.0.0:8000 --noreload --nothreading'
+      workingDir: ${PROJECT_SOURCE}
+      component: py-web
+      group:
+        kind: debug
