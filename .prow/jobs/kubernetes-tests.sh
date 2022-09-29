@@ -12,5 +12,4 @@ PATH=${PATH}:${GOPATH}/bin
 make install
 
 export KUBERNETES=true
-make test-integration
-make test-e2e
+make test-integration-hack
