@@ -13,3 +13,4 @@ make install
 
 export KUBERNETES=true
 make test-integration-hack
+sleep 10000
