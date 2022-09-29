@@ -2,8 +2,7 @@
 
 set -e
 
-ibmcloud login --apikey "${IBM_API_KEY}"
-ibmcloud target -r "${IBM_REGION}"
+ibmcloud login --apikey "${IBM_API_KEY}" -r "${IBM_REGION}"
 ibmcloud ks cluster config --cluster "${IBM_KUBERNETES_ID}" --admin
 
 export DEVFILE_PROXY="$(kubectl get svc -n devfile-proxy nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' || true)"
