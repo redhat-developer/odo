@@ -12,5 +12,5 @@ PATH=${PATH}:${GOPATH}/bin
 make install
 
 export KUBERNETES=true
-make test-integration-hack
-sleep 10000
+export TEST_EXEC_NODES=24
+make test-integration
