@@ -195,7 +195,7 @@ func CommonBeforeEach(setupCluster bool) CommonVar {
 	commonVar.ConfigDir = CreateNewContext()
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
 	commonVar.CliRunner = GetCliRunner()
-	LocalKubeconfigSet(commonVar.ConfigDir)
+	//LocalKubeconfigSet(commonVar.ConfigDir)
 	if setupCluster {
 		commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 	}
