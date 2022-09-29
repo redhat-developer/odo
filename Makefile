@@ -186,7 +186,7 @@ openshiftci-presubmit-unittests:
 
 .PHONY: test-integration-hack
 test-integration-hack:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus "odo analyze command tests" tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus "odo generic" tests/integration
 
 .PHONY: test-e2e
 test-e2e:
