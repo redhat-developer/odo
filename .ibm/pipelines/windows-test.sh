@@ -11,7 +11,6 @@ LOGFILE="pr-${GIT_PR_NUMBER}-windows-tests-${BUILD_NUMBER}"
 export REPO=${REPO:-"https://github.com/redhat-developer/odo"}
 #copy test script inside /tmp/
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no ./.ibm/pipelines/windows-test-script.ps1 Administrator@$WINDOWS_IP:/tmp/windows-test-script.ps1
-sshpass -p $WINDOWS_PASSWORD scp -ro StrictHostKeyChecking=no  /go/odo_1  Administrator@$WINDOWS_IP:$BUILD_NUMBER
 
 #execute test from the test script
 export TEST_EXEC_NODES=${TEST_EXEC_NODES:-"16"}

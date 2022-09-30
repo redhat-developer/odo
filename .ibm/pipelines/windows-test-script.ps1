@@ -18,14 +18,19 @@ function Do-Cleanup {
     Shout "Removed $BUILD_NUMBER"
     Remove-Item  -Force -Recurse  $BUILD_NUMBER
     }
-}    
+}
 
 function Run-Test {
     Shout "kill previous odo sessions"
     taskkill /IM "odo.exe" /F
 
-    Shout "copying from IBM Cloud to local"
+    Shout "Cloning Repo"
+    git clone --depth 1 $REPO $BUILD_NUMBER
     Push-Location $BUILD_NUMBER
+
+    Shout "Checking out PR #$GIT_PR_NUMBER"
+    git fetch --depth 1 origin pull/${GIT_PR_NUMBER}/head:pr${GIT_PR_NUMBER}
+    git checkout pr${GIT_PR_NUMBER}
 
     Shout "Setup ENV variables"
     mkdir bin 
