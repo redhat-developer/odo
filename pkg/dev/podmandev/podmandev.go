@@ -61,6 +61,31 @@ func (o *DevClient) Start(
 		return err
 	}
 
+	compInfo := sync.ComponentInfo{
+		ComponentName: componentName,
+		ContainerName: "", // TODO
+		PodName:       pod.GetName(),
+		SyncFolder:    "/projects", // TODO
+	}
+
+	syncParams := sync.SyncParameters{
+		Path:                     path,
+		WatchFiles:               nil,
+		WatchDeletedFiles:        nil,
+		IgnoredFiles:             options.IgnorePaths,
+		DevfileScanIndexForWatch: true,
+		SyncExtracter:            nil,
+
+		CompInfo:  compInfo,
+		ForcePush: true,
+		Files:     map[string]string{}, // ??? TODO
+	}
+	execRequired, err := o.syncClient.SyncFiles(syncParams)
+	if err != nil {
+		return err
+	}
+	_ = execRequired
+
 	<-ctx.Done()
 
 	fmt.Printf("Cleaning up resources\n")
