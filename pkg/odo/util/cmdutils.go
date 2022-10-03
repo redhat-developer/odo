@@ -2,12 +2,13 @@ package util
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"os"
 )
 
 func LogError(err error, context string) {

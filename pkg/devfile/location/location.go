@@ -8,7 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-//  possibleDevfileNames contains possivle devfile name that should be checked in the context dir.
+// possibleDevfileNames contains possivle devfile name that should be checked in the context dir.
 var possibleDevfileNames = [...]string{"devfile.yaml", ".devfile.yaml"}
 
 // DevfileFilenamesProvider checks if the context dir contains devfile with possible names from possibleDevfileNames variable,

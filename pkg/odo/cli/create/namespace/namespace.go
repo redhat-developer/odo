@@ -3,9 +3,10 @@ package namespace
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"os"
 
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/spf13/cobra"

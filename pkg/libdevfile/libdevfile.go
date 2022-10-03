@@ -444,7 +444,7 @@ func loadResourceManifestFromUriAndResolveVariables(devfileObj parser.DevfileObj
 // substituteVariables validates the string for a global variable in the given `devfileObj` and replaces it.
 // An error is returned if the string references an invalid variable key not defined in the Devfile object.
 //
-//Inspired from variables.validateAndReplaceDataWithVariable, which is unfortunately not exported
+// Inspired from variables.validateAndReplaceDataWithVariable, which is unfortunately not exported
 func substituteVariables(devfileVars map[string]string, val string) (string, error) {
 	// example of the regex: {{variable}} / {{ variable }}
 	matches := regexp.MustCompile(`\{\{\s*(.*?)\s*\}\}`).FindAllStringSubmatch(val, -1)

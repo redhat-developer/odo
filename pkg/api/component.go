@@ -1,10 +1,11 @@
 package api
 
 import (
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"sort"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type RunningMode string
