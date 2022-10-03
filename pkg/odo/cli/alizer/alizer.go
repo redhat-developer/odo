@@ -7,8 +7,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -73,7 +73,7 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER)
-	machineoutput.UsedByCommand(alizerCmd)
+	commonflags.UseOutputFlag(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	alizerCmd.Annotations["command"] = "utility"
 	return alizerCmd

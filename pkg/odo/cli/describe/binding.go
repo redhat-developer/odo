@@ -12,8 +12,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -127,7 +127,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	}
 	bindingCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the binding to describe, optional. By default, the bindings in the local devfile are described")
 	clientset.Add(bindingCmd, clientset.KUBERNETES, clientset.BINDING)
-	machineoutput.UsedByCommand(bindingCmd)
+	commonflags.UseOutputFlag(bindingCmd)
 
 	return bindingCmd
 }

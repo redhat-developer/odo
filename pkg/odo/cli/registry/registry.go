@@ -11,8 +11,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -125,7 +125,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Annotations["command"] = "main"
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	machineoutput.UsedByCommand(listCmd)
+	commonflags.UseOutputFlag(listCmd)
 	return listCmd
 }
 

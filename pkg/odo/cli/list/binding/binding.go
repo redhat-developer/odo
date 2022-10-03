@@ -14,9 +14,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -138,7 +138,7 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 	}
 	clientset.Add(bindingListCmd, clientset.KUBERNETES, clientset.BINDING)
 	bindingListCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for bindings")
-	machineoutput.UsedByCommand(bindingListCmd)
+	commonflags.UseOutputFlag(bindingListCmd)
 	return bindingListCmd
 }
 

@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/list/services"
 	"os"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/list/services"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/binding"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/list/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
@@ -172,7 +173,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	completion.RegisterCommandFlagHandler(listCmd, "path", completion.FileCompletionHandler)
-	machineoutput.UsedByCommand(listCmd)
+	commonflags.UseOutputFlag(listCmd)
 
 	return listCmd
 }

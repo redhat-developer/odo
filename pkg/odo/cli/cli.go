@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/logs"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/add"
@@ -133,13 +134,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// will be global for your application.
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
-	// Add the machine readable output flag to all commands
-	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
-	// above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
-	// package
-
-	flag.CommandLine.String("o", "", "Specify output format, supported format: json")
-	_ = pflag.CommandLine.MarkHidden("o")
+	commonflags.AddOutputFlag()
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging

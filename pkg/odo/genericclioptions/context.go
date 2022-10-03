@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 
@@ -109,7 +110,7 @@ func New(parameters CreateParameters) (*Context, error) {
 
 	ctx.componentContext = parameters.componentContext
 
-	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(util.OutputFlagName)
+	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(commonflags.OutputFlagName)
 
 	if !parameters.offline {
 		ctx.KClient, err = parameters.cmdline.GetKubeClient()
