@@ -27,7 +27,9 @@ In addition to this, the following data about user's identity is also noted -
 Alternatively you can _disable_ telemetry by setting `ODO_DISABLE_TELEMETRY` environment variable to `true`.
 This environment variable will override the `ConsentTelemetry` value set by `odo preference`.
 
-The following tables describes the additional information collected by odo commands.
+### Additional information collected
+
+The following tables describe the additional information collected by `odo` commands.
 
 **odo v2**
 
