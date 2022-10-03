@@ -109,9 +109,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	})
 
-	// CheckMachineReadableOutput
-	// fixes / checks all related machine readable output functions
 	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(cmd), "")
+	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
 
 	deps, err := clientset.Fetch(cmd)
 	if err != nil {
