@@ -43,7 +43,7 @@ source ~/.odo/completion.bash.inc
 Load into your current shell environment:
 
 ```sh
-source <(odo zsh)
+source <(odo completion zsh)
 ```
 
 Load persistently:
