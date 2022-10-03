@@ -62,7 +62,7 @@ func (so *SetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes SetOptions after they've been created
-func (so *SetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (so *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	so.namespaceName = args[0]
 	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
@@ -79,7 +79,7 @@ func (so *SetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 }
 
 // Validate validates the parameters of the SetOptions
-func (so *SetOptions) Validate() error {
+func (so *SetOptions) Validate(ctx context.Context) error {
 	return dfutil.ValidateK8sResourceName("namespace name", so.namespaceName)
 }
 

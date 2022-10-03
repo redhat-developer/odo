@@ -45,7 +45,7 @@ func (o *RemoveBindingOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *RemoveBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *RemoveBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (o *RemoveBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) 
 	return nil
 }
 
-func (o *RemoveBindingOptions) Validate() (err error) {
+func (o *RemoveBindingOptions) Validate(ctx context.Context) (err error) {
 	return o.clientset.BindingClient.ValidateRemoveBinding(o.flags)
 }
 

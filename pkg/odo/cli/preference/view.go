@@ -43,12 +43,12 @@ func (o *ViewOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ViewOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	return
 }
 
 // Validate validates the ViewOptions based on completed values
-func (o *ViewOptions) Validate() (err error) {
+func (o *ViewOptions) Validate(ctx context.Context) (err error) {
 	return
 }
 

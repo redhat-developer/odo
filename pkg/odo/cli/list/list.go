@@ -65,7 +65,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete ...
-func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	lo.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 }
 
 // Validate ...
-func (lo *ListOptions) Validate() (err error) {
+func (lo *ListOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

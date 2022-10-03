@@ -40,8 +40,8 @@ import (
 
 type Runnable interface {
 	SetClientset(clientset *clientset.Clientset)
-	Complete(cmdline cmdline.Cmdline, args []string) error
-	Validate() error
+	Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error
+	Validate(ctx context.Context) error
 	Run(ctx context.Context) error
 }
 
@@ -119,15 +119,18 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	o.SetClientset(deps)
 
 	cmdLineObj := cmdline.NewCobra(cmd)
+
+	ctx := cmdLineObj.Context()
+
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
-	err = o.Complete(cmdLineObj, args)
+	err = o.Complete(ctx, cmdLineObj, args)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Validate()
+	err = o.Validate(ctx)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
 	}
@@ -140,7 +143,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			machineoutput.OutputSuccess(out)
 		}
 	} else {
-		err = o.Run(cmdLineObj.Context())
+		err = o.Run(ctx)
 	}
 	startTelemetry(cmd, err, startTime)
 	util.LogError(err, "")

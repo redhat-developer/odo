@@ -52,7 +52,7 @@ func (o *BuildImagesOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes LoginOptions after they've been created
-func (o *BuildImagesOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *BuildImagesOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag).IsOffline())
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (o *BuildImagesOptions) Complete(cmdline cmdline.Cmdline, args []string) (e
 }
 
 // Validate validates the LoginOptions based on completed values
-func (o *BuildImagesOptions) Validate() (err error) {
+func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
 	return
 }
 

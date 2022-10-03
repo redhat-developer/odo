@@ -68,7 +68,7 @@ func TestInitOptions_Complete(t *testing.T) {
 			if tt.initExpects != nil {
 				tt.initExpects(initClient)
 			}
-			if err := o.Complete(cmdline, []string{}); (err != nil) != tt.wantErr {
+			if err := o.Complete(context.TODO(), cmdline, []string{}); (err != nil) != tt.wantErr {
 				t.Errorf("InitOptions.Complete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -81,7 +81,7 @@ func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete will build the parameters for init, using different backends based on the flags set,
 // either by using flags or interactively if no flag is passed
 // Complete will return an error immediately if the current working directory is not empty
-func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *InitOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
 	o.ctx = cmdline.Context()
 
@@ -98,7 +98,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 }
 
 // Validate validates the InitOptions based on completed values
-func (o *InitOptions) Validate() error {
+func (o *InitOptions) Validate(ctx context.Context) error {
 
 	devfilePresent, err := location.DirectoryContainsDevfile(o.clientset.FS, o.contextDir)
 	if err != nil {

@@ -52,13 +52,13 @@ func (o *UnsetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes UnsetOptions after they've been created
-func (o *UnsetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *UnsetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = strings.ToLower(args[0])
 	return
 }
 
 // Validate validates the UnsetOptions based on completed values
-func (o *UnsetOptions) Validate() (err error) {
+func (o *UnsetOptions) Validate(ctx context.Context) (err error) {
 	return
 }
 

@@ -60,7 +60,7 @@ func (o *ServiceListOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *ServiceListOptions) Complete(cmdline cmdline.Cmdline, _ []string) error {
+func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
 	var err error
 	o.contextDir, err = os.Getwd()
 	if err != nil {
@@ -79,7 +79,7 @@ func (o *ServiceListOptions) Complete(cmdline cmdline.Cmdline, _ []string) error
 	return err
 }
 
-func (o *ServiceListOptions) Validate() error {
+func (o *ServiceListOptions) Validate(ctx context.Context) error {
 	if o.allNamespacesFlag && o.namespaceFlag != "" {
 		return errors.New("cannot use --all-namespaces and --namespace flags together")
 	}

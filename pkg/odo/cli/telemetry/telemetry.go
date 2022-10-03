@@ -32,12 +32,12 @@ func (o *TelemetryOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *TelemetryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *TelemetryOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	err = json.Unmarshal([]byte(args[0]), &o.telemetryData)
 	return err
 }
 
-func (o *TelemetryOptions) Validate() (err error) {
+func (o *TelemetryOptions) Validate(ctx context.Context) (err error) {
 	return err
 }
 

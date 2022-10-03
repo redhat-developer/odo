@@ -57,7 +57,7 @@ func (o *VersionOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes VersionOptions after they have been created
-func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *VersionOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if !o.clientFlag {
 		// Let's fetch the info about the server, ignoring errors
 		client, err := kclient.New()
@@ -82,7 +82,7 @@ func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 }
 
 // Validate validates the VersionOptions based on completed values
-func (o *VersionOptions) Validate() (err error) {
+func (o *VersionOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

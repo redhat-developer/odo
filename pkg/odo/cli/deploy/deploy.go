@@ -63,7 +63,7 @@ func (o *DeployOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete DeployOptions after they've been created
-func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 }
 
 // Validate validates the DeployOptions based on completed values
-func (o *DeployOptions) Validate() error {
+func (o *DeployOptions) Validate(ctx context.Context) error {
 	return nil
 }
 

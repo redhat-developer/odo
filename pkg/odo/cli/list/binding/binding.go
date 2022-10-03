@@ -63,7 +63,7 @@ func (o *BindingListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes BindingListOptions after they've been created
-func (o *BindingListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *BindingListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (o *BindingListOptions) Complete(cmdline cmdline.Cmdline, args []string) (e
 }
 
 // Validate validates the BindingListOptions based on completed values
-func (o *BindingListOptions) Validate() (err error) {
+func (o *BindingListOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

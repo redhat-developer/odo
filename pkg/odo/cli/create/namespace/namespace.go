@@ -66,7 +66,7 @@ func (o *NamespaceCreateOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes NamespaceCreateOptions after they've been created
-func (nco *NamespaceCreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (nco *NamespaceCreateOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	nco.namespaceName = args[0]
 	nco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
@@ -79,7 +79,7 @@ func (nco *NamespaceCreateOptions) Complete(cmdline cmdline.Cmdline, args []stri
 }
 
 // Validate validates the parameters of the NamespaceCreateOptions
-func (nco *NamespaceCreateOptions) Validate() error {
+func (nco *NamespaceCreateOptions) Validate(ctx context.Context) error {
 	return dfutil.ValidateK8sResourceName("namespace name", nco.namespaceName)
 }
 

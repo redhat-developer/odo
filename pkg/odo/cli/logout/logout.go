@@ -37,13 +37,13 @@ func (o *LogoutOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes LogoutOptions after they've been created
-func (o *LogoutOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *LogoutOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return
 }
 
 // Validate validates the LogoutOptions based on completed values
-func (o *LogoutOptions) Validate() (err error) {
+func (o *LogoutOptions) Validate(ctx context.Context) (err error) {
 	return
 }
 

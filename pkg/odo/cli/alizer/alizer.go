@@ -34,11 +34,11 @@ func (o *AlizerOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *AlizerOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *AlizerOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	return nil
 }
 
-func (o *AlizerOptions) Validate() error {
+func (o *AlizerOptions) Validate(ctx context.Context) error {
 	return nil
 }
 

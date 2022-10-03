@@ -59,7 +59,7 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.nameFlag == "" {
 
@@ -84,7 +84,7 @@ func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err
 	return nil
 }
 
-func (o *ComponentOptions) Validate() (err error) {
+func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

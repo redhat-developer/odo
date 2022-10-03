@@ -64,7 +64,7 @@ func (o *AddBindingOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *AddBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *AddBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	// The command must work without Devfile
 	if err != nil && !genericclioptions.IsNoDevfileError(err) {
@@ -79,7 +79,7 @@ func (o *AddBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (er
 	return nil
 }
 
-func (o *AddBindingOptions) Validate() (err error) {
+func (o *AddBindingOptions) Validate(ctx context.Context) (err error) {
 	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
 	return o.clientset.BindingClient.ValidateAddBinding(o.flags, withDevfile)
 }

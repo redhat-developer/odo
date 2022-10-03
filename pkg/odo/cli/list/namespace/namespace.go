@@ -50,13 +50,13 @@ func (o *NamespaceListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes NamespaceListOptions after they've been created
-func (plo *NamespaceListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (plo *NamespaceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 
 // Validate validates the NamespaceListOptions based on completed values
-func (plo *NamespaceListOptions) Validate() (err error) {
+func (plo *NamespaceListOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

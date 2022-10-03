@@ -55,7 +55,7 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *BindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
 		o.contextDir, err = os.Getwd()
 		if err != nil {
@@ -73,7 +73,7 @@ func (o *BindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	return nil
 }
 
-func (o *BindingOptions) Validate() (err error) {
+func (o *BindingOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

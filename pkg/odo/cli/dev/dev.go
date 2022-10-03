@@ -92,7 +92,7 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
+func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
@@ -143,7 +143,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	return nil
 }
 
-func (o *DevOptions) Validate() error {
+func (o *DevOptions) Validate(ctx context.Context) error {
 	if !o.debugFlag && !libdevfile.HasRunCommand(o.initialDevfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("run")
 	}
