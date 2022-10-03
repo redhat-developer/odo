@@ -123,6 +123,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithOutput(ctx, commonflags.GetOutputValue(cmdLineObj))
+	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
 
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.

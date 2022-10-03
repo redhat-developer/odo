@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -12,6 +13,9 @@ import (
 const (
 	// RunOnFlagName is the name of the flag allowing user to specify target platform
 	RunOnFlagName = "run-on"
+	RunOnCluster  = "cluster"
+	RunOnPodman   = "podman"
+	RunOnDefault  = RunOnCluster
 )
 
 // UseRunOnFlag indicates that a command accepts the --run-on flag
@@ -40,7 +44,7 @@ func CheckRunOnCommand(cmd *cobra.Command) error {
 	runOn := cmd.Annotations["runOn"]
 
 	// Check the valid output
-	if hasFlagChanged && runOnFlag.Value.String() != "podman" && runOnFlag.Value.String() != "cluster" {
+	if hasFlagChanged && runOnFlag.Value.String() != RunOnPodman && runOnFlag.Value.String() != RunOnCluster {
 		return fmt.Errorf("%s is not a valid target platform for --run-on, please select either cluster (default) or podman", runOnFlag.Value.String())
 	}
 
@@ -50,4 +54,13 @@ func CheckRunOnCommand(cmd *cobra.Command) error {
 	}
 
 	return nil
+}
+
+// GetRunOnValue returns value of --run-on flag or default value
+func GetRunOnValue(cmd cmdline.Cmdline) string {
+	val := cmd.FlagValueIfSet(RunOnFlagName)
+	if val == "" {
+		val = RunOnDefault
+	}
+	return val
 }
