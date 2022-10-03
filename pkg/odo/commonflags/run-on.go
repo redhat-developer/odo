@@ -14,6 +14,7 @@ const (
 	RunOnFlagName = "run-on"
 )
 
+// UseRunOnFlag indicates that a command accepts the --run-on flag
 func UseRunOnFlag(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}

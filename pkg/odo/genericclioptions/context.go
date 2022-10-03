@@ -11,7 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 
@@ -46,8 +45,6 @@ type internalCxt struct {
 	componentContext string
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
 	componentName string
-	// outputFlag is the value passed with the `-o` flag
-	outputFlag string
 	// The path of the detected devfile
 	devfilePath string
 	// Kclient can be used to access Kubernetes resources
@@ -109,8 +106,6 @@ func New(parameters CreateParameters) (*Context, error) {
 	ctx.application = defaultAppName
 
 	ctx.componentContext = parameters.componentContext
-
-	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(commonflags.OutputFlagName)
 
 	if !parameters.offline {
 		ctx.KClient, err = parameters.cmdline.GetKubeClient()
@@ -182,10 +177,6 @@ func (o *Context) GetApplication() string {
 
 func (o *Context) GetComponentName() string {
 	return o.componentName
-}
-
-func (o *Context) GetOutputFlag() string {
-	return o.outputFlag
 }
 
 func (o *Context) GetDevfilePath() string {

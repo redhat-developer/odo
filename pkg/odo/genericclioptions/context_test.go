@@ -137,7 +137,6 @@ func TestNew(t *testing.T) {
 						componentName: getTestBaseName(),
 						// empty when no devfile
 						componentContext: "",
-						outputFlag:       "",
 						devfilePath:      "",
 					},
 				}
@@ -163,7 +162,6 @@ func TestNew(t *testing.T) {
 						componentName: getTestBaseName(),
 						// empty when no devfile
 						componentContext: "",
-						outputFlag:       "",
 						devfilePath:      "",
 					},
 				}
@@ -190,7 +188,6 @@ func TestNew(t *testing.T) {
 						application:      "app",
 						componentName:    getTestBaseName(),
 						componentContext: "",
-						outputFlag:       "",
 						devfilePath:      "",
 					},
 				}
@@ -217,7 +214,6 @@ func TestNew(t *testing.T) {
 						application:      "app",
 						componentName:    "",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						outputFlag:       "",
 						devfilePath:      "",
 					},
 				}
@@ -246,7 +242,6 @@ func TestNew(t *testing.T) {
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						outputFlag:       "",
 						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
 					},
 				}
@@ -275,7 +270,6 @@ func TestNew(t *testing.T) {
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						outputFlag:       "",
 						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
 					},
 				}
@@ -304,7 +298,6 @@ func TestNew(t *testing.T) {
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						outputFlag:       "",
 						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
 					},
 				}
@@ -333,7 +326,6 @@ func TestNew(t *testing.T) {
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						outputFlag:       "",
 						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
 					},
 				}
@@ -426,9 +418,6 @@ func TestNew(t *testing.T) {
 				}
 				if result.componentContext != expected.componentContext {
 					t.Errorf("Expected component context %s, got %s", expected.componentContext, result.componentContext)
-				}
-				if result.outputFlag != expected.outputFlag {
-					t.Errorf("Expected output flag %s, got %s", expected.outputFlag, result.outputFlag)
 				}
 				if result.devfilePath != expected.devfilePath {
 					t.Errorf("Expected devfilePath %s, got %s", expected.devfilePath, result.devfilePath)

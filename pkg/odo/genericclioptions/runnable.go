@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/klog"
 
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
@@ -121,6 +122,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	cmdLineObj := cmdline.NewCobra(cmd)
 
 	ctx := cmdLineObj.Context()
+	ctx = fcontext.WithOutput(ctx, commonflags.GetOutputValue(cmdLineObj))
 
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.

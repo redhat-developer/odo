@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -113,7 +114,7 @@ func (o *InitOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
-	if len(o.flags) == 0 && log.IsJSON() {
+	if len(o.flags) == 0 && fcontext.GetOutput(ctx) {
 		return errors.New("parameters are expected to select a devfile")
 	}
 	return nil

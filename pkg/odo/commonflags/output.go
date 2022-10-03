@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -15,6 +16,7 @@ const (
 	OutputFlagName = "o"
 )
 
+// UseOutputFlag indicates that a command accepts the -o flag
 func UseOutputFlag(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
@@ -74,4 +76,9 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
 		}
 	}
 	return nil
+}
+
+// GetOutputValue returns true if -o flag is used and value is "json"
+func GetOutputValue(cmd cmdline.Cmdline) bool {
+	return cmd.FlagValueIfSet(OutputFlagName) == "json"
 }
