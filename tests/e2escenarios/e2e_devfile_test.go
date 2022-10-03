@@ -71,7 +71,7 @@ var _ = Describe("odo devfile supported tests", func() {
 		It("Verify output debug information for java-springboot works", func() {
 			createStarterProjAndSetDebug("java-springboot", "springbootproject")
 		})
-		// enable it once https://github.com/redhat-developer/odo/issues/6181 is fixed
+		// TODO(anandrkskd) - enable it once https://github.com/redhat-developer/odo/issues/6181 is fixed
 		// It("Verify output debug information for java-quarkus debug works", func() {
 		// 	createStarterProjAndSetDebug("java-quarkus", "community")
 		// })
