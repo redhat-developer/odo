@@ -3,14 +3,41 @@ Usage Data
 
 If the user has consented to `odo` collecting usage data, the following data will be collected when a command is executed -
 
-* command's ID
-* command's duration time
-* command's pseudonymized error message and error type (in case of failure)
-* whether the command was run from a terminal
-* OS type
+* Command Name
+* Command Duration
+* Command Success
+* Pseudonymized error message and error type (in case of failure)
+* Whether the command was run from a terminal
 * `odo` version in use
 
-Note that these commands do not include `--help` commands. We do not collect data about help commands.
+In addition to this, the following data about user's identity is also noted - 
+* OS type
+* Timezone
+* Locale
+
+The following tables describe the additional information collected by `odo` commands.
+
+**odo v3**
+
+| Command                           | Data                                                                          |
+|-----------------------------------|-------------------------------------------------------------------------------|
+| odo init                          | Component Type, Devfile Name, Language, Project Type, Interactive Mode (bool) |
+| odo dev                           | Component Type, Devfile Name, Language, Project Type                          |
+| odo deploy                        | Component Type, Devfile Name, Language, Project Type                          |
+| odo <create/set/delete> namespace | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes)          |
+
+**odo v2**
+
+| Command                  | Data                                                                 |
+|--------------------------|----------------------------------------------------------------------|
+| odo create               | Component Type, Devfile name                                         |
+| odo push                 | Component Type, Cluster Type, Language, Project Type                 |
+| odo project <create/set> | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes) |
+
+
+All the data collected above is pseudonymized to keep the user information anonymous.
+
+Note: Telemetry data is not collected when you run `--help` for commands.
 
 ###  Enable/Disable preference
 
@@ -22,16 +49,3 @@ Note that these commands do not include `--help` commands. We do not collect dat
 
 Alternatively you can _disable_ telemetry by setting `ODO_DISABLE_TELEMETRY` environment variable to `true`.
 This environment variable will override the `ConsentTelemetry` value set by `odo preference`.
-
-The following table describes the additional information collected by odo commands.
-
-|Event                  | Data                         | Type
-| :-: | :-: | :-- |
-|**Component Create** | Component Type | Devfile component type |
-|**Component Push**| Component Type| Devfile component type|
-| | **Cluster Type** | Openshift 4 / Kubernetes |
-|**Project Create**| Cluster Type |Openshift 4 / Kubernetes |
-|**Project Set**| Cluster Type |Openshift 4 / Kubernetes |
-|**Preference Change** | Preference Key| UpdateNotification/Timeout/PushTimeout/RegistryCacheTime/Ephemeral/ConsentTelemetry |
-
-
