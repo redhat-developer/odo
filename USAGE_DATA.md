@@ -19,20 +19,20 @@ The following tables describe the additional information collected by `odo` comm
 
 **odo v3**
 
-| Command | Data                                                                   |
-|----------------------|------------------------------------------------------------------------|
-| odo init             | Component Type, Devfile Name, Language, Project Type, Interactive Mode |
-| odo dev              | Component Type, Devfile Name, Language, Project Type                   |
-| odo deploy           | Component Type, Devfile Name, Language, Project Type                   |
-| odo <create/set/delete> namespace | Cluster Type                                                           |
+| Command                           | Data                                                                          |
+|-----------------------------------|-------------------------------------------------------------------------------|
+| odo init                          | Component Type, Devfile Name, Language, Project Type, Interactive Mode (bool) |
+| odo dev                           | Component Type, Devfile Name, Language, Project Type                          |
+| odo deploy                        | Component Type, Devfile Name, Language, Project Type                          |
+| odo <create/set/delete> namespace | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes)          |
 
 **odo v2**
 
-| Command                  | Data                                                 |
-|--------------------------|------------------------------------------------------|
-| odo create               | Component Type, Devfile name                         |
-| odo push                 | Component Type, Cluster Type, Language, Project Type |
-| odo project <create/set> | Cluster Type                                         |
+| Command                  | Data                                                                 |
+|--------------------------|----------------------------------------------------------------------|
+| odo create               | Component Type, Devfile name                                         |
+| odo push                 | Component Type, Cluster Type, Language, Project Type                 |
+| odo project <create/set> | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes) |
 
 
 All the data collected above is pseudonymized to keep the user information anonymous.
