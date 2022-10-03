@@ -7,18 +7,28 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/sync"
 )
 
 type DevClient struct {
 	podmanClient podman.Client
+	syncClient   sync.Client
+	execClient   exec.Client
 }
 
 var _ dev.Client = (*DevClient)(nil)
 
-func NewDevClient(podmanClient podman.Client) *DevClient {
+func NewDevClient(
+	podmanClient podman.Client,
+	syncClient sync.Client,
+	execClient exec.Client,
+) *DevClient {
 	return &DevClient{
 		podmanClient: podmanClient,
+		syncClient:   syncClient,
+		execClient:   execClient,
 	}
 }
 

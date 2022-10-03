@@ -163,6 +163,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	case commonflags.RunOnPodman:
 		o.clientset.DevClient = podmandev.NewDevClient(
 			podman.NewPodmanCli(),
+			o.clientset.SyncClient,
+			o.clientset.ExecClient,
 		)
 	}
 	return o.clientset.DevClient.Start(
@@ -225,6 +227,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.KUBERNETES_NULLABLE,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
+		clientset.SYNC,
 		clientset.WATCH,
 	)
 	// Add a defined annotation in order to appear in the help menu
