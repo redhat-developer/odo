@@ -4,6 +4,8 @@ import (
 	"context"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/pflag"
 )
 
 func TestGetContextProperties(t *testing.T) {
@@ -123,3 +125,79 @@ func TestSetTelemetryStatus(t *testing.T) {
 //	}
 //	fakeClient.SetDiscoveryInterface(fd)
 //}
+
+func TestSetFlags(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		flags *pflag.FlagSet
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "no flags",
+			args: args{
+				ctx:   NewContext(context.Background()),
+				flags: &pflag.FlagSet{},
+			},
+			want: "",
+		},
+		{
+			name: "one changed flag",
+			args: args{
+				ctx: NewContext(context.Background()),
+				flags: func() *pflag.FlagSet {
+					f := &pflag.FlagSet{}
+					f.String("flag1", "", "")
+					//nolint:errcheck
+					f.Set("flag1", "value1")
+					return f
+				}(),
+			},
+			want: "flag1",
+		},
+		{
+			name: "one changed flag, one unchanged flag",
+			args: args{
+				ctx: NewContext(context.Background()),
+				flags: func() *pflag.FlagSet {
+					f := &pflag.FlagSet{}
+					f.String("flag1", "", "")
+					f.String("flag2", "", "")
+					//nolint:errcheck
+					f.Set("flag2", "value1")
+					return f
+				}(),
+			},
+			want: "flag2",
+		},
+		{
+			name: "two changed flags",
+			args: args{
+				ctx: NewContext(context.Background()),
+				flags: func() *pflag.FlagSet {
+					f := &pflag.FlagSet{}
+					f.String("flag1", "", "")
+					f.String("flag2", "", "")
+					//nolint:errcheck
+					f.Set("flag1", "value1")
+					//nolint:errcheck
+					f.Set("flag2", "value1")
+					return f
+				}(),
+			},
+			want: "flag1 flag2",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetFlags(tt.args.ctx, tt.args.flags)
+			got := GetContextProperties(tt.args.ctx)[Flags]
+			if got != tt.want {
+				t.Errorf("SetFlags() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

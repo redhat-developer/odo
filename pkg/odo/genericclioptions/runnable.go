@@ -94,6 +94,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
+	scontext.SetFlags(cmd.Context(), cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
 	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 
