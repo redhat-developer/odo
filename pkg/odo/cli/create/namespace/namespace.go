@@ -73,7 +73,7 @@ func (nco *NamespaceCreateOptions) Complete(ctx context.Context, cmdline cmdline
 		return err
 	}
 	if scontext.GetTelemetryStatus(cmdline.Context()) {
-		scontext.SetClusterType(cmdline.Context(), nco.KClient)
+		scontext.SetClusterType(cmdline.Context(), nco.clientset.KubernetesClient)
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
 
 	namespaceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the namespace is ready")
 
-	clientset.Add(namespaceCreateCmd, clientset.PROJECT)
+	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT)
 
 	return namespaceCreateCmd
 }

@@ -73,7 +73,7 @@ func (so *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, arg
 		return err
 	}
 	if scontext.GetTelemetryStatus(cmdline.Context()) {
-		scontext.SetClusterType(cmdline.Context(), so.KClient)
+		scontext.SetClusterType(cmdline.Context(), so.clientset.KubernetesClient)
 	}
 	return nil
 }
@@ -117,7 +117,7 @@ func NewCmdNamespaceSet(name, fullName string) *cobra.Command {
 		Aliases:     []string{"project"},
 	}
 
-	clientset.Add(namespaceSetCmd, clientset.FILESYSTEM, clientset.PROJECT)
+	clientset.Add(namespaceSetCmd, clientset.KUBERNETES, clientset.FILESYSTEM, clientset.PROJECT)
 
 	return namespaceSetCmd
 }

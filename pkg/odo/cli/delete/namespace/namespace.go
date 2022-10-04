@@ -72,7 +72,7 @@ func (do *DeleteOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, 
 		return err
 	}
 	if scontext.GetTelemetryStatus(cmdline.Context()) {
-		scontext.SetClusterType(cmdline.Context(), do.KClient)
+		scontext.SetClusterType(cmdline.Context(), do.clientset.KubernetesClient)
 	}
 	return nil
 }
@@ -137,6 +137,6 @@ func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
 		"wait", "w", false,
 		"Wait until the namespace no longer exists")
 
-	clientset.Add(namespaceDeleteCmd, clientset.PROJECT)
+	clientset.Add(namespaceDeleteCmd, clientset.KUBERNETES, clientset.PROJECT)
 	return namespaceDeleteCmd
 }

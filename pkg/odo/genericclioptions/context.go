@@ -17,7 +17,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
 const (
@@ -44,9 +43,7 @@ type internalCxt struct {
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
 	componentName string
 	// The path of the detected devfile
-	devfilePath string
-	// Kclient can be used to access Kubernetes resources
-	KClient             kclient.ClientInterface
+	devfilePath         string
 	EnvSpecificInfo     *envinfo.EnvSpecificInfo
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
@@ -102,13 +99,6 @@ func New(parameters CreateParameters) (*Context, error) {
 	ctx.application = defaultAppName
 
 	ctx.componentContext = parameters.componentContext
-
-	if !parameters.offline {
-		ctx.KClient, err = parameters.cmdline.GetKubeClient()
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	if parameters.devfile {
 		devfilePath := location.DevfileLocation(parameters.componentContext)
