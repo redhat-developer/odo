@@ -22,6 +22,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -155,7 +156,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	// Output what the command is doing / information
 	log.Title("Developing using the \""+componentName+"\" Devfile",
-		"Namespace: "+o.GetProject(),
+		"Namespace: "+odocontext.GetNamespace(ctx),
 		"odo version: "+version.VERSION)
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore

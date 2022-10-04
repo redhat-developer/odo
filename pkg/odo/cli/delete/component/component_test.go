@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/testingutil"
@@ -212,7 +214,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					DeleteClient:     deleteClient,
 				},
 			}
-			if err = o.deleteDevfileComponent(); (err != nil) != tt.wantErr {
+			ctx := odocontext.WithNamespace(context.Background(), projectName)
+			if err = o.deleteDevfileComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -239,7 +242,6 @@ func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectN
 // prepareKubeClient prepares the mock kclient.ClientInterface3 and returns it
 func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.ClientInterface {
 	kubeClient := kclient.NewMockClientInterface(ctrl)
-	kubeClient.EXPECT().GetCurrentNamespace().Return(projectName)
 	kubeClient.EXPECT().GetNamespaceNormal(projectName).Return(
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{

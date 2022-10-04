@@ -12,9 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const devfileYAML = `
@@ -99,7 +96,6 @@ func TestNew(t *testing.T) {
 		populateWorkingDir func(fs filesystem.Filesystem)
 
 		// flags
-		projectFlag   string
 		componentFlag string
 		outputFlag    string
 		allFlagSet    bool
@@ -121,7 +117,6 @@ func TestNew(t *testing.T) {
 				needDevfile:   false,
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
-				projectFlag:   "myproject",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -132,7 +127,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:       "myproject",
 						application:   "app",
 						componentName: getTestBaseName(),
 						// empty when no devfile
@@ -157,7 +151,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:       "",
 						application:   "app",
 						componentName: getTestBaseName(),
 						// empty when no devfile
@@ -184,7 +177,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:          "",
 						application:      "app",
 						componentName:    getTestBaseName(),
 						componentContext: "",
@@ -199,7 +191,6 @@ func TestNew(t *testing.T) {
 				needDevfile:   true,
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
-				projectFlag:   "myproject",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -210,7 +201,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:          "myproject",
 						application:      "app",
 						componentName:    "",
 						componentContext: filepath.Join(prefixDir, "myapp"),
@@ -225,7 +215,6 @@ func TestNew(t *testing.T) {
 				needDevfile:   true,
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
-				projectFlag:   "myproject",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -238,7 +227,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:          "myproject",
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
@@ -253,7 +241,6 @@ func TestNew(t *testing.T) {
 				needDevfile:   true,
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
-				projectFlag:   "myproject",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -266,7 +253,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:          "myproject",
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
@@ -281,7 +267,6 @@ func TestNew(t *testing.T) {
 				needDevfile: true,
 				isOffline:   true,
 				workingDir:  filepath.Join(prefixDir, "myapp"),
-				projectFlag: "myproject",
 				outputFlag:  "",
 				allFlagSet:  false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
@@ -294,7 +279,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:          "myproject",
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
@@ -309,7 +293,6 @@ func TestNew(t *testing.T) {
 				needDevfile: true,
 				isOffline:   true,
 				workingDir:  filepath.Join(prefixDir, "myapp"),
-				projectFlag: "myproject",
 				outputFlag:  "",
 				allFlagSet:  false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
@@ -322,7 +305,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						project:          "myproject",
 						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
@@ -347,7 +329,6 @@ func TestNew(t *testing.T) {
 			// Fake Cobra
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			cmdline.EXPECT().GetWorkingDirectory().Return(tt.input.workingDir, nil).AnyTimes()
-			cmdline.EXPECT().FlagValueIfSet("project").Return(tt.input.projectFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return(tt.input.componentFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("o").Return(tt.input.outputFlag).AnyTimes()
 			cmdline.EXPECT().IsFlagSet("all").Return(tt.input.allFlagSet).AnyTimes()
@@ -365,13 +346,6 @@ func TestNew(t *testing.T) {
 			kclient := kclient.NewMockClientInterface(ctrl)
 
 			kclient.EXPECT().SetNamespace(gomock.Any()).AnyTimes()
-
-			ns := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: tt.input.projectFlag,
-				},
-			}
-			kclient.EXPECT().GetNamespaceNormal(gomock.Any()).Return(ns, nil).AnyTimes()
 
 			// Call the tested function
 			params := NewCreateParameters(cmdline)
@@ -407,9 +381,6 @@ func TestNew(t *testing.T) {
 			}
 
 			if expected != nil && result != nil {
-				if result.project != expected.project {
-					t.Errorf("Expected project %s, got %s", expected.project, result.project)
-				}
 				if result.application != expected.application {
 					t.Errorf("Expected application %s, got %s", expected.application, result.application)
 				}

@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -86,7 +87,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 	if o.name != "" {
 		return o.deleteNamedComponent()
 	}
-	return o.deleteDevfileComponent()
+	return o.deleteDevfileComponent(ctx)
 }
 
 // deleteNamedComponent deletes a component given its name
@@ -115,12 +116,12 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 }
 
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
-func (o *ComponentOptions) deleteDevfileComponent() error {
+func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 
 	componentName := o.GetComponentName()
 
-	namespace := o.GetProject()
+	namespace := odocontext.GetNamespace(ctx)
 	appName := "app"
 
 	log.Info("Searching resources to delete, please wait...")

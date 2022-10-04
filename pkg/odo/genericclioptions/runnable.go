@@ -29,6 +29,7 @@ import (
 	"k8s.io/klog"
 
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
@@ -125,6 +126,11 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
+
+	if deps.KubernetesClient != nil {
+		namespace := deps.KubernetesClient.GetCurrentNamespace()
+		ctx = odocontext.WithNamespace(ctx, namespace)
+	}
 
 	variables, err := commonflags.GetVariablesValues(cmdLineObj)
 	util.LogErrorAndExit(err, "")

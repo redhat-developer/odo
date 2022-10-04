@@ -37,8 +37,6 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	// project used for the command, either passed with the `--project` flag, or the current one by default
-	project string
 	// application used for the command, either passed with the `--app` flag, or the current one by default
 	application string
 	// componentContext is the value passed with the `--context` flag
@@ -110,10 +108,6 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		if e := ctx.resolveProjectAndNamespace(parameters.cmdline); e != nil {
-			return nil, e
-		}
-
 	}
 
 	if parameters.devfile {
@@ -163,10 +157,6 @@ func NewContextCompletion(command *cobra.Command) *Context {
 		util.LogErrorAndExit(err, "")
 	}
 	return ctx
-}
-
-func (o *Context) GetProject() string {
-	return o.project
 }
 
 func (o *Context) GetApplication() string {

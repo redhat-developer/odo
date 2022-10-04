@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
@@ -73,7 +74,7 @@ func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdli
 	}
 
 	if o.namespaceFlag == "" && !o.allNamespacesFlag {
-		o.namespaceFlag = o.GetProject()
+		o.namespaceFlag = odocontext.GetNamespace(ctx)
 	}
 
 	return err

@@ -25,6 +25,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -102,7 +103,7 @@ func (o *LogsOptions) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (o *LogsOptions) Run(_ context.Context) error {
+func (o *LogsOptions) Run(ctx context.Context) error {
 	var logMode logsMode
 	var err error
 
@@ -125,7 +126,7 @@ func (o *LogsOptions) Run(_ context.Context) error {
 	events, err := o.clientset.LogsClient.GetLogsForMode(
 		mode,
 		o.componentName,
-		o.Context.GetProject(),
+		odocontext.GetNamespace(ctx),
 		o.follow,
 	)
 	if err != nil {
