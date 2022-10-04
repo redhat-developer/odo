@@ -71,9 +71,6 @@ func (o *AddBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdlin
 		return err
 	}
 
-	// this ensures that the current namespace is used
-	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
-
 	o.flags = o.clientset.BindingClient.GetFlags(cmdline.GetFlags())
 
 	return nil

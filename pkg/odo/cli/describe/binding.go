@@ -63,12 +63,7 @@ func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, 
 		}
 
 		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-		if err != nil {
-			return err
-		}
-		// this ensures that the current namespace is used
-		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
-		return nil
+		return err
 	}
 	return nil
 }

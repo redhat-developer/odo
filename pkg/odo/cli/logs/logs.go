@@ -92,9 +92,6 @@ func (o *LogsOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ [
 	}
 
 	o.componentName = o.Context.GetComponentName()
-
-	o.clientset.KubernetesClient.SetNamespace(o.Context.GetProject())
-
 	return nil
 }
 

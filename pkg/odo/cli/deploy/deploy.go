@@ -93,13 +93,7 @@ func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, a
 	o.variables = fcontext.GetVariables(ctx)
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).WithVariables(o.variables).CreateAppIfNeeded())
-	if err != nil {
-		return err
-	}
-
-	// this ensures that odo deploy uses the current namespace
-	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
-	return
+	return err
 }
 
 // Validate validates the DeployOptions based on completed values

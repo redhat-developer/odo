@@ -43,9 +43,6 @@ type BindingListOptions struct {
 	// working directory
 	contextDir string
 
-	// Local variables
-	namespaceFilter string
-
 	// Flags
 	namespaceFlag string
 }
@@ -76,12 +73,9 @@ func (o *BindingListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdli
 	}
 
 	if o.namespaceFlag != "" {
-		o.namespaceFilter = o.namespaceFlag
-	} else {
-		o.namespaceFilter = o.GetProject()
+		o.clientset.KubernetesClient.SetNamespace(o.namespaceFlag)
 	}
 
-	o.clientset.KubernetesClient.SetNamespace(o.namespaceFilter)
 	return nil
 }
 

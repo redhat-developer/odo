@@ -133,9 +133,6 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 	}
 
 	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
-
-	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
-
 	return nil
 }
 

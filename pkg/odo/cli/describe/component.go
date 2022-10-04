@@ -68,12 +68,7 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 		}
 
 		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-		if err != nil {
-			return err
-		}
-		// this ensures that the current namespace is used
-		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
-		return nil
+		return err
 	}
 	// 2. Name is passed, and odo does not have access to devfile.yaml; if Name is passed, then we assume that odo does not have access to the devfile.yaml
 	if o.namespaceFlag != "" {
