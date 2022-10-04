@@ -122,7 +122,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	cmdLineObj := cmdline.NewCobra(cmd)
 
 	ctx := cmdLineObj.Context()
-	ctx = fcontext.WithOutput(ctx, commonflags.GetOutputValue(cmdLineObj))
+	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
 
 	// Run completion, validation and run.

@@ -114,7 +114,7 @@ func (o *InitOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
-	if len(o.flags) == 0 && fcontext.GetOutput(ctx) {
+	if len(o.flags) == 0 && fcontext.IsJsonOutput(ctx) {
 		return errors.New("parameters are expected to select a devfile")
 	}
 	return nil

@@ -9,21 +9,21 @@ import (
 
 func TestOutput(t *testing.T) {
 	ctx := context.TODO()
-	ctx = WithOutput(ctx, true)
-	res := GetOutput(ctx)
+	ctx = WithJsonOutput(ctx, true)
+	res := IsJsonOutput(ctx)
 	if res != true {
 		t.Errorf("GetOutput should return true but returns %v", res)
 	}
 
 	ctx = context.TODO()
-	res = GetOutput(ctx)
+	res = IsJsonOutput(ctx)
 	if res != false {
 		t.Errorf("GetOutput should return false but returns %v", res)
 	}
 
 	ctx = context.TODO()
-	ctx = WithOutput(ctx, false)
-	res = GetOutput(ctx)
+	ctx = WithJsonOutput(ctx, false)
+	res = IsJsonOutput(ctx)
 	if res != false {
 		t.Errorf("GetOutput should return false but returns %v", res)
 	}

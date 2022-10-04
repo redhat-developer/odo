@@ -31,7 +31,7 @@ func UseRunOnFlag(cmd *cobra.Command) {
 // above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 // package
 func AddRunOnFlag() {
-	flag.CommandLine.String(RunOnFlagName, "", "Specify target platform, supported platforms: cluster(default), podman")
+	flag.CommandLine.String(RunOnFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
 	_ = pflag.CommandLine.MarkHidden(RunOnFlagName)
 }
 
@@ -45,7 +45,7 @@ func CheckRunOnCommand(cmd *cobra.Command) error {
 
 	// Check the valid output
 	if hasFlagChanged && runOnFlag.Value.String() != RunOnPodman && runOnFlag.Value.String() != RunOnCluster {
-		return fmt.Errorf("%s is not a valid target platform for --run-on, please select either cluster (default) or podman", runOnFlag.Value.String())
+		return fmt.Errorf(`%s is not a valid target platform for --run-on, please select either "cluster" (default) or "podman" (experimental)`, runOnFlag.Value.String())
 	}
 
 	// Check that if -o json has been passed, that the command actually USES json.. if not, error out.
