@@ -6,13 +6,12 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
 // resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
 func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline) error {
 	var namespace string
-	projectFlag := cmdline.FlagValueIfSet(util.ProjectFlagName)
+	projectFlag := ""
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := o.KClient.GetNamespaceNormal(projectFlag)
