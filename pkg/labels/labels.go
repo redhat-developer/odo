@@ -202,6 +202,13 @@ func GetSelector(componentName string, applicationName string, mode string, isPa
 	return labels.String()
 }
 
+func IsCoreComponent(labels map[string]string) bool {
+	if _, ok := labels[componentLabel]; ok {
+		return true
+	}
+	return false
+}
+
 // getLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
 // if you are creating something use additional=true

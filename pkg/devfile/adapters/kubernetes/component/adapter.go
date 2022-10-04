@@ -8,10 +8,13 @@ import (
 	"reflect"
 	"strings"
 
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -126,6 +129,11 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 	ownerReference := generator.GetOwnerReference(deployment)
+
+	err = a.deleteRemoteResourcesNotPresentInDevfile(labels)
+	if err != nil {
+		return fmt.Errorf("unable to delete remote resources: %w", err)
+	}
 
 	// Create all the K8s components defined in the devfile
 	_, err = a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode, ownerReference)
@@ -569,6 +577,65 @@ func (a Adapter) generateDeploymentObjectMeta(deployment *appsv1.Deployment, lab
 		}
 		return generator.GetObjectMeta(deploymentName, a.kubeClient.GetCurrentNamespace(), labels, annotations), nil
 	}
+}
+
+// deleteRemoteResourcesNotPresentInDevfile compares the list of Devfile K8s component and remote K8s resources
+// and removes the remote resources not present in the Devfile;
+// it ignores the core components (such as deployments, svc, pods; all resources with `component:<something>` label)
+func (a Adapter) deleteRemoteResourcesNotPresentInDevfile(labels map[string]string) error {
+	allRemoteK8sResources, err := a.kubeClient.GetAllResourcesFromSelector(util.ConvertLabelsToSelector(labels), a.kubeClient.GetCurrentNamespace())
+	if err != nil {
+		return fmt.Errorf("unable to fetch remote kubernetes resources: %w", err)
+	}
+	var remoteK8sResources []unstructured.Unstructured
+	// Filter core components
+	for _, remoteK := range allRemoteK8sResources {
+		if !odolabels.IsCoreComponent(remoteK.GetLabels()) {
+			remoteK8sResources = append(remoteK8sResources, remoteK)
+		}
+	}
+	devfileK8sResources, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
+	if err != nil {
+		return fmt.Errorf("unable to obtain devfile kubernetes resources: %w", err)
+	}
+
+	// convert all devfileK8sResources to unstructured data
+	var devfileK8sResourcesUnstructured []unstructured.Unstructured
+	for _, devfileK := range devfileK8sResources {
+		devfileKUnstructured, err := libdevfile.GetK8sComponentAsUnstructured(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
+		if err != nil {
+			return fmt.Errorf("unable to obtain unstructured data: %w", err)
+		}
+		devfileK8sResourcesUnstructured = append(devfileK8sResourcesUnstructured, devfileKUnstructured)
+	}
+
+	var objectsToRemove []unstructured.Unstructured
+	for _, remoteK := range remoteK8sResources {
+		matchFound := false
+		for _, devfileK := range devfileK8sResourcesUnstructured {
+			if devfileK.GetKind() == remoteK.GetKind() && devfileK.GetName() == remoteK.GetName() && remoteK.GetNamespace() == a.kubeClient.GetCurrentNamespace() {
+				matchFound = true
+				break
+			}
+		}
+		if !matchFound {
+			objectsToRemove = append(objectsToRemove, remoteK)
+		}
+	}
+
+	// Delete the resources present on the cluster but not in the Devfile
+	for _, objectToRemove := range objectsToRemove {
+		log.Infof("Deleting Kubernetes resource: %s/%s", objectToRemove.GetKind(), objectToRemove.GetName())
+		gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
+		if err != nil {
+			log.Warningf("Unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+		}
+		err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
+		if err != nil {
+			log.Warningf("Unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+		}
+	}
+	return nil
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well

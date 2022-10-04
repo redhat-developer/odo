@@ -496,11 +496,12 @@ ComponentSettings:
 		})
 
 		When("a new k8s resource is added to the devfile", func() {
+			// instead of adding a new resource, we will simply change the resource name to make it act as a new one
 			const newDeploymentName = "changed-component"
 			BeforeEach(func() {
-				// instead of adding a new resource, we will simply change the resource name to make it act as a new one
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), deploymentName, newDeploymentName)
-				devSession.WaitSync()
+				_, _, _, err := devSession.WaitSync()
+				Expect(err).To(BeNil())
 			})
 			It("should have deleted the old resource and created the new resource", func() {
 				getDeployments := commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()
