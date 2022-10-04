@@ -209,7 +209,7 @@
 
   - name: Create NFS configuration
     copy:
-      content: "/mnt/nfs *(rw,all_squash)"
+      content: "/mnt/nfs *(rw,no_root_squash)"
       dest: "/etc/exports"
 
   - name: Restart service nfs-kernel-server
