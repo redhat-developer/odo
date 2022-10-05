@@ -52,7 +52,7 @@ type SignalHandler interface {
 }
 
 type Cleanuper interface {
-	Cleanup(err error)
+	Cleanup(ctx context.Context, err error)
 }
 
 // JsonOutputter must be implemented by commands with JSON output
@@ -62,6 +62,11 @@ type Cleanuper interface {
 type JsonOutputter interface {
 	RunForJsonOutput(ctx context.Context) (result interface{}, err error)
 }
+
+const (
+	// defaultAppName is the default name of the application when an application name is not provided
+	defaultAppName = "app"
+)
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
@@ -126,6 +131,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
+	ctx = odocontext.WithApplication(ctx, defaultAppName)
 
 	if deps.KubernetesClient != nil {
 		namespace := deps.KubernetesClient.GetCurrentNamespace()
@@ -152,7 +158,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	if jsonOutputter, ok := o.(JsonOutputter); ok && log.IsJSON() {
 		var out interface{}
-		out, err = jsonOutputter.RunForJsonOutput(cmdLineObj.Context())
+		out, err = jsonOutputter.RunForJsonOutput(ctx)
 		if err == nil {
 			machineoutput.OutputSuccess(out)
 		}
@@ -162,7 +168,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	startTelemetry(cmd, err, startTime)
 	util.LogError(err, "")
 	if cleanuper, ok := o.(Cleanuper); ok {
-		cleanuper.Cleanup(err)
+		cleanuper.Cleanup(ctx, err)
 	}
 	if err != nil {
 		os.Exit(1)

@@ -52,7 +52,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(nil, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(nil, nil)
 					client.EXPECT().DeleteResources(gomock.Any(), false).Times(0)
 					return client
 				},
@@ -75,7 +75,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					res2 := getUnstructured("svc1", "service", "v1")
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(resources, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(resources, nil)
 					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
 					return client
 				},
@@ -95,7 +95,8 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					DeleteClient:     tt.fields.deleteComponentClient(ctrl),
 				},
 			}
-			if err := o.deleteNamedComponent(); (err != nil) != tt.wantErr {
+			ctx := odocontext.WithApplication(context.TODO(), "app")
+			if err := o.deleteNamedComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("ComponentOptions.deleteNamedComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -133,7 +134,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
-				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
@@ -148,7 +149,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
-				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName, gomock.Any()).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
@@ -215,6 +216,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				},
 			}
 			ctx := odocontext.WithNamespace(context.Background(), projectName)
+			ctx = odocontext.WithApplication(ctx, "app")
 			if err = o.deleteDevfileComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}

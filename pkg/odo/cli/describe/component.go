@@ -99,18 +99,18 @@ func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{
 
 func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 	if o.nameFlag != "" {
-		return o.describeNamedComponent(o.nameFlag)
+		return o.describeNamedComponent(ctx, o.nameFlag)
 	}
-	return o.describeDevfileComponent()
+	return o.describeDevfileComponent(ctx)
 }
 
 // describeNamedComponent describes a component given its name
-func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, name)
+func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
+	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	devfile, err := component.GetDevfileInfoFromCluster(o.clientset.KubernetesClient, name)
+	devfile, err := component.GetDevfileInfoFromCluster(ctx, o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
@@ -124,7 +124,7 @@ func (o *ComponentOptions) describeNamedComponent(name string) (result api.Compo
 }
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
-func (o *ComponentOptions) describeDevfileComponent() (result api.Component, devfile *parser.DevfileObj, err error) {
+func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result api.Component, devfile *parser.DevfileObj, err error) {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	path, err := filepath.Abs(".")
 	if err != nil {
@@ -137,7 +137,7 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, dev
 
 	componentName := o.GetComponentName()
 
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, componentName)
+	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, componentName)
 	if err != nil {
 		if !errors.As(err, &component.NoComponentFoundError{}) {
 			return api.Component{}, nil, err

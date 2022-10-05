@@ -23,5 +23,5 @@ func GetNamespace(ctx context.Context) string {
 	if cast, ok := value.(string); ok {
 		return cast
 	}
-	return ""
+	panic("GetNamespace can be called only when clientset.KUBERNETES is added to dependencies")
 }

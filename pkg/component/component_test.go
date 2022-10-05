@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -348,7 +350,8 @@ func TestGetRunningModes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			got, err := GetRunningModes(tt.args.client(ctrl), tt.args.name)
+			ctx := odocontext.WithApplication(context.TODO(), "app")
+			got, err := GetRunningModes(ctx, tt.args.client(ctrl), tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 				return

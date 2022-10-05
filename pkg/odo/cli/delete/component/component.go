@@ -85,15 +85,15 @@ func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
 
 func (o *ComponentOptions) Run(ctx context.Context) error {
 	if o.name != "" {
-		return o.deleteNamedComponent()
+		return o.deleteNamedComponent(ctx)
 	}
 	return o.deleteDevfileComponent(ctx)
 }
 
 // deleteNamedComponent deletes a component given its name
-func (o *ComponentOptions) deleteNamedComponent() error {
+func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	log.Info("Searching resources to delete, please wait...")
-	list, err := o.clientset.DeleteClient.ListClusterResourcesToDelete(o.name, o.namespace)
+	list, err := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	componentName := o.GetComponentName()
 
 	namespace := odocontext.GetNamespace(ctx)
-	appName := "app"
+	appName := odocontext.GetApplication(ctx)
 
 	log.Info("Searching resources to delete, please wait...")
 	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName, componentName, labels.ComponentAnyMode)
@@ -138,7 +138,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
 		// Get a list of component's resources present on the cluster
-		clusterResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(componentName, namespace)
+		clusterResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
 		// Get a list of component's resources absent from the devfile, but present on the cluster
 		remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, devfileResources, clusterResources)
 

@@ -15,5 +15,5 @@ type Client interface {
 	// as it is generally done for a Kubernetes resource)
 	WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error
 	// CleanupDevResources deletes the component created using the devfileObj and writes any outputs to out
-	CleanupDevResources(devfileObj parser.DevfileObj, componentName string, out io.Writer) error
+	CleanupDevResources(ctx context.Context, devfileObj parser.DevfileObj, componentName string, out io.Writer) error
 }

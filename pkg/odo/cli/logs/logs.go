@@ -124,6 +124,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	}
 
 	events, err := o.clientset.LogsClient.GetLogsForMode(
+		ctx,
 		mode,
 		o.componentName,
 		odocontext.GetNamespace(ctx),

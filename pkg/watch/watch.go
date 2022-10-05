@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
@@ -491,9 +492,10 @@ func (o *WatchClient) processEvents(
 	return nil, nil
 }
 
-func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, componentName string, out io.Writer) error {
+func (o *WatchClient) CleanupDevResources(ctx context.Context, devfileObj parser.DevfileObj, componentName string, out io.Writer) error {
 	fmt.Fprintln(out, "Cleaning resources, please wait")
-	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", componentName, labels.ComponentDevMode)
+	appname := odocontext.GetApplication(ctx)
+	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appname, componentName, labels.ComponentDevMode)
 	if err != nil {
 		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
 			fmt.Fprintf(out, "Error connecting to the cluster, the resources were not cleaned up.\nPlease log in again and cleanup the resource with `odo delete component`\n\n")
@@ -504,7 +506,7 @@ func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, componen
 	}
 	// if innerloop deployment resource is present, then execute preStop events
 	if isInnerLoopDeployed {
-		err = o.deleteClient.ExecutePreStopEvents(devfileObj, "app", componentName)
+		err = o.deleteClient.ExecutePreStopEvents(devfileObj, appname, componentName)
 		if err != nil {
 			fmt.Fprint(out, "Failed to execute preStop events")
 		}

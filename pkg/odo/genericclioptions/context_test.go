@@ -127,7 +127,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:   "app",
 						componentName: getTestBaseName(),
 						// empty when no devfile
 						componentContext: "",
@@ -151,7 +150,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:   "app",
 						componentName: getTestBaseName(),
 						// empty when no devfile
 						componentContext: "",
@@ -177,7 +175,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:      "app",
 						componentName:    getTestBaseName(),
 						componentContext: "",
 						devfilePath:      "",
@@ -201,7 +198,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:      "app",
 						componentName:    "",
 						componentContext: filepath.Join(prefixDir, "myapp"),
 						devfilePath:      "",
@@ -227,7 +223,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
 						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
@@ -253,7 +248,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
 						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
@@ -279,7 +273,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
 						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
@@ -305,7 +298,6 @@ func TestNew(t *testing.T) {
 			expected: func() *Context {
 				return &Context{
 					internalCxt: internalCxt{
-						application:      "app",
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
 						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
@@ -381,9 +373,6 @@ func TestNew(t *testing.T) {
 			}
 
 			if expected != nil && result != nil {
-				if result.application != expected.application {
-					t.Errorf("Expected application %s, got %s", expected.application, result.application)
-				}
 				if result.componentName != expected.componentName {
 					t.Errorf("Expected componentName %s, got %s", expected.componentName, result.componentName)
 				}

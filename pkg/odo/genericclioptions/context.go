@@ -20,8 +20,6 @@ import (
 )
 
 const (
-	// defaultAppName is the default name of the application when an application name is not provided
-	defaultAppName = "app"
 
 	// gitDirName is the git dir name in a project
 	gitDirName = ".git"
@@ -36,8 +34,6 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	// application used for the command, either passed with the `--app` flag, or the current one by default
-	application string
 	// componentContext is the value passed with the `--context` flag
 	componentContext string
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
@@ -96,8 +92,6 @@ func New(parameters CreateParameters) (*Context, error) {
 	}
 	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-	ctx.application = defaultAppName
-
 	ctx.componentContext = parameters.componentContext
 
 	if parameters.devfile {
@@ -147,10 +141,6 @@ func NewContextCompletion(command *cobra.Command) *Context {
 		util.LogErrorAndExit(err, "")
 	}
 	return ctx
-}
-
-func (o *Context) GetApplication() string {
-	return o.application
 }
 
 func (o *Context) GetComponentName() string {

@@ -96,7 +96,7 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 	var err error
 
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
-	o.ctx, o.cancel = context.WithCancel(context.Background())
+	o.ctx, o.cancel = context.WithCancel(ctx)
 
 	o.contextDir, err = os.Getwd()
 	if err != nil {
@@ -212,11 +212,11 @@ func (o *DevOptions) HandleSignal() error {
 	select {}
 }
 
-func (o *DevOptions) Cleanup(commandError error) {
+func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
 		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 		componentName := o.GetComponentName()
-		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, componentName, log.GetStdout())
+		_ = o.clientset.WatchClient.CleanupDevResources(ctx, devFileObj, componentName, log.GetStdout())
 	}
 }
 
