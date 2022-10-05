@@ -112,6 +112,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(cmd), "")
 	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
+	util.LogErrorAndExit(commonflags.CheckVariablesCommand(cmd), "")
 
 	deps, err := clientset.Fetch(cmd)
 	if err != nil {
@@ -124,6 +125,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
+
+	variables, err := commonflags.GetVariablesValues(cmdLineObj)
+	util.LogErrorAndExit(err, "")
+	ctx = fcontext.WithVariables(ctx, variables)
 
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.

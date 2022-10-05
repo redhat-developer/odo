@@ -87,6 +87,12 @@ func (o *Cobra) FlagValueIfSet(flagName string) string {
 	return flag
 }
 
+// FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
+func (o *Cobra) FlagValuesIfSet(flagName string) []string {
+	flag, _ := o.cmd.Flags().GetStringArray(flagName)
+	return flag
+}
+
 func (o *Cobra) GetKubeClient() (kclient.ClientInterface, error) {
 	return kclient.New()
 }

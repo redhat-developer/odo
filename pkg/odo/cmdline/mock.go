@@ -78,6 +78,20 @@ func (mr *MockCmdlineMockRecorder) FlagValueIfSet(flagName interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValueIfSet", reflect.TypeOf((*MockCmdline)(nil).FlagValueIfSet), flagName)
 }
 
+// FlagValuesIfSet mocks base method.
+func (m *MockCmdline) FlagValuesIfSet(flagName string) []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FlagValuesIfSet", flagName)
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// FlagValuesIfSet indicates an expected call of FlagValuesIfSet.
+func (mr *MockCmdlineMockRecorder) FlagValuesIfSet(flagName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValuesIfSet", reflect.TypeOf((*MockCmdline)(nil).FlagValuesIfSet), flagName)
+}
+
 // GetArgsAfterDashes mocks base method.
 func (m *MockCmdline) GetArgsAfterDashes(args []string) ([]string, error) {
 	m.ctrl.T.Helper()

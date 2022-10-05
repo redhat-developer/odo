@@ -21,6 +21,9 @@ type Cmdline interface {
 	// FlagValueIfSet returns the value for a flag, or an empty string if not set
 	FlagValueIfSet(flagName string) string
 
+	// FlagValuesIfSet returns the array of values for a flag, or an empty array if not set
+	FlagValuesIfSet(flagName string) []string
+
 	// IsFlagSet returns true if the flag is explicitely set
 	IsFlagSet(flagName string) bool
 

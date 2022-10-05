@@ -11,13 +11,15 @@ const (
 )
 
 type (
-	outputKeyType struct{}
-	runOnKeyType  struct{}
+	outputKeyType    struct{}
+	runOnKeyType     struct{}
+	variablesKeyType struct{}
 )
 
 var (
-	outputKey outputKeyType
-	runOnKey  runOnKeyType
+	outputKey    outputKeyType
+	runOnKey     runOnKeyType
+	variablesKey variablesKeyType
 )
 
 // WithJsonOutput sets the value for the output flag (-o) in ctx
@@ -46,4 +48,18 @@ func GetRunOn(ctx context.Context) string {
 		return cast
 	}
 	return commonflags.RunOnDefault
+}
+
+// WithRunOn sets the value for the run-on flag in ctx
+func WithVariables(ctx context.Context, val map[string]string) context.Context {
+	return context.WithValue(ctx, variablesKey, val)
+}
+
+// GetRunOn gets value of run-on flag in ctx
+func GetVariables(ctx context.Context) map[string]string {
+	value := ctx.Value(variablesKey)
+	if cast, ok := value.(map[string]string); ok {
+		return cast
+	}
+	panic("should not happen")
 }
