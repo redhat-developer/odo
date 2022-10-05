@@ -49,8 +49,6 @@ type CreateParameters struct {
 	cmdline          cmdline.Cmdline
 	componentContext string
 	devfile          bool
-	offline          bool
-	appIfNeeded      bool
 	// variables override devfile variables
 	variables map[string]string
 }
@@ -62,16 +60,6 @@ func NewCreateParameters(cmdline cmdline.Cmdline) CreateParameters {
 func (o CreateParameters) NeedDevfile(ctx string) CreateParameters {
 	o.devfile = true
 	o.componentContext = ctx
-	return o
-}
-
-func (o CreateParameters) IsOffline() CreateParameters {
-	o.offline = true
-	return o
-}
-
-func (o CreateParameters) CreateAppIfNeeded() CreateParameters {
-	o.appIfNeeded = true
 	return o
 }
 

@@ -89,7 +89,6 @@ func TestNew(t *testing.T) {
 	type input struct {
 		// New params
 		needDevfile bool
-		isOffline   bool
 
 		// working dir
 		workingDir         string
@@ -115,7 +114,6 @@ func TestNew(t *testing.T) {
 			name: "flags set",
 			input: input{
 				needDevfile:   false,
-				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				componentFlag: "mycomponent",
 				outputFlag:    "",
@@ -139,7 +137,6 @@ func TestNew(t *testing.T) {
 			name: "flags not set",
 			input: input{
 				needDevfile: false,
-				isOffline:   true,
 				workingDir:  filepath.Join(prefixDir, "myapp"),
 				outputFlag:  "",
 				allFlagSet:  false,
@@ -162,7 +159,6 @@ func TestNew(t *testing.T) {
 			name: "missing project for url create",
 			input: input{
 				needDevfile:       false,
-				isOffline:         true,
 				workingDir:        filepath.Join(prefixDir, "myapp"),
 				outputFlag:        "",
 				allFlagSet:        false,
@@ -186,7 +182,6 @@ func TestNew(t *testing.T) {
 			name: "flags set, needDevfile, devfile not found",
 			input: input{
 				needDevfile:   true,
-				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				componentFlag: "mycomponent",
 				outputFlag:    "",
@@ -209,7 +204,6 @@ func TestNew(t *testing.T) {
 			name: "flags set, needDevfile, .devfile.yaml is present",
 			input: input{
 				needDevfile:   true,
-				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				componentFlag: "mycomponent",
 				outputFlag:    "",
@@ -234,7 +228,6 @@ func TestNew(t *testing.T) {
 			name: "flags set, needDevfile, devfile.yaml is present",
 			input: input{
 				needDevfile:   true,
-				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				componentFlag: "mycomponent",
 				outputFlag:    "",
@@ -259,7 +252,6 @@ func TestNew(t *testing.T) {
 			name: "component flag not set, needDevfile, .devfile.yaml is present",
 			input: input{
 				needDevfile: true,
-				isOffline:   true,
 				workingDir:  filepath.Join(prefixDir, "myapp"),
 				outputFlag:  "",
 				allFlagSet:  false,
@@ -284,7 +276,6 @@ func TestNew(t *testing.T) {
 			name: "component flag not set, needDevfile, devfile.yaml is present",
 			input: input{
 				needDevfile: true,
-				isOffline:   true,
 				workingDir:  filepath.Join(prefixDir, "myapp"),
 				outputFlag:  "",
 				allFlagSet:  false,
@@ -343,9 +334,6 @@ func TestNew(t *testing.T) {
 			params := NewCreateParameters(cmdline)
 			if tt.input.needDevfile {
 				params = params.NeedDevfile(tt.input.workingDir)
-			}
-			if tt.input.isOffline {
-				params = params.IsOffline()
 			}
 			result, err := New(params)
 

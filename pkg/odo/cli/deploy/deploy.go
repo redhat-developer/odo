@@ -93,7 +93,7 @@ func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, a
 
 	o.variables = fcontext.GetVariables(ctx)
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).WithVariables(o.variables).CreateAppIfNeeded())
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).WithVariables(o.variables))
 	return err
 }
 

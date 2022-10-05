@@ -53,7 +53,7 @@ func (o *BuildImagesOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes LoginOptions after they've been created
 func (o *BuildImagesOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag).IsOffline())
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
