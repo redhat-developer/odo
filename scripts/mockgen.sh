@@ -83,7 +83,7 @@ mockgen -source=pkg/binding/backend/interface.go \
     -package backend \
     -destination pkg/binding/backend/mock.go
 
-mockgen -source=pkg/sync/sync.go \
+mockgen -source=pkg/sync/interface.go \
     -package sync \
     -destination pkg/sync/mock.go
 
