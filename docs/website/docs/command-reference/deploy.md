@@ -65,7 +65,13 @@ components:
                   image: {{CONTAINER_IMAGE}}
 ```
 
-Note that the `uri` for the Dockerfile could also be an HTTP or HTTPS URL.
+:::note
+The `uri` for the Dockerfile could also be an HTTP or HTTPS URL.
+:::
+
+import Note from '../_imageregistrynote.mdx';
+
+<Note />
 
 ### Running the command
 ```shell
