@@ -57,7 +57,7 @@ func (o *RegistryOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes RegistryOptions after they've been created
-func (o *RegistryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *RegistryOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "remove"
 	o.registryName = args[0]
 	o.registryURL = ""
@@ -66,7 +66,7 @@ func (o *RegistryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err 
 }
 
 // Validate validates the RegistryOptions based on completed values
-func (o *RegistryOptions) Validate() (err error) {
+func (o *RegistryOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

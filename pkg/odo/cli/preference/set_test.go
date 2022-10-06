@@ -22,7 +22,7 @@ func TestSet(t *testing.T) {
 	cmdline := cmdline.NewMockCmdline(ctrl)
 
 	args := []string{"Arg1", "Arg2"}
-	err := opts.Complete(cmdline, args)
+	err := opts.Complete(context.TODO(), cmdline, args)
 	if err != nil {
 		t.Errorf("Expected nil error, got %s", err)
 		return
@@ -35,7 +35,7 @@ func TestSet(t *testing.T) {
 		t.Errorf("Expected paramValue %q, got %q", "Arg2", opts.paramName)
 	}
 
-	err = opts.Validate()
+	err = opts.Validate(context.TODO())
 	if err != nil {
 		t.Errorf("Expected nil error, got %s", err)
 		return

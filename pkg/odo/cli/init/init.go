@@ -16,9 +16,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -81,7 +82,7 @@ func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete will build the parameters for init, using different backends based on the flags set,
 // either by using flags or interactively if no flag is passed
 // Complete will return an error immediately if the current working directory is not empty
-func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *InitOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
 	o.ctx = cmdline.Context()
 
@@ -98,7 +99,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 }
 
 // Validate validates the InitOptions based on completed values
-func (o *InitOptions) Validate() error {
+func (o *InitOptions) Validate(ctx context.Context) error {
 
 	devfilePresent, err := location.DirectoryContainsDevfile(o.clientset.FS, o.contextDir)
 	if err != nil {
@@ -113,7 +114,7 @@ func (o *InitOptions) Validate() error {
 		return err
 	}
 
-	if len(o.flags) == 0 && log.IsJSON() {
+	if len(o.flags) == 0 && fcontext.IsJsonOutput(ctx) {
 		return errors.New("parameters are expected to select a devfile")
 	}
 	return nil
@@ -257,7 +258,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
-	machineoutput.UsedByCommand(initCmd)
+	commonflags.UseOutputFlag(initCmd)
 	// Add a defined annotation in order to appear in the help menu
 	initCmd.Annotations["command"] = "main"
 	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

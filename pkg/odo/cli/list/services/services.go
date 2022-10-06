@@ -4,19 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"os"
-	"strings"
 )
 
 const RecommendedCommandName = "services"
@@ -59,7 +60,7 @@ func (o *ServiceListOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *ServiceListOptions) Complete(cmdline cmdline.Cmdline, _ []string) error {
+func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
 	var err error
 	o.contextDir, err = os.Getwd()
 	if err != nil {
@@ -78,7 +79,7 @@ func (o *ServiceListOptions) Complete(cmdline cmdline.Cmdline, _ []string) error
 	return err
 }
 
-func (o *ServiceListOptions) Validate() error {
+func (o *ServiceListOptions) Validate(ctx context.Context) error {
 	if o.allNamespacesFlag && o.namespaceFlag != "" {
 		return errors.New("cannot use --all-namespaces and --namespace flags together")
 	}
@@ -183,6 +184,6 @@ func NewCmdServicesList(name, fullName string) *cobra.Command {
 	clientset.Add(servicesListCmd, clientset.PROJECT, clientset.BINDING)
 	servicesListCmd.Flags().BoolVarP(&o.allNamespacesFlag, "all-namespaces", "A", false, "Show bindable services from all namespaces")
 	servicesListCmd.Flags().StringVarP(&o.namespaceFlag, "namespace", "n", "", "Show bindable services from a specific namespace (uses current namespace in kubeconfig by default)")
-	machineoutput.UsedByCommand(servicesListCmd)
+	commonflags.UseOutputFlag(servicesListCmd)
 	return servicesListCmd
 }

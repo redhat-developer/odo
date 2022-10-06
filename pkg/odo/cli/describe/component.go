@@ -16,8 +16,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -59,7 +59,7 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.nameFlag == "" {
 
@@ -84,7 +84,7 @@ func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err
 	return nil
 }
 
-func (o *ComponentOptions) Validate() (err error) {
+func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 
@@ -246,7 +246,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
 	clientset.Add(componentCmd, clientset.KUBERNETES, clientset.STATE)
-	machineoutput.UsedByCommand(componentCmd)
+	commonflags.UseOutputFlag(componentCmd)
 
 	return componentCmd
 }

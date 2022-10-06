@@ -53,14 +53,14 @@ func (o *SetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes SetOptions after they've been created
-func (o *SetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = strings.ToLower(args[0])
 	o.paramValue = args[1]
 	return
 }
 
 // Validate validates the SetOptions based on completed values
-func (o *SetOptions) Validate() (err error) {
+func (o *SetOptions) Validate(ctx context.Context) (err error) {
 	return
 }
 

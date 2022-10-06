@@ -60,7 +60,7 @@ func (o *LoginOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes LoginOptions after they've been created
-func (o *LoginOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *LoginOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if len(args) == 1 {
 		// if the user specifies server without --server flag. Example:
 		// odo login -u developer -p developer https://api.crc.testing:6443
@@ -71,7 +71,7 @@ func (o *LoginOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 }
 
 // Validate validates the LoginOptions based on completed values
-func (o *LoginOptions) Validate() (err error) {
+func (o *LoginOptions) Validate(ctx context.Context) (err error) {
 	if o.server != "" && o.serverFlag != "" && o.server != o.serverFlag {
 		// if user has passed server value as parameter as well as used --server flag:
 		// * odo errors *if* the values are different

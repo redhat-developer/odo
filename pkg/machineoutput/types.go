@@ -6,8 +6,6 @@ import (
 	"sync"
 
 	"github.com/redhat-developer/odo/pkg/log"
-
-	"github.com/spf13/cobra"
 )
 
 // ListKind is the kind used for all lists in the machine readable output
@@ -20,13 +18,6 @@ const APIVersion = "odo.dev/v1alpha1"
 // required for OutputSuccessUnindented's 'unindented' JSON objects, since objects printed by other methods are not written from
 // multiple threads.
 var unindentedMutex = &sync.Mutex{}
-
-func UsedByCommand(cmd *cobra.Command) {
-	if cmd.Annotations == nil {
-		cmd.Annotations = map[string]string{}
-	}
-	cmd.Annotations["machineoutput"] = "json"
-}
 
 // OutputSuccessUnindented outputs a "successful" machine-readable output format in unindented json
 func OutputSuccessUnindented(machineOutput interface{}) {

@@ -11,9 +11,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -43,12 +43,12 @@ func (o *ViewOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ViewOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	return
 }
 
 // Validate validates the ViewOptions based on completed values
-func (o *ViewOptions) Validate() (err error) {
+func (o *ViewOptions) Validate(ctx context.Context) (err error) {
 	return
 }
 
@@ -137,6 +137,6 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(preferenceViewCmd, clientset.PREFERENCE)
-	machineoutput.UsedByCommand(preferenceViewCmd)
+	commonflags.UseOutputFlag(preferenceViewCmd)
 	return preferenceViewCmd
 }

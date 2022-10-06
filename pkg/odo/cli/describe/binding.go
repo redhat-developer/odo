@@ -12,8 +12,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -55,7 +55,7 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *BindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
 		o.contextDir, err = os.Getwd()
 		if err != nil {
@@ -73,7 +73,7 @@ func (o *BindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	return nil
 }
 
-func (o *BindingOptions) Validate() (err error) {
+func (o *BindingOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 
@@ -127,7 +127,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	}
 	bindingCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the binding to describe, optional. By default, the bindings in the local devfile are described")
 	clientset.Add(bindingCmd, clientset.KUBERNETES, clientset.BINDING)
-	machineoutput.UsedByCommand(bindingCmd)
+	commonflags.UseOutputFlag(bindingCmd)
 
 	return bindingCmd
 }

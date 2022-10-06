@@ -72,7 +72,7 @@ func (o *LogsOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *LogsOptions) Complete(cmdline cmdline.Cmdline, _ []string) error {
+func (o *LogsOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
 	var err error
 	o.contextDir, err = os.Getwd()
 	if err != nil {
@@ -98,7 +98,7 @@ func (o *LogsOptions) Complete(cmdline cmdline.Cmdline, _ []string) error {
 	return nil
 }
 
-func (o *LogsOptions) Validate() error {
+func (o *LogsOptions) Validate(ctx context.Context) error {
 	if o.devMode && o.deployMode {
 		return errors.New("pass only one of --dev or --deploy flags; pass no flag to see logs for both modes")
 	}

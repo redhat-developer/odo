@@ -11,8 +11,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -64,7 +64,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ListOptions after they've been created
-func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
 	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag)
 	if err != nil {
@@ -75,7 +75,7 @@ func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 }
 
 // Validate validates the ListOptions based on completed values
-func (o *ListOptions) Validate() error {
+func (o *ListOptions) Validate(ctx context.Context) error {
 	if o.devfileList.DevfileRegistries == nil {
 		if len(o.registryFlag) > 0 {
 			return fmt.Errorf("the registry %q is not in preferences", o.registryFlag)
@@ -125,7 +125,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Annotations["command"] = "main"
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	machineoutput.UsedByCommand(listCmd)
+	commonflags.UseOutputFlag(listCmd)
 	return listCmd
 }
 

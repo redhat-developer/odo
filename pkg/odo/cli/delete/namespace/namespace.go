@@ -65,7 +65,7 @@ func (do *DeleteOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes DeleteOptions after they've been created
-func (do *DeleteOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+func (do *DeleteOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	do.namespaceName = args[0]
 	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
@@ -78,7 +78,7 @@ func (do *DeleteOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 }
 
 // Validate validates the DeleteOptions based on completed values
-func (do *DeleteOptions) Validate() (err error) {
+func (do *DeleteOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 

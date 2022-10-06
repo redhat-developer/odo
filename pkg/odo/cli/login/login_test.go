@@ -1,10 +1,12 @@
 package login
 
 import (
+	"context"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/auth"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"testing"
 )
 
 func TestLoginOptions_Complete(t *testing.T) {
@@ -38,7 +40,7 @@ func TestLoginOptions_Complete(t *testing.T) {
 			cmdline := cmdline.NewMockCmdline(ctrl)
 
 			loginOptions := NewLoginOptions(nil)
-			_ = loginOptions.Complete(cmdline, tt.args)
+			_ = loginOptions.Complete(context.TODO(), cmdline, tt.args)
 
 			if loginOptions.server != tt.want {
 				t.Errorf("got %s; wanted %s", loginOptions.server, tt.want)
@@ -96,7 +98,7 @@ func TestLoginOptions_Validate(t *testing.T) {
 			loginOptions.server = tt.serverParam
 			loginOptions.serverFlag = tt.serverFlag
 
-			err := loginOptions.Validate()
+			err := loginOptions.Validate(context.TODO())
 			if err == nil && tt.wantErr {
 				t.Errorf("got no error when one expected")
 			}
