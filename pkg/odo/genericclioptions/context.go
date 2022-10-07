@@ -32,8 +32,6 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	// componentContext is the value passed with the `--context` flag
-	componentContext string
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
 	componentName string
 	// The path of the detected devfile
@@ -70,8 +68,6 @@ func (o CreateParameters) WithVariables(variables map[string]string) CreateParam
 func New(parameters CreateParameters) (*Context, error) {
 	ctx := internalCxt{}
 	var err error
-
-	ctx.componentContext = parameters.componentContext
 
 	if parameters.devfile {
 		devfilePath := location.DevfileLocation(parameters.componentContext)
