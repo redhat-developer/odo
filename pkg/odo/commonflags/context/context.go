@@ -50,12 +50,12 @@ func GetRunOn(ctx context.Context) string {
 	return commonflags.RunOnDefault
 }
 
-// WithRunOn sets the value for the run-on flag in ctx
+// WithVariables sets the value for the --var-file and --var flags in ctx
 func WithVariables(ctx context.Context, val map[string]string) context.Context {
 	return context.WithValue(ctx, variablesKey, val)
 }
 
-// GetRunOn gets value of run-on flag in ctx
+// GetVariables gets values of --var-file and --var flags in ctx
 func GetVariables(ctx context.Context) map[string]string {
 	value := ctx.Value(variablesKey)
 	if cast, ok := value.(map[string]string); ok {
