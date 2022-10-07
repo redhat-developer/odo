@@ -105,7 +105,7 @@ func (o *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interfac
 }
 
 func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error) {
-	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(o.EnvSpecificInfo.GetDevfileObj(), o.contextDir)
+	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(o.DevfileObj, o.contextDir)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}

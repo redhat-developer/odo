@@ -125,7 +125,7 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
 func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result api.Component, devfile *parser.DevfileObj, err error) {
-	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	devfileObj := o.DevfileObj
 	path, err := filepath.Abs(".")
 	if err != nil {
 		return api.Component{}, nil, err

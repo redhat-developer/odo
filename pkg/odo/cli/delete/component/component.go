@@ -117,7 +117,7 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
 func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
-	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	devfileObj := o.DevfileObj
 
 	componentName := o.GetComponentName()
 

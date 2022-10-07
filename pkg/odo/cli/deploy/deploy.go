@@ -104,7 +104,7 @@ func (o *DeployOptions) Validate(ctx context.Context) error {
 
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run(ctx context.Context) error {
-	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	devfileObj := o.DevfileObj
 
 	devfileName := o.GetComponentName()
 

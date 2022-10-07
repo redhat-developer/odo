@@ -129,12 +129,12 @@ func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, e
 
 func (lo *ListOptions) run() (list api.ResourcesList, err error) {
 	devfileComponents, componentInDevfile, err := component.ListAllComponents(
-		lo.clientset.KubernetesClient, lo.namespaceFilter, lo.EnvSpecificInfo.GetDevfileObj(), lo.GetComponentName())
+		lo.clientset.KubernetesClient, lo.namespaceFilter, lo.DevfileObj, lo.GetComponentName())
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
 
-	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(lo.EnvSpecificInfo.GetDevfileObj(), lo.contextDir)
+	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(lo.DevfileObj, lo.contextDir)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}

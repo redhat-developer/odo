@@ -9,13 +9,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/spf13/cobra"
-
-	"github.com/redhat-developer/odo/pkg/envinfo"
 )
 
 const (
@@ -38,7 +37,9 @@ type internalCxt struct {
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
 	componentName string
 	// The path of the detected devfile
-	devfilePath     string
+	devfilePath string
+	DevfileObj  parser.DevfileObj
+
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
@@ -94,7 +95,7 @@ func New(parameters CreateParameters) (*Context, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx.EnvSpecificInfo.SetDevfileObj(devObj)
+			ctx.DevfileObj = devObj
 
 			ctx.componentName, err = component.GatherName(parameters.componentContext, &devObj)
 			if err != nil {

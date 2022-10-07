@@ -62,7 +62,7 @@ func (o *RemoveBindingOptions) Validate(ctx context.Context) (err error) {
 
 func (o *RemoveBindingOptions) Run(_ context.Context) error {
 
-	devfileobj, err := o.clientset.BindingClient.RemoveBinding(o.flags[backend.FLAG_NAME], o.EnvSpecificInfo.GetDevfileObj())
+	devfileobj, err := o.clientset.BindingClient.RemoveBinding(o.flags[backend.FLAG_NAME], o.DevfileObj)
 	if err != nil {
 		return err
 	}

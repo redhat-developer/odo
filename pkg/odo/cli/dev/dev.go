@@ -133,7 +133,7 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
-	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
+	o.initialDevfileObj = o.Context.DevfileObj
 	return nil
 }
 
@@ -149,7 +149,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj    = o.Context.EnvSpecificInfo.GetDevfileObj()
+		devFileObj    = o.Context.DevfileObj
 		path          = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 		componentName = o.GetComponentName()
 	)
@@ -214,7 +214,7 @@ func (o *DevOptions) HandleSignal() error {
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
-		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+		devFileObj := o.Context.DevfileObj
 		componentName := o.GetComponentName()
 		_ = o.clientset.WatchClient.CleanupDevResources(ctx, devFileObj, componentName, log.GetStdout())
 	}

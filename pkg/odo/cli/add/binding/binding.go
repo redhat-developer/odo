@@ -77,12 +77,12 @@ func (o *AddBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdlin
 }
 
 func (o *AddBindingOptions) Validate(ctx context.Context) (err error) {
-	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
+	withDevfile := o.DevfileObj.Data != nil
 	return o.clientset.BindingClient.ValidateAddBinding(o.flags, withDevfile)
 }
 
 func (o *AddBindingOptions) Run(_ context.Context) error {
-	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
+	withDevfile := o.DevfileObj.Data != nil
 
 	ns, err := o.clientset.BindingClient.SelectNamespace(o.flags)
 	if err != nil {
@@ -141,7 +141,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if withDevfile {
 		var devfileobj parser.DevfileObj
 		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(
-			componentName, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+			componentName, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.DevfileObj)
 		if err != nil {
 			return err
 		}

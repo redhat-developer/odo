@@ -99,7 +99,7 @@ func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{},
 }
 
 func (o *BindingOptions) runWithoutName() ([]api.ServiceBinding, error) {
-	return o.clientset.BindingClient.GetBindingsFromDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.contextDir)
+	return o.clientset.BindingClient.GetBindingsFromDevfile(o.DevfileObj, o.contextDir)
 }
 
 func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
