@@ -150,7 +150,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
 		devFileObj    = o.Context.DevfileObj
-		path          = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+		path          = filepath.Dir(o.DevfilePath)
 		componentName = o.GetComponentName()
 	)
 
@@ -190,7 +190,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		devFileObj,
 		componentName,
 		path,
-		o.GetDevfilePath(),
+		o.DevfilePath,
 		o.out,
 		o.errOut,
 		dev.StartOptions{

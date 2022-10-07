@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -126,10 +125,6 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 // describeDevfileComponent describes the component defined by the devfile in the current directory
 func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result api.Component, devfile *parser.DevfileObj, err error) {
 	devfileObj := o.DevfileObj
-	path, err := filepath.Abs(".")
-	if err != nil {
-		return api.Component{}, nil, err
-	}
 	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
 	if err != nil {
 		return api.Component{}, nil, err
@@ -147,7 +142,7 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		}
 	}
 	return api.Component{
-		DevfilePath:       filepath.Join(path, o.Context.GetDevfilePath()),
+		DevfilePath:       o.DevfilePath,
 		DevfileData:       api.GetDevfileData(devfileObj),
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         runningIn,

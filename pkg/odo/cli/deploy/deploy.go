@@ -108,7 +108,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 
 	devfileName := o.GetComponentName()
 
-	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
+	path := filepath.Dir(o.DevfilePath)
 	appName := odocontext.GetApplication(ctx)
 	namespace := odocontext.GetNamespace(ctx)
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))

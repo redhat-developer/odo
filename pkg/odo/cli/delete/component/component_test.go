@@ -268,8 +268,6 @@ func prepareContext(ctrl *gomock.Controller, kubeClient kclient.ClientInterface,
 	if err != nil {
 		return nil
 	}
-	context.EnvSpecificInfo = info                      // TODO remove when devfilePath moved
-	context.EnvSpecificInfo.EnvInfo = envinfo.EnvInfo{} // TODO remove when devfilePath moved
 	context.DevfileObj = info.GetDevfileObj()
 	return context
 }

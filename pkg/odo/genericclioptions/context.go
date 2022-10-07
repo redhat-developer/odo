@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
@@ -37,10 +37,8 @@ type internalCxt struct {
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
 	componentName string
 	// The path of the detected devfile
-	devfilePath string
+	DevfilePath string
 	DevfileObj  parser.DevfileObj
-
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // CreateParameters defines the options which can be provided while creating the context
@@ -73,23 +71,21 @@ func New(parameters CreateParameters) (*Context, error) {
 	ctx := internalCxt{}
 	var err error
 
-	ctx.EnvSpecificInfo, err = GetValidEnvInfo(parameters.cmdline)
-	if err != nil {
-		return nil, err
-	}
-
 	ctx.componentContext = parameters.componentContext
 
 	if parameters.devfile {
 		devfilePath := location.DevfileLocation(parameters.componentContext)
 		isDevfile := odoutil.CheckPathExists(devfilePath)
 		if isDevfile {
-			ctx.devfilePath = devfilePath
+			ctx.DevfilePath, err = dfutil.GetAbsPath(devfilePath)
+			if err != nil {
+				return nil, err
+			}
 			// Parse devfile and validate
 			var devObj parser.DevfileObj
-			devObj, err = devfile.ParseAndValidateFromFileWithVariables(ctx.devfilePath, parameters.variables)
+			devObj, err = devfile.ParseAndValidateFromFileWithVariables(ctx.DevfilePath, parameters.variables)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse the devfile %s: %w", ctx.devfilePath, err)
+				return nil, fmt.Errorf("failed to parse the devfile %s: %w", ctx.DevfilePath, err)
 			}
 			err = validate.ValidateDevfileData(devObj.Data)
 			if err != nil {
@@ -131,8 +127,4 @@ func NewContextCompletion(command *cobra.Command) *Context {
 
 func (o *Context) GetComponentName() string {
 	return o.componentName
-}
-
-func (o *Context) GetDevfilePath() string {
-	return o.devfilePath
 }

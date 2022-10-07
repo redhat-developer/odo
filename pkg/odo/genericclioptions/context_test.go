@@ -128,7 +128,7 @@ func TestNew(t *testing.T) {
 						componentName: getTestBaseName(),
 						// empty when no devfile
 						componentContext: "",
-						devfilePath:      "",
+						DevfilePath:      "",
 					},
 				}
 			},
@@ -150,7 +150,7 @@ func TestNew(t *testing.T) {
 						componentName: getTestBaseName(),
 						// empty when no devfile
 						componentContext: "",
-						devfilePath:      "",
+						DevfilePath:      "",
 					},
 				}
 			},
@@ -173,7 +173,7 @@ func TestNew(t *testing.T) {
 					internalCxt: internalCxt{
 						componentName:    getTestBaseName(),
 						componentContext: "",
-						devfilePath:      "",
+						DevfilePath:      "",
 					},
 				}
 			},
@@ -195,7 +195,7 @@ func TestNew(t *testing.T) {
 					internalCxt: internalCxt{
 						componentName:    "",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						devfilePath:      "",
+						DevfilePath:      "",
 					},
 				}
 			},
@@ -219,7 +219,7 @@ func TestNew(t *testing.T) {
 					internalCxt: internalCxt{
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
+						DevfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
 					},
 				}
 			},
@@ -243,7 +243,7 @@ func TestNew(t *testing.T) {
 					internalCxt: internalCxt{
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
+						DevfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
 					},
 				}
 			},
@@ -267,7 +267,7 @@ func TestNew(t *testing.T) {
 					internalCxt: internalCxt{
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
+						DevfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
 					},
 				}
 			},
@@ -291,7 +291,7 @@ func TestNew(t *testing.T) {
 					internalCxt: internalCxt{
 						componentName:    "nodejs-prj1-api-abhz",
 						componentContext: filepath.Join(prefixDir, "myapp"),
-						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
+						DevfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
 					},
 				}
 			},
@@ -367,8 +367,8 @@ func TestNew(t *testing.T) {
 				if result.componentContext != expected.componentContext {
 					t.Errorf("Expected component context %s, got %s", expected.componentContext, result.componentContext)
 				}
-				if result.devfilePath != expected.devfilePath {
-					t.Errorf("Expected devfilePath %s, got %s", expected.devfilePath, result.devfilePath)
+				if result.DevfilePath != expected.DevfilePath {
+					t.Errorf("Expected devfilePath %s, got %s", expected.DevfilePath, result.DevfilePath)
 				}
 			}
 		})

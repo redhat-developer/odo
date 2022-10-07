@@ -68,7 +68,7 @@ func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
 	devfileObj := o.Context.DevfileObj
-	path := filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+	path := filepath.Dir(o.DevfilePath)
 	return image.BuildPushImages(o.clientset.FS, devfileObj, path, o.pushFlag)
 }
 
