@@ -116,8 +116,8 @@ module.exports = {
       darkTheme: darkCodeTheme,
     },
     algolia: {
-      appId: 'BH4D9OD16A',
-      apiKey: 'e498f97159ee3094d356b8ed95dd405f',
+      appId: '7RBQSTPIA4',
+      apiKey: '97ac94cb47dcaeef1c2c9694bd39b458',
       indexName: 'odo',
       debug: false
     }
