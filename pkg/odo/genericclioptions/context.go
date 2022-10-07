@@ -9,7 +9,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
@@ -39,9 +38,8 @@ type internalCxt struct {
 	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
 	componentName string
 	// The path of the detected devfile
-	devfilePath         string
-	EnvSpecificInfo     *envinfo.EnvSpecificInfo
-	LocalConfigProvider localConfigProvider.LocalConfigProvider
+	devfilePath     string
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // CreateParameters defines the options which can be provided while creating the context
@@ -78,7 +76,6 @@ func New(parameters CreateParameters) (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
 	ctx.componentContext = parameters.componentContext
 
