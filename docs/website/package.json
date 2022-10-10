@@ -18,7 +18,7 @@
     "@docusaurus/core": "^2.1.0",
     "@docusaurus/preset-classic": "^2.1.0",
     "@docusaurus/theme-search-algolia": "^2.1.0",
-    "@mdx-js/react": "^1.6.21",
+    "@mdx-js/react": "^2.1.4",
     "@segment/snippet": "^4.15.3",
     "@svgr/webpack": "^6.3.0",
     "browserslist": "^4.21.1",
