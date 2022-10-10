@@ -20,12 +20,13 @@ import (
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
 )
 
@@ -58,8 +59,6 @@ type DevOptions struct {
 	noWatchFlag      bool
 	randomPortsFlag  bool
 	debugFlag        bool
-	varFileFlag      string
-	varsFlag         []string
 	buildCommandFlag string
 	runCommandFlag   string
 
@@ -126,10 +125,7 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 		return err
 	}
 
-	o.variables, err = vars.GetVariables(o.clientset.FS, o.varFileFlag, o.varsFlag, os.LookupEnv)
-	if err != nil {
-		return err
-	}
+	o.variables = fcontext.GetVariables(ctx)
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
 	if err != nil {
@@ -243,8 +239,6 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
-	devCmd.Flags().StringArrayVar(&o.varsFlag, "var", []string{}, "Variable to override Devfile variable and variables in var-file")
-	devCmd.Flags().StringVar(&o.varFileFlag, "var-file", "", "File containing variables to override Devfile variables")
 	devCmd.Flags().StringVar(&o.buildCommandFlag, "build-command", "",
 		"Alternative build command. The default one will be used if this flag is not set.")
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
@@ -262,6 +256,6 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-
+	commonflags.UseVariablesFlags(devCmd)
 	return devCmd
 }

@@ -136,6 +136,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 
 	commonflags.AddOutputFlag()
 	commonflags.AddRunOnFlag()
+	commonflags.AddVariablesFlags()
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging

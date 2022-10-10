@@ -87,6 +87,11 @@ func (o *Cobra) FlagValueIfSet(flagName string) string {
 	return flag
 }
 
+// FlagValues retrieves the value of the specified flag
+func (o *Cobra) FlagValues(flagName string) ([]string, error) {
+	return o.cmd.Flags().GetStringArray(flagName)
+}
+
 func (o *Cobra) GetKubeClient() (kclient.ClientInterface, error) {
 	return kclient.New()
 }

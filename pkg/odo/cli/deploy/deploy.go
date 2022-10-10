@@ -13,11 +13,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/spf13/cobra"
@@ -34,10 +35,6 @@ type DeployOptions struct {
 
 	// Clients
 	clientset *clientset.Clientset
-
-	// Flags
-	varFileFlag string
-	varsFlag    []string
 
 	// Variables to override Devfile variables
 	variables map[string]string
@@ -93,10 +90,7 @@ func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, a
 		return err
 	}
 
-	o.variables, err = vars.GetVariables(o.clientset.FS, o.varFileFlag, o.varsFlag, os.LookupEnv)
-	if err != nil {
-		return err
-	}
+	o.variables = fcontext.GetVariables(ctx)
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).WithVariables(o.variables).CreateAppIfNeeded())
 	if err != nil {
@@ -154,12 +148,11 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	deployCmd.Flags().StringArrayVar(&o.varsFlag, "var", []string{}, "Variable to override Devfile variable and variables in var-file")
-	deployCmd.Flags().StringVar(&o.varFileFlag, "var-file", "", "File containing variables to override Devfile variables")
 	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY, clientset.FILESYSTEM)
 
 	// Add a defined annotation in order to appear in the help menu
 	deployCmd.Annotations["command"] = "main"
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	commonflags.UseVariablesFlags(deployCmd)
 	return deployCmd
 }
