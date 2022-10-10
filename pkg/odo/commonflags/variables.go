@@ -51,7 +51,13 @@ func CheckVariablesCommand(cmd *cobra.Command) error {
 
 // GetVariablesValues returns variables computed from --var-file and --var values
 func GetVariablesValues(cmd cmdline.Cmdline) (map[string]string, error) {
-	varFileFlagValue := cmd.FlagValueIfSet(VarFileFlagName)
-	varFlagValue := cmd.FlagValuesIfSet(VarFlagName)
+	varFileFlagValue, err := cmd.FlagValue(VarFileFlagName)
+	if err != nil {
+		return nil, err
+	}
+	varFlagValue, err := cmd.FlagValues(VarFlagName)
+	if err != nil {
+		return nil, err
+	}
 	return vars.GetVariables(filesystem.DefaultFs{}, varFileFlagValue, varFlagValue, os.LookupEnv)
 }
