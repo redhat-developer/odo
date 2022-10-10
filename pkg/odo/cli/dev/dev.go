@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -53,9 +51,6 @@ type DevOptions struct {
 	// cancel function ensures that any function/method listening on ctx.Done channel stops doing its work
 	cancel context.CancelFunc
 
-	// working directory
-	contextDir string
-
 	// Flags
 	noWatchFlag      bool
 	randomPortsFlag  bool
@@ -92,42 +87,17 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *DevOptions) PreInit() string {
+	return messages.DevInitializeExistingComponent
+}
+
 func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(ctx)
 
-	o.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
-	if err != nil {
-		return err
-	}
-	if isEmptyDir {
-		return genericclioptions.NewNoDevfileError(o.contextDir)
-	}
-	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
-	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
-		func(interactiveMode bool) {
-			scontext.SetInteractive(cmdline.Context(), interactiveMode)
-			if interactiveMode {
-				log.Title(messages.DevInitializeExistingComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION)
-				log.Info("\n" + messages.InteractiveModeEnabled)
-			}
-		},
-		func(newDevfileObj parser.DevfileObj) error {
-			return newDevfileObj.WriteYamlDevfile()
-		})
-	if err != nil {
-		return err
-	}
-
 	o.variables = fcontext.GetVariables(ctx)
-
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)

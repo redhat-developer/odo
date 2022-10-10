@@ -3,13 +3,9 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -60,39 +56,13 @@ func (o *DeployOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *DeployOptions) PreInit() string {
+	return messages.DeployInitializeExistingComponent
+}
+
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
-	if err != nil {
-		return err
-	}
-	if isEmptyDir {
-		return genericclioptions.NewNoDevfileError(o.contextDir)
-	}
-
-	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
-
-	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
-		func(interactiveMode bool) {
-			scontext.SetInteractive(cmdline.Context(), interactiveMode)
-			if interactiveMode {
-				log.Title(messages.DeployInitializeExistingComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION)
-				log.Info("\n" + messages.InteractiveModeEnabled)
-			}
-		},
-		func(newDevfileObj parser.DevfileObj) error {
-			return newDevfileObj.WriteYamlDevfile()
-		})
-	if err != nil {
-		return err
-	}
-
 	o.variables = fcontext.GetVariables(ctx)
-
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).WithVariables(o.variables))
 	return err
 }

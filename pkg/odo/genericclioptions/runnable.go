@@ -55,6 +55,13 @@ type Cleanuper interface {
 	Cleanup(ctx context.Context, err error)
 }
 
+// A PreIniter command is a command that will run `init` command if no file is present in current directory
+// Commands implementing this interfaec must add FILESYSTEM and INIT dependencies
+type PreIniter interface {
+	// PreInit indicates a command will run `init`, and display the message returned by the method
+	PreInit() string
+}
+
 // JsonOutputter must be implemented by commands with JSON output
 // For these commands, the `-o json` flag will be added
 // when err is not nil, the text of the error will be returned in a `message` field on stderr with an exit status of 1
@@ -141,6 +148,15 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	variables, err := commonflags.GetVariablesValues(cmdLineObj)
 	util.LogErrorAndExit(err, "")
 	ctx = fcontext.WithVariables(ctx, variables)
+
+	if preiniter, ok := o.(PreIniter); ok {
+		msg := preiniter.PreInit()
+		err = runPreInit(deps, cmdLineObj, msg)
+		if err != nil {
+			startTelemetry(cmd, err, startTime)
+		}
+		util.LogErrorAndExit(err, "")
+	}
 
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
