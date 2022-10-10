@@ -3,12 +3,12 @@ package alizer
 import (
 	"context"
 	"errors"
-	"os"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -48,11 +48,8 @@ func (o *AlizerOptions) Run(ctx context.Context) (err error) {
 
 // Run contains the logic for the odo command
 func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	df, reg, err := o.clientset.AlizerClient.DetectFramework(cwd)
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+	df, reg, err := o.clientset.AlizerClient.DetectFramework(workingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +69,7 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(alizerCmd, clientset.ALIZER)
+	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)
 	commonflags.UseOutputFlag(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	alizerCmd.Annotations["command"] = "utility"

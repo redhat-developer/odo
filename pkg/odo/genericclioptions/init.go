@@ -1,35 +1,33 @@
 package genericclioptions
 
 import (
-	"os"
+	"context"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // runPreInit executes the Init command before running the main command
-func runPreInit(deps *clientset.Clientset, cmdline cmdline.Cmdline, msg string) error {
-	contextDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	isEmptyDir, err := location.DirIsEmpty(deps.FS, contextDir)
+func runPreInit(ctx context.Context, deps *clientset.Clientset, cmdline cmdline.Cmdline, msg string) error {
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+	isEmptyDir, err := location.DirIsEmpty(deps.FS, workingDir)
 	if err != nil {
 		return err
 	}
 	if isEmptyDir {
-		return NewNoDevfileError(contextDir)
+		return NewNoDevfileError(workingDir)
 	}
 
 	initFlags := deps.InitClient.GetFlags(cmdline.GetFlags())
 
-	err = deps.InitClient.InitDevfile(initFlags, contextDir,
+	err = deps.InitClient.InitDevfile(initFlags, workingDir,
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {

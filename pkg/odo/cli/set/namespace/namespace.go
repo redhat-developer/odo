@@ -40,9 +40,6 @@ type SetOptions struct {
 	// Clients
 	clientset *clientset.Clientset
 
-	// Destination directory
-	contextDir string
-
 	// Parameters
 	namespaceName string
 
@@ -65,10 +62,6 @@ func (so *SetOptions) SetClientset(clientset *clientset.Clientset) {
 func (so *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	so.namespaceName = args[0]
 	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
-	so.contextDir, err = so.clientset.FS.Getwd()
 	if err != nil {
 		return err
 	}

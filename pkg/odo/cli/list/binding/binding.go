@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -17,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -40,9 +40,6 @@ type BindingListOptions struct {
 	// Clients
 	clientset *clientset.Clientset
 
-	// working directory
-	contextDir string
-
 	// Flags
 	namespaceFlag string
 }
@@ -61,11 +58,6 @@ func (o *BindingListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes BindingListOptions after they've been created
 func (o *BindingListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	// The command must work without Devfile
 	if err != nil && !genericclioptions.IsNoDevfileError(err) {
@@ -105,7 +97,8 @@ func (o *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interfac
 }
 
 func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error) {
-	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(o.DevfileObj, o.contextDir)
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(o.DevfileObj, workingDir)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
@@ -130,7 +123,7 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 		},
 		Aliases: []string{"bindings"},
 	}
-	clientset.Add(bindingListCmd, clientset.KUBERNETES, clientset.BINDING)
+	clientset.Add(bindingListCmd, clientset.KUBERNETES, clientset.BINDING, clientset.FILESYSTEM)
 	bindingListCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for bindings")
 	commonflags.UseOutputFlag(bindingListCmd)
 	return bindingListCmd

@@ -145,13 +145,23 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		ctx = odocontext.WithNamespace(ctx, namespace)
 	}
 
+	if deps.FS != nil {
+		var cwd string
+		cwd, err = deps.FS.Getwd()
+		if err != nil {
+			startTelemetry(cmd, err, startTime)
+		}
+		util.LogErrorAndExit(err, "")
+		ctx = odocontext.WithWorkingDirectory(ctx, cwd)
+	}
+
 	variables, err := commonflags.GetVariablesValues(cmdLineObj)
 	util.LogErrorAndExit(err, "")
 	ctx = fcontext.WithVariables(ctx, variables)
 
 	if preiniter, ok := o.(PreIniter); ok {
 		msg := preiniter.PreInit()
-		err = runPreInit(deps, cmdLineObj, msg)
+		err = runPreInit(ctx, deps, cmdLineObj, msg)
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
 		}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/services"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -46,7 +45,6 @@ type ListOptions struct {
 	clientset *clientset.Clientset
 
 	// Local variables
-	contextDir      string
 	namespaceFilter string
 
 	// Flags
@@ -67,10 +65,6 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete ...
 func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	lo.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
 
 	// Check to see if KUBECONFIG exists, and if not, error the user that we would not be able to get cluster information
 	// Do this before anything else, or else we will just error out with the:
@@ -108,7 +102,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 	listSpinner := log.Spinnerf("Listing resources from the namespace %q", lo.namespaceFilter)
 	defer listSpinner.End(false)
 
-	list, err := lo.run()
+	list, err := lo.run(ctx)
 	if err != nil {
 		return err
 	}
@@ -124,17 +118,18 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 
 // Run contains the logic for the odo command
 func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	return lo.run()
+	return lo.run(ctx)
 }
 
-func (lo *ListOptions) run() (list api.ResourcesList, err error) {
+func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err error) {
 	devfileComponents, componentInDevfile, err := component.ListAllComponents(
 		lo.clientset.KubernetesClient, lo.namespaceFilter, lo.DevfileObj, lo.GetComponentName())
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
 
-	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(lo.DevfileObj, lo.contextDir)
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(lo.DevfileObj, workingDir)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
@@ -162,7 +157,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(listCmd, clientset.KUBERNETES, clientset.BINDING)
+	clientset.Add(listCmd, clientset.KUBERNETES, clientset.BINDING, clientset.FILESYSTEM)
 
 	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
 	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))

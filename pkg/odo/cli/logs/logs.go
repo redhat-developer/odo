@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,7 +39,6 @@ type LogsOptions struct {
 
 	// variables
 	componentName string
-	contextDir    string
 	out           io.Writer
 
 	// flags
@@ -75,11 +73,8 @@ func (o *LogsOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *LogsOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
 	var err error
-	o.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, workingDir)
 	if err != nil {
 		return err
 	}
