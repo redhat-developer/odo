@@ -35,6 +35,14 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
 
+// IsLinkSecret helps in identifying if a secret is related to Service Binding
+func IsLinkSecret(labels map[string]string) bool {
+	_, hasLinkLabel := labels[LinkLabel]
+	_, hasServiceLabel := labels[ServiceLabel]
+	_, hasServiceKindLabel := labels[ServiceKind]
+	return hasLinkLabel && hasServiceLabel && hasServiceKindLabel
+}
+
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
 // https://github.com/redhat-developer/odo/issues/3563
@@ -262,8 +270,7 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 	// If the component is of Kind: ServiceBinding, trying to run in Dev mode and SBO is not installed, run it without operator.
 	if isLinkResource(u.GetKind()) && mode == odolabels.ComponentDevMode && !sboSupported {
 		// it's a service binding related resource
-		err = pushLinksWithoutOperator(client, u, labels)
-		return err
+		return pushLinksWithoutOperator(client, u, labels)
 	}
 
 	// Add all passed in labels to the k8s resource regardless if it's an operator or not

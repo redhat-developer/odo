@@ -12,9 +12,8 @@ import (
 	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
-
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	sboKubernetes "github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
@@ -71,7 +70,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	serviceBinding.Spec.Services[0].Namespace = &ns
 
 	var processingPipeline sboPipeline.Pipeline
-	processingPipeline, err = getPipeline(client)
+	processingPipeline, err = GetPipeline(client)
 	if err != nil {
 		return err
 	}
@@ -124,8 +123,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	return nil
 }
 
-// getPipeline gets the pipeline to process service binding requests
-func getPipeline(client kclient.ClientInterface) (sboPipeline.Pipeline, error) {
+// GetPipeline gets the pipeline to process service binding requests
+func GetPipeline(client kclient.ClientInterface) (sboPipeline.Pipeline, error) {
 	mgr, err := ctrl.NewManager(client.GetClientConfig(), ctrl.Options{
 		Scheme: runtime.NewScheme(),
 		// disable the health probes to prevent binding to them

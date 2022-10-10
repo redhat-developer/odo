@@ -467,7 +467,52 @@ ComponentSettings:
 			})
 		})
 	})
+	Context("checking if odo dev matches local Devfile K8s resources and remote resources", func() {
+		for _, devfile := range []struct {
+			devfileName, title string
+			envvars            []string
+		}{
+			{"devfile-with-k8s-resource.yaml", "", nil},
+			{"devfile-composite-apply-commands.yaml", " with apply command", []string{"PODMAN_CMD=echo"}}} {
+			devfile := devfile
+			When(fmt.Sprintf("odo dev is executed to run a devfile containing a k8s resource%s", devfile.title), func() {
+				var (
+					devSession    helper.DevSession
+					err           error
+					getDeployArgs = []string{"get", "deployments", "-n", commonVar.Project}
+				)
 
+				const (
+					deploymentName    = "my-component" // hard-coded from the Devfiles
+					newDeploymentName = "changed-component"
+				)
+
+				BeforeEach(
+					func() {
+						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile.devfileName), filepath.Join(commonVar.Context, "devfile.yaml"))
+						devSession, _, _, _, err = helper.StartDevMode(devfile.envvars)
+						Expect(err).To(BeNil())
+						Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(deploymentName))
+
+						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), deploymentName, newDeploymentName)
+
+						_, _, _, err := devSession.WaitSync()
+						Expect(err).To(BeNil())
+					})
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should have deleted the old resource and created the new resource", func() {
+					getDeployments := commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()
+					Expect(getDeployments).ToNot(ContainSubstring(deploymentName))
+					Expect(getDeployments).To(ContainSubstring(newDeploymentName))
+				})
+			})
+		}
+	})
 	When("odo dev is executed to run a devfile containing a k8s resource", func() {
 		var (
 			devSession    helper.DevSession
@@ -494,22 +539,8 @@ ComponentSettings:
 		It("should have created the k8s resource", func() {
 			Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(deploymentName))
 		})
-
-		When("a new k8s resource is added to the devfile", func() {
-			// instead of adding a new resource, we will simply change the resource name to make it act as a new one
-			const newDeploymentName = "changed-component"
-			BeforeEach(func() {
-				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), deploymentName, newDeploymentName)
-				_, _, _, err := devSession.WaitSync()
-				Expect(err).To(BeNil())
-			})
-			It("should have deleted the old resource and created the new resource", func() {
-				getDeployments := commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()
-				Expect(getDeployments).ToNot(ContainSubstring(deploymentName))
-				Expect(getDeployments).To(ContainSubstring(newDeploymentName))
-			})
-		})
 	})
+
 	for _, manual := range []bool{false, true} {
 		manual := manual
 		Context("port-forwarding for the component", func() {

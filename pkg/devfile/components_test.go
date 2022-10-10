@@ -53,6 +53,7 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 		name       string
 		devfileObj parser.DevfileObj
 		want       []devfilev1.Component
+		allowApply bool
 		wantErr    bool
 	}{
 		{
@@ -108,10 +109,31 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			// TODO: Fix this; it should fail
+			name:       "allow apply command when allowApply is true",
+			devfileObj: getDevfileWithApplyCommand("component1"),
+			allowApply: true,
+			want: []devfilev1.Component{
+				{
+					Name: "component1",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Kubernetes: &devfilev1.KubernetesComponent{
+							K8sLikeComponent: devfilev1.K8sLikeComponent{
+								K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
+									Inlined: "Component 1",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetKubernetesComponentsToPush(tt.devfileObj)
+			got, err := GetKubernetesComponentsToPush(tt.devfileObj, tt.allowApply)
 			gotErr := err != nil
 			if len(got) != len(tt.want) {
 				t.Errorf("Got %d components, expected %d\n", len(got), len(tt.want))

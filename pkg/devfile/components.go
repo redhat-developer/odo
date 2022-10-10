@@ -9,7 +9,7 @@ import (
 // GetKubernetesComponentsToPush returns the list of Kubernetes components to push,
 // by getting the list of Kubernetes components and removing the ones
 // referenced from a command in the devfile
-func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj) ([]devfilev1.Component, error) {
+func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) ([]devfilev1.Component, error) {
 	k8sComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
 	})
@@ -31,7 +31,7 @@ func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj) ([]devfilev1.Co
 		componentName := ""
 		if command.Exec != nil {
 			componentName = command.Exec.Component
-		} else if command.Apply != nil {
+		} else if !allowApply && command.Apply != nil {
 			componentName = command.Apply.Component
 		}
 		if componentName == "" {
