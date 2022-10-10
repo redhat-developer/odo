@@ -12,7 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -28,8 +27,7 @@ type BuildImagesOptions struct {
 	clientset *clientset.Clientset
 
 	// Flags
-	pushFlag    bool
-	contextFlag string
+	pushFlag bool
 }
 
 var _ genericclioptions.Runnable = (*BuildImagesOptions)(nil)
@@ -53,7 +51,7 @@ func (o *BuildImagesOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes LoginOptions after they've been created
 func (o *BuildImagesOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	if err != nil {
 		return err
 	}
@@ -90,7 +88,6 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 	buildImagesCmd.Annotations = map[string]string{"command": "main"}
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
-	util.AddContextFlag(buildImagesCmd, &o.contextFlag)
 	clientset.Add(buildImagesCmd, clientset.FILESYSTEM)
 
 	return buildImagesCmd
