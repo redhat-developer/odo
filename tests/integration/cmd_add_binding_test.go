@@ -11,6 +11,7 @@ import (
 )
 
 var _ = Describe("odo add binding command tests", func() {
+	// TODO: Add integration tests to check when SBO is not installed
 	var commonVar helper.CommonVar
 	var devSession helper.DevSession
 	var err error
