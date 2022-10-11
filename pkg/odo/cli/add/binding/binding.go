@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -46,9 +47,6 @@ type AddBindingOptions struct {
 	// Flags passed to the command
 	flags map[string]string
 
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -65,25 +63,19 @@ func (o *AddBindingOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *AddBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	// The command must work without Devfile
-	if err != nil && !genericclioptions.IsNoDevfileError(err) {
-		return err
-	}
-
 	o.flags = o.clientset.BindingClient.GetFlags(cmdline.GetFlags())
-
 	return nil
 }
 
 func (o *AddBindingOptions) Validate(ctx context.Context) (err error) {
-	withDevfile := o.DevfileObj.Data != nil
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	withDevfile := devfileObj != nil
 	return o.clientset.BindingClient.ValidateAddBinding(o.flags, withDevfile)
 }
 
-func (o *AddBindingOptions) Run(_ context.Context) error {
-	withDevfile := o.DevfileObj.Data != nil
-
+func (o *AddBindingOptions) Run(ctx context.Context) error {
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	withDevfile := devfileObj != nil
 	ns, err := o.clientset.BindingClient.SelectNamespace(o.flags)
 	if err != nil {
 		return err
@@ -120,7 +112,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		}
 		componentName = workloadName
 	} else {
-		componentName = o.GetComponentName()
+		componentName = odocontext.GetComponentName(ctx)
 	}
 
 	bindingName, err := o.clientset.BindingClient.AskBindingName(serviceName, componentName, o.flags)
@@ -141,7 +133,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if withDevfile {
 		var devfileobj parser.DevfileObj
 		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(
-			componentName, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.DevfileObj)
+			componentName, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], *devfileObj)
 		if err != nil {
 			return err
 		}
@@ -216,7 +208,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		"Naming strategy to use for binding names. "+
 			"It can be set to pre-defined strategies: 'none', 'lowercase', or 'uppercase'. "+
 			"Otherwise, it is treated as a custom Go template, and it is handled accordingly.")
-	clientset.Add(bindingCmd, clientset.BINDING)
+	clientset.Add(bindingCmd, clientset.BINDING, clientset.FILESYSTEM)
 
 	return bindingCmd
 }
