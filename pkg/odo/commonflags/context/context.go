@@ -61,5 +61,5 @@ func GetVariables(ctx context.Context) map[string]string {
 	if cast, ok := value.(map[string]string); ok {
 		return cast
 	}
-	panic("should not happen")
+	return map[string]string{}
 }

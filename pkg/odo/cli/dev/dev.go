@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -33,9 +32,6 @@ import (
 const RecommendedCommandName = "dev"
 
 type DevOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -43,11 +39,10 @@ type DevOptions struct {
 	ignorePaths []string
 	out         io.Writer
 	errOut      io.Writer
-	// it's called "initial" because it has to be set only once when running odo dev for the first time
-	// it is used to compare with updated devfile when we watch the contextDir for changes
-	initialDevfileObj parser.DevfileObj
+
 	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
 	ctx context.Context
+
 	// cancel function ensures that any function/method listening on ctx.Done channel stops doing its work
 	cancel context.CancelFunc
 
@@ -57,9 +52,6 @@ type DevOptions struct {
 	debugFlag        bool
 	buildCommandFlag string
 	runCommandFlag   string
-
-	// Variables to override Devfile variables
-	variables map[string]string
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -92,26 +84,18 @@ func (o *DevOptions) PreInit() string {
 }
 
 func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
-	var err error
-
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(ctx)
 
-	o.variables = fcontext.GetVariables(ctx)
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
-	if err != nil {
-		return fmt.Errorf("unable to create context: %v", err)
-	}
-
-	o.initialDevfileObj = o.Context.DevfileObj
 	return nil
 }
 
 func (o *DevOptions) Validate(ctx context.Context) error {
-	if !o.debugFlag && !libdevfile.HasRunCommand(o.initialDevfileObj.Data) {
+	devfileObj := *odocontext.GetDevfileObj(ctx)
+	if !o.debugFlag && !libdevfile.HasRunCommand(devfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("run")
 	}
-	if o.debugFlag && !libdevfile.HasDebugCommand(o.initialDevfileObj.Data) {
+	if o.debugFlag && !libdevfile.HasDebugCommand(devfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("debug")
 	}
 	return nil
@@ -119,9 +103,11 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj    = o.Context.DevfileObj
-		path          = filepath.Dir(o.DevfilePath)
-		componentName = o.GetComponentName()
+		devFileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		variables     = fcontext.GetVariables(ctx)
 	)
 
 	// Output what the command is doing / information
@@ -157,10 +143,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	log.Section("Deploying to the cluster in developer mode")
 	return o.clientset.DevClient.Start(
 		o.ctx,
-		devFileObj,
+		*devFileObj,
 		componentName,
 		path,
-		o.DevfilePath,
+		devfilePath,
 		o.out,
 		o.errOut,
 		dev.StartOptions{
@@ -170,7 +156,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			RunCommand:   o.runCommandFlag,
 			RandomPorts:  o.randomPortsFlag,
 			WatchFiles:   !o.noWatchFlag,
-			Variables:    o.variables,
+			Variables:    variables,
 		},
 	)
 }
@@ -184,9 +170,9 @@ func (o *DevOptions) HandleSignal() error {
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
-		devFileObj := o.Context.DevfileObj
-		componentName := o.GetComponentName()
-		_ = o.clientset.WatchClient.CleanupDevResources(ctx, devFileObj, componentName, log.GetStdout())
+		devFileObj := odocontext.GetDevfileObj(ctx)
+		componentName := odocontext.GetComponentName(ctx)
+		_ = o.clientset.WatchClient.CleanupDevResources(ctx, *devFileObj, componentName, log.GetStdout())
 	}
 }
 

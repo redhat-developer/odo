@@ -13,6 +13,7 @@ import (
 
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -166,6 +167,19 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			startTelemetry(cmd, err, startTime)
 		}
 		util.LogErrorAndExit(err, "")
+	}
+
+	if deps.FS != nil {
+		var devfilePath, componentName string
+		var devfileObj *parser.DevfileObj
+		devfilePath, devfileObj, componentName, err = getDevfileInfo(ctx)
+		if err != nil {
+			startTelemetry(cmd, err, startTime)
+		}
+		util.LogErrorAndExit(err, "")
+		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
+		ctx = odocontext.WithDevfileObj(ctx, devfileObj)
+		ctx = odocontext.WithComponentName(ctx, componentName)
 	}
 
 	// Run completion, validation and run.
