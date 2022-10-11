@@ -129,7 +129,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 	}
 
 	workingDir := odocontext.GetWorkingDirectory(ctx)
-	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(lo.DevfileObj, workingDir)
+	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(&lo.DevfileObj, workingDir)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}

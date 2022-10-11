@@ -190,7 +190,7 @@ func (mr *MockClientMockRecorder) GetServiceInstances(namespace interface{}) *go
 }
 
 // ListAllBindings mocks base method.
-func (m *MockClient) ListAllBindings(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
+func (m *MockClient) ListAllBindings(devfileObj *parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListAllBindings", devfileObj, context)
 	ret0, _ := ret[0].([]api.ServiceBinding)

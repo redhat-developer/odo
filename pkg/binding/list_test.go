@@ -83,7 +83,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 		kubernetesClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
 	type args struct {
-		devfileObj parser.DevfileObj
+		devfileObj *parser.DevfileObj
 		context    string
 	}
 	tests := []struct {

@@ -34,9 +34,6 @@ var (
 
 // BindingListOptions encapsulates the options for the odo list binding command
 type BindingListOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -58,16 +55,9 @@ func (o *BindingListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes BindingListOptions after they've been created
 func (o *BindingListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	// The command must work without Devfile
-	if err != nil && !genericclioptions.IsNoDevfileError(err) {
-		return err
-	}
-
 	if o.namespaceFlag != "" {
 		o.clientset.KubernetesClient.SetNamespace(o.namespaceFlag)
 	}
-
 	return nil
 }
 
@@ -97,8 +87,11 @@ func (o *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interfac
 }
 
 func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error) {
-	workingDir := odocontext.GetWorkingDirectory(ctx)
-	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(o.DevfileObj, workingDir)
+	var (
+		workingDir = odocontext.GetWorkingDirectory(ctx)
+		devfileObj = odocontext.GetDevfileObj(ctx)
+	)
+	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(devfileObj, workingDir)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
