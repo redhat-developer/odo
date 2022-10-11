@@ -29,9 +29,6 @@ var (
 
 // NamespaceListOptions encapsulates the options for the odo list project command
 type NamespaceListOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -51,8 +48,7 @@ func (o *NamespaceListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes NamespaceListOptions after they've been created
 func (plo *NamespaceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	return err
+	return nil
 }
 
 // Validate validates the NamespaceListOptions based on completed values
