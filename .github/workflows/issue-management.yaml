@@ -1,0 +1,39 @@
+name: Issue Management
+
+on:
+  issues:
+    types:
+    - opened
+    - reopened
+
+env:
+  ORGANIZATION: redhat-developer
+  # See https://github.com/redhat-developer/odo/projects?query=is%3Aopen
+  PROJECT_NUMBER: 16
+
+jobs:
+  label_issue:
+    name: Label issue
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+    - name: Label issue
+      # Action recommended in https://docs.github.com/en/actions/managing-issues-and-pull-requests/adding-labels-to-issues
+      # Recommended to pin unofficial Actions to a specific commit SHA
+      uses: andymckay/labeler@3a4296e9dcdf9576b0456050db78cfd34853f260
+      with:
+        add-labels: "needs-triage"
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  add_issue_to_project:
+    name: Add issue to Project
+    runs-on: ubuntu-latest
+    steps:
+    - name: Add issue to Project
+      uses: actions/add-to-project@v0.3.0
+      with:
+        project-url: https://github.com/orgs/${{ env.ORGANIZATION }}/projects/${{ env.PROJECT_NUMBER }}
+        # This action needs a Personal Access Token (PAT) to be created with 'repo' and 'project' scopes and be added as repository secret.
+        # See https://github.com/actions/add-to-project#creating-a-pat-and-adding-it-to-your-repository and https://github.com/settings/tokens/new
+        github-token: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
