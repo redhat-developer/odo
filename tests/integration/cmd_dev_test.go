@@ -469,13 +469,14 @@ ComponentSettings:
 	})
 	Context("checking if odo dev matches local Devfile K8s resources and remote resources", func() {
 		for _, devfile := range []struct {
-			devfileName, title string
-			envvars            []string
+			title       string
+			devfileName string
+			envvars     []string
 		}{
-			{"devfile-with-k8s-resource.yaml", "", nil},
-			{"devfile-composite-apply-commands.yaml", " with apply command", []string{"PODMAN_CMD=echo"}}} {
+			{title: "without apply command", devfileName: "devfile-with-k8s-resource.yaml", envvars: nil},
+			{title: "with apply command", devfileName: "devfile-composite-apply-commands.yaml", envvars: []string{"PODMAN_CMD=echo"}}} {
 			devfile := devfile
-			When(fmt.Sprintf("odo dev is executed to run a devfile containing a k8s resource%s", devfile.title), func() {
+			When(fmt.Sprintf("odo dev is executed to run a devfile containing a k8s resource %s", devfile.title), func() {
 				var (
 					devSession    helper.DevSession
 					err           error
@@ -493,8 +494,11 @@ ComponentSettings:
 						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile.devfileName), filepath.Join(commonVar.Context, "devfile.yaml"))
 						devSession, _, _, _, err = helper.StartDevMode(devfile.envvars)
 						Expect(err).To(BeNil())
+
+						// ensure the deployment is created by `odo dev`
 						Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(deploymentName))
 
+						// we fake the new deployment creation by changing the old deployment's name
 						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), deploymentName, newDeploymentName)
 
 						_, _, _, err := devSession.WaitSync()
@@ -513,7 +517,8 @@ ComponentSettings:
 			})
 		}
 	})
-	When("odo dev is executed to run a devfile containing a k8s resource", func() {
+
+	When("odo dev is executed to run a devfile containing a k8s resource ", func() {
 		var (
 			devSession    helper.DevSession
 			err           error

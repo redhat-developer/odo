@@ -11,7 +11,10 @@ import (
 )
 
 var _ = Describe("odo add binding command tests", func() {
-	// TODO: Add integration tests to check when SBO is not installed
+	// TODO: Add integration tests for the following cases when SBO is not installed
+	// * servicebinding with envvars does not send `odo dev` in an infinite loop
+	// * `odo dev` deletes service binding secrets for SB that is not present locally
+
 	var commonVar helper.CommonVar
 	var devSession helper.DevSession
 	var err error
