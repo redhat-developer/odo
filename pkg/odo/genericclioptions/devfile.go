@@ -1,7 +1,6 @@
 package genericclioptions
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -10,18 +9,15 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
-	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 )
 
-func getDevfileInfo(ctx context.Context) (
+func getDevfileInfo(workingDir string, variables map[string]string) (
 	devfilePath string,
 	devfileObj *parser.DevfileObj,
 	componentName string,
 	err error,
 ) {
-	workingDir := odocontext.GetWorkingDirectory(ctx)
 	devfilePath = location.DevfileLocation(workingDir)
 	isDevfile := odoutil.CheckPathExists(devfilePath)
 	if isDevfile {
@@ -30,7 +26,6 @@ func getDevfileInfo(ctx context.Context) (
 			return "", nil, "", err
 		}
 		// Parse devfile and validate
-		variables := fcontext.GetVariables(ctx)
 		var devObj parser.DevfileObj
 		devObj, err = devfile.ParseAndValidateFromFileWithVariables(devfilePath, variables)
 		if err != nil {

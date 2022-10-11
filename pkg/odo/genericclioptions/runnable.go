@@ -154,25 +154,24 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		}
 		util.LogErrorAndExit(err, "")
 		ctx = odocontext.WithWorkingDirectory(ctx, cwd)
-	}
 
-	variables, err := commonflags.GetVariablesValues(cmdLineObj)
-	util.LogErrorAndExit(err, "")
-	ctx = fcontext.WithVariables(ctx, variables)
-
-	if preiniter, ok := o.(PreIniter); ok {
-		msg := preiniter.PreInit()
-		err = runPreInit(ctx, deps, cmdLineObj, msg)
-		if err != nil {
-			startTelemetry(cmd, err, startTime)
-		}
+		var variables map[string]string
+		variables, err = commonflags.GetVariablesValues(cmdLineObj)
 		util.LogErrorAndExit(err, "")
-	}
+		ctx = fcontext.WithVariables(ctx, variables)
 
-	if deps.FS != nil {
+		if preiniter, ok := o.(PreIniter); ok {
+			msg := preiniter.PreInit()
+			err = runPreInit(cwd, deps, cmdLineObj, msg)
+			if err != nil {
+				startTelemetry(cmd, err, startTime)
+			}
+			util.LogErrorAndExit(err, "")
+		}
+
 		var devfilePath, componentName string
 		var devfileObj *parser.DevfileObj
-		devfilePath, devfileObj, componentName, err = getDevfileInfo(ctx)
+		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables)
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
 		}

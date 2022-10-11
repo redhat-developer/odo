@@ -1,22 +1,18 @@
 package genericclioptions
 
 import (
-	"context"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // runPreInit executes the Init command before running the main command
-func runPreInit(ctx context.Context, deps *clientset.Clientset, cmdline cmdline.Cmdline, msg string) error {
-	workingDir := odocontext.GetWorkingDirectory(ctx)
+func runPreInit(workingDir string, deps *clientset.Clientset, cmdline cmdline.Cmdline, msg string) error {
 	isEmptyDir, err := location.DirIsEmpty(deps.FS, workingDir)
 	if err != nil {
 		return err
