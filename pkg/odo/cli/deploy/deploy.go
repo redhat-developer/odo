@@ -10,7 +10,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
-	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -27,17 +26,8 @@ const RecommendedCommandName = "deploy"
 
 // DeployOptions encapsulates the options for the odo command
 type DeployOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
-
-	// Variables to override Devfile variables
-	variables map[string]string
-
-	// working directory
-	contextDir string
 }
 
 var _ genericclioptions.Runnable = (*DeployOptions)(nil)
@@ -62,25 +52,29 @@ func (o *DeployOptions) PreInit() string {
 
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.variables = fcontext.GetVariables(ctx)
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).WithVariables(o.variables))
-	return err
+	return nil
 }
 
 // Validate validates the DeployOptions based on completed values
 func (o *DeployOptions) Validate(ctx context.Context) error {
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	if devfileObj == nil {
+		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
+	}
 	return nil
 }
 
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run(ctx context.Context) error {
-	devfileObj := o.DevfileObj
+	var (
+		devfileObj  = odocontext.GetDevfileObj(ctx)
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+		devfileName = odocontext.GetComponentName(ctx)
+		appName     = odocontext.GetApplication(ctx)
+		namespace   = odocontext.GetNamespace(ctx)
+	)
 
-	devfileName := o.GetComponentName()
-
-	path := filepath.Dir(o.DevfilePath)
-	appName := odocontext.GetApplication(ctx)
-	namespace := odocontext.GetNamespace(ctx)
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
@@ -91,7 +85,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	// Run actual deploy command to be used
-	err := o.clientset.DeployClient.Deploy(o.clientset.FS, devfileObj, path, appName, devfileName)
+	err := o.clientset.DeployClient.Deploy(o.clientset.FS, *devfileObj, path, appName, devfileName)
 
 	if err == nil {
 		log.Info("\nYour Devfile has been successfully deployed")
