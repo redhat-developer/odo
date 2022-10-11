@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -27,9 +28,6 @@ type RemoveBindingOptions struct {
 	// Flags passed to the command
 	flags map[string]string
 
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -46,13 +44,11 @@ func (o *RemoveBindingOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *RemoveBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	if err != nil {
-		return err
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	if devfileObj == nil {
+		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
-
 	o.flags = o.clientset.BindingClient.GetFlags(cmdline.GetFlags())
-
 	return nil
 }
 
@@ -60,14 +56,14 @@ func (o *RemoveBindingOptions) Validate(ctx context.Context) (err error) {
 	return o.clientset.BindingClient.ValidateRemoveBinding(o.flags)
 }
 
-func (o *RemoveBindingOptions) Run(_ context.Context) error {
-
-	devfileobj, err := o.clientset.BindingClient.RemoveBinding(o.flags[backend.FLAG_NAME], o.DevfileObj)
+func (o *RemoveBindingOptions) Run(ctx context.Context) error {
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	newDevfileObj, err := o.clientset.BindingClient.RemoveBinding(o.flags[backend.FLAG_NAME], *devfileObj)
 	if err != nil {
 		return err
 	}
 
-	err = devfileobj.WriteYamlDevfile()
+	err = newDevfileObj.WriteYamlDevfile()
 	if err != nil {
 		return err
 	}
@@ -90,7 +86,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		},
 	}
 	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")
-	clientset.Add(bindingCmd, clientset.BINDING)
+	clientset.Add(bindingCmd, clientset.BINDING, clientset.FILESYSTEM)
 
 	return bindingCmd
 }
