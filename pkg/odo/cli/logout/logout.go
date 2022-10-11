@@ -22,9 +22,6 @@ var example = templates.Examples(`  # Logout
 
 // LogoutOptions encapsulates the options for the odo logout command
 type LogoutOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -42,13 +39,12 @@ func (o *LogoutOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes LogoutOptions after they've been created
 func (o *LogoutOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	return
+	return nil
 }
 
 // Validate validates the LogoutOptions based on completed values
 func (o *LogoutOptions) Validate(ctx context.Context) (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for the odo logout command
