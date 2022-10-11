@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	sboPipeline "github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/pointer"
@@ -588,8 +586,8 @@ func (a Adapter) generateDeploymentObjectMeta(deployment *appsv1.Deployment, lab
 // and removes the remote resources not present in the Devfile;
 // it ignores the core components (such as deployments, svc, pods; all resources with `component:<something>` label)
 func (a Adapter) deleteRemoteResourcesNotPresentInDevfile(selector string, deployment *appsv1.Deployment) (objectsToRemove []unstructured.Unstructured, serviceBindingSecretsToRemove []unstructured.Unstructured, _ error) {
-	currentNameSpace := a.kubeClient.GetCurrentNamespace()
-	allRemoteK8sResources, err := a.kubeClient.GetAllResourcesFromSelector(selector, currentNameSpace)
+	currentNamespace := a.kubeClient.GetCurrentNamespace()
+	allRemoteK8sResources, err := a.kubeClient.GetAllResourcesFromSelector(selector, currentNamespace)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to fetch remote kubernetes resources: %w", err)
 	}
@@ -602,7 +600,8 @@ func (a Adapter) deleteRemoteResourcesNotPresentInDevfile(selector string, deplo
 		}
 	}
 
-	devfileK8sResources, err := devfile.GetKubernetesComponentsToPush(a.Devfile, true)
+	var devfileK8sResources []devfilev1.Component
+	devfileK8sResources, err = devfile.GetKubernetesComponentsToPush(a.Devfile, true)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to obtain devfile kubernetes resources: %w", err)
 	}
@@ -610,24 +609,26 @@ func (a Adapter) deleteRemoteResourcesNotPresentInDevfile(selector string, deplo
 	// convert all devfileK8sResources to unstructured data
 	var devfileK8sResourcesUnstructured []unstructured.Unstructured
 	for _, devfileK := range devfileK8sResources {
-		devfileKUnstructured, err := libdevfile.GetK8sComponentAsUnstructured(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
+		var devfileKUnstructured unstructured.Unstructured
+		devfileKUnstructured, err = libdevfile.GetK8sComponentAsUnstructured(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
 		if err != nil {
 			return nil, nil, fmt.Errorf("unable to obtain unstructured data: %w", err)
 		}
 		devfileK8sResourcesUnstructured = append(devfileK8sResourcesUnstructured, devfileKUnstructured)
 	}
+
 	isSBOSupported, err := a.kubeClient.IsServiceBindingSupported()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error in determining if the Service Binding Opertor is supported, cause: %w", err)
 	}
 	isServiceBindingSecretFound := func(u unstructured.Unstructured, k8sName string) bool {
-		return u.GroupVersionKind() == kclient.SecretGVK && service.IsLinkSecret(u.GetLabels()) && u.GetLabels()[service.LinkLabel] == k8sName && u.GetNamespace() == currentNameSpace
+		return u.GroupVersionKind() == kclient.SecretGVK && service.IsLinkSecret(u.GetLabels()) && u.GetLabels()[service.LinkLabel] == k8sName && u.GetNamespace() == currentNamespace
 	}
 	for _, remoteK := range remoteK8sResources {
 		matchFound := false
 		for _, devfileK := range devfileK8sResourcesUnstructured {
 			// only check against GroupKind because version might not always match
-			remoteResourceIsPresentInDevfile := devfileK.GroupVersionKind().GroupKind() == remoteK.GroupVersionKind().GroupKind() && devfileK.GetName() == remoteK.GetName() && remoteK.GetNamespace() == currentNameSpace
+			remoteResourceIsPresentInDevfile := devfileK.GroupVersionKind().GroupKind() == remoteK.GroupVersionKind().GroupKind() && devfileK.GetName() == remoteK.GetName() && remoteK.GetNamespace() == currentNamespace
 			if remoteResourceIsPresentInDevfile {
 				matchFound = true
 				break
@@ -672,9 +673,9 @@ func (a Adapter) deleteRemoteResourcesNotPresentInDevfile(selector string, deplo
 	for _, objectToRemove := range objectsToRemove {
 		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", objectToRemove.GetKind(), objectToRemove.GetName())
 
-		gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
-		if err != nil {
-			return objectsToRemove, serviceBindingSecretsToRemove, fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+		gvr, err1 := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
+		if err1 != nil {
+			return objectsToRemove, serviceBindingSecretsToRemove, fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err1.Error())
 		}
 
 		err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
@@ -688,49 +689,14 @@ func (a Adapter) deleteRemoteResourcesNotPresentInDevfile(selector string, deplo
 		}
 		spinner.End(true)
 	}
-
-	var processingPipeline sboPipeline.Pipeline
-	deploymentGVK, err := a.kubeClient.GetDeploymentAPIVersion()
-	if err != nil {
-		return objectsToRemove, serviceBindingSecretsToRemove, fmt.Errorf("failed to get deployment GVK: %w", err)
+	if isSBOSupported {
+		return objectsToRemove, serviceBindingSecretsToRemove, nil
 	}
+	// this part will only be executed with SBO is not installed
 	for _, secretToRemove := range serviceBindingSecretsToRemove {
 		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", secretToRemove.GetKind(), secretToRemove.GetName())
 
-		// build the ServiceBinding object to for unbinding
-		var newServiceBinding servicebinding.ServiceBinding
-		newServiceBinding.Name = secretToRemove.GetLabels()[service.LinkLabel]
-		newServiceBinding.Namespace = currentNameSpace
-		newServiceBinding.Spec.Application = servicebinding.Application{
-			Ref: servicebinding.Ref{
-				Name:    deployment.Name,
-				Group:   deploymentGVK.Group,
-				Version: deploymentGVK.Version,
-				Kind:    deploymentGVK.Kind,
-			},
-		}
-		newServiceBinding.Status.Secret = secretToRemove.GetName()
-		// set the deletion time stamp to trigger deletion
-		timeNow := metav1.Now()
-		newServiceBinding.DeletionTimestamp = &timeNow
-
-		if processingPipeline == nil {
-			processingPipeline, err = service.GetPipeline(a.kubeClient)
-			if err != nil {
-				return objectsToRemove, serviceBindingSecretsToRemove, err
-			}
-		}
-		// use the library to perform unbinding;
-		// this will remove all the envvars, volume/secret mounts done on the deployment to bind it to the service
-		_, err = processingPipeline.Process(&newServiceBinding)
-		if err != nil {
-			return objectsToRemove, serviceBindingSecretsToRemove, err
-		}
-
-		// since the library currently doesn't delete the secret after unbinding
-		// delete the secret manually
-		err = a.kubeClient.DeleteSecret(secretToRemove.GetName(), currentNameSpace)
-
+		err = service.DeleteLinkWithoutOperator(a.kubeClient, secretToRemove, deployment)
 		if err != nil {
 			if !kerrors.IsNotFound(err) {
 				spinner.End(false)

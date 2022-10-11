@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -70,7 +71,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	serviceBinding.Spec.Services[0].Namespace = &ns
 
 	var processingPipeline sboPipeline.Pipeline
-	processingPipeline, err = GetPipeline(client)
+	processingPipeline, err = getPipeline(client)
 	if err != nil {
 		return err
 	}
@@ -123,8 +124,51 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	return nil
 }
 
-// GetPipeline gets the pipeline to process service binding requests
-func GetPipeline(client kclient.ClientInterface) (sboPipeline.Pipeline, error) {
+// DeleteLinkWithoutOperator deletes the ServiceBinding secret when Service Binding Operator is not installed
+func DeleteLinkWithoutOperator(kubeClient kclient.ClientInterface, secretToRemove unstructured.Unstructured, deployment *appsv1.Deployment) error {
+	currentNamespace := kubeClient.GetCurrentNamespace()
+	var processingPipeline sboPipeline.Pipeline
+	deploymentGVK, err := kubeClient.GetDeploymentAPIVersion()
+	if err != nil {
+		return fmt.Errorf("failed to get deployment GVK: %w", err)
+	}
+	// build the ServiceBinding object to for unbinding
+	var newServiceBinding sboApi.ServiceBinding
+	newServiceBinding.Name = secretToRemove.GetLabels()[LinkLabel]
+	newServiceBinding.Namespace = currentNamespace
+	newServiceBinding.Spec.Application = sboApi.Application{
+		Ref: sboApi.Ref{
+			Name:    deployment.Name,
+			Group:   deploymentGVK.Group,
+			Version: deploymentGVK.Version,
+			Kind:    deploymentGVK.Kind,
+		},
+	}
+	newServiceBinding.Status.Secret = secretToRemove.GetName()
+	// set the deletion time stamp to trigger deletion
+	timeNow := metav1.Now()
+	newServiceBinding.DeletionTimestamp = &timeNow
+
+	if processingPipeline == nil {
+		processingPipeline, err = getPipeline(kubeClient)
+		if err != nil {
+			return err
+		}
+	}
+	// use the library to perform unbinding;
+	// this will remove all the envvars, volume/secret mounts done on the deployment to bind it to the service
+	_, err = processingPipeline.Process(&newServiceBinding)
+	if err != nil {
+		return err
+	}
+
+	// since the library currently doesn't delete the secret after unbinding
+	// delete the secret manually
+	return kubeClient.DeleteSecret(secretToRemove.GetName(), currentNamespace)
+}
+
+// getPipeline gets the pipeline to process service binding requests
+func getPipeline(client kclient.ClientInterface) (sboPipeline.Pipeline, error) {
 	mgr, err := ctrl.NewManager(client.GetClientConfig(), ctrl.Options{
 		Scheme: runtime.NewScheme(),
 		// disable the health probes to prevent binding to them
