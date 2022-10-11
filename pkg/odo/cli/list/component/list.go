@@ -22,7 +22,6 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -142,7 +141,6 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
-	completion.RegisterCommandFlagHandler(listCmd, "path", completion.FileCompletionHandler)
 	commonflags.UseOutputFlag(listCmd)
 
 	return listCmd

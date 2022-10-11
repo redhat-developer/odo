@@ -6,6 +6,10 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 )
 
+const (
+	gitDirName = ".git"
+)
+
 // ApplyIgnore will take the current ignores []string and append the mandatory odo-file-index.json and
 // .git ignores; or find the .odoignore/.gitignore file in the directory and use that instead.
 func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
