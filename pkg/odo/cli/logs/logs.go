@@ -32,14 +32,11 @@ import (
 const RecommendedCommandName = "logs"
 
 type LogsOptions struct {
-	// context
-	Context *genericclioptions.Context
 	// clients
 	clientset *clientset.Clientset
 
 	// variables
-	componentName string
-	out           io.Writer
+	out io.Writer
 
 	// flags
 	devMode    bool
@@ -82,12 +79,10 @@ func (o *LogsOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ [
 		return errors.New("this command cannot run in an empty directory, run the command in a directory containing source code or initialize using 'odo init'")
 	}
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	if err != nil {
-		return fmt.Errorf("unable to create context: %v", err)
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	if devfileObj == nil {
+		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
-
-	o.componentName = o.Context.GetComponentName()
 	return nil
 }
 
@@ -101,6 +96,8 @@ func (o *LogsOptions) Validate(ctx context.Context) error {
 func (o *LogsOptions) Run(ctx context.Context) error {
 	var logMode logsMode
 	var err error
+
+	componentName := odocontext.GetComponentName(ctx)
 
 	if o.devMode {
 		logMode = DevMode
@@ -121,7 +118,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	events, err := o.clientset.LogsClient.GetLogsForMode(
 		ctx,
 		mode,
-		o.componentName,
+		componentName,
 		odocontext.GetNamespace(ctx),
 		o.follow,
 	)
@@ -171,7 +168,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 					// 1. user specifies --dev flag, but the component's running in Deploy mode
 					// 2. user specified --deploy flag, but the component's running in Dev mode
 					// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
-					fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", o.componentName)
+					fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", componentName)
 				}
 				return nil
 			}
