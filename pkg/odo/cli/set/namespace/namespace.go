@@ -34,9 +34,6 @@ var (
 
 // SetOptions encapsulates the options for the odo namespace create command
 type SetOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -61,10 +58,6 @@ func (so *SetOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes SetOptions after they've been created
 func (so *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	so.namespaceName = args[0]
-	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
 	if scontext.GetTelemetryStatus(cmdline.Context()) {
 		scontext.SetClusterType(cmdline.Context(), so.clientset.KubernetesClient)
 	}
