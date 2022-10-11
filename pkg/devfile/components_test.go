@@ -29,10 +29,11 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 	}
 
 	getDevfileWithApplyCommand := func(applyComponentName string) parser.DevfileObj {
+		const defaultComponentName = "component1"
 		devfileObj := parser.DevfileObj{
 			Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 				{
-					Name:    "component1",
+					Name:    defaultComponentName,
 					Inlined: "Component 1",
 				},
 			}, nil),
@@ -44,6 +45,22 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 					Component: applyComponentName,
 				},
 			},
+		}
+		if applyComponentName != defaultComponentName {
+			_ = devfileObj.Data.AddComponents([]devfilev1.Component{
+				{
+					Name: applyComponentName,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Kubernetes: &devfilev1.KubernetesComponent{
+							K8sLikeComponent: devfilev1.K8sLikeComponent{
+								K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
+									Inlined: applyComponentName,
+								},
+							},
+						},
+					},
+				},
+			})
 		}
 		_ = devfileObj.Data.AddCommands([]devfilev1.Command{applyCommand})
 		return devfileObj
@@ -110,9 +127,8 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			// TODO: Fix this; it should fail
-			name:       "allow apply command when allowApply is true",
-			devfileObj: getDevfileWithApplyCommand("component1"),
+			name:       "allow component referenced by apply command when allowApply is true",
+			devfileObj: getDevfileWithApplyCommand("component2"),
 			allowApply: true,
 			want: []devfilev1.Component{
 				{
@@ -122,6 +138,18 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 							K8sLikeComponent: devfilev1.K8sLikeComponent{
 								K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
 									Inlined: "Component 1",
+								},
+							},
+						},
+					},
+				},
+				{
+					Name: "component2",
+					ComponentUnion: devfilev1.ComponentUnion{
+						Kubernetes: &devfilev1.KubernetesComponent{
+							K8sLikeComponent: devfilev1.K8sLikeComponent{
+								K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
+									Inlined: "component2",
 								},
 							},
 						},
