@@ -33,9 +33,6 @@ type BindingOptions struct {
 	// nameFlag of the component to describe, optional
 	nameFlag string
 
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -54,8 +51,11 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-		return err
+		devfileObj := odocontext.GetDevfileObj(ctx)
+		if devfileObj == nil {
+			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
+		}
+		return nil
 	}
 	return nil
 }
@@ -91,8 +91,12 @@ func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{},
 }
 
 func (o *BindingOptions) runWithoutName(ctx context.Context) ([]api.ServiceBinding, error) {
-	workingDir := odocontext.GetWorkingDirectory(ctx)
-	return o.clientset.BindingClient.GetBindingsFromDevfile(o.DevfileObj, workingDir)
+	var (
+		workingDir = odocontext.GetWorkingDirectory(ctx)
+		devfileObj = odocontext.GetDevfileObj(ctx)
+	)
+
+	return o.clientset.BindingClient.GetBindingsFromDevfile(*devfileObj, workingDir)
 }
 
 func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
