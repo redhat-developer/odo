@@ -46,9 +46,6 @@ type ComponentOptions struct {
 	// waitFlag waits for deletion of all resources
 	waitFlag bool
 
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -67,8 +64,11 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.name == "" {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-		return err
+		devfileObj := odocontext.GetDevfileObj(ctx)
+		if devfileObj == nil {
+			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
+		}
+		return nil
 	}
 	// 2. Name is passed, and odo does not have access to devfile.yaml; if Name is passed, then we assume that odo does not have access to the devfile.yaml
 	if o.namespace != "" {
@@ -116,16 +116,17 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 }
 
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
+// devfileObj in context must not be nil when this method is called
 func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
-	devfileObj := o.DevfileObj
-
-	componentName := o.GetComponentName()
-
-	namespace := odocontext.GetNamespace(ctx)
-	appName := odocontext.GetApplication(ctx)
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+		namespace     = odocontext.GetNamespace(ctx)
+		appName       = odocontext.GetApplication(ctx)
+	)
 
 	log.Info("Searching resources to delete, please wait...")
-	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName, componentName, labels.ComponentAnyMode)
+	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
 	if err != nil {
 		return err
 	}
@@ -144,7 +145,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 		// if innerloop deployment resource is present, then execute preStop events
 		if isInnerLoopDeployed {
-			err = o.clientset.DeleteClient.ExecutePreStopEvents(devfileObj, appName, componentName)
+			err = o.clientset.DeleteClient.ExecutePreStopEvents(*devfileObj, appName, componentName)
 			if err != nil {
 				log.Errorf("Failed to execute preStop events")
 			}
@@ -222,7 +223,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kubeconfig is used")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait for deletion of all dependent resources")
-	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES)
+	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES, clientset.FILESYSTEM)
 
 	return componentCmd
 }

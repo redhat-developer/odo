@@ -20,9 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 )
@@ -209,7 +207,6 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			o := &ComponentOptions{
 				name:      tt.fields.name,
 				forceFlag: tt.fields.forceFlag,
-				Context:   prepareContext(ctrl, kubeClient, info, workingDir),
 				clientset: &clientset.Clientset{
 					KubernetesClient: kubeClient,
 					DeleteClient:     deleteClient,
@@ -217,6 +214,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			}
 			ctx := odocontext.WithNamespace(context.Background(), projectName)
 			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithWorkingDirectory(ctx, workingDir)
+			ctx = odocontext.WithDevfilePath(ctx, info.GetDevfilePath())
+			ctx = odocontext.WithComponentName(ctx, compName)
+			devfileObj := info.GetDevfileObj()
+			ctx = odocontext.WithDevfileObj(ctx, &devfileObj)
 			if err = o.deleteDevfileComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -252,24 +254,6 @@ func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.Clie
 		}, nil).AnyTimes()
 	kubeClient.EXPECT().SetNamespace(projectName).AnyTimes()
 	return kubeClient
-}
-
-// prepareContext prepares the mock genericclioptions.Context and returns it
-func prepareContext(ctrl *gomock.Controller, kubeClient kclient.ClientInterface, info *envinfo.EnvSpecificInfo, workingDir string) *genericclioptions.Context {
-	cmdline := cmdline.NewMockCmdline(ctrl)
-	cmdline.EXPECT().GetWorkingDirectory().Return(workingDir, nil).AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("o").Return("").AnyTimes()
-	cmdline.EXPECT().GetKubeClient().Return(kubeClient, nil).AnyTimes()
-	createParameters := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(workingDir)
-	context, err := genericclioptions.New(createParameters)
-	if err != nil {
-		return nil
-	}
-	context.DevfileObj = info.GetDevfileObj()
-	return context
 }
 
 // getUnstructured returns an unstructured.Unstructured object
