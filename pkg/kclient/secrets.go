@@ -23,6 +23,8 @@ import (
 // ComponentPortAnnotationName annotation is used on the secrets that are created for each exposed port of the component
 const ComponentPortAnnotationName = "component-port"
 
+var SecretGVK = corev1.SchemeGroupVersion.WithKind("Secret")
+
 // CreateTLSSecret creates a TLS Secret with the given certificate and private key
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
