@@ -36,9 +36,6 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions ...
 type ListOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -70,13 +67,6 @@ func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, ar
 	// instead
 	if !dfutil.CheckKubeConfigExist() {
 		return errors.New("KUBECONFIG not found. Unable to retrieve cluster information. Please set your Kubernetes configuration via KUBECONFIG env variable or ~/.kube/config")
-	}
-
-	// Create the local context and initial Kubernetes client configuration
-	lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	// The command must work without Devfile
-	if err != nil && !genericclioptions.IsNoDevfileError(err) {
-		return err
 	}
 
 	// If the namespace flag has been passed, we will search there.
@@ -117,8 +107,12 @@ func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, e
 }
 
 func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+	)
 	devfileComponents, componentInDevfile, err := component.ListAllComponents(
-		lo.clientset.KubernetesClient, lo.namespaceFilter, lo.DevfileObj, lo.GetComponentName())
+		lo.clientset.KubernetesClient, lo.namespaceFilter, devfileObj, componentName)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
@@ -144,7 +138,7 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 		},
 		Aliases: []string{"components"},
 	}
-	clientset.Add(listCmd, clientset.KUBERNETES)
+	clientset.Add(listCmd, clientset.KUBERNETES, clientset.FILESYSTEM)
 
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
