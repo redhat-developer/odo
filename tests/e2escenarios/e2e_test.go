@@ -61,6 +61,14 @@ var _ = Describe("E2E Test", func() {
 		return string(body)
 	}
 
+	failcheck := func(url string) string {
+		resp, err := http.Get(fmt.Sprintf("http://%s", url))
+		Expect(err).To(BeNil())
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return string(body)
+	}
+
 	Context("starting with empty Directory", func() {
 		componentName := helper.RandString(6)
 		var _ = BeforeEach(func() {
@@ -337,15 +345,27 @@ var _ = Describe("E2E Test", func() {
 			Expect(err).To(BeNil())
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
 
-			//add binding information (binding as file)
-			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
-
 			// // "execute odo dev and add changes to application"
 			var devSession helper.DevSession
 			var ports map[string]string
 
 			devSession, _, _, ports, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
+
+			// "send data"
+			recive_data := failcheck(ports["8080"])
+			Expect(recive_data).To(ContainSubstring("404 page not found")) // should fail as application is not connected to DB
+
+			//add binding information (binding as ENV)
+			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
+
+			// Get new random port after restart
+			Eventually(func() map[string]string {
+				_, _, ports, err = devSession.GetInfo()
+				Expect(err).ToNot(HaveOccurred())
+				fmt.Println(ports)
+				return ports
+			}, 180, 10).ShouldNot(BeEmpty())
 
 			// "send data"
 			data := sendDataEntry(ports["8080"])
@@ -363,11 +383,12 @@ var _ = Describe("E2E Test", func() {
 			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "Go", "Dev", bindingName})
 
-			// "exit dev mode and run odo deploy"
+			// "exit dev mode"
 			devSession.Stop()
 			devSession.WaitEnd()
 
 			// remove bindings and check devfile to not contain binding info
+			// TODO: move `remove binding` inside devsession after https://github.com/redhat-developer/odo/issues/6101 is fixed
 			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 
 			devSession, _, _, _, err = helper.StartDevMode(nil)
