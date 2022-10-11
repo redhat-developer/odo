@@ -45,9 +45,6 @@ type ServiceListOptions struct {
 	// clientset
 	clientset *clientset.Clientset
 
-	// context
-	*genericclioptions.Context
-
 	// flags
 	namespaceFlag     string
 	allNamespacesFlag bool
@@ -61,17 +58,10 @@ func (o *ServiceListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
-	var err error
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
-
 	if o.namespaceFlag == "" && !o.allNamespacesFlag {
 		o.namespaceFlag = odocontext.GetNamespace(ctx)
 	}
-
-	return err
+	return nil
 }
 
 func (o *ServiceListOptions) Validate(ctx context.Context) error {
