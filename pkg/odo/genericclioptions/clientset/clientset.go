@@ -16,6 +16,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/logs"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/sync"
 
@@ -135,7 +136,7 @@ func isDefined(command *cobra.Command, dependency string) bool {
 	return ok
 }
 
-func Fetch(command *cobra.Command) (*Clientset, error) {
+func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	dep := Clientset{}
 	var err error
 
@@ -164,7 +165,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
 	}
 	if isDefined(command, EXEC) {
-		dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
+		if platform == commonflags.RunOnCluster {
+			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
+		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.ExecClient)
