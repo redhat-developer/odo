@@ -137,7 +137,7 @@ module.exports = {
               banner: 'none',
             },
             '2.5.0': {
-              label: '2.5.0 (Stable) 🚀',
+              label: '2.5.1 (Stable) 🚀',
               path: '2.5.0',
               badge: true,
               banner: 'none',
