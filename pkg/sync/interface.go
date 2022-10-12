@@ -20,7 +20,6 @@ type SyncParameters struct {
 	IgnoredFiles             []string // IgnoredFiles is the list of files to not push up to a component
 	DevfileScanIndexForWatch bool     // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See 'pkg/sync/adapter.go' for details
 	ForcePush                bool
-	SyncExtracter            SyncExtracter
 	CompInfo                 ComponentInfo
 	Files                    map[string]string
 }

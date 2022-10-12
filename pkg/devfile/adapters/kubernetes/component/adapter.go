@@ -3,7 +3,6 @@ package component
 import (
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -212,7 +211,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		WatchDeletedFiles:        parameters.WatchDeletedFiles,
 		IgnoredFiles:             parameters.IgnoredFiles,
 		DevfileScanIndexForWatch: parameters.DevfileScanIndexForWatch,
-		SyncExtracter:            a.ExtractProjectToComponent,
 
 		CompInfo:  compInfo,
 		ForcePush: !deploymentExists || podChanged,
@@ -586,11 +584,6 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	}
 
 	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
-}
-
-// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a Adapter) ExtractProjectToComponent(componentInfo sync.ComponentInfo, targetPath string, stdin io.Reader) error {
-	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.

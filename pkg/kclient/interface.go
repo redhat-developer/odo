@@ -109,7 +109,6 @@ type ClientInterface interface {
 
 	// pods.go
 	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
-	ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
 	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)

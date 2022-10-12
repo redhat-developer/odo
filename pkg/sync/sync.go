@@ -10,7 +10,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
@@ -18,17 +18,17 @@ import (
 
 // SyncClient is a Kubernetes implementationn for sync
 type SyncClient struct {
-	kubeClient kclient.ClientInterface
-	execClient exec.Client
+	platformClient platform.Client
+	execClient     exec.Client
 }
 
 var _ Client = (*SyncClient)(nil)
 
 // NewSyncClient instantiates a new SyncClient
-func NewSyncClient(kubeClient kclient.ClientInterface, execClient exec.Client) *SyncClient {
+func NewSyncClient(platformClient platform.Client, execClient exec.Client) *SyncClient {
 	return &SyncClient{
-		kubeClient: kubeClient,
-		execClient: execClient,
+		platformClient: platformClient,
+		execClient:     execClient,
 	}
 }
 
@@ -150,7 +150,6 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		syncParameters.ForcePush,
 		syncParameters.IgnoredFiles,
 		syncParameters.CompInfo,
-		syncParameters.SyncExtracter,
 		ret,
 	)
 	if err != nil {
@@ -167,7 +166,7 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a SyncClient) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, extracter SyncExtracter, ret util.IndexerRet) error {
+func (a SyncClient) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, ret util.IndexerRet) error {
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", compInfo.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -209,7 +208,7 @@ func (a SyncClient) pushLocal(path string, files []string, delFiles []string, is
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(extracter, path, compInfo, syncFolder, files, globExps, ret)
+		err = a.CopyFile(path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			return fmt.Errorf("unable push files to pod: %w", err)
 		}
