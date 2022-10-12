@@ -145,7 +145,9 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		return fmt.Errorf("unable to delete remote resources: %w", err)
 	}
 
-	err = a.deleteServiceBindingSecretWhenSBOIsNotInstalled(serviceBindingSecretsToRemove, deployment)
+	// this is mainly useful when the Service Binding Operator is not installed;
+	// and the service binding secrets must be deleted manually since they are created by odo
+	err = a.deleteServiceBindingSecret(serviceBindingSecretsToRemove, deployment)
 	if err != nil {
 		return fmt.Errorf("unable to delete service binding secrets: %w", err)
 	}
@@ -595,7 +597,7 @@ func (a Adapter) generateDeploymentObjectMeta(deployment *appsv1.Deployment, lab
 }
 
 // getRemoteResourcesNotPresentInDevfile compares the list of Devfile K8s component and remote K8s resources
-// and returns a list of the remote resources not present in the Devfile;
+// and returns a list of the remote resources not present in the Devfile and in case the SBO is not installed, a list of service binding secrets that must be deleted;
 // it ignores the core components (such as deployments, svc, pods; all resources with `component:<something>` label)
 func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objectsToRemove, serviceBindingSecretsToRemove []unstructured.Unstructured, err error) {
 	currentNamespace := a.kubeClient.GetCurrentNamespace()
@@ -638,7 +640,9 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 		matchFound := false
 		for _, devfileK := range devfileK8sResourcesUnstructured {
 			// only check against GroupKind because version might not always match
-			remoteResourceIsPresentInDevfile := devfileK.GroupVersionKind().GroupKind() == remoteK.GroupVersionKind().GroupKind() && devfileK.GetName() == remoteK.GetName() && remoteK.GetNamespace() == currentNamespace
+			remoteResourceIsPresentInDevfile := devfileK.GroupVersionKind().GroupKind() == remoteK.GroupVersionKind().GroupKind() &&
+				devfileK.GetName() == remoteK.GetName() &&
+				remoteK.GetNamespace() == currentNamespace
 			if remoteResourceIsPresentInDevfile {
 				matchFound = true
 				break
@@ -664,9 +668,9 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 
 				} else {
 					// if SBO is not installed, check if it is a servicebinding secret
-					remoteSecretHasLocalServiceBindingOwner = (service.IsLinkSecret(remoteK.GetLabels()) &&
+					remoteSecretHasLocalServiceBindingOwner = service.IsLinkSecret(remoteK.GetLabels()) &&
 						remoteK.GetLabels()[service.LinkLabel] == devfileK.GetName() &&
-						remoteK.GetNamespace() == currentNamespace)
+						remoteK.GetNamespace() == currentNamespace
 				}
 				if remoteSecretHasLocalServiceBindingOwner {
 					matchFound = true
@@ -711,12 +715,13 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 	return nil
 }
 
-// deleteServiceBindingSecretWhenSBOIsNotInstalled takes a list of Service Binding secrets that should be deleted when the SBO is not installed.
-func (a Adapter) deleteServiceBindingSecretWhenSBOIsNotInstalled(serviceBindingSecretsToRemove []unstructured.Unstructured, deployment *appsv1.Deployment) error {
+// deleteServiceBindingSecret takes a list of Service Binding secrets that should be deleted;
+// this is mainly helpful when Service Binding Operator is not installed on the cluster
+func (a Adapter) deleteServiceBindingSecret(serviceBindingSecretsToRemove []unstructured.Unstructured, deployment *appsv1.Deployment) error {
 	for _, secretToRemove := range serviceBindingSecretsToRemove {
 		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", secretToRemove.GetKind(), secretToRemove.GetName())
 
-		err := service.DeleteLinkWithoutOperator(a.kubeClient, secretToRemove, deployment)
+		err := service.UnbindWithLibrary(a.kubeClient, secretToRemove, deployment)
 		if err != nil {
 			if !kerrors.IsNotFound(err) {
 				spinner.End(false)

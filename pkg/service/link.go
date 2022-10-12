@@ -124,8 +124,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	return nil
 }
 
-// DeleteLinkWithoutOperator deletes the ServiceBinding secret when Service Binding Operator is not installed
-func DeleteLinkWithoutOperator(kubeClient kclient.ClientInterface, secretToRemove unstructured.Unstructured, deployment *appsv1.Deployment) error {
+// UnbindWithLibrary unbinds the component and service using the ServiceBinding library and deletes the secret
+func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToRemove unstructured.Unstructured, deployment *appsv1.Deployment) error {
 	currentNamespace := kubeClient.GetCurrentNamespace()
 	var processingPipeline sboPipeline.Pipeline
 	deploymentGVK, err := kubeClient.GetDeploymentAPIVersion()
