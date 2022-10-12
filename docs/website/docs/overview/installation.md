@@ -3,7 +3,7 @@ title: Installation
 sidebar_position: 4
 ---
 
-`odo` can be used as either a [CLI tool](./installation#cli-binary-installation) or an [IDE plugin](./installation#ide-installation) on Mac, Windows or Linux.
+`odo` can be used as a CLI tool on Mac, Windows or Linux.
 
 Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/). 
 
