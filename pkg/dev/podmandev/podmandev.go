@@ -74,7 +74,6 @@ func (o *DevClient) Start(
 		WatchDeletedFiles:        nil,
 		IgnoredFiles:             options.IgnorePaths,
 		DevfileScanIndexForWatch: true,
-		SyncExtracter:            nil,
 
 		CompInfo:  compInfo,
 		ForcePush: true,

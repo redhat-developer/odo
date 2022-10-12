@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/sync"
 
@@ -61,6 +62,8 @@ const (
 	KUBERNETES = "DEP_KUBERNETES"
 	// LOGS instantiates client for pkg/logs
 	LOGS = "DEP_LOGS"
+	// PODMAN instantiates client for pkg/podman
+	PODMAN = "DEP_PODMAN"
 	// PORT_FORWARD instantiates client for pkg/portForward
 	PORT_FORWARD = "PORT_FORWARD"
 	// PREFERENCE instantiates client for pkg/preference
@@ -109,6 +112,7 @@ type Clientset struct {
 	InitClient        _init.Client
 	KubernetesClient  kclient.ClientInterface
 	LogsClient        logs.Client
+	PodmanClient      podman.Client
 	PortForwardClient portForward.Client
 	PreferenceClient  preference.Client
 	ProjectClient     project.Client
@@ -152,6 +156,9 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			return nil, err
 		}
 	}
+	if isDefined(command, PODMAN) {
+		dep.PodmanClient = podman.NewPodmanCli()
+	}
 	if isDefined(command, PREFERENCE) {
 		dep.PreferenceClient, err = preference.NewClient(command.Context())
 		if err != nil {
@@ -170,8 +177,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		switch platform {
 		case commonflags.RunOnCluster:
 			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
-		default:
-			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
+		case commonflags.RunOnPodman:
+			dep.ExecClient = exec.NewExecClient(dep.PodmanClient)
 		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
@@ -198,7 +205,12 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		dep.StateClient = state.NewStateClient(dep.FS)
 	}
 	if isDefined(command, SYNC) {
-		dep.SyncClient = sync.NewSyncClient(dep.ExecClient)
+		switch platform {
+		case commonflags.RunOnCluster:
+			dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient, dep.ExecClient)
+		case commonflags.RunOnPodman:
+			dep.SyncClient = sync.NewSyncClient(dep.PodmanClient, dep.ExecClient)
+		}
 	}
 	if isDefined(command, WATCH) {
 		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.DeleteClient, dep.StateClient)

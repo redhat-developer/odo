@@ -225,6 +225,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.FILESYSTEM,
 		clientset.INIT,
 		clientset.KUBERNETES_NULLABLE,
+		clientset.PODMAN,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
 		clientset.SYNC,

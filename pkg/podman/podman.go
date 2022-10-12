@@ -2,6 +2,7 @@ package podman
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -86,4 +87,9 @@ func (o *PodmanCli) VolumeRm(volumeName string) error {
 	out, err := exec.Command("podman", "volume", "rm", volumeName).Output()
 	fmt.Printf("%s\n", string(out))
 	return err
+}
+
+func (o *PodmanCli) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	fmt.Printf("exec %v\n", cmd)
+	return nil
 }

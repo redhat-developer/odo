@@ -1,6 +1,10 @@
 package podman
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	"io"
+
+	corev1 "k8s.io/api/core/v1"
+)
 
 type Client interface {
 	// PlayKube creates the Pod with Podman
@@ -14,4 +18,6 @@ type Client interface {
 
 	// VolumeRm deletes the volume with given volumeName
 	VolumeRm(volumeName string) error
+
+	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 }
