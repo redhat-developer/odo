@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"io"
 
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/sync"
 )
@@ -89,7 +93,41 @@ func (o *DevClient) Start(
 	if err != nil {
 		return err
 	}
-	_ = execRequired
+	if execRequired {
+		doExecuteBuildCommand := func() error {
+			execHandler := component.NewExecHandler(
+				nil, /* TODO */
+				o.execClient,
+				"app", /* TODO */
+				componentName,
+				pod.Name,
+				"Building your application in container on cluster",
+				false, /* TODO */
+			)
+			return libdevfile.Build(devfileObj, options.BuildCommand, execHandler)
+		}
+		err = doExecuteBuildCommand()
+		if err != nil {
+			return err
+		}
+
+		cmdKind := devfilev1.RunCommandGroupKind
+		cmdName := options.RunCommand
+		if options.Debug {
+			cmdKind = devfilev1.DebugCommandGroupKind
+			cmdName = options.DebugCommand
+		}
+		cmdHandler := commandHandler{
+			execClient:      o.execClient,
+			componentExists: false, // TODO
+			podName:         pod.Name,
+		}
+		err = libdevfile.ExecuteCommandByNameAndKind(devfileObj, cmdName, cmdKind, &cmdHandler, false)
+		if err != nil {
+			return err
+		}
+
+	}
 
 	<-ctx.Done()
 

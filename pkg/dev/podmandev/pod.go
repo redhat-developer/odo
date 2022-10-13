@@ -34,6 +34,7 @@ func createPodFromComponent(
 		return nil, err
 	}
 	utils.AddOdoProjectVolume(&containers)
+	utils.AddOdoMandatoryVolume(&containers)
 
 	addHostPorts(containers)
 
@@ -42,7 +43,15 @@ func createPodFromComponent(
 			Name: storage.OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: getVolumeName(componentName, appName),
+					ClaimName: getVolumeName(componentName, appName, "source"),
+				},
+			},
+		},
+		{
+			Name: storage.SharedDataVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: getVolumeName(componentName, appName, "shared"),
 				},
 			},
 		},
@@ -65,8 +74,8 @@ func createPodFromComponent(
 	return &pod, nil
 }
 
-func getVolumeName(componentName string, appName string) string {
-	return "odo-projects-" + componentName + "-" + appName
+func getVolumeName(componentName string, appName string, volume string) string {
+	return "odo-projects-" + componentName + "-" + appName + "-" + volume
 }
 
 func addHostPorts(containers []corev1.Container) {
