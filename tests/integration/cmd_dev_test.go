@@ -207,6 +207,8 @@ var _ = Describe("odo dev command tests", func() {
 				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
 				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
 				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
+				Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
+				Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 			})
 		})
 

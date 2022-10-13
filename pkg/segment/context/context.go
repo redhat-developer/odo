@@ -7,8 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/spf13/pflag"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -16,6 +17,7 @@ import (
 )
 
 const (
+	Caller          = "caller"
 	ComponentType   = "componentType"
 	ClusterType     = "clusterType"
 	TelemetryStatus = "isTelemetryEnabled"
@@ -25,6 +27,12 @@ const (
 	NOTFOUND        = "not-found"
 	InteractiveMode = "interactive"
 	Flags           = "flags"
+)
+
+const (
+	VSCode   = "vscode"
+	IntelliJ = "intellij"
+	JBoss    = "jboss"
 )
 
 type contextKey struct{}
