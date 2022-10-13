@@ -1,6 +1,3 @@
-//go:build linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-
 package e2escenarios
 
 import (
@@ -53,20 +50,16 @@ var _ = Describe("E2E Test", func() {
 		Expect(err).To(BeNil())
 		return res
 	}
-	receiveData := func(url string) string {
-		resp, err := http.Get(fmt.Sprintf("http://%s", url))
-		Expect(err).ToNot(HaveOccurred())
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		return string(body)
-	}
 
-	failcheck := func(url string) string {
+	receiveData := func(url string) (string, error) {
 		resp, err := http.Get(fmt.Sprintf("http://%s", url))
-		Expect(err).To(BeNil())
+		if err != nil {
+			return "", err
+		}
 		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		return string(body)
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).To(BeNil())
+		return string(body), nil
 	}
 
 	Context("starting with empty Directory", func() {
@@ -353,8 +346,8 @@ var _ = Describe("E2E Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// "send data"
-			recive_data := failcheck(ports["8080"])
-			Expect(recive_data).To(ContainSubstring("404 page not found")) // should fail as application is not connected to DB
+			_, err = receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			Expect(err).ToNot(BeNil()) // should fail as application is not connected to DB
 
 			//add binding information (binding as ENV)
 			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
@@ -363,7 +356,6 @@ var _ = Describe("E2E Test", func() {
 			Eventually(func() map[string]string {
 				_, _, ports, err = devSession.GetInfo()
 				Expect(err).ToNot(HaveOccurred())
-				fmt.Println(ports)
 				return ports
 			}, 180, 10).ShouldNot(BeEmpty())
 
@@ -372,7 +364,8 @@ var _ = Describe("E2E Test", func() {
 			Expect(data["message"]).To(Equal("User created successfully"))
 
 			// "get all data"
-			rec := receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			rec, err := receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			Expect(err).To(BeNil())
 			helper.MatchAllInOutput(rec, []string{"id", "1", "name", "joe", "location", "tokyo", "age", "23"})
 
 			// check odo describe to check for env
