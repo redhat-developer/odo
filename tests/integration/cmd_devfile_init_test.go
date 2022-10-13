@@ -362,6 +362,8 @@ var _ = Describe("odo devfile init command tests", func() {
 			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("Go"))
 			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("Go"))
 			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("Go"))
+			Expect(td.Properties.CmdProperties[segment.Flags]).To(ContainSubstring("devfile name"))
+
 		})
 	})
 })

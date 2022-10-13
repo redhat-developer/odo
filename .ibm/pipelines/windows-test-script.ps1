@@ -18,20 +18,19 @@ function Do-Cleanup {
     Shout "Removed $BUILD_NUMBER"
     Remove-Item  -Force -Recurse  $BUILD_NUMBER
     }
-}    
+}
 
 function Run-Test {
     Shout "kill previous odo sessions"
     taskkill /IM "odo.exe" /F
 
     Shout "Cloning Repo"
-    git clone $REPO $BUILD_NUMBER
+    git clone --depth 1 $REPO $BUILD_NUMBER
     Push-Location $BUILD_NUMBER
 
-    Shout "Checkout to $GIT_PR_NUMBER"
-    git fetch -v origin pull/${GIT_PR_NUMBER}/head:pr${GIT_PR_NUMBER}
-    git checkout main
-    git merge pr${GIT_PR_NUMBER} --no-edit
+    Shout "Checking out PR #$GIT_PR_NUMBER"
+    git fetch --depth 1 origin pull/${GIT_PR_NUMBER}/head:pr${GIT_PR_NUMBER}
+    git checkout pr${GIT_PR_NUMBER}
 
     Shout "Setup ENV variables"
     mkdir bin 
@@ -100,8 +99,6 @@ $CLUSTER_ID=$args[6]
 $TEST_EXEC_NODES=$args[7]
 Shout "Args Recived"
 
-# Pre test cleanup
-Do-Cleanup
 
 # Run test
 Run-Test

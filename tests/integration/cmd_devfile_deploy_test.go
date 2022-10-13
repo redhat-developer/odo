@@ -207,6 +207,8 @@ ComponentSettings:
 			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
 			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
 			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
+			Expect(td.Properties.CmdProperties[segment.Flags]).To(BeEmpty())
+
 		})
 	})
 
