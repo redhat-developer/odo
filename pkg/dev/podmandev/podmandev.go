@@ -7,6 +7,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/sync"
@@ -61,11 +62,16 @@ func (o *DevClient) Start(
 		return err
 	}
 
+	containerName, syncFolder, err := common.GetFirstContainerWithSourceVolume(pod.Spec.Containers)
+	if err != nil {
+		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
+	}
+
 	compInfo := sync.ComponentInfo{
 		ComponentName: componentName,
-		ContainerName: "runtime", // TODO
+		ContainerName: containerName,
 		PodName:       pod.GetName(),
-		SyncFolder:    "/projects", // TODO
+		SyncFolder:    syncFolder,
 	}
 
 	syncParams := sync.SyncParameters{

@@ -21,7 +21,6 @@ import (
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -131,110 +130,6 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		})
 	}
 
-}
-
-func TestGetFirstContainerWithSourceVolume(t *testing.T) {
-	tests := []struct {
-		name           string
-		containers     []corev1.Container
-		want           string
-		wantSourcePath string
-		wantErr        bool
-	}{
-		{
-			name: "Case: One container, Project Source Env",
-			containers: []corev1.Container{
-				{
-					Name: "test",
-					Env: []corev1.EnvVar{
-						{
-							Name:  "RANDOMENV",
-							Value: "/mypath2",
-						},
-						{
-							Name:  generator.EnvProjectsSrc,
-							Value: "/mypath",
-						},
-					},
-				},
-			},
-			want:           "test",
-			wantSourcePath: "/mypath",
-			wantErr:        false,
-		},
-		{
-			name: "Case: Multiple containers, multiple Project Source Env",
-			containers: []corev1.Container{
-				{
-					Name: "test1",
-					Env: []corev1.EnvVar{
-						{
-							Name:  "RANDOMENV",
-							Value: "/mypath1",
-						},
-						{
-							Name:  generator.EnvProjectsSrc,
-							Value: "/mypath1",
-						},
-					},
-				},
-				{
-					Name: "test2",
-					Env: []corev1.EnvVar{
-						{
-							Name:  "RANDOMENV",
-							Value: "/mypath2",
-						},
-						{
-							Name:  generator.EnvProjectsSrc,
-							Value: "/mypath2",
-						},
-					},
-				},
-			},
-			want:           "test1",
-			wantSourcePath: "/mypath1",
-			wantErr:        false,
-		},
-		{
-			name: "Case: Multiple containers, no Project Source Env",
-			containers: []corev1.Container{
-				{
-					Name: "test1",
-					Env: []corev1.EnvVar{
-						{
-							Name:  "RANDOMENV",
-							Value: "/mypath1",
-						},
-					},
-				},
-				{
-					Name: "test2",
-					Env: []corev1.EnvVar{
-						{
-							Name:  "RANDOMENV",
-							Value: "/mypath2",
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			container, syncFolder, err := getFirstContainerWithSourceVolume(tt.containers)
-			if container != tt.want {
-				t.Errorf("expected %s, actual %s", tt.want, container)
-			}
-			if syncFolder != tt.wantSourcePath {
-				t.Errorf("expected %s, actual %s", tt.wantSourcePath, syncFolder)
-			}
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("expected %v, actual %v", tt.wantErr, err)
-			}
-		})
-	}
 }
 
 func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {
