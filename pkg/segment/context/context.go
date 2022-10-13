@@ -138,6 +138,25 @@ func SetFlags(ctx context.Context, flags *pflag.FlagSet) {
 	setContextProperty(ctx, Flags, strings.Join(changedFlags, " "))
 }
 
+// SetCaller sets the caller property for telemetry to record the tool used to call odo.
+// Passing an empty caller is not considered invalid, but means that odo was invoked directly from the command line.
+// In all other cases, the value is verified against a set of allowed values.
+// Also note that unexpected values are added to the telemetry context, even if an error is returned.
+func SetCaller(ctx context.Context, caller string) error {
+	var err error
+	s := strings.TrimSpace(strings.ToLower(caller))
+	switch s {
+	case "", VSCode, IntelliJ, JBoss:
+		// An empty caller means that odo was invoked directly from the command line
+		err = nil
+	default:
+		// Note: we purposely don't disclose the list of allowed values
+		err = fmt.Errorf("unknown caller type: %q", caller)
+	}
+	setContextProperty(ctx, Caller, s)
+	return err
+}
+
 // GetTelemetryStatus gets the telemetry status that is set before a command is run
 func GetTelemetryStatus(ctx context.Context) bool {
 	isEnabled, ok := GetContextProperties(ctx)[TelemetryStatus]

@@ -39,6 +39,7 @@ const TelemetryClient = "odo"
 const (
 	DisableTelemetryEnv   = "ODO_DISABLE_TELEMETRY"
 	DebugTelemetryFileEnv = "ODO_DEBUG_TELEMETRY_FILE"
+	TelemetryCaller       = "TELEMETRY_CALLER"
 )
 
 type TelemetryProperties struct {
