@@ -16,7 +16,7 @@ import (
 	"k8s.io/klog"
 )
 
-// SyncClient is a Kubernetes implementationn for sync
+// SyncClient is a platform-agnostic implementation for sync
 type SyncClient struct {
 	platformClient platform.Client
 	execClient     exec.Client

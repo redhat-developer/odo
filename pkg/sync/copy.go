@@ -66,9 +66,8 @@ func (a SyncClient) ExtractProjectToComponent(containerName, podName string, tar
 		log.Errorf("stdout: %s\n", stdout.String())
 		log.Errorf("stderr: %s\n", stderr.String())
 		log.Errorf("err: %s\n", err.Error())
-		return err
 	}
-	return nil
+	return err
 }
 
 // checkFileExist check if given file exists or not
