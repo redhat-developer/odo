@@ -63,7 +63,7 @@ func (o *DevClient) Start(
 
 	compInfo := sync.ComponentInfo{
 		ComponentName: componentName,
-		ContainerName: "", // TODO
+		ContainerName: "runtime", // TODO
 		PodName:       pod.GetName(),
 		SyncFolder:    "/projects", // TODO
 	}
