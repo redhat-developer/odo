@@ -96,7 +96,6 @@ Unsetting a preference key sets it to an empty value in the preference file. odo
 | Preference         | Description                                                                    | Default                |
 |--------------------|--------------------------------------------------------------------------------|------------------------|
 | UpdateNotification | Control whether a notification to update odo is shown                          | True                   |
-| NamePrefix         | Set a default name prefix for an odo resource (component, storage, etc)        | Current directory name |
 | Timeout            | Timeout for Kubernetes server connection check                                 | 1 second               |
 | PushTimeout        | Timeout for waiting for a component to start                                   | 240 seconds            |
 | RegistryCacheTime  | For how long (in minutes) odo will cache information from the Devfile registry | 4 Minutes              |
