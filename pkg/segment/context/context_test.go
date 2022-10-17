@@ -2,7 +2,9 @@ package context
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -197,6 +199,63 @@ func TestSetFlags(t *testing.T) {
 			got := GetContextProperties(tt.args.ctx)[Flags]
 			if got != tt.want {
 				t.Errorf("SetFlags() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSetCaller(t *testing.T) {
+	type testScope struct {
+		name       string
+		callerType string
+		wantErr    bool
+		want       interface{}
+	}
+
+	tests := []testScope{
+		{
+			name:       "empty caller",
+			callerType: "",
+			want:       "",
+		},
+		{
+			name:       "unknown caller",
+			callerType: "an-unknown-caller",
+			wantErr:    true,
+			want:       "an-unknown-caller",
+		},
+		{
+			name:       "case-insensitive caller",
+			callerType: strings.ToUpper(IntelliJ),
+			want:       IntelliJ,
+		},
+		{
+			name:       "trimming space from caller",
+			callerType: fmt.Sprintf("   %s\t", VSCode),
+			want:       VSCode,
+		},
+	}
+	for _, c := range []string{VSCode, IntelliJ, JBoss} {
+		tests = append(tests, testScope{
+			name:       fmt.Sprintf("valid caller: %s", c),
+			callerType: c,
+			want:       c,
+		})
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := NewContext(context.Background())
+
+			err := SetCaller(ctx, tt.callerType)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			got := GetContextProperties(ctx)[Caller]
+			if got != tt.want {
+				t.Errorf("SetCaller() = %v, want %v", got, tt.want)
 			}
 		})
 	}
