@@ -56,3 +56,5 @@ import CreatingApp from './_creating_app.mdx';
 import RunningCommand from './_running_command.mdx';
 
 <RunningCommand name="go" port="8080" language="go" framework="Go"/>
+
+_You can now follow the [advanced guide](../advanced/deploy/go.md) to deploy the application to production._

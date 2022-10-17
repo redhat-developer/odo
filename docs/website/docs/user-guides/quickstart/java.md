@@ -38,3 +38,6 @@ import CreatingApp from './_creating_app.mdx';
 import RunningCommand from './_running_command.mdx';
 
 <RunningCommand name="java" port="8080" language="java" framework="Java (Spring Boot)"/>
+
+
+_You can now follow the [advanced guide](../advanced/deploy/java.md) to deploy the application to production._

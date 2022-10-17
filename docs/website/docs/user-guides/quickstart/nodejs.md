@@ -70,3 +70,6 @@ import CreatingApp from './_creating_app.mdx';
 import RunningCommand from './_running_command.mdx';
 
 <RunningCommand name="nodejs" port="3000" language="javascript" framework="Node.JS"/>
+
+
+_You can now follow the [advanced guide](../advanced/deploy/nodejs.md) to deploy the application to production._
