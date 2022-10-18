@@ -56,3 +56,5 @@ import CreatingApp from './_creating_app.mdx';
 import RunningCommand from './_running_command.mdx';
 
 <RunningCommand name="dotnet" port="8080" language="dotnet" framework=".NET"/>
+
+_You can now follow the [advanced guide](../advanced/deploy/dotnet.md) to deploy the application to production._
