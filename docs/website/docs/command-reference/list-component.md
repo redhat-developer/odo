@@ -36,7 +36,7 @@ $ odo list component
 
 `odo list component` makes use of cache for performance reasons. This is the same cache that is referred by `kubectl` command 
 when you do `kubectl api-resources --cached=true`. As a result, if you were to install an Operator/CRD on the 
-Kubernetes cluster, and create a resource from it using odo, you might not see it in the `odo list component` output. This 
+Kubernetes cluster, and create a resource from it using `odo`, you might not see it in the `odo list component` output. This 
 would be the case for 10 minutes timeframe for which the cache is considered valid. Beyond this 10 minutes, the 
 cache is updated anyway.
 
