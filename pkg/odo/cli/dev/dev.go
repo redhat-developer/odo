@@ -235,5 +235,6 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	commonflags.UseVariablesFlags(devCmd)
+	commonflags.UseRunOnFlag(devCmd)
 	return devCmd
 }
