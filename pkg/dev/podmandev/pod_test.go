@@ -67,6 +67,10 @@ var (
 							MountPath: "/projects",
 							Name:      "odo-projects",
 						},
+						{
+							MountPath: "/opt/odo/",
+							Name:      "odo-shared-data",
+						},
 					},
 				},
 			},
@@ -75,7 +79,15 @@ var (
 					Name: "odo-projects",
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-projects-mycmp-app",
+							ClaimName: "odo-projects-mycmp-app-source",
+						},
+					},
+				},
+				{
+					Name: "odo-shared-data",
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "odo-projects-mycmp-app-shared",
 						},
 					},
 				},
