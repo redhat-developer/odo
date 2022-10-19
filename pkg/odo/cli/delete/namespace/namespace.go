@@ -34,9 +34,6 @@ var (
 
 // DeleteOptions encapsulates the options for the 'odo delete namespace' command
 type DeleteOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -67,12 +64,8 @@ func (do *DeleteOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes DeleteOptions after they've been created
 func (do *DeleteOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	do.namespaceName = args[0]
-	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
 	if scontext.GetTelemetryStatus(cmdline.Context()) {
-		scontext.SetClusterType(cmdline.Context(), do.KClient)
+		scontext.SetClusterType(cmdline.Context(), do.clientset.KubernetesClient)
 	}
 	return nil
 }
@@ -137,6 +130,6 @@ func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
 		"wait", "w", false,
 		"Wait until the namespace no longer exists")
 
-	clientset.Add(namespaceDeleteCmd, clientset.PROJECT)
+	clientset.Add(namespaceDeleteCmd, clientset.KUBERNETES, clientset.PROJECT)
 	return namespaceDeleteCmd
 }

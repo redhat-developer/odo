@@ -38,9 +38,6 @@ var (
 
 // NamespaceCreateOptions encapsulates the options for the odo namespace create command
 type NamespaceCreateOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -68,12 +65,8 @@ func (o *NamespaceCreateOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes NamespaceCreateOptions after they've been created
 func (nco *NamespaceCreateOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	nco.namespaceName = args[0]
-	nco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
 	if scontext.GetTelemetryStatus(cmdline.Context()) {
-		scontext.SetClusterType(cmdline.Context(), nco.KClient)
+		scontext.SetClusterType(cmdline.Context(), nco.clientset.KubernetesClient)
 	}
 	return nil
 }
@@ -139,7 +132,7 @@ func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
 
 	namespaceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the namespace is ready")
 
-	clientset.Add(namespaceCreateCmd, clientset.PROJECT)
+	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT)
 
 	return namespaceCreateCmd
 }

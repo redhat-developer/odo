@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -18,6 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -40,9 +40,6 @@ type ComponentOptions struct {
 	// namespaceFlag on which to find the component to describe, optional, defaults to current namespaceFlag
 	namespaceFlag string
 
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -62,19 +59,16 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.nameFlag == "" {
-
-		if len(o.namespaceFlag) > 0 && len(o.nameFlag) == 0 {
+		if len(o.namespaceFlag) > 0 {
 			return errors.New("--namespace can be used only with --name")
 		}
-
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-		if err != nil {
-			return err
+		devfileObj := odocontext.GetDevfileObj(ctx)
+		if devfileObj == nil {
+			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 		}
-		// this ensures that the current namespace is used
-		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 		return nil
 	}
+
 	// 2. Name is passed, and odo does not have access to devfile.yaml; if Name is passed, then we assume that odo does not have access to the devfile.yaml
 	if o.namespaceFlag != "" {
 		o.clientset.KubernetesClient.SetNamespace(o.namespaceFlag)
@@ -104,18 +98,18 @@ func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{
 
 func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 	if o.nameFlag != "" {
-		return o.describeNamedComponent(o.nameFlag)
+		return o.describeNamedComponent(ctx, o.nameFlag)
 	}
-	return o.describeDevfileComponent()
+	return o.describeDevfileComponent(ctx)
 }
 
 // describeNamedComponent describes a component given its name
-func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, name)
+func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
+	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	devfile, err := component.GetDevfileInfoFromCluster(o.clientset.KubernetesClient, name)
+	devfile, err := component.GetDevfileInfoFromCluster(ctx, o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
@@ -129,20 +123,19 @@ func (o *ComponentOptions) describeNamedComponent(name string) (result api.Compo
 }
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
-func (o *ComponentOptions) describeDevfileComponent() (result api.Component, devfile *parser.DevfileObj, err error) {
-	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
-	path, err := filepath.Abs(".")
-	if err != nil {
-		return api.Component{}, nil, err
-	}
+func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result api.Component, devfile *parser.DevfileObj, err error) {
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+	)
+
 	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
 	if err != nil {
 		return api.Component{}, nil, err
 	}
 
-	componentName := o.GetComponentName()
-
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, componentName)
+	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, componentName)
 	if err != nil {
 		if !errors.As(err, &component.NoComponentFoundError{}) {
 			return api.Component{}, nil, err
@@ -152,12 +145,12 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, dev
 		}
 	}
 	return api.Component{
-		DevfilePath:       filepath.Join(path, o.Context.GetDevfilePath()),
-		DevfileData:       api.GetDevfileData(devfileObj),
+		DevfilePath:       devfilePath,
+		DevfileData:       api.GetDevfileData(*devfileObj),
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         runningIn,
 		ManagedBy:         "odo",
-	}, &devfileObj, nil
+	}, devfileObj, nil
 }
 
 func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) error {

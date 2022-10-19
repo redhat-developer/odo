@@ -22,8 +22,8 @@ var example = templates.Examples(`  # Logout
 
 // LogoutOptions encapsulates the options for the odo logout command
 type LogoutOptions struct {
-	// Context
-	*genericclioptions.Context
+	// Clients
+	clientset *clientset.Clientset
 }
 
 var _ genericclioptions.Runnable = (*LogoutOptions)(nil)
@@ -34,22 +34,22 @@ func NewLogoutOptions() *LogoutOptions {
 }
 
 func (o *LogoutOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes LogoutOptions after they've been created
 func (o *LogoutOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	return
+	return nil
 }
 
 // Validate validates the LogoutOptions based on completed values
 func (o *LogoutOptions) Validate(ctx context.Context) (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for the odo logout command
 func (o *LogoutOptions) Run(ctx context.Context) (err error) {
-	return o.KClient.RunLogout(os.Stdout)
+	return o.clientset.KubernetesClient.RunLogout(os.Stdout)
 }
 
 // NewCmdLogout implements the logout odo command
@@ -69,6 +69,8 @@ func NewCmdLogout(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	logoutCmd.Annotations = map[string]string{"command": "openshift"}
 	logoutCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+
+	clientset.Add(logoutCmd, clientset.KUBERNETES)
 
 	return logoutCmd
 }

@@ -4,17 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -22,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -34,9 +32,6 @@ import (
 const RecommendedCommandName = "dev"
 
 type DevOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -44,16 +39,12 @@ type DevOptions struct {
 	ignorePaths []string
 	out         io.Writer
 	errOut      io.Writer
-	// it's called "initial" because it has to be set only once when running odo dev for the first time
-	// it is used to compare with updated devfile when we watch the contextDir for changes
-	initialDevfileObj parser.DevfileObj
+
 	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
 	ctx context.Context
+
 	// cancel function ensures that any function/method listening on ctx.Done channel stops doing its work
 	cancel context.CancelFunc
-
-	// working directory
-	contextDir string
 
 	// Flags
 	noWatchFlag      bool
@@ -61,9 +52,6 @@ type DevOptions struct {
 	debugFlag        bool
 	buildCommandFlag string
 	runCommandFlag   string
-
-	// Variables to override Devfile variables
-	variables map[string]string
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -91,59 +79,23 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *DevOptions) PreInit() string {
+	return messages.DevInitializeExistingComponent
+}
+
 func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
-	var err error
-
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
-	o.ctx, o.cancel = context.WithCancel(context.Background())
-
-	o.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
-	if err != nil {
-		return err
-	}
-	if isEmptyDir {
-		return genericclioptions.NewNoDevfileError(o.contextDir)
-	}
-	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
-	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
-		func(interactiveMode bool) {
-			scontext.SetInteractive(cmdline.Context(), interactiveMode)
-			if interactiveMode {
-				log.Title(messages.DevInitializeExistingComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION)
-				log.Info("\n" + messages.InteractiveModeEnabled)
-			}
-		},
-		func(newDevfileObj parser.DevfileObj) error {
-			return newDevfileObj.WriteYamlDevfile()
-		})
-	if err != nil {
-		return err
-	}
-
-	o.variables = fcontext.GetVariables(ctx)
-
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
-	if err != nil {
-		return fmt.Errorf("unable to create context: %v", err)
-	}
-
-	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
-
-	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
+	o.ctx, o.cancel = context.WithCancel(ctx)
 
 	return nil
 }
 
 func (o *DevOptions) Validate(ctx context.Context) error {
-	if !o.debugFlag && !libdevfile.HasRunCommand(o.initialDevfileObj.Data) {
+	devfileObj := *odocontext.GetDevfileObj(ctx)
+	if !o.debugFlag && !libdevfile.HasRunCommand(devfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("run")
 	}
-	if o.debugFlag && !libdevfile.HasDebugCommand(o.initialDevfileObj.Data) {
+	if o.debugFlag && !libdevfile.HasDebugCommand(devfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("debug")
 	}
 	return nil
@@ -151,14 +103,16 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj    = o.Context.EnvSpecificInfo.GetDevfileObj()
-		path          = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-		componentName = o.GetComponentName()
+		devFileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		variables     = fcontext.GetVariables(ctx)
 	)
 
 	// Output what the command is doing / information
 	log.Title("Developing using the \""+componentName+"\" Devfile",
-		"Namespace: "+o.GetProject(),
+		"Namespace: "+odocontext.GetNamespace(ctx),
 		"odo version: "+version.VERSION)
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
@@ -189,10 +143,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	log.Section("Deploying to the cluster in developer mode")
 	return o.clientset.DevClient.Start(
 		o.ctx,
-		devFileObj,
+		*devFileObj,
 		componentName,
 		path,
-		o.GetDevfilePath(),
+		devfilePath,
 		o.out,
 		o.errOut,
 		dev.StartOptions{
@@ -202,7 +156,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			RunCommand:   o.runCommandFlag,
 			RandomPorts:  o.randomPortsFlag,
 			WatchFiles:   !o.noWatchFlag,
-			Variables:    o.variables,
+			Variables:    variables,
 		},
 	)
 }
@@ -214,11 +168,11 @@ func (o *DevOptions) HandleSignal() error {
 	select {}
 }
 
-func (o *DevOptions) Cleanup(commandError error) {
+func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
-		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
-		componentName := o.GetComponentName()
-		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, componentName, log.GetStdout())
+		devFileObj := odocontext.GetDevfileObj(ctx)
+		componentName := odocontext.GetComponentName(ctx)
+		_ = o.clientset.WatchClient.CleanupDevResources(ctx, *devFileObj, componentName, log.GetStdout())
 	}
 }
 

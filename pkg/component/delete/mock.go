@@ -5,6 +5,7 @@
 package delete
 
 import (
+	context "context"
 	reflect "reflect"
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
@@ -64,18 +65,18 @@ func (mr *MockClientMockRecorder) ExecutePreStopEvents(devfileObj, appName, comp
 }
 
 // ListClusterResourcesToDelete mocks base method.
-func (m *MockClient) ListClusterResourcesToDelete(componentName, namespace string) ([]unstructured.Unstructured, error) {
+func (m *MockClient) ListClusterResourcesToDelete(ctx context.Context, componentName, namespace string) ([]unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListClusterResourcesToDelete", componentName, namespace)
+	ret := m.ctrl.Call(m, "ListClusterResourcesToDelete", ctx, componentName, namespace)
 	ret0, _ := ret[0].([]unstructured.Unstructured)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListClusterResourcesToDelete indicates an expected call of ListClusterResourcesToDelete.
-func (mr *MockClientMockRecorder) ListClusterResourcesToDelete(componentName, namespace interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListClusterResourcesToDelete(ctx, componentName, namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDelete), componentName, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDelete), ctx, componentName, namespace)
 }
 
 // ListResourcesToDeleteFromDevfile mocks base method.

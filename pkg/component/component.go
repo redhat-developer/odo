@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -15,8 +16,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -205,7 +206,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 	return components, nil
 }
 
-func ListAllComponents(client kclient.ClientInterface, namespace string, devObj parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
+func ListAllComponents(client kclient.ClientInterface, namespace string, devObj *parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
 	devfileComponents, err := ListAllClusterComponents(client, namespace)
 	if err != nil {
 		return nil, "", err
@@ -216,7 +217,7 @@ func ListAllComponents(client kclient.ClientInterface, namespace string, devObj 
 		ManagedBy: "",
 		RunningIn: api.NewRunningModes(),
 	}
-	if devObj.Data != nil {
+	if devObj != nil {
 		localComponent.Type = GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 	}
 
@@ -230,8 +231,13 @@ func ListAllComponents(client kclient.ClientInterface, namespace string, devObj 
 	return devfileComponents, componentInDevfile, nil
 }
 
-func getResourcesForComponent(client kclient.ClientInterface, name string, namespace string) ([]unstructured.Unstructured, error) {
-	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode, false)
+func getResourcesForComponent(
+	ctx context.Context,
+	client kclient.ClientInterface,
+	name string,
+	namespace string,
+) ([]unstructured.Unstructured, error) {
+	selector := odolabels.GetSelector(name, odocontext.GetApplication(ctx), odolabels.ComponentAnyMode, false)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -249,8 +255,8 @@ func getResourcesForComponent(client kclient.ClientInterface, name string, names
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(client kclient.ClientInterface, name string) (api.RunningModes, error) {
-	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
+func GetRunningModes(ctx context.Context, client kclient.ClientInterface, name string) (api.RunningModes, error) {
+	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
 	if err != nil {
 		return api.RunningModes{}, nil
 	}
@@ -262,7 +268,7 @@ func GetRunningModes(client kclient.ClientInterface, name string) (api.RunningMo
 	mapResult := api.NewRunningModes()
 	for _, resource := range list {
 		resourceLabels := resource.GetLabels()
-		mode := labels.GetMode(resourceLabels)
+		mode := odolabels.GetMode(resourceLabels)
 		if mode != "" {
 			mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 		}
@@ -282,8 +288,8 @@ func Contains(component api.ComponentAbstract, components []api.ComponentAbstrac
 }
 
 // GetDevfileInfoFromCluster extracts information from the labels and annotations of resources to rebuild a Devfile
-func GetDevfileInfoFromCluster(client kclient.ClientInterface, name string) (parser.DevfileObj, error) {
-	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
+func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterface, name string) (parser.DevfileObj, error) {
+	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
 	if err != nil {
 		return parser.DevfileObj{}, nil
 	}

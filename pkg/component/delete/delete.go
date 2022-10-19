@@ -1,6 +1,7 @@
 package delete
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -19,6 +20,7 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -38,9 +40,9 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface, execClient exe
 
 // ListClusterResourcesToDelete lists Kubernetes resources from cluster in namespace for a given odo component
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
-func (do *DeleteComponentClient) ListClusterResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
+func (do *DeleteComponentClient) ListClusterResourcesToDelete(ctx context.Context, componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
-	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentAnyMode, false)
+	selector := odolabels.GetSelector(componentName, odocontext.GetApplication(ctx), odolabels.ComponentAnyMode, false)
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err

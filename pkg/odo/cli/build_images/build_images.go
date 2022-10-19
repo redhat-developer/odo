@@ -10,9 +10,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -21,15 +21,11 @@ const RecommendedCommandName = "build-images"
 
 // BuildImagesOptions encapsulates the options for the odo command
 type BuildImagesOptions struct {
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
 	// Flags
-	pushFlag    bool
-	contextFlag string
+	pushFlag bool
 }
 
 var _ genericclioptions.Runnable = (*BuildImagesOptions)(nil)
@@ -53,23 +49,26 @@ func (o *BuildImagesOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes LoginOptions after they've been created
 func (o *BuildImagesOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag).IsOffline())
-	if err != nil {
-		return err
-	}
-	return
+	return nil
 }
 
 // Validate validates the LoginOptions based on completed values
 func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
-	return
+	devfileObj := odocontext.GetDevfileObj(ctx)
+	if devfileObj == nil {
+		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
+	}
+	return nil
 }
 
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
-	devfileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
-	path := filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-	return image.BuildPushImages(o.clientset.FS, devfileObj, path, o.pushFlag)
+	var (
+		devfileObj  = odocontext.GetDevfileObj(ctx)
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+	)
+	return image.BuildPushImages(o.clientset.FS, *devfileObj, path, o.pushFlag)
 }
 
 // NewCmdBuildImages implements the odo command
@@ -90,7 +89,6 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 	buildImagesCmd.Annotations = map[string]string{"command": "main"}
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
-	util.AddContextFlag(buildImagesCmd, &o.contextFlag)
 	clientset.Add(buildImagesCmd, clientset.FILESYSTEM)
 
 	return buildImagesCmd

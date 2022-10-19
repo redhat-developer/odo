@@ -266,7 +266,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    parser.DevfileObj
+		want    *parser.DevfileObj
 		wantErr bool
 	}{
 		{
@@ -408,14 +408,14 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				t.Errorf("AddBindingToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got, *tt.want) {
 				t.Errorf("AddBindingToDevfile(): %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}
 }
 
-func getDevfileObjWithServiceBinding(bindingName string, ns string, bindAsFiles bool, namingStrategy string) parser.DevfileObj {
+func getDevfileObjWithServiceBinding(bindingName string, ns string, bindAsFiles bool, namingStrategy string) *parser.DevfileObj {
 	obj := odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs())
 	_ = obj.Data.AddComponents([]v1alpha2.Component{{
 		Name: bindingName,
@@ -430,7 +430,7 @@ func getDevfileObjWithServiceBinding(bindingName string, ns string, bindAsFiles 
 			},
 		},
 	}})
-	return obj
+	return &obj
 }
 
 func getServiceBindingInlinedContent(ns string, bindAsFiles bool, namingStrategy string) string {

@@ -3,7 +3,6 @@ package describe
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -14,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
@@ -33,14 +33,8 @@ type BindingOptions struct {
 	// nameFlag of the component to describe, optional
 	nameFlag string
 
-	// Context
-	*genericclioptions.Context
-
 	// Clients
 	clientset *clientset.Clientset
-
-	// working directory
-	contextDir string
 }
 
 var _ genericclioptions.Runnable = (*BindingOptions)(nil)
@@ -57,17 +51,10 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
-		o.contextDir, err = os.Getwd()
-		if err != nil {
-			return err
+		devfileObj := odocontext.GetDevfileObj(ctx)
+		if devfileObj == nil {
+			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 		}
-
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-		if err != nil {
-			return err
-		}
-		// this ensures that the current namespace is used
-		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 		return nil
 	}
 	return nil
@@ -79,7 +66,7 @@ func (o *BindingOptions) Validate(ctx context.Context) (err error) {
 
 func (o *BindingOptions) Run(ctx context.Context) error {
 	if o.nameFlag == "" {
-		bindings, err := o.runWithoutName()
+		bindings, err := o.runWithoutName(ctx)
 		if err != nil {
 			return err
 		}
@@ -98,13 +85,18 @@ func (o *BindingOptions) Run(ctx context.Context) error {
 // Run contains the logic for the odo command
 func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	if o.nameFlag == "" {
-		return o.runWithoutName()
+		return o.runWithoutName(ctx)
 	}
 	return o.runWithName()
 }
 
-func (o *BindingOptions) runWithoutName() ([]api.ServiceBinding, error) {
-	return o.clientset.BindingClient.GetBindingsFromDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.contextDir)
+func (o *BindingOptions) runWithoutName(ctx context.Context) ([]api.ServiceBinding, error) {
+	var (
+		workingDir = odocontext.GetWorkingDirectory(ctx)
+		devfileObj = odocontext.GetDevfileObj(ctx)
+	)
+
+	return o.clientset.BindingClient.GetBindingsFromDevfile(*devfileObj, workingDir)
 }
 
 func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
@@ -126,7 +118,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		},
 	}
 	bindingCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the binding to describe, optional. By default, the bindings in the local devfile are described")
-	clientset.Add(bindingCmd, clientset.KUBERNETES, clientset.BINDING)
+	clientset.Add(bindingCmd, clientset.KUBERNETES, clientset.BINDING, clientset.FILESYSTEM)
 	commonflags.UseOutputFlag(bindingCmd)
 
 	return bindingCmd

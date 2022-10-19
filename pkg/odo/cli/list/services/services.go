@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -13,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
@@ -44,10 +44,7 @@ var (
 type ServiceListOptions struct {
 	// clientset
 	clientset *clientset.Clientset
-	// context
-	*genericclioptions.Context
-	// working directory
-	contextDir string
+
 	// flags
 	namespaceFlag     string
 	allNamespacesFlag bool
@@ -61,22 +58,10 @@ func (o *ServiceListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
-	var err error
-	o.contextDir, err = os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
-
 	if o.namespaceFlag == "" && !o.allNamespacesFlag {
-		o.namespaceFlag = o.GetProject()
+		o.namespaceFlag = odocontext.GetNamespace(ctx)
 	}
-
-	return err
+	return nil
 }
 
 func (o *ServiceListOptions) Validate(ctx context.Context) error {
@@ -181,7 +166,7 @@ func NewCmdServicesList(name, fullName string) *cobra.Command {
 		},
 		Aliases: []string{"service"},
 	}
-	clientset.Add(servicesListCmd, clientset.PROJECT, clientset.BINDING)
+	clientset.Add(servicesListCmd, clientset.PROJECT, clientset.BINDING, clientset.FILESYSTEM)
 	servicesListCmd.Flags().BoolVarP(&o.allNamespacesFlag, "all-namespaces", "A", false, "Show bindable services from all namespaces")
 	servicesListCmd.Flags().StringVarP(&o.namespaceFlag, "namespace", "n", "", "Show bindable services from a specific namespace (uses current namespace in kubeconfig by default)")
 	commonflags.UseOutputFlag(servicesListCmd)

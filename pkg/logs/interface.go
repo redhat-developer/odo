@@ -1,5 +1,7 @@
 package logs
 
+import "context"
+
 type Client interface {
 	// GetLogsForMode gets logs of the containers for the specified mode (Dev, Deploy or both) of the provided
 	// component name and namespace. It returns Events which has multiple channels. Logs are put on the
@@ -9,6 +11,7 @@ type Client interface {
 	// found in the pkg/labels package.
 	// Setting follow boolean to true helps follow/tail the logs of the pods.
 	GetLogsForMode(
+		ctx context.Context,
 		mode string,
 		componentName string,
 		namespace string,

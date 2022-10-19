@@ -20,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -54,17 +55,11 @@ var initExample = templates.Examples(`
   `)
 
 type InitOptions struct {
-	// CMD context
-	ctx context.Context
-
 	// Clients
 	clientset *clientset.Clientset
 
 	// Flags passed to the command
 	flags map[string]string
-
-	// Destination directory
-	contextDir string
 }
 
 var _ genericclioptions.Runnable = (*InitOptions)(nil)
@@ -84,13 +79,6 @@ func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete will return an error immediately if the current working directory is not empty
 func (o *InitOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.ctx = cmdline.Context()
-
-	o.contextDir, err = o.clientset.FS.Getwd()
-	if err != nil {
-		return err
-	}
-
 	o.flags = o.clientset.InitClient.GetFlags(cmdline.GetFlags())
 
 	scontext.SetInteractive(cmdline.Context(), len(o.flags) == 0)
@@ -101,7 +89,9 @@ func (o *InitOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, arg
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate(ctx context.Context) error {
 
-	devfilePresent, err := location.DirectoryContainsDevfile(o.clientset.FS, o.contextDir)
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+
+	devfilePresent, err := location.DirectoryContainsDevfile(o.clientset.FS, workingDir)
 	if err != nil {
 		return err
 	}
@@ -109,7 +99,7 @@ func (o *InitOptions) Validate(ctx context.Context) error {
 		return errors.New("a devfile already exists in the current directory")
 	}
 
-	err = o.clientset.InitClient.Validate(o.flags, o.clientset.FS, o.contextDir)
+	err = o.clientset.InitClient.Validate(o.flags, o.clientset.FS, workingDir)
 	if err != nil {
 		return err
 	}
@@ -160,6 +150,8 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, err error) {
 	var starterDownloaded bool
 
+	workingDir := odocontext.GetWorkingDirectory(ctx)
+
 	defer func() {
 		if err == nil {
 			return
@@ -172,7 +164,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		}
 	}()
 
-	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, workingDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", err
 	}
@@ -191,12 +183,12 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		log.Info(messages.InteractiveModeEnabled)
 	}
 
-	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
+	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, workingDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", err
 	}
 
-	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
+	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, workingDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", err
 	}
@@ -210,7 +202,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
+		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, workingDir)
 		if err != nil {
 			return parser.DevfileObj{}, "", fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
 		}

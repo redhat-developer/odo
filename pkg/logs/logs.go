@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -13,6 +14,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 )
 
 type LogsClient struct {
@@ -44,6 +46,7 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 var _ Client = (*LogsClient)(nil)
 
 func (o *LogsClient) GetLogsForMode(
+	ctx context.Context,
 	mode string,
 	componentName string,
 	namespace string,
@@ -55,11 +58,12 @@ func (o *LogsClient) GetLogsForMode(
 		Done: make(chan struct{}),
 	}
 
-	go o.getLogsForMode(events, mode, componentName, namespace, follow)
+	go o.getLogsForMode(ctx, events, mode, componentName, namespace, follow)
 	return events, nil
 }
 
 func (o *LogsClient) getLogsForMode(
+	ctx context.Context,
 	events Events,
 	mode string,
 	componentName string,
@@ -91,15 +95,17 @@ func (o *LogsClient) getLogsForMode(
 		}
 	}()
 
+	appname := odocontext.GetApplication(ctx)
+
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
-		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
+		selector = odolabels.GetSelector(componentName, appname, odolabels.ComponentDevMode, false)
 		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
 			errChan <- err
 		}
 	}
 	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
-		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode, false)
+		selector = odolabels.GetSelector(componentName, appname, odolabels.ComponentDeployMode, false)
 		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
 			errChan <- err

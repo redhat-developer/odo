@@ -43,15 +43,15 @@ func (o *BindingSet) toArray() []api.ServiceBinding {
 
 // ListAllBindings returns the list of Service Binding resources either defined in local Devfile
 // or deployed in the current namespace
-func (o *BindingClient) ListAllBindings(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
+func (o *BindingClient) ListAllBindings(devfileObj *parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
 
 	bindingList := newBindingSet()
 	var namesInDevfile []string
 
-	if devfileObj.Data != nil {
+	if devfileObj != nil {
 		var err error
 		var bindingsInDevfile []api.ServiceBinding
-		bindingsInDevfile, err = o.GetBindingsFromDevfile(devfileObj, context)
+		bindingsInDevfile, err = o.GetBindingsFromDevfile(*devfileObj, context)
 		if err != nil {
 			return nil, nil, err
 		}

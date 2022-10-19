@@ -1,13 +1,15 @@
 package delete
 
 import (
+	"context"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Client interface {
 	// ListClusterResourcesToDelete lists Kubernetes resources from cluster in namespace for a given odo component
-	ListClusterResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error)
+	ListClusterResourcesToDelete(ctx context.Context, componentName string, namespace string) ([]unstructured.Unstructured, error)
 	// DeleteResources deletes the unstructured resources and return the resources that failed to be deleted
 	// set wait to true to wait for all the dependencies to be deleted
 	DeleteResources(resources []unstructured.Unstructured, wait bool) []unstructured.Unstructured

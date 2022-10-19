@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -19,8 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 )
@@ -50,7 +50,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(nil, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(nil, nil)
 					client.EXPECT().DeleteResources(gomock.Any(), false).Times(0)
 					return client
 				},
@@ -73,7 +73,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					res2 := getUnstructured("svc1", "service", "v1")
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(resources, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(resources, nil)
 					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
 					return client
 				},
@@ -93,7 +93,8 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					DeleteClient:     tt.fields.deleteComponentClient(ctrl),
 				},
 			}
-			if err := o.deleteNamedComponent(); (err != nil) != tt.wantErr {
+			ctx := odocontext.WithApplication(context.TODO(), "app")
+			if err := o.deleteNamedComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("ComponentOptions.deleteNamedComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -131,7 +132,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
-				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
@@ -146,7 +147,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
-				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName, gomock.Any()).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
@@ -206,13 +207,19 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			o := &ComponentOptions{
 				name:      tt.fields.name,
 				forceFlag: tt.fields.forceFlag,
-				Context:   prepareContext(ctrl, kubeClient, info, workingDir),
 				clientset: &clientset.Clientset{
 					KubernetesClient: kubeClient,
 					DeleteClient:     deleteClient,
 				},
 			}
-			if err = o.deleteDevfileComponent(); (err != nil) != tt.wantErr {
+			ctx := odocontext.WithNamespace(context.Background(), projectName)
+			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithWorkingDirectory(ctx, workingDir)
+			ctx = odocontext.WithDevfilePath(ctx, info.GetDevfilePath())
+			ctx = odocontext.WithComponentName(ctx, compName)
+			devfileObj := info.GetDevfileObj()
+			ctx = odocontext.WithDevfileObj(ctx, &devfileObj)
+			if err = o.deleteDevfileComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -239,7 +246,6 @@ func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectN
 // prepareKubeClient prepares the mock kclient.ClientInterface3 and returns it
 func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.ClientInterface {
 	kubeClient := kclient.NewMockClientInterface(ctrl)
-	kubeClient.EXPECT().GetCurrentNamespace().Return(projectName)
 	kubeClient.EXPECT().GetNamespaceNormal(projectName).Return(
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -248,24 +254,6 @@ func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.Clie
 		}, nil).AnyTimes()
 	kubeClient.EXPECT().SetNamespace(projectName).AnyTimes()
 	return kubeClient
-}
-
-// prepareContext prepares the mock genericclioptions.Context and returns it
-func prepareContext(ctrl *gomock.Controller, kubeClient kclient.ClientInterface, info *envinfo.EnvSpecificInfo, workingDir string) *genericclioptions.Context {
-	cmdline := cmdline.NewMockCmdline(ctrl)
-	cmdline.EXPECT().GetWorkingDirectory().Return(workingDir, nil).AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()
-	cmdline.EXPECT().FlagValueIfSet("o").Return("").AnyTimes()
-	cmdline.EXPECT().GetKubeClient().Return(kubeClient, nil).AnyTimes()
-	createParameters := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(workingDir)
-	context, err := genericclioptions.New(createParameters)
-	if err != nil {
-		return nil
-	}
-	context.EnvSpecificInfo = info
-	return context
 }
 
 // getUnstructured returns an unstructured.Unstructured object

@@ -13,6 +13,7 @@ import (
 
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/klog"
 
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
@@ -51,7 +53,14 @@ type SignalHandler interface {
 }
 
 type Cleanuper interface {
-	Cleanup(err error)
+	Cleanup(ctx context.Context, err error)
+}
+
+// A PreIniter command is a command that will run `init` command if no file is present in current directory
+// Commands implementing this interfaec must add FILESYSTEM and INIT dependencies
+type PreIniter interface {
+	// PreInit indicates a command will run `init`, and display the message returned by the method
+	PreInit() string
 }
 
 // JsonOutputter must be implemented by commands with JSON output
@@ -61,6 +70,11 @@ type Cleanuper interface {
 type JsonOutputter interface {
 	RunForJsonOutput(ctx context.Context) (result interface{}, err error)
 }
+
+const (
+	// defaultAppName is the default name of the application when an application name is not provided
+	defaultAppName = "app"
+)
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
@@ -131,10 +145,47 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
+	ctx = odocontext.WithApplication(ctx, defaultAppName)
 
-	variables, err := commonflags.GetVariablesValues(cmdLineObj)
-	util.LogErrorAndExit(err, "")
-	ctx = fcontext.WithVariables(ctx, variables)
+	if deps.KubernetesClient != nil {
+		namespace := deps.KubernetesClient.GetCurrentNamespace()
+		ctx = odocontext.WithNamespace(ctx, namespace)
+	}
+
+	if deps.FS != nil {
+		var cwd string
+		cwd, err = deps.FS.Getwd()
+		if err != nil {
+			startTelemetry(cmd, err, startTime)
+		}
+		util.LogErrorAndExit(err, "")
+		ctx = odocontext.WithWorkingDirectory(ctx, cwd)
+
+		var variables map[string]string
+		variables, err = commonflags.GetVariablesValues(cmdLineObj)
+		util.LogErrorAndExit(err, "")
+		ctx = fcontext.WithVariables(ctx, variables)
+
+		if preiniter, ok := o.(PreIniter); ok {
+			msg := preiniter.PreInit()
+			err = runPreInit(cwd, deps, cmdLineObj, msg)
+			if err != nil {
+				startTelemetry(cmd, err, startTime)
+			}
+			util.LogErrorAndExit(err, "")
+		}
+
+		var devfilePath, componentName string
+		var devfileObj *parser.DevfileObj
+		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables)
+		if err != nil {
+			startTelemetry(cmd, err, startTime)
+		}
+		util.LogErrorAndExit(err, "")
+		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
+		ctx = odocontext.WithDevfileObj(ctx, devfileObj)
+		ctx = odocontext.WithComponentName(ctx, componentName)
+	}
 
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
@@ -152,7 +203,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	if jsonOutputter, ok := o.(JsonOutputter); ok && log.IsJSON() {
 		var out interface{}
-		out, err = jsonOutputter.RunForJsonOutput(cmdLineObj.Context())
+		out, err = jsonOutputter.RunForJsonOutput(ctx)
 		if err == nil {
 			machineoutput.OutputSuccess(out)
 		}
@@ -162,7 +213,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	startTelemetry(cmd, err, startTime)
 	util.LogError(err, "")
 	if cleanuper, ok := o.(Cleanuper); ok {
-		cleanuper.Cleanup(err)
+		cleanuper.Cleanup(ctx, err)
 	}
 	if err != nil {
 		os.Exit(1)

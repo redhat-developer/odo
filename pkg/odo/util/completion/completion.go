@@ -2,7 +2,6 @@ package completion
 
 import (
 	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 )
@@ -10,7 +9,6 @@ import (
 // completionHandler wraps a ContextualizedPredictor providing needed information for its invocation during the Predict function
 type completionHandler struct {
 	cmd       *cobra.Command
-	ctxLoader contextLoader
 	predictor ContextualizedPredictor
 }
 
@@ -32,15 +30,12 @@ type parsedArgs struct {
 	flagValues map[string]string
 }
 
-type contextLoader func(command *cobra.Command) *genericclioptions.Context
-
-// ContextualizedPredictor predicts completion based on specified arguments, potentially using the context provided by the
-// specified client to resolve the entities to be completed
-type ContextualizedPredictor func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) []string
+// ContextualizedPredictor predicts completion based on specified arguments to resolve the entities to be completed
+type ContextualizedPredictor func(cmd *cobra.Command, args parsedArgs) []string
 
 // Predict is called by the posener/complete code when the shell asks for completion of a given argument
 func (ch completionHandler) Predict(args complete.Args) []string {
-	return ch.predictor(ch.cmd, NewParsedArgs(args, ch.cmd), ch.ctxLoader(ch.cmd))
+	return ch.predictor(ch.cmd, NewParsedArgs(args, ch.cmd))
 }
 
 // NewParsedArgs creates a parsed representation of the provided arguments for the specified command. Mostly exposed for tests.
@@ -102,26 +97,6 @@ func getCommandFlagCompletionHandlerKey(command *cobra.Command, flag string) han
 		cmd:  command,
 		flag: flag,
 	}
-}
-
-// newHandler wraps a ContextualizedPredictor into a completionHandler
-func newHandler(cmd *cobra.Command, predictor ContextualizedPredictor) completionHandler {
-	return completionHandler{
-		cmd:       cmd,
-		ctxLoader: genericclioptions.NewContextCompletion,
-		predictor: predictor,
-	}
-}
-
-// RegisterCommandHandler registers the provided ContextualizedPredictor as a completion handler for the specified command
-func RegisterCommandHandler(command *cobra.Command, predictor ContextualizedPredictor) {
-	completionHandlers[getCommandCompletionHandlerKey(command)] = newHandler(command, predictor)
-}
-
-// RegisterCommandFlagHandler registers the provided ContextualizedPredictor as a completion handler for the specified flag
-// of the specified command
-func RegisterCommandFlagHandler(command *cobra.Command, flag string, predictor ContextualizedPredictor) {
-	completionHandlers[getCommandFlagCompletionHandlerKey(command, flag)] = newHandler(command, predictor)
 }
 
 // GetCommandHandler retrieves the command handler associated with the specified command or nil otherwise

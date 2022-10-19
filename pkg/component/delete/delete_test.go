@@ -1,6 +1,7 @@
 package delete
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -115,7 +117,8 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
 			do := NewDeleteComponentClient(kubeClient, execClient)
-			got, err := do.ListClusterResourcesToDelete(tt.args.componentName, tt.args.namespace)
+			ctx := odocontext.WithApplication(context.TODO(), "app")
+			got, err := do.ListClusterResourcesToDelete(ctx, tt.args.componentName, tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponentClient.ListResourcesToDelete() error = %v, wantErr %v", err, tt.wantErr)
 				return

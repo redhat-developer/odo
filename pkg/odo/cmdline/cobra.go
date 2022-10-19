@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
 )
@@ -57,23 +56,7 @@ func (o *Cobra) IsFlagSet(flagName string) bool {
 }
 
 func (o *Cobra) GetWorkingDirectory() (string, error) {
-	contextDir := o.FlagValueIfSet(util.ContextFlagName)
-
-	// Grab the absolute path of the configuration
-	if contextDir != "" {
-		fAbs, err := dfutil.GetAbsPath(contextDir)
-		if err != nil {
-			return "", err
-		}
-		contextDir = fAbs
-	} else {
-		fAbs, err := dfutil.GetAbsPath(".")
-		if err != nil {
-			return "", err
-		}
-		contextDir = fAbs
-	}
-	return contextDir, nil
+	return dfutil.GetAbsPath(".")
 }
 
 // FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
