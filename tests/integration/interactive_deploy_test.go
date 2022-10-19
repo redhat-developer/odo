@@ -39,7 +39,7 @@ var _ = Describe("odo deploy interactive command tests", func() {
 		It("should run alizer to download devfile successfully even with -v flag", func() {
 
 			language := "Python"
-			projectType := "Flask"
+			projectType := "Python"
 			devfileName := "python"
 			output, err := helper.RunInteractive([]string{"odo", "deploy", "-v", "4"},
 				nil,
@@ -73,7 +73,7 @@ var _ = Describe("odo deploy interactive command tests", func() {
 		It("should run alizer to download devfile", func() {
 
 			language := "Python"
-			projectType := "Flask"
+			projectType := "Python"
 			devfileName := "python"
 			output, err := helper.RunInteractive([]string{"odo", "deploy"},
 				nil,
@@ -111,7 +111,7 @@ var _ = Describe("odo deploy interactive command tests", func() {
 			}
 
 			language := "Python"
-			projectType := "Flask"
+			projectType := "Python"
 			devfileName := "python"
 			output, err := helper.RunInteractive([]string{"odo", "deploy"},
 				// Setting verbosity level to 0, because we would be asserting the welcoming message is the first

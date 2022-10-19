@@ -47,7 +47,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 		By("using human readable output", func() {
 			output := helper.Cmd("odo", args...).ShouldPass().Out()
-			helper.MatchAllInOutput(output, []string{"nodejs-starter", "javascript", "Node.js Runtime", "Dev: Y"})
+			helper.MatchAllInOutput(output, []string{"nodejs-starter", "JavaScript", "Node.js Runtime", "Dev: Y"})
 		})
 		By("using JSON output", func() {
 			args = append(args, "-o", "json")
@@ -58,8 +58,8 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.JsonPathContentIs(stdout, "0.name", "nodejs")
 			helper.JsonPathContentContain(stdout, "0.displayName", "Node")
 			helper.JsonPathContentContain(stdout, "0.description", "Node")
-			helper.JsonPathContentContain(stdout, "0.language", "javascript")
-			helper.JsonPathContentContain(stdout, "0.projectType", "nodejs")
+			helper.JsonPathContentContain(stdout, "0.language", "JavaScript")
+			helper.JsonPathContentContain(stdout, "0.projectType", "Node.js")
 			helper.JsonPathContentContain(stdout, "0.starterProjects.0", "nodejs-starter")
 			helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
 			helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
@@ -79,10 +79,10 @@ var _ = Describe("odo devfile registry command tests", func() {
 			Expect(stderr).To(BeEmpty())
 			Expect(helper.IsJSON(stdout)).To(BeTrue())
 			helper.JsonPathContentIs(stdout, "0.name", "python")
-			helper.JsonPathContentContain(stdout, "0.displayName", "Flask")
-			helper.JsonPathContentContain(stdout, "0.description", "Flask is a web framework")
+			helper.JsonPathContentContain(stdout, "0.displayName", "Python")
+			helper.JsonPathContentContain(stdout, "0.description", "Python is an interpreted")
 			helper.JsonPathContentContain(stdout, "0.language", "Python")
-			helper.JsonPathContentContain(stdout, "0.projectType", "Flask")
+			helper.JsonPathContentContain(stdout, "0.projectType", "Python")
 			helper.JsonPathContentContain(stdout, "0.starterProjects.0", "flask-example")
 			helper.JsonPathContentContain(stdout, "0.devfileData", "")
 

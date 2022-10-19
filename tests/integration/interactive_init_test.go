@@ -224,7 +224,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				}
 
 				language := "Python"
-				projectType := "Flask"
+				projectType := "Python"
 				devfileName := "python"
 				welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
@@ -266,9 +266,10 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 
 			It("should display node-echo name", func() {
-				language := "javascript"
-				projectType := "nodejs"
+				language := "JavaScript"
+				projectType := "Node.js"
 				projectName := "node-echo"
+				devfileName := "nodejs"
 
 				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -278,7 +279,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", projectType))
+						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "")
@@ -300,9 +301,10 @@ var _ = Describe("odo init interactive command tests", func() {
 
 			})
 			It("should ask to re-enter the component name if invalid value is passed by the user", func() {
-				language := "javascript"
-				projectType := "nodejs"
+				language := "JavaScript"
+				projectType := "Node.js"
 				projectName := "node-echo"
+				devfileName := "nodejs"
 
 				_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -312,7 +314,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", projectType))
+						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "")
