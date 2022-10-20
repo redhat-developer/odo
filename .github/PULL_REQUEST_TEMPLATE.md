@@ -18,8 +18,10 @@ Add one of the following kinds:
 /kind bug
 /kind feature
 /kind tests
-/kind documentation
 /kind code-refactoring
+
+For documentation, add the following label:
+/area documentation
 
 Feel free to use other [labels](https://github.com/redhat-developer/odo/labels) as needed. However one of the above labels must be present or the PR will not be reviewed. This instruction is for reviewers as well.
 -->

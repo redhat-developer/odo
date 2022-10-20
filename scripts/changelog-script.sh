@@ -62,7 +62,7 @@ $RUN_GITHUB_CHANGELOG_GENERATOR \
 --enhancement-labels "kind/feature" \
 --bugs-label "**Bugs:**" \
 --bug-labels "kind/bug" \
---add-sections '{"documentation":{"prefix":"**Documentation:**","labels":["kind/documentation"]}, "tests": {"prefix": "**Testing/CI:**", "labels": ["kind/tests"]}, "cleanup": {"prefix": "**Cleanup/Refactor:**", "labels": ["kind/code-refactoring"]}}'
+--add-sections '{"documentation":{"prefix":"**Documentation:**","labels":["area/documentation"]}, "tests": {"prefix": "**Testing/CI:**", "labels": ["kind/tests"]}, "cleanup": {"prefix": "**Cleanup/Refactor:**", "labels": ["kind/code-refactoring"]}}'
 
 echo "---------------------------------------"
 cat release-changelog.md
