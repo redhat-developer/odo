@@ -132,12 +132,12 @@ module.exports = {
           lastVersion: 'current',
           versions: {
             current: {
-              label: '3.0.0 (Stable) 🚀',
+              label: '3.0.0',
               badge: true,
               banner: 'none',
             },
             '2.5.0': {
-              label: '2.5.1 (Stable) 🚀',
+              label: '2.5.1',
               path: '2.5.0',
               badge: true,
               banner: 'none',
