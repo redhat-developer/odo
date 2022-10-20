@@ -2,6 +2,7 @@ package integration
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -237,6 +238,36 @@ var _ = Describe("odo describe component command tests", func() {
 				})
 			})
 
+		})
+		When("running odo deploy", func() {
+			var matchOutput []string
+			var matchJSONOutput map[string]string
+			const k8sComponentName = "my-nodejs-app" // hard-coded from the Devfiles
+			BeforeEach(func() {
+				if helper.IsKubernetesCluster() {
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-ingress.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+					matchOutput = []string{"Kubernetes Ingresses", "nodejs.example.com/", "nodejs.example.com/foo"}
+					matchJSONOutput = map[string]string{"ingresses.0.name": k8sComponentName, "ingresses.0.hosts.0": "nodejs.example.com/", "ingresses.0.hosts.1": "nodejs.example.com/foo"}
+				} else {
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-route.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+					// we are not matching host at the moment
+					matchOutput = []string{"OpenShift Routes", "/foo"}
+					matchJSONOutput = map[string]string{"routes.0.name": k8sComponentName, "routes.0.hosts.0": "/foo"}
+				}
+				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+			})
+			It("should show the ingress/routes in odo describe component output", func() {
+				By("checking the human readable output", func() {
+					out := helper.Cmd("odo", "describe", "component").ShouldPass().Out()
+					helper.MatchAllInOutput(out, matchOutput)
+				})
+				By("checking the machine readable output", func() {
+					out := helper.Cmd("odo", "describe", "component", "-ojson").ShouldPass().Out()
+					for key, value := range matchJSONOutput {
+						helper.JsonPathContentContain(out, key, value)
+					}
+				})
+			})
 		})
 	})
 })

@@ -11,6 +11,9 @@ import (
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	routev1 "github.com/openshift/api/route/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
@@ -79,7 +82,7 @@ func GatherName(contextDir string, devfileObj *parser.DevfileObj) (string, error
 		name = filepath.Base(baseDir)
 	}
 
-	//sanitize the name
+	// sanitize the name
 	s := util.GetDNS1123Name(name)
 	klog.V(3).Infof("name of component is %q, and sanitized name is %q", name, s)
 
@@ -325,4 +328,68 @@ func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterfa
 	return parser.DevfileObj{
 		Data: devfileData,
 	}, nil
+}
+
+// ListRoutesAndIngresses lists routes and ingresses created by a component
+func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string, mode string) (ings []api.Host, routes []api.Host, err error) {
+	selector := odolabels.GetSelector(componentName, "app", mode, false)
+
+	ingressGVR, err := client.GetGVRFromGVK(kclient.IngressGVK)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to determine GVR for %s: %w", kclient.IngressGVK.String(), err)
+	}
+
+	k8sIngresses, err := client.ListDynamicResourcesFromSelector(client.GetCurrentNamespace(), ingressGVR, selector)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, u := range k8sIngresses.Items {
+		ing := &networkingv1.Ingress{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), ing)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		ings = append(ings, api.Host{
+			Name: ing.GetName(),
+			Hosts: func() (hosts []string) {
+				for _, rule := range ing.Spec.Rules {
+					for _, path := range rule.HTTP.Paths {
+						hosts = append(hosts, strings.Join([]string{rule.Host, path.Path}, ""))
+					}
+				}
+				return hosts
+			}(),
+		})
+	}
+	// Return early if it is not an OpenShift cluster
+	if isOC, e := client.IsProjectSupported(); !isOC {
+		if e != nil {
+			klog.V(4).Infof("unable to detect project support: %s", e.Error())
+		}
+		return ings, nil, nil
+	}
+
+	routeGVR, err := client.GetGVRFromGVK(kclient.RouteGVK)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to determine GVR for %s: %w", kclient.RouteGVK.String(), err)
+	}
+
+	ocRoutes, err := client.ListDynamicResourcesFromSelector(client.GetCurrentNamespace(), routeGVR, selector)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, u := range ocRoutes.Items {
+		route := &routev1.Route{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), route)
+		if err != nil {
+			return nil, nil, err
+		}
+		routes = append(routes, api.Host{
+			Name:  route.GetName(),
+			Hosts: []string{strings.Join([]string{route.Spec.Host, route.Spec.Path}, "")},
+		})
+	}
+
+	return ings, routes, nil
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -113,12 +114,19 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 	if err != nil {
 		return api.Component{}, nil, err
 	}
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name, odolabels.ComponentDeployMode)
+	if err != nil {
+		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+	}
+
 	return api.Component{
 		DevfileData: &api.DevfileData{
 			Devfile: devfile.Data,
 		},
 		RunningIn: runningIn,
 		ManagedBy: "odo",
+		Ingresses: ingresses,
+		Routes:    routes,
 	}, &devfile, nil
 }
 
@@ -144,12 +152,19 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 			runningIn = nil
 		}
 	}
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName, odolabels.ComponentDeployMode)
+	if err != nil {
+		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+	}
+
 	return api.Component{
 		DevfilePath:       devfilePath,
 		DevfileData:       api.GetDevfileData(*devfileObj),
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         runningIn,
 		ManagedBy:         "odo",
+		Ingresses:         ingresses,
+		Routes:            routes,
 	}, devfileObj, nil
 }
 
@@ -197,6 +212,27 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 	if err != nil {
 		return err
 	}
+
+	if len(cmp.Ingresses) != 0 {
+		log.Info("Kubernetes Ingresses:")
+		for _, ing := range cmp.Ingresses {
+			for _, host := range ing.Hosts {
+				log.Printf("%s: %s", ing.Name, host)
+			}
+		}
+		fmt.Println()
+	}
+
+	if len(cmp.Routes) != 0 {
+		log.Info("OpenShift Routes:")
+		for _, route := range cmp.Routes {
+			for _, host := range route.Hosts {
+				log.Printf("%s: %s", route.Name, host)
+			}
+		}
+		fmt.Println()
+	}
+
 	return nil
 }
 

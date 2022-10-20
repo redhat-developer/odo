@@ -79,8 +79,42 @@ func (c *Client) ListDynamicResources(namespace string, gvr schema.GroupVersionR
 	return list, nil
 }
 
+// ListDynamicResources returns an unstructured list of instances of a Custom
+// Resource currently deployed in the specified namespace of the cluster. The current namespace is used if the namespace is not specified.
+func (c *Client) ListDynamicResourcesFromSelector(namespace string, gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error) {
+
+	if c.DynamicClient == nil {
+		return nil, nil
+	}
+
+	ns := namespace
+	if ns == "" {
+		ns = c.Namespace
+	}
+
+	list, err := c.DynamicClient.Resource(gvr).Namespace(ns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			// Assume this is a cluster scoped resource (not namespace scoped) and skip it
+			return &unstructured.UnstructuredList{}, nil
+		}
+		return nil, err
+	}
+
+	return list, nil
+}
+
 // GetDynamicResource returns an unstructured instance of a Custom Resource currently deployed in the active namespace
 func (c *Client) GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
+	res, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// GetDynamicResource returns an unstructured instance of a Custom Resource currently deployed in the active namespace
+func (c *Client) GetDynamicResourceMatchingSelector(selector string, gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
 	res, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err

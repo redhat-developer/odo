@@ -61,6 +61,7 @@ type ClientInterface interface {
 	// dynamic.go
 	PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error)
 	ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error)
+	ListDynamicResourcesFromSelector(namespace string, gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error)
 	GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error)
 	UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error
 	DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error

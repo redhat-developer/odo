@@ -50,6 +50,8 @@ type Component struct {
 	DevForwardedPorts []ForwardedPort `json:"devForwardedPorts,omitempty"`
 	RunningIn         RunningModes    `json:"runningIn"`
 	ManagedBy         string          `json:"managedBy"`
+	Ingresses         []Host          `json:"ingresses,omitempty"`
+	Routes            []Host          `json:"routes,omitempty"`
 }
 
 type ForwardedPort struct {
@@ -57,4 +59,9 @@ type ForwardedPort struct {
 	LocalAddress  string `json:"localAddress"`
 	LocalPort     int    `json:"localPort"`
 	ContainerPort int    `json:"containerPort"`
+}
+
+type Host struct {
+	Name  string   `json:"name"`
+	Hosts []string `json:"hosts"`
 }
