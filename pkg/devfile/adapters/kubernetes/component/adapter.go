@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"sync/atomic"
+
+	"golang.org/x/sync/errgroup"
 
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -700,45 +701,53 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 		return nil
 	}
 
-	stopCh := make(chan struct{})
-	errCh := make(chan error)
-	var goroutineCount int64
+	// stopCh := make(chan struct{})
+	// errCh := make(chan error)
+	// var goroutineCount int64
+	g := new(errgroup.Group)
 	// Delete the resources present on the cluster but not in the Devfile
 	for _, objectToRemove := range objectsToRemove {
 		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", objectToRemove.GetKind(), objectToRemove.GetName())
 		defer spinner.End(false)
-
-		atomic.AddInt64(&goroutineCount, 1)
-		go func(spinner *log.Status) {
+		// wg.Add(1)
+		// atomic.AddInt64(&goroutineCount, 1)
+		g.Go(func() error {
 			gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
 			if err != nil {
-				errCh <- fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+				err = fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+				return err
 			}
 
 			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
 			if err != nil {
 				if !kerrors.IsNotFound(err) {
-					errCh <- fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+					err = fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+					return err
 				}
 
 				klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
 			}
 			spinner.End(true)
-			atomic.AddInt64(&goroutineCount, -1)
-			stopCh <- struct{}{}
-		}(spinner)
+			// atomic.AddInt64(&goroutineCount, -1)
+			// stopCh <- struct{}{}
+			return nil
+		})
 	}
 
-	for {
-		select {
-		case err := <-errCh:
-			return err
-		case <-stopCh:
-			if goroutineCount == 0 {
-				return nil
-			}
-		}
+	if err := g.Wait(); err != nil {
+		return err
 	}
+	return nil
+	// for {
+	// 	select {
+	// 	case err := <-errCh:
+	// 		return err
+	// 	case <-stopCh:
+	// 		if goroutineCount == 0 {
+	// 			return nil
+	// 		}
+	// 	}
+	// }
 }
 
 // deleteServiceBindingSecrets takes a list of Service Binding secrets that should be deleted;
