@@ -147,7 +147,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 
 	// this is mainly useful when the Service Binding Operator is not installed;
 	// and the service binding secrets must be deleted manually since they are created by odo
-	err = a.deleteServiceBindingSecret(serviceBindingSecretsToRemove, deployment)
+	err = a.deleteServiceBindingSecrets(serviceBindingSecretsToRemove, deployment)
 	if err != nil {
 		return fmt.Errorf("unable to delete service binding secrets: %w", err)
 	}
@@ -610,6 +610,9 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	// Filter core components
 	for _, remoteK := range allRemoteK8sResources {
 		if !odolabels.IsCoreComponent(remoteK.GetLabels()) {
+			if remoteK.GetDeletionTimestamp() != nil {
+				continue
+			}
 			remoteK8sResources = append(remoteK8sResources, remoteK)
 		}
 	}
@@ -715,22 +718,28 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 	return nil
 }
 
-// deleteServiceBindingSecret takes a list of Service Binding secrets that should be deleted;
+// deleteServiceBindingSecrets takes a list of Service Binding secrets that should be deleted;
 // this is mainly helpful when Service Binding Operator is not installed on the cluster
-func (a Adapter) deleteServiceBindingSecret(serviceBindingSecretsToRemove []unstructured.Unstructured, deployment *appsv1.Deployment) error {
+func (a Adapter) deleteServiceBindingSecrets(serviceBindingSecretsToRemove []unstructured.Unstructured, deployment *appsv1.Deployment) error {
 	for _, secretToRemove := range serviceBindingSecretsToRemove {
 		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", secretToRemove.GetKind(), secretToRemove.GetName())
+		defer spinner.End(false)
 
 		err := service.UnbindWithLibrary(a.kubeClient, secretToRemove, deployment)
 		if err != nil {
+			return fmt.Errorf("failed to unbind secret %q from the application", secretToRemove.GetName())
+		}
+
+		// since the library currently doesn't delete the secret after unbinding
+		// delete the secret manually
+		err = a.kubeClient.DeleteSecret(secretToRemove.GetName(), a.kubeClient.GetCurrentNamespace())
+		if err != nil {
 			if !kerrors.IsNotFound(err) {
-				spinner.End(false)
 				return fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", secretToRemove.GetKind(), secretToRemove.GetName(), err.Error())
 			}
 			klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", secretToRemove.GetKind(), secretToRemove.GetName())
 		}
 		spinner.End(true)
-
 	}
 	return nil
 }

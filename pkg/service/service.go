@@ -7,9 +7,6 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
-
-	"github.com/redhat-developer/odo/pkg/kclient"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -20,6 +17,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 

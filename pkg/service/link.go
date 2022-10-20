@@ -124,9 +124,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	return nil
 }
 
-// UnbindWithLibrary unbinds the component and service using the ServiceBinding library and deletes the secret
-func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToRemove unstructured.Unstructured, deployment *appsv1.Deployment) error {
-	currentNamespace := kubeClient.GetCurrentNamespace()
+// UnbindWithLibrary unbinds the component and service using the ServiceBinding library; it does not delete the secret
+func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToUnbind unstructured.Unstructured, deployment *appsv1.Deployment) error {
 	var processingPipeline sboPipeline.Pipeline
 	deploymentGVK, err := kubeClient.GetDeploymentAPIVersion()
 	if err != nil {
@@ -134,8 +133,8 @@ func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToRemove unstru
 	}
 	// build the ServiceBinding object to for unbinding
 	var newServiceBinding sboApi.ServiceBinding
-	newServiceBinding.Name = secretToRemove.GetLabels()[LinkLabel]
-	newServiceBinding.Namespace = currentNamespace
+	newServiceBinding.Name = secretToUnbind.GetLabels()[LinkLabel]
+	newServiceBinding.Namespace = kubeClient.GetCurrentNamespace()
 	newServiceBinding.Spec.Application = sboApi.Application{
 		Ref: sboApi.Ref{
 			Name:    deployment.Name,
@@ -144,7 +143,7 @@ func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToRemove unstru
 			Kind:    deploymentGVK.Kind,
 		},
 	}
-	newServiceBinding.Status.Secret = secretToRemove.GetName()
+	newServiceBinding.Status.Secret = secretToUnbind.GetName()
 	// set the deletion time stamp to trigger deletion
 	timeNow := metav1.Now()
 	newServiceBinding.DeletionTimestamp = &timeNow
@@ -158,13 +157,7 @@ func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToRemove unstru
 	// use the library to perform unbinding;
 	// this will remove all the envvars, volume/secret mounts done on the deployment to bind it to the service
 	_, err = processingPipeline.Process(&newServiceBinding)
-	if err != nil {
-		return err
-	}
-
-	// since the library currently doesn't delete the secret after unbinding
-	// delete the secret manually
-	return kubeClient.DeleteSecret(secretToRemove.GetName(), currentNamespace)
+	return err
 }
 
 // getPipeline gets the pipeline to process service binding requests

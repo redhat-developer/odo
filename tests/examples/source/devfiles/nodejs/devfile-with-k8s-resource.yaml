@@ -43,14 +43,6 @@ components:
                       cpu: "500m"
 
 commands:
-  - id: devbuild
-    exec:
-      component: runtime
-      commandLine: npm install
-      workingDir: ${PROJECTS_ROOT}
-      group:
-        kind: build
-        isDefault: true
   - id: build
     exec:
       component: runtime
@@ -58,13 +50,6 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-  - id: devrun
-    exec:
-      component: runtime
-      commandLine: npm start
-      workingDir: ${PROJECTS_ROOT}
-      group:
-        kind: run
         isDefault: true
   - id: run
     exec:
@@ -73,3 +58,4 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
+        isDefault: true
