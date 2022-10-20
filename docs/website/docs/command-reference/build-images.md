@@ -2,9 +2,9 @@
 title: odo build-images
 ---
 
-odo can build container images based on Dockerfiles, and push these images to their registries.
+`odo` can build container images based on Dockerfiles, and push these images to their registries.
 
-When running the command `odo build-images`, odo searches for all components in the `devfile.yaml` with the `image` type, for example:
+When running the command `odo build-images`, `odo` searches for all components in the `devfile.yaml` with the `image` type, for example:
 
 ```
 components:
@@ -21,7 +21,7 @@ As indicated in the Devfile specification, `uri` could also be an HTTP or HTTPS 
 
 The `buildContext` indicates the directory used as build context. The default value is `${PROJECT_SOURCE}`.
 
-For each image component, odo executes either `podman` or `docker` (the first one found, in this order), to build the image with the specified Dockerfile, build context and arguments.
+For each image component, `odo` executes either `podman` or `docker` (the first one found, in this order), to build the image with the specified Dockerfile, build context and arguments.
 
 If the `--push` flag is passed to the command, the images will be pushed to their registries after they are built.
 
@@ -66,4 +66,4 @@ Successfully tagged quay.io/user/myimage:latest
 
 
 ### Faking the image build
-You can also fake the image build by exporting `PODMAN_CMD=echo` or `DOCKER_CMD=echo` to your environment. Read [environment variables controlling odo behaviour](../overview/configure.md#environment-variables-controlling-odo-behavior) for more information.
+You can also fake the image build by exporting `PODMAN_CMD=echo` or `DOCKER_CMD=echo` to your environment. Read [environment variables controlling `odo` behaviour](../overview/configure.md#environment-variables-controlling-odo-behavior) for more information.

@@ -2,11 +2,11 @@
 title: odo deploy
 ---
 
-odo can be used to deploy components in a similar manner they would be deployed by a CI/CD system, 
+`odo` can be used to deploy components in a similar manner they would be deployed by a CI/CD system, 
 by first building the images of the containers to deploy, then by deploying the Kubernetes resources
 necessary to deploy the components.
 
-When running the command `odo deploy`, odo searches for the default command of kind `deploy` in the devfile, and executes this command.
+When running the command `odo deploy`, `odo` searches for the default command of kind `deploy` in the devfile, and executes this command.
 The kind `deploy` is supported by the devfile format starting from version 2.2.0.
 
 The `deploy` command is typically a *composite* command, composed of several *apply* commands:
@@ -135,4 +135,4 @@ Your Devfile has been successfully deployed
 The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
 can override the values for variables from the command line when running `odo deploy`, using the `--var` and `--var-file` options.
 
-See [Substituting variables in odo dev](dev.md#substituting-variables) for more information.
+See [Substituting variables in `odo` dev](dev.md#substituting-variables) for more information.
