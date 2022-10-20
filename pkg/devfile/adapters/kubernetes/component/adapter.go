@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync/atomic"
 
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -695,27 +696,49 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 
 // deleteRemoteResources takes a list of remote resources to be deleted
 func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructured) error {
+	if len(objectsToRemove) == 0 {
+		return nil
+	}
+
+	stopCh := make(chan struct{})
+	errCh := make(chan error)
+	var goroutineCount int64
 	// Delete the resources present on the cluster but not in the Devfile
 	for _, objectToRemove := range objectsToRemove {
 		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", objectToRemove.GetKind(), objectToRemove.GetName())
+		defer spinner.End(false)
 
-		gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
-		if err != nil {
-			return fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
-		}
-
-		err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
-		if err != nil {
-			if !kerrors.IsNotFound(err) {
-				spinner.End(false)
-				return fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+		atomic.AddInt64(&goroutineCount, 1)
+		go func(spinner *log.Status) {
+			gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
+			if err != nil {
+				errCh <- fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
 			}
 
-			klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
-		}
-		spinner.End(true)
+			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
+			if err != nil {
+				if !kerrors.IsNotFound(err) {
+					errCh <- fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+				}
+
+				klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
+			}
+			spinner.End(true)
+			atomic.AddInt64(&goroutineCount, -1)
+			stopCh <- struct{}{}
+		}(spinner)
 	}
-	return nil
+
+	for {
+		select {
+		case err := <-errCh:
+			return err
+		case <-stopCh:
+			if goroutineCount == 0 {
+				return nil
+			}
+		}
+	}
 }
 
 // deleteServiceBindingSecrets takes a list of Service Binding secrets that should be deleted;
