@@ -22,7 +22,7 @@ Why use `odo`?
 * **Containers first:** We provide first class support for both Kubernetes and OpenShift. Choose your favourite container orchestrator and develop your application.
 * **Easy to learn:** Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
 
-Learn more about the features provided by odo on [odo.dev](https://odo.dev/docs/overview/features).
+Learn more about the features provided by `odo` on [odo.dev](https://odo.dev/docs/overview/features).
 
 ----
 
@@ -63,7 +63,7 @@ We are an open community who welcomes any concerns, changes or ideas for `odo`! 
 
 All our calls are open to public. You are welcome to join any of our calls.
 
-You can find the exact dates of all scheduled odo calls together with sprint dates in the [odo calendar](https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com) ([iCal format](https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics)).
+You can find the exact dates of all scheduled team calls together with sprint dates in the [google calendar](https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com) ([iCal format](https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics)).
 
 ----
 
