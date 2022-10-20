@@ -701,12 +701,17 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 		return nil
 	}
 
+	var resources string
+	for _, u := range objectsToRemove {
+		resources += fmt.Sprintf("%s/%s, ", u.GetKind(), u.GetName())
+	}
+	spinner := log.Spinnerf("Deleting Kubernetes resources not present in the Devfile: %s", resources)
+	defer spinner.End(false)
+
 	g := new(errgroup.Group)
 	// Delete the resources present on the cluster but not in the Devfile
 	for _, objectToRemove := range objectsToRemove {
 		g.Go(func() error {
-			spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", objectToRemove.GetKind(), objectToRemove.GetName())
-			defer spinner.End(false)
 			gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
 			if err != nil {
 				err = fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
@@ -722,7 +727,6 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 
 				klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
 			}
-			spinner.End(true)
 			return nil
 		})
 	}
@@ -730,6 +734,7 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 	if err := g.Wait(); err != nil {
 		return err
 	}
+	spinner.End(true)
 	return nil
 }
 
