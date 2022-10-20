@@ -343,7 +343,7 @@ var _ = Describe("odo init interactive command tests", func() {
 		output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 
 			helper.ExpectString(ctx, "Select language")
-			helper.SendLine(ctx, "dotnet")
+			helper.SendLine(ctx, ".NET")
 
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
