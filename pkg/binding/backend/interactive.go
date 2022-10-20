@@ -70,7 +70,7 @@ loop:
 			if err != nil {
 				return "", schema.GroupVersionKind{}, err
 			}
-			resourceList, err := o.kubernetesClient.ListDynamicResources("", gvr)
+			resourceList, err := o.kubernetesClient.ListDynamicResources("", gvr, "")
 			if err != nil {
 				return "", schema.GroupVersionKind{}, err
 			}
@@ -130,10 +130,10 @@ func (o *InteractiveBackend) SelectNamespace(_ map[string]string) (string, error
 		sort.Strings(nsList)
 		klog.V(4).Infof("all accessible namespaces: %v", nsList)
 		if len(nsList) == 0 {
-			//User needs to provide a namespace
+			// User needs to provide a namespace
 			return o.askerClient.AskNamespace()
 		}
-		//Let users select a namespace from the list
+		// Let users select a namespace from the list
 		return o.askerClient.SelectNamespace(nsList)
 	default:
 		return "", fmt.Errorf("unknown namespace list option: %d", option)

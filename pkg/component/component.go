@@ -339,7 +339,7 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		return nil, nil, fmt.Errorf("unable to determine GVR for %s: %w", kclient.IngressGVK.String(), err)
 	}
 
-	k8sIngresses, err := client.ListDynamicResourcesFromSelector(client.GetCurrentNamespace(), ingressGVR, selector)
+	k8sIngresses, err := client.ListDynamicResources(client.GetCurrentNamespace(), ingressGVR, selector)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -375,7 +375,7 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		return nil, nil, fmt.Errorf("unable to determine GVR for %s: %w", kclient.RouteGVK.String(), err)
 	}
 
-	ocRoutes, err := client.ListDynamicResourcesFromSelector(client.GetCurrentNamespace(), routeGVR, selector)
+	ocRoutes, err := client.ListDynamicResources(client.GetCurrentNamespace(), routeGVR, selector)
 	if err != nil {
 		return nil, nil, err
 	}

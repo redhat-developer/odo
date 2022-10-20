@@ -2,8 +2,9 @@ package binding
 
 import (
 	"fmt"
-	"k8s.io/klog"
 	"path/filepath"
+
+	"k8s.io/klog"
 
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -90,7 +91,7 @@ func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstru
 	for _, restMapping := range bindableKindRestMappings {
 		// TODO: Debug into why List returns all the versions instead of the GVR version
 		// List all the instances of the restMapping object
-		resources, err := o.kubernetesClient.ListDynamicResources(namespace, restMapping.Resource)
+		resources, err := o.kubernetesClient.ListDynamicResources(namespace, restMapping.Resource, "")
 		if err != nil {
 			if kerrors.IsNotFound(err) || kerrors.IsForbidden(err) {
 				// Assume the namespace is deleted or being terminated, hence user can't list its resources

@@ -125,7 +125,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 						{Resource: clusterGVR, GroupVersionKind: clusterGVK},
 					}, nil)
 
-					client.EXPECT().ListDynamicResources("", clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
+					client.EXPECT().ListDynamicResources("", clusterGVR, "").Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
 					return client
 				},
 			},
@@ -145,7 +145,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 						{Resource: clusterGVR, GroupVersionKind: clusterGVK},
 					}, nil)
 
-					client.EXPECT().ListDynamicResources(ns, clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
+					client.EXPECT().ListDynamicResources(ns, clusterGVR, "").Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
 					return client
 				},
 			},
@@ -181,7 +181,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 					{Resource: clusterGVR, GroupVersionKind: clusterGVK},
 				}, nil)
 
-				client.EXPECT().ListDynamicResources("", clusterGVR).Return(&unstructured.UnstructuredList{Items: nil}, nil)
+				client.EXPECT().ListDynamicResources("", clusterGVR, "").Return(&unstructured.UnstructuredList{Items: nil}, nil)
 				return client
 			}},
 			want:    map[string]unstructured.Unstructured{},

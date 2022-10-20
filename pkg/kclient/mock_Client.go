@@ -1055,19 +1055,19 @@ func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
 }
 
-// ListDynamicResources mocks base method.
-func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
+// ListDynamicResources mocks base method
+func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr)
+	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr, selector)
 	ret0, _ := ret[0].(*unstructured.UnstructuredList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDynamicResources indicates an expected call of ListDynamicResources.
-func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr interface{}) *gomock.Call {
+// ListDynamicResources indicates an expected call of ListDynamicResources
+func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr, selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr, selector)
 }
 
 // ListPVCNames mocks base method.
