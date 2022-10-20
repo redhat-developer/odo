@@ -1,11 +1,16 @@
 package component
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
+	"github.com/redhat-developer/service-binding-operator/pkg/converter"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 
@@ -346,6 +351,152 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("generateDeploymentObjectMeta() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAdapter_deleteRemoteResourcesNotPresentInDevfile(t *testing.T) {
+	const (
+		componentName      = "nodejs"
+		coreDeploymentName = "nodejs-app"
+		deploymentName     = "my-component"
+		namespace          = "namespace-1"
+	)
+	deployment := odoTestingUtil.CreateFakeDeployment(deploymentName, false)
+	deployment.SetNamespace(namespace)
+	deploymentGVR := schema.GroupVersionResource{
+		Group:    deployment.GroupVersionKind().Group,
+		Version:  deployment.GroupVersionKind().Version,
+		Resource: "deployments",
+	}
+	unstructuredDeployment, _ := converter.ToUnstructured(deployment)
+
+	coreDeployment := odoTestingUtil.CreateFakeDeployment(coreDeploymentName, true)
+	coreDeployment.SetNamespace(namespace)
+	unstructuredCoreDeployment, _ := converter.ToUnstructured(coreDeployment)
+
+	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
+
+	type fields struct {
+		kubeClient     func(ctrl *gomock.Controller) kclient.ClientInterface
+		AdapterContext AdapterContext
+	}
+	type args struct {
+		selector string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []unstructured.Unstructured
+		wantErr bool
+	}{
+		{
+			name: "should delete remote resources from cluster that are not present in the devfile; this should not include core components",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+					kubeClient.EXPECT().GetCurrentNamespace().Return(namespace)
+					kubeClient.EXPECT().GetAllResourcesFromSelector(selector, namespace).Return([]unstructured.Unstructured{*unstructuredDeployment, *unstructuredCoreDeployment}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(deployment.GroupVersionKind()).Return(deploymentGVR, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(deployment.GetName(), gomock.Any(), gomock.Any()).Return(nil)
+					return kubeClient
+				},
+				AdapterContext: AdapterContext{
+					ComponentName: componentName,
+					AppName:       "app",
+					Devfile:       odoTestingUtil.GetTestDevfileObjFromFile("devfile.yaml"),
+				},
+			},
+			args: args{
+				selector: selector,
+			},
+			want:    []unstructured.Unstructured{*unstructuredDeployment},
+			wantErr: false,
+		},
+		{
+			name: "should not delete resources that are present in both devfile and cluster",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+					kubeClient.EXPECT().GetCurrentNamespace().Return(namespace).Times(2)
+					kubeClient.EXPECT().GetAllResourcesFromSelector(selector, namespace).Return([]unstructured.Unstructured{*unstructuredDeployment, *unstructuredCoreDeployment}, nil)
+					return kubeClient
+				},
+				AdapterContext: AdapterContext{
+					ComponentName: componentName,
+					AppName:       "app",
+					Devfile:       odoTestingUtil.GetTestDevfileObjFromFile("devfile-with-k8s-resource.yaml"),
+				},
+			},
+			args: args{
+				selector: selector,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "should fail if there is an error",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+					kubeClient.EXPECT().GetCurrentNamespace().Return(namespace)
+					kubeClient.EXPECT().GetAllResourcesFromSelector(selector, namespace).Return([]unstructured.Unstructured{*unstructuredDeployment, *unstructuredCoreDeployment}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(deployment.GroupVersionKind()).Return(deploymentGVR, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(deployment.GetName(), gomock.Any(), gomock.Any()).Return(errors.New("failed to delete the resource"))
+					return kubeClient
+				},
+				AdapterContext: AdapterContext{
+					ComponentName: componentName,
+					AppName:       "app",
+					Devfile:       odoTestingUtil.GetTestDevfileObjFromFile("devfile.yaml"),
+				},
+			},
+			args: args{
+				selector: selector,
+			},
+			want:    []unstructured.Unstructured{*unstructuredDeployment},
+			wantErr: true,
+		},
+		{
+			name: "should not fail if DeleteDynamicResource returns a NotFound error",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+					kubeClient.EXPECT().GetCurrentNamespace().Return(namespace)
+					kubeClient.EXPECT().GetAllResourcesFromSelector(selector, namespace).Return([]unstructured.Unstructured{*unstructuredDeployment, *unstructuredCoreDeployment}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(deployment.GroupVersionKind()).Return(deploymentGVR, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(deployment.GetName(), gomock.Any(), gomock.Any()).Return(kerrors.NewNotFound(deploymentGVR.GroupResource(), deployment.GetName()))
+					return kubeClient
+				},
+				AdapterContext: AdapterContext{
+					ComponentName: componentName,
+					AppName:       "app",
+					Devfile:       odoTestingUtil.GetTestDevfileObjFromFile("devfile.yaml"),
+				},
+			},
+			args: args{
+				selector: selector,
+			},
+			want:    []unstructured.Unstructured{*unstructuredDeployment},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			a := Adapter{
+				kubeClient:     tt.fields.kubeClient(ctrl),
+				AdapterContext: tt.fields.AdapterContext,
+			}
+			got, err := a.deleteRemoteResources(tt.args.selector)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("deleteRemoteResourcesNotPresentInDevfile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("deleteRemoteResourcesNotPresentInDevfile() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
