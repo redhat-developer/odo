@@ -709,8 +709,10 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 	defer spinner.End(false)
 
 	g := new(errgroup.Group)
+
 	// Delete the resources present on the cluster but not in the Devfile
 	for _, objectToRemove := range objectsToRemove {
+		objectToRemove := objectToRemove
 		g.Go(func() error {
 			gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
 			if err != nil {
