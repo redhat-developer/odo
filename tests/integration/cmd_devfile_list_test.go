@@ -171,7 +171,7 @@ var _ = Describe("odo list with devfile", func() {
 
 	})
 
-	Context("devfile has missing metadata", func() {
+	Context("devfile has missing metadata", Label(helper.LabelSerial), func() {
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
 		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/redhat-developer/odo/issues/4815
 		BeforeEach(func() {

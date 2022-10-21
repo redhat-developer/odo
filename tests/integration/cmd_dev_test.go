@@ -273,7 +273,7 @@ ComponentSettings:
 			})
 		})
 
-		When("odo dev is executed and Ephemeral is set to false", func() {
+		When("odo dev is executed and Ephemeral is set to false", Label(helper.LabelSerial), func() {
 
 			var devSession helper.DevSession
 			BeforeEach(func() {
@@ -329,7 +329,7 @@ ComponentSettings:
 			})
 		})
 
-		When("odo dev is executed and Ephemeral is set to false", func() {
+		When("odo dev is executed and Ephemeral is set to false", Label(helper.LabelSerial), func() {
 
 			var devSession helper.DevSession
 			BeforeEach(func() {
@@ -1177,7 +1177,7 @@ ComponentSettings:
 			})
 		})
 
-		When("running odo dev with devfile contain volume - "+devfileHandlerCtx.name, func() {
+		When("running odo dev with devfile contain volume - "+devfileHandlerCtx.name, Label(helper.LabelSerial), func() {
 			var devfileCmpName string
 			var session helper.DevSession
 			BeforeEach(func() {
@@ -1249,7 +1249,7 @@ ComponentSettings:
 			})
 		})
 
-		When("running odo dev with devfile containing volume-component - "+devfileHandlerCtx.name, func() {
+		When("running odo dev with devfile containing volume-component - "+devfileHandlerCtx.name, Label(helper.LabelSerial), func() {
 			var devfileCmpName string
 			var session helper.DevSession
 			BeforeEach(func() {
@@ -1746,7 +1746,7 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("Create and dev java-springboot component", func() {
+	When("Create and dev java-springboot component", Label(helper.LabelSerial), func() {
 		devfileCmpName := "java-spring-boot"
 		var session helper.DevSession
 		BeforeEach(func() {
@@ -2021,7 +2021,7 @@ CMD ["npm", "start"]
 	}
 
 	// Tests https://github.com/redhat-developer/odo/issues/3838
-	When("java-springboot application is created and running odo dev", func() {
+	When("java-springboot application is created and running odo dev", Label(helper.LabelSerial), func() {
 		var session helper.DevSession
 		BeforeEach(func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
@@ -2444,7 +2444,7 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("a hotReload capable project is used with odo dev", func() {
+	When("a hotReload capable project is used with odo dev", Label(helper.LabelSerial), func() {
 		var devSession helper.DevSession
 		var stdout []byte
 		var executeRunCommand = "Executing the application (command: dev-run)"

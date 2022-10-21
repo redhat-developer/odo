@@ -186,8 +186,9 @@ openshiftci-presubmit-unittests:
 
 .PHONY: test-integration
 test-integration:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --label-filter=!serial tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) --label-filter=serial tests/integration
 
 .PHONY: test-e2e
 test-e2e:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/e2escenarios
+	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) tests/e2escenarios
