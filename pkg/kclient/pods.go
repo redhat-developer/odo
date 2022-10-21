@@ -1,15 +1,9 @@
 package kclient
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"strings"
-
-	"k8s.io/klog"
-
-	"github.com/redhat-developer/odo/pkg/log"
 
 	// api resource types
 
@@ -64,24 +58,6 @@ func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string,
 		return fmt.Errorf("error while streaming command: %w", err)
 	}
 
-	return nil
-}
-
-// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (c *Client) ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error {
-	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--no-same-owner"}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	klog.V(3).Infof("Executing command %s", strings.Join(cmdArr, " "))
-	err := c.ExecCMDInContainer(containerName, podName, cmdArr, &stdout, &stderr, stdin, false)
-	if err != nil {
-		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
-		log.Errorf("stdout: %s\n", stdout.String())
-		log.Errorf("stderr: %s\n", stderr.String())
-		log.Errorf("err: %s\n", err.Error())
-		return err
-	}
 	return nil
 }
 

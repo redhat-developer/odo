@@ -134,17 +134,17 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
 	util.LogErrorAndExit(commonflags.CheckVariablesCommand(cmd), "")
 
-	deps, err := clientset.Fetch(cmd)
+	cmdLineObj := cmdline.NewCobra(cmd)
+	platform := commonflags.GetRunOnValue(cmdLineObj)
+	deps, err := clientset.Fetch(cmd, platform)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
 	o.SetClientset(deps)
 
-	cmdLineObj := cmdline.NewCobra(cmd)
-
 	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
-	ctx = fcontext.WithRunOn(ctx, commonflags.GetRunOnValue(cmdLineObj))
+	ctx = fcontext.WithRunOn(ctx, platform)
 	ctx = odocontext.WithApplication(ctx, defaultAppName)
 
 	if deps.KubernetesClient != nil {

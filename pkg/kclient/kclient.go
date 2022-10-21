@@ -7,6 +7,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/blang/semver"
+	"github.com/redhat-developer/odo/pkg/platform"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,6 +76,7 @@ type Client struct {
 }
 
 var _ ClientInterface = (*Client)(nil)
+var _ platform.Client = (*Client)(nil)
 
 // New creates a new client
 func New() (*Client, error) {

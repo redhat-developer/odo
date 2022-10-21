@@ -103,10 +103,6 @@ func TestSyncFiles(t *testing.T) {
 	// Assert that Bar() is invoked.
 	defer ctrl.Finish()
 
-	syncClient := func(ComponentInfo, string, io.Reader) error {
-		return nil
-	}
-
 	tests := []struct {
 		name               string
 		syncParameters     SyncParameters
@@ -123,8 +119,7 @@ func TestSyncFiles(t *testing.T) {
 				CompInfo: ComponentInfo{
 					ContainerName: "abcd",
 				},
-				ForcePush:     true,
-				SyncExtracter: syncClient,
+				ForcePush: true,
 			},
 			wantErr:            false,
 			wantIsPushRequired: true,
@@ -139,8 +134,7 @@ func TestSyncFiles(t *testing.T) {
 				CompInfo: ComponentInfo{
 					ContainerName: "abcd",
 				},
-				ForcePush:     false,
-				SyncExtracter: syncClient,
+				ForcePush: false,
 			},
 			wantErr:            false,
 			wantIsPushRequired: false, // always false after case 1
@@ -155,8 +149,7 @@ func TestSyncFiles(t *testing.T) {
 				CompInfo: ComponentInfo{
 					ContainerName: "abcd",
 				},
-				ForcePush:     false,
-				SyncExtracter: syncClient,
+				ForcePush: false,
 			},
 			wantErr:            true,
 			wantIsPushRequired: false,
@@ -172,8 +165,7 @@ func TestSyncFiles(t *testing.T) {
 					ComponentName: testComponentName,
 					ContainerName: "abcd",
 				},
-				ForcePush:     false,
-				SyncExtracter: syncClient,
+				ForcePush: false,
 			},
 			wantErr:            false,
 			wantIsPushRequired: true,
@@ -323,7 +315,7 @@ func TestPushLocal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			execClient := exec.NewExecClient(kc)
 			syncAdapter := NewSyncClient(kc, execClient)
-			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, syncClient, util.IndexerRet{})
+			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)
 			}

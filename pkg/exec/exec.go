@@ -9,17 +9,17 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/platform"
 )
 
 type ExecClient struct {
-	kubeClient kclient.ClientInterface
+	platformClient platform.Client
 }
 
-func NewExecClient(kubeClient kclient.ClientInterface) *ExecClient {
+func NewExecClient(platformClient platform.Client) *ExecClient {
 	return &ExecClient{
-		kubeClient: kubeClient,
+		platformClient: platformClient,
 	}
 }
 
@@ -42,7 +42,7 @@ func (o ExecClient) ExecuteCommand(
 	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, stdoutWriter)
 	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, stderrWriter)
 
-	err = o.kubeClient.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
+	err = o.platformClient.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
 
 	// Block until we have received all the container output from each stream
 	_ = soutWriter.Close()
