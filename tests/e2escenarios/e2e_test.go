@@ -93,7 +93,7 @@ var _ = Describe("E2E Test", func() {
 
 			// "running odo list"
 			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev"})
+			helper.MatchAllInOutput(stdout, []string{componentName, "Node.js", "Dev"})
 
 			// "exit dev mode and run odo deploy"
 			devSession.Stop()
@@ -169,8 +169,8 @@ var _ = Describe("E2E Test", func() {
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
 				// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
-				helper.ExpectString(ctx, "Language: javascript")
-				helper.ExpectString(ctx, "Project type: nodejs")
+				helper.ExpectString(ctx, "Language: JavaScript")
+				helper.ExpectString(ctx, "Project type: Node.js")
 				helper.ExpectString(ctx, "Is this correct")
 
 				helper.SendLine(ctx, "\n")
@@ -214,7 +214,7 @@ var _ = Describe("E2E Test", func() {
 
 			// "running odo list"
 			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev"})
+			helper.MatchAllInOutput(stdout, []string{componentName, "Node.js", "Dev"})
 
 			// "exit dev mode and run odo deploy"
 			devSession.Stop()
