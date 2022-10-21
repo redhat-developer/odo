@@ -57,6 +57,7 @@ func createPodFromComponent(
 		},
 	}
 
+	// TODO add labels (for GetRunningPodFromSelector)
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
 			Containers: containers,
