@@ -4,7 +4,10 @@ about: Report mistakes or request for documentation
 ---
 
 /area documentation
+
+Add one of the following kinds:
 /kind bug
+/kind feature
 
 <!--
 
