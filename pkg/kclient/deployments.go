@@ -193,9 +193,9 @@ func (c *Client) IsDeploymentExtensionsV1Beta1() (bool, error) {
 
 // DeploymentWatcher returns a watcher on Deployments into the current namespace
 // with the given label selector
-func (o *Client) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
-	ns := o.GetCurrentNamespace()
-	return o.GetClient().AppsV1().Deployments(ns).
+func (c *Client) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	ns := c.GetCurrentNamespace()
+	return c.GetClient().AppsV1().Deployments(ns).
 		Watch(ctx, metav1.ListOptions{
 			LabelSelector: selector,
 		})
