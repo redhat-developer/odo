@@ -328,20 +328,6 @@ func (mr *MockClientInterfaceMockRecorder) ExecCMDInContainer(containerName, pod
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecCMDInContainer", reflect.TypeOf((*MockClientInterface)(nil).ExecCMDInContainer), containerName, podName, cmd, stdout, stderr, stdin, tty)
 }
 
-// ExtractProjectToComponent mocks base method.
-func (m *MockClientInterface) ExtractProjectToComponent(containerName, podName, targetPath string, stdin io.Reader) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtractProjectToComponent", containerName, podName, targetPath, stdin)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ExtractProjectToComponent indicates an expected call of ExtractProjectToComponent.
-func (mr *MockClientInterfaceMockRecorder) ExtractProjectToComponent(containerName, podName, targetPath, stdin interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractProjectToComponent", reflect.TypeOf((*MockClientInterface)(nil).ExtractProjectToComponent), containerName, podName, targetPath, stdin)
-}
-
 // GeneratePortForwardReq mocks base method.
 func (m *MockClientInterface) GeneratePortForwardReq(podName string) *rest.Request {
 	m.ctrl.T.Helper()
@@ -356,19 +342,19 @@ func (mr *MockClientInterfaceMockRecorder) GeneratePortForwardReq(podName interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GeneratePortForwardReq", reflect.TypeOf((*MockClientInterface)(nil).GeneratePortForwardReq), podName)
 }
 
-// GetAllPodsInNamespace mocks base method.
-func (m *MockClientInterface) GetAllPodsInNamespace() (*v11.PodList, error) {
+// GetAllPodsInNamespaceMatchingSelector mocks base method.
+func (m *MockClientInterface) GetAllPodsInNamespaceMatchingSelector(selector, ns string) (*v11.PodList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllPodsInNamespace")
+	ret := m.ctrl.Call(m, "GetAllPodsInNamespaceMatchingSelector", selector, ns)
 	ret0, _ := ret[0].(*v11.PodList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllPodsInNamespace indicates an expected call of GetAllPodsInNamespace.
-func (mr *MockClientInterfaceMockRecorder) GetAllPodsInNamespace() *gomock.Call {
+// GetAllPodsInNamespaceMatchingSelector indicates an expected call of GetAllPodsInNamespaceMatchingSelector.
+func (mr *MockClientInterfaceMockRecorder) GetAllPodsInNamespaceMatchingSelector(selector, ns interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodsInNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetAllPodsInNamespace))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodsInNamespaceMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).GetAllPodsInNamespaceMatchingSelector), selector, ns)
 }
 
 // GetAllResourcesFromSelector mocks base method.

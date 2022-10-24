@@ -184,7 +184,12 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
 	}
 	if isDefined(command, LOGS) {
-		dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
+		switch platform {
+		case commonflags.RunOnCluster:
+			dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
+		default:
+			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
+		}
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
