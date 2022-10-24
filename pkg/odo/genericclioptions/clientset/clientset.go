@@ -12,6 +12,8 @@
 package clientset
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/exec"
@@ -165,8 +167,11 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
 	}
 	if isDefined(command, EXEC) {
-		if platform == commonflags.RunOnCluster {
+		switch platform {
+		case commonflags.RunOnCluster:
 			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
+		default:
+			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
 		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
