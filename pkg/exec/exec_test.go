@@ -5,6 +5,9 @@ import (
 	"io"
 	"reflect"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -18,6 +21,26 @@ type fakePlatform struct {
 
 func (o fakePlatform) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	return o.execCMDInContainer(containerName, podName, cmd, stdout, stderr, stdin, tty)
+}
+
+func (o fakePlatform) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
+	panic("not implemented yet")
+}
+
+func (o fakePlatform) GetPodsMatchingSelector(selector string) (*corev1.PodList, error) {
+	panic("not implemented yet")
+}
+
+func (o fakePlatform) GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error) {
+	panic("not implemented yet")
+}
+
+func (o fakePlatform) GetAllPodsInNamespaceMatchingSelector(selector string, ns string) (*corev1.PodList, error) {
+	panic("not implemented yet")
+}
+
+func (o fakePlatform) GetRunningPodFromSelector(selector string) (*corev1.Pod, error) {
+	panic("not implemented yet")
 }
 
 func TestExecuteCommand(t *testing.T) {
