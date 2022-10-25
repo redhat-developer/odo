@@ -32,11 +32,46 @@ If these resources have been deployed on the cluster, then `odo` will delete the
 Otherwise, `odo` will exit with a message stating that it could not find the resources on the cluster.
 
 :::note
-If some resources attached to the component are present on the clutser, but not in the Devfile, then they will not be deleted.
+If some resources attached to the component are present on the cluster, but not in the Devfile, then they will not be deleted.
 You can delete these resources by running the command in the [next section](#delete-without-access-to-devfile).
 :::
 
-`odo` does not delete the Devfile, the `odo` configuration files, or the source code.
+By default, `odo` does not delete the Devfile, the `odo` configuration files, or the source code.
+
+#### Deleting local files with `--files`
+
+When `--files` is passed, `odo` attempts to delete files or directories it initially created locally.
+
+This will delete the following files or directories:
+- the `.odo` directory in the current directory
+- optionally, the Devfile only if it was initially created via `odo` (initialization via any of the `odo init`, `odo dev` or `odo deploy` commands).
+- optionally, the `.gitignore` file only if it was initially created via `odo` (`odo dev` generates a `.gitignore` file if it does not exist in the current directory).
+
+:::caution
+Use this flag with caution.
+:::
+
+```shell
+odo delete component --files [--force] [--wait]
+```
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo delete component --files
+
+Searching resources to delete, please wait...
+This will delete "my-nodejs" from the namespace "my-project".
+ •  The component contains the following resources that will get deleted:
+        - Deployment: my-component
+
+This will also delete the following files and directories:
+        - /home/user/my-project/my-nodejs/.odo
+        - /home/user/my-project/my-nodejs/devfile.yaml
+? Are you sure you want to delete "my-nodejs" and all its resources? Yes
+The component "my-nodejs" is successfully deleted from namespace "my-project"
+```
+</details>
 
 ### Delete without access to Devfile
 ```shell
