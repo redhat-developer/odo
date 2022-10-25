@@ -189,56 +189,50 @@ func TestClientUploadWithConsent(t *testing.T) {
 }
 
 func TestIsTelemetryEnabled(t *testing.T) {
-	tests := []struct {
-		errMesssage, envVar   string
-		want, preferenceValue bool
-	}{
-		{
-			want:            false,
-			errMesssage:     "Telemetry must be disabled.",
-			envVar:          "true",
-			preferenceValue: false,
-		},
-		{
-			want:            false,
-			errMesssage:     "Telemetry must be disabled.",
-			envVar:          "false",
-			preferenceValue: false,
-		},
-		{
-			want:            false,
-			errMesssage:     "Telemetry must be disabled.",
-			envVar:          "true",
-			preferenceValue: true,
-		},
-		{
-			want:            true,
-			errMesssage:     "Telemetry must be enabled.",
-			envVar:          "false",
-			preferenceValue: true,
-		},
-		{
-			want:            true,
-			errMesssage:     "Telemetry must be enabled.",
-			envVar:          "foobar",
-			preferenceValue: true,
-		},
-		{
-			want:            false,
-			errMesssage:     "Telemetry must be disabled.",
-			envVar:          "foobar",
-			preferenceValue: false,
-		},
+	type testStruct struct {
+		name                 string
+		env                  map[string]string
+		consentTelemetryPref bool
+		want                 func(odoDisableTelemetry, odoTrackingConsent string, consentTelemetry bool) bool
+	}
+	var tests []testStruct
+	for _, odoDisableTelemetry := range []string{"", "true", "false", "foo"} {
+		for _, odoTrackingConsent := range []string{"", "yes", "no", "bar"} {
+			for _, consentTelemetry := range []bool{true, false} {
+				odoDisableTelemetry := odoDisableTelemetry
+				odoTrackingConsent := odoTrackingConsent
+				consentTelemetry := consentTelemetry
+				tests = append(tests, testStruct{
+					want: func(odoDisableTelemetry, odoTrackingConsent string, consentTelemetry bool) bool {
+						if odoDisableTelemetry == "true" || odoTrackingConsent == "no" {
+							return false
+						}
+						return consentTelemetry
+					},
+					name: fmt.Sprintf("ODO_DISABLE_TELEMETRY=%q,ODO_TRACKING_CONSENT=%q,ConsentTelemetry=%v",
+						odoDisableTelemetry, odoTrackingConsent, consentTelemetry),
+					env: map[string]string{
+						DisableTelemetryEnv: odoDisableTelemetry,
+						TrackingConsentEnv:  odoTrackingConsent,
+					},
+					consentTelemetryPref: consentTelemetry,
+				})
+			}
+		}
 	}
 	for _, tt := range tests {
-		t.Setenv(DisableTelemetryEnv, tt.envVar)
-		ctrl := gomock.NewController(t)
-		cfg := preference.NewMockClient(ctrl)
-		cfg.EXPECT().GetConsentTelemetry().Return(tt.preferenceValue).AnyTimes()
+		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
+			ctrl := gomock.NewController(t)
+			cfg := preference.NewMockClient(ctrl)
+			cfg.EXPECT().GetConsentTelemetry().Return(tt.consentTelemetryPref).AnyTimes()
 
-		if IsTelemetryEnabled(cfg) != tt.want {
-			t.Errorf(tt.errMesssage, "%s is set to %q. %s is set to %q.", DisableTelemetryEnv, tt.envVar, preference.ConsentTelemetrySetting, tt.preferenceValue)
-		}
+			if IsTelemetryEnabled(cfg) != tt.want(tt.env[DisableTelemetryEnv], tt.env[TrackingConsentEnv], tt.consentTelemetryPref) {
+				t.Errorf(tt.name, "env is set to %v. %s is set to %q.", tt.env, preference.ConsentTelemetrySetting, tt.consentTelemetryPref)
+			}
+		})
 	}
 }
 

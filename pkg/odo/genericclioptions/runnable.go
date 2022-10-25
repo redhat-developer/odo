@@ -14,6 +14,7 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -80,8 +81,17 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	startTime := time.Now()
 	cfg, _ := preference.NewClient()
-	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
+	disableTelemetryValue, disableTelemetryEnvSet := os.LookupEnv(segment.DisableTelemetryEnv)
+	disableTelemetry, _ := strconv.ParseBool(disableTelemetryValue)
 	debugTelemetry := segment.GetDebugTelemetryFile()
+	trackingConsent := os.Getenv(segment.TrackingConsentEnv)
+
+	// check for conflicting settings
+	if disableTelemetryEnvSet && ((disableTelemetry && trackingConsent == "yes") || (disableTelemetry == false && trackingConsent == "no")) {
+		util.LogErrorAndExit(
+			fmt.Errorf("%[1]s and %[2]s values are in conflict. %[1]s is deprecated, please use only %[2]s",
+				segment.DisableTelemetryEnv, segment.TrackingConsentEnv), "")
+	}
 
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
@@ -89,6 +99,14 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
+		} else if trackingConsent == "no" {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+		} else if trackingConsent == "yes" {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+			klog.V(4).Info("Telemetry is enabled!\n")
+			if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
+				klog.V(4).Info(err1.Error())
+			}
 		} else if disableTelemetry {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else {

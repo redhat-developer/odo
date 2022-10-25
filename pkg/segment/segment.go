@@ -37,7 +37,17 @@ const TelemetryClient = "odo"
 // DisableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely
 // hiding even the question
 const (
-	DisableTelemetryEnv   = "ODO_DISABLE_TELEMETRY"
+	// DisableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely.
+	// Setting it to false has the same effect as not setting it at all == does NOT enable telemetry!
+	// This has priority over TelemetryTrackingEnv
+	//
+	// Deprecated: Use TrackingConsentEnv instead.
+	DisableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
+	// TrackingConsentEnv controls whether odo tracks telemetry or not.
+	// Setting it to 'no' has the same effect as DisableTelemetryEnv=true (telemetry is disabled and no question asked)
+	// Settings this to 'yes' skips the question about telemetry and enables user tracking.
+	// Possible values are yes/no.
+	TrackingConsentEnv    = "ODO_TRACKING_CONSENT"
 	DebugTelemetryFileEnv = "ODO_DEBUG_TELEMETRY_FILE"
 	TelemetryCaller       = "TELEMETRY_CALLER"
 )
@@ -258,14 +268,21 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 	klog.V(4).Info("Checking telemetry enable status")
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
+
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))
-	if disableTelemetry {
-		klog.V(4).Infof("Sending telemetry disabled by %s=%t\n", DisableTelemetryEnv, disableTelemetry)
+	trackingConsent := os.Getenv(TrackingConsentEnv)
+
+	if disableTelemetry || trackingConsent == "no" {
+		klog.V(4).Info("Sending telemetry disabled by env variable\n")
 		return false
-	} else if cfg.GetConsentTelemetry() {
-		return true
 	}
-	return false
+	isEnabled := cfg.GetConsentTelemetry()
+	s := "Telemetry is disabled"
+	if isEnabled {
+		s = "Telemetry is disabled"
+	}
+	klog.V(4).Infof("%s!\n", s)
+	return isEnabled
 }
 
 // sanitizeUserInfo sanitizes username from the error string
