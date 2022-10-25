@@ -7,16 +7,17 @@ import (
 	"os"
 	"path/filepath"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
+
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	segmentContext "github.com/redhat-developer/odo/pkg/segment/context"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -121,7 +122,9 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 					Expect(output).ShouldNot(ContainSubstring(messages.InteractiveModeEnabled))
 				})
 				files := helper.ListFilesInDir(commonVar.Context)
-				Expect(files).To(Equal([]string{"devfile.yaml"}))
+				Expect(files).To(SatisfyAll(
+					HaveLen(2),
+					ContainElements("devfile.yaml", util.DotOdoDirectory)))
 				metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 				Expect(metadata.Name).To(BeEquivalentTo(compName))
 			})
@@ -158,7 +161,9 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			})
 			It("should copy the devfile.yaml file", func() {
 				files := helper.ListFilesInDir(commonVar.Context)
-				Expect(files).To(Equal([]string{"devfile.yaml"}))
+				Expect(files).To(SatisfyAll(
+					HaveLen(2),
+					ContainElements(util.DotOdoDirectory, "devfile.yaml")))
 			})
 		})
 		When("using --devfile-path flag with a URL", func() {
@@ -167,7 +172,9 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			})
 			It("should copy the devfile.yaml file", func() {
 				files := helper.ListFilesInDir(commonVar.Context)
-				Expect(files).To(Equal([]string{"devfile.yaml"}))
+				Expect(files).To(SatisfyAll(
+					HaveLen(2),
+					ContainElements("devfile.yaml", util.DotOdoDirectory)))
 			})
 		})
 		When("using --devfile-registry flag", func() {

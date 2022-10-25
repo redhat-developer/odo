@@ -547,7 +547,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		{
 			name:             "test case 2: no odoignore but gitignore exists with no rules",
 			directoryName:    testDir,
-			filesToCreate:    []string{".gitignore"},
+			filesToCreate:    []string{DotGitIgnoreFile},
 			rulesOnGitIgnore: "",
 			rulesOnOdoIgnore: "",
 			wantRules:        []string{".git"},
@@ -556,7 +556,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		{
 			name:             "test case 3: no odoignore but gitignore exists with rules",
 			directoryName:    testDir,
-			filesToCreate:    []string{".gitignore"},
+			filesToCreate:    []string{DotGitIgnoreFile},
 			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n/tests",
 			rulesOnOdoIgnore: "",
 			wantRules:        []string{".git", "*.js", "/openshift/**/*.json", "/tests"},
@@ -583,7 +583,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		{
 			name:             "test case 6: odoignore and gitignore both exists with rules",
 			directoryName:    testDir,
-			filesToCreate:    []string{".gitignore", ".odoignore"},
+			filesToCreate:    []string{DotGitIgnoreFile, ".odoignore"},
 			rulesOnGitIgnore: "/tests",
 			rulesOnOdoIgnore: "*.json\n\n/openshift/**/*.js",
 			wantRules:        []string{".git", "*.json", "/openshift/**/*.js"},
@@ -592,7 +592,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		{
 			name:             "test case 7: no odoignore but gitignore exists with rules and comments",
 			directoryName:    testDir,
-			filesToCreate:    []string{".gitignore"},
+			filesToCreate:    []string{DotGitIgnoreFile},
 			rulesOnGitIgnore: "*.js\n\n/openshift/**/*.json\n\n\n#/tests",
 			rulesOnOdoIgnore: "",
 			wantRules:        []string{".git", "*.js", "/openshift/**/*.json"},
@@ -612,7 +612,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 	for _, tt := range tests {
 		for _, fileName := range tt.filesToCreate {
 			var err error
-			if fileName == ".gitignore" {
+			if fileName == DotGitIgnoreFile {
 				err = MakeFileWithContent(testDir, fileName, tt.rulesOnGitIgnore)
 			} else if fileName == ".odoignore" {
 				err = MakeFileWithContent(testDir, fileName, tt.rulesOnOdoIgnore)
@@ -1280,7 +1280,7 @@ func TestUnzip(t *testing.T) {
 			name:          "Case 2: Valid source zip, no pathToUnzip",
 			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
 			pathToUnzip:   "",
-			expectedFiles: []string{"package.json", "package-lock.json", "app", "app/app.js", ".gitignore", "LICENSE", "README.md"},
+			expectedFiles: []string{"package.json", "package-lock.json", "app", "app/app.js", DotGitIgnoreFile, "LICENSE", "README.md"},
 			expectedError: "",
 		},
 		{

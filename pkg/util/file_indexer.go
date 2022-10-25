@@ -20,6 +20,7 @@ import (
 
 const DotOdoDirectory = ".odo"
 const fileIndexName = "odo-file-index.json"
+const DotGitIgnoreFile = ".gitignore"
 
 // FileIndex holds the file index used for storing local file state change
 type FileIndex struct {
@@ -105,30 +106,33 @@ func addOdoDirectory(gitIgnoreFile string, fs filesystem.Filesystem) error {
 	return addFileToIgnoreFile(gitIgnoreFile, DotOdoDirectory, fs)
 }
 
-// TouchGitIgnoreFile checks .gitignore file exists or not, if not then create it
-func TouchGitIgnoreFile(directory string) (string, error) {
+// TouchGitIgnoreFile checks .gitignore file exists or not, if not then creates it.
+// The first return value is the path to the .gitignore file, and the second return value indicates whether the file
+// has been created (because it did not exist at the time this function was called).
+func TouchGitIgnoreFile(directory string) (gitIgnoreFile string, isNewFile bool, err error) {
 	return touchGitIgnoreFile(directory, filesystem.DefaultFs{})
 }
 
-func touchGitIgnoreFile(directory string, fs filesystem.Filesystem) (string, error) {
-
-	_, err := fs.Stat(directory)
+func touchGitIgnoreFile(directory string, fs filesystem.Filesystem) (gitIgnoreFile string, isNewFile bool, err error) {
+	_, err = fs.Stat(directory)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
-	gitIgnoreFile := filepath.Join(directory, ".gitignore")
+	gitIgnoreFile = filepath.Join(directory, DotGitIgnoreFile)
 
-	// err checks the existence of .gitignore and then creates if does not exists
-	if _, err := fs.Stat(gitIgnoreFile); os.IsNotExist(err) {
-		file, err := fs.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
+	// err checks the existence of .gitignore and then creates it if it does not exist
+	if _, err = fs.Stat(gitIgnoreFile); os.IsNotExist(err) {
+		var f filesystem.File
+		f, err = fs.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			return gitIgnoreFile, fmt.Errorf("failed to create .gitignore file: %w", err)
+			return gitIgnoreFile, false, fmt.Errorf("failed to create .gitignore file: %w", err)
 		}
-		file.Close()
+		defer f.Close()
+		isNewFile = true
 	}
 
-	return gitIgnoreFile, nil
+	return gitIgnoreFile, isNewFile, nil
 }
 
 // DeleteIndexFile deletes the index file. It doesn't throw error if it doesn't exist

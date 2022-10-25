@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
+
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -23,7 +24,7 @@ func TestCheckGitIgnoreFile(t *testing.T) {
 		t.Error(err)
 	}
 
-	gitignorePath := filepath.Join(contextDir, ".gitignore")
+	gitignorePath := filepath.Join(contextDir, DotGitIgnoreFile)
 
 	tests := []struct {
 		testName        string
@@ -60,7 +61,7 @@ func TestCheckGitIgnoreFile(t *testing.T) {
 
 		t.Run(tt.testName, func(t *testing.T) {
 
-			gitIgnoreFilePath, err := touchGitIgnoreFile(tt.directory, fs)
+			gitIgnoreFilePath, isNew, err := touchGitIgnoreFile(tt.directory, fs)
 
 			if tt.want != gitIgnoreFilePath {
 				t.Errorf("touchGitIgnoreFile unexpected error %v, while creating .gitignore file", err)
@@ -68,6 +69,10 @@ func TestCheckGitIgnoreFile(t *testing.T) {
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("touchGitIgnoreFile unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.create != isNew {
+				t.Errorf("touchGitIgnoreFile: expected tt.create=%v, got %v", tt.create, isNew)
 			}
 		})
 	}
@@ -84,7 +89,7 @@ func TestAddOdoDirectory(t *testing.T) {
 		t.Error(err)
 	}
 
-	gitignorePath := filepath.Join(contextDir, ".gitignore")
+	gitignorePath := filepath.Join(contextDir, DotGitIgnoreFile)
 
 	tests := []struct {
 		testName        string
@@ -124,7 +129,7 @@ func TestAddOdoDirectory(t *testing.T) {
 func mockDirectoryInfo(create bool, contextDir string, fs filesystem.Filesystem) error {
 
 	if !create {
-		err := fs.MkdirAll(filepath.Join(contextDir, ".gitignore"), os.ModePerm)
+		err := fs.MkdirAll(filepath.Join(contextDir, DotGitIgnoreFile), os.ModePerm)
 		if err != nil {
 			return err
 		}
