@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 )
@@ -18,7 +19,7 @@ func setDebugTelemetryFile(value string) error {
 //EnableTelemetryDebug creates a temp file to use for debugging telemetry.
 //it also sets up envs and cfg for the same
 func EnableTelemetryDebug() {
-	Expect(os.Setenv(segment.DisableTelemetryEnv, "false")).NotTo(HaveOccurred())
+	Expect(os.Setenv(segment.TrackingConsentEnv, "yes")).NotTo(HaveOccurred())
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
 	Expect(err).To(BeNil())
@@ -46,7 +47,7 @@ func GetTelemetryDebugData() segment.TelemetryData {
 
 //ResetTelemetry resets the telemetry back to original values
 func ResetTelemetry() {
-	Expect(os.Setenv(segment.DisableTelemetryEnv, "true")).NotTo(HaveOccurred())
+	Expect(os.Setenv(segment.TrackingConsentEnv, "no")).NotTo(HaveOccurred())
 	Expect(os.Unsetenv(segment.DebugTelemetryFileEnv))
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")

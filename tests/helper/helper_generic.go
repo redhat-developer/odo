@@ -308,7 +308,7 @@ func SetProjectName() string {
 
 // RunTestSpecs defines a common way how test specs in test suite are executed
 func RunTestSpecs(t *testing.T, description string) {
-	os.Setenv(segment.DisableTelemetryEnv, "true")
+	os.Setenv(segment.TrackingConsentEnv, "no")
 	RegisterFailHandler(Fail)
 	RunSpecs(t, description)
 }
