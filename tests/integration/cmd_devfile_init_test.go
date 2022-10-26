@@ -346,94 +346,143 @@ var _ = Describe("odo devfile init command tests", func() {
 		})
 	})
 
-	type telemetryTest struct {
-		title         string
-		env           map[string]string
-		callerChecker func(stdout, stderr string, data segment.TelemetryData)
-	}
-	allowedTelemetryCallers := []string{segmentContext.VSCode, segmentContext.IntelliJ, segmentContext.JBoss}
-	telemetryTests := []telemetryTest{
-		{
-			title: "no caller env var",
-			callerChecker: func(_, _ string, td segment.TelemetryData) {
-				cmdProperties := td.Properties.CmdProperties
-				Expect(cmdProperties).Should(HaveKey(segmentContext.Caller))
-				Expect(cmdProperties[segmentContext.Caller]).To(BeEmpty())
-			},
-		},
-		{
-			title: "empty caller env var",
-			env: map[string]string{
-				segment.TelemetryCaller: "",
-			},
-			callerChecker: func(_, _ string, td segment.TelemetryData) {
-				cmdProperties := td.Properties.CmdProperties
-				Expect(cmdProperties).Should(HaveKey(segmentContext.Caller))
-				Expect(cmdProperties[segmentContext.Caller]).To(BeEmpty())
-			},
-		},
-		{
-			title: "invalid caller env var",
-			env: map[string]string{
-				segment.TelemetryCaller: "an-invalid-caller",
-			},
-			callerChecker: func(stdout, stderr string, td segment.TelemetryData) {
-				By("not disclosing list of allowed values", func() {
-					helper.DontMatchAllInOutput(stdout, allowedTelemetryCallers)
-					helper.DontMatchAllInOutput(stderr, allowedTelemetryCallers)
-				})
+	Describe("telemetry", func() {
 
-				By("setting the value as caller property in telemetry even if it is invalid", func() {
-					Expect(td.Properties.CmdProperties[segmentContext.Caller]).To(Equal("an-invalid-caller"))
-				})
+		for _, tt := range []struct {
+			name string
+			env  map[string]string
+		}{
+			{
+				name: "ODO_DISABLE_TELEMETRY=true and ODO_TRACKING_CONSENT=yes",
+				env: map[string]string{
+					segment.DisableTelemetryEnv: "true",
+					segment.TrackingConsentEnv:  "yes",
+				},
 			},
-		},
-	}
-	for _, c := range allowedTelemetryCallers {
-		c := c
-		telemetryTests = append(telemetryTests, telemetryTest{
-			title: fmt.Sprintf("valid caller env var: %s", c),
-			env: map[string]string{
-				segment.TelemetryCaller: c,
+			{
+				name: "ODO_DISABLE_TELEMETRY=false and ODO_TRACKING_CONSENT=no",
+				env: map[string]string{
+					segment.DisableTelemetryEnv: "false",
+					segment.TrackingConsentEnv:  "no",
+				},
 			},
-			callerChecker: func(_, _ string, td segment.TelemetryData) {
-				Expect(td.Properties.CmdProperties[segmentContext.Caller]).To(Equal(c))
+			{
+				name: "ODO_DISABLE_TELEMETRY=foobar and ODO_TRACKING_CONSENT=no",
+				env: map[string]string{
+					// foobar will evaluate to false
+					segment.DisableTelemetryEnv: "foobar",
+					segment.TrackingConsentEnv:  "no",
+				},
 			},
-		})
-	}
-
-	for _, tt := range telemetryTests {
-		tt := tt
-		When("recording telemetry data with "+tt.title, func() {
-			var stdout string
-			var stderr string
-			BeforeEach(func() {
-				helper.EnableTelemetryDebug()
+			{
+				name: "ODO_DISABLE_TELEMETRY='' and ODO_TRACKING_CONSENT=no",
+				env: map[string]string{
+					// an empty string will evaluate to false
+					segment.DisableTelemetryEnv: "",
+					segment.TrackingConsentEnv:  "no",
+				},
+			},
+		} {
+			tt := tt
+			It("should error out if "+tt.name, func() {
 				cmd := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go")
 				for k, v := range tt.env {
 					cmd = cmd.AddEnv(fmt.Sprintf("%s=%s", k, v))
 				}
-				stdout, stderr = cmd.ShouldPass().OutAndErr()
-			})
+				stderr := cmd.ShouldFail().Err()
 
-			AfterEach(func() {
-				helper.ResetTelemetry()
+				Expect(stderr).To(ContainSubstring("%s and %s values are in conflict.", segment.DisableTelemetryEnv, segment.TrackingConsentEnv))
 			})
+		}
 
-			It("should record the telemetry data correctly", func() {
-				td := helper.GetTelemetryDebugData()
-				Expect(td.Event).To(ContainSubstring("odo init"))
-				Expect(td.Properties.Success).To(BeTrue())
-				Expect(td.Properties.Error == "").To(BeTrue())
-				Expect(td.Properties.ErrorType == "").To(BeTrue())
-				Expect(td.Properties.CmdProperties[segmentContext.DevfileName]).To(ContainSubstring("aname"))
-				Expect(td.Properties.CmdProperties[segmentContext.ComponentType]).To(ContainSubstring("Go"))
-				Expect(td.Properties.CmdProperties[segmentContext.Language]).To(ContainSubstring("Go"))
-				Expect(td.Properties.CmdProperties[segmentContext.ProjectType]).To(ContainSubstring("Go"))
-				Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(ContainSubstring("devfile name"))
-				tt.callerChecker(stdout, stderr, td)
+		type telemetryTest struct {
+			title         string
+			env           map[string]string
+			callerChecker func(stdout, stderr string, data segment.TelemetryData)
+		}
+		allowedTelemetryCallers := []string{segmentContext.VSCode, segmentContext.IntelliJ, segmentContext.JBoss}
+		telemetryTests := []telemetryTest{
+			{
+				title: "no caller env var",
+				callerChecker: func(_, _ string, td segment.TelemetryData) {
+					cmdProperties := td.Properties.CmdProperties
+					Expect(cmdProperties).Should(HaveKey(segmentContext.Caller))
+					Expect(cmdProperties[segmentContext.Caller]).To(BeEmpty())
+				},
+			},
+			{
+				title: "empty caller env var",
+				env: map[string]string{
+					segment.TelemetryCaller: "",
+				},
+				callerChecker: func(_, _ string, td segment.TelemetryData) {
+					cmdProperties := td.Properties.CmdProperties
+					Expect(cmdProperties).Should(HaveKey(segmentContext.Caller))
+					Expect(cmdProperties[segmentContext.Caller]).To(BeEmpty())
+				},
+			},
+			{
+				title: "invalid caller env var",
+				env: map[string]string{
+					segment.TelemetryCaller: "an-invalid-caller",
+				},
+				callerChecker: func(stdout, stderr string, td segment.TelemetryData) {
+					By("not disclosing list of allowed values", func() {
+						helper.DontMatchAllInOutput(stdout, allowedTelemetryCallers)
+						helper.DontMatchAllInOutput(stderr, allowedTelemetryCallers)
+					})
+
+					By("setting the value as caller property in telemetry even if it is invalid", func() {
+						Expect(td.Properties.CmdProperties[segmentContext.Caller]).To(Equal("an-invalid-caller"))
+					})
+				},
+			},
+		}
+		for _, c := range allowedTelemetryCallers {
+			c := c
+			telemetryTests = append(telemetryTests, telemetryTest{
+				title: fmt.Sprintf("valid caller env var: %s", c),
+				env: map[string]string{
+					segment.TelemetryCaller: c,
+				},
+				callerChecker: func(_, _ string, td segment.TelemetryData) {
+					Expect(td.Properties.CmdProperties[segmentContext.Caller]).To(Equal(c))
+				},
 			})
+		}
+		for _, tt := range telemetryTests {
+			tt := tt
+			When("recording telemetry data with "+tt.title, func() {
+				var stdout string
+				var stderr string
+				BeforeEach(func() {
+					helper.EnableTelemetryDebug()
+					cmd := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go")
+					for k, v := range tt.env {
+						cmd = cmd.AddEnv(fmt.Sprintf("%s=%s", k, v))
+					}
+					stdout, stderr = cmd.ShouldPass().OutAndErr()
+				})
 
-		})
-	}
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+
+				It("should record the telemetry data correctly", func() {
+					td := helper.GetTelemetryDebugData()
+					Expect(td.Event).To(ContainSubstring("odo init"))
+					Expect(td.Properties.Success).To(BeTrue())
+					Expect(td.Properties.Error == "").To(BeTrue())
+					Expect(td.Properties.ErrorType == "").To(BeTrue())
+					Expect(td.Properties.CmdProperties[segmentContext.DevfileName]).To(ContainSubstring("aname"))
+					Expect(td.Properties.CmdProperties[segmentContext.ComponentType]).To(ContainSubstring("Go"))
+					Expect(td.Properties.CmdProperties[segmentContext.Language]).To(ContainSubstring("Go"))
+					Expect(td.Properties.CmdProperties[segmentContext.ProjectType]).To(ContainSubstring("Go"))
+					Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(ContainSubstring("devfile name"))
+					tt.callerChecker(stdout, stderr, td)
+				})
+
+			})
+		}
+	})
 })

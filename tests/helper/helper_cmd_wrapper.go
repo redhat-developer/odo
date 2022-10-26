@@ -131,7 +131,10 @@ func (cw *CmdWrapper) WithEnv(args ...string) *CmdWrapper {
 }
 
 func (cw *CmdWrapper) AddEnv(args ...string) *CmdWrapper {
-	cw.Cmd.Env = append(os.Environ(), args...)
+	if cw.Cmd.Env == nil {
+		cw.Cmd.Env = append(cw.Cmd.Env, os.Environ()...)
+	}
+	cw.Cmd.Env = append(cw.Cmd.Env, args...)
 	return cw
 }
 
