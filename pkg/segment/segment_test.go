@@ -212,6 +212,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 					name: fmt.Sprintf("ODO_DISABLE_TELEMETRY=%q,ODO_TRACKING_CONSENT=%q,ConsentTelemetry=%v",
 						odoDisableTelemetry, odoTrackingConsent, consentTelemetry),
 					env: map[string]string{
+						//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 						DisableTelemetryEnv: odoDisableTelemetry,
 						TrackingConsentEnv:  odoTrackingConsent,
 					},
@@ -229,6 +230,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 			cfg := preference.NewMockClient(ctrl)
 			cfg.EXPECT().GetConsentTelemetry().Return(tt.consentTelemetryPref).AnyTimes()
 
+			//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 			if IsTelemetryEnabled(cfg) != tt.want(tt.env[DisableTelemetryEnv], tt.env[TrackingConsentEnv], tt.consentTelemetryPref) {
 				t.Errorf(tt.name, "env is set to %v. %s is set to %q.", tt.env, preference.ConsentTelemetrySetting, tt.consentTelemetryPref)
 			}

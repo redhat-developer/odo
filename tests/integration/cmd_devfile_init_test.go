@@ -355,6 +355,7 @@ var _ = Describe("odo devfile init command tests", func() {
 			{
 				name: "ODO_DISABLE_TELEMETRY=true and ODO_TRACKING_CONSENT=yes",
 				env: map[string]string{
+					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 					segment.DisableTelemetryEnv: "true",
 					segment.TrackingConsentEnv:  "yes",
 				},
@@ -362,6 +363,7 @@ var _ = Describe("odo devfile init command tests", func() {
 			{
 				name: "ODO_DISABLE_TELEMETRY=false and ODO_TRACKING_CONSENT=no",
 				env: map[string]string{
+					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 					segment.DisableTelemetryEnv: "false",
 					segment.TrackingConsentEnv:  "no",
 				},
@@ -369,8 +371,8 @@ var _ = Describe("odo devfile init command tests", func() {
 			{
 				name: "ODO_DISABLE_TELEMETRY=foobar and ODO_TRACKING_CONSENT=no",
 				env: map[string]string{
-					// foobar will evaluate to false
-					segment.DisableTelemetryEnv: "foobar",
+					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
+					segment.DisableTelemetryEnv: "foobar-should-evaluate-to-false",
 					segment.TrackingConsentEnv:  "no",
 				},
 			},
@@ -378,6 +380,7 @@ var _ = Describe("odo devfile init command tests", func() {
 				name: "ODO_DISABLE_TELEMETRY='' and ODO_TRACKING_CONSENT=no",
 				env: map[string]string{
 					// an empty string will evaluate to false
+					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 					segment.DisableTelemetryEnv: "",
 					segment.TrackingConsentEnv:  "no",
 				},
@@ -391,6 +394,7 @@ var _ = Describe("odo devfile init command tests", func() {
 				}
 				stderr := cmd.ShouldFail().Err()
 
+				//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 				Expect(stderr).To(ContainSubstring("%s and %s values are in conflict.", segment.DisableTelemetryEnv, segment.TrackingConsentEnv))
 			})
 		}

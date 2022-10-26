@@ -269,6 +269,7 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
 
+	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))
 	trackingConsent := os.Getenv(TrackingConsentEnv)
 

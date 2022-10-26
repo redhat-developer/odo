@@ -77,3 +77,9 @@ issues:
   # Set to 0 to disable.
   # Default: 3
   max-same-issues: 0
+  exclude-rules:
+    - linters:
+        - staticcheck
+      # Workaround to exclude some 'staticcheck' messages, because line-based directive does not seem to work with golangci-lint
+      # See https://github.com/golangci/golangci-lint/issues/741#issuecomment-1017014331
+      text: "SA1019: segment.DisableTelemetryEnv is deprecated"

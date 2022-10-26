@@ -81,13 +81,15 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	startTime := time.Now()
 	cfg, _ := preference.NewClient()
+	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 	disableTelemetryValue, disableTelemetryEnvSet := os.LookupEnv(segment.DisableTelemetryEnv)
 	disableTelemetry, _ := strconv.ParseBool(disableTelemetryValue)
 	debugTelemetry := segment.GetDebugTelemetryFile()
 	trackingConsent := os.Getenv(segment.TrackingConsentEnv)
 
 	// check for conflicting settings
-	if disableTelemetryEnvSet && ((disableTelemetry && trackingConsent == "yes") || (disableTelemetry == false && trackingConsent == "no")) {
+	if disableTelemetryEnvSet && ((disableTelemetry && trackingConsent == "yes") || (!disableTelemetry && trackingConsent == "no")) {
+		//lint:ignore SA1019 We deprecated this env var, but we really want users to know there is a conflict here
 		util.LogErrorAndExit(
 			fmt.Errorf("%[1]s and %[2]s values are in conflict. %[1]s is deprecated, please use only %[2]s",
 				segment.DisableTelemetryEnv, segment.TrackingConsentEnv), "")
@@ -108,6 +110,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 				klog.V(4).Info(err1.Error())
 			}
 		} else if disableTelemetry {
+			//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else {
 			var consentTelemetry bool
