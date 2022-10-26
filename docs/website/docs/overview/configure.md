@@ -179,13 +179,13 @@ Options here are mostly used for debugging and testing `odo` behavior.
 
 ### Environment variables controlling `odo` behavior
 
-| Variable                    | Usage                                                                                                               |
-|-----------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `PODMAN_CMD`                | The command executed to run the local podman binary. `podman` by default                                            |
-| `DOCKER_CMD`                | The command executed to run the local docker binary. `docker` by default                                            |
-| `ODO_LOG_LEVEL`             | Useful for setting a log level to be used by `odo` commands.                                                          |
-| `ODO_DISABLE_TELEMETRY`     | Useful for disabling telemetry collection.                                                                          |
-| `GLOBALODOCONFIG`           | Useful for setting a different location of global preference file preference.yaml.                                  |
-| `ODO_DEBUG_TELEMETRY_FILE`  | Useful for debugging telemetry. When set it will save telemetry data to a file instead of sending it to the server. |
-| `DEVFILE_PROXY`             | Integration tests will use this address as Devfile registry instead of `https://registry.stage.devfile.io`          |
-| `TELEMETRY_CALLER`          | Caller identifier passed to telemetry. Acceptable values: `vscode`, `intellij`, `jboss`.                            |
+| Variable                    | Usage                                                                                                               | Since         | Example                         |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------|---------------|---------------------------------|
+| `PODMAN_CMD`                | The command executed to run the local podman binary. `podman` by default                                            | v2.4.2        | `podman`                        |
+| `DOCKER_CMD`                | The command executed to run the local docker binary. `docker` by default                                            | v2.4.2        | `docker`                        |
+| `ODO_LOG_LEVEL`             | Useful for setting a log level to be used by `odo` commands. Takes precedence over the `-v` flag.                   | v1.0.2        | 3                               |
+| `ODO_DISABLE_TELEMETRY`     | Useful for disabling telemetry collection.                                                                          | v2.1.0        | `true`                          |
+| `GLOBALODOCONFIG`           | Useful for setting a different location of global preference file `preference.yaml`.                                | v0.0.19       | `~/.config/odo/preference.yaml` |
+| `ODO_DEBUG_TELEMETRY_FILE`  | Useful for debugging telemetry. When set it will save telemetry data to a file instead of sending it to the server. | v3.0.0-alpha1 | `/tmp/telemetry_data.json`      |
+| `DEVFILE_PROXY`             | Integration tests will use this address as Devfile registry instead of `registry.stage.devfile.io`                  | v3.0.0-beta3  | `my-registry.example.com`       |
+| `TELEMETRY_CALLER`          | Caller identifier passed to telemetry. Case-insensitive. Acceptable values: `vscode`, `intellij`, `jboss`.          | v3.1.0        | `intellij`                      |
