@@ -1,6 +1,9 @@
 Usage Data
 ---
 
+You can help improve `odo` by allowing it to collect usage data.
+Read more about our privacy statement in this article on [developers.redhat.com](https://developers.redhat.com/article/tool-data-collection).
+
 If the user has consented to `odo` collecting usage data, the following data will be collected when a command is executed -
 
 * Command Name
@@ -47,5 +50,5 @@ Note: Telemetry data is not collected when you run `--help` for commands.
 #### Disable
 `odo preference set ConsentTelemetry false`
 
-Alternatively you can _disable_ telemetry by setting `ODO_DISABLE_TELEMETRY` environment variable to `true`.
+Alternatively you can _disable_ telemetry by setting the `ODO_TRACKING_CONSENT` environment variable to `no`.
 This environment variable will override the `ConsentTelemetry` value set by `odo preference`.
