@@ -58,5 +58,5 @@ type Client interface {
 
 	// SelectAndPersonalizeDevfile selects a devfile, then downloads, parse and personalize it
 	// Returns the devfile object and its path
-	SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error)
+	SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error)
 }

@@ -254,27 +254,27 @@ func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags
 	return backend.PersonalizeDevfileConfig(devfileobj)
 }
 
-func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error) {
+func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
 	devfileLocation, err := o.SelectDevfile(flags, o.fsys, contextDir)
 	if err != nil {
-		return parser.DevfileObj{}, "", err
+		return parser.DevfileObj{}, "", nil, err
 	}
 
 	devfilePath, err := o.DownloadDevfile(devfileLocation, contextDir)
 	if err != nil {
-		return parser.DevfileObj{}, "", fmt.Errorf("unable to download devfile: %w", err)
+		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to download devfile: %w", err)
 	}
 
 	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 	if err != nil {
-		return parser.DevfileObj{}, "", fmt.Errorf("unable to parse devfile: %w", err)
+		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to parse devfile: %w", err)
 	}
 
 	devfileObj, err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)
 	if err != nil {
-		return parser.DevfileObj{}, "", fmt.Errorf("failed to configure devfile: %w", err)
+		return parser.DevfileObj{}, "", nil, fmt.Errorf("failed to configure devfile: %w", err)
 	}
-	return devfileObj, devfilePath, nil
+	return devfileObj, devfilePath, devfileLocation, nil
 }
 
 func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
@@ -292,7 +292,7 @@ func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
 		preInitHandlerFunc(len(flags) == 0)
 	}
 
-	devfileObj, _, err := o.SelectAndPersonalizeDevfile(map[string]string{}, contextDir)
+	devfileObj, _, _, err := o.SelectAndPersonalizeDevfile(map[string]string{}, contextDir)
 	if err != nil {
 		return err
 	}

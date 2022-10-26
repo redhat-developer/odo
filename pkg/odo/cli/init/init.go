@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 
@@ -113,7 +114,7 @@ func (o *InitOptions) Validate(ctx context.Context) error {
 // Run contains the logic for the odo command
 func (o *InitOptions) Run(ctx context.Context) (err error) {
 
-	devfileObj, _, err := o.run(ctx)
+	devfileObj, _, name, devfileLocation, starterInfo, err := o.run(ctx)
 	if err != nil {
 		return err
 	}
@@ -122,6 +123,13 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 Your new component '%s' is ready in the current directory.
 To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
+
+	automateCommad := fmt.Sprintf("\nPort configuration using flag is currently not supported  \n\nYou can automate this command by executing:\n   odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
+	if len(o.flags) == 0 && starterInfo != nil {
+		log.Infof("%s --starter %s", automateCommad, starterInfo.Name)
+	} else if len(o.flags) == 0 {
+		log.Infof("%s", automateCommad)
+	}
 
 	if libdevfile.HasDeployCommand(devfileObj.Data) {
 		exitMessage += "\nTo deploy your component to a cluster use \"odo deploy\"."
@@ -133,7 +141,7 @@ Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata
 
 // RunForJsonOutput is executed instead of Run when -o json flag is given
 func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	devfileObj, devfilePath, err := o.run(ctx)
+	devfileObj, devfilePath, _, _, _, err := o.run(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +155,7 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 }
 
 // run downloads the devfile and starter project and returns the content and the path of the devfile
-func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, err error) {
+func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DevfileLocation, starterInfoName *v1alpha2.StarterProject, err error) {
 	var starterDownloaded bool
 
 	workingDir := odocontext.GetWorkingDirectory(ctx)
@@ -166,7 +174,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 
 	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, workingDir)
 	if err != nil {
-		return parser.DevfileObj{}, "", err
+		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
 
 	// Show a welcome message for when you initially run `odo init`.
@@ -183,28 +191,28 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		log.Info(messages.InteractiveModeEnabled)
 	}
 
-	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, workingDir)
+	devfileObj, devfilePath, devfileLocation, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, workingDir)
 	if err != nil {
-		return parser.DevfileObj{}, "", err
+		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
 
 	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, workingDir)
 	if err != nil {
-		return parser.DevfileObj{}, "", err
+		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
 
 	// Set the name in the devfile but do not write it yet to disk,
 	// because the starter project downloaded at the end might come bundled with a specific Devfile.
-	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
+	name, err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
 	if err != nil {
-		return parser.DevfileObj{}, "", fmt.Errorf("failed to update the devfile's name: %w", err)
+		return parser.DevfileObj{}, "", "", nil, nil, fmt.Errorf("failed to update the devfile's name: %w", err)
 	}
 
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
 		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, workingDir)
 		if err != nil {
-			return parser.DevfileObj{}, "", fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
+			return parser.DevfileObj{}, "", "", nil, nil, fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
 		}
 		starterDownloaded = true
 
@@ -212,20 +220,20 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
 			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 			if err != nil {
-				return parser.DevfileObj{}, "", err
+				return parser.DevfileObj{}, "", "", nil, nil, err
 			}
 		}
 	}
 	// WARNING: SetMetadataName writes the Devfile to disk
 	if err = devfileObj.SetMetadataName(name); err != nil {
-		return parser.DevfileObj{}, "", err
+		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
-	return devfileObj, devfilePath, nil
+	return devfileObj, devfilePath, name, devfileLocation, starterInfo, nil
 }
 
 // NewCmdInit implements the odo command
