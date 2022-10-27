@@ -207,6 +207,9 @@ func TestIsTelemetryEnabled(t *testing.T) {
 						if odoDisableTelemetry == "true" || odoTrackingConsent == "no" {
 							return false
 						}
+						if odoTrackingConsent == "yes" {
+							return true
+						}
 						return consentTelemetry
 					},
 					name: fmt.Sprintf("ODO_DISABLE_TELEMETRY=%q,ODO_TRACKING_CONSENT=%q,ConsentTelemetry=%v",

@@ -277,12 +277,18 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 		klog.V(4).Info("Sending telemetry disabled by env variable\n")
 		return false
 	}
-	isEnabled := cfg.GetConsentTelemetry()
-	s := "Telemetry is disabled"
-	if isEnabled {
-		s = "Telemetry is disabled"
+
+	if trackingConsent == "yes" {
+		klog.V(4).Info("Sending telemetry enabled by env variable\n")
+		return true
 	}
-	klog.V(4).Infof("%s!\n", s)
+
+	isEnabled := cfg.GetConsentTelemetry()
+	s := "Sending telemetry disabled by preference"
+	if isEnabled {
+		s = "Sending telemetry enabled by preference"
+	}
+	klog.V(4).Infof("%s\n", s)
 	return isEnabled
 }
 

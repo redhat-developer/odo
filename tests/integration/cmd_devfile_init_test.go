@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	segmentContext "github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -402,6 +403,7 @@ var _ = Describe("odo devfile init command tests", func() {
 		type telemetryTest struct {
 			title         string
 			env           map[string]string
+			setupFunc     func(cfg preference.Client)
 			callerChecker func(stdout, stderr string, data segment.TelemetryData)
 		}
 		allowedTelemetryCallers := []string{segmentContext.VSCode, segmentContext.IntelliJ, segmentContext.JBoss}
@@ -441,6 +443,19 @@ var _ = Describe("odo devfile init command tests", func() {
 					})
 				},
 			},
+			{
+				title: "ODO_TRACKING_CONSENT=yes env var should take precedence over ConsentTelemetry preference",
+				env:   map[string]string{segment.TrackingConsentEnv: "yes"},
+				callerChecker: func(_, _ string, td segment.TelemetryData) {
+					cmdProperties := td.Properties.CmdProperties
+					Expect(cmdProperties).Should(HaveKey(segmentContext.Caller))
+					Expect(cmdProperties[segmentContext.Caller]).To(BeEmpty())
+				},
+				setupFunc: func(cfg preference.Client) {
+					err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
+					Expect(err).ShouldNot(HaveOccurred())
+				},
+			},
 		}
 		for _, c := range allowedTelemetryCallers {
 			c := c
@@ -461,6 +476,13 @@ var _ = Describe("odo devfile init command tests", func() {
 				var stderr string
 				BeforeEach(func() {
 					helper.EnableTelemetryDebug()
+
+					cfg, err := preference.NewClient()
+					Expect(err).ShouldNot(HaveOccurred())
+					if tt.setupFunc != nil {
+						tt.setupFunc(cfg)
+					}
+
 					cmd := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go")
 					for k, v := range tt.env {
 						cmd = cmd.AddEnv(fmt.Sprintf("%s=%s", k, v))
