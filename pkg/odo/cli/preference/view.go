@@ -63,9 +63,19 @@ func (o *ViewOptions) Run(ctx context.Context) (err error) {
 func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{}, err error) {
 	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
 	registryList := o.clientset.PreferenceClient.RegistryList()
+
+	var regList, newRegistryList []preference.Registry
+	if registryList != nil {
+		regList = *registryList
+	}
+	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
+	for i := len(regList) - 1; i >= 0; i-- {
+		newRegistryList = append(newRegistryList, regList[i])
+	}
+
 	return api.PreferenceView{
 		Preferences: preferenceList.Items,
-		Registries:  *registryList,
+		Registries:  newRegistryList,
 	}, nil
 }
 
