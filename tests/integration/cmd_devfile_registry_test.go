@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo devfile registry command tests", func() {
+var _ = Describe("odo devfile registry command tests", Label(helper.LabelNoCluster), func() {
 	const registryName string = "RegistryName"
 
 	// Use staging OCI-based registry for tests to avoid overload

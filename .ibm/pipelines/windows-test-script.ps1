@@ -80,7 +80,7 @@ function Run-Test {
     Shout "Create Binary"
     make install 
     Shout "Running test"
-    make test-integration           | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
+    make test-integration-cluster           | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
     Check-ExitCode $LASTEXITCODE
     make test-e2e           | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
     Check-ExitCode $LASTEXITCODE

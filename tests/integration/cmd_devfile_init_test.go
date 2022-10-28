@@ -17,7 +17,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo devfile init command tests", func() {
+var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster), func() {
 
 	var commonVar helper.CommonVar
 

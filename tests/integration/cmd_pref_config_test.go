@@ -13,7 +13,7 @@ import (
 
 const promptMessageSubString = "Help odo improve by allowing it to collect usage data."
 
-var _ = Describe("odo preference and config command tests", func() {
+var _ = Describe("odo preference and config command tests", Label(helper.LabelNoCluster), func() {
 	// TODO: A neater way to provide odo path. Currently we assume odo and oc in $PATH already.
 	var commonVar helper.CommonVar
 
