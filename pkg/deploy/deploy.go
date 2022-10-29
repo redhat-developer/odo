@@ -1,11 +1,9 @@
 package deploy
 
 import (
-	"errors"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -69,5 +67,41 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	// TODO:
 	// * Make sure we inject the "deploy" mode label once we implement exec in `odo deploy`
 	// * Make sure you inject the "component type" label once we implement exec.
-	return errors.New("exec command is not implemented for Deploy")
+
+	// get the containers matching the command
+	containers, err := libdevfile.GetContainerComponentsForCommand(o.devfileObj, command)
+	if err != nil {
+		return err
+	}
+	if len(containers) != 1 {
+		return libdevfile.NewNotExactlyOneContainer()
+	}
+	containerName := containers[0]
+
+	// get all the container components from the devfile and find the one we are interested in
+	devfileContainers, err := o.devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return err
+	}
+	var devfileContainer v1alpha2.Component
+	var found bool
+	for _, dc := range devfileContainers {
+		if dc.Name == containerName {
+			found = true
+			devfileContainer = dc
+		}
+	}
+	if !found {
+		return libdevfile.NewNotExactlyOneContainer()
+	}
+
+	job, err := libdevfile.GetJobFromContainerWithCommand(devfileContainer, command)
+	if err != nil {
+		return err
+	}
+	job.Labels = odolabels.GetLabels(o.devfileObj.GetMetadataName(), "app", "", odolabels.ComponentDeployMode, false)
+
+	return o.kubeClient.CreateJob(job)
 }
