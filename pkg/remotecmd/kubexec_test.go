@@ -389,6 +389,13 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 						return err
 					})
 				for _, p := range []int{987, 765} {
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(p)),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							//Simulate the fact that those children process have no direct descendant processes
+							_, err := stderr.Write([]byte("no such file or directory"))
+							return err
+						})
 					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(p)),
 						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil)
@@ -416,6 +423,13 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("987"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(987)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						//Simulate the fact that those children process have no direct descendant processes
+						_, err := stderr.Write([]byte("no such file or directory"))
 						return err
 					})
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(987)),
@@ -714,8 +728,10 @@ func Test_getRemoteProcessPID(t *testing.T) {
 
 func Test_getProcessChildren(t *testing.T) {
 	const ppid = 123
+	cmdProvider := func(pid int) []string {
+		return []string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid)}
+	}
 
-	cmd := []string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", ppid)}
 	for _, tt := range []struct {
 		name                 string
 		ppid                 int
@@ -735,6 +751,7 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "error returned at command execution",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				cmd := cmdProvider(ppid)
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("an error"))
@@ -745,6 +762,7 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "missing children file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				cmd := cmdProvider(ppid)
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
@@ -757,13 +775,23 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "one child in children file without trailing space",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("987"))
-						return err
-					})
+				for _, p := range []int{ppid, 987} {
+					p := p
+					cmd := cmdProvider(p)
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+						gomock.Eq(cmd),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							var err error
+							if p == ppid {
+								_, err = stdout.Write([]byte("987"))
+							} else {
+								//Simulate the fact that those children process have no direct descendant processes
+								_, err = stderr.Write([]byte("no such file or directory"))
+							}
+							return err
+						})
+				}
 			},
 			ppid: ppid,
 			want: []int{987},
@@ -771,13 +799,23 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "one child in children file with trailing space",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("987 "))
-						return err
-					})
+				for _, p := range []int{ppid, 987} {
+					p := p
+					cmd := cmdProvider(p)
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+						gomock.Eq(cmd),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							var err error
+							if p == ppid {
+								_, err = stdout.Write([]byte("987 "))
+							} else {
+								//Simulate the fact that those children process have no direct descendant processes
+								_, err = stderr.Write([]byte("no such file or directory"))
+							}
+							return err
+						})
+				}
 			},
 			ppid: ppid,
 			want: []int{987},
@@ -785,13 +823,23 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "multiple children in children file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte(" 987 765 432 "))
-						return err
-					})
+				for _, p := range []int{ppid, 987, 765, 432} {
+					p := p
+					cmd := cmdProvider(p)
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+						gomock.Eq(cmd),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							var err error
+							if p == ppid {
+								_, err = stdout.Write([]byte(" 987 765 432 "))
+							} else {
+								//Simulate the fact that those children process have no direct descendant processes
+								_, err = stderr.Write([]byte("no such file or directory"))
+							}
+							return err
+						})
+				}
 			},
 			ppid: ppid,
 			want: []int{987, 765, 432},
@@ -799,14 +847,24 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "multiple children in children file (on many lines)",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, _ = stdout.Write([]byte(" 987 765 \n"))
-						_, err := stdout.Write([]byte("432"))
-						return err
-					})
+				for _, p := range []int{ppid, 987, 765, 432} {
+					p := p
+					cmd := cmdProvider(p)
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+						gomock.Eq(cmd),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							var err error
+							if p == ppid {
+								_, _ = stdout.Write([]byte(" 987 765 \n"))
+								_, err = stdout.Write([]byte("432"))
+							} else {
+								//Simulate the fact that those children process have no direct descendant processes
+								_, err = stderr.Write([]byte("no such file or directory"))
+							}
+							return err
+						})
+				}
 			},
 			ppid: ppid,
 			want: []int{987, 765, 432},
@@ -814,17 +872,63 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "multiple children in children file, with non-integer pid",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("987 765 an-invalid-pid 432 321"))
-						return err
-					})
+				for _, p := range []int{ppid, 987, 765} {
+					p := p
+					cmd := cmdProvider(p)
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+						gomock.Eq(cmd),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							var err error
+							if p == ppid {
+								_, err = stdout.Write([]byte("987 765 an-invalid-pid 432 321"))
+							} else {
+								//Simulate the fact that those children process have no direct descendant processes
+								_, err = stderr.Write([]byte("no such file or directory"))
+							}
+							return err
+						})
+				}
 			},
 			ppid:    ppid,
 			wantErr: true,
 			want:    []int{987, 765},
+		},
+		{
+			name: "child with descendants",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				for _, p := range []int{ppid, 400, 20, 200, 543, 432, 10, 654, 765, 987} {
+					p := p
+					cmd := cmdProvider(p)
+					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+						gomock.Eq(cmd),
+						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+							var err error
+							switch p {
+							case ppid:
+								_, err = stdout.Write([]byte("987"))
+							case 987:
+								_, err = stdout.Write([]byte("765"))
+							case 765:
+								_, err = stdout.Write([]byte("654"))
+							case 654:
+								_, err = stdout.Write([]byte("543 432 10"))
+							case 543:
+								_, err = stdout.Write([]byte("400 200"))
+							case 200:
+								_, err = stdout.Write([]byte("20"))
+							default:
+								//Simulate the fact that those children process have no direct descendant processes
+								_, err = stderr.Write([]byte("no such file or directory"))
+							}
+							return err
+						})
+				}
+			},
+			ppid: ppid,
+			// order is important here: post-order tree traversal
+			want: []int{400, 20, 200, 543, 432, 10, 654, 765, 987},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

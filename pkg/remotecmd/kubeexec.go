@@ -179,6 +179,8 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		return err
 	}
 
+	klog.V(3).Infof("Found %d children (either direct and indirect) for parent process %d: %v", len(children), ppid, children)
+
 	if len(children) == 0 {
 		//TODO(rm3l): A length of 0 might indicate that there is no children file, which might happen if the host kernel
 		//was not built with the CONFIG_PROC_CHILDREN config.
@@ -287,8 +289,10 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	return process, nil
 }
 
-// getProcessChildren returns the children of the specified process in the given container.
-// It works by reading the /proc/<pid>/task/<pid>/children file, which is a space-separated list of children
+// getProcessChildren returns all the children (either direct or indirect) of the specified process in the given container.
+// It works by reading the /proc/<pid>/task/<tid>/children file, which is a space-separated list of children,
+// and then recursively finds the children for each child.
+// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm.
 func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
 	if pid <= 0 {
 		return nil, fmt.Errorf("invalid pid: %d", pid)
@@ -309,6 +313,11 @@ func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, con
 			if err != nil {
 				return children, err
 			}
+			childChildren, err := k.getProcessChildren(c, podName, containerName)
+			if err != nil {
+				return children, err
+			}
+			children = append(children, childChildren...)
 			children = append(children, c)
 		}
 	}
