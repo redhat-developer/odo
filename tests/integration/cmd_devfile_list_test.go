@@ -46,6 +46,7 @@ var _ = Describe("odo list with devfile", func() {
 			})
 			It("should list the component in JSON", func() {
 				output := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
+				helper.JsonPathContentIs(output, "components.#", "1")
 				helper.JsonPathContentIs(output, "components.0.name", deploymentName)
 				Expect(gjson.Get(output, "components.0.runningIn").String()).To(BeEmpty())
 				helper.JsonPathContentIs(output, "components.0.projectType", "Unknown")
@@ -69,6 +70,7 @@ var _ = Describe("odo list with devfile", func() {
 			})
 			It("should list the component in JSON", func() {
 				output := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
+				helper.JsonPathContentIs(output, "components.#", "1")
 				helper.JsonPathContentContain(output, "components.0.name", deploymentName)
 				Expect(gjson.Get(output, "components.0.runningIn").String()).To(BeEmpty())
 				helper.JsonPathContentContain(output, "components.0.projectType", "Unknown")
@@ -143,6 +145,7 @@ var _ = Describe("odo list with devfile", func() {
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentIs(stdout, "components.#", "1")
 				helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
 				helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "")
 			})
@@ -163,6 +166,7 @@ var _ = Describe("odo list with devfile", func() {
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentIs(stdout, "components.#", "1")
 				helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
 				helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "true")
 			})
@@ -191,6 +195,7 @@ var _ = Describe("odo list with devfile", func() {
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentIs(stdout, "components.#", "1")
 				helper.JsonPathContentContain(stdout, "components.0.projectType", componentType)
 			})
 		}
