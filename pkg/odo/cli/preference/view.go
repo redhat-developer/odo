@@ -64,18 +64,9 @@ func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{},
 	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
 	registryList := o.clientset.PreferenceClient.RegistryList()
 
-	var regList, newRegistryList []preference.Registry
-	if registryList != nil {
-		regList = *registryList
-	}
-	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
-	for i := len(regList) - 1; i >= 0; i-- {
-		newRegistryList = append(newRegistryList, regList[i])
-	}
-
 	return api.PreferenceView{
 		Preferences: preferenceList.Items,
-		Registries:  newRegistryList,
+		Registries:  *registryList,
 	}, nil
 }
 
@@ -98,7 +89,7 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 		regList = *registryList
 	}
 	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
-	for i := len(regList) - 1; i >= 0; i-- {
+	for i := range regList {
 		registry := regList[i]
 		secure := "No"
 		if registry.Secure {

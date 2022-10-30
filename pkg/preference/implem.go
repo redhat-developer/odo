@@ -133,6 +133,19 @@ func newPreferenceInfo() (*preferenceInfo, error) {
 		return nil, err
 	}
 
+	regList := []Registry{}
+	if c.OdoSettings.RegistryList != nil {
+		regList = *c.OdoSettings.RegistryList
+	}
+
+	i := 0
+	j := len(regList) - 1
+	for i < j {
+		regList[i], regList[j] = regList[j], regList[i]
+		i++
+		j--
+	}
+
 	// TODO: This code block about logging warnings should be removed once users completely shift to odo v3.
 	// The warning will be printed more than once, and it can be annoying, but it should ensure that the user will change these values.
 	var requiresChange []string
