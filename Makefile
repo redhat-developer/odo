@@ -49,8 +49,8 @@ export ARTIFACT_DIR ?= .
 
 GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --slow-spec-threshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT) --no-color
 
-# Flags for tests that must not be run in parallel.
-GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
+# Flags to run one test per core.
+GINKGO_FLAGS_AUTO = $(GINKGO_FLAGS_ALL) -p
 # Flags for tests that may be run in parallel
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 # GolangCi version for unit-validate test
@@ -188,9 +188,16 @@ vendor-update: ## Update vendoring
 openshiftci-presubmit-unittests:
 	./scripts/openshiftci-presubmit-unittests.sh
 
+.PHONY: test-integration-cluster
+test-integration-cluster:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --label-filter="!nocluster" tests/integration
+
+.PHONY: test-integration-no-cluster
+test-integration-no-cluster:
+	$(RUN_GINKGO) $(GINKGO_FLAGS_AUTO) --label-filter=nocluster tests/integration
+
 .PHONY: test-integration
-test-integration:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration
+test-integration: test-integration-no-cluster test-integration-cluster
 
 .PHONY: test-e2e
 test-e2e:
