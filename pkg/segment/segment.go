@@ -37,7 +37,17 @@ const TelemetryClient = "odo"
 // DisableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely
 // hiding even the question
 const (
-	DisableTelemetryEnv   = "ODO_DISABLE_TELEMETRY"
+	// DisableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely.
+	// Setting it to false has the same effect as not setting it at all == does NOT enable telemetry!
+	// This has priority over TelemetryTrackingEnv
+	//
+	// Deprecated: Use TrackingConsentEnv instead.
+	DisableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
+	// TrackingConsentEnv controls whether odo tracks telemetry or not.
+	// Setting it to 'no' has the same effect as DisableTelemetryEnv=true (telemetry is disabled and no question asked)
+	// Settings this to 'yes' skips the question about telemetry and enables user tracking.
+	// Possible values are yes/no.
+	TrackingConsentEnv    = "ODO_TRACKING_CONSENT"
 	DebugTelemetryFileEnv = "ODO_DEBUG_TELEMETRY_FILE"
 	TelemetryCaller       = "TELEMETRY_CALLER"
 )
@@ -258,14 +268,52 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 	klog.V(4).Info("Checking telemetry enable status")
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
+
+	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))
 	if disableTelemetry {
-		klog.V(4).Infof("Sending telemetry disabled by %s=%t\n", DisableTelemetryEnv, disableTelemetry)
+		//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
+		klog.V(4).Infof("Sending telemetry disabled by %q env variable\n", DisableTelemetryEnv)
 		return false
-	} else if cfg.GetConsentTelemetry() {
+	}
+
+	trackingConsentEnabled, present, err := IsTrackingConsentEnabled()
+	if err != nil {
+		klog.V(4).Infof("error in determining value of tracking consent env var: %v", err)
+	} else if present {
+		//Takes precedence over the ConsentTelemetry preference
+		if !trackingConsentEnabled {
+			klog.V(4).Info("Sending telemetry disabled by env variable\n")
+			return false
+		}
+		klog.V(4).Info("Sending telemetry enabled by env variable\n")
 		return true
 	}
-	return false
+
+	isEnabled := cfg.GetConsentTelemetry()
+	s := "Sending telemetry disabled by preference"
+	if isEnabled {
+		s = "Sending telemetry enabled by preference"
+	}
+	klog.V(4).Infof("%s\n", s)
+	return isEnabled
+}
+
+// IsTrackingConsentEnabled returns whether tracking consent is enabled, based on the value of the TrackingConsentEnv environment variable.
+// The second value returned indicates whether the variable is present in the environment.
+func IsTrackingConsentEnabled() (enabled bool, present bool, err error) {
+	trackingConsent, ok := os.LookupEnv(TrackingConsentEnv)
+	if !ok {
+		return false, false, nil
+	}
+	switch trackingConsent {
+	case "yes":
+		return true, true, nil
+	case "no":
+		return false, true, nil
+	default:
+		return false, true, fmt.Errorf("invalid value for %s: %q", TrackingConsentEnv, trackingConsent)
+	}
 }
 
 // sanitizeUserInfo sanitizes username from the error string

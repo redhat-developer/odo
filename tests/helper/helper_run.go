@@ -11,12 +11,20 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/types"
+
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/segment"
 )
 
 func runningCmd(cmd *exec.Cmd) string {
 	prog := filepath.Base(cmd.Path)
-	return fmt.Sprintf("Running %s with args %v", prog, cmd.Args)
+	var env []string
+	for _, e := range cmd.Env {
+		if strings.HasPrefix(e, "ODO_") || e == segment.TelemetryCaller {
+			env = append(env, e)
+		}
+	}
+	return fmt.Sprintf("Running %s with args %v and odo env: %v", prog, cmd.Args, env)
 }
 
 func CmdRunner(program string, args ...string) *gexec.Session {
