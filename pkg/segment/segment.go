@@ -277,7 +277,7 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 		return false
 	}
 
-	trackingConsentEnabled, present, err := isTrackingConsentEnabled()
+	trackingConsentEnabled, present, err := IsTrackingConsentEnabled()
 	if err != nil {
 		klog.V(4).Infof("error in determining value of tracking consent env var: %v", err)
 	} else if present {
@@ -299,9 +299,9 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 	return isEnabled
 }
 
-// isTrackingConsentEnabled returns whether tracking consent is enabled, based on the value of the TrackingConsentEnv environment variable.
+// IsTrackingConsentEnabled returns whether tracking consent is enabled, based on the value of the TrackingConsentEnv environment variable.
 // The second value returned indicates whether the variable is present in the environment.
-func isTrackingConsentEnabled() (enabled bool, present bool, err error) {
+func IsTrackingConsentEnabled() (enabled bool, present bool, err error) {
 	trackingConsent, ok := os.LookupEnv(TrackingConsentEnv)
 	if !ok {
 		return false, false, nil

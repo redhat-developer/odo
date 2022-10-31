@@ -101,25 +101,37 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
-		} else if trackingConsent == "no" {
-			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
-		} else if trackingConsent == "yes" {
-			klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
-			klog.V(4).Info("Telemetry is enabled!\n")
-			if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
-				klog.V(4).Info(err1.Error())
-			}
-		} else if disableTelemetry {
-			//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
-			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else {
-			var consentTelemetry bool
-			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
-			err = survey.AskOne(prompt, &consentTelemetry, nil)
-			ui.HandleError(err)
-			if err == nil {
-				if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
-					klog.V(4).Info(err1.Error())
+			var askConsent bool
+			isTrackingConsentEnabled, ok, trackingConsentErr := segment.IsTrackingConsentEnabled()
+			if trackingConsentErr != nil {
+				klog.V(4).Infof("error in determining value of tracking consent env var: %v", trackingConsentErr)
+				askConsent = true
+			} else if ok {
+				if isTrackingConsentEnabled {
+					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+					klog.V(4).Info("Telemetry is enabled!\n")
+					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
+						klog.V(4).Info(err1.Error())
+					}
+				} else {
+					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+				}
+			} else if disableTelemetry {
+				//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
+				klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
+			} else {
+				askConsent = true
+			}
+			if askConsent {
+				var consentTelemetry bool
+				prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
+				err = survey.AskOne(prompt, &consentTelemetry, nil)
+				ui.HandleError(err)
+				if err == nil {
+					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+						klog.V(4).Info(err1.Error())
+					}
 				}
 			}
 		}
