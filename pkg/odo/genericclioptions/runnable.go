@@ -85,10 +85,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	disableTelemetryValue, disableTelemetryEnvSet := os.LookupEnv(segment.DisableTelemetryEnv)
 	disableTelemetry, _ := strconv.ParseBool(disableTelemetryValue)
 	debugTelemetry := segment.GetDebugTelemetryFile()
-	trackingConsent := os.Getenv(segment.TrackingConsentEnv)
+	isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled()
 
 	// check for conflicting settings
-	if disableTelemetryEnvSet && ((disableTelemetry && trackingConsent == "yes") || (!disableTelemetry && trackingConsent == "no")) {
+	if trackingConsentErr == nil && disableTelemetryEnvSet && trackingConsentEnvSet && disableTelemetry == isTrackingConsentEnabled {
 		//lint:ignore SA1019 We deprecated this env var, but we really want users to know there is a conflict here
 		util.LogErrorAndExit(
 			fmt.Errorf("%[1]s and %[2]s values are in conflict. %[1]s is deprecated, please use only %[2]s",
@@ -103,11 +103,11 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
 		} else {
 			var askConsent bool
-			isTrackingConsentEnabled, ok, trackingConsentErr := segment.IsTrackingConsentEnabled()
 			if trackingConsentErr != nil {
 				klog.V(4).Infof("error in determining value of tracking consent env var: %v", trackingConsentErr)
 				askConsent = true
-			} else if ok {
+			} else if trackingConsentEnvSet {
+				trackingConsent := os.Getenv(segment.TrackingConsentEnv)
 				if isTrackingConsentEnabled {
 					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
 					klog.V(4).Info("Telemetry is enabled!\n")
