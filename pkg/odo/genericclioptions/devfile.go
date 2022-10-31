@@ -36,11 +36,11 @@ func getDevfileInfo(workingDir string, variables map[string]string) (
 		if err != nil {
 			return "", nil, "", err
 		}
-	}
 
-	componentName, err = component.GatherName(workingDir, devfileObj)
-	if err != nil {
-		return "", nil, "", err
+		componentName, err = component.GatherName(workingDir, devfileObj)
+		if err != nil {
+			return "", nil, "", err
+		}
 	}
 
 	return devfilePath, devfileObj, componentName, nil
