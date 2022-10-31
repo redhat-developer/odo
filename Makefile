@@ -8,7 +8,7 @@ endif
 COMMON_GOFLAGS := -mod=vendor
 COMMON_LDFLAGS := -X $(PROJECT)/pkg/version.GITCOMMIT=$(GITCOMMIT)
 BUILD_FLAGS := $(COMMON_GOFLAGS) -ldflags="$(COMMON_LDFLAGS)"
-CROSS_BUILD_FLAGS := $(COMMON_GOFLAGS) -ldflags="-s -w -X $(PROJECT)/pkg/segment.writeKey=R1Z79HadJIrphLoeONZy5uqOjusljSwN $(COMMON_LDFLAGS)"
+RELEASE_BUILD_FLAGS := $(COMMON_GOFLAGS) -ldflags="-s -w -X $(PROJECT)/pkg/segment.writeKey=R1Z79HadJIrphLoeONZy5uqOjusljSwN $(COMMON_LDFLAGS)"
 PKGS := $(shell go list $(COMMON_GOFLAGS)  ./... | grep -v $(PROJECT)/vendor | grep -v $(PROJECT)/tests)
 FILES := odo dist
 TIMEOUT ?= 14400s
@@ -67,6 +67,10 @@ help: ## Show this help.
 .PHONY: bin
 bin: ## build the odo binary
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
+
+.PHONY: release-bin
+release-bin: ## build the odo binary
+	go build ${RELEASE_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: install
 install:
@@ -127,7 +131,7 @@ test-coverage: ## Run unit tests and collect coverage
 
 .PHONY: cross
 cross: ## compile for multiple platforms
-	./scripts/cross-compile.sh $(CROSS_BUILD_FLAGS)
+	./scripts/cross-compile.sh $(RELEASE_BUILD_FLAGS)
 
 .PHONY: generate-cli-structure
 generate-cli-structure:
