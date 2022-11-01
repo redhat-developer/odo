@@ -5,20 +5,15 @@ import (
 	"fmt"
 	"io"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/platform"
 )
 
 type LogsClient struct {
-	kubernetesClient kclient.ClientInterface
+	platformClient platform.Client
 }
 
 type ContainerLogs struct {
@@ -37,9 +32,9 @@ type Events struct {
 
 var _ Client = (*LogsClient)(nil)
 
-func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
+func NewLogsClient(platformClient platform.Client) *LogsClient {
 	return &LogsClient{
-		kubernetesClient: kubernetesClient,
+		platformClient: platformClient,
 	}
 }
 
@@ -81,7 +76,7 @@ func (o *LogsClient) getLogsForMode(
 			select {
 			case pod := <-podChan:
 				for _, container := range pod.Spec.Containers {
-					containerLogs, err := o.kubernetesClient.GetPodLogs(pod.Name, container.Name, follow)
+					containerLogs, err := o.platformClient.GetPodLogs(pod.Name, container.Name, follow)
 					if err != nil {
 						events.Err <- fmt.Errorf("failed to get logs for container %s; error: %v", container.Name, err)
 					}
@@ -125,69 +120,31 @@ func (o *LogsClient) getPodsForSelector(
 	// set of unique Pods with Pod name as key; these are the Pods whose logs we want to get from the cluster
 	pods := map[string]struct{}{}
 
-	podList, err := o.kubernetesClient.GetPodsMatchingSelector(selector)
+	podList, err := o.platformClient.GetPodsMatchingSelector(selector)
 	if err != nil {
 		return err
 	}
 	for _, pod := range podList.Items {
-		podChan <- pod
 		pods[pod.GetName()] = struct{}{}
 	}
 
-	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
-	if err != nil {
-		return err
-	}
-
 	// get all pods in the namespace
-	podList, err = o.kubernetesClient.GetAllPodsInNamespace()
+	podsInNs, err := o.platformClient.GetAllPodsInNamespaceMatchingSelector(selector, namespace)
 	if err != nil {
 		return err
 	}
 
-	// match pod ownerReference (if any) with resources matching the selector
-	for _, pod := range podList.Items {
+	for _, pod := range podsInNs.Items {
 		if _, ok := pods[pod.GetName()]; ok {
 			// Pod's logs have already been displayed to user
 			continue
 		}
-		match := false
-		for _, owner := range pod.GetOwnerReferences() {
-			match, err = o.matchOwnerReferenceWithResources(owner, resources)
-			if err != nil {
-				return err
-			} else if match {
-				pods[pod.GetName()] = struct{}{}
-				podChan <- pod
-				break // because we don't need to check other owner references of the pod anymore
-			}
-		}
+		podList.Items = append(podList.Items, pod)
 	}
-	return nil
-}
 
-// matchOwnerReferenceWithResources recursively checks if the owner reference passed to it matches any of the resources
-// This is useful when trying to find if a pod is owned by any of the ReplicaSet or Deployment in the cluster.
-func (o *LogsClient) matchOwnerReferenceWithResources(owner metav1.OwnerReference, resources []unstructured.Unstructured) (bool, error) {
-	// first, check if ownerReference belongs to any of the resources
-	for _, resource := range resources {
-		if resource.GetUID() != "" && owner.UID != "" && resource.GetUID() == owner.UID {
-			return true, nil
-		}
+	for _, pod := range podList.Items {
+		podChan <- pod
 	}
-	// second, get the resource indicated by ownerReference and check its ownerReferences field
-	restMapping, err := o.kubernetesClient.GetRestMappingFromGVK(schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind))
-	if err != nil {
-		return false, err
-	}
-	resource, err := o.kubernetesClient.GetDynamicResource(restMapping.Resource, owner.Name)
-	if err != nil {
-		return false, err
-	}
-	ownerReferences := resource.GetOwnerReferences()
-	// recursively check if ownerReference matches any of the resources' UID
-	for _, ownerReference := range ownerReferences {
-		return o.matchOwnerReferenceWithResources(ownerReference, resources)
-	}
-	return false, nil
+
+	return nil
 }

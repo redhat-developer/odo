@@ -7,36 +7,36 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type execHandler struct {
-	kubeClient    kclient.ClientInterface
-	execClient    exec.Client
-	appName       string
-	componentName string
-	podName       string
-	msg           string
-	show          bool
+	platformClient platform.Client
+	execClient     exec.Client
+	appName        string
+	componentName  string
+	podName        string
+	msg            string
+	show           bool
 }
 
 var _ libdevfile.Handler = (*execHandler)(nil)
 
 const ShellExecutable string = "/bin/sh"
 
-func NewExecHandler(kubeClient kclient.ClientInterface, execClient exec.Client, appName, cmpName, podName, msg string, show bool) *execHandler {
+func NewExecHandler(platformClient platform.Client, execClient exec.Client, appName, cmpName, podName, msg string, show bool) *execHandler {
 	return &execHandler{
-		kubeClient:    kubeClient,
-		execClient:    execClient,
-		appName:       appName,
-		componentName: cmpName,
-		podName:       podName,
-		msg:           msg,
-		show:          show,
+		platformClient: platformClient,
+		execClient:     execClient,
+		appName:        appName,
+		componentName:  cmpName,
+		podName:        podName,
+		msg:            msg,
+		show:           show,
 	}
 }
 
@@ -68,7 +68,7 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 
 	spinner.End(err == nil)
 	if err != nil {
-		rd, errLog := Log(o.kubeClient, o.componentName, o.appName, false, command)
+		rd, errLog := Log(o.platformClient, o.componentName, o.appName, false, command)
 		if errLog != nil {
 			return fmt.Errorf("unable to log error %v: %w", err, errLog)
 		}

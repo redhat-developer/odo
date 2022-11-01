@@ -3,9 +3,10 @@ package kclient
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"strings"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -17,6 +18,7 @@ import (
 
 // Code into this file is heavily inspired from https://github.com/ahmetb/kubectl-tree
 
+// GetAllResourcesFromSelector returns all resources of any kind (including CRs) matching the given label selector
 func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error) {
 	apis, err := findAPIs(c.cachedDiscoveryClient)
 	if err != nil {

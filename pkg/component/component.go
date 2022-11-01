@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -85,15 +86,10 @@ func GatherName(contextDir string, devfileObj *parser.DevfileObj) (string, error
 	return s, nil
 }
 
-// GetOnePod gets a pod using the component and app name
-func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
-	return client.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false))
-}
-
 // Log returns log from component
-func Log(client kclient.ClientInterface, componentName string, appName string, follow bool, command v1alpha2.Command) (io.ReadCloser, error) {
+func Log(platformClient platform.Client, componentName string, appName string, follow bool, command v1alpha2.Command) (io.ReadCloser, error) {
 
-	pod, err := GetOnePod(client, componentName, appName)
+	pod, err := platformClient.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false))
 	if err != nil {
 		return nil, fmt.Errorf("the component %s doesn't exist on the cluster", componentName)
 	}
@@ -104,7 +100,7 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 
 	containerName := command.Exec.Component
 
-	return client.GetPodLogs(pod.Name, containerName, follow)
+	return platformClient.GetPodLogs(pod.Name, containerName, follow)
 }
 
 // ListAllClusterComponents returns a list of all "components" on a cluster

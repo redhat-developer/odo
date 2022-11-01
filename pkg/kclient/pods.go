@@ -9,6 +9,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
@@ -120,8 +122,60 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 	return rd, err
 }
 
-func (c *Client) GetAllPodsInNamespace() (*corev1.PodList, error) {
-	return c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{})
+func (c *Client) GetAllPodsInNamespaceMatchingSelector(selector string, ns string) (*corev1.PodList, error) {
+	podList, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := c.GetAllResourcesFromSelector(selector, ns)
+	if err != nil {
+		return nil, err
+	}
+
+	var list corev1.PodList
+	// match pod ownerReference (if any) with resources matching the selector
+	for _, pod := range podList.Items {
+		for _, owner := range pod.GetOwnerReferences() {
+			var match bool
+			match, err = matchOwnerReferenceWithResources(c, owner, resources)
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				list.Items = append(list.Items, pod)
+				break // because we don't need to check other owner references of the pod anymore
+			}
+		}
+	}
+
+	return &list, err
+}
+
+// matchOwnerReferenceWithResources recursively checks if the owner reference passed to it matches any of the resources
+// This is useful when trying to find if a pod is owned by any of the ReplicaSet or Deployment in the cluster.
+func matchOwnerReferenceWithResources(c ClientInterface, owner metav1.OwnerReference, resources []unstructured.Unstructured) (bool, error) {
+	// first, check if ownerReference belongs to any of the resources
+	for _, resource := range resources {
+		if resource.GetUID() != "" && owner.UID != "" && resource.GetUID() == owner.UID {
+			return true, nil
+		}
+	}
+	// second, get the resource indicated by ownerReference and check its ownerReferences field
+	restMapping, err := c.GetRestMappingFromGVK(schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind))
+	if err != nil {
+		return false, err
+	}
+	resource, err := c.GetDynamicResource(restMapping.Resource, owner.Name)
+	if err != nil {
+		return false, err
+	}
+	ownerReferences := resource.GetOwnerReferences()
+	// recursively check if ownerReference matches any of the resources' UID
+	for _, ownerReference := range ownerReferences {
+		return matchOwnerReferenceWithResources(c, ownerReference, resources)
+	}
+	return false, nil
 }
 
 func (c *Client) GetPodsMatchingSelector(selector string) (*corev1.PodList, error) {

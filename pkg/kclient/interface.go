@@ -8,8 +8,6 @@ import (
 	"github.com/go-openapi/spec"
 	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -22,6 +20,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -112,7 +113,7 @@ type ClientInterface interface {
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
 	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
-	GetAllPodsInNamespace() (*corev1.PodList, error)
+	GetAllPodsInNamespaceMatchingSelector(selector string, ns string) (*corev1.PodList, error)
 	GetPodsMatchingSelector(selector string) (*corev1.PodList, error)
 	PodWatcher(ctx context.Context, selector string) (watch.Interface, error)
 	IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error)
