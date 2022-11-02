@@ -48,8 +48,8 @@ mkdir -p "$SPEC_DIR"
 mkdir -p $SOURCES_DIR/$NAME
 mkdir -p "$FINAL_OUT_DIR"
 
-echo "Generating spec file $SPEC_DIR/openshift-odo.spec"
-envsubst <rpms/openshift-odo.spec > $SPEC_DIR/openshift-odo.spec
+echo "Generating spec file $SPEC_DIR/odo.spec"
+envsubst <rpms/odo.spec > $SPEC_DIR/odo.spec
 
 echo "Generating tarball $SOURCES_DIR/$NAME.tar.gz"
 # Copy code for manipulation

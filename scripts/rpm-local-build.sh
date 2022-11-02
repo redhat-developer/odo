@@ -8,4 +8,4 @@ fi
 
 top_dir="`pwd`/dist/rpmbuild"
 echo "Building locally"
-rpmbuild --define "_topdir `echo $top_dir`" -ba dist/rpmbuild/SPECS/openshift-odo.spec
+rpmbuild --define "_topdir `echo $top_dir`" -ba dist/rpmbuild/SPECS/odo.spec
