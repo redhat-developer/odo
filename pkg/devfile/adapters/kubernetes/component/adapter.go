@@ -253,14 +253,19 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 	var running bool
 	var isComposite bool
-	cmdHandler := adapterHandler{
-		Adapter:    a,
-		parameters: parameters,
-		podName:    pod.GetName(),
+	cmdHandler := runHandler{
+		fs:            a.FS,
+		execClient:    a.execClient,
+		kubeClient:    a.kubeClient,
+		appName:       a.AppName,
+		componentName: a.ComponentName,
+		devfile:       a.Devfile,
+		path:          parameters.Path,
+		podName:       pod.GetName(),
 	}
 
 	if commandType == devfilev1.ExecCommandType {
-		running, err = cmdHandler.isRemoteProcessForCommandRunning(cmd, pod.Name)
+		running, err = cmdHandler.IsRemoteProcessForCommandRunning(cmd, pod.Name)
 		if err != nil {
 			return err
 		}

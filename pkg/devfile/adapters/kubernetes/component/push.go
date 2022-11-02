@@ -49,7 +49,7 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
+	err = component.ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
 	if err != nil {
 		return nil, err
 	}
