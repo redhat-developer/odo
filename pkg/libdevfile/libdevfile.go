@@ -114,6 +114,10 @@ func getDefaultCommand(devfileObj parser.DevfileObj, groupType v1alpha2.CommandG
 		}
 	}
 
+	// if there is only one command of a given group kind, use it as default
+	if len(commands) == 1 {
+		return commands[0], true, nil
+	}
 	if len(defaultCmds) == 0 {
 		return v1alpha2.Command{}, false, nil
 	}
