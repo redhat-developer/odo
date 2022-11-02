@@ -46,6 +46,7 @@ func TestGetCommand(t *testing.T) {
 			},
 			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       false,
+			wantPresent:   true,
 		},
 		{
 			name: "Case 2: Valid devfile with devrun and devbuild",
@@ -55,6 +56,7 @@ func TestGetCommand(t *testing.T) {
 			},
 			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       false,
+			wantPresent:   true,
 		},
 		{
 			name: "Case 3: Valid devfile with empty workdir",
@@ -75,6 +77,7 @@ func TestGetCommand(t *testing.T) {
 			},
 			requestedType: []v1alpha2.CommandGroupKind{runGroup},
 			wantErr:       false,
+			wantPresent:   true,
 		},
 		{
 			name: "Case 4.1: Mismatched command type",
@@ -157,6 +160,99 @@ func TestGetCommand(t *testing.T) {
 			requestedType:  []v1alpha2.CommandGroupKind{runGroup},
 			wantErr:        false,
 			wantPresent:    true,
+		},
+		{
+			name: "Case 5.1: if only one command is present, it is returned and assumed as default",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "defaultRunCommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			retCommandName: "defaultRunCommand",
+			requestedType:  []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:        false,
+			wantPresent:    true,
+		},
+		{
+			name: "Case 5.2: if multiple default commands are present, error is returned",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "runCommand1",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				}, {
+					Id: "runCommand2",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+
+			requestedType: []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:       true,
+		},
+		{
+			name: "Case 5.2: if multiple default commands are present, error is returned",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "runCommand1",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				}, {
+					Id: "runCommand2",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+
+			requestedType: []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:       true,
 		},
 		{
 			name: "Case 6: Composite command is returned",
@@ -329,11 +425,11 @@ func TestDeploy(t *testing.T) {
 			},
 		},
 		{
-			name: "deploy with no deploy command",
+			name: "deploy with multiple deploy and no default",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					dData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					_ = dData.AddCommands([]v1alpha2.Command{applyServiceCommand})
+					_ = dData.AddCommands([]v1alpha2.Command{applyServiceCommand, applyDeploymentCommand})
 					_ = dData.AddComponents([]v1alpha2.Component{deploymentComponent, serviceComponent})
 					return parser.DevfileObj{
 						Data: dData,
@@ -1054,31 +1150,34 @@ func TestValidateAndGetCommand(t *testing.T) {
 		execCommands   []v1alpha2.Command
 		compCommands   []v1alpha2.Command
 		reqCommandName string
-		retCommandName string
+		retCommandName []string
 		wantErr        bool
 	}{
 		{
-			name: "Case 1: Valid devfile, but error returned because no default command",
+			name: "Case 1: Valid devfile, default command returned even if it is not marked as IsDefault",
 			execCommands: []v1alpha2.Command{
 				getExecCommand("build", buildGroup),
+				getExecCommand("run", runGroup),
+			},
+			requestedType:  []v1alpha2.CommandGroupKind{buildGroup, runGroup},
+			wantErr:        false,
+			retCommandName: []string{"build", "run"},
+		},
+		{
+			name: "Case 2: Valid devfile, but error returned because multiple build commands without default",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("build", buildGroup),
+				getExecCommand("build2", buildGroup),
 				getExecCommand("run", runGroup),
 			},
 			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
 			wantErr:       true,
 		},
 		{
-			name: "Case 2: Valid devfile with devrun and devbuild, but error returned because no default command",
-			execCommands: []v1alpha2.Command{
-				getExecCommand("build", buildGroup),
-				getExecCommand("run", runGroup),
-			},
-			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
-			wantErr:       true,
-		},
-		{
-			name: "Case 3: Valid devfile with empty workdir, but error returned because no default command",
+			name: "Case 3: Valid devfile with empty workdir",
 			execCommands: []v1alpha2.Command{
 				{
+					Id: "run",
 					CommandUnion: v1alpha2.CommandUnion{
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
@@ -1092,8 +1191,9 @@ func TestValidateAndGetCommand(t *testing.T) {
 					},
 				},
 			},
-			requestedType: []v1alpha2.CommandGroupKind{runGroup},
-			wantErr:       true,
+			requestedType:  []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:        false,
+			retCommandName: []string{"run"},
 		},
 		{
 			name: "Case 4.1: Mismatched command type",
@@ -1137,6 +1237,7 @@ func TestValidateAndGetCommand(t *testing.T) {
 			},
 			reqCommandName: "build command",
 			requestedType:  []v1alpha2.CommandGroupKind{buildGroup},
+			retCommandName: []string{"build command"},
 			wantErr:        false,
 		},
 		{
@@ -1171,7 +1272,7 @@ func TestValidateAndGetCommand(t *testing.T) {
 					},
 				},
 			},
-			retCommandName: "defaultRunCommand",
+			retCommandName: []string{"defaultRunCommand"},
 			requestedType:  []v1alpha2.CommandGroupKind{runGroup},
 			wantErr:        false,
 		},
@@ -1222,13 +1323,17 @@ func TestValidateAndGetCommand(t *testing.T) {
 					},
 				},
 			},
-			retCommandName: "myComposite",
+			retCommandName: []string{"myComposite"},
 			requestedType:  []v1alpha2.CommandGroupKind{buildGroup},
 			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			if !tt.wantErr && (len(tt.requestedType) != len(tt.retCommandName)) {
+				t.Errorf("Invalid test definition %q requestedType length must match retCommandName length.", tt.name)
+			}
 			components := []v1alpha2.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
 			devObj := parser.DevfileObj{
 				Data: func() data.DevfileData {
@@ -1252,7 +1357,7 @@ func TestValidateAndGetCommand(t *testing.T) {
 				}(),
 			}
 
-			for _, gtype := range tt.requestedType {
+			for i, gtype := range tt.requestedType {
 				cmd, err := ValidateAndGetCommand(devObj, tt.reqCommandName, gtype)
 				if tt.wantErr != (err != nil) {
 					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", gtype, tt.wantErr, err)
@@ -1261,8 +1366,8 @@ func TestValidateAndGetCommand(t *testing.T) {
 					return
 				}
 
-				if len(tt.retCommandName) > 0 && cmd.Id != tt.retCommandName {
-					t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.Id)
+				if cmd.Id != tt.retCommandName[i] {
+					t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", tt.retCommandName[i], cmd.Id)
 				}
 			}
 		})
@@ -1373,12 +1478,11 @@ func TestValidateAndGetPushCommands(t *testing.T) {
 		wantErr             bool
 	}{
 		{
-			name:         "Case 1: Default Devfile Commands",
-			buildCommand: emptyString,
-			runCommand:   emptyString,
-			execCommands: execCommands,
-			//only the default run command is returned, because the build command is not marked as default
-			numberOfCommands: 1,
+			name:             "Case 1: Default Devfile Commands",
+			buildCommand:     emptyString,
+			runCommand:       emptyString,
+			execCommands:     execCommands,
+			numberOfCommands: 2,
 			wantErr:          false,
 		},
 		{
@@ -1387,7 +1491,7 @@ func TestValidateAndGetPushCommands(t *testing.T) {
 			runCommand:   "customcommand",
 			execCommands: execCommands,
 			//only the specified run command is returned, because the build command is not marked as default
-			numberOfCommands: 1,
+			numberOfCommands: 2,
 			wantErr:          false,
 		},
 		{
