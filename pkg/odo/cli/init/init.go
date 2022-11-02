@@ -124,11 +124,12 @@ Your new component '%s' is ready in the current directory.
 To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
 
-	automateCommad := fmt.Sprintf("\nPort configuration using flag is currently not supported  \n\nYou can automate this command by executing:\n   odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
-	if len(o.flags) == 0 && starterInfo != nil {
-		log.Infof("%s --starter %s", automateCommad, starterInfo.Name)
-	} else if len(o.flags) == 0 {
-		log.Infof("%s", automateCommad)
+	if len(o.flags) == 0 {
+		automateCommad := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
+		if starterInfo != nil {
+			automateCommad = fmt.Sprintf("%s --starter %s", automateCommad, starterInfo.Name)
+		}
+		log.Infof("\nPort configuration using flag is currently not supported  \n\nYou can automate this command by executing:\n   %s\n", automateCommad)
 	}
 
 	if libdevfile.HasDeployCommand(devfileObj.Data) {
@@ -154,8 +155,8 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	}, nil
 }
 
-// run downloads the devfile and starter project and returns the content and the path of the devfile
-func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DevfileLocation, starterInfoName *v1alpha2.StarterProject, err error) {
+// run downloads the devfile and starter project and returns the content of the devfile, path of the devfile, name of the component, api.DevfileLocation object for DevfileRegistry info and StarterProject object
+func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DevfileLocation, starterInfo *v1alpha2.StarterProject, err error) {
 	var starterDownloaded bool
 
 	workingDir := odocontext.GetWorkingDirectory(ctx)
@@ -196,7 +197,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
 
-	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, workingDir)
+	starterInfo, err = o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, workingDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
