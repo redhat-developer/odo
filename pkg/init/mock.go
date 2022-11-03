@@ -125,13 +125,14 @@ func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags interface{}) *g
 }
 
 // SelectAndPersonalizeDevfile mocks base method.
-func (m *MockClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error) {
+func (m *MockClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectAndPersonalizeDevfile", flags, contextDir)
 	ret0, _ := ret[0].(parser.DevfileObj)
 	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret2, _ := ret[2].(*api.DevfileLocation)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
 }
 
 // SelectAndPersonalizeDevfile indicates an expected call of SelectAndPersonalizeDevfile.
