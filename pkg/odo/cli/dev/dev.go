@@ -12,8 +12,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
-	"github.com/redhat-developer/odo/pkg/dev/kubedev"
-	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -25,7 +23,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/podman"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -147,26 +144,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	log.Section("Deploying to the cluster in developer mode")
 
-	runOnFlag := fcontext.GetRunOn(ctx)
-	switch runOnFlag {
-	case commonflags.RunOnCluster:
-		o.clientset.DevClient = kubedev.NewDevClient(
-			o.clientset.KubernetesClient,
-			o.clientset.PreferenceClient,
-			o.clientset.PortForwardClient,
-			o.clientset.WatchClient,
-			o.clientset.BindingClient,
-			o.clientset.SyncClient,
-			o.clientset.FS,
-			o.clientset.ExecClient,
-		)
-	case commonflags.RunOnPodman:
-		o.clientset.DevClient = podmandev.NewDevClient(
-			podman.NewPodmanCli(),
-			o.clientset.SyncClient,
-			o.clientset.ExecClient,
-		)
-	}
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		o.out,
@@ -191,7 +168,8 @@ func (o *DevOptions) HandleSignal() error {
 }
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
-	if commandError != nil {
+	runOnFlag := fcontext.GetRunOn(ctx)
+	if runOnFlag == commonflags.RunOnCluster && commandError != nil {
 		devFileObj := odocontext.GetDevfileObj(ctx)
 		componentName := odocontext.GetComponentName(ctx)
 		_ = o.clientset.WatchClient.CleanupDevResources(ctx, *devFileObj, componentName, log.GetStdout())
@@ -221,6 +199,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	clientset.Add(devCmd,
 		clientset.BINDING,
+		clientset.DEV,
 		clientset.EXEC,
 		clientset.FILESYSTEM,
 		clientset.INIT,

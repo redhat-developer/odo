@@ -16,6 +16,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/dev/kubedev"
+	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -87,6 +89,7 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
+	DEV:              {BINDING, EXEC, FILESYSTEM, KUBERNETES, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES_NULLABLE},
@@ -101,11 +104,10 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
-	AlizerClient  alizer.Client
-	BindingClient binding.Client
-	DeleteClient  _delete.Client
-	DeployClient  deploy.Client
-	// DevClient will be instantiated from pkg/odo/cli/dev, depending on runOn option
+	AlizerClient      alizer.Client
+	BindingClient     binding.Client
+	DeleteClient      _delete.Client
+	DeployClient      deploy.Client
 	DevClient         dev.Client
 	ExecClient        exec.Client
 	FS                filesystem.Filesystem
@@ -220,6 +222,27 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, PORT_FORWARD) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
+	}
+	if isDefined(command, DEV) {
+		switch platform {
+		case commonflags.RunOnCluster:
+			dep.DevClient = kubedev.NewDevClient(
+				dep.KubernetesClient,
+				dep.PreferenceClient,
+				dep.PortForwardClient,
+				dep.WatchClient,
+				dep.BindingClient,
+				dep.SyncClient,
+				dep.FS,
+				dep.ExecClient,
+			)
+		case commonflags.RunOnPodman:
+			dep.DevClient = podmandev.NewDevClient(
+				dep.PodmanClient,
+				dep.SyncClient,
+				dep.ExecClient,
+			)
+		}
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
