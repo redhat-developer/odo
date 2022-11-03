@@ -169,9 +169,7 @@ func (o *DevOptions) HandleSignal() error {
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
-		devFileObj := odocontext.GetDevfileObj(ctx)
-		componentName := odocontext.GetComponentName(ctx)
-		_ = o.clientset.DevClient.CleanupResources(ctx, *devFileObj, componentName, log.GetStdout())
+		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
 	}
 	_ = o.clientset.StateClient.SaveExit()
 }
