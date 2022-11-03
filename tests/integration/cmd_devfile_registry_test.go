@@ -125,10 +125,23 @@ var _ = Describe("odo devfile registry command tests", Label(helper.LabelNoClust
 			helper.Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
 			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "java-maven", "--devfile-registry", registryName).ShouldFail()
 		})
+
+		It("should list registry with recently added registry on top", func() {
+			By("for json output", func() {
+				output := helper.Cmd("odo", "preference", "view", "-o", "json").ShouldPass().Out()
+				Expect(helper.IsJSON(output)).To(BeTrue())
+				helper.JsonPathContentIs(output, "registries.0.name", registryName)
+				helper.JsonPathContentIs(output, "registries.0.url", addRegistryURL)
+				helper.JsonPathContentIs(output, "registries.1.name", "DefaultDevfileRegistry")
+				helper.JsonPathContentIs(output, "registries.1.url", addRegistryURL) // as we are using its updated in case of Proxy
+			})
+
+		})
 	})
 
 	It("should fail when adding a git based registry", func() {
 		err := helper.Cmd("odo", "preference", "add", "registry", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
 		helper.MatchAllInOutput(err, []string{"github", "no", "supported", "https://github.com/devfile/registry-support"})
 	})
+
 })
