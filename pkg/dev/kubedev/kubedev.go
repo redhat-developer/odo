@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/binding"
+	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/exec"
@@ -34,6 +35,7 @@ type DevClient struct {
 	syncClient        sync.Client
 	filesystem        filesystem.Filesystem
 	execClient        exec.Client
+	deleteClient      _delete.Client
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -47,6 +49,7 @@ func NewDevClient(
 	syncClient sync.Client,
 	filesystem filesystem.Filesystem,
 	execClient exec.Client,
+	deleteClient _delete.Client,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
@@ -57,6 +60,7 @@ func NewDevClient(
 		syncClient:        syncClient,
 		filesystem:        filesystem,
 		execClient:        execClient,
+		deleteClient:      deleteClient,
 	}
 }
 

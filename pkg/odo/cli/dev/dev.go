@@ -168,12 +168,12 @@ func (o *DevOptions) HandleSignal() error {
 }
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
-	runOnFlag := fcontext.GetRunOn(ctx)
-	if runOnFlag == commonflags.RunOnCluster && commandError != nil {
+	if commandError != nil {
 		devFileObj := odocontext.GetDevfileObj(ctx)
 		componentName := odocontext.GetComponentName(ctx)
-		_ = o.clientset.WatchClient.CleanupDevResources(ctx, *devFileObj, componentName, log.GetStdout())
+		_ = o.clientset.DevClient.CleanupResources(ctx, *devFileObj, componentName, log.GetStdout())
 	}
+	_ = o.clientset.StateClient.SaveExit()
 }
 
 // NewCmdDev implements the odo dev command
@@ -207,6 +207,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.PODMAN,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
+		clientset.STATE,
 		clientset.SYNC,
 		clientset.WATCH,
 	)

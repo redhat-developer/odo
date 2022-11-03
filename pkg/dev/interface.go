@@ -3,6 +3,8 @@ package dev
 import (
 	"context"
 	"io"
+
+	parser "github.com/devfile/library/pkg/devfile/parser"
 )
 
 type StartOptions struct {
@@ -34,4 +36,7 @@ type Client interface {
 		errOut io.Writer,
 		options StartOptions,
 	) error
+
+	// CleanupResources deletes the component created using the devfileObj and writes any outputs to out
+	CleanupResources(ctx context.Context, devfileObj parser.DevfileObj, componentName string, out io.Writer) error
 }

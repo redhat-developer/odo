@@ -89,7 +89,7 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, EXEC, FILESYSTEM, KUBERNETES, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
+	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES_NULLABLE},
@@ -98,7 +98,7 @@ var subdeps map[string][]string = map[string][]string{
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
 	SYNC:             {EXEC},
-	WATCH:            {KUBERNETES_NULLABLE, DELETE_COMPONENT, STATE},
+	WATCH:            {KUBERNETES_NULLABLE},
 	BINDING:          {PROJECT, KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
@@ -215,7 +215,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.DeleteClient, dep.StateClient)
+		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient)
 	}
 	if isDefined(command, BINDING) {
 		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)
@@ -235,6 +235,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 				dep.SyncClient,
 				dep.FS,
 				dep.ExecClient,
+				dep.DeleteClient,
 			)
 		case commonflags.RunOnPodman:
 			dep.DevClient = podmandev.NewDevClient(
