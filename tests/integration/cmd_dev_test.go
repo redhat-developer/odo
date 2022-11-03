@@ -2562,6 +2562,42 @@ CMD ["npm", "start"]
 		},
 
 		{
+			whenTitle: "Devfile contains metadata.language invalid as a label value",
+			devfile:   "devfile-with-metadata-language-as-invalid-label.yaml",
+			checkDev: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"a-custom-language",
+				)
+				commonVar.CliRunner.AssertContainsLabel(
+					"service",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"a-custom-language",
+				)
+			},
+			checkDeploy: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDeployMode,
+					"app.openshift.io/runtime",
+					"a-custom-language",
+				)
+			},
+		},
+
+		{
 			whenTitle: "Devfile contains metadata.projectType",
 			devfile:   "devfile-with-metadata-project-type.yaml",
 			checkDev: func(cmpName string) {
@@ -2593,6 +2629,42 @@ CMD ["npm", "start"]
 					labels.ComponentDeployMode,
 					"app.openshift.io/runtime",
 					"nodejs",
+				)
+			},
+		},
+
+		{
+			whenTitle: "Devfile contains metadata.projectType invalid as a label value",
+			devfile:   "devfile-with-metadata-project-type-as-invalid-label.yaml",
+			checkDev: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"DOTNODE",
+				)
+				commonVar.CliRunner.AssertContainsLabel(
+					"service",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDevMode,
+					"app.openshift.io/runtime",
+					"DOTNODE",
+				)
+			},
+			checkDeploy: func(cmpName string) {
+				commonVar.CliRunner.AssertContainsLabel(
+					"deployment",
+					commonVar.Project,
+					cmpName,
+					"app",
+					labels.ComponentDeployMode,
+					"app.openshift.io/runtime",
+					"DOTNODE",
 				)
 			},
 		},

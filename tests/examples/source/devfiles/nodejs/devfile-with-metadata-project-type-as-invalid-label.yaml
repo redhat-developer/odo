@@ -1,0 +1,96 @@
+commands:
+- exec:
+    commandLine: npm install
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    workingDir: /project
+  id: install
+- exec:
+    commandLine: npm start
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: /project
+  id: run
+- exec:
+    commandLine: npm run debug
+    component: runtime
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: /project
+  id: debug
+- exec:
+    commandLine: npm test
+    component: runtime
+    group:
+      isDefault: true
+      kind: test
+    workingDir: /project
+  id: test
+- id: deploy
+  composite:
+    commands:
+      - deploy-nginx
+    group:
+      kind: deploy
+      isDefault: true
+- id: deploy-nginx
+  apply:
+    component: nginx
+components:
+- container:
+    endpoints:
+    - name: http-3000
+      targetPort: 3000
+    image: registry.access.redhat.com/ubi8/nodejs-14:latest
+    memoryLimit: 1024Mi
+    mountSources: true
+    sourceMapping: /project
+  name: runtime
+- name: nginx
+  kubernetes:
+    inlined: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        labels:
+          app: nginx
+        name: nginx
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: nginx
+        template:
+          metadata:
+            creationTimestamp: null
+            labels:
+              app: nginx
+          spec:
+            containers:
+            - image: nginx
+              name: nginx
+metadata:
+  description: Stack with Node.js 14
+  displayName: Node.js Runtime
+  icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+  name: nodejs-prj
+  # Project type is a free-form string in the Devfile spec, and might need to be sanitized before it can be used as label
+  # See https://github.com/redhat-developer/odo/issues/6234
+  projectType: .NODE
+  language: javascript
+  tags:
+  - NodeJS
+  - Express
+  - ubi8
+  version: 1.0.1
+schemaVersion: 2.2.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/nodejs-ex.git
+  name: nodejs-starter
