@@ -25,7 +25,7 @@ type StartOptions struct {
 }
 
 type Client interface {
-	// Start the resources in devfileObj on the namespace. It then pushes the files in path to the container.
+	// Start the resources defined in context's Devfile on the platform. It then pushes the files in path to the container.
 	// It then watches for any changes to the files under path.
 	// It logs messages and errors to out and errOut.
 	Start(

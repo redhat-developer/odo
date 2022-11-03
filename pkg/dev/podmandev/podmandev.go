@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/sync"
 )
@@ -39,20 +40,24 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	ctx context.Context,
-	devfileObj parser.DevfileObj,
-	componentName string,
-	path string,
-	devfilePath string,
 	out io.Writer,
 	errOut io.Writer,
 	options dev.StartOptions,
 ) error {
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+	)
+
 	fmt.Printf("Deploying using Podman\n\n")
 
 	pod, err := createPodFromComponent(
-		devfileObj,
+		*devfileObj,
 		componentName,
-		"app",
+		appName,
 		options.BuildCommand,
 		options.RunCommand,
 		"",
@@ -96,15 +101,15 @@ func (o *DevClient) Start(
 	if execRequired {
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(
-				nil, /* TODO */
+				o.podmanClient,
 				o.execClient,
-				"app", /* TODO */
+				appName,
 				componentName,
 				pod.Name,
 				"Building your application in container on cluster",
 				false, /* TODO */
 			)
-			return libdevfile.Build(devfileObj, options.BuildCommand, execHandler)
+			return libdevfile.Build(*devfileObj, options.BuildCommand, execHandler)
 		}
 		err = doExecuteBuildCommand()
 		if err != nil {
@@ -122,10 +127,10 @@ func (o *DevClient) Start(
 			platformClient:  o.podmanClient,
 			componentExists: false, // TODO
 			podName:         pod.Name,
-			appName:         "app", // TODO
+			appName:         appName,
 			componentName:   componentName,
 		}
-		err = libdevfile.ExecuteCommandByNameAndKind(devfileObj, cmdName, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(*devfileObj, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err
 		}
