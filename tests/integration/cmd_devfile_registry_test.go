@@ -133,7 +133,7 @@ var _ = Describe("odo devfile registry command tests", Label(helper.LabelNoClust
 				helper.JsonPathContentIs(output, "registries.0.name", registryName)
 				helper.JsonPathContentIs(output, "registries.0.url", addRegistryURL)
 				helper.JsonPathContentIs(output, "registries.1.name", "DefaultDevfileRegistry")
-				helper.JsonPathContentIs(output, "registries.1.url", "https://registry.stage.devfile.io")
+				helper.JsonPathContentIs(output, "registries.1.url", addRegistryURL) // as we are using its updated in case of Proxy
 			})
 
 		})
