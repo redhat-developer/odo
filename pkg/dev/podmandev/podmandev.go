@@ -119,14 +119,16 @@ func (o *DevClient) Start(
 		}
 		cmdHandler := commandHandler{
 			execClient:      o.execClient,
+			platformClient:  o.podmanClient,
 			componentExists: false, // TODO
 			podName:         pod.Name,
+			appName:         "app", // TODO
+			componentName:   componentName,
 		}
 		err = libdevfile.ExecuteCommandByNameAndKind(devfileObj, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err
 		}
-
 	}
 
 	<-ctx.Done()
