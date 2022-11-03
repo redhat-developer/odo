@@ -92,6 +92,36 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
+	It("should print automation command with proper values", func() {
+		command := []string{"odo", "init"}
+		starter := "go-starter"
+		componentName := "my-go-app"
+		devfileName := "go"
+
+		output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+			helper.ExpectString(ctx, "Select language")
+			helper.SendLine(ctx, "Go")
+
+			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "")
+
+			helper.ExpectString(ctx, "Which starter project do you want to use")
+			helper.SendLine(ctx, starter)
+
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, componentName)
+
+			helper.ExpectString(ctx, "Your new component 'my-go-app' is ready in the current directory")
+
+		})
+
+		Expect(err).To(BeNil())
+		Expect(output).To(ContainSubstring("odo init --name %s --devfile %s --devfile-registry DefaultDevfileRegistry --starter %s", componentName, devfileName, starter))
+		Expect(output).To(ContainSubstring("Your new component 'my-go-app' is ready in the current directory"))
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+	})
+
 	It("should download correct devfile", func() {
 
 		command := []string{"odo", "init"}
