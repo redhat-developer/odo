@@ -84,13 +84,9 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	registryT := ui.NewTable()
 	registryT.AppendHeader(table.Row{"NAME", "URL", "SECURE"})
 
-	var regList []preference.Registry
-	if registryList != nil {
-		regList = *registryList
-	}
 	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
-	for i := range regList {
-		registry := regList[i]
+	for i := range *registryList {
+		registry := (*registryList)[i]
 		secure := "No"
 		if registry.Secure {
 			secure = "Yes"
