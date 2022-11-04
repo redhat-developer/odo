@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
@@ -149,7 +150,12 @@ func (o *DevClient) Start(
 	}
 
 	for _, volume := range pod.Spec.Volumes {
-		err = o.podmanClient.VolumeRm(volume.Name)
+		if volume.PersistentVolumeClaim == nil {
+			continue
+		}
+		volumeName := volume.PersistentVolumeClaim.ClaimName
+		klog.V(3).Infof("deleting podman volume %q", volumeName)
+		err = o.podmanClient.VolumeRm(volumeName)
 		if err != nil {
 			return err
 		}
