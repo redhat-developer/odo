@@ -1,5 +1,7 @@
 package localConfigProvider
 
+import "github.com/devfile/library/pkg/devfile/parser"
+
 // LocalStorage holds storage related information
 type LocalStorage struct {
 	// Name of the storage
@@ -17,5 +19,5 @@ type LocalStorage struct {
 // LocalConfigProvider is an interface which all local config providers need to implement
 // currently implemented by EnvInfo
 type LocalConfigProvider interface {
-	ListStorage() ([]LocalStorage, error)
+	ListStorage(devfileObj parser.DevfileObj) ([]LocalStorage, error)
 }

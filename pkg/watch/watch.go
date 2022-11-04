@@ -24,8 +24,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
 
-	"github.com/redhat-developer/odo/pkg/envinfo"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -87,8 +85,6 @@ type WatchParameters struct {
 	DevfileWatchHandler func(adapters.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
-	// EnvSpecificInfo contains information about devfile
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileBuildCmd string
 	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
@@ -450,7 +446,6 @@ func (o *WatchClient) processEvents(
 		DevfileRunCmd:            parameters.DevfileRunCmd,
 		DevfileDebugCmd:          parameters.DevfileDebugCmd,
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
 		Debug:                    parameters.Debug,
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,

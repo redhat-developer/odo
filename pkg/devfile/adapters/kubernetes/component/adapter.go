@@ -14,7 +14,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -117,7 +116,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, runtime, odolabels.ComponentDevMode, false)
 
 	var updated bool
-	deployment, updated, err = a.createOrUpdateComponent(deploymentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
+	deployment, updated, err = a.createOrUpdateComponent(deploymentExists, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
@@ -178,7 +177,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
-	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
@@ -327,22 +325,19 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 // Returns the new deployment and if the generation of the deployment has been updated
 func (a *Adapter) createOrUpdateComponent(
 	componentExists bool,
-	ei envinfo.EnvSpecificInfo,
 	commands libdevfile.DevfileCommands,
 	deployment *appsv1.Deployment,
 ) (*appsv1.Deployment, bool, error) {
 
 	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
 
-	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 
 	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
 
 	storageClient := storagepkg.NewClient(componentName, a.AppName, storagepkg.ClientOptions{
-		Client:              a.kubeClient,
-		LocalConfigProvider: &ei,
-		Runtime:             runtime,
+		Client:  a.kubeClient,
+		Runtime: runtime,
 	})
 
 	// handle the ephemeral storage
@@ -352,7 +347,7 @@ func (a *Adapter) createOrUpdateComponent(
 	}
 
 	// From devfile info, create PVCs and return ephemeral storages
-	ephemerals, err := storagepkg.Push(storageClient, &ei)
+	ephemerals, err := storagepkg.Push(storageClient, a.Devfile)
 	if err != nil {
 		return nil, false, err
 	}

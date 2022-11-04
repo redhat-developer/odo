@@ -7,6 +7,7 @@ package localConfigProvider
 import (
 	reflect "reflect"
 
+	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -34,16 +35,16 @@ func (m *MockLocalConfigProvider) EXPECT() *MockLocalConfigProviderMockRecorder 
 }
 
 // ListStorage mocks base method.
-func (m *MockLocalConfigProvider) ListStorage() ([]LocalStorage, error) {
+func (m *MockLocalConfigProvider) ListStorage(devfileObj parser.DevfileObj) ([]LocalStorage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListStorage")
+	ret := m.ctrl.Call(m, "ListStorage", devfileObj)
 	ret0, _ := ret[0].([]LocalStorage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListStorage indicates an expected call of ListStorage.
-func (mr *MockLocalConfigProviderMockRecorder) ListStorage() *gomock.Call {
+func (mr *MockLocalConfigProviderMockRecorder) ListStorage(devfileObj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).ListStorage))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).ListStorage), devfileObj)
 }

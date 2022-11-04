@@ -5,7 +5,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 )
 
 // EnvInfo holds all the env specific information relevant to a specific Component.
@@ -20,7 +19,7 @@ type EnvSpecificInfo struct {
 	EnvInfo     `yaml:",omitempty"`
 }
 
-var _ localConfigProvider.LocalConfigProvider = (*EnvSpecificInfo)(nil)
+//var _ localConfigProvider.LocalConfigProvider = (*EnvSpecificInfo)(nil)
 
 func (esi EnvSpecificInfo) GetDevfilePath() string {
 	return esi.devfilePath

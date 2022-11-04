@@ -1,4 +1,4 @@
-package envinfo
+package storage
 
 import (
 	"reflect"
@@ -225,10 +225,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ei := &EnvInfo{
-				devfileObj: tt.fields.devfileObj,
-			}
-			got, err := ei.ListStorage()
+			got, err := ListStorage(tt.fields.devfileObj)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListStorage() error = %v, wantErr %v", err, tt.wantErr)
 			}

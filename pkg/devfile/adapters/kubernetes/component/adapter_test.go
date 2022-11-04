@@ -9,7 +9,6 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/generator"
 
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -48,35 +47,30 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 	tests := []struct {
 		name          string
 		componentType devfilev1.ComponentType
-		envInfo       envinfo.EnvSpecificInfo
 		running       bool
 		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Invalid devfile",
 			componentType: "",
-			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 2: Valid devfile",
 			componentType: devfilev1.ContainerComponentType,
-			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
-			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 4: Valid devfile, already running component",
 			componentType: devfilev1.ContainerComponentType,
-			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       false,
 		},
@@ -125,12 +119,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					return true, &deployment, nil
 				})
 			}
-			tt.envInfo.EnvInfo = envinfo.EnvInfo{}
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
 			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, adapterCtx)
-			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, nil)
+			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, libdevfile.DevfileCommands{}, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
