@@ -106,6 +106,25 @@ func (o *DevClient) Start(
 	if err != nil {
 		return err
 	}
+
+	// PostStart events from the devfile will only be executed when the component
+	// didn't previously exist
+	if libdevfile.HasPostStartEvents(*devfileObj) {
+		execHandler := component.NewExecHandler(
+			o.podmanClient,
+			o.execClient,
+			appName,
+			componentName,
+			pod.Name,
+			"",
+			false, /* TODO */
+		)
+		err = libdevfile.ExecPostStartEvents(*devfileObj, execHandler)
+		if err != nil {
+			return err
+		}
+	}
+
 	if execRequired {
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(
