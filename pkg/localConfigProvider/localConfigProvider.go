@@ -1,7 +1,5 @@
 package localConfigProvider
 
-import "github.com/devfile/library/pkg/devfile/parser"
-
 // LocalStorage holds storage related information
 type LocalStorage struct {
 	// Name of the storage
@@ -14,10 +12,4 @@ type LocalStorage struct {
 	Path string `yaml:"Path,omitempty"`
 	// Container is the container name on which this storage is mounted
 	Container string `yaml:"-" json:"-"`
-}
-
-// LocalConfigProvider is an interface which all local config providers need to implement
-// currently implemented by EnvInfo
-type LocalConfigProvider interface {
-	ListStorage(devfileObj parser.DevfileObj) ([]LocalStorage, error)
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 )
 
@@ -27,10 +26,9 @@ const (
 
 // generic contains information required for all the Storage clients
 type generic struct {
-	appName             string
-	componentName       string
-	localConfigProvider localConfigProvider.LocalConfigProvider
-	runtime             string
+	appName       string
+	componentName string
+	runtime       string
 }
 
 type ClientOptions struct {

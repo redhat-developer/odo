@@ -15,7 +15,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -328,10 +327,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-
-			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-
-			tt.fields.generic.localConfigProvider = mockLocalConfig
 
 			k := kubernetesClient{
 				generic: tt.fields.generic,

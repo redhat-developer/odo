@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +18,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -215,10 +215,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			ctx := odocontext.WithNamespace(context.Background(), projectName)
 			ctx = odocontext.WithApplication(ctx, "app")
 			ctx = odocontext.WithWorkingDirectory(ctx, workingDir)
-			ctx = odocontext.WithDevfilePath(ctx, info.GetDevfilePath())
 			ctx = odocontext.WithComponentName(ctx, compName)
-			devfileObj := info.GetDevfileObj()
-			ctx = odocontext.WithDevfileObj(ctx, &devfileObj)
+			ctx = odocontext.WithDevfileObj(ctx, &info)
 			if err = o.deleteDevfileComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -227,20 +225,15 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 }
 
 // populateWorkingDir populates the working directory with .odo and devfile.yaml, and returns envinfo
-func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName string) *envinfo.EnvSpecificInfo {
+func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName string) parser.DevfileObj {
 	_ = fs.MkdirAll(filepath.Join(workingDir), 0755)
-	env, err := envinfo.NewEnvSpecificInfo(workingDir)
-	if err != nil {
-		return env
-	}
 	devfileObj := testingutil.GetTestDevfileObjFromFile("devfile-deploy.yaml")
 	devfileYAML, err := yaml.Marshal(devfileObj.Data)
 	if err != nil {
-		return env
+		return parser.DevfileObj{}
 	}
 	_ = fs.WriteFile(filepath.Join(workingDir, "devfile.yaml"), devfileYAML, 0644)
-	env.SetDevfileObj(devfileObj)
-	return env
+	return devfileObj
 }
 
 // prepareKubeClient prepares the mock kclient.ClientInterface3 and returns it
