@@ -1,9 +1,11 @@
 package podman
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -86,4 +88,21 @@ func (o *PodmanCli) VolumeRm(volumeName string) error {
 	out, err := exec.Command("podman", "volume", "rm", volumeName).Output()
 	fmt.Printf("%s\n", string(out))
 	return err
+}
+
+func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
+	out, err := exec.Command("podman", "volume", "ls", "--format", "{{.Name}}", "--noheading").Output()
+	if err != nil {
+		return nil, err
+	}
+	return SplitLinesAsSet(string(out)), nil
+}
+
+func SplitLinesAsSet(s string) map[string]bool {
+	lines := map[string]bool{}
+	sc := bufio.NewScanner(strings.NewReader(s))
+	for sc.Scan() {
+		lines[sc.Text()] = true
+	}
+	return lines
 }

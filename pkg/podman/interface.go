@@ -17,6 +17,9 @@ type Client interface {
 	// PodRm deletes the pod with given podname
 	PodRm(podname string) error
 
+	// VolumeLs lists the names of existing volumes
+	VolumeLs() (map[string]bool, error)
+
 	// VolumeRm deletes the volume with given volumeName
 	VolumeRm(volumeName string) error
 

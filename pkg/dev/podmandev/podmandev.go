@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -63,6 +65,11 @@ func (o *DevClient) Start(
 		options.RunCommand,
 		"",
 	)
+	if err != nil {
+		return err
+	}
+
+	err = o.checkVolumesFree(pod)
 	if err != nil {
 		return err
 	}
@@ -161,5 +168,24 @@ func (o *DevClient) Start(
 		}
 	}
 
+	return nil
+}
+
+// checkVolumesFree checks that all persistent volumes declared in pod
+// are not using an existing volume
+func (o *DevClient) checkVolumesFree(pod *v1.Pod) error {
+	existingVolumesSet, err := o.podmanClient.VolumeLs()
+	if err != nil {
+		return err
+	}
+	var problematicVolumes []string
+	for _, volume := range pod.Spec.Volumes {
+		if volume.PersistentVolumeClaim != nil && existingVolumesSet[volume.PersistentVolumeClaim.ClaimName] {
+			problematicVolumes = append(problematicVolumes, volume.PersistentVolumeClaim.ClaimName)
+		}
+	}
+	if len(problematicVolumes) > 0 {
+		return fmt.Errorf("volumes already exist, please remove them before to run odo dev: %s", strings.Join(problematicVolumes, ", "))
+	}
 	return nil
 }
