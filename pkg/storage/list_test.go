@@ -7,7 +7,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
@@ -18,7 +17,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []localConfigProvider.LocalStorage
+		want    []LocalStorage
 		wantErr bool
 	}{
 		{
@@ -75,7 +74,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 					}(),
 				},
 			},
-			want: []localConfigProvider.LocalStorage{
+			want: []LocalStorage{
 				{
 					Name:      "volume-0",
 					Size:      "5Gi",
@@ -135,7 +134,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 					}(),
 				},
 			},
-			want: []localConfigProvider.LocalStorage{
+			want: []LocalStorage{
 				{
 					Name:      "volume-0",
 					Size:      "1Gi",
@@ -183,7 +182,7 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 					}(),
 				},
 			},
-			want: []localConfigProvider.LocalStorage{
+			want: []LocalStorage{
 				{
 					Name:      "volume-0",
 					Size:      "1Gi",
