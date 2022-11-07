@@ -92,7 +92,7 @@ var subdeps map[string][]string = map[string][]string{
 	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
-	LOGS:             {KUBERNETES_NULLABLE},
+	LOGS:             {KUBERNETES_NULLABLE, PODMAN},
 	PORT_FORWARD:     {KUBERNETES_NULLABLE, STATE},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
@@ -185,6 +185,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
 		case commonflags.RunOnPodman:
 			dep.ExecClient = exec.NewExecClient(dep.PodmanClient)
+		default:
+			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
 		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
@@ -200,6 +202,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		switch platform {
 		case commonflags.RunOnCluster:
 			dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
+		case commonflags.RunOnPodman:
+			dep.LogsClient = logs.NewLogsClient(dep.PodmanClient)
 		default:
 			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
 		}
@@ -216,6 +220,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient, dep.ExecClient)
 		case commonflags.RunOnPodman:
 			dep.SyncClient = sync.NewSyncClient(dep.PodmanClient, dep.ExecClient)
+		default:
+			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
 		}
 	}
 	if isDefined(command, WATCH) {
@@ -247,6 +253,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 				dep.SyncClient,
 				dep.ExecClient,
 			)
+		default:
+			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
 		}
 	}
 

@@ -2,6 +2,7 @@ package podmandev
 
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/exec"
@@ -21,12 +22,12 @@ type commandHandler struct {
 var _ libdevfile.Handler = (*commandHandler)(nil)
 
 func (a commandHandler) ApplyImage(img devfilev1.Component) error {
-	// Not implemented
+	klog.V(4).Info("apply image commands are not implemented on podman")
 	return nil
 }
 
 func (a commandHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
-	// Not implemented
+	klog.V(4).Info("apply kubernetes commands are not implemented on podman")
 	return nil
 }
 
