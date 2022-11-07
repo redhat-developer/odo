@@ -45,7 +45,9 @@ When `--files` is passed, `odo` attempts to delete files or directories it initi
 This will delete the following files or directories:
 - the `.odo` directory in the current directory
 - optionally, the Devfile only if it was initially created via `odo` (initialization via any of the `odo init`, `odo dev` or `odo deploy` commands).
-- optionally, the `.gitignore` file only if it was initially created via `odo` (`odo dev` generates a `.gitignore` file if it does not exist in the current directory).
+
+Note that `odo dev` might generate a `.gitignore` file if it does not exist in the current directory,
+but this file will not be removed when `--files` is passed to `odo delete component`.
 
 :::caution
 Use this flag with caution.

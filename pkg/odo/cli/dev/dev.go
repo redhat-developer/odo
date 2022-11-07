@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
-
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -16,7 +14,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
-	"github.com/redhat-developer/odo/pkg/odo/cli/files"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -117,16 +114,12 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"Namespace: "+odocontext.GetNamespace(ctx),
 		"odo version: "+version.VERSION)
 
-	// check for .gitignore file and add odo-file-index.json to .gitignore
-	gitIgnoreFile, isNew, err := util.TouchGitIgnoreFile(path)
+	// check for .gitignore file and add odo-file-index.json to .gitignore.
+	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
+	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).
+	gitIgnoreFile, _, err := util.TouchGitIgnoreFile(path)
 	if err != nil {
 		return err
-	}
-	if isNew {
-		err = files.ReportLocalFileGeneratedByOdo(o.clientset.FS, path, util.DotGitIgnoreFile)
-		if err != nil {
-			klog.V(4).Infof("error trying to report local .gitignore generated: %v", err)
-		}
 	}
 
 	// add .odo dir to .gitignore

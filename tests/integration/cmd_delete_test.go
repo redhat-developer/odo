@@ -273,7 +273,7 @@ var _ = Describe("odo delete command tests", func() {
 								Eventually(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(cmpName))
 							})
 
-							deletableFileNames := []string{util.DotOdoDirectory, util.DotGitIgnoreFile, "devfile.yaml"}
+							deletableFileNames := []string{util.DotOdoDirectory, "devfile.yaml"}
 							var deletableFilesPaths []string
 							By("listing the files to delete", func() {
 								for _, f := range deletableFileNames {
