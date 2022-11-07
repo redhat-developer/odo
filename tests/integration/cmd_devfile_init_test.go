@@ -242,6 +242,15 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "app"}
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements(expectedFiles))
 	})
+
+	It("should successfully run odo init for devfile with starter project on git with main default branch", func() {
+		helper.Cmd("odo", "init",
+			"--name", "vertx",
+			"--devfile-path", helper.GetExamplePath("source", "devfiles", "java", "devfile-with-git-main-branch.yaml"),
+			"--starter", "vertx-http-example-redhat",
+		).ShouldPass()
+	})
+
 	When("running odo init from a directory with sources", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
