@@ -121,12 +121,16 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 	}
 
 	cloneOptions := &git.CloneOptions{
-		URL:           remoteUrl,
-		RemoteName:    remoteName,
-		ReferenceName: refName,
-		SingleBranch:  true,
+		URL:        remoteUrl,
+		RemoteName: remoteName,
 		// we don't need history for starter projects
 		Depth: 1,
+	}
+
+	if refName != "" {
+		cloneOptions.ReferenceName = refName
+		cloneOptions.SingleBranch = true
+
 	}
 
 	if starterToken != "" {
