@@ -1,0 +1,135 @@
+commands:
+- exec:
+    commandLine: mvn package -Dmaven.test.skip=true
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: mvn-package
+- exec:
+    commandLine: mvn io.reactiverse:vertx-maven-plugin:run
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+- exec:
+    commandLine: mvn io.reactiverse:vertx-maven-plugin:debug -Ddebug.port=${DEBUG_PORT}
+    component: runtime
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: ${PROJECT_SOURCE}
+  id: debug
+components:
+- container:
+    endpoints:
+    - exposure: public
+      name: http-vertx
+      path: /
+      protocol: http
+      targetPort: 8080
+    env:
+    - name: DEBUG_PORT
+      value: "5858"
+    image: quay.io/eclipse/che-java11-maven:next
+    memoryLimit: 512Mi
+    mountSources: true
+    volumeMounts:
+    - name: m2
+      path: /home/user/.m2
+  name: runtime
+- name: m2
+  volume:
+    size: 3Gi
+metadata:
+  description: Upstream Vert.x using Java
+  displayName: Vert.x Java
+  icon: https://raw.githubusercontent.com/vertx-web-site/vertx-logo/master/vertx-logo.svg
+  language: Java
+  name: vertx
+  projectType: Vert.x
+  tags:
+  - Java
+  - Vert.x
+  version: 1.1.1
+schemaVersion: 2.1.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-http-example
+  name: vertx-http-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-istio-circuit-breaker-booster
+  name: vertx-istio-circuit-breaker-booster
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-istio-routing-booster
+  name: vertx-istio-routing-booster
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-secured-http-example-redhat
+  name: vertx-secured-http-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-crud-example-redhat
+  name: vertx-crud-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-istio-security-booster
+  name: vertx-istio-security-booster
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-crud-example
+  name: vertx-crud-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-circuit-breaker-example
+  name: vertx-circuit-breaker-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-configmap-example
+  name: vertx-configmap-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-circuit-breaker-example-redhat
+  name: vertx-circuit-breaker-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-cache-example-redhat
+  name: vertx-cache-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-cache-example
+  name: vertx-cache-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-secured-http-example
+  name: vertx-secured-http-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-health-checks-example-redhat
+  name: vertx-health-checks-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-http-example-redhat
+  name: vertx-http-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-health-checks-example
+  name: vertx-health-checks-example
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-configmap-example-redhat
+  name: vertx-configmap-example-redhat
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-messaging-work-queue-booster
+  name: vertx-messaging-work-queue-booster
+- git:
+    remotes:
+      origin: https://github.com/openshift-vertx-examples/vertx-istio-distributed-tracing-booster
+  name: vertx-istio-distributed-tracing-booster
