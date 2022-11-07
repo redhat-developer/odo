@@ -110,11 +110,22 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)
 		variables     = fcontext.GetVariables(ctx)
+		platform      = fcontext.GetRunOn(ctx)
 	)
+
+	var dest string
+	switch platform {
+	case commonflags.RunOnPodman:
+		dest = "Platform: podman"
+	case commonflags.RunOnCluster:
+		dest = "Namespace: " + odocontext.GetNamespace(ctx)
+	default:
+		panic(fmt.Errorf("platform %s is not implemented", platform))
+	}
 
 	// Output what the command is doing / information
 	log.Title("Developing using the \""+componentName+"\" Devfile",
-		"Namespace: "+odocontext.GetNamespace(ctx),
+		dest,
 		"odo version: "+version.VERSION)
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore

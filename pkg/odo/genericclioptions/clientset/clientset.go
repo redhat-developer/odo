@@ -89,7 +89,7 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
+	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES_NULLABLE},
@@ -154,9 +154,13 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		dep.KubernetesClient, err = kclient.New()
-		if err != nil && isDefined(command, KUBERNETES) {
-			return nil, err
+		if err != nil {
+			if isDefined(command, KUBERNETES) {
+				return nil, err
+			}
+			dep.KubernetesClient = nil
 		}
+
 	}
 	if isDefined(command, PODMAN) {
 		dep.PodmanClient = podman.NewPodmanCli()
