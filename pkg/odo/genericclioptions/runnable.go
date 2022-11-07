@@ -15,6 +15,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -29,6 +30,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -80,11 +82,20 @@ const (
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	startTime := time.Now()
-	cfg, _ := preference.NewClient()
+	userConfig, _ := preference.NewClient()
+
+	envConfig, err := config.GetConfiguration()
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+
 	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
-	disableTelemetryValue, disableTelemetryEnvSet := os.LookupEnv(segment.DisableTelemetryEnv)
-	disableTelemetry, _ := strconv.ParseBool(disableTelemetryValue)
-	debugTelemetry := segment.GetDebugTelemetryFile()
+	disableTelemetryEnvSet := envConfig.OdoDisableTelemetry != nil
+	var disableTelemetry bool
+	if disableTelemetryEnvSet {
+		disableTelemetry = *envConfig.OdoDisableTelemetry
+	}
+	debugTelemetry := pointer.StringDeref(envConfig.OdoDebugTelemetryFile, "")
 	isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled()
 
 	// check for conflicting settings
@@ -98,7 +109,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
 	// This prompt has been placed here so that it does not prompt the user when they call --help
-	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
+	if !userConfig.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
 		} else {
@@ -111,7 +122,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 				if isTrackingConsentEnabled {
 					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
 					klog.V(4).Info("Telemetry is enabled!\n")
-					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
+					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
 						klog.V(4).Info(err1.Error())
 					}
 				} else {
@@ -129,7 +140,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 				err = survey.AskOne(prompt, &consentTelemetry, nil)
 				ui.HandleError(err)
 				if err == nil {
-					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
 						klog.V(4).Info(err1.Error())
 					}
 				}
@@ -147,7 +158,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	scontext.SetFlags(cmd.Context(), cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
+	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig))
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}

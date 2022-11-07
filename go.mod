@@ -20,6 +20,7 @@ require (
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.3.5
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.9
