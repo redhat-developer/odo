@@ -411,7 +411,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			{
 				title: "empty caller env var",
 				env: map[string]string{
-					segment.TelemetryCaller: "",
+					helper.TelemetryCaller: "",
 				},
 				callerChecker: func(_, _ string, td segment.TelemetryData) {
 					cmdProperties := td.Properties.CmdProperties
@@ -422,7 +422,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			{
 				title: "invalid caller env var",
 				env: map[string]string{
-					segment.TelemetryCaller: "an-invalid-caller",
+					helper.TelemetryCaller: "an-invalid-caller",
 				},
 				callerChecker: func(stdout, stderr string, td segment.TelemetryData) {
 					By("not disclosing list of allowed values", func() {
@@ -454,7 +454,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			telemetryTests = append(telemetryTests, telemetryTest{
 				title: fmt.Sprintf("valid caller env var: %s", c),
 				env: map[string]string{
-					segment.TelemetryCaller: c,
+					helper.TelemetryCaller: c,
 				},
 				callerChecker: func(_, _ string, td segment.TelemetryData) {
 					Expect(td.Properties.CmdProperties[segmentContext.Caller]).To(Equal(c))

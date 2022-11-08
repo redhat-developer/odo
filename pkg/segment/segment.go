@@ -50,7 +50,6 @@ const (
 	// Settings this to 'yes' skips the question about telemetry and enables user tracking.
 	// Possible values are yes/no.
 	TrackingConsentEnv = "ODO_TRACKING_CONSENT"
-	TelemetryCaller    = "TELEMETRY_CALLER"
 )
 
 type TelemetryProperties struct {
