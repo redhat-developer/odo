@@ -378,23 +378,6 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 					segment.TrackingConsentEnv:  "no",
 				},
 			},
-			{
-				name: "ODO_DISABLE_TELEMETRY=foobar and ODO_TRACKING_CONSENT=no",
-				env: map[string]string{
-					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
-					segment.DisableTelemetryEnv: "foobar-should-evaluate-to-false",
-					segment.TrackingConsentEnv:  "no",
-				},
-			},
-			{
-				name: "ODO_DISABLE_TELEMETRY='' and ODO_TRACKING_CONSENT=no",
-				env: map[string]string{
-					// an empty string will evaluate to false
-					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
-					segment.DisableTelemetryEnv: "",
-					segment.TrackingConsentEnv:  "no",
-				},
-			},
 		} {
 			tt := tt
 			It("should error out if "+tt.name, func() {
