@@ -5,14 +5,15 @@ import (
 	"context"
 	"errors"
 	"os/exec"
+	"path/filepath"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"k8s.io/utils/pointer"
@@ -33,7 +34,12 @@ var lookPathCmd = exec.LookPath
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, push bool) error {
+func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, push bool) error {
+	var (
+		devfileObj  = odocontext.GetDevfileObj(ctx)
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+	)
 
 	backend, err := selectBackend(ctx)
 	if err != nil {
@@ -61,13 +67,16 @@ func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, devfileObj p
 
 // BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(ctx context.Context, fs filesystem.Filesystem, devfilePath string, component devfile.Component, push bool) error {
+func BuildPushSpecificImage(ctx context.Context, fs filesystem.Filesystem, component devfile.Component, push bool) error {
+	var (
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+	)
 	backend, err := selectBackend(ctx)
 	if err != nil {
 		return err
 	}
-
-	return buildPushImage(backend, fs, component.Image, devfilePath, push)
+	return buildPushImage(backend, fs, component.Image, path, push)
 }
 
 // buildPushImage build an image using the provided backend

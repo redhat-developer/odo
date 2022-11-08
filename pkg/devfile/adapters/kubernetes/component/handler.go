@@ -32,7 +32,7 @@ type runHandler struct {
 var _ libdevfile.Handler = (*runHandler)(nil)
 
 func (a *runHandler) ApplyImage(img devfilev1.Component) error {
-	return image.BuildPushSpecificImage(a.ctx, a.fs, a.path, img, true)
+	return image.BuildPushSpecificImage(a.ctx, a.fs, img, true)
 }
 
 func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {

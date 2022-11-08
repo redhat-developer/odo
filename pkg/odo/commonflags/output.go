@@ -3,8 +3,9 @@ package commonflags
 import (
 	"errors"
 	"flag"
-	"os"
+	"strconv"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ func AddOutputFlag() {
 
 // CheckMachineReadableOutputCommand performs machine-readable output functions required to
 // have it work correctly
-func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
+func CheckMachineReadableOutputCommand(envconfig *config.Configuration, cmd *cobra.Command) error {
 
 	// Get the needed values
 	outputFlag := pflag.Lookup(OutputFlagName)
@@ -71,8 +72,8 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
 		// Override the logging level by the value (if set) by the ODO_LOG_LEVEL env
 		// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
 		v := flag.CommandLine.Lookup("v").Value.String()
-		if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" {
-			_ = flag.CommandLine.Set("v", level)
+		if envconfig.OdoLogLevel != nil && v == "0" {
+			_ = flag.CommandLine.Set("v", strconv.Itoa(*envconfig.OdoLogLevel))
 		}
 	}
 	return nil

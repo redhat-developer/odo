@@ -174,7 +174,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	})
 
-	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(cmd), "")
+	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(envConfig, cmd), "")
 	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
 	util.LogErrorAndExit(commonflags.CheckVariablesCommand(cmd), "")
 

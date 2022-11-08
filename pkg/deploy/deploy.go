@@ -69,7 +69,7 @@ func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj 
 
 // ApplyImage builds and pushes the OCI image to be used on Kubernetes
 func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
-	return image.BuildPushSpecificImage(o.ctx, o.fs, o.path, img, true)
+	return image.BuildPushSpecificImage(o.ctx, o.fs, img, true)
 }
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
