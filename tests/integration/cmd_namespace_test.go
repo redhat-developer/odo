@@ -183,6 +183,13 @@ ComponentSettings:
 					return out
 				}, 10*time.Second, 1*time.Second).Should(ContainSubstring(commonVar.Project))
 			})
+			It(fmt.Sprintf("should successfully list all the %ss in JSON format", commandName), func() {
+				Eventually(func() bool {
+					out := helper.Cmd("odo", "list", commandName, "-o", "json").ShouldPass().Out()
+					helper.MatchAllInOutput(out, []string{commonVar.Project, "\"active\": true", "\"active\": false"})
+					return true
+				}, 10*time.Second, 1*time.Second).Should(Equal(true))
+			})
 		})
 	}
 })

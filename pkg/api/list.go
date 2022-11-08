@@ -14,4 +14,7 @@ type ResourcesList struct {
 
 	// BindableServices is the list of bindable services that could be bound to the component
 	BindableServices []BindableService `json:"bindableServices,omitempty"`
+
+	// Namespaces is the list of namespces available for the user on the cluster
+	Namespaces []Project `json:"namespaces,omitempty"`
 }
