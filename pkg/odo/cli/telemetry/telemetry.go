@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/spf13/cobra"
+
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
+
 	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 )
 
 const RecommendedCommandName = "telemetry"
@@ -46,7 +50,7 @@ func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
 		return nil
 	}
 
-	dt := segment.GetDebugTelemetryFile()
+	dt := pointer.StringDeref(envcontext.GetEnvConfig(ctx).OdoDebugTelemetryFile, "")
 	if len(dt) > 0 {
 		klog.V(4).Infof("WARNING: telemetry debug enabled, data logged to file %s", dt)
 		return util.WriteToJSONFile(o.telemetryData, dt)

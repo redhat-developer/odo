@@ -10,7 +10,6 @@ import (
 
 // getTelemetryForDevfileRegistry returns a populated TelemetryData object that contains some odo telemetry (with client consent), such as the anonymous ID and
 // locale in addition to the generic client name "odo"
-
 func getTelemetryForDevfileRegistry() (registryLibrary.TelemetryData, error) {
 
 	td := registryLibrary.TelemetryData{
