@@ -66,11 +66,7 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	defer server.Close()
 	defer close(body)
 
-	ctrl := gomock.NewController(t)
-	cfg := preference.NewMockClient(ctrl)
-	cfg.EXPECT().GetConsentTelemetry().Return(false)
-
-	c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+	c, err := newCustomClient(createConfigDir(t), server.URL)
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +74,9 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	testError := errors.New("error occurred")
 	uploadData := fakeTelemetryData("odo preference view", testError, context.Background())
 	// run a command, odo preference view
-	if err = c.Upload(uploadData); err != nil {
+	ctx := context.Background()
+	scontext.SetTelemetryStatus(ctx, false)
+	if err = c.Upload(ctx, uploadData); err != nil {
 		t.Error(err)
 	}
 
@@ -124,17 +122,15 @@ func TestClientUploadWithConsent(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			cfg := preference.NewMockClient(ctrl)
-			cfg.EXPECT().GetConsentTelemetry().Return(true)
-
-			c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+			c, err := newCustomClient(createConfigDir(t), server.URL)
 			if err != nil {
 				t.Error(err)
 			}
 			uploadData := fakeTelemetryData("odo init", tt.err, context.Background())
 			// upload the data to Segment
-			if err = c.Upload(uploadData); err != nil {
+			ctx := scontext.NewContext(context.Background())
+			scontext.SetTelemetryStatus(ctx, true)
+			if err = c.Upload(ctx, uploadData); err != nil {
 				t.Error(err)
 			}
 			// segment.Client.SegmentClient uploads the data to server when a condition is met or when the connection is closed.
@@ -318,10 +314,8 @@ func TestClientUploadWithContext(t *testing.T) {
 	defer server.Close()
 	defer close(body)
 
-	ctrl := gomock.NewController(t)
-	cfg := preference.NewMockClient(ctrl)
-	cfg.EXPECT().GetConsentTelemetry().Return(true).AnyTimes()
 	ctx := scontext.NewContext(context.Background())
+	scontext.SetTelemetryStatus(ctx, true)
 
 	for k, v := range map[string]string{scontext.ComponentType: "nodejs", scontext.ClusterType: ""} {
 		switch k {
@@ -333,12 +327,12 @@ func TestClientUploadWithContext(t *testing.T) {
 			scontext.SetClusterType(ctx, fakeClient)
 			uploadData = fakeTelemetryData("odo set project", nil, ctx)
 		}
-		c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+		c, err := newCustomClient(createConfigDir(t), server.URL)
 		if err != nil {
 			t.Error(err)
 		}
 		// upload the data to Segment
-		if err = c.Upload(uploadData); err != nil {
+		if err = c.Upload(ctx, uploadData); err != nil {
 			t.Error(err)
 		}
 		if err = c.Close(); err != nil {

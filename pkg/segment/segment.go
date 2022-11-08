@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -70,22 +71,20 @@ type TelemetryData struct {
 type Client struct {
 	// SegmentClient helps interact with the segment API
 	SegmentClient analytics.Client
-	// Preference points to the global odo config
-	Preference preference.Client
 	// TelemetryFilePath points to the file containing anonymousID used for tracking odo commands executed by the user
 	TelemetryFilePath string
 }
 
 // NewClient returns a Client created with the default args
-func NewClient(preference preference.Client) (*Client, error) {
-	return newCustomClient(preference,
+func NewClient() (*Client, error) {
+	return newCustomClient(
 		GetTelemetryFilePath(),
 		analytics.DefaultEndpoint,
 	)
 }
 
 // newCustomClient returns a Client created with custom args
-func newCustomClient(preference preference.Client, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
+func newCustomClient(telemetryFilePath string, segmentEndpoint string) (*Client, error) {
 	// get the locale information
 	tag, err := locale.Detect()
 	if err != nil {
@@ -109,7 +108,6 @@ func newCustomClient(preference preference.Client, telemetryFilePath string, seg
 	}
 	return &Client{
 		SegmentClient:     client,
-		Preference:        preference,
 		TelemetryFilePath: telemetryFilePath,
 	}, nil
 }
@@ -128,9 +126,9 @@ func (c *Client) Close() error {
 }
 
 // Upload prepares the data to be sent to segment and send it once the client connection closes
-func (c *Client) Upload(data TelemetryData) error {
+func (c *Client) Upload(ctx context.Context, data TelemetryData) error {
 	// if the user has not consented for telemetry, return
-	if !IsTelemetryEnabled(c.Preference) {
+	if !scontext.GetTelemetryStatus(ctx) {
 		return nil
 	}
 
