@@ -32,6 +32,7 @@ import (
 	"k8s.io/klog"
 	"k8s.io/utils/pointer"
 
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -186,6 +187,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	o.SetClientset(deps)
 
 	ctx := cmdLineObj.Context()
+	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, platform)
 	ctx = odocontext.WithApplication(ctx, defaultAppName)
