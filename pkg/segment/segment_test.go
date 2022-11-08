@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -236,7 +237,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 
 	// When only ODO_DISABLE_TELEMETRY is present in the env, it takes precedence over the ConsentTelemetry preference,
 	// only if ODO_DISABLE_TELEMETRY=true
-	for _, odoDisableTelemetry := range []string{"", "true", "false", "foo"} {
+	for _, odoDisableTelemetry := range []string{"true", "false"} {
 		for _, consentTelemetry := range []bool{true, false} {
 			odoDisableTelemetry := odoDisableTelemetry
 			consentTelemetry := consentTelemetry
@@ -258,7 +259,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 		}
 	}
 	//Cases where all the environment variables are there.
-	for _, odoDisableTelemetry := range []string{"", "true", "false", "foo"} {
+	for _, odoDisableTelemetry := range []string{"true", "false"} {
 		for _, odoTrackingConsent := range []string{"", "yes", "no", "bar"} {
 			for _, consentTelemetry := range []bool{true, false} {
 				odoDisableTelemetry := odoDisableTelemetry
@@ -296,7 +297,11 @@ func TestIsTelemetryEnabled(t *testing.T) {
 			cfg := preference.NewMockClient(ctrl)
 			cfg.EXPECT().GetConsentTelemetry().Return(tt.consentTelemetryPref).AnyTimes()
 
-			got := IsTelemetryEnabled(cfg)
+			envConfig, err := config.GetConfiguration()
+			if err != nil {
+				t.Errorf("Get configuration fails: %v", err)
+			}
+			got := IsTelemetryEnabled(cfg, *envConfig)
 
 			//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 			want := tt.want(tt.env[DisableTelemetryEnv], tt.env[TrackingConsentEnv], tt.consentTelemetryPref)

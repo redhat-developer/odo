@@ -11,18 +11,19 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Xuanwo/go-locale"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/pborman/uuid"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/preference"
 )
@@ -48,9 +49,8 @@ const (
 	// Setting it to 'no' has the same effect as DisableTelemetryEnv=true (telemetry is disabled and no question asked)
 	// Settings this to 'yes' skips the question about telemetry and enables user tracking.
 	// Possible values are yes/no.
-	TrackingConsentEnv    = "ODO_TRACKING_CONSENT"
-	DebugTelemetryFileEnv = "ODO_DEBUG_TELEMETRY_FILE"
-	TelemetryCaller       = "TELEMETRY_CALLER"
+	TrackingConsentEnv = "ODO_TRACKING_CONSENT"
+	TelemetryCaller    = "TELEMETRY_CALLER"
 )
 
 type TelemetryProperties struct {
@@ -262,13 +262,13 @@ func RunningInTerminal() bool {
 }
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
-func IsTelemetryEnabled(cfg preference.Client) bool {
+func IsTelemetryEnabled(cfg preference.Client, envConfig config.Configuration) bool {
 	klog.V(4).Info("Checking telemetry enable status")
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
 
 	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
-	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))
+	disableTelemetry := pointer.BoolDeref(envConfig.OdoDisableTelemetry, false)
 	if disableTelemetry {
 		//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 		klog.V(4).Infof("Sending telemetry disabled by %q env variable\n", DisableTelemetryEnv)
@@ -352,8 +352,4 @@ func sanitizeExec(errString string) string {
 	pattern, _ := regexp.Compile("exec command.*")
 	errString = pattern.ReplaceAllString(errString, fmt.Sprintf("exec command %s", Sanitizer))
 	return errString
-}
-
-func GetDebugTelemetryFile() string {
-	return os.Getenv(DebugTelemetryFileEnv)
 }

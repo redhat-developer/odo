@@ -158,7 +158,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	scontext.SetFlags(cmd.Context(), cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig))
+	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, *envConfig))
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
