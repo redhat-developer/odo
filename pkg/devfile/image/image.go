@@ -2,17 +2,20 @@
 package image
 
 import (
+	"context"
 	"errors"
-	"os"
 	"os/exec"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+
+	"k8s.io/utils/pointer"
 )
 
 // Backend is in interface that must be implemented by container runtimes
@@ -27,13 +30,12 @@ type Backend interface {
 }
 
 var lookPathCmd = exec.LookPath
-var getEnvFunc = os.Getenv
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, push bool) error {
+func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, push bool) error {
 
-	backend, err := selectBackend()
+	backend, err := selectBackend(ctx)
 	if err != nil {
 		return err
 	}
@@ -59,8 +61,8 @@ func BuildPushImages(fs filesystem.Filesystem, devfileObj parser.DevfileObj, pat
 
 // BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(fs filesystem.Filesystem, devfilePath string, component devfile.Component, push bool) error {
-	backend, err := selectBackend()
+func BuildPushSpecificImage(ctx context.Context, fs filesystem.Filesystem, devfilePath string, component devfile.Component, push bool) error {
+	backend, err := selectBackend(ctx)
 	if err != nil {
 		return err
 	}
@@ -91,12 +93,9 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 // selectBackend selects the container backend to use for building and pushing images
 // It will detect podman and docker CLIs (in this order),
 // or return an error if none are present locally
-func selectBackend() (Backend, error) {
+func selectBackend(ctx context.Context) (Backend, error) {
 
-	podmanCmd := getEnvFunc("PODMAN_CMD")
-	if podmanCmd == "" {
-		podmanCmd = "podman"
-	}
+	podmanCmd := pointer.StringDeref(envcontext.GetEnvConfig(ctx).PodmanCmd, "podman")
 	if _, err := lookPathCmd(podmanCmd); err == nil {
 
 		// Podman does NOT build x86 images on Apple Silicon / M1 and we must *WARN* the user that this will not work.
@@ -116,10 +115,7 @@ func selectBackend() (Backend, error) {
 		return NewDockerCompatibleBackend(podmanCmd), nil
 	}
 
-	dockerCmd := getEnvFunc("DOCKER_CMD")
-	if dockerCmd == "" {
-		dockerCmd = "docker"
-	}
+	dockerCmd := pointer.StringDeref(envcontext.GetEnvConfig(ctx).DockerCmd, "docker")
 	if _, err := lookPathCmd(dockerCmd); err == nil {
 		return NewDockerCompatibleBackend(dockerCmd), nil
 	}

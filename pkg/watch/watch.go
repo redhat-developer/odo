@@ -82,7 +82,7 @@ type WatchParameters struct {
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(adapters.PushParameters, WatchParameters, *ComponentStatus) error
+	DevfileWatchHandler func(context.Context, adapters.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
@@ -114,7 +114,7 @@ type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores 
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
 // It returns a Duration after which to recall in case of error
-type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
+type processEventsFunc func(ctx context.Context, changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
@@ -240,7 +240,7 @@ func (o *WatchClient) eventWatcher(
 
 			componentStatus.State = StateSyncOutdated
 			fmt.Fprintf(out, "Pushing files...\n\n")
-			retry, err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
 			o.forceSync = false
 			if err != nil {
 				return err
@@ -278,7 +278,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-deployTimer.C:
-			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -294,7 +294,7 @@ func (o *WatchClient) eventWatcher(
 
 		case <-devfileTimer.C:
 			fmt.Fprintf(out, "Updating Component...\n\n")
-			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -306,7 +306,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-retryTimer.C:
-			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -423,6 +423,7 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 }
 
 func (o *WatchClient) processEvents(
+	ctx context.Context,
 	changedFiles, deletedPaths []string,
 	parameters WatchParameters,
 	out io.Writer,
@@ -451,7 +452,7 @@ func (o *WatchClient) processEvents(
 		ErrOut:                   parameters.ErrOut,
 	}
 	oldStatus := *componentStatus
-	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
+	err := parameters.DevfileWatchHandler(ctx, pushParams, parameters, componentStatus)
 	if err != nil {
 		if isFatal(err) {
 			return nil, err

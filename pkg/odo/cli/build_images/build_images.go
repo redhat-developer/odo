@@ -68,7 +68,7 @@ func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
 	)
-	return image.BuildPushImages(o.clientset.FS, *devfileObj, path, o.pushFlag)
+	return image.BuildPushImages(ctx, o.clientset.FS, *devfileObj, path, o.pushFlag)
 }
 
 // NewCmdBuildImages implements the odo command

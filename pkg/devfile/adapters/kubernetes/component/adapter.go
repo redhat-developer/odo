@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -89,7 +90,7 @@ func NewKubernetesAdapter(
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 // The componentStatus will be modified to reflect the status of the component when the function returns
-func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch.ComponentStatus) (err error) {
+func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, componentStatus *watch.ComponentStatus) (err error) {
 
 	// preliminary checks
 	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
@@ -260,6 +261,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		devfile:       a.Devfile,
 		path:          parameters.Path,
 		podName:       pod.GetName(),
+		ctx:           ctx,
 	}
 
 	if commandType == devfilev1.ExecCommandType {

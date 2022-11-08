@@ -93,7 +93,7 @@ func (o *DevClient) Start(
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	componentStatus := watch.ComponentStatus{}
-	err := adapter.Push(pushParameters, &componentStatus)
+	err := adapter.Push(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (o *DevClient) Start(
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 	var adapter component.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
@@ -128,7 +128,7 @@ func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters,
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
-	err = adapter.Push(pushParams, componentStatus)
+	err = adapter.Push(ctx, pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}

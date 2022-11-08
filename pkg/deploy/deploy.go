@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -26,12 +27,13 @@ func NewDeployClient(kubeClient kclient.ClientInterface) *DeployClient {
 	}
 }
 
-func (o *DeployClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string, componentName string) error {
-	deployHandler := newDeployHandler(fs, devfileObj, path, o.kubeClient, appName, componentName)
+func (o *DeployClient) Deploy(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string, componentName string) error {
+	deployHandler := newDeployHandler(ctx, fs, devfileObj, path, o.kubeClient, appName, componentName)
 	return libdevfile.Deploy(devfileObj, deployHandler)
 }
 
 type deployHandler struct {
+	ctx           context.Context
 	fs            filesystem.Filesystem
 	devfileObj    parser.DevfileObj
 	path          string
@@ -42,8 +44,9 @@ type deployHandler struct {
 
 var _ libdevfile.Handler = (*deployHandler)(nil)
 
-func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string, componentName string) *deployHandler {
+func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string, componentName string) *deployHandler {
 	return &deployHandler{
+		ctx:           ctx,
 		fs:            fs,
 		devfileObj:    devfileObj,
 		path:          path,
@@ -55,7 +58,7 @@ func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, pa
 
 // ApplyImage builds and pushes the OCI image to be used on Kubernetes
 func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
-	return image.BuildPushSpecificImage(o.fs, o.path, img, true)
+	return image.BuildPushSpecificImage(o.ctx, o.fs, o.path, img, true)
 }
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file

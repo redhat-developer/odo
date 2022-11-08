@@ -85,7 +85,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	// Run actual deploy command to be used
-	err := o.clientset.DeployClient.Deploy(o.clientset.FS, *devfileObj, path, appName, devfileName)
+	err := o.clientset.DeployClient.Deploy(ctx, o.clientset.FS, *devfileObj, path, appName, devfileName)
 
 	if err == nil {
 		log.Info("\nYour Devfile has been successfully deployed")
