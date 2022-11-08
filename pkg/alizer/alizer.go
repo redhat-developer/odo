@@ -1,6 +1,7 @@
 package alizer
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,9 +27,9 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 
 // DetectFramework uses the alizer library in order to detect the devfile
 // to use depending on the files in the path
-func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, api.Registry, error) {
+func (o *Alizer) DetectFramework(ctx context.Context, path string) (recognizer.DevFileType, api.Registry, error) {
 	types := []recognizer.DevFileType{}
-	components, err := o.registryClient.ListDevfileStacks("", "", "", false)
+	components, err := o.registryClient.ListDevfileStacks(ctx, "", "", "", false)
 	if err != nil {
 		return recognizer.DevFileType{}, api.Registry{}, err
 	}

@@ -5,6 +5,7 @@
 package alizer
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -36,9 +37,9 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DetectFramework mocks base method.
-func (m *MockClient) DetectFramework(path string) (recognizer.DevFileType, api.Registry, error) {
+func (m *MockClient) DetectFramework(ctx context.Context, path string) (recognizer.DevFileType, api.Registry, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DetectFramework", path)
+	ret := m.ctrl.Call(m, "DetectFramework", ctx, path)
 	ret0, _ := ret[0].(recognizer.DevFileType)
 	ret1, _ := ret[1].(api.Registry)
 	ret2, _ := ret[2].(error)
@@ -46,9 +47,9 @@ func (m *MockClient) DetectFramework(path string) (recognizer.DevFileType, api.R
 }
 
 // DetectFramework indicates an expected call of DetectFramework.
-func (mr *MockClientMockRecorder) DetectFramework(path interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DetectFramework(ctx, path interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectFramework", reflect.TypeOf((*MockClient)(nil).DetectFramework), path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectFramework", reflect.TypeOf((*MockClient)(nil).DetectFramework), ctx, path)
 }
 
 // DetectName mocks base method.

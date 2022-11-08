@@ -213,7 +213,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 		if preiniter, ok := o.(PreIniter); ok {
 			msg := preiniter.PreInit()
-			err = runPreInit(cwd, deps, cmdLineObj, msg)
+			err = runPreInit(ctx, cwd, deps, cmdLineObj, msg)
 			if err != nil {
 				startTelemetry(cmd, err, startTime)
 			}

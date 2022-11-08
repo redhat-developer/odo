@@ -5,6 +5,7 @@
 package backend
 
 import (
+	context "context"
 	reflect "reflect"
 
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -68,18 +69,18 @@ func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{
 }
 
 // SelectDevfile mocks base method.
-func (m *MockInitBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
+func (m *MockInitBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
+	ret := m.ctrl.Call(m, "SelectDevfile", ctx, flags, fs, dir)
 	ret0, _ := ret[0].(*api.DevfileLocation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectDevfile indicates an expected call of SelectDevfile.
-func (mr *MockInitBackendMockRecorder) SelectDevfile(flags, fs, dir interface{}) *gomock.Call {
+func (mr *MockInitBackendMockRecorder) SelectDevfile(ctx, flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockInitBackend)(nil).SelectDevfile), flags, fs, dir)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockInitBackend)(nil).SelectDevfile), ctx, flags, fs, dir)
 }
 
 // SelectStarterProject mocks base method.

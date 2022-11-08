@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -30,8 +31,8 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 }
 
 // SelectDevfile calls thz Alizer to detect the devfile and asks for confirmation to the user
-func (o *AlizerBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DevfileLocation, err error) {
-	selected, registry, err := o.alizerClient.DetectFramework(dir)
+func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DevfileLocation, err error) {
+	selected, registry, err := o.alizerClient.DetectFramework(ctx, dir)
 	if err != nil {
 		return nil, err
 	}

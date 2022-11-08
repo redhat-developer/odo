@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -46,7 +47,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				},
 				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 					return client
 				},
 			},
@@ -73,7 +74,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				},
 				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 					return client
 				},
 			},
@@ -90,7 +91,8 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				askerClient:    tt.fields.buildAsker(ctrl),
 				registryClient: tt.fields.buildCatalogClient(ctrl),
 			}
-			got, err := o.SelectDevfile(map[string]string{}, nil, "")
+			ctx := context.Background()
+			got, err := o.SelectDevfile(ctx, map[string]string{}, nil, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -66,7 +66,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag)
+	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(ctx, o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag)
 	if err != nil {
 		return err
 	}

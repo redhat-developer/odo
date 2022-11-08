@@ -1,6 +1,7 @@
 package init
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -76,7 +77,7 @@ func (o *InitClient) Validate(flags map[string]string, fs filesystem.Filesystem,
 }
 
 // SelectDevfile calls SelectDevfile methods of the adequate backend
-func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
+func (o *InitClient) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
 	var backend backend.InitBackend
 
 	empty, err := location.DirIsEmpty(fs, dir)
@@ -90,7 +91,7 @@ func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesy
 	} else {
 		backend = o.flagsBackend
 	}
-	location, err := backend.SelectDevfile(flags, fs, dir)
+	location, err := backend.SelectDevfile(ctx, flags, fs, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesy
 	if location == nil {
 		if backend == o.alizerBackend {
 			backend = o.interactiveBackend
-			return backend.SelectDevfile(flags, fs, dir)
+			return backend.SelectDevfile(ctx, flags, fs, dir)
 		} else {
 			return nil, errors.New("unable to determine the devfile location")
 		}
@@ -108,12 +109,12 @@ func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesy
 	return location, err
 }
 
-func (o *InitClient) DownloadDevfile(devfileLocation *api.DevfileLocation, destDir string) (string, error) {
+func (o *InitClient) DownloadDevfile(ctx context.Context, devfileLocation *api.DevfileLocation, destDir string) (string, error) {
 	destDevfile := filepath.Join(destDir, "devfile.yaml")
 	if devfileLocation.DevfilePath != "" {
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
 	} else {
-		return destDevfile, o.downloadFromRegistry(devfileLocation.DevfileRegistry, devfileLocation.Devfile, destDir)
+		return destDevfile, o.downloadFromRegistry(ctx, devfileLocation.DevfileRegistry, devfileLocation.Devfile, destDir)
 	}
 }
 
@@ -161,7 +162,7 @@ func (o *InitClient) downloadDirect(URL string, dest string) error {
 
 // downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
 // If registryName is empty, will try to download the devfile from the list of registries in preferences
-func (o *InitClient) downloadFromRegistry(registryName string, devfile string, dest string) error {
+func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName string, devfile string, dest string) error {
 	var downloadSpinner *log.Status
 	var forceRegistry bool
 	if registryName == "" {
@@ -177,14 +178,14 @@ func (o *InitClient) downloadFromRegistry(registryName string, devfile string, d
 	var reg preference.Registry
 	for _, reg = range registries {
 		if forceRegistry && reg.Name == registryName {
-			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
+			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions(ctx))
 			if err != nil {
 				return err
 			}
 			downloadSpinner.End(true)
 			return nil
 		} else if !forceRegistry {
-			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
+			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions(ctx))
 			if err != nil {
 				continue
 			}
@@ -254,13 +255,13 @@ func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags
 	return backend.PersonalizeDevfileConfig(devfileobj)
 }
 
-func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
-	devfileLocation, err := o.SelectDevfile(flags, o.fsys, contextDir)
+func (o InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
+	devfileLocation, err := o.SelectDevfile(ctx, flags, o.fsys, contextDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", nil, err
 	}
 
-	devfilePath, err := o.DownloadDevfile(devfileLocation, contextDir)
+	devfilePath, err := o.DownloadDevfile(ctx, devfileLocation, contextDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to download devfile: %w", err)
 	}
@@ -277,7 +278,7 @@ func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, context
 	return devfileObj, devfilePath, devfileLocation, nil
 }
 
-func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
+func (o InitClient) InitDevfile(ctx context.Context, flags map[string]string, contextDir string,
 	preInitHandlerFunc func(interactiveMode bool), newDevfileHandlerFunc func(newDevfileObj parser.DevfileObj) error) error {
 
 	containsDevfile, err := location.DirectoryContainsDevfile(o.fsys, contextDir)
@@ -292,7 +293,7 @@ func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
 		preInitHandlerFunc(len(flags) == 0)
 	}
 
-	devfileObj, _, _, err := o.SelectAndPersonalizeDevfile(map[string]string{}, contextDir)
+	devfileObj, _, _, err := o.SelectAndPersonalizeDevfile(ctx, map[string]string{}, contextDir)
 	if err != nil {
 		return err
 	}

@@ -49,7 +49,7 @@ func (o *AlizerOptions) Run(ctx context.Context) (err error) {
 // Run contains the logic for the odo command
 func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	workingDir := odocontext.GetWorkingDirectory(ctx)
-	df, reg, err := o.clientset.AlizerClient.DetectFramework(workingDir)
+	df, reg, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
 	if err != nil {
 		return nil, err
 	}

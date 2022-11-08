@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -260,7 +261,8 @@ func TestListDevfileStacks(t *testing.T) {
 				},
 			}).AnyTimes()
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
-			got, err := catClient.ListDevfileStacks(tt.registryName, tt.devfileName, tt.filter, false)
+			ctx := context.Background()
+			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false)
 			if err != nil {
 				t.Error(err)
 			}
@@ -336,7 +338,8 @@ func TestGetRegistryDevfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			got, err := getRegistryStacks(prefClient, tt.registry)
+			ctx := context.Background()
+			got, err := getRegistryStacks(ctx, prefClient, tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)

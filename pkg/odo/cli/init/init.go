@@ -192,7 +192,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		log.Info(messages.InteractiveModeEnabled)
 	}
 
-	devfileObj, devfilePath, devfileLocation, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, workingDir)
+	devfileObj, devfilePath, devfileLocation, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(ctx, o.flags, workingDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", "", nil, nil, err
 	}

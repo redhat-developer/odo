@@ -1,6 +1,7 @@
 package init
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -163,7 +164,8 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 				preferenceClient: tt.fields.preferenceClient(ctrl),
 				registryClient:   tt.fields.registryClient(ctrl),
 			}
-			if err := o.downloadFromRegistry(tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
+			ctx := context.Background()
+			if err := o.downloadFromRegistry(ctx, tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadFromRegistry() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

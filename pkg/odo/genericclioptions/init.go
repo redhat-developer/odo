@@ -1,6 +1,8 @@
 package genericclioptions
 
 import (
+	"context"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -12,7 +14,7 @@ import (
 )
 
 // runPreInit executes the Init command before running the main command
-func runPreInit(workingDir string, deps *clientset.Clientset, cmdline cmdline.Cmdline, msg string) error {
+func runPreInit(ctx context.Context, workingDir string, deps *clientset.Clientset, cmdline cmdline.Cmdline, msg string) error {
 	isEmptyDir, err := location.DirIsEmpty(deps.FS, workingDir)
 	if err != nil {
 		return err
@@ -23,7 +25,7 @@ func runPreInit(workingDir string, deps *clientset.Clientset, cmdline cmdline.Cm
 
 	initFlags := deps.InitClient.GetFlags(cmdline.GetFlags())
 
-	err = deps.InitClient.InitDevfile(initFlags, workingDir,
+	err = deps.InitClient.InitDevfile(ctx, initFlags, workingDir,
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {

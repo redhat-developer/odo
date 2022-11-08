@@ -5,6 +5,7 @@
 package init
 
 import (
+	context "context"
 	reflect "reflect"
 
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -38,18 +39,18 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DownloadDevfile mocks base method.
-func (m *MockClient) DownloadDevfile(devfileLocation *api.DevfileLocation, destDir string) (string, error) {
+func (m *MockClient) DownloadDevfile(ctx context.Context, devfileLocation *api.DevfileLocation, destDir string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadDevfile", devfileLocation, destDir)
+	ret := m.ctrl.Call(m, "DownloadDevfile", ctx, devfileLocation, destDir)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DownloadDevfile indicates an expected call of DownloadDevfile.
-func (mr *MockClientMockRecorder) DownloadDevfile(devfileLocation, destDir interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DownloadDevfile(ctx, devfileLocation, destDir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadDevfile", reflect.TypeOf((*MockClient)(nil).DownloadDevfile), devfileLocation, destDir)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadDevfile", reflect.TypeOf((*MockClient)(nil).DownloadDevfile), ctx, devfileLocation, destDir)
 }
 
 // DownloadStarterProject mocks base method.
@@ -81,17 +82,17 @@ func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
 }
 
 // InitDevfile mocks base method.
-func (m *MockClient) InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(bool), newDevfileHandlerFunc func(parser.DevfileObj) error) error {
+func (m *MockClient) InitDevfile(ctx context.Context, flags map[string]string, contextDir string, preInitHandlerFunc func(bool), newDevfileHandlerFunc func(parser.DevfileObj) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitDevfile", flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc)
+	ret := m.ctrl.Call(m, "InitDevfile", ctx, flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // InitDevfile indicates an expected call of InitDevfile.
-func (mr *MockClientMockRecorder) InitDevfile(flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) InitDevfile(ctx, flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitDevfile", reflect.TypeOf((*MockClient)(nil).InitDevfile), flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitDevfile", reflect.TypeOf((*MockClient)(nil).InitDevfile), ctx, flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc)
 }
 
 // PersonalizeDevfileConfig mocks base method.
@@ -125,9 +126,9 @@ func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags interface{}) *g
 }
 
 // SelectAndPersonalizeDevfile mocks base method.
-func (m *MockClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
+func (m *MockClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectAndPersonalizeDevfile", flags, contextDir)
+	ret := m.ctrl.Call(m, "SelectAndPersonalizeDevfile", ctx, flags, contextDir)
 	ret0, _ := ret[0].(parser.DevfileObj)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(*api.DevfileLocation)
@@ -136,24 +137,24 @@ func (m *MockClient) SelectAndPersonalizeDevfile(flags map[string]string, contex
 }
 
 // SelectAndPersonalizeDevfile indicates an expected call of SelectAndPersonalizeDevfile.
-func (mr *MockClientMockRecorder) SelectAndPersonalizeDevfile(flags, contextDir interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SelectAndPersonalizeDevfile(ctx, flags, contextDir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAndPersonalizeDevfile", reflect.TypeOf((*MockClient)(nil).SelectAndPersonalizeDevfile), flags, contextDir)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAndPersonalizeDevfile", reflect.TypeOf((*MockClient)(nil).SelectAndPersonalizeDevfile), ctx, flags, contextDir)
 }
 
 // SelectDevfile mocks base method.
-func (m *MockClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
+func (m *MockClient) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
+	ret := m.ctrl.Call(m, "SelectDevfile", ctx, flags, fs, dir)
 	ret0, _ := ret[0].(*api.DevfileLocation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectDevfile indicates an expected call of SelectDevfile.
-func (mr *MockClientMockRecorder) SelectDevfile(flags, fs, dir interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SelectDevfile(ctx, flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockClient)(nil).SelectDevfile), flags, fs, dir)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockClient)(nil).SelectDevfile), ctx, flags, fs, dir)
 }
 
 // SelectStarterProject mocks base method.

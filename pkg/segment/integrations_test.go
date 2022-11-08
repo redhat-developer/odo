@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -63,7 +64,8 @@ func TestGetRegistryOptions(t *testing.T) {
 				t.Setenv(DebugTelemetryFileEnv, "/a/telemetry/file")
 			}
 
-			ro := GetRegistryOptions()
+			ctx := context.Background()
+			ro := GetRegistryOptions(ctx)
 			err = verifyRegistryOptions(cfg.GetConsentTelemetry(), tt.telemetryFile, ro)
 			if err != nil {
 				t.Error(err)

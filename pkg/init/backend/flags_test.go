@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -47,7 +48,8 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &FlagsBackend{}
-			got, err := o.SelectDevfile(tt.fields.flags, nil, "")
+			ctx := context.Background()
+			got, err := o.SelectDevfile(ctx, tt.fields.flags, nil, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
