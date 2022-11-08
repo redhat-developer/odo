@@ -48,13 +48,13 @@ OdoSettings:
 			registryName: "",
 			want: []api.Registry{
 				{
-					Name:   "DefaultDevfileRegistry",
-					URL:    "https://registry.devfile.io",
+					Name:   "CheDevfileRegistry",
+					URL:    "https://che-devfile-registry.openshift.io/",
 					Secure: false,
 				},
 				{
-					Name:   "CheDevfileRegistry",
-					URL:    "https://che-devfile-registry.openshift.io/",
+					Name:   "DefaultDevfileRegistry",
+					URL:    "https://registry.devfile.io",
 					Secure: false,
 				},
 			},
