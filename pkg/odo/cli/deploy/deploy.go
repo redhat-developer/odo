@@ -3,7 +3,6 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -68,10 +67,7 @@ func (o *DeployOptions) Validate(ctx context.Context) error {
 func (o *DeployOptions) Run(ctx context.Context) error {
 	var (
 		devfileObj  = odocontext.GetDevfileObj(ctx)
-		devfilePath = odocontext.GetDevfilePath(ctx)
-		path        = filepath.Dir(devfilePath)
 		devfileName = odocontext.GetComponentName(ctx)
-		appName     = odocontext.GetApplication(ctx)
 		namespace   = odocontext.GetNamespace(ctx)
 	)
 
@@ -85,7 +81,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	// Run actual deploy command to be used
-	err := o.clientset.DeployClient.Deploy(ctx, o.clientset.FS, *devfileObj, path, appName, devfileName)
+	err := o.clientset.DeployClient.Deploy(ctx)
 
 	if err == nil {
 		log.Info("\nYour Devfile has been successfully deployed")

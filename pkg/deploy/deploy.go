@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"errors"
+	"path/filepath"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -12,24 +13,34 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type DeployClient struct {
 	kubeClient kclient.ClientInterface
+	fs         filesystem.Filesystem
 }
 
 var _ Client = (*DeployClient)(nil)
 
-func NewDeployClient(kubeClient kclient.ClientInterface) *DeployClient {
+func NewDeployClient(kubeClient kclient.ClientInterface, fs filesystem.Filesystem) *DeployClient {
 	return &DeployClient{
 		kubeClient: kubeClient,
+		fs:         fs,
 	}
 }
 
-func (o *DeployClient) Deploy(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string, componentName string) error {
-	deployHandler := newDeployHandler(ctx, fs, devfileObj, path, o.kubeClient, appName, componentName)
-	return libdevfile.Deploy(devfileObj, deployHandler)
+func (o *DeployClient) Deploy(ctx context.Context) error {
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		appName       = odocontext.GetApplication(ctx)
+	)
+	deployHandler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
+	return libdevfile.Deploy(*devfileObj, deployHandler)
 }
 
 type deployHandler struct {
