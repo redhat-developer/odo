@@ -4,10 +4,13 @@ import (
 	"context"
 
 	"github.com/Xuanwo/go-locale"
-	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/preference"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
+
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+
+	"k8s.io/klog"
 )
 
 // getTelemetryForDevfileRegistry returns a populated TelemetryData object that contains some odo telemetry (with client consent), such as the anonymous ID and
@@ -18,17 +21,12 @@ func getTelemetryForDevfileRegistry(ctx context.Context) (registryLibrary.Teleme
 		Client: TelemetryClient,
 	}
 
-	if GetDebugTelemetryFile() != "" {
+	envConfig := envcontext.GetEnvConfig(ctx)
+	if envConfig.OdoDebugTelemetryFile != nil {
 		return td, nil
 	}
 
-	// TODO(feloy) Get from DI
-	cfg, err := preference.NewClient()
-	if err != nil {
-		return td, err
-	}
-
-	if !IsTelemetryEnabled(cfg) {
+	if !scontext.GetTelemetryStatus(ctx) {
 		return td, nil
 	}
 
