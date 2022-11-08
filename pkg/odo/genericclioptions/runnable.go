@@ -96,7 +96,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		disableTelemetry = *envConfig.OdoDisableTelemetry
 	}
 	debugTelemetry := pointer.StringDeref(envConfig.OdoDebugTelemetryFile, "")
-	isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled()
+	trackingConsentValue, isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled()
 
 	// check for conflicting settings
 	if trackingConsentErr == nil && disableTelemetryEnvSet && trackingConsentEnvSet && disableTelemetry == isTrackingConsentEnabled {
@@ -118,15 +118,14 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 				klog.V(4).Infof("error in determining value of tracking consent env var: %v", trackingConsentErr)
 				askConsent = true
 			} else if trackingConsentEnvSet {
-				trackingConsent := os.Getenv(segment.TrackingConsentEnv)
 				if isTrackingConsentEnabled {
-					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsentValue)
 					klog.V(4).Info("Telemetry is enabled!\n")
 					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
 						klog.V(4).Info(err1.Error())
 					}
 				} else {
-					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsentValue)
 				}
 			} else if disableTelemetry {
 				//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
@@ -151,7 +150,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
-	err = scontext.SetCaller(cmd.Context(), os.Getenv(segment.TelemetryCaller))
+	err = scontext.SetCaller(cmd.Context(), pointer.StringDeref(envConfig.TelemetryCaller, ""))
 	if err != nil {
 		klog.V(3).Infof("error handling caller property for telemetry: %v", err)
 	}
