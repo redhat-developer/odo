@@ -3,8 +3,6 @@ package dev
 import (
 	"context"
 	"io"
-
-	"github.com/devfile/library/pkg/devfile/parser"
 )
 
 type StartOptions struct {
@@ -30,10 +28,6 @@ type Client interface {
 	// It logs messages and errors to out and errOut.
 	Start(
 		ctx context.Context,
-		devfileObj parser.DevfileObj,
-		componentName string,
-		path string,
-		devfilePath string,
 		out io.Writer,
 		errOut io.Writer,
 		options StartOptions,

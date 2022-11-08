@@ -143,10 +143,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	log.Section("Deploying to the cluster in developer mode")
 	return o.clientset.DevClient.Start(
 		o.ctx,
-		*devFileObj,
-		componentName,
-		path,
-		devfilePath,
 		o.out,
 		o.errOut,
 		dev.StartOptions{
