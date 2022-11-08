@@ -9,6 +9,8 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -165,6 +167,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 				registryClient:   tt.fields.registryClient(ctrl),
 			}
 			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
 			if err := o.downloadFromRegistry(ctx, tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadFromRegistry() error = %v, wantErr %v", err, tt.wantErr)
 			}

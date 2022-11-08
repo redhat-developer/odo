@@ -11,7 +11,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
+
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -262,6 +265,7 @@ func TestListDevfileStacks(t *testing.T) {
 			}).AnyTimes()
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
 			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
 			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false)
 			if err != nil {
 				t.Error(err)
@@ -339,6 +343,7 @@ func TestGetRegistryDevfiles(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
 			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
 			got, err := getRegistryStacks(ctx, prefClient, tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
