@@ -97,7 +97,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		disableTelemetry = *envConfig.OdoDisableTelemetry
 	}
 	debugTelemetry := pointer.StringDeref(envConfig.OdoDebugTelemetryFile, "")
-	trackingConsentValue, isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled()
+	trackingConsentValue, isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled(envConfig)
 
 	// check for conflicting settings
 	if trackingConsentErr == nil && disableTelemetryEnvSet && trackingConsentEnvSet && disableTelemetry == isTrackingConsentEnabled {
