@@ -1,11 +1,14 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -469,7 +472,12 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 				BeforeEach(func() {
 					helper.EnableTelemetryDebug()
 
-					cfg, err := preference.NewClient()
+					ctx := context.Background()
+					envConfig, err := config.GetConfiguration()
+					Expect(err).To(BeNil())
+					ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
+					cfg, err := preference.NewClient(ctx)
 					Expect(err).ShouldNot(HaveOccurred())
 					if tt.setupFunc != nil {
 						tt.setupFunc(cfg)

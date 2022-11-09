@@ -6,6 +6,11 @@ import (
 	"os"
 
 	"github.com/posener/complete"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
@@ -13,16 +18,24 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/preference"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+
 	"k8s.io/klog"
 )
 
 func main() {
+	// Create a context ready for receiving telemetry data
+	// and save into it configuration based on environment variables
+	ctx := segment.NewContext(context.Background())
+	envConfig, err := config.GetConfiguration()
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
 	// create the complete command
 	klog.InitFlags(nil)
 
-	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
+	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName)
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
@@ -41,7 +54,7 @@ func main() {
 	// parse the flags but hack around to avoid exiting with error code 2 on help
 	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
 	args := os.Args[1:]
-	if err := flag.CommandLine.Parse(args); err != nil {
+	if err = flag.CommandLine.Parse(args); err != nil {
 		if err == flag.ErrHelp {
 			os.Exit(0)
 		}
@@ -55,7 +68,7 @@ func main() {
 		return
 	}
 
-	cfg, err := preference.NewClient()
+	cfg, err := preference.NewClient(ctx)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
@@ -67,7 +80,7 @@ func main() {
 		updateInfo := make(chan string)
 		go version.GetLatestReleaseInfo(updateInfo)
 
-		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")
+		util.LogErrorAndExit(root.ExecuteContext(ctx), "")
 		select {
 		case message := <-updateInfo:
 			log.Info(message)
@@ -75,7 +88,7 @@ func main() {
 			klog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
-		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")
+		util.LogErrorAndExit(root.ExecuteContext(ctx), "")
 	}
 }
 

@@ -39,8 +39,7 @@ OdoSettings:
 	if err != nil {
 		t.Error(err)
 	}
-
-	t.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
+	tempConfigFileName := tempConfigFile.Name()
 
 	tests := []struct {
 		name         string
@@ -78,7 +77,11 @@ OdoSettings:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prefClient, _ := preference.NewClient()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{
+				Globalodoconfig: &tempConfigFileName,
+			})
+			prefClient, _ := preference.NewClient(ctx)
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {

@@ -153,7 +153,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, PREFERENCE) {
-		dep.PreferenceClient, err = preference.NewClient()
+		dep.PreferenceClient, err = preference.NewClient(command.Context())
 		if err != nil {
 			return nil, err
 		}

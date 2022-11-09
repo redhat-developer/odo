@@ -15,7 +15,6 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -81,14 +80,14 @@ const (
 )
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
-	var err error
-	startTime := time.Now()
-	userConfig, _ := preference.NewClient()
+	var (
+		err       error
+		startTime = time.Now()
+		ctx       = cmd.Context()
+	)
 
-	envConfig, err := config.GetConfiguration()
-	if err != nil {
-		util.LogErrorAndExit(err, "")
-	}
+	userConfig, _ := preference.NewClient(ctx)
+	envConfig := envcontext.GetEnvConfig(ctx)
 
 	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 	disableTelemetryEnvSet := envConfig.OdoDisableTelemetry != nil
@@ -97,7 +96,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		disableTelemetry = *envConfig.OdoDisableTelemetry
 	}
 	debugTelemetry := pointer.StringDeref(envConfig.OdoDebugTelemetryFile, "")
-	trackingConsentValue, isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled(envConfig)
+	trackingConsentValue, isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled(&envConfig)
 
 	// check for conflicting settings
 	if trackingConsentErr == nil && disableTelemetryEnvSet && trackingConsentEnvSet && disableTelemetry == isTrackingConsentEnabled {
@@ -158,7 +157,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	scontext.SetFlags(cmd.Context(), cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, *envConfig))
+	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, envConfig))
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
@@ -174,7 +173,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	})
 
-	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(envConfig, cmd), "")
+	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(&envConfig, cmd), "")
 	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
 	util.LogErrorAndExit(commonflags.CheckVariablesCommand(cmd), "")
 
@@ -186,8 +185,6 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	o.SetClientset(deps)
 
-	ctx := cmdLineObj.Context()
-	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, platform)
 	ctx = odocontext.WithApplication(ctx, defaultAppName)

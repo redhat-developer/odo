@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 )
@@ -25,8 +27,14 @@ func setDebugTelemetryFile(value string) error {
 // it also sets up envs and cfg for the same
 func EnableTelemetryDebug() {
 	Expect(os.Setenv(segment.TrackingConsentEnv, "yes")).NotTo(HaveOccurred())
-	cfg, _ := preference.NewClient()
-	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
+
+	ctx := context.Background()
+	envConfig, err := config.GetConfiguration()
+	Expect(err).To(BeNil())
+	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
+	cfg, _ := preference.NewClient(ctx)
+	err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
 	Expect(err).To(BeNil())
 	tempFile, err := ioutil.TempFile("", "telemetry")
 	Expect(err).NotTo(HaveOccurred())
@@ -58,10 +66,14 @@ func GetTelemetryDebugData() segment.TelemetryData {
 func ResetTelemetry() {
 	Expect(os.Setenv(segment.TrackingConsentEnv, "no")).NotTo(HaveOccurred())
 	Expect(os.Unsetenv(DebugTelemetryFileEnv))
-	cfg, _ := preference.NewClient()
-	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
-	Expect(err).NotTo(HaveOccurred())
+
+	ctx := context.Background()
 	envConfig, err := config.GetConfiguration()
+	Expect(err).To(BeNil())
+	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
+	cfg, _ := preference.NewClient(ctx)
+	err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
 	Expect(err).NotTo(HaveOccurred())
 	Expect(segment.IsTelemetryEnabled(cfg, *envConfig)).To(BeFalse())
 }

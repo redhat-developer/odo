@@ -1,16 +1,14 @@
 package registry
 
 import (
+	"context"
 	"io/ioutil"
 	"reflect"
 	"testing"
 
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
-)
-
-const (
-	// GlobalConfigEnvName is the environment variable GLOBALODOCONFIG
-	GlobalConfigEnvName = "GLOBALODOCONFIG"
 )
 
 func TestIsSecure(t *testing.T) {
@@ -19,7 +17,7 @@ func TestIsSecure(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	tempConfigFileName := tempConfigFile.Name()
 
 	tests := []struct {
 		name              string
@@ -52,7 +50,11 @@ func TestIsSecure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := preference.NewClient()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{
+				Globalodoconfig: &tempConfigFileName,
+			})
+			cfg, err := preference.NewClient(ctx)
 			if err != nil {
 				t.Errorf("Unable to get preference file with error: %v", err)
 			}
