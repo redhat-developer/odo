@@ -617,3 +617,9 @@ func (oc OcRunner) AssertNoContainsLabel(kind, namespace, componentName, appName
 	all := Cmd(oc.path, "get", kind, selector, "-n", namespace, "-o", "jsonpath={.items[0].metadata.labels}").ShouldPass().Out()
 	Expect(all).ToNot(ContainSubstring(fmt.Sprintf(`"%s"`, key)))
 }
+
+func (oc OcRunner) EnsurePodIsUp(namespace, podName string) {
+	WaitForCmdOut(oc.path, []string{"get", "pods", "-n", namespace, "-o", "jsonpath='{range .items[*]}{.metadata.name}'"}, 4, true, func(output string) bool {
+		return strings.Contains(output, podName)
+	})
+}

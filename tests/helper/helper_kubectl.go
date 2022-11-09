@@ -380,6 +380,12 @@ func (kubectl KubectlRunner) EnsureOperatorIsInstalled(partialOperatorName strin
 	})
 }
 
+func (kubectl KubectlRunner) EnsurePodIsUp(namespace, podName string) {
+	WaitForCmdOut(kubectl.path, []string{"get", "pods", "-n", namespace, "-o", "jsonpath='{range .items[*]}{.metadata.name}'"}, 4, true, func(output string) bool {
+		return strings.Contains(output, podName)
+	})
+}
+
 func (kubectl KubectlRunner) GetNamespaceProject() string {
 	return Cmd(kubectl.path, "get", "namespace").ShouldPass().Out()
 }

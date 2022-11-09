@@ -27,6 +27,7 @@ var _ = Describe("odo add binding command tests", func() {
 		}, 120, 3).Should(ContainSubstring("Cluster"))
 		addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 		Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+		commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "cluster-sample-1")
 	})
 
 	// This is run after every Spec (It)
@@ -114,6 +115,7 @@ status:
 			addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
 				helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 			Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
+			commonVar.CliRunner.EnsurePodIsUp(otherNS, "cluster-sample-1")
 
 			nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 
@@ -190,6 +192,7 @@ status:
 					addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
 						helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 					Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
+					commonVar.CliRunner.EnsurePodIsUp(otherNS, "cluster-sample-1")
 
 					commonVar.CliRunner.SetProject(commonVar.Project)
 
