@@ -2644,7 +2644,7 @@ CMD ["npm", "start"]
 					"app",
 					labels.ComponentDevMode,
 					"app.openshift.io/runtime",
-					"DOTNODE",
+					"dotnode",
 				)
 				commonVar.CliRunner.AssertContainsLabel(
 					"service",
@@ -2653,7 +2653,7 @@ CMD ["npm", "start"]
 					"app",
 					labels.ComponentDevMode,
 					"app.openshift.io/runtime",
-					"DOTNODE",
+					"dotnode",
 				)
 			},
 			checkDeploy: func(cmpName string) {
@@ -2664,7 +2664,7 @@ CMD ["npm", "start"]
 					"app",
 					labels.ComponentDeployMode,
 					"app.openshift.io/runtime",
-					"DOTNODE",
+					"dotnode",
 				)
 			},
 		},

@@ -32,7 +32,8 @@ var (
 func GetLabels(componentName string, applicationName string, runtime string, mode string, isPartOfComponent bool) map[string]string {
 	labels := getLabels(componentName, applicationName, mode, true, isPartOfComponent)
 	if runtime != "" {
-		labels[openshiftRunTimeLabel] = sanitizeLabelValue(openshiftRunTimeLabel, runtime)
+		// 'app.openshift.io/runtime' label added by OpenShift console is always lowercase
+		labels[openshiftRunTimeLabel] = strings.ToLower(sanitizeLabelValue(openshiftRunTimeLabel, runtime))
 	}
 	return labels
 }
