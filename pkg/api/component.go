@@ -3,6 +3,9 @@ package api
 import (
 	"sort"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type RunningMode string
@@ -27,9 +30,10 @@ func (o RunningModes) AddRunningMode(mode RunningMode) {
 
 func (o RunningModes) String() string {
 	strs := make([]string, 0, len(o))
+	caser := cases.Title(language.Und)
 	for s, v := range o {
 		if v {
-			strs = append(strs, strings.Title(string(s)))
+			strs = append(strs, caser.String(string(s)))
 		}
 	}
 	if len(strs) == 0 {

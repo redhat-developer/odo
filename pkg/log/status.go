@@ -246,7 +246,7 @@ func Println() {
 }
 
 // Success will output in an appropriate "success" manner
-//  ✓  <message>
+// ✓  <message>
 func Success(a ...interface{}) {
 	if !IsJSON() {
 		green := color.New(color.FgGreen).SprintFunc()
@@ -255,7 +255,8 @@ func Success(a ...interface{}) {
 }
 
 // Successf will output in an appropriate "progress" manner
-//  ✓  <message>
+//
+//	✓  <message>
 func Successf(format string, a ...interface{}) {
 	if !IsJSON() {
 		green := color.New(color.FgGreen).SprintFunc()
@@ -264,12 +265,14 @@ func Successf(format string, a ...interface{}) {
 }
 
 // Warning will output in an appropriate "progress" manner
+//
 //	⚠ <message>
 func Warning(a ...interface{}) {
 	Fwarning(GetStderr(), a...)
 }
 
 // Fwarning will output in an appropriate "progress" manner in out writer
+//
 //	⚠ <message>
 func Fwarning(out io.Writer, a ...interface{}) {
 	if !IsJSON() {
@@ -279,6 +282,7 @@ func Fwarning(out io.Writer, a ...interface{}) {
 }
 
 // Warningf will output in an appropriate "warning" manner
+//
 //	⚠ <message>
 func Warningf(format string, a ...interface{}) {
 	if !IsJSON() {
@@ -288,6 +292,7 @@ func Warningf(format string, a ...interface{}) {
 }
 
 // Fsuccess will output in an appropriate "progress" manner in out writer
+//
 //	✓ <message>
 func Fsuccess(out io.Writer, a ...interface{}) {
 	if !IsJSON() {
@@ -298,12 +303,12 @@ func Fsuccess(out io.Writer, a ...interface{}) {
 
 // Title Prints the logo as well as the first line being BLUE (indicator of the command information)
 // the second and third lines are optional and provide information with regards to what is being ran
-// 	 __
-//  /  \__     **First line**
-//  \__/  \    Second line
-//  /  \__/    Third line
-//  \__/
 //
+//		 __
+//	 /  \__     **First line**
+//	 \__/  \    Second line
+//	 /  \__/    Third line
+//	 \__/
 func Title(firstLine, secondLine, thirdLine string) {
 	if !IsJSON() {
 		fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine, thirdLine))
@@ -347,6 +352,7 @@ func Section(a ...interface{}) {
 }
 
 // Deprecate will output a warning symbol and then "Deprecated" at the end of the output in YELLOW
+//
 //	⚠ <message all yellow>
 func Deprecate(what, nextAction string) {
 	if !IsJSON() {

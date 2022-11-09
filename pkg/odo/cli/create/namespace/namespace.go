@@ -1,11 +1,12 @@
 package namespace
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"strings"
 
-	"context"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/spf13/cobra"
@@ -94,7 +95,8 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 	}
 	s.End(true)
 
-	successMessage := fmt.Sprintf(`%s %q is ready for use`, strings.Title(nco.commandName), nco.namespaceName)
+	caser := cases.Title(language.Und)
+	successMessage := fmt.Sprintf(`%s %q is ready for use`, caser.String(nco.commandName), nco.namespaceName)
 	log.Successf(successMessage)
 
 	// Set the current namespace when created

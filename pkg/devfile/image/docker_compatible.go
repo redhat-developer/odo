@@ -115,8 +115,8 @@ func resolveAndDownloadDockerfile(fs filesystem.Filesystem, uri string) (string,
 	return uri, false, nil
 }
 
-//getShellCommand creates the docker compatible build command from detected backend,
-//container image and devfile path
+// getShellCommand creates the docker compatible build command from detected backend,
+// container image and devfile path
 func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
 	var shellCmd []string
 	imageName := image.ImageName

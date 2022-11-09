@@ -58,7 +58,7 @@ func FakeNewWithIngressSupports(networkingv1Supported, extensionV1Supported bool
 	return &client, &fkclientset
 }
 
-//FakePodStatus returns a pod with the status
+// FakePodStatus returns a pod with the status
 func FakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

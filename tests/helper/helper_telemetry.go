@@ -16,8 +16,8 @@ func setDebugTelemetryFile(value string) error {
 	return os.Setenv(segment.DebugTelemetryFileEnv, value)
 }
 
-//EnableTelemetryDebug creates a temp file to use for debugging telemetry.
-//it also sets up envs and cfg for the same
+// EnableTelemetryDebug creates a temp file to use for debugging telemetry.
+// it also sets up envs and cfg for the same
 func EnableTelemetryDebug() {
 	Expect(os.Setenv(segment.TrackingConsentEnv, "yes")).NotTo(HaveOccurred())
 	cfg, _ := preference.NewClient()
@@ -29,7 +29,7 @@ func EnableTelemetryDebug() {
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
 }
 
-//GetTelemetryDebugData gets telemetry data dumped into temp file for testing/debugging
+// GetTelemetryDebugData gets telemetry data dumped into temp file for testing/debugging
 func GetTelemetryDebugData() segment.TelemetryData {
 	var data []byte
 	var td segment.TelemetryData
@@ -45,7 +45,7 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	return td
 }
 
-//ResetTelemetry resets the telemetry back to original values
+// ResetTelemetry resets the telemetry back to original values
 func ResetTelemetry() {
 	Expect(os.Setenv(segment.TrackingConsentEnv, "no")).NotTo(HaveOccurred())
 	Expect(os.Unsetenv(segment.DebugTelemetryFileEnv))

@@ -54,7 +54,7 @@ GINKGO_FLAGS_AUTO = $(GINKGO_FLAGS_ALL) -p
 # Flags for tests that may be run in parallel
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 # GolangCi version for unit-validate test
-GOLANGCI_LINT_VERSION=1.37.0
+GOLANGCI_LINT_VERSION=1.49.0
 
 RUN_GINKGO = go run -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 

@@ -3,11 +3,12 @@ package util
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func LogError(err error, context string) {
@@ -26,7 +27,8 @@ func LogError(err error, context string) {
 			if context == "" {
 				log.Error(err)
 			} else {
-				printstring := fmt.Sprintf("%s%s", strings.Title(context), "\nError: %v")
+				caser := cases.Title(language.Und)
+				printstring := fmt.Sprintf("%s%s", caser.String(context), "\nError: %v")
 				log.Errorf(printstring, err)
 			}
 		}
