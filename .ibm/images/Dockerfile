@@ -18,6 +18,6 @@ RUN useradd -u 2001 --create-home tester
 # Change to non-root privilege
 USER tester
 
-RUN go get github.com/kadel/odo-robot@965ea0dd848856691bfc76e6824a8b787b950045 && \
+RUN go install github.com/kadel/odo-robot@965ea0dd848856691bfc76e6824a8b787b950045 && \
     ibmcloud plugin install -f cloud-object-storage && \
     ibmcloud plugin install -f kubernetes-service
