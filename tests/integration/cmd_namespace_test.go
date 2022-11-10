@@ -185,10 +185,12 @@ ComponentSettings:
 			})
 			It(fmt.Sprintf("should successfully list all the %ss in JSON format", commandName), func() {
 				Eventually(func() bool {
-					out := helper.Cmd("odo", "list", commandName, "-o", "json").ShouldPass().Out()
-					helper.MatchAllInOutput(out, []string{commonVar.Project, "\"active\": true", "\"active\": false"})
-					return true
-				}, 10*time.Second, 1*time.Second).Should(Equal(true))
+					ns := helper.Cmd("odo", "list", commandName).ShouldPass().Out()
+					return strings.Contains(ns, commonVar.Project)
+				}).WithTimeout(10 * time.Second).Should(BeTrue())
+
+				out := helper.Cmd("odo", "list", commandName, "-o", "json").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{commonVar.Project, "\"active\": true", "\"active\": false"})
 			})
 		})
 	}
