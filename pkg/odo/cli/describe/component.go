@@ -70,10 +70,12 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 	}
 
 	// 2. Name is passed, and odo does not have access to devfile.yaml; if Name is passed, then we assume that odo does not have access to the devfile.yaml
-	if o.namespaceFlag != "" {
-		o.clientset.KubernetesClient.SetNamespace(o.namespaceFlag)
-	} else {
-		o.namespaceFlag = o.clientset.KubernetesClient.GetCurrentNamespace()
+	if o.clientset.KubernetesClient != nil {
+		if o.namespaceFlag != "" {
+			o.clientset.KubernetesClient.SetNamespace(o.namespaceFlag)
+		} else {
+			o.namespaceFlag = o.clientset.KubernetesClient.GetCurrentNamespace()
+		}
 	}
 	return nil
 }
@@ -105,6 +107,10 @@ func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfi
 
 // describeNamedComponent describes a component given its name
 func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
+	if o.clientset.KubernetesClient == nil {
+		return api.Component{}, nil, errors.New("cluster is non accessible")
+	}
+
 	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
@@ -283,7 +289,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	}
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
-	clientset.Add(componentCmd, clientset.KUBERNETES, clientset.STATE)
+	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE)
 	commonflags.UseOutputFlag(componentCmd)
 
 	return componentCmd

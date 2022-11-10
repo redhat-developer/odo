@@ -349,7 +349,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: api.RunningModes{},
+			want: nil,
 		},
 	}
 	for _, tt := range tests {

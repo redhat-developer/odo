@@ -254,9 +254,13 @@ func getResourcesForComponent(
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
 func GetRunningModes(ctx context.Context, client kclient.ClientInterface, name string) (api.RunningModes, error) {
+	if client == nil {
+		return nil, nil
+	}
+
 	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
 	if err != nil {
-		return api.RunningModes{}, nil
+		return nil, nil
 	}
 
 	if len(list) == 0 {
