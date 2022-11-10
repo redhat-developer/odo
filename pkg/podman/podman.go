@@ -2,13 +2,12 @@ package podman
 
 import (
 	"bufio"
-	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/klog"
 	"k8s.io/kubectl/pkg/scheme"
 )
 
@@ -27,11 +26,6 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 			Yaml: true,
 		},
 	)
-
-	err := serializer.Encode(pod, os.Stdin)
-	if err != nil {
-		return err
-	}
 
 	cmd := exec.Command("podman", "play", "kube", "-")
 	stdin, err := cmd.StdinPipe()
@@ -59,7 +53,7 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		for {
 			tmp := make([]byte, 1024)
 			_, err = stdout.Read(tmp)
-			fmt.Print(string(tmp))
+			klog.V(4).Info(string(tmp))
 			if err != nil {
 				break
 			}
@@ -74,19 +68,19 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 
 func (o *PodmanCli) PodStop(podname string) error {
 	out, err := exec.Command("podman", "pod", "stop", podname).Output()
-	fmt.Printf("%s\n", string(out))
+	klog.V(4).Infof("Stopped pod %s", string(out))
 	return err
 }
 
 func (o *PodmanCli) PodRm(podname string) error {
 	out, err := exec.Command("podman", "pod", "rm", podname).Output()
-	fmt.Printf("%s\n", string(out))
+	klog.V(4).Infof("Deleted pod %s", string(out))
 	return err
 }
 
 func (o *PodmanCli) VolumeRm(volumeName string) error {
 	out, err := exec.Command("podman", "volume", "rm", volumeName).Output()
-	fmt.Printf("%s\n", string(out))
+	klog.V(4).Infof("Deleted volume %s", string(out))
 	return err
 }
 

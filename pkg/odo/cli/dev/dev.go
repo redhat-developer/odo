@@ -114,11 +114,14 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	)
 
 	var dest string
+	var deployingTo string
 	switch platform {
 	case commonflags.RunOnPodman:
 		dest = "Platform: podman"
+		deployingTo = "podman"
 	case commonflags.RunOnCluster:
 		dest = "Namespace: " + odocontext.GetNamespace(ctx)
+		deployingTo = "the cluster"
 	default:
 		panic(fmt.Errorf("platform %s is not implemented", platform))
 	}
@@ -153,7 +156,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, componentName)
 
-	log.Section("Deploying to the cluster in developer mode")
+	log.Sectionf("Deploying to %s in developer mode", deployingTo)
 
 	return o.clientset.DevClient.Start(
 		o.ctx,
