@@ -205,9 +205,13 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 }
 
 func ListAllComponents(client kclient.ClientInterface, namespace string, devObj *parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
-	devfileComponents, err := ListAllClusterComponents(client, namespace)
-	if err != nil {
-		return nil, "", err
+	var devfileComponents []api.ComponentAbstract
+	var err error
+	if client != nil {
+		devfileComponents, err = ListAllClusterComponents(client, namespace)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 
 	localComponent := api.ComponentAbstract{
