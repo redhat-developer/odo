@@ -26,7 +26,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterFalse)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 	})

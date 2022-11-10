@@ -19,7 +19,7 @@ var _ = Describe("odo preference and config command tests", Label(helper.LabelNo
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterFalse)
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	// Clean up after the test

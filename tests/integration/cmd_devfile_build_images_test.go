@@ -19,7 +19,7 @@ var _ = Describe("odo devfile build-images command tests", Label(helper.LabelNoC
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterFalse)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
 

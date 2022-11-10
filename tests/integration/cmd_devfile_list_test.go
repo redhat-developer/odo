@@ -19,7 +19,7 @@ var _ = Describe("odo list with devfile", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
 

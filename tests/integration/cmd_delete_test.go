@@ -17,7 +17,7 @@ var _ = Describe("odo delete command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 		getDeployArgs = []string{"get", "deployment", "-n", commonVar.Project}
