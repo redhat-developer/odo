@@ -207,7 +207,7 @@ var _ = Describe("odo list with devfile", func() {
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 
-			It("should show the language for 'Type' in odo list", func() {
+			It("should show the language for 'Type' in odo list", Label(helper.LabelNoCluster), func() {
 				checkList(metadata.Language)
 			})
 			When("the component is pushed in dev mode", func() {
@@ -234,7 +234,7 @@ var _ = Describe("odo list with devfile", func() {
 				helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
-			It("should show 'Not available' for 'Type' in odo list", func() {
+			It("should show 'Not available' for 'Type' in odo list", Label(helper.LabelNoCluster), func() {
 				checkList("Not available")
 			})
 			When("the component is pushed", func() {
