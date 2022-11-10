@@ -1,18 +1,36 @@
 package feature
 
-// OdoFeature represents a free-form, but uniquely identifiable feature of odo.
+import "github.com/redhat-developer/odo/pkg/log"
+
+// OdoFeature represents a uniquely identifiable feature of odo.
 // It can either be a CLI command or flag.
-//
-// To mark a given feature as experimental for example, it should be explicitly listed in _experimentalFeatures.
 type OdoFeature struct {
-	id          string
+	// id is a free-form but unique identifier of this feature.
+	id string
+
+	// isExperimental indicates whether this feature should be considered in early or intermediate stages of development.
+	// Features that are not experimental by default will always be enabled, regardless of the experimental mode.
+	isExperimental bool
+
+	// description provides a human-readable overview of this feature.
+	// Note that this will be visible by the end users if this feature is experimental and the experimental mode is enabled.
 	description string
 }
 
-var (
-	// GenericRunOnFlag is the feature supporting the `--run-on` generic CLI flag.
-	GenericRunOnFlag = OdoFeature{
-		id:          "generic-run-on",
-		description: "flag: --run-on",
+// IsEnabled returns whether the specified feature should be enabled or not.
+// If the feature is not marked as experimental, it should always be enabled.
+// Otherwise, it is enabled only if the experimental mode is enabled (see the isExperimentalModeEnabled package-level function).
+func IsEnabled(feat OdoFeature) bool {
+	// Features not marked as experimental are always enabled, regardless of the experimental mode
+	if !feat.isExperimental {
+		return true
 	}
-)
+
+	// Features marked as experimental are enabled only if the experimental mode is set
+	experimentalModeEnabled := isExperimentalModeEnabled()
+	if experimentalModeEnabled {
+		log.Experimentalf("Experimental mode enabled for %s. Use at your own risk. More details on https://odo.dev/docs/user-guides/advanced/experimental-mode",
+			feat.description)
+	}
+	return experimentalModeEnabled
+}
