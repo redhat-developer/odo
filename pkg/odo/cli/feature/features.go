@@ -8,3 +8,11 @@ type OdoFeature struct {
 	id          string
 	description string
 }
+
+var (
+	// GenericRunOnFlag is the feature supporting the `--run-on` generic CLI flag.
+	GenericRunOnFlag = OdoFeature{
+		id:          "generic-run-on",
+		description: "flag: --run-on",
+	}
+)

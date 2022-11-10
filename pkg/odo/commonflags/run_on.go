@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 )
 
 const (
@@ -31,8 +33,10 @@ func UseRunOnFlag(cmd *cobra.Command) {
 // above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 // package
 func AddRunOnFlag() {
-	flag.CommandLine.String(RunOnFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
-	_ = pflag.CommandLine.MarkHidden(RunOnFlagName)
+	if feature.IsExperimental(feature.GenericRunOnFlag) {
+		flag.CommandLine.String(RunOnFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
+		_ = pflag.CommandLine.MarkHidden(RunOnFlagName)
+	}
 }
 
 // CheckRunOnCommand checks if commands enabling run-on flag are used correctly

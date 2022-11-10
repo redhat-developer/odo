@@ -13,7 +13,9 @@ const (
 	OdoExperimentalModeTrue   = "true"
 )
 
-var _experimentalFeatures []OdoFeature
+var _experimentalFeatures = []OdoFeature{
+	GenericRunOnFlag,
+}
 
 // IsExperimental returns whether the given feature can be used as an experimental CLI feature,
 // which means that the following two conditions should be met: i) the ODO_EXPERIMENTAL_MODE environment variable is enabled,
