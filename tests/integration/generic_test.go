@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -117,6 +118,46 @@ var _ = Describe("odo generic", func() {
 			Expect(odoVersion).Should(SatisfyAll(MatchRegexp(reOdoVersion), MatchRegexp(rekubernetesVersion)))
 			serverURL := oc.GetCurrentServerURL()
 			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+		})
+	})
+
+	Describe("Experimental Mode", func() {
+		experimentalFlag := "--run-on"
+
+		AfterEach(func() {
+			helper.ResetExperimentalMode()
+		})
+
+		It("should not list experimental flags by default", func() {
+			helpOutput := helper.Cmd("odo", "help").ShouldPass().Out()
+			Expect(helpOutput).ShouldNot(ContainSubstring(experimentalFlag))
+		})
+
+		Context("experimental mode has an unknown value", func() {
+			for _, val := range []string{"", "false", "foobar"} {
+				val := val
+				It("should not list experimental flags if ODO_EXPERIMENTAL is not true", func() {
+					helpOutput := helper.Cmd("odo", "help").AddEnv(feature.OdoExperimentalModeEnvVar + "=" + val).ShouldPass().Out()
+					Expect(helpOutput).ShouldNot(ContainSubstring(experimentalFlag))
+				})
+			}
+		})
+
+		When("experimental mode is enabled", func() {
+			BeforeEach(func() {
+				helper.EnableExperimentalMode()
+			})
+
+			AfterEach(func() {
+				helper.ResetExperimentalMode()
+			})
+
+			It("experimental flags should be usable", func() {
+				By("via help output", func() {
+					helpOutput := helper.Cmd("odo", "help").ShouldPass().Out()
+					Expect(helpOutput).Should(ContainSubstring(experimentalFlag))
+				})
+			})
 		})
 	})
 
