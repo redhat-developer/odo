@@ -17,6 +17,15 @@ type OdoFeature struct {
 	description string
 }
 
+var (
+	// GenericRunOnFlag is the feature supporting the `--run-on` generic CLI flag.
+	GenericRunOnFlag = OdoFeature{
+		id:             "generic-run-on",
+		isExperimental: true,
+		description:    "flag: --run-on",
+	}
+)
+
 // IsEnabled returns whether the specified feature should be enabled or not.
 // If the feature is not marked as experimental, it should always be enabled.
 // Otherwise, it is enabled only if the experimental mode is enabled (see the isExperimentalModeEnabled package-level function).

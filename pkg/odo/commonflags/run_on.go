@@ -33,7 +33,7 @@ func UseRunOnFlag(cmd *cobra.Command) {
 // above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 // package
 func AddRunOnFlag() {
-	if feature.IsExperimental(feature.GenericRunOnFlag) {
+	if feature.IsEnabled(feature.GenericRunOnFlag) {
 		flag.CommandLine.String(RunOnFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
 		_ = pflag.CommandLine.MarkHidden(RunOnFlagName)
 	}
