@@ -93,6 +93,16 @@ func (plo *NamespaceListOptions) RunForJsonOutput(_ context.Context) (out interf
 // NewCmdNamespaceList implements the odo list project command.
 func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 	o := NewNamespaceListOptions()
+	// To help the UI messages deal better with namespace vs project
+	o.commandName = name
+	if len(os.Args) > 2 {
+		o.commandName = os.Args[2]
+	}
+	// trim commandName if user passed a plural form
+	lastElement := len(o.commandName) - 1
+	if o.commandName[lastElement] == byte('s') {
+		o.commandName = o.commandName[:lastElement]
+	}
 	projectListCmd := &cobra.Command{
 		Use:     name,
 		Short:   listLongDesc,
