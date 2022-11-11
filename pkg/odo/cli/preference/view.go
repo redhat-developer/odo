@@ -66,11 +66,11 @@ func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{},
 
 	return api.PreferenceView{
 		Preferences: preferenceList.Items,
-		Registries:  *registryList,
+		Registries:  registryList,
 	}, nil
 }
 
-func HumanReadableOutput(preferenceList preference.PreferenceList, registryList *[]preference.Registry) {
+func HumanReadableOutput(preferenceList preference.PreferenceList, registryList []preference.Registry) {
 	preferenceT := ui.NewTable()
 	preferenceT.AppendHeader(table.Row{"PARAMETER", "VALUE"})
 	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
@@ -85,8 +85,8 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	registryT.AppendHeader(table.Row{"NAME", "URL", "SECURE"})
 
 	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
-	for i := range *registryList {
-		registry := (*registryList)[i]
+	for i := range registryList {
+		registry := (registryList)[i]
 		secure := "No"
 		if registry.Secure {
 			secure = "Yes"
@@ -97,7 +97,7 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	log.Info("Preference parameters:")
 	preferenceT.Render()
 	log.Info("\nDevfile registries:")
-	if registryList == nil || len(*registryList) == 0 {
+	if registryList == nil || len(registryList) == 0 {
 		log.Warning("No devfile registries added to the configuration. Refer to `odo preference add registry -h` to add one")
 		return
 	}

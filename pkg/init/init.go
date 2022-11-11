@@ -175,7 +175,7 @@ func (o *InitClient) downloadFromRegistry(registryName string, devfile string, d
 
 	registries := o.preferenceClient.RegistryList()
 	var reg preference.Registry
-	for _, reg = range *registries {
+	for _, reg = range registries {
 		if forceRegistry && reg.Name == registryName {
 			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
 			if err != nil {
