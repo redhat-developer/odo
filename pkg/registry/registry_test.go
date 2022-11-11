@@ -253,7 +253,7 @@ func TestListDevfileStacks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().RegistryList().Return(&[]preference.Registry{
+			prefClient.EXPECT().RegistryList().Return([]preference.Registry{
 				{
 					Name: "TestRegistry",
 					URL:  server.URL,

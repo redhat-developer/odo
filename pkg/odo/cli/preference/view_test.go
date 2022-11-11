@@ -85,7 +85,7 @@ func TestView(t *testing.T) {
 		},
 	}
 	prefClient.EXPECT().NewPreferenceList().Return(preferenceList)
-	prefClient.EXPECT().RegistryList().Return(&registryList)
+	prefClient.EXPECT().RegistryList().Return(registryList)
 
 	err = opts.Run(context.Background())
 	if err != nil {

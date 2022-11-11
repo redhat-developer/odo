@@ -44,7 +44,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(&registryList)
+					client.EXPECT().RegistryList().Return(registryList)
 					return client
 				},
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
@@ -75,7 +75,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(&registryList)
+					client.EXPECT().RegistryList().Return(registryList)
 					return client
 				},
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
@@ -106,7 +106,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(&registryList)
+					client.EXPECT().RegistryList().Return(registryList)
 					return client
 				},
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
@@ -138,7 +138,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(&registryList)
+					client.EXPECT().RegistryList().Return(registryList)
 					return client
 				},
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
