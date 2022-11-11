@@ -97,7 +97,7 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	log.Info("Preference parameters:")
 	preferenceT.Render()
 	log.Info("\nDevfile registries:")
-	if registryList == nil || len(registryList) == 0 {
+	if len(registryList) == 0 {
 		log.Warning("No devfile registries added to the configuration. Refer to `odo preference add registry -h` to add one")
 		return
 	}
