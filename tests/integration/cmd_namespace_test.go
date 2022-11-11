@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/text/cases"
