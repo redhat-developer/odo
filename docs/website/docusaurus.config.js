@@ -106,6 +106,10 @@ module.exports = {
               label: 'Twitter',
               href: 'https://twitter.com/rhdevelopers',
             },
+            {
+              label: 'YouTube',
+              href: 'https://www.youtube.com/channel/UCXAt2CtoBBtN9EWe4xv4Row'
+            }
           ],
         },
       ],
