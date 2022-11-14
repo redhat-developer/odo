@@ -2,10 +2,27 @@ package labels
 
 import (
 	"errors"
+	"regexp"
+	"strings"
+	"unicode"
 
-	"k8s.io/apimachinery/pkg/labels"
+	dfutil "github.com/devfile/library/pkg/util"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/version"
+)
+
+var _replacementMap = map[string]string{
+	".": "dot",
+	"#": "sharp",
+}
+
+var (
+	_regexpInvalidCharacters        = regexp.MustCompile(`[^a-zA-Z0-9._-]`)
+	_regexpStartingWithAlphanumeric = regexp.MustCompile(`^[a-z0-9A-Z]`)
+	_regexpEndingWithAlphanumeric   = regexp.MustCompile(`[a-z0-9A-Z]$`)
 )
 
 // GetLabels return labels that should be applied to every object for given component in active application
@@ -15,9 +32,108 @@ import (
 func GetLabels(componentName string, applicationName string, runtime string, mode string, isPartOfComponent bool) map[string]string {
 	labels := getLabels(componentName, applicationName, mode, true, isPartOfComponent)
 	if runtime != "" {
-		labels[openshiftRunTimeLabel] = runtime
+		// 'app.openshift.io/runtime' label added by OpenShift console is always lowercase
+		labels[openshiftRunTimeLabel] = strings.ToLower(sanitizeLabelValue(openshiftRunTimeLabel, runtime))
 	}
 	return labels
+}
+
+// sanitizeLabelValue makes sure that the value specified is a valid value for a Kubernetes label, which means:
+// i) must be 63 characters or fewer (can be empty), ii) unless empty, must begin and end with an alphanumeric character ([a-z0-9A-Z]),
+// iii) could contain dashes (-), underscores (_), dots (.), and alphanumerics between.
+//
+// As such, sanitizeLabelValue might perform the following operations (taking care of repeating the process if the result is not a valid label value):
+//
+// - replace leading or trailing characters (. with "dot" or "DOT", and # with "sharp" or "SHARP", depending on the value case)
+//
+// - replace all characters that are not dashes, underscores, dots or alphanumerics between with a dash (-)
+//
+// - truncate the overall result so that it is less than 63 characters.
+func sanitizeLabelValue(key, value string) string {
+	errs := validation.IsValidLabelValue(value)
+	if len(errs) == 0 {
+		return value
+	}
+
+	klog.V(4).Infof("invalid value for label %q: %q => sanitizing it: %v", key, value, strings.Join(errs, "; "))
+
+	// Return the corresponding value if is replaceable immediately
+	if v, ok := _replacementMap[value]; ok {
+		return v
+	}
+
+	// Replacements if it starts or ends with a non-alphanumeric character
+	value = replaceAllLeadingOrTrailingInvalidValues(value)
+
+	// Now replace any characters that are not dashes, dots, underscores or alphanumerics between
+	value = _regexpInvalidCharacters.ReplaceAllString(value, "-")
+
+	// Truncate if length > 63
+	if len(value) > validation.LabelValueMaxLength {
+		value = dfutil.TruncateString(value, validation.LabelValueMaxLength)
+	}
+
+	if errs = validation.IsValidLabelValue(value); len(errs) == 0 {
+		return value
+	}
+	return sanitizeLabelValue(key, value)
+}
+
+func replaceAllLeadingOrTrailingInvalidValues(value string) string {
+	if value == "" {
+		return ""
+	}
+
+	isAllCaseMatchingPredicate := func(p func(rune) bool, s string) bool {
+		for _, r := range s {
+			if !p(r) && unicode.IsLetter(r) {
+				return false
+			}
+		}
+		return true
+	}
+	getLabelValueReplacement := func(v, replacement string) string {
+		if isAllCaseMatchingPredicate(unicode.IsLower, v) {
+			return strings.ToLower(replacement)
+		}
+		if isAllCaseMatchingPredicate(unicode.IsUpper, v) {
+			return strings.ToUpper(replacement)
+		}
+		return replacement
+	}
+
+	if !_regexpStartingWithAlphanumeric.MatchString(value) {
+		vAfterFirstChar := value[1:]
+		var isPrefixReplaced bool
+		for k, val := range _replacementMap {
+			if strings.HasPrefix(value, k) {
+				value = getLabelValueReplacement(vAfterFirstChar, val) + vAfterFirstChar
+				isPrefixReplaced = true
+				break
+			}
+		}
+		if !isPrefixReplaced {
+			value = vAfterFirstChar
+		}
+		if value == "" {
+			return value
+		}
+	}
+	if !_regexpEndingWithAlphanumeric.MatchString(value) {
+		vBeforeLastChar := value[:len(value)-1]
+		var isSuffixReplaced bool
+		for k, val := range _replacementMap {
+			if strings.HasSuffix(value, k) {
+				value = vBeforeLastChar + getLabelValueReplacement(vBeforeLastChar, val)
+				isSuffixReplaced = true
+				break
+			}
+		}
+		if !isSuffixReplaced {
+			value = vBeforeLastChar
+		}
+	}
+	return value
 }
 
 // AddStorageInfo adds labels for storage resources
@@ -92,7 +208,7 @@ func GetSelector(componentName string, applicationName string, mode string, isPa
 // if you need labels to filter component then use additional=false
 // isPartOfComponent denotes if the label is required for a core resource(deployment, svc, pvc, pv) of a given component deployed with `odo dev`
 // it is the only thing that sets it apart from the resources created via other ways (`odo deploy`, deploying resource with apply command during `odo dev`)
-func getLabels(componentName string, applicationName string, mode string, additional bool, isPartOfComponent bool) labels.Set {
+func getLabels(componentName string, applicationName string, mode string, additional bool, isPartOfComponent bool) k8slabels.Set {
 	labels := getApplicationLabels(applicationName, additional)
 	labels[kubernetesInstanceLabel] = componentName
 	if mode != ComponentAnyMode {
@@ -108,8 +224,8 @@ func getLabels(componentName string, applicationName string, mode string, additi
 // additional labels are used only when creating object
 // if you are creating something use additional=true
 // if you need labels to filter component then use additional=false
-func getApplicationLabels(application string, additional bool) labels.Set {
-	labels := labels.Set{
+func getApplicationLabels(application string, additional bool) k8slabels.Set {
+	labels := k8slabels.Set{
 		kubernetesPartOfLabel:    application,
 		kubernetesManagedByLabel: odoManager,
 	}
