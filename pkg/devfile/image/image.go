@@ -15,8 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
-	"k8s.io/utils/pointer"
 )
 
 // Backend is in interface that must be implemented by container runtimes
@@ -104,7 +102,7 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 // or return an error if none are present locally
 func selectBackend(ctx context.Context) (Backend, error) {
 
-	podmanCmd := pointer.StringDeref(envcontext.GetEnvConfig(ctx).PodmanCmd, "podman")
+	podmanCmd := envcontext.GetEnvConfig(ctx).PodmanCmd
 	if _, err := lookPathCmd(podmanCmd); err == nil {
 
 		// Podman does NOT build x86 images on Apple Silicon / M1 and we must *WARN* the user that this will not work.
@@ -124,7 +122,7 @@ func selectBackend(ctx context.Context) (Backend, error) {
 		return NewDockerCompatibleBackend(podmanCmd), nil
 	}
 
-	dockerCmd := pointer.StringDeref(envcontext.GetEnvConfig(ctx).DockerCmd, "docker")
+	dockerCmd := envcontext.GetEnvConfig(ctx).DockerCmd
 	if _, err := lookPathCmd(dockerCmd); err == nil {
 		return NewDockerCompatibleBackend(dockerCmd), nil
 	}

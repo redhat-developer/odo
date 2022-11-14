@@ -4,7 +4,6 @@ import (
 	"context"
 
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
-	"k8s.io/utils/pointer"
 )
 
 const (
@@ -13,5 +12,5 @@ const (
 )
 
 func isExperimentalModeEnabled(ctx context.Context) bool {
-	return pointer.BoolDeref(envcontext.GetEnvConfig(ctx).OdoExperimentalMode, false)
+	return envcontext.GetEnvConfig(ctx).OdoExperimentalMode
 }

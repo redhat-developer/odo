@@ -150,7 +150,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
-	err = scontext.SetCaller(cmd.Context(), pointer.StringDeref(envConfig.TelemetryCaller, ""))
+	// We can dereference as there is a default value defined for this config field
+	err = scontext.SetCaller(cmd.Context(), envConfig.TelemetryCaller)
 	if err != nil {
 		klog.V(3).Infof("error handling caller property for telemetry: %v", err)
 	}

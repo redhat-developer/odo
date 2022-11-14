@@ -11,14 +11,13 @@ import (
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog"
-	"k8s.io/utils/pointer"
 )
 
 func TestMain(m *testing.M) {
 	// --run-on is considered experimental for now. As such, to exist, it requires the ODO_EXPERIMENTAL_MODE env var to be set.
 	ctx := context.Background()
 	cfg := config.Configuration{
-		OdoExperimentalMode: pointer.Bool(true),
+		OdoExperimentalMode: true,
 	}
 	ctx = envcontext.WithEnvConfig(ctx, cfg)
 	klog.InitFlags(nil)

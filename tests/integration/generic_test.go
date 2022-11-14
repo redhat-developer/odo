@@ -134,7 +134,7 @@ var _ = Describe("odo generic", func() {
 		})
 
 		Context("experimental mode has an unknown value", func() {
-			for _, val := range []string{"", "false", "foobar"} {
+			for _, val := range []string{"", "false"} {
 				val := val
 				It("should not list experimental flags if ODO_EXPERIMENTAL is not true", func() {
 					helpOutput := helper.Cmd("odo", "help").AddEnv(feature.OdoExperimentalModeEnvVar + "=" + val).ShouldPass().Out()

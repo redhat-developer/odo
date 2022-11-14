@@ -8,7 +8,6 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	gomock "github.com/golang/mock/gomock"
-	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
@@ -130,6 +129,10 @@ func TestSelectBackend(t *testing.T) {
 	}{
 		{
 			name: "all backends are present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(string) (string, error) {
 				return "", nil
 			},
@@ -138,6 +141,10 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "no backend are present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(string) (string, error) {
 				return "", errors.New("")
 			},
@@ -145,6 +152,10 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "only docker is present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "docker" {
 					return "docker", nil
@@ -156,6 +167,10 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "only podman is present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "podman" {
 					return "podman", nil
@@ -168,7 +183,8 @@ func TestSelectBackend(t *testing.T) {
 		{
 			name: "value of PODMAN_CMD envvar is returned if it points to a valid command",
 			envConfig: config.Configuration{
-				PodmanCmd: pointer.String("my-alternate-podman-command"),
+				DockerCmd: "docker",
+				PodmanCmd: "my-alternate-podman-command",
 			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "my-alternate-podman-command" {
@@ -182,7 +198,8 @@ func TestSelectBackend(t *testing.T) {
 		{
 			name: "docker if PODMAN_CMD points to an invalid command",
 			envConfig: config.Configuration{
-				PodmanCmd: pointer.String("no-such-command"),
+				PodmanCmd: "no-such-command",
+				DockerCmd: "docker",
 			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "docker" {

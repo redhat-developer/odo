@@ -6,8 +6,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
-
-	"k8s.io/utils/pointer"
 )
 
 func TestIsEnabled(t *testing.T) {
@@ -15,7 +13,7 @@ func TestIsEnabled(t *testing.T) {
 		feature OdoFeature
 	}
 	type env struct {
-		experimentalMode *bool
+		experimentalMode bool
 	}
 	type testCase struct {
 		name string
@@ -44,7 +42,7 @@ func TestIsEnabled(t *testing.T) {
 			name: "non-experimental feature should always be enabled regardless of experimental mode",
 			args: args{feature: nonExperimentalFeature},
 			env: env{
-				experimentalMode: pointer.Bool(true),
+				experimentalMode: true,
 			},
 			want: true,
 		},
@@ -52,7 +50,7 @@ func TestIsEnabled(t *testing.T) {
 			name: "non-experimental feature should always be enabled even if experimental mode is not enabled",
 			args: args{feature: nonExperimentalFeature},
 			env: env{
-				experimentalMode: pointer.Bool(false),
+				experimentalMode: false,
 			},
 			want: true,
 		},
@@ -65,7 +63,7 @@ func TestIsEnabled(t *testing.T) {
 			name: "experimental feature should be disabled if experimental mode has an unknown value",
 			args: args{feature: experimentalFeature},
 			env: env{
-				experimentalMode: pointer.Bool(false),
+				experimentalMode: false,
 			},
 			want: false,
 		},
@@ -73,7 +71,7 @@ func TestIsEnabled(t *testing.T) {
 			name: "experimental feature should be enabled only if experimental mode is enabled",
 			args: args{feature: experimentalFeature},
 			env: env{
-				experimentalMode: pointer.Bool(true),
+				experimentalMode: true,
 			},
 			want: true,
 		},
