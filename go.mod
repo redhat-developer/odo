@@ -20,7 +20,6 @@ require (
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.3.5
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.9
@@ -40,6 +39,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/securego/gosec/v2 v2.14.0
 	github.com/segmentio/backo-go v1.0.1-0.20200129164019-23eae7c10bd3
+	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5

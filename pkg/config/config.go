@@ -1,25 +1,27 @@
 package config
 
 import (
-	"github.com/kelseyhightower/envconfig"
+	"context"
+
+	"github.com/sethvargo/go-envconfig"
 )
 
 type Configuration struct {
-	DevfileProxy          *string `split_words:"true"`
-	DockerCmd             *string `split_words:"true"`
-	Globalodoconfig       *string `split_words:"true"`
-	OdoDebugTelemetryFile *string `split_words:"true"`
-	OdoDisableTelemetry   *bool   `split_words:"true"`
-	OdoLogLevel           *int    `split_words:"true"`
-	OdoTrackingConsent    *string `split_words:"true"`
-	PodmanCmd             *string `split_words:"true"`
-	TelemetryCaller       *string `split_words:"true"`
-	OdoExperimentalMode   *bool   `split_words:"true"`
+	DevfileProxy          *string `env:"DEVFILE_PROXY"`
+	DockerCmd             *string `env:"DOCKER_CMD"`
+	Globalodoconfig       *string `env:"GLOBALODOCONFIG"`
+	OdoDebugTelemetryFile *string `env:"ODO_DEBUG_TELEMETRY_FILE"`
+	OdoDisableTelemetry   *bool   `env:"ODO_DISABLE_TELEMETRY"`
+	OdoLogLevel           *int    `env:"ODO_LOG_LEVEL"`
+	OdoTrackingConsent    *string `env:"ODO_TRACKING_CONSENT"`
+	PodmanCmd             *string `env:"PODMAN_CMD"`
+	TelemetryCaller       *string `env:"TELEMETRY_CALLER"`
+	OdoExperimentalMode   *bool   `env:"ODO_EXPERIMENTAL_MODE"`
 }
 
 func GetConfiguration() (*Configuration, error) {
 	var s Configuration
-	err := envconfig.Process("", &s)
+	err := envconfig.Process(context.Background(), &s)
 	if err != nil {
 		return nil, err
 	}
