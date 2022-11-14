@@ -301,6 +301,19 @@ func Fsuccess(out io.Writer, a ...interface{}) {
 	}
 }
 
+// Experimental will output in an appropriate "progress" manner
+func Experimental(a ...interface{}) {
+	Experimentalf("%s", a)
+}
+
+// Experimentalf will output in an appropriate "progress" manner
+func Experimentalf(format string, a ...interface{}) {
+	if !IsJSON() {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Fprintf(GetStdout(), "%s\n", yellow(fmt.Sprintf(format, a...)))
+	}
+}
+
 // Title Prints the logo as well as the first line being BLUE (indicator of the command information)
 // the second and third lines are optional and provide information with regards to what is being ran
 //
