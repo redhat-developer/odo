@@ -14,6 +14,7 @@ type Configuration struct {
 	OdoTrackingConsent    *string `split_words:"true"`
 	PodmanCmd             *string `split_words:"true"`
 	TelemetryCaller       *string `split_words:"true"`
+	OdoExperimentalMode   *bool   `split_words:"true"`
 }
 
 func GetConfiguration() (*Configuration, error) {

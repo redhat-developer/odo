@@ -136,7 +136,7 @@ func odoRootCmd(ctx context.Context, name, fullName string) *cobra.Command {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
 	commonflags.AddOutputFlag()
-	commonflags.AddRunOnFlag()
+	commonflags.AddRunOnFlag(ctx)
 	commonflags.AddVariablesFlags()
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user

@@ -1,7 +1,10 @@
 package feature
 
 import (
-	"os"
+	"context"
+
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
+	"k8s.io/utils/pointer"
 )
 
 const (
@@ -9,6 +12,6 @@ const (
 	OdoExperimentalModeTrue   = "true"
 )
 
-func isExperimentalModeEnabled() bool {
-	return os.Getenv(OdoExperimentalModeEnvVar) == OdoExperimentalModeTrue
+func isExperimentalModeEnabled(ctx context.Context) bool {
+	return pointer.BoolDeref(envcontext.GetEnvConfig(ctx).OdoExperimentalMode, false)
 }

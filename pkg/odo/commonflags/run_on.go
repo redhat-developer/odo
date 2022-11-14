@@ -1,6 +1,7 @@
 package commonflags
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -32,8 +33,8 @@ func UseRunOnFlag(cmd *cobra.Command) {
 // We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
 // above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 // package
-func AddRunOnFlag() {
-	if feature.IsEnabled(feature.GenericRunOnFlag) {
+func AddRunOnFlag(ctx context.Context) {
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
 		flag.CommandLine.String(RunOnFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
 		_ = pflag.CommandLine.MarkHidden(RunOnFlagName)
 	}
