@@ -190,15 +190,15 @@ openshiftci-presubmit-unittests:
 
 .PHONY: test-integration-cluster
 test-integration-cluster:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) --label-filter="!nocluster" tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!nocluster" tests/integration
 
 .PHONY: test-integration-no-cluster
 test-integration-no-cluster:
-	$(RUN_GINKGO) $(GINKGO_FLAGS_AUTO) --label-filter=nocluster tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS_AUTO)  --junit-report="test-integration-nc.xml" --label-filter=nocluster tests/integration
 
 .PHONY: test-integration
 test-integration: test-integration-no-cluster test-integration-cluster
 
 .PHONY: test-e2e
 test-e2e:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/e2escenarios
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-e2e.xml"  tests/e2escenarios
