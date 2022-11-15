@@ -12,7 +12,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	routev1 "github.com/openshift/api/route/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 
@@ -334,22 +333,11 @@ func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterfa
 func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string, mode string) (ings []api.Host, routes []api.Host, err error) {
 	selector := odolabels.GetSelector(componentName, "app", mode, false)
 
-	ingressGVR, err := client.GetGVRFromGVK(kclient.IngressGVK)
-	if err != nil {
-		return nil, nil, fmt.Errorf("unable to determine GVR for %s: %w", kclient.IngressGVK.String(), err)
-	}
-
-	k8sIngresses, err := client.ListDynamicResources(client.GetCurrentNamespace(), ingressGVR, selector)
+	k8sIngresses, err := client.ListIngresses(client.GetCurrentNamespace(), selector)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, u := range k8sIngresses.Items {
-		ing := &networkingv1.Ingress{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), ing)
-		if err != nil {
-			return nil, nil, err
-		}
-
+	for _, ing := range k8sIngresses.Items {
 		ings = append(ings, api.Host{
 			Name: ing.GetName(),
 			Hosts: func() (hosts []string) {

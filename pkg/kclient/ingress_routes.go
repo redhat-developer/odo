@@ -1,6 +1,10 @@
 package kclient
 
 import (
+	"context"
+
+	v1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -16,3 +20,10 @@ var (
 		Kind:    "Route",
 	}
 )
+
+func (c *Client) ListIngresses(namespace, selector string) (*v1.IngressList, error) {
+	if namespace == "" {
+		namespace = c.Namespace
+	}
+	return c.KubeClient.NetworkingV1().Ingresses(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+}

@@ -10,6 +10,7 @@ import (
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -161,4 +162,7 @@ type ClientInterface interface {
 	GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error)
 	UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error
 	UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error
+
+	// ingress_routes.go
+	ListIngresses(namespace, selector string) (*v1.IngressList, error)
 }
