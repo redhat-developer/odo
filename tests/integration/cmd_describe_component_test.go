@@ -250,12 +250,12 @@ var _ = Describe("odo describe component command tests", func() {
 				if helper.IsKubernetesCluster() {
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-ingress.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 					matchOutput = []string{"Kubernetes Ingresses", "nodejs.example.com/", "nodejs.example.com/foo"}
-					matchJSONOutput = map[string]string{"ingresses.0.name": k8sComponentName, "ingresses.0.hosts.0": "nodejs.example.com/", "ingresses.0.hosts.1": "nodejs.example.com/foo"}
+					matchJSONOutput = map[string]string{"ingresses.0.name": k8sComponentName, "ingresses.0.rules.0.host": "nodejs.example.com", "ingresses.0.rules.0.paths.0": "/", "ingresses.0.rules.0.paths.1": "/foo"}
 				} else {
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-route.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 					// we are not matching host at the moment
 					matchOutput = []string{"OpenShift Routes", "/foo"}
-					matchJSONOutput = map[string]string{"routes.0.name": k8sComponentName, "routes.0.hosts.0": "/foo"}
+					matchJSONOutput = map[string]string{"routes.0.name": k8sComponentName, "routes.0.rules.0.paths.0": "/foo"}
 				}
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 			})
