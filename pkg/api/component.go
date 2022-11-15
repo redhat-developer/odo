@@ -63,5 +63,5 @@ type ForwardedPort struct {
 
 type Host struct {
 	Name  string   `json:"name"`
-	Hosts []string `json:"hosts"`
+	Hosts []string `json:"hosts,omitempty"`
 }
