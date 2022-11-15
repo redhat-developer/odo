@@ -219,6 +219,9 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 			for _, host := range ing.Hosts {
 				log.Printf("%s: %s", ing.Name, host)
 			}
+			if len(ing.Hosts) == 0 {
+				log.Printf(ing.Name)
+			}
 		}
 		fmt.Println()
 	}
@@ -228,6 +231,9 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 		for _, route := range cmp.Routes {
 			for _, host := range route.Hosts {
 				log.Printf("%s: %s", route.Name, host)
+			}
+			if len(route.Hosts) == 0 {
+				log.Printf(route.Name)
 			}
 		}
 		fmt.Println()
