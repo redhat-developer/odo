@@ -1,0 +1,40 @@
+name: Build and Push Image
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.ibm/images/Dockerfile'
+      - '.github/workflows/build-push-ibm-image.yaml'
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Image
+      id: build-image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ibmcloudtest-image
+        tags: v1.18-1
+        context: ./.ibm/images
+        containerfiles: |
+          ./.ibm/images/Dockerfile
+
+    # Podman Login action (https://github.com/redhat-actions/podman-login) also be used to log in,
+    # in which case 'username' and 'password' can be omitted.
+    - name: Push To quay.io
+      id: push-to-quay
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-image.outputs.image }}
+        tags: ${{ steps.build-image.outputs.tags }}
+        registry: quay.io/odo-dev
+        username: phmartin
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Print image url
+      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
