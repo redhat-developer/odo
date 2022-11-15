@@ -424,6 +424,11 @@ func (c *preferenceInfo) ConsentTelemetry() *bool {
 	return c.OdoSettings.ConsentTelemetry
 }
 
+// RegistryList returns the list of registries,
+// in reverse order compared to what is declared in the preferences file.
+//
+// Adding a new registry always adds it to the end of the list in the preferences file,
+// but RegistryList intentionally reverses the order to prioritize the most recently added registries.
 func (c *preferenceInfo) RegistryList() []Registry {
 	regList := make([]Registry, len(*c.OdoSettings.RegistryList))
 	copy(regList, *c.OdoSettings.RegistryList)

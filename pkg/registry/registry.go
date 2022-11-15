@@ -61,7 +61,6 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registr
 	hasName := len(registryName) != 0
 	if o.preferenceClient.RegistryList() != nil {
 		registryList := o.preferenceClient.RegistryList()
-		// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
 		for _, registry := range registryList {
 			if hasName {
 				if registryName == registry.Name {
