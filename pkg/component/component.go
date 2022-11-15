@@ -338,13 +338,26 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		return nil, nil, err
 	}
 	for _, ing := range k8sIngresses.Items {
+		if ownerReferences := ing.GetOwnerReferences(); ownerReferences != nil {
+			klog.V(4).Infof("Skipping Ingress %q created/owned by another resource: %v", ing.GetName(), ownerReferences)
+			continue
+		}
 		ings = append(ings, api.ConnectionData{
 			Name: ing.GetName(),
 			Rules: func() (rules []api.Rules) {
 				for _, rule := range ing.Spec.Rules {
+					var paths []string
 					for _, path := range rule.HTTP.Paths {
-						rules = append(rules, api.Rules{Host: rule.Host, Path: path.Path})
+						paths = append(paths, path.Path)
 					}
+					host := rule.Host
+					if host == "" {
+						host = "*"
+					}
+					rules = append(rules, api.Rules{Host: host, Paths: paths})
+				}
+				if len(ing.Spec.Rules) == 0 {
+					rules = append(rules, api.Rules{Host: "*", Paths: []string{"/*"}})
 				}
 				return rules
 			}(),
@@ -368,6 +381,10 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		return nil, nil, err
 	}
 	for _, u := range ocRoutes.Items {
+		if ownerReferences := u.GetOwnerReferences(); ownerReferences != nil {
+			klog.V(4).Infof("Skipping Route %q created/owned by another resource: %v", u.GetName(), ownerReferences)
+			continue
+		}
 		route := &routev1.Route{}
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), route)
 		if err != nil {
@@ -376,7 +393,7 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		routes = append(routes, api.ConnectionData{
 			Name: route.GetName(),
 			Rules: []api.Rules{
-				{Host: route.Spec.Host, Path: route.Spec.Path},
+				{Host: route.Spec.Host, Paths: []string{route.Spec.Path}},
 			},
 		})
 	}

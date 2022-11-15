@@ -67,6 +67,6 @@ type ConnectionData struct {
 }
 
 type Rules struct {
-	Host string `json:"host"`
-	Path string `json:"path"`
+	Host  string   `json:"host"`
+	Paths []string `json:"paths"`
 }

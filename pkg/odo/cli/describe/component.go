@@ -217,7 +217,12 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 		log.Info("Kubernetes Ingresses:")
 		for _, ing := range cmp.Ingresses {
 			for _, host := range ing.Rules {
-				log.Printf("%s: %s%s", ing.Name, host.Host, host.Path)
+				for _, path := range host.Paths {
+					log.Printf("%s: %s%s", ing.Name, host.Host, path)
+				}
+			}
+			if len(ing.Rules) == 0 {
+				log.Printf(ing.Name)
 			}
 		}
 		fmt.Println()
@@ -227,7 +232,12 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 		log.Info("OpenShift Routes:")
 		for _, route := range cmp.Routes {
 			for _, host := range route.Rules {
-				log.Printf("%s: %s%s", route.Name, host.Host, host.Path)
+				for _, path := range host.Paths {
+					log.Printf("%s: %s%s", route.Name, host.Host, path)
+				}
+			}
+			if len(route.Rules) == 0 {
+				log.Printf(route.Name)
 			}
 		}
 		fmt.Println()
