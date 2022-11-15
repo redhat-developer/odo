@@ -45,13 +45,13 @@ func (o RunningModes) String() string {
 
 // Component describes the state of a devfile component
 type Component struct {
-	DevfilePath       string          `json:"devfilePath,omitempty"`
-	DevfileData       *DevfileData    `json:"devfileData,omitempty"`
-	DevForwardedPorts []ForwardedPort `json:"devForwardedPorts,omitempty"`
-	RunningIn         RunningModes    `json:"runningIn"`
-	ManagedBy         string          `json:"managedBy"`
-	Ingresses         []Host          `json:"ingresses,omitempty"`
-	Routes            []Host          `json:"routes,omitempty"`
+	DevfilePath       string           `json:"devfilePath,omitempty"`
+	DevfileData       *DevfileData     `json:"devfileData,omitempty"`
+	DevForwardedPorts []ForwardedPort  `json:"devForwardedPorts,omitempty"`
+	RunningIn         RunningModes     `json:"runningIn"`
+	ManagedBy         string           `json:"managedBy"`
+	Ingresses         []ConnectionData `json:"ingresses,omitempty"`
+	Routes            []ConnectionData `json:"routes,omitempty"`
 }
 
 type ForwardedPort struct {
@@ -61,7 +61,12 @@ type ForwardedPort struct {
 	ContainerPort int    `json:"containerPort"`
 }
 
-type Host struct {
-	Name  string   `json:"name"`
-	Hosts []string `json:"hosts,omitempty"`
+type ConnectionData struct {
+	Name  string  `json:"name"`
+	Rules []Rules `json:"rules,omitempty"`
+}
+
+type Rules struct {
+	Host string `json:"host"`
+	Path string `json:"path"`
 }

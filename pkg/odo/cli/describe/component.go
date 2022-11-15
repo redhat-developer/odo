@@ -216,11 +216,8 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 	if len(cmp.Ingresses) != 0 {
 		log.Info("Kubernetes Ingresses:")
 		for _, ing := range cmp.Ingresses {
-			for _, host := range ing.Hosts {
-				log.Printf("%s: %s", ing.Name, host)
-			}
-			if len(ing.Hosts) == 0 {
-				log.Printf(ing.Name)
+			for _, host := range ing.Rules {
+				log.Printf("%s: %s%s", ing.Name, host.Host, host.Path)
 			}
 		}
 		fmt.Println()
@@ -229,11 +226,8 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 	if len(cmp.Routes) != 0 {
 		log.Info("OpenShift Routes:")
 		for _, route := range cmp.Routes {
-			for _, host := range route.Hosts {
-				log.Printf("%s: %s", route.Name, host)
-			}
-			if len(route.Hosts) == 0 {
-				log.Printf(route.Name)
+			for _, host := range route.Rules {
+				log.Printf("%s: %s%s", route.Name, host.Host, host.Path)
 			}
 		}
 		fmt.Println()

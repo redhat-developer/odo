@@ -330,7 +330,7 @@ func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterfa
 }
 
 // ListRoutesAndIngresses lists routes and ingresses created by a component
-func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string, mode string) (ings []api.Host, routes []api.Host, err error) {
+func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string, mode string) (ings []api.ConnectionData, routes []api.ConnectionData, err error) {
 	selector := odolabels.GetSelector(componentName, "app", mode, false)
 
 	k8sIngresses, err := client.ListIngresses(client.GetCurrentNamespace(), selector)
@@ -338,15 +338,15 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		return nil, nil, err
 	}
 	for _, ing := range k8sIngresses.Items {
-		ings = append(ings, api.Host{
+		ings = append(ings, api.ConnectionData{
 			Name: ing.GetName(),
-			Hosts: func() (hosts []string) {
+			Rules: func() (rules []api.Rules) {
 				for _, rule := range ing.Spec.Rules {
 					for _, path := range rule.HTTP.Paths {
-						hosts = append(hosts, strings.Join([]string{rule.Host, path.Path}, ""))
+						rules = append(rules, api.Rules{Host: rule.Host, Path: path.Path})
 					}
 				}
-				return hosts
+				return rules
 			}(),
 		})
 	}
@@ -373,9 +373,11 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 		if err != nil {
 			return nil, nil, err
 		}
-		routes = append(routes, api.Host{
-			Name:  route.GetName(),
-			Hosts: []string{strings.Join([]string{route.Spec.Host, route.Spec.Path}, "")},
+		routes = append(routes, api.ConnectionData{
+			Name: route.GetName(),
+			Rules: []api.Rules{
+				{Host: route.Spec.Host, Path: route.Spec.Path},
+			},
 		})
 	}
 
