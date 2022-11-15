@@ -242,7 +242,10 @@ var _ = Describe("odo describe component command tests", func() {
 		When("running odo deploy", func() {
 			var matchOutput []string
 			var matchJSONOutput map[string]string
-			const k8sComponentName = "my-nodejs-app" // hard-coded from the Devfiles
+			const (
+				k8sComponentName = "my-nodejs-app"        // hard-coded from the Devfiles
+				componentName    = "nodejs-prj1-api-abhz" // hard-coded from the Devfiles
+			)
 			BeforeEach(func() {
 				if helper.IsKubernetesCluster() {
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-ingress.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
@@ -263,6 +266,16 @@ var _ = Describe("odo describe component command tests", func() {
 				})
 				By("checking the machine readable output", func() {
 					out := helper.Cmd("odo", "describe", "component", "-ojson").ShouldPass().Out()
+					for key, value := range matchJSONOutput {
+						helper.JsonPathContentContain(out, key, value)
+					}
+				})
+				By("checking the human readable output with component name", func() {
+					out := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
+					helper.MatchAllInOutput(out, matchOutput)
+				})
+				By("checking the machine readable output with component name", func() {
+					out := helper.Cmd("odo", "describe", "component", "--name", componentName, "-o", "json").ShouldPass().Out()
 					for key, value := range matchJSONOutput {
 						helper.JsonPathContentContain(out, key, value)
 					}
