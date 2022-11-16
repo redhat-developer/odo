@@ -55,4 +55,7 @@ else
     fi
 fi
 
+#copy artifact to shared volume
+cp -r test-*.xml $ARTIFACT_DIR
+
 oc logout
