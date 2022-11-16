@@ -1,0 +1,3 @@
+This Dockerfile creates an image to be used by the IBM Cloud pipelines
+
+When you update the Dockerfile, please specify a new tag in .github/workflows/build-push-ibm-image.yaml
