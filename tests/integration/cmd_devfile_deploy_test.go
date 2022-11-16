@@ -205,7 +205,7 @@ ComponentSettings:
 			Expect(td.Properties.Error == "").To(BeTrue())
 			Expect(td.Properties.ErrorType == "").To(BeTrue())
 			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
-			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
+			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("JavaScript"))
 			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 			Expect(td.Properties.CmdProperties[segment.Flags]).To(BeEmpty())
 			Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))

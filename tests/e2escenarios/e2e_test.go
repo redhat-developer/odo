@@ -54,7 +54,7 @@ var _ = Describe("E2E Test", func() {
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
 				helper.ExpectString(ctx, "Select language")
-				helper.SendLine(ctx, "javascript")
+				helper.SendLine(ctx, "JavaScript")
 
 				helper.ExpectString(ctx, "Select project type")
 				helper.SendLine(ctx, "Node.js\n")

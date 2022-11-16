@@ -2536,7 +2536,7 @@ CMD ["npm", "start"]
 					"app",
 					labels.ComponentDevMode,
 					"app.openshift.io/runtime",
-					"javascript",
+					"JavaScript",
 				)
 				commonVar.CliRunner.AssertContainsLabel(
 					"service",
@@ -2545,7 +2545,7 @@ CMD ["npm", "start"]
 					"app",
 					labels.ComponentDevMode,
 					"app.openshift.io/runtime",
-					"javascript",
+					"JavaScript",
 				)
 			},
 			checkDeploy: func(cmpName string) {
@@ -2556,7 +2556,7 @@ CMD ["npm", "start"]
 					"app",
 					labels.ComponentDeployMode,
 					"app.openshift.io/runtime",
-					"javascript",
+					"JavaScript",
 				)
 			},
 		},
