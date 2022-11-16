@@ -5,8 +5,8 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 )
 
@@ -26,17 +26,15 @@ const (
 
 // generic contains information required for all the Storage clients
 type generic struct {
-	appName             string
-	componentName       string
-	localConfigProvider localConfigProvider.LocalConfigProvider
-	runtime             string
+	appName       string
+	componentName string
+	runtime       string
 }
 
 type ClientOptions struct {
-	Client              kclient.ClientInterface
-	LocalConfigProvider localConfigProvider.LocalConfigProvider
-	Deployment          *v1.Deployment
-	Runtime             string
+	Client     kclient.ClientInterface
+	Deployment *v1.Deployment
+	Runtime    string
 }
 
 type Client interface {
@@ -48,12 +46,6 @@ type Client interface {
 // NewClient gets the appropriate Storage client based on the parameters
 func NewClient(componentName string, appName string, options ClientOptions) Client {
 	var genericInfo generic
-
-	if options.LocalConfigProvider != nil {
-		genericInfo = generic{
-			localConfigProvider: options.LocalConfigProvider,
-		}
-	}
 
 	genericInfo.componentName = componentName
 	genericInfo.appName = appName
@@ -68,7 +60,7 @@ func NewClient(componentName string, appName string, options ClientOptions) Clie
 
 // Push creates and deletes the required persistent storages and returns the list of ephemeral storages
 // it compares the local storage against the storage on the cluster
-func Push(client Client, configProvider localConfigProvider.LocalConfigProvider) (ephemerals map[string]Storage, _ error) {
+func Push(client Client, devfileObj parser.DevfileObj) (ephemerals map[string]Storage, _ error) {
 	// list all the storage in the cluster
 	storageClusterList, err := client.List()
 	if err != nil {
@@ -84,7 +76,7 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 	// list the ephemeral storages
 	ephemeralConfigNames := make(map[string]Storage)
 
-	localStorage, err := configProvider.ListStorage()
+	localStorage, err := ListStorage(devfileObj)
 	if err != nil {
 		return nil, err
 	}

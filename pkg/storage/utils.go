@@ -5,7 +5,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -40,7 +39,7 @@ func generatePVCName(volName, componentName, appName string) (string, error) {
 }
 
 // ConvertListLocalToMachine converts storage config list to StorageList type
-func ConvertListLocalToMachine(storageListConfig []localConfigProvider.LocalStorage) StorageList {
+func ConvertListLocalToMachine(storageListConfig []LocalStorage) StorageList {
 
 	var storageListLocal []Storage
 

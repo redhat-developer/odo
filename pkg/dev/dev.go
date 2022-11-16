@@ -7,7 +7,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -82,13 +81,7 @@ func (o *DevClient) Start(
 			FS:            o.filesystem,
 		})
 
-	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
-	if err != nil {
-		return err
-	}
-
 	pushParameters := adapters.PushParameters{
-		EnvSpecificInfo: *envSpecificInfo,
 		Path:            path,
 		IgnoredFiles:    options.IgnorePaths,
 		Debug:           options.Debug,
@@ -100,7 +93,7 @@ func (o *DevClient) Start(
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	componentStatus := watch.ComponentStatus{}
-	err = adapter.Push(pushParameters, &componentStatus)
+	err := adapter.Push(pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -112,7 +105,6 @@ func (o *DevClient) Start(
 		ComponentName:       componentName,
 		ApplicationName:     odocontext.GetApplication(ctx),
 		DevfileWatchHandler: o.regenerateAdapterAndPush,
-		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         options.IgnorePaths,
 		InitialDevfileObj:   devfileObj,
 		Debug:               options.Debug,
