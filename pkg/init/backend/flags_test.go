@@ -272,7 +272,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
 			prefClient.EXPECT().RegistryNameExists(gomock.Any()).Return(tt.registryNameExists).AnyTimes()
-			prefClient.EXPECT().RegistryList().Return(&tt.registryList).AnyTimes()
+			prefClient.EXPECT().RegistryList().Return(tt.registryList).AnyTimes()
 
 			o := &FlagsBackend{
 				preferenceClient: prefClient,

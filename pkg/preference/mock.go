@@ -231,10 +231,10 @@ func (mr *MockClientMockRecorder) RegistryHandler(operation, registryName, regis
 }
 
 // RegistryList mocks base method.
-func (m *MockClient) RegistryList() *[]Registry {
+func (m *MockClient) RegistryList() []Registry {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegistryList")
-	ret0, _ := ret[0].(*[]Registry)
+	ret0, _ := ret[0].([]Registry)
 	return ret0
 }
 

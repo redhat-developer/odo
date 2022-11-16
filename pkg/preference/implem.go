@@ -133,19 +133,6 @@ func newPreferenceInfo() (*preferenceInfo, error) {
 		return nil, err
 	}
 
-	regList := []Registry{}
-	if c.OdoSettings.RegistryList != nil {
-		regList = *c.OdoSettings.RegistryList
-	}
-
-	i := 0
-	j := len(regList) - 1
-	for i < j {
-		regList[i], regList[j] = regList[j], regList[i]
-		i++
-		j--
-	}
-
 	// TODO: This code block about logging warnings should be removed once users completely shift to odo v3.
 	// The warning will be printed more than once, and it can be annoying, but it should ensure that the user will change these values.
 	var requiresChange []string
@@ -437,12 +424,26 @@ func (c *preferenceInfo) ConsentTelemetry() *bool {
 	return c.OdoSettings.ConsentTelemetry
 }
 
-func (c *preferenceInfo) RegistryList() *[]Registry {
-	return c.OdoSettings.RegistryList
+// RegistryList returns the list of registries,
+// in reverse order compared to what is declared in the preferences file.
+//
+// Adding a new registry always adds it to the end of the list in the preferences file,
+// but RegistryList intentionally reverses the order to prioritize the most recently added registries.
+func (c *preferenceInfo) RegistryList() []Registry {
+	regList := make([]Registry, len(*c.OdoSettings.RegistryList))
+	copy(regList, *c.OdoSettings.RegistryList)
+	i := 0
+	j := len(regList) - 1
+	for i < j {
+		regList[i], regList[j] = regList[j], regList[i]
+		i++
+		j--
+	}
+	return regList
 }
 
 func (c *preferenceInfo) RegistryNameExists(name string) bool {
-	for _, registry := range *c.RegistryList() {
+	for _, registry := range *c.OdoSettings.RegistryList {
 		if registry.Name == name {
 			return true
 		}

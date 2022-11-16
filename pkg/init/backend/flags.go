@@ -54,7 +54,7 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 			return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo preference <add/remove> registry` command to configure devfile registries", flags[FLAG_DEVFILE_REGISTRY])
 		}
 		registries := o.preferenceClient.RegistryList()
-		for _, r := range *registries {
+		for _, r := range registries {
 			isGithubRegistry, err := registry.IsGithubBasedRegistry(r.URL)
 			if err != nil {
 				return err

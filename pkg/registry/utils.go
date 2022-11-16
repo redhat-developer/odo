@@ -12,7 +12,7 @@ import (
 func IsSecure(prefClient preference.Client, registryName string) bool {
 	isSecure := false
 	if prefClient.RegistryList() != nil {
-		for _, registry := range *prefClient.RegistryList() {
+		for _, registry := range prefClient.RegistryList() {
 			if registry.Name == registryName && registry.Secure {
 				isSecure = true
 				break

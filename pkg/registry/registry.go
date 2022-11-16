@@ -60,10 +60,8 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registr
 
 	hasName := len(registryName) != 0
 	if o.preferenceClient.RegistryList() != nil {
-		registryList := *o.preferenceClient.RegistryList()
-		// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
-		for i := len(registryList) - 1; i >= 0; i-- {
-			registry := registryList[i]
+		registryList := o.preferenceClient.RegistryList()
+		for _, registry := range registryList {
 			if hasName {
 				if registryName == registry.Name {
 					reg := api.Registry{
@@ -241,7 +239,7 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(registryName string, dev
 	// 2. The devfile api library does not support saving in memory
 	// 3. We need to get the file from the registry and save it to the temporary file
 	// 4. We need to read the file from the temporary file, unmarshal it and then return the devfile data
-	for _, reg = range *registries {
+	for _, reg = range registries {
 		if reg.Name == registryName {
 			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, segment.GetRegistryOptions())
 			if err != nil {

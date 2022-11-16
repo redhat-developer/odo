@@ -48,13 +48,13 @@ OdoSettings:
 			registryName: "",
 			want: []api.Registry{
 				{
-					Name:   "DefaultDevfileRegistry",
-					URL:    "https://registry.devfile.io",
+					Name:   "CheDevfileRegistry",
+					URL:    "https://che-devfile-registry.openshift.io/",
 					Secure: false,
 				},
 				{
-					Name:   "CheDevfileRegistry",
-					URL:    "https://che-devfile-registry.openshift.io/",
+					Name:   "DefaultDevfileRegistry",
+					URL:    "https://registry.devfile.io",
 					Secure: false,
 				},
 			},
@@ -253,7 +253,7 @@ func TestListDevfileStacks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().RegistryList().Return(&[]preference.Registry{
+			prefClient.EXPECT().RegistryList().Return([]preference.Registry{
 				{
 					Name: "TestRegistry",
 					URL:  server.URL,
