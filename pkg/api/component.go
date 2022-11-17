@@ -49,9 +49,9 @@ type Component struct {
 	DevfileData       *DevfileData     `json:"devfileData,omitempty"`
 	DevForwardedPorts []ForwardedPort  `json:"devForwardedPorts,omitempty"`
 	RunningIn         RunningModes     `json:"runningIn"`
-	ManagedBy         string           `json:"managedBy"`
 	Ingresses         []ConnectionData `json:"ingresses,omitempty"`
 	Routes            []ConnectionData `json:"routes,omitempty"`
+	ManagedBy         string           `json:"managedBy"`
 }
 
 type ForwardedPort struct {

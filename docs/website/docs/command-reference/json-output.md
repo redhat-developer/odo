@@ -131,6 +131,7 @@ When the `describe component` command is executed without parameter from a direc
   - the path of the Devfile,
   - the content of the Devfile,
   - supported `odo` features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
+  - ingress or routes created in Deploy mode
 - the status of the component
   - the forwarded ports if odo is currently running in Dev mode,
   - the modes in which the component is deployed (either none, Dev, Deploy or both)
@@ -150,7 +151,7 @@ odo describe component -o json
 			"dev": true,
 			"deploy": false,
 			"debug": true
-		}
+		},
 	},
 	"devForwardedPorts": [
 		{
@@ -164,12 +165,39 @@ odo describe component -o json
 		"dev": true,
 		"deploy": false
 	},
-	"managedBy": "odo"
+	"ingresses": [
+		{
+			"name": "my-nodejs-app",
+			"rules": [
+				{
+					"host": "nodejs.example.com",
+					"paths": [
+						"/",
+						"/foo"
+					]
+				}
+			]
+		}
+	]
+	"routes": [
+		{
+			"name": "my-nodejs-app",
+			"rules": [
+				{
+					"host": "my-nodejs-app-phmartin-crt-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com",
+					"paths": [
+						"/testpath"
+					]
+				}
+			]
+		}
+	]
+    "managedBy": "odo",
 }
 ```
-
 When the `describe component` commmand is executed with a name and namespace, it will return:
 - the modes in which the component is deployed (either Dev, Deploy or both)
+- ingress and route resources created by the component in Deploy mode
 
 The command with name and namespace is not able to return information about a component that has not been deployed. 
 
@@ -182,11 +210,51 @@ odo describe component --name aname -o json
 ```
 ```json
 {
-	"runningIn": {
-		"dev": true,
-		"deploy": false
-	},
-	"managedBy": "odo"
+  "devfileData": {
+    "devfile": {
+      "schemaVersion": "",
+      "metadata": {
+        "name": "my-nodejs-app",
+        "version": "Unknown",
+        "displayName": "Unknown",
+        "description": "Unknown",
+        "projectType": "nodejs",
+        "language": "Unknown"
+      }
+    }
+  },
+  "runningIn": {
+    "deploy": true,
+    "dev": false
+  },
+  "ingresses": [
+    {
+      "name": "my-nodejs-app",
+      "rules": [
+        {
+          "host": "nodejs.example.com",
+          "paths": [
+            "/",
+            "/foo"
+          ]
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "name": "my-nodejs-app",
+      "rules": [
+        {
+          "host": "my-nodejs-app-phmartin-crt-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com",
+          "paths": [
+            "/testpath"
+          ]
+        }
+      ]
+    }
+  ],
+  "managedBy": "odo",
 }
 ```
 

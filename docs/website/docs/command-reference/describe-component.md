@@ -37,7 +37,17 @@ Container components:
 •  runtime
 
 Kubernetes components:
-•  outerloop-deploy
+ •  outerloop-deployment
+ •  outerloop-service
+ •  outerloop-url-ingress
+ •  outerloop-url-route
+
+Kubernetes Ingresses:
+ •  my-nodejs-app: nodejs.example.com/
+ •  my-nodejs-app: nodejs.example.com/foo
+
+Kubernetes Routes:
+ •  my-nodejs-app: my-nodejs-app-phmartin-crt-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com/testpath
 
 ```
 </details>
@@ -74,7 +84,14 @@ Supported odo features:
  •  Dev: Unknown
  •  Deploy: Unknown
  •  Debug: Unknown
- 
+
+Kubernetes Ingresses:
+ •  my-nodejs-app: nodejs.example.com/
+ •  my-nodejs-app: nodejs.example.com/foo
+
+Kubernetes Routes:
+ •  my-nodejs-app: my-nodejs-app-phmartin-crt-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com/testpath
+
 ```
 </details>
 
