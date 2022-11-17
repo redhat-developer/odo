@@ -494,14 +494,13 @@ func TestGatherName(t *testing.T) {
 
 func TestListRoutesAndIngresses(t *testing.T) {
 	const (
-		componentName    = "nodejs-prj1-api-abhz"
-		k8sComponentName = "my-nodejs-app"
-		mode             = labels.ComponentDeployMode
+		componentName    = "nodejs-prj1-api-abhz" // hard coding from the Devfile
+		k8sComponentName = "my-nodejs-app"        // hard coding from the Devfile
 		namespace        = "my-namespace"
 	)
-	selector := labels.GetSelector(componentName, "app", mode, false)
+	label := labels.GetLabels(componentName, "app", "", labels.ComponentDeployMode, false)
+	selector := dfutil.ConvertLabelsToSelector(label)
 
-	label := labels.GetLabels(componentName, "app", "", mode, false)
 	devfileObjWithIngress := testingutil.GetTestDevfileObjFromFile("devfile-deploy-ingress.yaml")
 	ing := testingutil.CreateFakeIngressFromDevfile(devfileObjWithIngress, "outerloop-url", label)
 	ingConnectionData := api.ConnectionData{
@@ -545,7 +544,6 @@ func TestListRoutesAndIngresses(t *testing.T) {
 	type args struct {
 		client        func(ctrl *gomock.Controller) kclient.ClientInterface
 		componentName string
-		mode          string
 	}
 	tests := []struct {
 		name       string
@@ -570,7 +568,6 @@ func TestListRoutesAndIngresses(t *testing.T) {
 					return client
 				},
 				componentName: componentName,
-				mode:          mode,
 			},
 			wantIngs:   []api.ConnectionData{ingConnectionData},
 			wantRoutes: []api.ConnectionData{routeConnectionData},
@@ -587,7 +584,6 @@ func TestListRoutesAndIngresses(t *testing.T) {
 					return client
 				},
 				componentName: componentName,
-				mode:          mode,
 			},
 			wantIngs:   []api.ConnectionData{ingConnectionData},
 			wantRoutes: nil,
@@ -604,7 +600,6 @@ func TestListRoutesAndIngresses(t *testing.T) {
 					return client
 				},
 				componentName: componentName,
-				mode:          mode,
 			},
 			wantIngs:   []api.ConnectionData{ingDBConnectionData},
 			wantRoutes: nil,
@@ -614,7 +609,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			gotIngs, gotRoutes, err := ListRoutesAndIngresses(tt.args.client(ctrl), tt.args.componentName, tt.args.mode)
+			gotIngs, gotRoutes, err := ListRoutesAndIngresses(tt.args.client(ctrl), tt.args.componentName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListRoutesAndIngresses() error = %v, wantErr %v", err, tt.wantErr)
 				return

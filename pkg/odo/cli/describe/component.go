@@ -14,7 +14,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -114,7 +113,7 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name, odolabels.ComponentDeployMode)
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
 	}
@@ -152,7 +151,7 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 			runningIn = nil
 		}
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName, odolabels.ComponentDeployMode)
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName)
 	if err != nil {
 		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
 	}
