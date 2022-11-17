@@ -196,6 +196,8 @@ ComponentSettings:
 				// check if the namespace/project created for this test is marked as active in the JSON output
 				gjsonStr := fmt.Sprintf("namespaces.#[name==%s].active", commonVar.Project)
 				Expect(gjson.Get(out, gjsonStr).String()).To(Equal("true"))
+				// ensure that some namespace is marked as "active: false"
+				Expect(gjson.Get(out, "namespaces.#[active==false]#.name").String()).ShouldNot(ContainSubstring(commonVar.Project))
 			})
 		})
 	}
