@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,6 +9,9 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,7 +23,7 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	tempConfigFileName := tempConfigFile.Name()
 
 	tests := []struct {
 		name    string
@@ -52,7 +56,11 @@ func TestNew(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfi, err := newPreferenceInfo()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{
+				Globalodoconfig: &tempConfigFileName,
+			})
+			cfi, err := newPreferenceInfo(ctx)
 			switch test.success {
 			case true:
 				if err != nil {
@@ -72,12 +80,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetPushTimeout(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 
 	nonzeroValue := 5 * time.Second
 
@@ -103,7 +105,9 @@ func TestGetPushTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := newPreferenceInfo()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+			cfg, err := newPreferenceInfo(ctx)
 			if err != nil {
 				t.Error(err)
 			}
@@ -118,12 +122,6 @@ func TestGetPushTimeout(t *testing.T) {
 }
 
 func TestGetTimeout(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	zeroValue := 0 * time.Second
 	nonzeroValue := 5 * time.Second
 	tests := []struct {
@@ -159,7 +157,9 @@ func TestGetTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := newPreferenceInfo()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+			cfg, err := newPreferenceInfo(ctx)
 			if err != nil {
 				t.Error(err)
 			}
@@ -174,12 +174,6 @@ func TestGetTimeout(t *testing.T) {
 }
 
 func TestSetConfiguration(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 	minValue := minimumDurationValue
@@ -357,7 +351,9 @@ func TestSetConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := newPreferenceInfo()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+			cfg, err := newPreferenceInfo(ctx)
 			if err != nil {
 				t.Error(err)
 			}
@@ -402,12 +398,6 @@ func TestSetConfiguration(t *testing.T) {
 }
 
 func TestConsentTelemetry(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 
@@ -457,13 +447,6 @@ func TestConsentTelemetry(t *testing.T) {
 }
 
 func TestGetupdateNotification(t *testing.T) {
-
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 
@@ -562,13 +545,15 @@ func TestIsSupportedParameter(t *testing.T) {
 
 func TestPreferenceIsntCreatedWhenOdoIsUsed(t *testing.T) {
 	// cleaning up old odo files if any
-	filename, err := getPreferenceFile()
+	ctx := context.Background()
+	ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+	filename, err := getPreferenceFile(ctx)
 	if err != nil {
 		t.Error(err)
 	}
 	os.RemoveAll(filename)
 
-	conf, err := newPreferenceInfo()
+	conf, err := newPreferenceInfo(ctx)
 	if err != nil {
 		t.Errorf("error while creating global preference %v", err)
 	}
@@ -578,7 +563,9 @@ func TestPreferenceIsntCreatedWhenOdoIsUsed(t *testing.T) {
 }
 
 func TestMetaTypePopulatedInPreference(t *testing.T) {
-	pi, err := newPreferenceInfo()
+	ctx := context.Background()
+	ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+	pi, err := newPreferenceInfo(ctx)
 
 	if err != nil {
 		t.Error(err)
@@ -687,12 +674,6 @@ func TestHandleWithRegistryExist(t *testing.T) {
 }
 
 func TestGetConsentTelemetry(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 

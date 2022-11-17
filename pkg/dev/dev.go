@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -14,7 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -61,15 +61,18 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	ctx context.Context,
-	devfileObj parser.DevfileObj,
-	componentName string,
-	path string,
-	devfilePath string,
 	out io.Writer,
 	errOut io.Writer,
 	options StartOptions,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
+
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+	)
 
 	adapter := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient, o.syncClient, o.execClient,
@@ -77,7 +80,7 @@ func (o *DevClient) Start(
 			ComponentName: componentName,
 			Context:       path,
 			AppName:       odocontext.GetApplication(ctx),
-			Devfile:       devfileObj,
+			Devfile:       *devfileObj,
 			FS:            o.filesystem,
 		})
 
@@ -93,7 +96,7 @@ func (o *DevClient) Start(
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	componentStatus := watch.ComponentStatus{}
-	err := adapter.Push(pushParameters, &componentStatus)
+	err := adapter.Push(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -106,7 +109,7 @@ func (o *DevClient) Start(
 		ApplicationName:     odocontext.GetApplication(ctx),
 		DevfileWatchHandler: o.regenerateAdapterAndPush,
 		FileIgnores:         options.IgnorePaths,
-		InitialDevfileObj:   devfileObj,
+		InitialDevfileObj:   *devfileObj,
 		Debug:               options.Debug,
 		DevfileBuildCmd:     options.BuildCommand,
 		DevfileRunCmd:       options.RunCommand,
@@ -120,7 +123,7 @@ func (o *DevClient) Start(
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 	var adapter component.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
@@ -128,7 +131,7 @@ func (o *DevClient) regenerateAdapterAndPush(pushParams adapters.PushParameters,
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
-	err = adapter.Push(pushParams, componentStatus)
+	err = adapter.Push(ctx, pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}

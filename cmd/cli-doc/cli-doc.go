@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -171,11 +172,12 @@ func main() {
 			if len(args) == 0 {
 				fmt.Print(command.Usage())
 			} else {
+				ctx := context.Background()
 				switch args[0] {
 				case "reference":
-					fmt.Print(referencePrinter(cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
+					fmt.Print(referencePrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
 				case "structure":
-					fmt.Print(commandPrinter(cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
+					fmt.Print(commandPrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
 				default:
 					fmt.Print(command.Usage())
 				}

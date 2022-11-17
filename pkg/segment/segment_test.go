@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -66,11 +67,7 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	defer server.Close()
 	defer close(body)
 
-	ctrl := gomock.NewController(t)
-	cfg := preference.NewMockClient(ctrl)
-	cfg.EXPECT().GetConsentTelemetry().Return(false)
-
-	c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+	c, err := newCustomClient(createConfigDir(t), server.URL)
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +75,9 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	testError := errors.New("error occurred")
 	uploadData := fakeTelemetryData("odo preference view", testError, context.Background())
 	// run a command, odo preference view
-	if err = c.Upload(uploadData); err != nil {
+	ctx := context.Background()
+	scontext.SetTelemetryStatus(ctx, false)
+	if err = c.Upload(ctx, uploadData); err != nil {
 		t.Error(err)
 	}
 
@@ -124,17 +123,15 @@ func TestClientUploadWithConsent(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			cfg := preference.NewMockClient(ctrl)
-			cfg.EXPECT().GetConsentTelemetry().Return(true)
-
-			c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+			c, err := newCustomClient(createConfigDir(t), server.URL)
 			if err != nil {
 				t.Error(err)
 			}
 			uploadData := fakeTelemetryData("odo init", tt.err, context.Background())
 			// upload the data to Segment
-			if err = c.Upload(uploadData); err != nil {
+			ctx := scontext.NewContext(context.Background())
+			scontext.SetTelemetryStatus(ctx, true)
+			if err = c.Upload(ctx, uploadData); err != nil {
 				t.Error(err)
 			}
 			// segment.Client.SegmentClient uploads the data to server when a condition is met or when the connection is closed.
@@ -240,7 +237,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 
 	// When only ODO_DISABLE_TELEMETRY is present in the env, it takes precedence over the ConsentTelemetry preference,
 	// only if ODO_DISABLE_TELEMETRY=true
-	for _, odoDisableTelemetry := range []string{"", "true", "false", "foo"} {
+	for _, odoDisableTelemetry := range []string{"true", "false"} {
 		for _, consentTelemetry := range []bool{true, false} {
 			odoDisableTelemetry := odoDisableTelemetry
 			consentTelemetry := consentTelemetry
@@ -262,7 +259,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 		}
 	}
 	//Cases where all the environment variables are there.
-	for _, odoDisableTelemetry := range []string{"", "true", "false", "foo"} {
+	for _, odoDisableTelemetry := range []string{"true", "false"} {
 		for _, odoTrackingConsent := range []string{"", "yes", "no", "bar"} {
 			for _, consentTelemetry := range []bool{true, false} {
 				odoDisableTelemetry := odoDisableTelemetry
@@ -300,7 +297,11 @@ func TestIsTelemetryEnabled(t *testing.T) {
 			cfg := preference.NewMockClient(ctrl)
 			cfg.EXPECT().GetConsentTelemetry().Return(tt.consentTelemetryPref).AnyTimes()
 
-			got := IsTelemetryEnabled(cfg)
+			envConfig, err := config.GetConfiguration()
+			if err != nil {
+				t.Errorf("Get configuration fails: %v", err)
+			}
+			got := IsTelemetryEnabled(cfg, *envConfig)
 
 			//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
 			want := tt.want(tt.env[DisableTelemetryEnv], tt.env[TrackingConsentEnv], tt.consentTelemetryPref)
@@ -318,10 +319,8 @@ func TestClientUploadWithContext(t *testing.T) {
 	defer server.Close()
 	defer close(body)
 
-	ctrl := gomock.NewController(t)
-	cfg := preference.NewMockClient(ctrl)
-	cfg.EXPECT().GetConsentTelemetry().Return(true).AnyTimes()
 	ctx := scontext.NewContext(context.Background())
+	scontext.SetTelemetryStatus(ctx, true)
 
 	for k, v := range map[string]string{scontext.ComponentType: "nodejs", scontext.ClusterType: ""} {
 		switch k {
@@ -333,12 +332,12 @@ func TestClientUploadWithContext(t *testing.T) {
 			scontext.SetClusterType(ctx, fakeClient)
 			uploadData = fakeTelemetryData("odo set project", nil, ctx)
 		}
-		c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
+		c, err := newCustomClient(createConfigDir(t), server.URL)
 		if err != nil {
 			t.Error(err)
 		}
 		// upload the data to Segment
-		if err = c.Upload(uploadData); err != nil {
+		if err = c.Upload(ctx, uploadData); err != nil {
 			t.Error(err)
 		}
 		if err = c.Close(); err != nil {

@@ -29,7 +29,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -78,14 +80,23 @@ const (
 )
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
-	var err error
-	startTime := time.Now()
-	cfg, _ := preference.NewClient()
+	var (
+		err       error
+		startTime = time.Now()
+		ctx       = cmd.Context()
+	)
+
+	userConfig, _ := preference.NewClient(ctx)
+	envConfig := envcontext.GetEnvConfig(ctx)
+
 	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
-	disableTelemetryValue, disableTelemetryEnvSet := os.LookupEnv(segment.DisableTelemetryEnv)
-	disableTelemetry, _ := strconv.ParseBool(disableTelemetryValue)
-	debugTelemetry := segment.GetDebugTelemetryFile()
-	isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled()
+	disableTelemetryEnvSet := envConfig.OdoDisableTelemetry != nil
+	var disableTelemetry bool
+	if disableTelemetryEnvSet {
+		disableTelemetry = *envConfig.OdoDisableTelemetry
+	}
+	debugTelemetry := pointer.StringDeref(envConfig.OdoDebugTelemetryFile, "")
+	trackingConsentValue, isTrackingConsentEnabled, trackingConsentEnvSet, trackingConsentErr := segment.IsTrackingConsentEnabled(&envConfig)
 
 	// check for conflicting settings
 	if trackingConsentErr == nil && disableTelemetryEnvSet && trackingConsentEnvSet && disableTelemetry == isTrackingConsentEnabled {
@@ -98,7 +109,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
 	// This prompt has been placed here so that it does not prompt the user when they call --help
-	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
+	if !userConfig.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
 		} else {
@@ -107,15 +118,14 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 				klog.V(4).Infof("error in determining value of tracking consent env var: %v", trackingConsentErr)
 				askConsent = true
 			} else if trackingConsentEnvSet {
-				trackingConsent := os.Getenv(segment.TrackingConsentEnv)
 				if isTrackingConsentEnabled {
-					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsentValue)
 					klog.V(4).Info("Telemetry is enabled!\n")
-					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
+					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, "true"); err1 != nil {
 						klog.V(4).Info(err1.Error())
 					}
 				} else {
-					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsent)
+					klog.V(4).Infof("Skipping telemetry question due to %s=%s\n", segment.TrackingConsentEnv, trackingConsentValue)
 				}
 			} else if disableTelemetry {
 				//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
@@ -129,7 +139,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 				err = survey.AskOne(prompt, &consentTelemetry, nil)
 				ui.HandleError(err)
 				if err == nil {
-					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
 						klog.V(4).Info(err1.Error())
 					}
 				}
@@ -140,14 +150,15 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
-	err = scontext.SetCaller(cmd.Context(), os.Getenv(segment.TelemetryCaller))
+	// We can dereference as there is a default value defined for this config field
+	err = scontext.SetCaller(cmd.Context(), envConfig.TelemetryCaller)
 	if err != nil {
 		klog.V(3).Infof("error handling caller property for telemetry: %v", err)
 	}
 
 	scontext.SetFlags(cmd.Context(), cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
+	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, envConfig))
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
@@ -163,7 +174,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	})
 
-	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(cmd), "")
+	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(&envConfig, cmd), "")
 	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
 	util.LogErrorAndExit(commonflags.CheckVariablesCommand(cmd), "")
 
@@ -175,7 +186,6 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	o.SetClientset(deps)
 
-	ctx := cmdLineObj.Context()
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, platform)
 	ctx = odocontext.WithApplication(ctx, defaultAppName)
@@ -201,7 +211,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 		if preiniter, ok := o.(PreIniter); ok {
 			msg := preiniter.PreInit()
-			err = runPreInit(cwd, deps, cmdLineObj, msg)
+			err = runPreInit(ctx, cwd, deps, cmdLineObj, msg)
 			if err != nil {
 				startTelemetry(cmd, err, startTime)
 			}

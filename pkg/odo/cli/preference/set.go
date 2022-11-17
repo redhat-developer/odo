@@ -87,14 +87,14 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdSet implements the config set odo command
-func NewCmdSet(name, fullName string) *cobra.Command {
+func NewCmdSet(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewSetOptions()
 	preferenceSetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Set a value in the odo preference file",
 		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters()),
 		Example: func(exampleString, fullName string) string {
-			prefClient, err := preference.NewClient()
+			prefClient, err := preference.NewClient(ctx)
 			if err != nil {
 				util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 			}

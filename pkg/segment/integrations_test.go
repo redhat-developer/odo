@@ -1,13 +1,19 @@
 package segment
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"testing"
 
 	"github.com/devfile/registry-support/registry-library/library"
+	"k8s.io/utils/pointer"
+
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 )
 
 func TestGetRegistryOptions(t *testing.T) {
@@ -21,50 +27,45 @@ func TestGetRegistryOptions(t *testing.T) {
 
 	tests := []struct {
 		testName      string
-		consent       string
+		consent       bool
 		telemetryFile bool
 		cfg           preference.Client
 	}{
 		{
 			testName:      "Registry options with telemetry consent and telemetry file",
-			consent:       "true",
+			consent:       true,
 			telemetryFile: true,
 		},
 		{
 			testName:      "Registry options with telemetry consent and no telemetry file",
-			consent:       "true",
+			consent:       true,
 			telemetryFile: false,
 		},
 
 		{
 			testName:      "Registry options without telemetry consent and telemetry file",
-			consent:       "false",
+			consent:       false,
 			telemetryFile: true,
 		},
 		{
 			testName:      "Registry options without telemetry consent and no telemetry file",
-			consent:       "false",
+			consent:       false,
 			telemetryFile: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			cfg, err := preference.NewClient()
-			if err != nil {
-				t.Error(err)
-			}
-			err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, tt.consent)
-			if err != nil {
-				t.Error(err)
-			}
-
+			ctx := scontext.NewContext(context.Background())
+			var envConfig config.Configuration
 			if tt.telemetryFile {
-				t.Setenv(DebugTelemetryFileEnv, "/a/telemetry/file")
+				envConfig.OdoDebugTelemetryFile = pointer.String("/a/telemetry/file")
 			}
+			ctx = envcontext.WithEnvConfig(ctx, envConfig)
+			scontext.SetTelemetryStatus(ctx, tt.consent)
 
-			ro := GetRegistryOptions()
-			err = verifyRegistryOptions(cfg.GetConsentTelemetry(), tt.telemetryFile, ro)
+			ro := GetRegistryOptions(ctx)
+			err = verifyRegistryOptions(tt.consent, tt.telemetryFile, ro)
 			if err != nil {
 				t.Error(err)
 			}

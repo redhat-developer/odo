@@ -1,14 +1,16 @@
 package image
 
 import (
+	"context"
 	"errors"
-	"os"
 	"os/exec"
 	"testing"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	gomock "github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -120,13 +122,17 @@ func TestBuildPushImage(t *testing.T) {
 func TestSelectBackend(t *testing.T) {
 	tests := []struct {
 		name        string
-		getEnvFunc  func(string) string
+		envConfig   config.Configuration
 		lookPathCmd func(string) (string, error)
 		wantType    string
 		wantErr     bool
 	}{
 		{
 			name: "all backends are present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(string) (string, error) {
 				return "", nil
 			},
@@ -135,6 +141,10 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "no backend are present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(string) (string, error) {
 				return "", errors.New("")
 			},
@@ -142,6 +152,10 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "only docker is present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "docker" {
 					return "docker", nil
@@ -153,6 +167,10 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "only podman is present",
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "podman",
+			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "podman" {
 					return "podman", nil
@@ -164,11 +182,9 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "value of PODMAN_CMD envvar is returned if it points to a valid command",
-			getEnvFunc: func(name string) string {
-				if name == "PODMAN_CMD" {
-					return "my-alternate-podman-command"
-				}
-				return ""
+			envConfig: config.Configuration{
+				DockerCmd: "docker",
+				PodmanCmd: "my-alternate-podman-command",
 			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "my-alternate-podman-command" {
@@ -181,11 +197,9 @@ func TestSelectBackend(t *testing.T) {
 		},
 		{
 			name: "docker if PODMAN_CMD points to an invalid command",
-			getEnvFunc: func(name string) string {
-				if name == "PODMAN_CMD" {
-					return "no-such-command"
-				}
-				return ""
+			envConfig: config.Configuration{
+				PodmanCmd: "no-such-command",
+				DockerCmd: "docker",
 			},
 			lookPathCmd: func(name string) (string, error) {
 				if name == "docker" {
@@ -200,18 +214,11 @@ func TestSelectBackend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.getEnvFunc != nil {
-				getEnvFunc = tt.getEnvFunc
-			} else {
-				getEnvFunc = func(string) string {
-					//Empty environment
-					return ""
-				}
-			}
-			defer func() { getEnvFunc = os.Getenv }()
 			lookPathCmd = tt.lookPathCmd
 			defer func() { lookPathCmd = exec.LookPath }()
-			backend, err := selectBackend()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, tt.envConfig)
+			backend, err := selectBackend(ctx)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("%s: Error result wanted %v, got %v", tt.name, tt.wantErr, err != nil)
 			}

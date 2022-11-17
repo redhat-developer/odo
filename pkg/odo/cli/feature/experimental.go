@@ -1,7 +1,9 @@
 package feature
 
 import (
-	"os"
+	"context"
+
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 )
 
 const (
@@ -9,6 +11,6 @@ const (
 	OdoExperimentalModeTrue   = "true"
 )
 
-func isExperimentalModeEnabled() bool {
-	return os.Getenv(OdoExperimentalModeEnvVar) == OdoExperimentalModeTrue
+func isExperimentalModeEnabled(ctx context.Context) bool {
+	return envcontext.GetEnvConfig(ctx).OdoExperimentalMode
 }

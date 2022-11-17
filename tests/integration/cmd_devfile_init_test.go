@@ -1,11 +1,14 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -378,23 +381,6 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 					segment.TrackingConsentEnv:  "no",
 				},
 			},
-			{
-				name: "ODO_DISABLE_TELEMETRY=foobar and ODO_TRACKING_CONSENT=no",
-				env: map[string]string{
-					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
-					segment.DisableTelemetryEnv: "foobar-should-evaluate-to-false",
-					segment.TrackingConsentEnv:  "no",
-				},
-			},
-			{
-				name: "ODO_DISABLE_TELEMETRY='' and ODO_TRACKING_CONSENT=no",
-				env: map[string]string{
-					// an empty string will evaluate to false
-					//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still want to test it
-					segment.DisableTelemetryEnv: "",
-					segment.TrackingConsentEnv:  "no",
-				},
-			},
 		} {
 			tt := tt
 			It("should error out if "+tt.name, func() {
@@ -428,7 +414,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			{
 				title: "empty caller env var",
 				env: map[string]string{
-					segment.TelemetryCaller: "",
+					helper.TelemetryCaller: "",
 				},
 				callerChecker: func(_, _ string, td segment.TelemetryData) {
 					cmdProperties := td.Properties.CmdProperties
@@ -439,7 +425,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			{
 				title: "invalid caller env var",
 				env: map[string]string{
-					segment.TelemetryCaller: "an-invalid-caller",
+					helper.TelemetryCaller: "an-invalid-caller",
 				},
 				callerChecker: func(stdout, stderr string, td segment.TelemetryData) {
 					By("not disclosing list of allowed values", func() {
@@ -471,7 +457,7 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 			telemetryTests = append(telemetryTests, telemetryTest{
 				title: fmt.Sprintf("valid caller env var: %s", c),
 				env: map[string]string{
-					segment.TelemetryCaller: c,
+					helper.TelemetryCaller: c,
 				},
 				callerChecker: func(_, _ string, td segment.TelemetryData) {
 					Expect(td.Properties.CmdProperties[segmentContext.Caller]).To(Equal(c))
@@ -486,7 +472,12 @@ var _ = Describe("odo devfile init command tests", Label(helper.LabelNoCluster),
 				BeforeEach(func() {
 					helper.EnableTelemetryDebug()
 
-					cfg, err := preference.NewClient()
+					ctx := context.Background()
+					envConfig, err := config.GetConfiguration()
+					Expect(err).To(BeNil())
+					ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
+					cfg, err := preference.NewClient(ctx)
 					Expect(err).ShouldNot(HaveOccurred())
 					if tt.setupFunc != nil {
 						tt.setupFunc(cfg)

@@ -1,6 +1,10 @@
 package feature
 
-import "github.com/redhat-developer/odo/pkg/log"
+import (
+	"context"
+
+	"github.com/redhat-developer/odo/pkg/log"
+)
 
 // OdoFeature represents a uniquely identifiable feature of odo.
 // It can either be a CLI command or flag.
@@ -29,14 +33,14 @@ var (
 // IsEnabled returns whether the specified feature should be enabled or not.
 // If the feature is not marked as experimental, it should always be enabled.
 // Otherwise, it is enabled only if the experimental mode is enabled (see the isExperimentalModeEnabled package-level function).
-func IsEnabled(feat OdoFeature) bool {
+func IsEnabled(ctx context.Context, feat OdoFeature) bool {
 	// Features not marked as experimental are always enabled, regardless of the experimental mode
 	if !feat.isExperimental {
 		return true
 	}
 
 	// Features marked as experimental are enabled only if the experimental mode is set
-	experimentalModeEnabled := isExperimentalModeEnabled()
+	experimentalModeEnabled := isExperimentalModeEnabled(ctx)
 	if experimentalModeEnabled {
 		log.Experimentalf("Experimental mode enabled for %s. Use at your own risk. More details on https://odo.dev/docs/user-guides/advanced/experimental-mode",
 			feat.description)

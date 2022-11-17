@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -85,7 +86,7 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 	return nil
 }
 
-func (o *FlagsBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
+func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
 	return &api.DevfileLocation{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],

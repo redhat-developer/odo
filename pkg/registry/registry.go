@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -89,7 +90,7 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registr
 }
 
 // ListDevfileStacks lists all the available devfile stacks in devfile registry
-func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error) {
+func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error) {
 	catalogDevfileList := &DevfileStackList{}
 	var err error
 
@@ -115,7 +116,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 		registry := reg                 // Needed to prevent the lambda from capturing the value
 		registryPriority := regPriority // Needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			registryDevfiles, err := getRegistryStacks(o.preferenceClient, registry)
+			registryDevfiles, err := getRegistryStacks(ctx, o.preferenceClient, registry)
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL, and credential and remove add the registry again (refer to `odo preference add registry --help`)\n", registry.Name, err)
 				return
@@ -158,7 +159,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 			}
 
 			if detailsFlag {
-				devfileData, err := o.retrieveDevfileDataFromRegistry(devfile.Registry.Name, devfile.Name)
+				devfileData, err := o.retrieveDevfileDataFromRegistry(ctx, devfile.Registry.Name, devfile.Name)
 				if err != nil {
 					return *catalogDevfileList, err
 				}
@@ -185,7 +186,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 }
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
-func getRegistryStacks(preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
+func getRegistryStacks(ctx context.Context, preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
 	isGithubregistry, err := IsGithubBasedRegistry(registry.URL)
 	if err != nil {
 		return nil, err
@@ -194,7 +195,7 @@ func getRegistryStacks(preferenceClient preference.Client, registry api.Registry
 		return nil, &ErrGithubRegistryNotSupported{}
 	}
 	// OCI-based registry
-	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
+	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(ctx), indexSchema.StackDevfileType)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +222,7 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 	return registryDevfiles, nil
 }
 
-func (o RegistryClient) retrieveDevfileDataFromRegistry(registryName string, devfileName string) (api.DevfileData, error) {
+func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, registryName string, devfileName string) (api.DevfileData, error) {
 
 	// Create random temporary file
 	tmpFile, err := ioutil.TempDir("", "odo")
@@ -241,7 +242,7 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(registryName string, dev
 	// 4. We need to read the file from the temporary file, unmarshal it and then return the devfile data
 	for _, reg = range registries {
 		if reg.Name == registryName {
-			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, segment.GetRegistryOptions())
+			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, segment.GetRegistryOptions(ctx))
 			if err != nil {
 				return api.DevfileData{}, err
 			}

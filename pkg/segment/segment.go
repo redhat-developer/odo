@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,18 +11,19 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Xuanwo/go-locale"
 
+	"github.com/redhat-developer/odo/pkg/config"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/pborman/uuid"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/preference"
 )
@@ -47,9 +49,7 @@ const (
 	// Setting it to 'no' has the same effect as DisableTelemetryEnv=true (telemetry is disabled and no question asked)
 	// Settings this to 'yes' skips the question about telemetry and enables user tracking.
 	// Possible values are yes/no.
-	TrackingConsentEnv    = "ODO_TRACKING_CONSENT"
-	DebugTelemetryFileEnv = "ODO_DEBUG_TELEMETRY_FILE"
-	TelemetryCaller       = "TELEMETRY_CALLER"
+	TrackingConsentEnv = "ODO_TRACKING_CONSENT"
 )
 
 type TelemetryProperties struct {
@@ -70,22 +70,20 @@ type TelemetryData struct {
 type Client struct {
 	// SegmentClient helps interact with the segment API
 	SegmentClient analytics.Client
-	// Preference points to the global odo config
-	Preference preference.Client
 	// TelemetryFilePath points to the file containing anonymousID used for tracking odo commands executed by the user
 	TelemetryFilePath string
 }
 
 // NewClient returns a Client created with the default args
-func NewClient(preference preference.Client) (*Client, error) {
-	return newCustomClient(preference,
+func NewClient() (*Client, error) {
+	return newCustomClient(
 		GetTelemetryFilePath(),
 		analytics.DefaultEndpoint,
 	)
 }
 
 // newCustomClient returns a Client created with custom args
-func newCustomClient(preference preference.Client, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
+func newCustomClient(telemetryFilePath string, segmentEndpoint string) (*Client, error) {
 	// get the locale information
 	tag, err := locale.Detect()
 	if err != nil {
@@ -109,7 +107,6 @@ func newCustomClient(preference preference.Client, telemetryFilePath string, seg
 	}
 	return &Client{
 		SegmentClient:     client,
-		Preference:        preference,
 		TelemetryFilePath: telemetryFilePath,
 	}, nil
 }
@@ -128,9 +125,9 @@ func (c *Client) Close() error {
 }
 
 // Upload prepares the data to be sent to segment and send it once the client connection closes
-func (c *Client) Upload(data TelemetryData) error {
+func (c *Client) Upload(ctx context.Context, data TelemetryData) error {
 	// if the user has not consented for telemetry, return
-	if !IsTelemetryEnabled(c.Preference) {
+	if !scontext.GetTelemetryStatus(ctx) {
 		return nil
 	}
 
@@ -264,20 +261,20 @@ func RunningInTerminal() bool {
 }
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
-func IsTelemetryEnabled(cfg preference.Client) bool {
+func IsTelemetryEnabled(cfg preference.Client, envConfig config.Configuration) bool {
 	klog.V(4).Info("Checking telemetry enable status")
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
 
 	//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
-	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))
+	disableTelemetry := pointer.BoolDeref(envConfig.OdoDisableTelemetry, false)
 	if disableTelemetry {
 		//lint:ignore SA1019 We deprecated this env var, but until it is removed, we still need to support it
 		klog.V(4).Infof("Sending telemetry disabled by %q env variable\n", DisableTelemetryEnv)
 		return false
 	}
 
-	trackingConsentEnabled, present, err := IsTrackingConsentEnabled()
+	_, trackingConsentEnabled, present, err := IsTrackingConsentEnabled(&envConfig)
 	if err != nil {
 		klog.V(4).Infof("error in determining value of tracking consent env var: %v", err)
 	} else if present {
@@ -301,18 +298,18 @@ func IsTelemetryEnabled(cfg preference.Client) bool {
 
 // IsTrackingConsentEnabled returns whether tracking consent is enabled, based on the value of the TrackingConsentEnv environment variable.
 // The second value returned indicates whether the variable is present in the environment.
-func IsTrackingConsentEnabled() (enabled bool, present bool, err error) {
-	trackingConsent, ok := os.LookupEnv(TrackingConsentEnv)
-	if !ok {
-		return false, false, nil
+func IsTrackingConsentEnabled(envConfig *config.Configuration) (value string, enabled bool, present bool, err error) {
+	if envConfig.OdoTrackingConsent == nil {
+		return "", false, false, nil
 	}
+	trackingConsent := *envConfig.OdoTrackingConsent
 	switch trackingConsent {
 	case "yes":
-		return true, true, nil
+		return trackingConsent, true, true, nil
 	case "no":
-		return false, true, nil
+		return trackingConsent, false, true, nil
 	default:
-		return false, true, fmt.Errorf("invalid value for %s: %q", TrackingConsentEnv, trackingConsent)
+		return trackingConsent, false, true, fmt.Errorf("invalid value for %s: %q", TrackingConsentEnv, trackingConsent)
 	}
 }
 
@@ -354,8 +351,4 @@ func sanitizeExec(errString string) string {
 	pattern, _ := regexp.Compile("exec command.*")
 	errString = pattern.ReplaceAllString(errString, fmt.Sprintf("exec command %s", Sanitizer))
 	return errString
-}
-
-func GetDebugTelemetryFile() string {
-	return os.Getenv(DebugTelemetryFileEnv)
 }

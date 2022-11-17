@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/tidwall/gjson"
 
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 
@@ -200,11 +203,21 @@ func CommonBeforeEach(setupCluster bool) CommonVar {
 		commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 	}
 	commonVar.OriginalWorkingDirectory = Getwd()
-	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.ConfigDir, "preference.yaml"))
-	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
-	cfg, _ := preference.NewClient()
-	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
+
+	configPath := filepath.Join(commonVar.ConfigDir, "preference.yaml")
+	os.Setenv("GLOBALODOCONFIG", configPath)
+
+	// Create context with env var configuration
+	ctx := context.Background()
+	envConfig, err := config.GetConfiguration()
 	Expect(err).To(BeNil())
+	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
+	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
+	cfg, _ := preference.NewClient(ctx)
+	err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
+	Expect(err).To(BeNil())
+
 	// Use ephemeral volumes (emptyDir) in tests to make test faster
 	err = cfg.SetConfiguration(preference.EphemeralSetting, "true")
 	Expect(err).To(BeNil())

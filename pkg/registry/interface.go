@@ -2,6 +2,8 @@
 package registry
 
 import (
+	"context"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/devfile/registry-support/registry-library/library"
@@ -13,5 +15,5 @@ type Client interface {
 	DownloadFileInMemory(params dfutil.HTTPRequestParams) ([]byte, error)
 	DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error
 	GetDevfileRegistries(registryName string) ([]api.Registry, error)
-	ListDevfileStacks(registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error)
+	ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error)
 }

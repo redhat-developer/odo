@@ -3,7 +3,6 @@ package build_images
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -63,12 +62,7 @@ func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
 
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
-	var (
-		devfileObj  = odocontext.GetDevfileObj(ctx)
-		devfilePath = odocontext.GetDevfilePath(ctx)
-		path        = filepath.Dir(devfilePath)
-	)
-	return image.BuildPushImages(o.clientset.FS, *devfileObj, path, o.pushFlag)
+	return image.BuildPushImages(ctx, o.clientset.FS, o.pushFlag)
 }
 
 // NewCmdBuildImages implements the odo command

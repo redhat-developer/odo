@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -49,7 +50,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				},
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
-					alizerClient.EXPECT().DetectFramework(gomock.Any()).Return(recognizer.DevFileType{
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(recognizer.DevFileType{
 						Name: "a-devfile-name",
 					}, api.Registry{
 						Name: "a-registry",
@@ -76,7 +77,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				},
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
-					alizerClient.EXPECT().DetectFramework(gomock.Any()).Return(recognizer.DevFileType{}, api.Registry{}, nil)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(recognizer.DevFileType{}, api.Registry{}, nil)
 					return alizerClient
 				},
 			},
@@ -95,7 +96,8 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				askerClient:  tt.fields.askerClient(ctrl),
 				alizerClient: tt.fields.alizerClient(ctrl),
 			}
-			gotLocation, err := o.SelectDevfile(tt.args.flags, tt.args.fs, tt.args.dir)
+			ctx := context.Background()
+			gotLocation, err := o.SelectDevfile(ctx, tt.args.flags, tt.args.fs, tt.args.dir)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AlizerBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return

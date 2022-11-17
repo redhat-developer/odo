@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -47,9 +48,9 @@ func (o *InteractiveBackend) Validate(flags map[string]string, fs filesystem.Fil
 	return nil
 }
 
-func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
+func (o *InteractiveBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
 	result := &api.DevfileLocation{}
-	devfileEntries, _ := o.registryClient.ListDevfileStacks("", "", "", false)
+	devfileEntries, _ := o.registryClient.ListDevfileStacks(ctx, "", "", "", false)
 
 	langs := devfileEntries.GetLanguages()
 	state := STATE_ASK_LANG

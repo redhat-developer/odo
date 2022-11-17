@@ -8,6 +8,8 @@
 package init
 
 import (
+	"context"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 
@@ -29,17 +31,17 @@ type Client interface {
 	// `newDevfileHandlerFunc` is called only when a new Devfile object has been instantiated.
 	// It allows to perform operations right after the Devfile has been initialized and personalized.
 	// It is not called if the context directory already has a Devfile file.
-	InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool),
+	InitDevfile(ctx context.Context, flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool),
 		newDevfileHandlerFunc func(newDevfileObj parser.DevfileObj) error) error
 
 	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
 	// or based on the flags if the directory is empty, or
 	// interactively if flags is empty
-	SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error)
+	SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error)
 
 	// DownloadDevfile downloads a devfile given its location information and a destination directory
 	// and returns the path of the downloaded file
-	DownloadDevfile(devfileLocation *api.DevfileLocation, destDir string) (string, error)
+	DownloadDevfile(ctx context.Context, devfileLocation *api.DevfileLocation, destDir string) (string, error)
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
 	// depending on the flags. If not starter project is selected, a nil starter is returned
@@ -58,5 +60,5 @@ type Client interface {
 
 	// SelectAndPersonalizeDevfile selects a devfile, then downloads, parse and personalize it
 	// Returns the devfile object, its path and pointer to *api.devfileLocation
-	SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error)
+	SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error)
 }

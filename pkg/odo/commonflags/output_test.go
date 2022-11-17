@@ -14,7 +14,7 @@ func TestUseOutputFlagOK(t *testing.T) {
 	if err != nil {
 		t.Errorf("Set error should be nil but is %v", err)
 	}
-	err = CheckMachineReadableOutputCommand(cmd)
+	err = CheckMachineReadableOutputCommand(nil, cmd)
 	if err != nil {
 		t.Errorf("Check error should be nil but is %v", err)
 	}
@@ -26,7 +26,7 @@ func TestUseOutputFlagNotUsed(t *testing.T) {
 	if err != nil {
 		t.Errorf("Set error should be nil but is %v", err)
 	}
-	err = CheckMachineReadableOutputCommand(cmd)
+	err = CheckMachineReadableOutputCommand(nil, cmd)
 	if err.Error() != "Machine readable output is not yet implemented for this command" {
 		t.Errorf("Check error is %v", err)
 	}
@@ -38,7 +38,7 @@ func TestUseOutputFlagWrongValue(t *testing.T) {
 	if err != nil {
 		t.Errorf("Set error should be nil but is %v", err)
 	}
-	err = CheckMachineReadableOutputCommand(cmd)
+	err = CheckMachineReadableOutputCommand(nil, cmd)
 	if err.Error() != "Please input a valid output format for -o, available format: json" {
 		t.Errorf("Check error is %v", err)
 	}

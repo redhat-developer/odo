@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +11,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
+
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/config"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -35,8 +39,7 @@ OdoSettings:
 	if err != nil {
 		t.Error(err)
 	}
-
-	t.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
+	tempConfigFileName := tempConfigFile.Name()
 
 	tests := []struct {
 		name         string
@@ -74,7 +77,11 @@ OdoSettings:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prefClient, _ := preference.NewClient()
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{
+				Globalodoconfig: &tempConfigFileName,
+			})
+			prefClient, _ := preference.NewClient(ctx)
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
@@ -260,7 +267,9 @@ func TestListDevfileStacks(t *testing.T) {
 				},
 			}).AnyTimes()
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
-			got, err := catClient.ListDevfileStacks(tt.registryName, tt.devfileName, tt.filter, false)
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false)
 			if err != nil {
 				t.Error(err)
 			}
@@ -336,7 +345,9 @@ func TestGetRegistryDevfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			got, err := getRegistryStacks(prefClient, tt.registry)
+			ctx := context.Background()
+			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
+			got, err := getRegistryStacks(ctx, prefClient, tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)

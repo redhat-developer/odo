@@ -4,13 +4,18 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/spf13/cobra"
+
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/segment"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
+
 	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 )
 
 const RecommendedCommandName = "telemetry"
@@ -42,23 +47,23 @@ func (o *TelemetryOptions) Validate(ctx context.Context) (err error) {
 }
 
 func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
-	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
+	if !scontext.GetTelemetryStatus(ctx) {
 		return nil
 	}
 
-	dt := segment.GetDebugTelemetryFile()
+	dt := pointer.StringDeref(envcontext.GetEnvConfig(ctx).OdoDebugTelemetryFile, "")
 	if len(dt) > 0 {
 		klog.V(4).Infof("WARNING: telemetry debug enabled, data logged to file %s", dt)
 		return util.WriteToJSONFile(o.telemetryData, dt)
 	}
 
-	segmentClient, err := segment.NewClient(o.clientset.PreferenceClient)
+	segmentClient, err := segment.NewClient()
 	if err != nil {
 		klog.V(4).Infof("Cannot create a segment client. Will not send any data: %q", err)
 	}
 	defer segmentClient.Close()
 
-	err = segmentClient.Upload(o.telemetryData)
+	err = segmentClient.Upload(ctx, o.telemetryData)
 	if err != nil {
 		klog.V(4).Infof("Cannot send data to telemetry: %q", err)
 	}
@@ -84,6 +89,6 @@ func NewCmdTelemetry(name string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(telemetryCmd, clientset.PREFERENCE)
+	clientset.Add(telemetryCmd)
 	return telemetryCmd
 }

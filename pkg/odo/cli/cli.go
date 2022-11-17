@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -101,8 +102,8 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 const pluginPrefix = "odo"
 
 // NewCmdOdo creates a new root command for odo
-func NewCmdOdo(name, fullName string) *cobra.Command {
-	rootCmd := odoRootCmd(name, fullName)
+func NewCmdOdo(ctx context.Context, name, fullName string) *cobra.Command {
+	rootCmd := odoRootCmd(ctx, name, fullName)
 
 	if len(os.Args) > 1 {
 		cmdPathPieces := os.Args[1:]
@@ -120,7 +121,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 	return rootCmd
 }
 
-func odoRootCmd(name, fullName string) *cobra.Command {
+func odoRootCmd(ctx context.Context, name, fullName string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,
@@ -135,7 +136,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.odo.yaml)")
 
 	commonflags.AddOutputFlag()
-	commonflags.AddRunOnFlag()
+	commonflags.AddRunOnFlag(ctx)
 	commonflags.AddVariablesFlags()
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
@@ -177,7 +178,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
-		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
+		preference.NewCmdPreference(ctx, preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
 		list.NewCmdList(list.RecommendedCommandName, util.GetFullName(fullName, list.RecommendedCommandName)),
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),

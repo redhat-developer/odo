@@ -1,7 +1,9 @@
 package deploy
 
 import (
+	"context"
 	"errors"
+	"path/filepath"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -11,27 +13,38 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type DeployClient struct {
 	kubeClient kclient.ClientInterface
+	fs         filesystem.Filesystem
 }
 
 var _ Client = (*DeployClient)(nil)
 
-func NewDeployClient(kubeClient kclient.ClientInterface) *DeployClient {
+func NewDeployClient(kubeClient kclient.ClientInterface, fs filesystem.Filesystem) *DeployClient {
 	return &DeployClient{
 		kubeClient: kubeClient,
+		fs:         fs,
 	}
 }
 
-func (o *DeployClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string, componentName string) error {
-	deployHandler := newDeployHandler(fs, devfileObj, path, o.kubeClient, appName, componentName)
-	return libdevfile.Deploy(devfileObj, deployHandler)
+func (o *DeployClient) Deploy(ctx context.Context) error {
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		appName       = odocontext.GetApplication(ctx)
+	)
+	deployHandler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
+	return libdevfile.Deploy(*devfileObj, deployHandler)
 }
 
 type deployHandler struct {
+	ctx           context.Context
 	fs            filesystem.Filesystem
 	devfileObj    parser.DevfileObj
 	path          string
@@ -42,8 +55,9 @@ type deployHandler struct {
 
 var _ libdevfile.Handler = (*deployHandler)(nil)
 
-func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string, componentName string) *deployHandler {
+func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string, componentName string) *deployHandler {
 	return &deployHandler{
+		ctx:           ctx,
 		fs:            fs,
 		devfileObj:    devfileObj,
 		path:          path,
@@ -55,7 +69,7 @@ func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, pa
 
 // ApplyImage builds and pushes the OCI image to be used on Kubernetes
 func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
-	return image.BuildPushSpecificImage(o.fs, o.path, img, true)
+	return image.BuildPushSpecificImage(o.ctx, o.fs, img, true)
 }
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file

@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/user"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -69,9 +71,10 @@ type preferenceInfo struct {
 
 var _ Client = (*preferenceInfo)(nil)
 
-func getPreferenceFile() (string, error) {
-	if env, ok := os.LookupEnv(GlobalConfigEnvName); ok {
-		return env, nil
+func getPreferenceFile(ctx context.Context) (string, error) {
+	envConfig := envcontext.GetEnvConfig(ctx)
+	if envConfig.Globalodoconfig != nil {
+		return *envConfig.Globalodoconfig, nil
 	}
 
 	if len(customHomeDir) != 0 {
@@ -85,8 +88,8 @@ func getPreferenceFile() (string, error) {
 	return filepath.Join(currentUser.HomeDir, ".odo", configFileName), nil
 }
 
-func NewClient() (Client, error) {
-	return newPreferenceInfo()
+func NewClient(ctx context.Context) (Client, error) {
+	return newPreferenceInfo(ctx)
 }
 
 // newPreference creates an empty Preference struct with type meta information
@@ -101,8 +104,8 @@ func newPreference() Preference {
 
 // newPreferenceInfo gets the PreferenceInfo from preference file
 // or returns default PreferenceInfo if preference file does not exist
-func newPreferenceInfo() (*preferenceInfo, error) {
-	preferenceFile, err := getPreferenceFile()
+func newPreferenceInfo(ctx context.Context) (*preferenceInfo, error) {
+	preferenceFile, err := getPreferenceFile(ctx)
 	klog.V(4).Infof("The path for preference file is %+v", preferenceFile)
 	if err != nil {
 		return nil, err
