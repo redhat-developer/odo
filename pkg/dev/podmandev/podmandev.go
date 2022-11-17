@@ -26,6 +26,12 @@ import (
 	"k8s.io/klog"
 )
 
+const (
+	PromptMessage = `
+[Ctrl+c] - Exit and delete resources from podman
+`
+)
+
 type DevClient struct {
 	podmanClient podman.Client
 	syncClient   sync.Client
@@ -137,6 +143,13 @@ func (o *DevClient) Start(
 			return err
 		}
 	}
+
+	fmt.Fprintf(
+		out,
+		" %s%s",
+		log.Sbold("Keyboard Commands:"),
+		PromptMessage,
+	)
 
 	<-ctx.Done()
 
