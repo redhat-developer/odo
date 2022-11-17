@@ -89,7 +89,7 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN, PORT_FORWARD, PREFERENCE, SYNC, WATCH},
+	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES_NULLABLE, PODMAN},
@@ -252,6 +252,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 				dep.PodmanClient,
 				dep.SyncClient,
 				dep.ExecClient,
+				dep.StateClient,
 			)
 		default:
 			panic(fmt.Sprintf("not implemented yet for platform %q", platform))

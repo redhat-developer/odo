@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/fatih/color"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
@@ -17,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +30,7 @@ type DevClient struct {
 	podmanClient podman.Client
 	syncClient   sync.Client
 	execClient   exec.Client
+	stateClient  state.Client
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -35,11 +39,13 @@ func NewDevClient(
 	podmanClient podman.Client,
 	syncClient sync.Client,
 	execClient exec.Client,
+	stateClient state.Client,
 ) *DevClient {
 	return &DevClient{
 		podmanClient: podmanClient,
 		syncClient:   syncClient,
 		execClient:   execClient,
+		stateClient:  stateClient,
 	}
 }
 
@@ -57,10 +63,16 @@ func (o *DevClient) Start(
 		path          = filepath.Dir(devfilePath)
 	)
 
-	pod, err := o.deployPod(ctx, options)
+	pod, fwPorts, err := o.deployPod(ctx, options)
 	if err != nil {
 		return err
 	}
+
+	for _, fwPort := range fwPorts {
+		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
+		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
+	}
+	o.stateClient.SetForwardedPorts(fwPorts)
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
@@ -151,7 +163,7 @@ func (o *DevClient) Start(
 }
 
 // deployPod deploys the component as a Pod in podman
-func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*corev1.Pod, error) {
+func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*corev1.Pod, []api.ForwardedPort, error) {
 	var (
 		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
@@ -161,7 +173,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 	spinner := log.Spinner("Deploying pod")
 	defer spinner.End(false)
 
-	pod, err := createPodFromComponent(
+	pod, fwPorts, err := createPodFromComponent(
 		*devfileObj,
 		componentName,
 		appName,
@@ -170,21 +182,21 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		"",
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = o.checkVolumesFree(pod)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = o.podmanClient.PlayKube(pod)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	spinner.End(true)
-	return pod, nil
+	return pod, fwPorts, nil
 }
 
 // syncFiles syncs the local source files in path into the pod's source volume
