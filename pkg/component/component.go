@@ -387,8 +387,8 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string
 			klog.V(4).Infof("Skipping Route %q created/owned by another resource: %v", u.GetName(), ownerReferences)
 			continue
 		}
-		route := &routev1.Route{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), route)
+		route := routev1.Route{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), &route)
 		if err != nil {
 			return nil, nil, err
 		}
