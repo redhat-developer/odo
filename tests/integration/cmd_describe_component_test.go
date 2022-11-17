@@ -253,7 +253,7 @@ var _ = Describe("odo describe component command tests", func() {
 					if helper.IsKubernetesCluster() {
 						return "devfile-deploy-ingress.yaml"
 					}
-					return "devfile-deploy-routes.yaml"
+					return "devfile-deploy-route.yaml"
 				}(),
 				matchOutput: func() []string {
 					if helper.IsKubernetesCluster() {

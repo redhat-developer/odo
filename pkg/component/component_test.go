@@ -20,6 +20,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	v12 "github.com/openshift/api/route/v1"
 	v1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -623,6 +624,57 @@ func TestListRoutesAndIngresses(t *testing.T) {
 				componentName: componentName,
 			},
 			wantIngs:   []api.ConnectionData{ingDBConnectionData},
+			wantRoutes: nil,
+			wantErr:    false,
+		},
+		{
+			name: "skip ingress if it has an owner reference",
+			args: args{client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+				client := kclient.NewMockClientInterface(ctrl)
+				client.EXPECT().GetCurrentNamespace().Return(namespace)
+				ownedIng := ing
+				ownedIng.SetOwnerReferences([]metav1.OwnerReference{
+					{
+						APIVersion: route.APIVersion,
+						Kind:       route.Kind,
+						Name:       route.GetName(),
+					},
+				})
+				client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: []v1.Ingress{*ownedIng}}, nil)
+				client.EXPECT().IsProjectSupported().Return(false, nil)
+				return client
+			},
+				componentName: componentName,
+			},
+			wantIngs:   nil,
+			wantRoutes: nil,
+			wantErr:    false,
+		},
+		{
+			name: "skip route if it has an owner reference",
+			args: args{client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+				client := kclient.NewMockClientInterface(ctrl)
+				client.EXPECT().GetCurrentNamespace().Return(namespace)
+				client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{}, nil)
+				client.EXPECT().IsProjectSupported().Return(true, nil)
+				ownedRoute := route
+				ownedRoute.SetOwnerReferences([]metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "Deployment",
+						Name:       "some-deployment",
+					},
+				})
+				ownedRouteUnstructured, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(ownedRoute)
+				client.EXPECT().GetGVRFromGVK(kclient.RouteGVK).Return(routeGVR, nil)
+				client.EXPECT().GetCurrentNamespace().Return(namespace)
+				client.EXPECT().ListDynamicResources(gomock.Any(), routeGVR, selector).Return(
+					&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{Object: ownedRouteUnstructured}}}, nil)
+				return client
+			},
+				componentName: componentName,
+			},
+			wantIngs:   nil,
 			wantRoutes: nil,
 			wantErr:    false,
 		},
