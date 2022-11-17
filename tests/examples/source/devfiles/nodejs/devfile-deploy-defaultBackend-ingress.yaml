@@ -138,17 +138,6 @@ components:
               name: {{RESOURCE_NAME}}
               port:
                 number:  {{CONTAINER_PORT}}
-          rules:
-          - http:
-              paths:
-              - path: /testpath
-                pathType: Prefix
-                backend:
-                  service:
-                    name: {{RESOURCE_NAME}}
-                    port:
-                      number: {{CONTAINER_PORT}}
-
 
 metadata:
   description: Stack with Node.js 14

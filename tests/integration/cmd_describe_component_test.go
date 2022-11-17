@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -239,48 +240,73 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 
 		})
-		When("running odo deploy", func() {
-			var matchOutput []string
-			var matchJSONOutput map[string]string
-			const (
-				k8sComponentName = "my-nodejs-app"        // hard-coded from the Devfiles
-				componentName    = "nodejs-prj1-api-abhz" // hard-coded from the Devfiles
-			)
-			BeforeEach(func() {
-				if helper.IsKubernetesCluster() {
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-ingress.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
-					matchOutput = []string{"Kubernetes Ingresses", "nodejs.example.com/", "nodejs.example.com/foo"}
-					matchJSONOutput = map[string]string{"ingresses.0.name": k8sComponentName, "ingresses.0.rules.0.host": "nodejs.example.com", "ingresses.0.rules.0.paths.0": "/", "ingresses.0.rules.0.paths.1": "/foo"}
-				} else {
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-route.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
-					// we are not matching host at the moment
-					matchOutput = []string{"OpenShift Routes", "/foo"}
-					matchJSONOutput = map[string]string{"routes.0.name": k8sComponentName, "routes.0.rules.0.paths.0": "/foo"}
-				}
-				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-			})
-			It("should show the ingress/routes in odo describe component output", func() {
-				By("checking the human readable output", func() {
-					out := helper.Cmd("odo", "describe", "component").ShouldPass().Out()
-					helper.MatchAllInOutput(out, matchOutput)
-				})
-				By("checking the machine readable output", func() {
-					out := helper.Cmd("odo", "describe", "component", "-ojson").ShouldPass().Out()
-					for key, value := range matchJSONOutput {
-						helper.JsonPathContentContain(out, key, value)
+
+		for _, ctx := range []struct {
+			title           string
+			devfile         string
+			matchOutput     []string
+			matchJSONOutput map[string]string
+		}{
+			{
+				title: "ingress/routes",
+				devfile: func() string {
+					if helper.IsKubernetesCluster() {
+						return "devfile-deploy-ingress.yaml"
 					}
-				})
-				By("checking the human readable output with component name", func() {
-					out := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
-					helper.MatchAllInOutput(out, matchOutput)
-				})
-				By("checking the machine readable output with component name", func() {
-					out := helper.Cmd("odo", "describe", "component", "--name", componentName, "-o", "json").ShouldPass().Out()
-					for key, value := range matchJSONOutput {
-						helper.JsonPathContentContain(out, key, value)
+					return "devfile-deploy-routes.yaml"
+				}(),
+				matchOutput: func() []string {
+					if helper.IsKubernetesCluster() {
+						return []string{"Kubernetes Ingresses", "nodejs.example.com/", "nodejs.example.com/foo"}
 					}
+					return []string{"OpenShift Routes", "/foo"}
+				}(),
+				matchJSONOutput: func() map[string]string {
+					if helper.IsKubernetesCluster() {
+						return map[string]string{"ingresses.0.name": "my-nodejs-app", "ingresses.0.rules.0.host": "nodejs.example.com", "ingresses.0.rules.0.paths.0": "/", "ingresses.0.rules.0.paths.1": "/foo"}
+					}
+					return map[string]string{"routes.0.name": "my-nodejs-app", "routes.0.rules.0.paths.0": "/foo"}
+				}(),
+			},
+			{
+				title:           "ingress with defaultBackend",
+				devfile:         "devfile-deploy-defaultBackend-ingress.yaml",
+				matchOutput:     []string{"Kubernetes Ingresses", "*/*"},
+				matchJSONOutput: map[string]string{"ingresses.0.name": "my-nodejs-app", "ingresses.0.rules.0.host": "*", "ingresses.0.rules.0.paths.0": "/*"},
+			},
+		} {
+			ctx := ctx
+			When("running odo deploy to create ingress/routes", func() {
+				const (
+					componentName = "nodejs-prj1-api-abhz" // hard-coded from the Devfiles
+				)
+				BeforeEach(func() {
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), path.Join(commonVar.Context, "devfile.yaml"))
+					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+				})
+				It(fmt.Sprintf("should show the %s in odo describe component output", ctx.title), func() {
+					By("checking the human readable output", func() {
+						out := helper.Cmd("odo", "describe", "component").ShouldPass().Out()
+						helper.MatchAllInOutput(out, ctx.matchOutput)
+					})
+					By("checking the machine readable output", func() {
+						out := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass().Out()
+						for key, value := range ctx.matchJSONOutput {
+							helper.JsonPathContentContain(out, key, value)
+						}
+					})
+					By("checking the human readable output with component name", func() {
+						out := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
+						helper.MatchAllInOutput(out, ctx.matchOutput)
+					})
+					By("checking the machine readable output with component name", func() {
+						out := helper.Cmd("odo", "describe", "component", "--name", componentName, "-o", "json").ShouldPass().Out()
+						for key, value := range ctx.matchJSONOutput {
+							helper.JsonPathContentContain(out, key, value)
+						}
+					})
 				})
 			})
-		})
+		}
 	})
 })
