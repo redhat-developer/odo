@@ -2,6 +2,7 @@ package podman
 
 import (
 	"bufio"
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -60,6 +61,9 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		}
 	}()
 	if err = cmd.Wait(); err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
 		return err
 	}
 
@@ -68,25 +72,46 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 
 func (o *PodmanCli) PodStop(podname string) error {
 	out, err := exec.Command("podman", "pod", "stop", podname).Output()
+	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		return err
+	}
 	klog.V(4).Infof("Stopped pod %s", string(out))
-	return err
+	return nil
 }
 
 func (o *PodmanCli) PodRm(podname string) error {
 	out, err := exec.Command("podman", "pod", "rm", podname).Output()
+	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		return err
+	}
 	klog.V(4).Infof("Deleted pod %s", string(out))
-	return err
+	return nil
 }
 
 func (o *PodmanCli) VolumeRm(volumeName string) error {
 	out, err := exec.Command("podman", "volume", "rm", volumeName).Output()
+	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		return err
+	}
 	klog.V(4).Infof("Deleted volume %s", string(out))
-	return err
+	return nil
 }
 
 func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
 	out, err := exec.Command("podman", "volume", "ls", "--format", "{{.Name}}", "--noheading").Output()
 	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
 		return nil, err
 	}
 	return SplitLinesAsSet(string(out)), nil
