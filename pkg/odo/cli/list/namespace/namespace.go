@@ -7,13 +7,14 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/project"
 )
 
 const RecommendedCommandName = "namespace"
@@ -57,18 +58,51 @@ func (plo *NamespaceListOptions) Validate(ctx context.Context) (err error) {
 }
 
 // Run contains the logic for the odo list project command
-func (plo *NamespaceListOptions) Run(ctx context.Context) error {
-	namespaces, err := plo.clientset.ProjectClient.List()
+func (plo *NamespaceListOptions) Run(_ context.Context) error {
+	resourcesList, err := plo.run()
 	if err != nil {
 		return err
 	}
 
-	return HumanReadableOutput(os.Stdout, namespaces, plo.commandName)
+	return HumanReadableOutput(os.Stdout, resourcesList, plo.commandName)
+}
+
+func (plo *NamespaceListOptions) run() (api.ResourcesList, error) {
+	namespaces, err := plo.clientset.ProjectClient.List()
+	if err != nil {
+		return api.ResourcesList{}, err
+	}
+
+	if len(namespaces.Items) == 0 {
+		return api.ResourcesList{}, nil
+	}
+
+	var projects []api.Project
+	for _, proj := range namespaces.Items {
+		project := api.Project{Name: proj.Name, Active: proj.Status.Active}
+		projects = append(projects, project)
+	}
+
+	return api.ResourcesList{Namespaces: projects}, nil
+}
+
+func (plo *NamespaceListOptions) RunForJsonOutput(_ context.Context) (out interface{}, err error) {
+	return plo.run()
 }
 
 // NewCmdNamespaceList implements the odo list project command.
 func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 	o := NewNamespaceListOptions()
+	// To help the UI messages deal better with namespace vs project
+	o.commandName = name
+	if len(os.Args) > 2 {
+		o.commandName = os.Args[2]
+	}
+	// trim commandName if user passed a plural form
+	lastElement := len(o.commandName) - 1
+	if o.commandName[lastElement] == byte('s') {
+		o.commandName = o.commandName[:lastElement]
+	}
 	projectListCmd := &cobra.Command{
 		Use:     name,
 		Short:   listLongDesc,
@@ -81,19 +115,21 @@ func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 		Aliases: []string{"namespaces", "project", "projects"},
 	}
 	clientset.Add(projectListCmd, clientset.PROJECT)
+	commonflags.UseOutputFlag(projectListCmd)
+
 	return projectListCmd
 }
 
 // HumanReadableOutput outputs the list of namespaces in a human readable format
-func HumanReadableOutput(w io.Writer, o project.ProjectList, commandName string) error {
-	if len(o.Items) == 0 {
+func HumanReadableOutput(w io.Writer, o api.ResourcesList, commandName string) error {
+	if len(o.Namespaces) == 0 {
 		return fmt.Errorf("you are not a member of any %[1]ss. You can request a %[1]s to be created using the `odo create %[1]s <%[1]s_name>` command", commandName)
 	}
 	wr := tabwriter.NewWriter(w, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(wr, "ACTIVE", "\t", "NAME")
-	for _, project := range o.Items {
+	for _, project := range o.Namespaces {
 		activeMark := " "
-		if project.Status.Active {
+		if project.Active {
 			activeMark = "*"
 		}
 		fmt.Fprintln(wr, activeMark, "\t", project.Name)

@@ -722,3 +722,36 @@ $ odo list services -o json -A
 	]
 }
 ```
+
+## odo list projects -o json
+
+The `odo list projects -o json` (and `odo list namespaces -o json`) command lists all the projects on the cluster that 
+you have access to. It marks the currently active namespace as `active: true`:
+
+```shell
+odo list projects -o json
+```
+```shell
+$ odo list projects -o json
+{
+	"namespaces": [
+		{
+			"name": "proj1",
+			"active": false
+		},
+		{
+			"name": "proj2",
+			"active": false
+		},
+		{
+			"name": "proj3",
+			"active": true
+		}
+	]
+}
+```
+If odo can't find any projects on the cluster that you have access to, it will simply show an empty list:
+```shell
+$ odo list projects -o json
+{}
+```
