@@ -18,6 +18,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
+	v12 "github.com/openshift/api/route/v1"
 	v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -498,11 +500,29 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		k8sComponentName = "my-nodejs-app"        // hard coding from the Devfile
 		namespace        = "my-namespace"
 	)
-	label := labels.GetLabels(componentName, "app", "", labels.ComponentDeployMode, false)
-	selector := dfutil.ConvertLabelsToSelector(label)
+	createFakeIngressFromDevfile := func(devfileObj parser.DevfileObj, ingressComponentName string, label map[string]string) *v1.Ingress {
+		ing := &v1.Ingress{}
+		u, _ := libdevfile.GetK8sComponentAsUnstructured(devfileObj, ingressComponentName, "", filesystem.DefaultFs{})
+		_ = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), ing)
+		ing.SetLabels(label)
+		return ing
+	}
 
+	createFakeRouteFromDevfile := func(devfileObj parser.DevfileObj, routeComponentName string, label map[string]string) *v12.Route {
+		route := &v12.Route{}
+		u, _ := libdevfile.GetK8sComponentAsUnstructured(devfileObj, routeComponentName, "", filesystem.DefaultFs{})
+		_ = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), route)
+		route.SetLabels(label)
+		return route
+	}
+
+	label := labels.GetLabels(componentName, "app", "", labels.ComponentDeployMode, false)
+	// cannot use default label to selector converter; it does not return expected result
+	selector := labels.GetSelector(componentName, "app", labels.ComponentDeployMode, false)
+
+	// create ingress object
 	devfileObjWithIngress := testingutil.GetTestDevfileObjFromFile("devfile-deploy-ingress.yaml")
-	ing := testingutil.CreateFakeIngressFromDevfile(devfileObjWithIngress, "outerloop-url", label)
+	ing := createFakeIngressFromDevfile(devfileObjWithIngress, "outerloop-url", label)
 	ingConnectionData := api.ConnectionData{
 		Name: k8sComponentName,
 		Rules: []api.Rules{
@@ -512,8 +532,9 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		},
 	}
 
+	// create ingresss object with default backend and no rules
 	devfileObjWithDefaultBackendIngress := testingutil.GetTestDevfileObjFromFile("devfile-deploy-defaultBackend-ingress.yaml")
-	ingDefaultBackend := testingutil.CreateFakeIngressFromDevfile(devfileObjWithDefaultBackendIngress, "outerloop-url", label)
+	ingDefaultBackend := createFakeIngressFromDevfile(devfileObjWithDefaultBackendIngress, "outerloop-url", label)
 	ingDBConnectionData := api.ConnectionData{
 		Name: k8sComponentName,
 		Rules: []api.Rules{
@@ -523,13 +544,14 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		},
 	}
 
+	// create route object
 	devfileObjWithRoute := testingutil.GetTestDevfileObjFromFile("devfile-deploy-route.yaml")
 	routeGVR := schema.GroupVersionResource{
 		Group:    kclient.RouteGVK.Group,
 		Version:  kclient.RouteGVK.Version,
 		Resource: "routes",
 	}
-	route := testingutil.CreateFakeRouteFromDevfile(devfileObjWithRoute, "outerloop-url", label)
+	route := createFakeRouteFromDevfile(devfileObjWithRoute, "outerloop-url", label)
 	routeUnstructured, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(route)
 	routeConnectionData := api.ConnectionData{
 		Name: k8sComponentName,
@@ -552,7 +574,6 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		wantRoutes []api.ConnectionData
 		wantErr    bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "list both ingresses and routes",
 			args: args{
@@ -564,7 +585,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 					client.EXPECT().GetGVRFromGVK(kclient.RouteGVK).Return(routeGVR, nil)
 					client.EXPECT().GetCurrentNamespace().Return(namespace)
 					client.EXPECT().ListDynamicResources(gomock.Any(), routeGVR, selector).Return(
-						&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{routeUnstructured}}}, nil)
+						&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{Object: routeUnstructured}}}, nil)
 					return client
 				},
 				componentName: componentName,
@@ -590,7 +611,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "list ingress with default backend",
+			name: "list ingress with default backend and no rules",
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
