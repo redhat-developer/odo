@@ -564,6 +564,19 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		},
 	}
 
+	mockKubeClient := func(ctrl *gomock.Controller, isOCP bool, ingresses []v1.Ingress, routeUnstructured map[string]interface{}) kclient.ClientInterface {
+		client := kclient.NewMockClientInterface(ctrl)
+		client.EXPECT().GetCurrentNamespace().Return(namespace)
+		client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: ingresses}, nil)
+		client.EXPECT().IsProjectSupported().Return(isOCP, nil)
+		if isOCP {
+			client.EXPECT().GetGVRFromGVK(kclient.RouteGVK).Return(routeGVR, nil)
+			client.EXPECT().GetCurrentNamespace().Return(namespace)
+			client.EXPECT().ListDynamicResources(gomock.Any(), routeGVR, selector).Return(
+				&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{Object: routeUnstructured}}}, nil)
+		}
+		return client
+	}
 	type args struct {
 		client        func(ctrl *gomock.Controller) kclient.ClientInterface
 		componentName string
@@ -579,15 +592,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 			name: "list both ingresses and routes",
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
-					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().GetCurrentNamespace().Return(namespace)
-					client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: []v1.Ingress{*ing}}, nil)
-					client.EXPECT().IsProjectSupported().Return(true, nil)
-					client.EXPECT().GetGVRFromGVK(kclient.RouteGVK).Return(routeGVR, nil)
-					client.EXPECT().GetCurrentNamespace().Return(namespace)
-					client.EXPECT().ListDynamicResources(gomock.Any(), routeGVR, selector).Return(
-						&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{Object: routeUnstructured}}}, nil)
-					return client
+					return mockKubeClient(ctrl, true, []v1.Ingress{*ing}, routeUnstructured)
 				},
 				componentName: componentName,
 			},
@@ -599,11 +604,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 			name: "list only ingresses when the cluster is not ocp",
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
-					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().GetCurrentNamespace().Return(namespace)
-					client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: []v1.Ingress{*ing}}, nil)
-					client.EXPECT().IsProjectSupported().Return(false, nil)
-					return client
+					return mockKubeClient(ctrl, false, []v1.Ingress{*ing}, nil)
 				},
 				componentName: componentName,
 			},
@@ -615,11 +616,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 			name: "list ingress with default backend and no rules",
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
-					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().GetCurrentNamespace().Return(namespace)
-					client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: []v1.Ingress{*ingDefaultBackend}}, nil)
-					client.EXPECT().IsProjectSupported().Return(false, nil)
-					return client
+					return mockKubeClient(ctrl, false, []v1.Ingress{*ingDefaultBackend}, nil)
 				},
 				componentName: componentName,
 			},
@@ -629,21 +626,18 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		},
 		{
 			name: "skip ingress if it has an owner reference",
-			args: args{client: func(ctrl *gomock.Controller) kclient.ClientInterface {
-				client := kclient.NewMockClientInterface(ctrl)
-				client.EXPECT().GetCurrentNamespace().Return(namespace)
-				ownedIng := ing
-				ownedIng.SetOwnerReferences([]metav1.OwnerReference{
-					{
-						APIVersion: route.APIVersion,
-						Kind:       route.Kind,
-						Name:       route.GetName(),
-					},
-				})
-				client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: []v1.Ingress{*ownedIng}}, nil)
-				client.EXPECT().IsProjectSupported().Return(false, nil)
-				return client
-			},
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					ownedIng := ing
+					ownedIng.SetOwnerReferences([]metav1.OwnerReference{
+						{
+							APIVersion: route.APIVersion,
+							Kind:       route.Kind,
+							Name:       route.GetName(),
+						},
+					})
+					return mockKubeClient(ctrl, false, []v1.Ingress{*ownedIng}, nil)
+				},
 				componentName: componentName,
 			},
 			wantIngs:   nil,
@@ -653,10 +647,6 @@ func TestListRoutesAndIngresses(t *testing.T) {
 		{
 			name: "skip route if it has an owner reference",
 			args: args{client: func(ctrl *gomock.Controller) kclient.ClientInterface {
-				client := kclient.NewMockClientInterface(ctrl)
-				client.EXPECT().GetCurrentNamespace().Return(namespace)
-				client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{}, nil)
-				client.EXPECT().IsProjectSupported().Return(true, nil)
 				ownedRoute := route
 				ownedRoute.SetOwnerReferences([]metav1.OwnerReference{
 					{
@@ -666,11 +656,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 					},
 				})
 				ownedRouteUnstructured, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(ownedRoute)
-				client.EXPECT().GetGVRFromGVK(kclient.RouteGVK).Return(routeGVR, nil)
-				client.EXPECT().GetCurrentNamespace().Return(namespace)
-				client.EXPECT().ListDynamicResources(gomock.Any(), routeGVR, selector).Return(
-					&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{Object: ownedRouteUnstructured}}}, nil)
-				return client
+				return mockKubeClient(ctrl, true, nil, ownedRouteUnstructured)
 			},
 				componentName: componentName,
 			},
