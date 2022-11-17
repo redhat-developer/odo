@@ -8,6 +8,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/kylelemons/godebug/pretty"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 
 	corev1 "k8s.io/api/core/v1"
@@ -107,10 +108,11 @@ func Test_createPodFromComponent(t *testing.T) {
 		debugCommand  string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    func() *corev1.Pod
-		wantErr bool
+		name        string
+		args        args
+		wantPod     func() *corev1.Pod
+		wantFwPorts []api.ForwardedPort
+		wantErr     bool
 	}{
 		{
 			name: "basic component without command",
@@ -126,7 +128,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			want: func() *corev1.Pod {
+			wantPod: func() *corev1.Pod {
 				pod := basePod.DeepCopy()
 				return pod
 			},
@@ -148,7 +150,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			want: func() *corev1.Pod {
+			wantPod: func() *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[0].Command = []string{"./cmd"}
 				pod.Spec.Containers[0].Args = []string{"arg1", "arg2"}
@@ -171,7 +173,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			want: func() *corev1.Pod {
+			wantPod: func() *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[0].Resources.Limits = corev1.ResourceList{
 					"memory": resource.MustParse("1Gi"),
@@ -198,7 +200,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			want: func() *corev1.Pod {
+			wantPod: func() *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -207,6 +209,14 @@ func Test_createPodFromComponent(t *testing.T) {
 					HostPort:      39001,
 				})
 				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					ContainerName: "mycomponent",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     39001,
+					ContainerPort: 8080,
+				},
 			},
 		},
 		{
@@ -232,7 +242,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			want: func() *corev1.Pod {
+			wantPod: func() *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -248,19 +258,36 @@ func Test_createPodFromComponent(t *testing.T) {
 				})
 				return pod
 			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					ContainerName: "mycomponent",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     39001,
+					ContainerPort: 8080,
+				},
+				{
+					ContainerName: "mycomponent",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     39002,
+					ContainerPort: 5858,
+				},
+			},
 		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand)
+			got, gotFwPorts, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			want := tt.want()
+			want := tt.wantPod()
 			if !equality.Semantic.DeepEqual(got, want) {
-				t.Errorf("createPodFromComponent(): %s", pretty.Compare(want, got))
+				t.Errorf("createPodFromComponent() pod: %s", pretty.Compare(want, got))
+			}
+			if !equality.Semantic.DeepEqual(gotFwPorts, tt.wantFwPorts) {
+				t.Errorf("createPodFromComponent() fwPorts: %s", pretty.Compare(tt.wantFwPorts, gotFwPorts))
 			}
 		})
 	}

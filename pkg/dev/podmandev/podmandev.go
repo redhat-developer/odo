@@ -72,7 +72,10 @@ func (o *DevClient) Start(
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
 		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
 	}
-	o.stateClient.SetForwardedPorts(fwPorts)
+	err = o.stateClient.SetForwardedPorts(fwPorts)
+	if err != nil {
+		return err
+	}
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
