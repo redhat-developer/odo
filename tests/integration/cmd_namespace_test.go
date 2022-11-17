@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/gjson"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -191,7 +192,10 @@ ComponentSettings:
 				}).WithTimeout(10 * time.Second).Should(BeTrue())
 
 				out := helper.Cmd("odo", "list", commandName, "-o", "json").ShouldPass().Out()
-				helper.MatchAllInOutput(out, []string{commonVar.Project, "\"active\": true", "\"active\": false"})
+				Expect(helper.IsJSON(out)).To(BeTrue())
+				// check if the namespace/project created for this test is marked as active in the JSON output
+				gjsonStr := fmt.Sprintf("namespaces.#[name==%s].active", commonVar.Project)
+				Expect(gjson.Get(out, gjsonStr).String()).To(Equal("true"))
 			})
 		})
 	}
