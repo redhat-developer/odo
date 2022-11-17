@@ -59,12 +59,12 @@ func (plo *NamespaceListOptions) Validate(ctx context.Context) (err error) {
 
 // Run contains the logic for the odo list project command
 func (plo *NamespaceListOptions) Run(_ context.Context) error {
-	namespaces, err := plo.run()
+	resourcesList, err := plo.run()
 	if err != nil {
 		return err
 	}
 
-	return HumanReadableOutput(os.Stdout, namespaces, plo.commandName)
+	return HumanReadableOutput(os.Stdout, resourcesList, plo.commandName)
 }
 
 func (plo *NamespaceListOptions) run() (api.ResourcesList, error) {
@@ -74,7 +74,7 @@ func (plo *NamespaceListOptions) run() (api.ResourcesList, error) {
 	}
 
 	if len(namespaces.Items) == 0 {
-		return api.ResourcesList{}, fmt.Errorf("you are not a member of any %[1]ss. You can request a %[1]s to be created using the `odo create %[1]s <%[1]s_name>` command", plo.commandName)
+		return api.ResourcesList{}, nil
 	}
 
 	var projects []api.Project
