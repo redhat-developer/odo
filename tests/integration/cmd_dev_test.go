@@ -474,7 +474,8 @@ ComponentSettings:
 			envvars     []string
 		}{
 			{title: "without apply command", devfileName: "devfile-with-k8s-resource.yaml", envvars: nil},
-			{title: "with apply command", devfileName: "devfile-composite-apply-commands.yaml", envvars: []string{"PODMAN_CMD=echo"}}} {
+			{title: "with apply command", devfileName: "devfile-composite-apply-commands.yaml", envvars: []string{"PODMAN_CMD=echo"}},
+		} {
 			devfile := devfile
 			When(fmt.Sprintf("odo dev is executed to run a devfile containing a k8s resource %s", devfile.title), func() {
 				var (

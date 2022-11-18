@@ -607,7 +607,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	currentNamespace := a.kubeClient.GetCurrentNamespace()
 	allRemoteK8sResources, err := a.kubeClient.GetAllResourcesFromSelector(selector, currentNamespace)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to fetch remote kubernetes resources: %w", err)
+		return nil, nil, fmt.Errorf("unable to fetch remote resources: %w", err)
 	}
 
 	var remoteK8sResources []unstructured.Unstructured
@@ -628,7 +628,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	var devfileK8sResources []devfilev1.Component
 	devfileK8sResources, err = devfile.GetKubernetesComponentsToPush(a.Devfile, true)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to obtain devfile kubernetes resources: %w", err)
+		return nil, nil, fmt.Errorf("unable to obtain resources from the Devfile: %w", err)
 	}
 
 	// convert all devfileK8sResources to unstructured data
@@ -637,7 +637,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 		var devfileKUnstructured unstructured.Unstructured
 		devfileKUnstructured, err = libdevfile.GetK8sComponentAsUnstructured(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
 		if err != nil {
-			return nil, nil, fmt.Errorf("unable to obtain unstructured data for kubernetes resource: %w", err)
+			return nil, nil, fmt.Errorf("unable to read the resource: %w", err)
 		}
 		devfileK8sResourcesUnstructured = append(devfileK8sResourcesUnstructured, devfileKUnstructured)
 	}
@@ -693,7 +693,7 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 	}
 
 	var err error
-	spinner := log.Spinnerf("Deleting Kubernetes resources not present in the Devfile: %s", strings.Join(resources, ", "))
+	spinner := log.Spinnerf("Deleting resources not present in the Devfile: %s", strings.Join(resources, ", "))
 	defer spinner.End(err == nil)
 
 	var wg sync2.WaitGroup
@@ -708,19 +708,19 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 			var gvr schema.GroupVersionResource
 			gvr, err = a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
 			if err != nil {
-				err = fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+				err = fmt.Errorf("unable to get information about resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
 				return
 			}
 
 			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
 			if err != nil {
 				if !kerrors.IsNotFound(err) || !kerrors.IsMethodNotSupported(err) {
-					err = fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+					err = fmt.Errorf("unable to delete resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+					return
 				}
-				klog.V(1).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
+				klog.V(1).Infof("Failed to delete resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
 				err = nil
 			}
-			return
 		}()
 	}
 
