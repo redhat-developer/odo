@@ -201,6 +201,12 @@ func CommonBeforeEach() CommonVar {
 	} else {
 		// Disable the use of in-cluster configuration (seen in IBM Cloud pipeline)
 		os.Unsetenv("KUBERNETES_SERVICE_HOST")
+		// Create an empty kubeconfig file in the config dir and point KUBECONFIG to this file
+		kubeconfig, err := os.CreateTemp(commonVar.ConfigDir, "kubeconfig")
+		Expect(err).To(BeNil())
+		err = kubeconfig.Close()
+		Expect(err).To(BeNil())
+		os.Setenv("KUBECONFIG", kubeconfig.Name())
 	}
 	commonVar.OriginalWorkingDirectory = Getwd()
 
