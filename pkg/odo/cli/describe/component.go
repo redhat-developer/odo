@@ -113,12 +113,19 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 	if err != nil {
 		return api.Component{}, nil, err
 	}
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name, odocontext.GetApplication(ctx))
+	if err != nil {
+		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+	}
+
 	return api.Component{
 		DevfileData: &api.DevfileData{
 			Devfile: devfile.Data,
 		},
 		RunningIn: runningIn,
 		ManagedBy: "odo",
+		Ingresses: ingresses,
+		Routes:    routes,
 	}, &devfile, nil
 }
 
@@ -144,12 +151,19 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 			runningIn = nil
 		}
 	}
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName, odocontext.GetApplication(ctx))
+	if err != nil {
+		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+	}
+
 	return api.Component{
 		DevfilePath:       devfilePath,
 		DevfileData:       api.GetDevfileData(*devfileObj),
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         runningIn,
 		ManagedBy:         "odo",
+		Ingresses:         ingresses,
+		Routes:            routes,
 	}, devfileObj, nil
 }
 
@@ -197,6 +211,37 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 	if err != nil {
 		return err
 	}
+
+	if len(cmp.Ingresses) != 0 {
+		log.Info("Kubernetes Ingresses:")
+		for _, ing := range cmp.Ingresses {
+			for _, rule := range ing.Rules {
+				for _, path := range rule.Paths {
+					log.Printf("%s: %s%s", ing.Name, rule.Host, path)
+				}
+			}
+			if len(ing.Rules) == 0 {
+				log.Printf(ing.Name)
+			}
+		}
+		fmt.Println()
+	}
+
+	if len(cmp.Routes) != 0 {
+		log.Info("OpenShift Routes:")
+		for _, route := range cmp.Routes {
+			for _, rule := range route.Rules {
+				for _, path := range rule.Paths {
+					log.Printf("%s: %s%s", route.Name, rule.Host, path)
+				}
+			}
+			if len(route.Rules) == 0 {
+				log.Printf(route.Name)
+			}
+		}
+		fmt.Println()
+	}
+
 	return nil
 }
 

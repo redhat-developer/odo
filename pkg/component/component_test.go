@@ -18,11 +18,16 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
-
+	v12 "github.com/openshift/api/route/v1"
+	v1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -380,8 +385,8 @@ func TestGatherName(t *testing.T) {
 	}
 
 	fs := filesystem.DefaultFs{}
-	//realDevfileWithNameProvider creates a real temporary directory and writes a devfile with the given name to it.
-	//It is the responsibility of the caller to remove the directory.
+	// realDevfileWithNameProvider creates a real temporary directory and writes a devfile with the given name to it.
+	// It is the responsibility of the caller to remove the directory.
 	realDevfileWithNameProvider := func(name string) devfileProvider {
 		return func() (*parser.DevfileObj, string, error) {
 			dir, err := fs.TempDir("", "Component_GatherName_")
@@ -485,6 +490,194 @@ func TestGatherName(t *testing.T) {
 			want := tt.want(dir, d)
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("GatherName() = %q, want = %q", got, want)
+			}
+		})
+	}
+}
+
+func TestListRoutesAndIngresses(t *testing.T) {
+	const (
+		componentName    = "nodejs-prj1-api-abhz" // hard coding from the Devfile
+		k8sComponentName = "my-nodejs-app"        // hard coding from the Devfile
+		namespace        = "my-namespace"
+	)
+	createFakeIngressFromDevfile := func(devfileObj parser.DevfileObj, ingressComponentName string, label map[string]string) *v1.Ingress {
+		ing := &v1.Ingress{}
+		u, _ := libdevfile.GetK8sComponentAsUnstructured(devfileObj, ingressComponentName, "", filesystem.DefaultFs{})
+		_ = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), ing)
+		ing.SetLabels(label)
+		return ing
+	}
+
+	createFakeRouteFromDevfile := func(devfileObj parser.DevfileObj, routeComponentName string, label map[string]string) *v12.Route {
+		route := &v12.Route{}
+		u, _ := libdevfile.GetK8sComponentAsUnstructured(devfileObj, routeComponentName, "", filesystem.DefaultFs{})
+		_ = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), route)
+		route.SetLabels(label)
+		return route
+	}
+
+	label := labels.GetLabels(componentName, "app", "", labels.ComponentDeployMode, false)
+	// cannot use default label to selector converter; it does not return expected result
+	selector := labels.GetSelector(componentName, "app", labels.ComponentDeployMode, false)
+
+	// create ingress object
+	devfileObjWithIngress := testingutil.GetTestDevfileObjFromFile("devfile-deploy-ingress.yaml")
+	ing := createFakeIngressFromDevfile(devfileObjWithIngress, "outerloop-url", label)
+	ingConnectionData := api.ConnectionData{
+		Name: k8sComponentName,
+		Rules: []api.Rules{
+			{
+				Host:  "nodejs.example.com",
+				Paths: []string{"/", "/foo"}},
+		},
+	}
+
+	// create ingresss object with default backend and no rules
+	devfileObjWithDefaultBackendIngress := testingutil.GetTestDevfileObjFromFile("devfile-deploy-defaultBackend-ingress.yaml")
+	ingDefaultBackend := createFakeIngressFromDevfile(devfileObjWithDefaultBackendIngress, "outerloop-url", label)
+	ingDBConnectionData := api.ConnectionData{
+		Name: k8sComponentName,
+		Rules: []api.Rules{
+			{
+				Host:  "*",
+				Paths: []string{"/*"}},
+		},
+	}
+
+	// create route object
+	devfileObjWithRoute := testingutil.GetTestDevfileObjFromFile("devfile-deploy-route.yaml")
+	routeGVR := schema.GroupVersionResource{
+		Group:    kclient.RouteGVK.Group,
+		Version:  kclient.RouteGVK.Version,
+		Resource: "routes",
+	}
+	route := createFakeRouteFromDevfile(devfileObjWithRoute, "outerloop-url", label)
+	routeUnstructured, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(route)
+	routeConnectionData := api.ConnectionData{
+		Name: k8sComponentName,
+		Rules: []api.Rules{
+			{
+				Host:  "",
+				Paths: []string{"/foo"},
+			},
+		},
+	}
+
+	mockKubeClient := func(ctrl *gomock.Controller, isOCP bool, ingresses []v1.Ingress, routeUnstructured map[string]interface{}) kclient.ClientInterface {
+		client := kclient.NewMockClientInterface(ctrl)
+		client.EXPECT().GetCurrentNamespace().Return(namespace)
+		client.EXPECT().ListIngresses(namespace, selector).Return(&v1.IngressList{Items: ingresses}, nil)
+		client.EXPECT().IsProjectSupported().Return(isOCP, nil)
+		if isOCP {
+			client.EXPECT().GetGVRFromGVK(kclient.RouteGVK).Return(routeGVR, nil)
+			client.EXPECT().GetCurrentNamespace().Return(namespace)
+			client.EXPECT().ListDynamicResources(gomock.Any(), routeGVR, selector).Return(
+				&unstructured.UnstructuredList{Items: []unstructured.Unstructured{{Object: routeUnstructured}}}, nil)
+		}
+		return client
+	}
+	type args struct {
+		client        func(ctrl *gomock.Controller) kclient.ClientInterface
+		componentName string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantIngs   []api.ConnectionData
+		wantRoutes []api.ConnectionData
+		wantErr    bool
+	}{
+		{
+			name: "list both ingresses and routes",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					return mockKubeClient(ctrl, true, []v1.Ingress{*ing}, routeUnstructured)
+				},
+				componentName: componentName,
+			},
+			wantIngs:   []api.ConnectionData{ingConnectionData},
+			wantRoutes: []api.ConnectionData{routeConnectionData},
+			wantErr:    false,
+		},
+		{
+			name: "list only ingresses when the cluster is not ocp",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					return mockKubeClient(ctrl, false, []v1.Ingress{*ing}, nil)
+				},
+				componentName: componentName,
+			},
+			wantIngs:   []api.ConnectionData{ingConnectionData},
+			wantRoutes: nil,
+			wantErr:    false,
+		},
+		{
+			name: "list ingress with default backend and no rules",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					return mockKubeClient(ctrl, false, []v1.Ingress{*ingDefaultBackend}, nil)
+				},
+				componentName: componentName,
+			},
+			wantIngs:   []api.ConnectionData{ingDBConnectionData},
+			wantRoutes: nil,
+			wantErr:    false,
+		},
+		{
+			name: "skip ingress if it has an owner reference",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					ownedIng := ing
+					ownedIng.SetOwnerReferences([]metav1.OwnerReference{
+						{
+							APIVersion: route.APIVersion,
+							Kind:       route.Kind,
+							Name:       route.GetName(),
+						},
+					})
+					return mockKubeClient(ctrl, false, []v1.Ingress{*ownedIng}, nil)
+				},
+				componentName: componentName,
+			},
+			wantIngs:   nil,
+			wantRoutes: nil,
+			wantErr:    false,
+		},
+		{
+			name: "skip route if it has an owner reference",
+			args: args{client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+				ownedRoute := route
+				ownedRoute.SetOwnerReferences([]metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "Deployment",
+						Name:       "some-deployment",
+					},
+				})
+				ownedRouteUnstructured, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(ownedRoute)
+				return mockKubeClient(ctrl, true, nil, ownedRouteUnstructured)
+			},
+				componentName: componentName,
+			},
+			wantIngs:   nil,
+			wantRoutes: nil,
+			wantErr:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			gotIngs, gotRoutes, err := ListRoutesAndIngresses(tt.args.client(ctrl), tt.args.componentName, "app")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListRoutesAndIngresses() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotIngs, tt.wantIngs) {
+				t.Errorf("ListRoutesAndIngresses() gotIngs = %v, want %v", gotIngs, tt.wantIngs)
+			}
+			if !reflect.DeepEqual(gotRoutes, tt.wantRoutes) {
+				t.Errorf("ListRoutesAndIngresses() gotRoutes = %v, want %v", gotRoutes, tt.wantRoutes)
 			}
 		})
 	}

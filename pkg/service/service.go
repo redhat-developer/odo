@@ -121,7 +121,7 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	instances, err := client.ListDynamicResources("", kclient.GetGVRFromCR(customResource))
+	instances, err := client.ListDynamicResources("", kclient.GetGVRFromCR(customResource), "")
 	if err != nil {
 		return nil, err
 	}

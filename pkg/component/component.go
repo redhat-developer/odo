@@ -11,6 +11,8 @@ import (
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	routev1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
@@ -79,7 +81,7 @@ func GatherName(contextDir string, devfileObj *parser.DevfileObj) (string, error
 		name = filepath.Base(baseDir)
 	}
 
-	//sanitize the name
+	// sanitize the name
 	s := util.GetDNS1123Name(name)
 	klog.V(3).Infof("name of component is %q, and sanitized name is %q", name, s)
 
@@ -325,4 +327,78 @@ func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterfa
 	return parser.DevfileObj{
 		Data: devfileData,
 	}, nil
+}
+
+// ListRoutesAndIngresses lists routes and ingresses created by a component;
+// it only returns the resources created with Deploy mode;
+// it fetches resources from the cluster that match label and return.
+func ListRoutesAndIngresses(client kclient.ClientInterface, componentName, appName string) (ings []api.ConnectionData, routes []api.ConnectionData, err error) {
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDeployMode, false)
+
+	k8sIngresses, err := client.ListIngresses(client.GetCurrentNamespace(), selector)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, ing := range k8sIngresses.Items {
+		if ownerReferences := ing.GetOwnerReferences(); ownerReferences != nil {
+			klog.V(4).Infof("Skipping Ingress %q created/owned by another resource: %v", ing.GetName(), ownerReferences)
+			continue
+		}
+		ings = append(ings, api.ConnectionData{
+			Name: ing.GetName(),
+			Rules: func() (rules []api.Rules) {
+				for _, rule := range ing.Spec.Rules {
+					var paths []string
+					for _, path := range rule.HTTP.Paths {
+						paths = append(paths, path.Path)
+					}
+					host := rule.Host
+					if host == "" {
+						host = "*"
+					}
+					rules = append(rules, api.Rules{Host: host, Paths: paths})
+				}
+				if len(ing.Spec.Rules) == 0 {
+					rules = append(rules, api.Rules{Host: "*", Paths: []string{"/*"}})
+				}
+				return rules
+			}(),
+		})
+	}
+	// Return early if it is not an OpenShift cluster
+	if isOC, e := client.IsProjectSupported(); !isOC {
+		if e != nil {
+			klog.V(4).Infof("unable to detect project support: %s", e.Error())
+		}
+		return ings, nil, nil
+	}
+
+	routeGVR, err := client.GetGVRFromGVK(kclient.RouteGVK)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to determine GVR for %s: %w", kclient.RouteGVK.String(), err)
+	}
+
+	ocRoutes, err := client.ListDynamicResources(client.GetCurrentNamespace(), routeGVR, selector)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, u := range ocRoutes.Items {
+		if ownerReferences := u.GetOwnerReferences(); ownerReferences != nil {
+			klog.V(4).Infof("Skipping Route %q created/owned by another resource: %v", u.GetName(), ownerReferences)
+			continue
+		}
+		route := routev1.Route{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), &route)
+		if err != nil {
+			return nil, nil, err
+		}
+		routes = append(routes, api.ConnectionData{
+			Name: route.GetName(),
+			Rules: []api.Rules{
+				{Host: route.Spec.Host, Paths: []string{route.Spec.Path}},
+			},
+		})
+	}
+
+	return ings, routes, nil
 }

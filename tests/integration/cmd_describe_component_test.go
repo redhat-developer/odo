@@ -1,7 +1,9 @@
 package integration
 
 import (
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -238,5 +240,73 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 
 		})
+
+		for _, ctx := range []struct {
+			title           string
+			devfile         string
+			matchOutput     []string
+			matchJSONOutput map[string]string
+		}{
+			{
+				title: "ingress/routes",
+				devfile: func() string {
+					if helper.IsKubernetesCluster() {
+						return "devfile-deploy-ingress.yaml"
+					}
+					return "devfile-deploy-route.yaml"
+				}(),
+				matchOutput: func() []string {
+					if helper.IsKubernetesCluster() {
+						return []string{"Kubernetes Ingresses", "nodejs.example.com/", "nodejs.example.com/foo"}
+					}
+					return []string{"OpenShift Routes", "/foo"}
+				}(),
+				matchJSONOutput: func() map[string]string {
+					if helper.IsKubernetesCluster() {
+						return map[string]string{"ingresses.0.name": "my-nodejs-app", "ingresses.0.rules.0.host": "nodejs.example.com", "ingresses.0.rules.0.paths.0": "/", "ingresses.0.rules.0.paths.1": "/foo"}
+					}
+					return map[string]string{"routes.0.name": "my-nodejs-app", "routes.0.rules.0.paths.0": "/foo"}
+				}(),
+			},
+			{
+				title:           "ingress with defaultBackend",
+				devfile:         "devfile-deploy-defaultBackend-ingress.yaml",
+				matchOutput:     []string{"Kubernetes Ingresses", "*/*"},
+				matchJSONOutput: map[string]string{"ingresses.0.name": "my-nodejs-app", "ingresses.0.rules.0.host": "*", "ingresses.0.rules.0.paths.0": "/*"},
+			},
+		} {
+			ctx := ctx
+			When("running odo deploy to create ingress/routes", func() {
+				const (
+					componentName = "nodejs-prj1-api-abhz" // hard-coded from the Devfiles
+				)
+				BeforeEach(func() {
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), path.Join(commonVar.Context, "devfile.yaml"))
+					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+				})
+				It(fmt.Sprintf("should show the %s in odo describe component output", ctx.title), func() {
+					By("checking the human readable output", func() {
+						out := helper.Cmd("odo", "describe", "component").ShouldPass().Out()
+						helper.MatchAllInOutput(out, ctx.matchOutput)
+					})
+					By("checking the machine readable output", func() {
+						out := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass().Out()
+						for key, value := range ctx.matchJSONOutput {
+							helper.JsonPathContentContain(out, key, value)
+						}
+					})
+					By("checking the human readable output with component name", func() {
+						out := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
+						helper.MatchAllInOutput(out, ctx.matchOutput)
+					})
+					By("checking the machine readable output with component name", func() {
+						out := helper.Cmd("odo", "describe", "component", "--name", componentName, "-o", "json").ShouldPass().Out()
+						for key, value := range ctx.matchJSONOutput {
+							helper.JsonPathContentContain(out, key, value)
+						}
+					})
+				})
+			})
+		}
 	})
 })

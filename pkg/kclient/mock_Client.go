@@ -19,6 +19,7 @@ import (
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
 	v11 "k8s.io/api/core/v1"
+	v13 "k8s.io/api/networking/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -1055,19 +1056,19 @@ func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
 }
 
-// ListDynamicResources mocks base method.
-func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
+// ListDynamicResources mocks base method
+func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr)
+	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr, selector)
 	ret0, _ := ret[0].(*unstructured.UnstructuredList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDynamicResources indicates an expected call of ListDynamicResources.
-func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr interface{}) *gomock.Call {
+// ListDynamicResources indicates an expected call of ListDynamicResources
+func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr, selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr, selector)
 }
 
 // ListPVCNames mocks base method.
@@ -1436,4 +1437,19 @@ func (m *MockClientInterface) WaitForServiceAccountInNamespace(namespace, servic
 func (mr *MockClientInterfaceMockRecorder) WaitForServiceAccountInNamespace(namespace, serviceAccountName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForServiceAccountInNamespace", reflect.TypeOf((*MockClientInterface)(nil).WaitForServiceAccountInNamespace), namespace, serviceAccountName)
+}
+
+// ListIngresses mocks base method
+func (m *MockClientInterface) ListIngresses(namespace, selector string) (*v13.IngressList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIngresses", namespace, selector)
+	ret0, _ := ret[0].(*v13.IngressList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIngresses indicates an expected call of ListIngresses
+func (mr *MockClientInterfaceMockRecorder) ListIngresses(namespace, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIngresses", reflect.TypeOf((*MockClientInterface)(nil).ListIngresses), namespace, selector)
 }

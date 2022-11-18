@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
 )
@@ -49,7 +50,7 @@ var types = []api.DevfileStack{
 	},
 	{
 		Name:        "nodejs",
-		Language:    "javascript",
+		Language:    "JavaScript",
 		ProjectType: "nodejs",
 		Tags:        []string{"NodeJS", "Express", "ubi8"},
 		Registry: api.Registry{
