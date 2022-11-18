@@ -341,7 +341,7 @@ func updateOperatorService(client kclient.ClientInterface, u unstructured.Unstru
 	}
 
 	if updated {
-		createSpinner := log.Spinnerf("Creating kind %s", u.GetKind())
+		createSpinner := log.Spinnerf("Creating resource %s/%s", u.GetKind(), u.GetName())
 		createSpinner.End(true)
 	}
 	return updated, err

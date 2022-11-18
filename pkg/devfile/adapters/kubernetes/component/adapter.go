@@ -12,6 +12,7 @@ import (
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/binding"
@@ -649,6 +650,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	// check if the remote resource is also present in the Devfile
 	for _, remoteK := range remoteK8sResources {
 		matchFound := false
+		isServiceBindingSecret := false
 		for _, devfileK := range devfileK8sResourcesUnstructured {
 			// only check against GroupKind because version might not always match
 			if remoteResourceIsPresentInDevfile := devfileK.GroupVersionKind().GroupKind() == remoteK.GroupVersionKind().GroupKind() &&
@@ -657,37 +659,19 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 				break
 			}
 
-			// check for secrets related to ServiceBinding
-			// if the SBO is installed, we can mark the secret as a match if its ServiceBinding resource is found locally;
-			// we do this because such secrets will be owned by the ServiceBinding resource and will be handled by it
-			// if the SBO is not installed, we check if the secret's labels matches to those created by odo for binding
-			if remoteK.GroupVersionKind() == kclient.SecretGVK {
-				var remoteSecretHasLocalServiceBindingOwner bool
-				if isSBOSupported {
-					// if SBO is installed, check if its owner reference is a servicebinding present in the devfile;
-					// if the owner matches, consider it a match found
-					remoteSecretHasLocalServiceBindingOwner = func() bool {
-						for _, owner := range remoteK.GetOwnerReferences() {
-							if owner.Kind == kclient.ServiceBindingKind && owner.Name == devfileK.GetName() {
-								return true
-							}
-						}
-						return false
-					}()
-				} else {
-					// if SBO is not installed, check if it is a servicebinding secret
-					remoteSecretHasLocalServiceBindingOwner = service.IsLinkSecret(remoteK.GetLabels()) &&
-						remoteK.GetLabels()[service.LinkLabel] == devfileK.GetName()
-				}
-				if remoteSecretHasLocalServiceBindingOwner {
+			// if the resource is a secret and the SBO is not installed, then check if it's related to a local ServiceBinding by checking the labels
+			if !isSBOSupported && remoteK.GroupVersionKind() == kclient.SecretGVK {
+				if remoteSecretHasLocalServiceBindingOwner := service.IsLinkSecret(remoteK.GetLabels()) &&
+					remoteK.GetLabels()[service.LinkLabel] == devfileK.GetName(); remoteSecretHasLocalServiceBindingOwner {
 					matchFound = true
+					isServiceBindingSecret = true
 					break
 				}
 			}
 		}
+
 		if !matchFound {
-			// only remove servicebinding secrets if the SBO is not installed
-			if !isSBOSupported && remoteK.GroupVersionKind() == kclient.SecretGVK && service.IsLinkSecret(remoteK.GetLabels()) {
+			if isServiceBindingSecret {
 				serviceBindingSecretsToRemove = append(serviceBindingSecretsToRemove, remoteK)
 			} else {
 				objectsToRemove = append(objectsToRemove, remoteK)
@@ -707,18 +691,25 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 	for _, u := range objectsToRemove {
 		resources = append(resources, fmt.Sprintf("%s/%s", u.GetKind(), u.GetName()))
 	}
+
+	var err error
 	spinner := log.Spinnerf("Deleting Kubernetes resources not present in the Devfile: %s", strings.Join(resources, ", "))
-	defer spinner.End(false)
+	defer spinner.End(err == nil)
 
 	var wg sync2.WaitGroup
-	var err error
 	// Delete the resources present on the cluster but not in the Devfile
 	for _, objectToRemove := range objectsToRemove {
 		wg.Add(1)
+		// Avoid re-use of the same `objectToRemove` value in each goroutine closure.
+		// See https://golang.org/doc/faq#closures_and_goroutines for more details.
+		objectToRemove := objectToRemove
 		go func() {
-			gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
+			defer wg.Done()
+			var gvr schema.GroupVersionResource
+			gvr, err = a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
 			if err != nil {
 				err = fmt.Errorf("unable to get information about Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+				return
 			}
 
 			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
@@ -726,15 +717,14 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 				if !kerrors.IsNotFound(err) || !kerrors.IsMethodNotSupported(err) {
 					err = fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
 				}
-				klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
+				klog.V(1).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
+				err = nil
 			}
-			wg.Done()
 			return
 		}()
 	}
 
 	wg.Wait()
-	spinner.End(err == nil)
 	return err
 }
 
