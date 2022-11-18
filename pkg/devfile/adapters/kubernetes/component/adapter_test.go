@@ -4,10 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
-
-	"github.com/devfile/library/pkg/devfile/generator"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"

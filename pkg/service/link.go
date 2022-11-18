@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,9 +13,8 @@ import (
 	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
-
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	sboKubernetes "github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
@@ -122,6 +122,42 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	}
 
 	return nil
+}
+
+// UnbindWithLibrary unbinds the component and service using the ServiceBinding library; it does not delete the secret
+func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToUnbind unstructured.Unstructured, deployment *appsv1.Deployment) error {
+	var processingPipeline sboPipeline.Pipeline
+	deploymentGVK, err := kubeClient.GetDeploymentAPIVersion()
+	if err != nil {
+		return fmt.Errorf("failed to get deployment GVK: %w", err)
+	}
+	// build the ServiceBinding object to for unbinding
+	var newServiceBinding sboApi.ServiceBinding
+	newServiceBinding.Name = secretToUnbind.GetLabels()[LinkLabel]
+	newServiceBinding.Namespace = kubeClient.GetCurrentNamespace()
+	newServiceBinding.Spec.Application = sboApi.Application{
+		Ref: sboApi.Ref{
+			Name:    deployment.Name,
+			Group:   deploymentGVK.Group,
+			Version: deploymentGVK.Version,
+			Kind:    deploymentGVK.Kind,
+		},
+	}
+	newServiceBinding.Status.Secret = secretToUnbind.GetName()
+	// set the deletion time stamp to trigger deletion
+	timeNow := metav1.Now()
+	newServiceBinding.DeletionTimestamp = &timeNow
+
+	if processingPipeline == nil {
+		processingPipeline, err = getPipeline(kubeClient)
+		if err != nil {
+			return err
+		}
+	}
+	// use the library to perform unbinding;
+	// this will remove all the envvars, volume/secret mounts done on the deployment to bind it to the service
+	_, err = processingPipeline.Process(&newServiceBinding)
+	return err
 }
 
 // getPipeline gets the pipeline to process service binding requests

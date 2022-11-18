@@ -178,6 +178,13 @@ func GetMode(labels map[string]string) string {
 	return labels[odoModeLabel]
 }
 
+// IsProjectTypeSetInAnnotations checks if the ProjectType annotation is set;
+// this function is helpful in identifying if a resource is created by odo
+func IsProjectTypeSetInAnnotations(annotations map[string]string) bool {
+	_, ok := annotations[odoProjectTypeAnnotation]
+	return ok
+}
+
 func GetProjectType(labels map[string]string, annotations map[string]string) (string, error) {
 	// For backwards compatibility with previously deployed components that could be non-odo, check the annotation first
 	// then check to see if there is a label with the project type
@@ -200,6 +207,15 @@ func SetProjectType(annotations map[string]string, value string) {
 func GetSelector(componentName string, applicationName string, mode string, isPartOfComponent bool) string {
 	labels := getLabels(componentName, applicationName, mode, false, isPartOfComponent)
 	return labels.String()
+}
+
+// IsCoreComponent determines if a resource is core component (created in Dev mode and includes deployment, svc, pv, pvc, etc.)
+// by checking for 'component' label key.
+func IsCoreComponent(labels map[string]string) bool {
+	if _, ok := labels[componentLabel]; ok {
+		return true
+	}
+	return false
 }
 
 // getLabels return labels that should be applied to every object for given component in active application

@@ -7,11 +7,17 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	sync2 "sync"
 
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -23,6 +29,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -126,6 +133,28 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 	ownerReference := generator.GetOwnerReference(deployment)
+
+	// Delete remote resources that are not present in the Devfile
+	selector := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
+
+	objectsToRemove, serviceBindingSecretsToRemove, err := a.getRemoteResourcesNotPresentInDevfile(selector)
+	if err != nil {
+		return fmt.Errorf("unable to determine resources to delete: %w", err)
+	}
+
+	err = a.deleteRemoteResources(objectsToRemove)
+	if err != nil {
+		return fmt.Errorf("unable to delete remote resources: %w", err)
+	}
+
+	// this is mainly useful when the Service Binding Operator is not installed;
+	// and the service binding secrets must be deleted manually since they are created by odo
+	if len(serviceBindingSecretsToRemove) != 0 {
+		err = a.deleteServiceBindingSecrets(serviceBindingSecretsToRemove, deployment)
+		if err != nil {
+			return fmt.Errorf("unable to delete service binding secrets: %w", err)
+		}
+	}
 
 	// Create all the K8s components defined in the devfile
 	_, err = a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode, ownerReference)
@@ -569,6 +598,160 @@ func (a Adapter) generateDeploymentObjectMeta(deployment *appsv1.Deployment, lab
 		}
 		return generator.GetObjectMeta(deploymentName, a.kubeClient.GetCurrentNamespace(), labels, annotations), nil
 	}
+}
+
+// getRemoteResourcesNotPresentInDevfile compares the list of Devfile K8s component and remote K8s resources
+// and returns a list of the remote resources not present in the Devfile and in case the SBO is not installed, a list of service binding secrets that must be deleted;
+// it ignores the core components (such as deployments, svc, pods; all resources with `component:<something>` label)
+func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objectsToRemove, serviceBindingSecretsToRemove []unstructured.Unstructured, err error) {
+	currentNamespace := a.kubeClient.GetCurrentNamespace()
+	allRemoteK8sResources, err := a.kubeClient.GetAllResourcesFromSelector(selector, currentNamespace)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to fetch remote resources: %w", err)
+	}
+
+	var remoteK8sResources []unstructured.Unstructured
+	// Filter core components
+	for _, remoteK := range allRemoteK8sResources {
+		if !odolabels.IsCoreComponent(remoteK.GetLabels()) {
+			// ignore the resources that are already set for deletion
+			// ignore the resources that do not have projecttype annotation set; they will be the resources that are not created by odo
+			// for e.g. PodMetrics is a resource that is created if Monitoring is enabled on OCP;
+			// this resource has the same label as it's deployment, it has no owner reference; but it does not have the annotation either
+			if remoteK.GetDeletionTimestamp() != nil && !odolabels.IsProjectTypeSetInAnnotations(remoteK.GetAnnotations()) {
+				continue
+			}
+			remoteK8sResources = append(remoteK8sResources, remoteK)
+		}
+	}
+
+	var devfileK8sResources []devfilev1.Component
+	devfileK8sResources, err = devfile.GetKubernetesComponentsToPush(a.Devfile, true)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to obtain resources from the Devfile: %w", err)
+	}
+
+	// convert all devfileK8sResources to unstructured data
+	var devfileK8sResourcesUnstructured []unstructured.Unstructured
+	for _, devfileK := range devfileK8sResources {
+		var devfileKUnstructured unstructured.Unstructured
+		devfileKUnstructured, err = libdevfile.GetK8sComponentAsUnstructured(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to read the resource: %w", err)
+		}
+		devfileK8sResourcesUnstructured = append(devfileK8sResourcesUnstructured, devfileKUnstructured)
+	}
+
+	isSBOSupported, err := a.kubeClient.IsServiceBindingSupported()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error in determining support for the Service Binding Operator: %w", err)
+	}
+
+	// check if the remote resource is also present in the Devfile
+	for _, remoteK := range remoteK8sResources {
+		matchFound := false
+		isServiceBindingSecret := false
+		for _, devfileK := range devfileK8sResourcesUnstructured {
+			// only check against GroupKind because version might not always match
+			if remoteResourceIsPresentInDevfile := devfileK.GroupVersionKind().GroupKind() == remoteK.GroupVersionKind().GroupKind() &&
+				devfileK.GetName() == remoteK.GetName(); remoteResourceIsPresentInDevfile {
+				matchFound = true
+				break
+			}
+
+			// if the resource is a secret and the SBO is not installed, then check if it's related to a local ServiceBinding by checking the labels
+			if !isSBOSupported && remoteK.GroupVersionKind() == kclient.SecretGVK {
+				if remoteSecretHasLocalServiceBindingOwner := service.IsLinkSecret(remoteK.GetLabels()) &&
+					remoteK.GetLabels()[service.LinkLabel] == devfileK.GetName(); remoteSecretHasLocalServiceBindingOwner {
+					matchFound = true
+					isServiceBindingSecret = true
+					break
+				}
+			}
+		}
+
+		if !matchFound {
+			if isServiceBindingSecret {
+				serviceBindingSecretsToRemove = append(serviceBindingSecretsToRemove, remoteK)
+			} else {
+				objectsToRemove = append(objectsToRemove, remoteK)
+			}
+		}
+	}
+	return objectsToRemove, serviceBindingSecretsToRemove, nil
+}
+
+// deleteRemoteResources takes a list of remote resources to be deleted
+func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructured) error {
+	if len(objectsToRemove) == 0 {
+		return nil
+	}
+
+	var resources []string
+	for _, u := range objectsToRemove {
+		resources = append(resources, fmt.Sprintf("%s/%s", u.GetKind(), u.GetName()))
+	}
+
+	var err error
+	spinner := log.Spinnerf("Deleting resources not present in the Devfile: %s", strings.Join(resources, ", "))
+	defer spinner.End(err == nil)
+
+	var wg sync2.WaitGroup
+	// Delete the resources present on the cluster but not in the Devfile
+	for _, objectToRemove := range objectsToRemove {
+		wg.Add(1)
+		// Avoid re-use of the same `objectToRemove` value in each goroutine closure.
+		// See https://golang.org/doc/faq#closures_and_goroutines for more details.
+		objectToRemove := objectToRemove
+		go func() {
+			defer wg.Done()
+			var gvr schema.GroupVersionResource
+			gvr, err = a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
+			if err != nil {
+				err = fmt.Errorf("unable to get information about resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+				return
+			}
+
+			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
+			if err != nil {
+				if !kerrors.IsNotFound(err) || !kerrors.IsMethodNotSupported(err) {
+					err = fmt.Errorf("unable to delete resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
+					return
+				}
+				klog.V(1).Infof("Failed to delete resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
+				err = nil
+			}
+		}()
+	}
+
+	wg.Wait()
+	return err
+}
+
+// deleteServiceBindingSecrets takes a list of Service Binding secrets(unstructured) that should be deleted;
+// this is helpful when Service Binding Operator is not installed on the cluster
+func (a Adapter) deleteServiceBindingSecrets(serviceBindingSecretsToRemove []unstructured.Unstructured, deployment *appsv1.Deployment) error {
+	for _, secretToRemove := range serviceBindingSecretsToRemove {
+		spinner := log.Spinnerf("Deleting Kubernetes resource: %s/%s", secretToRemove.GetKind(), secretToRemove.GetName())
+		defer spinner.End(false)
+
+		err := service.UnbindWithLibrary(a.kubeClient, secretToRemove, deployment)
+		if err != nil {
+			return fmt.Errorf("failed to unbind secret %q from the application", secretToRemove.GetName())
+		}
+
+		// since the library currently doesn't delete the secret after unbinding
+		// delete the secret manually
+		err = a.kubeClient.DeleteSecret(secretToRemove.GetName(), a.kubeClient.GetCurrentNamespace())
+		if err != nil {
+			if !kerrors.IsNotFound(err) {
+				return fmt.Errorf("unable to delete Kubernetes resource: %s/%s: %s", secretToRemove.GetKind(), secretToRemove.GetName(), err.Error())
+			}
+			klog.V(4).Infof("Failed to delete Kubernetes resource: %s/%s; resource not found", secretToRemove.GetKind(), secretToRemove.GetName())
+		}
+		spinner.End(true)
+	}
+	return nil
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well

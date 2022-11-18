@@ -230,7 +230,7 @@ var _ = Describe("odo dev debug command tests", func() {
 		},
 		{
 			name: "without metadata.name",
-			//cmpName is returned by alizer.DetectName
+			// cmpName is returned by alizer.DetectName
 			cmpName: "nodejs-starter",
 			devfileHandler: func(path string) {
 				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
