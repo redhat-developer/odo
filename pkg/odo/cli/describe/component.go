@@ -113,7 +113,7 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name)
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name, odocontext.GetApplication(ctx))
 	if err != nil {
 		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
 	}
@@ -151,7 +151,7 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 			runningIn = nil
 		}
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName)
+	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName, odocontext.GetApplication(ctx))
 	if err != nil {
 		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
 	}

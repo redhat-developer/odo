@@ -332,8 +332,8 @@ func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterfa
 // ListRoutesAndIngresses lists routes and ingresses created by a component;
 // it only returns the resources created with Deploy mode;
 // it fetches resources from the cluster that match label and return.
-func ListRoutesAndIngresses(client kclient.ClientInterface, componentName string) (ings []api.ConnectionData, routes []api.ConnectionData, err error) {
-	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode, false)
+func ListRoutesAndIngresses(client kclient.ClientInterface, componentName, appName string) (ings []api.ConnectionData, routes []api.ConnectionData, err error) {
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDeployMode, false)
 
 	k8sIngresses, err := client.ListIngresses(client.GetCurrentNamespace(), selector)
 	if err != nil {

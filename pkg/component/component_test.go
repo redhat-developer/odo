@@ -668,7 +668,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			gotIngs, gotRoutes, err := ListRoutesAndIngresses(tt.args.client(ctrl), tt.args.componentName)
+			gotIngs, gotRoutes, err := ListRoutesAndIngresses(tt.args.client(ctrl), tt.args.componentName, "app")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListRoutesAndIngresses() error = %v, wantErr %v", err, tt.wantErr)
 				return
