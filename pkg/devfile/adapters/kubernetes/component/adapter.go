@@ -17,6 +17,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
@@ -209,7 +210,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, syncFolder, err := common.GetFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
 		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
 	}
@@ -752,23 +753,6 @@ func (a Adapter) deleteServiceBindingSecrets(serviceBindingSecretsToRemove []uns
 		spinner.End(true)
 	}
 	return nil
-}
-
-// getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well
-// as the path to the source volume inside the container.
-// Because the source volume is shared across all components that need it, we only need to sync once,
-// so we only need to find one container. If no container was found, that means there's no
-// container to sync to, so return an error
-func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
-	for _, c := range containers {
-		for _, env := range c.Env {
-			if env.Name == generator.EnvProjectsSrc {
-				return c.Name, env.Value, nil
-			}
-		}
-	}
-
-	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.

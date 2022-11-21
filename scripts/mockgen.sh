@@ -86,3 +86,7 @@ mockgen -source=pkg/sync/interface.go \
 mockgen -source=pkg/exec/interface.go \
     -package exec \
     -destination pkg/exec/mock.go
+
+mockgen -source=pkg/podman/interface.go \
+    -package podman \
+    -destination pkg/podman/mock.go

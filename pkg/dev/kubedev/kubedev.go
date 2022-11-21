@@ -1,4 +1,4 @@
-package dev
+package kubedev
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/binding"
+	_delete "github.com/redhat-developer/odo/pkg/component/delete"
+	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -33,9 +35,10 @@ type DevClient struct {
 	syncClient        sync.Client
 	filesystem        filesystem.Filesystem
 	execClient        exec.Client
+	deleteClient      _delete.Client
 }
 
-var _ Client = (*DevClient)(nil)
+var _ dev.Client = (*DevClient)(nil)
 
 func NewDevClient(
 	kubernetesClient kclient.ClientInterface,
@@ -46,6 +49,7 @@ func NewDevClient(
 	syncClient sync.Client,
 	filesystem filesystem.Filesystem,
 	execClient exec.Client,
+	deleteClient _delete.Client,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
@@ -56,6 +60,7 @@ func NewDevClient(
 		syncClient:        syncClient,
 		filesystem:        filesystem,
 		execClient:        execClient,
+		deleteClient:      deleteClient,
 	}
 }
 
@@ -63,7 +68,7 @@ func (o *DevClient) Start(
 	ctx context.Context,
 	out io.Writer,
 	errOut io.Writer,
-	options StartOptions,
+	options dev.StartOptions,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
 

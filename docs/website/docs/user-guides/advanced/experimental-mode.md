@@ -47,3 +47,15 @@ $ odo dev --run-on=some-platform
 ### Generic `--run-on` flag
 
 This is a generic flag that allows running `odo` on any supported platform (other than the default Kubernetes or OpenShift cluster mode).
+
+The supported platforms are `cluster` and `podman`.
+
+By default, if you do not use the `--run-on` flag, or if you do not activate the experimental mode, the `cluster` platform is used.
+
+The `cluster` platform uses the current Kubernetes or OpenShift cluster.
+
+The `podman` platform uses the local installation of `podman`. It relies on the `podman` binary to be installed on your system.
+
+These commands support the `--run-on`  flag:
+
+- `odo dev`

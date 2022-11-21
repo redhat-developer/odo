@@ -35,6 +35,20 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// CleanupResources mocks base method.
+func (m *MockClient) CleanupResources(ctx context.Context, out io.Writer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanupResources", ctx, out)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CleanupResources indicates an expected call of CleanupResources.
+func (mr *MockClientMockRecorder) CleanupResources(ctx, out interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupResources", reflect.TypeOf((*MockClient)(nil).CleanupResources), ctx, out)
+}
+
 // Start mocks base method.
 func (m *MockClient) Start(ctx context.Context, out, errOut io.Writer, options StartOptions) error {
 	m.ctrl.T.Helper()

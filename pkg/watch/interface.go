@@ -3,8 +3,6 @@ package watch
 import (
 	"context"
 	"io"
-
-	"github.com/devfile/library/pkg/devfile/parser"
 )
 
 type Client interface {
@@ -14,6 +12,4 @@ type Client interface {
 	// parts of code (unfortunately, tthere is no place to store the status of the component in some Kubernetes resource
 	// as it is generally done for a Kubernetes resource)
 	WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error
-	// CleanupDevResources deletes the component created using the devfileObj and writes any outputs to out
-	CleanupDevResources(ctx context.Context, devfileObj parser.DevfileObj, componentName string, out io.Writer) error
 }

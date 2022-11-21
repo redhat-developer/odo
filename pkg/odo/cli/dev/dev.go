@@ -29,7 +29,9 @@ import (
 )
 
 // RecommendedCommandName is the recommended command name
-const RecommendedCommandName = "dev"
+const (
+	RecommendedCommandName = "dev"
+)
 
 type DevOptions struct {
 	// Clients
@@ -108,11 +110,25 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)
 		variables     = fcontext.GetVariables(ctx)
+		platform      = fcontext.GetRunOn(ctx)
 	)
+
+	var dest string
+	var deployingTo string
+	switch platform {
+	case commonflags.RunOnPodman:
+		dest = "Platform: podman"
+		deployingTo = "podman"
+	case commonflags.RunOnCluster:
+		dest = "Namespace: " + odocontext.GetNamespace(ctx)
+		deployingTo = "the cluster"
+	default:
+		panic(fmt.Errorf("platform %s is not implemented", platform))
+	}
 
 	// Output what the command is doing / information
 	log.Title("Developing using the \""+componentName+"\" Devfile",
-		"Namespace: "+odocontext.GetNamespace(ctx),
+		dest,
 		"odo version: "+version.VERSION)
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
@@ -140,7 +156,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, componentName)
 
-	log.Section("Deploying to the cluster in developer mode")
+	log.Sectionf("Deploying to %s in developer mode", deployingTo)
+
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		o.out,
@@ -166,10 +183,9 @@ func (o *DevOptions) HandleSignal() error {
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
-		devFileObj := odocontext.GetDevfileObj(ctx)
-		componentName := odocontext.GetComponentName(ctx)
-		_ = o.clientset.WatchClient.CleanupDevResources(ctx, *devFileObj, componentName, log.GetStdout())
+		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
 	}
+	_ = o.clientset.StateClient.SaveExit()
 }
 
 // NewCmdDev implements the odo dev command
@@ -196,16 +212,21 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
+		clientset.EXEC,
 		clientset.FILESYSTEM,
 		clientset.INIT,
-		clientset.KUBERNETES,
+		clientset.KUBERNETES_NULLABLE,
+		clientset.PODMAN,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
+		clientset.STATE,
+		clientset.SYNC,
 		clientset.WATCH,
 	)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	commonflags.UseVariablesFlags(devCmd)
+	commonflags.UseRunOnFlag(devCmd)
 	return devCmd
 }

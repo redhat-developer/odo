@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -66,6 +67,9 @@ func (a SyncClient) ExtractProjectToComponent(containerName, podName string, tar
 		log.Errorf("stdout: %s\n", stdout.String())
 		log.Errorf("stderr: %s\n", stderr.String())
 		log.Errorf("err: %s\n", err.Error())
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			log.Errorf("exit err: %s\n", string(exiterr.Stderr))
+		}
 	}
 	return err
 }

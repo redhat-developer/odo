@@ -12,14 +12,11 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
-	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
@@ -42,9 +39,7 @@ const (
 )
 
 type WatchClient struct {
-	kubeClient   kclient.ClientInterface
-	deleteClient _delete.Client
-	stateClient  state.Client
+	kubeClient kclient.ClientInterface
 
 	sourcesWatcher    *fsnotify.Watcher
 	deploymentWatcher watch.Interface
@@ -59,11 +54,9 @@ type WatchClient struct {
 
 var _ Client = (*WatchClient)(nil)
 
-func NewWatchClient(kubeClient kclient.ClientInterface, deleteClient _delete.Client, stateClient state.Client) *WatchClient {
+func NewWatchClient(kubeClient kclient.ClientInterface) *WatchClient {
 	return &WatchClient{
-		kubeClient:   kubeClient,
-		deleteClient: deleteClient,
-		stateClient:  stateClient,
+		kubeClient: kubeClient,
 	}
 }
 
@@ -486,34 +479,6 @@ func (o *WatchClient) processEvents(
 		printInfoMessage(out, parameters.Path, parameters.WatchFiles)
 	}
 	return nil, nil
-}
-
-func (o *WatchClient) CleanupDevResources(ctx context.Context, devfileObj parser.DevfileObj, componentName string, out io.Writer) error {
-	fmt.Fprintln(out, "Cleaning resources, please wait")
-	appname := odocontext.GetApplication(ctx)
-	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appname, componentName, labels.ComponentDevMode)
-	if err != nil {
-		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
-			fmt.Fprintf(out, "Error connecting to the cluster, the resources were not cleaned up.\nPlease log in again and cleanup the resource with `odo delete component`\n\n")
-		} else {
-			fmt.Fprintf(out, "Failed to delete inner loop resources: %v\n", err)
-		}
-		return err
-	}
-	// if innerloop deployment resource is present, then execute preStop events
-	if isInnerLoopDeployed {
-		err = o.deleteClient.ExecutePreStopEvents(devfileObj, appname, componentName)
-		if err != nil {
-			fmt.Fprint(out, "Failed to execute preStop events")
-		}
-	}
-	// delete all the resources
-	failed := o.deleteClient.DeleteResources(resources, true)
-	for _, fail := range failed {
-		fmt.Fprintf(out, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
-	}
-
-	return o.stateClient.SaveExit()
 }
 
 func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -51,6 +53,11 @@ func (o *State) save() error {
 		return err
 	}
 	// .odo directory is supposed to exist, don't create it
+	dir := filepath.Dir(_filepath)
+	err = os.MkdirAll(dir, 0750)
+	if err != nil {
+		return err
+	}
 	return o.fs.WriteFile(_filepath, jsonContent, 0644)
 }
 
