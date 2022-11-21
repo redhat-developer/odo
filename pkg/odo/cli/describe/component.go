@@ -81,6 +81,9 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 }
 
 func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
+	if o.clientset.KubernetesClient == nil {
+		log.Warning("No connection to cluster defined")
+	}
 	return nil
 }
 

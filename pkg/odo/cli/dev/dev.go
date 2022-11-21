@@ -2,6 +2,7 @@ package dev
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -99,6 +100,14 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 	}
 	if o.debugFlag && !libdevfile.HasDebugCommand(devfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("debug")
+	}
+
+	platform := fcontext.GetRunOn(ctx)
+	switch platform {
+	case commonflags.RunOnCluster:
+		if o.clientset.KubernetesClient == nil {
+			return errors.New("no connection to cluster defined")
+		}
 	}
 	return nil
 }
