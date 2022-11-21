@@ -519,6 +519,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						}, 120, 3).Should(ContainSubstring("Cluster"))
 						addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 						Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+						commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "cluster-sample-1")
 
 						if ctx.isServiceNsSupported && ns != "" {
 							addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", ns, "apply", "-f",

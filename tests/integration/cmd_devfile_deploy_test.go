@@ -271,6 +271,7 @@ ComponentSettings:
 			}, 120, 3).Should(ContainSubstring("Cluster"))
 			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+			commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "cluster-sample-1")
 		})
 		When("odo deploy is run", func() {
 			BeforeEach(func() {
