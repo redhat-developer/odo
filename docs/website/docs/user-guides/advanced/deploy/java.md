@@ -48,8 +48,13 @@ import RunningDeploy from './_running_deploy.mdx';
 
 <RunningDeploy name="java"/>
 
+## Step 5. Accessing the application
 
-## Step 5. Delete the resources
+import AccessingApplication from './_accessing_application.mdx'
+
+<AccessingApplication name="java" displayName="Spring Boot®" language="Java" projectType="springboot" description="Spring Boot® using Java" tags="Java, Spring Boot" version="1.2.0"/>
+
+## Step 6. Delete the resources
 
 import Delete from './_delete_resources.mdx';
 
