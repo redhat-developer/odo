@@ -300,7 +300,6 @@ func (o *ComponentOptions) deleteFilesCreatedByOdo(filesys filesystem.Filesystem
 	for _, f := range files {
 		err := filesys.RemoveAll(f)
 		if err != nil {
-			klog.V(4).Infof("could not remove %q: %v", f, err)
 			notDeleted[f] = err
 		}
 	}
