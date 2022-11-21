@@ -124,7 +124,7 @@ components:
           targetPort: {{CONTAINER_PORT}}
         selector:
           app: {{RESOURCE_NAME}}
-        type: ClusterIP
+        type: NodePort
 ```
 
 To be able to access our application we need to add one more `component` to the Devfile.

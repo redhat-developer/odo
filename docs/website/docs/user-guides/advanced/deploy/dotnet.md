@@ -51,7 +51,13 @@ import RunningDeploy from './_running_deploy.mdx';
 <RunningDeploy name="dotnet"/>
 
 
-## Step 5. Delete the resources
+## Step 5. Accessing the application
+
+import AccessingApplication from './_accessing_application.mdx'
+
+<AccessingApplication name="dotnet" displayName=".NET 6.0" language=".NET" projectType="dotnet" description="Stack with .NET 6.0" tags=".NET" version="1.0.2"/>
+
+## Step 6. Delete the resources
 
 import Delete from './_delete_resources.mdx';
 

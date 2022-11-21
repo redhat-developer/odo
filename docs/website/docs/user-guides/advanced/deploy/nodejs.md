@@ -61,8 +61,13 @@ import RunningDeploy from './_running_deploy.mdx';
 
 <RunningDeploy name="nodejs"/>
 
+## Step 5. Accessing the application
 
-## Step 5. Delete the resources
+import AccessingApplication from './_accessing_application.mdx'
+
+<AccessingApplication name="node" displayName="Node.js Runtime" language="JavaScript" projectType="Node.js" description="Stack with Node.js 16" tags="Node.js, Express, ubi8" version="2.1.1"/>
+
+## Step 6. Delete the resources
 
 import Delete from './_delete_resources.mdx';
 

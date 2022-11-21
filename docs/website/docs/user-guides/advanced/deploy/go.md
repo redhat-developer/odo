@@ -52,15 +52,19 @@ import EditingDevfile from './_editing_devfile.mdx';
 
 <EditingDevfile name="go" port="8080"/>
 
-
 ## Step 4. Run the `odo deploy` command
 
 import RunningDeploy from './_running_deploy.mdx';
 
 <RunningDeploy name="go"/>
 
+## Step 5. Accessing the application
 
-## Step 5. Delete the resources
+import AccessingApplication from './_accessing_application.mdx'
+
+<AccessingApplication name="go" displayName="Go Runtime" language="Go" projectType="Go" description="Go is an open source programming language that makes it easy to build simple, reliable, and efficient software." tags="Go"/>
+
+## Step 6. Delete the resources
 
 import Delete from './_delete_resources.mdx';
 

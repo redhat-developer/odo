@@ -1,0 +1,89 @@
+import CodeBlock from '@theme/CodeBlock';
+import Version from '../../../_version.mdx';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+
+You can now access the application by running `odo describe component`:
+
+```console
+odo describe component
+```
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+<div>
+<CodeBlock language="console">
+{`\
+$ odo describe component
+Name: my-`}{props.name}{`-app
+Display Name: `}{props.displayName}{`\n`}
+{`Project Type: `}{props.projectType}{`\n`}
+{`Language: `}{props.language}{`\n`}
+{`Version: `}{props.Version}{`\n`}
+{`Description: `}{props.description}{`\n`}
+{`Tags: `}{props.tags}
+{`\n
+Running in: Deploy
+\n
+Supported odo features:
+ •  Dev: true
+ •  Deploy: true
+ •  Debug: false
+\n
+Container components:
+ •  runtime
+\n
+Kubernetes components:
+ •  outerloop-deployment
+ •  outerloop-service
+ •  outerloop-url
+\n
+Kubernetes Ingresses:
+ •  my-`}{props.name}{`-app: `}{props.name}{`.example.com/`}
+{`\n
+`}
+</CodeBlock>
+</div>
+You can use the URI mentioned under Kubernetes Ingresses section to access your application.
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+<div>
+<CodeBlock language="console">
+{`\
+$ odo describe component
+Name: my-`}{props.name}{`-app
+Display Name: `}{props.displayName}{`\n`}
+{`Project Type: `}{props.projectType}{`\n`}
+{`Language: `}{props.language}{`\n`}
+{`Version: `}{props.Version}{`\n`}
+{`Description: `}{props.description}{`\n`}
+{`Tags: `}{props.tags}
+{`\n
+Running in: Deploy
+\n
+Supported odo features:
+ •  Dev: true
+ •  Deploy: true
+ •  Debug: false
+\n
+Container components:
+ •  runtime
+\n
+Kubernetes components:
+ •  outerloop-deployment
+ •  outerloop-service
+ •  outerloop-url
+\n
+OpenShift Routes:
+ •  my-`}{props.name}{`-app: my-`}{props.name}{`-app-pvala-crt-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com/`}
+{`\n
+`}
+</CodeBlock>
+</div>
+You can use the URI mentioned under OpenShift Routes section to access your application.
+
+</TabItem>
+</Tabs>
