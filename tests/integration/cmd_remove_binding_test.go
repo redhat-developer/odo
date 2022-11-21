@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo remove binding command tests", Label(helper.LabelNoCluster), func() {
+var _ = Describe("odo remove binding command tests", func() {
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
@@ -29,7 +29,7 @@ var _ = Describe("odo remove binding command tests", Label(helper.LabelNoCluster
 			helper.Cmd("odo", "init", "--name", "mynode", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml")).ShouldPass()
 		})
 
-		When("removing the binding", func() {
+		When("removing the binding", Label(helper.LabelNoCluster), func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 			})
@@ -38,7 +38,7 @@ var _ = Describe("odo remove binding command tests", Label(helper.LabelNoCluster
 				Expect(components).To(BeNil())
 			})
 		})
-		It("should fail to remove binding that does not exist", func() {
+		It("should fail to remove binding that does not exist", Label(helper.LabelNoCluster), func() {
 			helper.Cmd("odo", "remove", "binding", "--name", "my-binding").ShouldFail()
 		})
 		When("odo dev is running", func() {
