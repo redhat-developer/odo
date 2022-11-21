@@ -16,12 +16,29 @@ For Node.JS we will use the [Express](https://expressjs.com/) framework for our 
 ```console
 npm install express --save
 ```
+<details>
+<summary>Example</summary>
+
+```shell
+$ npm install express --save
+
+added 57 packages, and audited 58 packages in 6s
+
+7 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+</details>
 
 2. Generate an example project:
 ```console
 npx express-generator
 ```
-```console
+<details>
+<summary>Example</summary>
+
+```shell
 $ npx express-generator
   warning: the default view engine will not be jade in future releases
   warning: use `--view=jade' or `--help' for additional options
@@ -50,6 +67,7 @@ $ npx express-generator
    run the app:
      $ DEBUG=express:* npm start
 ```
+</details>
 
 Your source code has now been generated and created in the directory.
 

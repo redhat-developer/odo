@@ -18,7 +18,10 @@ ASP.NET MVC is a web application framework that implements the model-view-contro
 ```console
 dotnet new mvc --name app
 ```
-```console
+<details>
+<summary>Example</summary>
+
+```shell
 $ dotnet new mvc --name app
 Welcome to .NET 6.0!
 ---------------------
@@ -35,6 +38,7 @@ Running 'dotnet restore' on /Users/user/app/app.csproj...
   Restored /Users/user/app/app.csproj (in 84 ms).
 Restore succeeded.
 ```
+</details>
 
 Your source code has now been generated and created in the directory.
 

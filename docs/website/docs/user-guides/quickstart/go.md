@@ -36,6 +36,16 @@ func HelloServer(w http.ResponseWriter, r *http.Request) {
 ```console
 go mod init my.example.go.project
 ```
+<details>
+<summary>Example</summary>
+
+```shell
+$ go mod init my.example.go.project
+go: creating new go.mod: module my.example.go.project
+go: to add module requirements and sums:
+	go mod tidy
+```
+</details>
 
 Your source code has now been generated and created in the directory.
 
