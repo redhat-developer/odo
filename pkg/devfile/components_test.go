@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
@@ -159,6 +160,13 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
+	sorterFuncProvider := func(x []devfilev1.Component) func(i, j int) bool {
+		return func(i, j int) bool {
+			return x[i].Name < x[j].Name
+		}
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetKubernetesComponentsToPush(tt.devfileObj, tt.allowApply)
@@ -166,11 +174,15 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			if len(got) != len(tt.want) {
 				t.Errorf("Got %d components, expected %d\n", len(got), len(tt.want))
 			}
+
+			sort.Slice(tt.want, sorterFuncProvider(tt.want))
+			sort.Slice(got, sorterFuncProvider(got))
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("\nGot      %+v\nExpected %+v\n", got, tt.want)
 			}
 			if gotErr != tt.wantErr {
-				t.Errorf("Got error %v, expected %v\n", gotErr, tt.wantErr)
+				t.Errorf("Got error %v, expected %v\n", err, tt.wantErr)
 			}
 		})
 	}
