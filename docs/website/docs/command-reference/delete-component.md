@@ -50,7 +50,8 @@ Note that `odo dev` might generate a `.gitignore` file if it does not exist in t
 but this file will not be removed when `--files` is passed to `odo delete component`.
 
 :::caution
-Use this flag with caution.
+Use this flag with caution because this permanently deletes the files mentioned above, and this operation is not reversible 
+(unless your files are backed up or under version control).
 :::
 
 ```shell
