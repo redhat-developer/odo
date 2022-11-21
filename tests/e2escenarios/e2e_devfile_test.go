@@ -24,7 +24,7 @@ var _ = Describe("odo devfile supported tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		componentName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 		projectDirPath = commonVar.Context + projectDir

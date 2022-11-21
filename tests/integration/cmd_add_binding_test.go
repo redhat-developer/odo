@@ -20,7 +20,7 @@ var _ = Describe("odo add binding command tests", func() {
 	var err error
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 		// Ensure that the operators are installed
 		commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")

@@ -14,7 +14,7 @@ var _ = Describe("odo analyze command tests", Label(helper.LabelNoCluster), func
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterFalse)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
 

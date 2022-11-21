@@ -205,9 +205,13 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 }
 
 func ListAllComponents(client kclient.ClientInterface, namespace string, devObj *parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
-	devfileComponents, err := ListAllClusterComponents(client, namespace)
-	if err != nil {
-		return nil, "", err
+	var devfileComponents []api.ComponentAbstract
+	var err error
+	if client != nil {
+		devfileComponents, err = ListAllClusterComponents(client, namespace)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 
 	localComponent := api.ComponentAbstract{
@@ -254,9 +258,13 @@ func getResourcesForComponent(
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
 func GetRunningModes(ctx context.Context, client kclient.ClientInterface, name string) (api.RunningModes, error) {
+	if client == nil {
+		return nil, nil
+	}
+
 	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
 	if err != nil {
-		return api.RunningModes{}, nil
+		return nil, nil
 	}
 
 	if len(list) == 0 {
@@ -333,6 +341,10 @@ func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterfa
 // it only returns the resources created with Deploy mode;
 // it fetches resources from the cluster that match label and return.
 func ListRoutesAndIngresses(client kclient.ClientInterface, componentName, appName string) (ings []api.ConnectionData, routes []api.ConnectionData, err error) {
+	if client == nil {
+		return nil, nil, nil
+	}
+
 	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDeployMode, false)
 
 	k8sIngresses, err := client.ListIngresses(client.GetCurrentNamespace(), selector)

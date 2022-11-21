@@ -18,7 +18,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 		cmpName = helper.RandString(6)
 	})
@@ -28,7 +28,7 @@ var _ = Describe("odo describe component command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	It("should fail", func() {
+	It("should fail, without cluster", Label(helper.LabelNoCluster), func() {
 		By("running odo describe component -o json with namespace flag without name flag", func() {
 			res := helper.Cmd("odo", "describe", "component", "--namespace", "default", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
@@ -45,14 +45,6 @@ var _ = Describe("odo describe component command tests", func() {
 			helper.JsonPathContentContain(stderr, "message", "The current directory does not represent an odo component")
 		})
 
-		By("running odo describe component -o json with an unknown name", func() {
-			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-			Expect(stdout).To(BeEmpty())
-			helper.JsonPathContentContain(stderr, "message", "no component found with name \"unknown-name\" in the namespace \""+commonVar.Project+"\"")
-		})
-
 		By("running odo describe component with namespace flag without name flag", func() {
 			res := helper.Cmd("odo", "describe", "component", "--namespace", "default").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
@@ -65,6 +57,17 @@ var _ = Describe("odo describe component command tests", func() {
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
 			Expect(stderr).To(ContainSubstring("The current directory does not represent an odo component"))
+		})
+
+	})
+
+	It("should fail, with cluster", func() {
+		By("running odo describe component -o json with an unknown name", func() {
+			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+			Expect(stdout).To(BeEmpty())
+			helper.JsonPathContentContain(stderr, "message", "no component found with name \"unknown-name\" in the namespace \""+commonVar.Project+"\"")
 		})
 
 		By("running odo describe component with an unknown name", func() {
@@ -99,7 +102,7 @@ var _ = Describe("odo describe component command tests", func() {
 			}
 		}
 
-		It("should describe the component in the current directory", func() {
+		It("should describe the component in the current directory", Label(helper.LabelNoCluster), func() {
 			By("running with json output", func() {
 				res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
 				stdout, stderr := res.Out(), res.Err()
@@ -140,7 +143,7 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 		})
 
-		When("renaming to hide devfile.yaml file", func() {
+		When("renaming to hide devfile.yaml file", Label(helper.LabelNoCluster), func() {
 			BeforeEach(func() {
 				err := os.Rename("devfile.yaml", ".devfile.yaml")
 				Expect(err).NotTo(HaveOccurred())

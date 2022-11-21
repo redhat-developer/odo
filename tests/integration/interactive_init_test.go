@@ -23,7 +23,7 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterFalse)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 
 		// We make EXPLICITLY sure that we are outputting with NO COLOR

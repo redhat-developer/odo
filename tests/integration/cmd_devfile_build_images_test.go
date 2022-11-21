@@ -14,12 +14,12 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo devfile build-images command tests", func() {
+var _ = Describe("odo devfile build-images command tests", Label(helper.LabelNoCluster), func() {
 
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
 

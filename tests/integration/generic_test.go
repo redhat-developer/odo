@@ -17,7 +17,7 @@ var _ = Describe("odo generic", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		oc = helper.NewOcRunner("oc")
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	// Clean up after the test
@@ -26,7 +26,7 @@ var _ = Describe("odo generic", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("running odo --help", func() {
+	When("running odo --help", Label(helper.LabelNoCluster), func() {
 		var output string
 		BeforeEach(func() {
 			output = helper.Cmd("odo", "--help").ShouldPass().Out()
@@ -37,7 +37,7 @@ var _ = Describe("odo generic", func() {
 
 	})
 
-	When("running odo without subcommand and flags", func() {
+	When("running odo without subcommand and flags", Label(helper.LabelNoCluster), func() {
 		var output string
 		BeforeEach(func() {
 			output = helper.Cmd("odo").ShouldPass().Out()
@@ -47,12 +47,12 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	It("returns error when using an invalid command", func() {
+	It("returns error when using an invalid command", Label(helper.LabelNoCluster), func() {
 		output := helper.Cmd("odo", "hello").ShouldFail().Err()
 		Expect(output).To(ContainSubstring("Invalid command - see available commands/subcommands above"))
 	})
 
-	It("returns JSON error", func() {
+	It("returns JSON error", Label(helper.LabelNoCluster), func() {
 		By("using an invalid command with JSON output", func() {
 			res := helper.Cmd("odo", "unknown-command", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
@@ -82,7 +82,7 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	It("returns error when using an invalid command with --help", func() {
+	It("returns error when using an invalid command with --help", Label(helper.LabelNoCluster), func() {
 		output := helper.Cmd("odo", "hello", "--help").ShouldFail().Err()
 		Expect(output).To(ContainSubstring("unknown command 'hello', type --help for a list of all commands"))
 	})
@@ -118,6 +118,11 @@ var _ = Describe("odo generic", func() {
 			Expect(odoVersion).Should(SatisfyAll(MatchRegexp(reOdoVersion), MatchRegexp(rekubernetesVersion)))
 			serverURL := oc.GetCurrentServerURL()
 			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+		})
+
+		It("should show the version of odo major components", Label(helper.LabelNoCluster), func() {
+			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
+			Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
 		})
 	})
 

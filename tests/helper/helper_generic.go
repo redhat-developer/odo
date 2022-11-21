@@ -184,12 +184,9 @@ type CommonVar struct {
 	testDuration float64
 }
 
-const SetupClusterTrue = true
-const SetupClusterFalse = false
-
 // CommonBeforeEach is common function runs before every test Spec (It)
 // returns CommonVar values that are used within the test script
-func CommonBeforeEach(setupCluster bool) CommonVar {
+func CommonBeforeEach() CommonVar {
 	SetDefaultEventuallyTimeout(10 * time.Minute)
 	SetDefaultConsistentlyDuration(30 * time.Second)
 
@@ -198,9 +195,18 @@ func CommonBeforeEach(setupCluster bool) CommonVar {
 	commonVar.ConfigDir = CreateNewContext()
 	commonVar.CliRunner = GetCliRunner()
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
-	if setupCluster {
+	if NeedsCluster(CurrentSpecReport().Labels()) {
 		LocalKubeconfigSet(commonVar.ConfigDir)
 		commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+	} else {
+		// Disable the use of in-cluster configuration (seen in IBM Cloud pipeline)
+		os.Unsetenv("KUBERNETES_SERVICE_HOST")
+		// Create an empty kubeconfig file in the config dir and point KUBECONFIG to this file
+		kubeconfig, err := os.CreateTemp(commonVar.ConfigDir, "kubeconfig")
+		Expect(err).To(BeNil())
+		err = kubeconfig.Close()
+		Expect(err).To(BeNil())
+		os.Setenv("KUBECONFIG", kubeconfig.Name())
 	}
 	commonVar.OriginalWorkingDirectory = Getwd()
 

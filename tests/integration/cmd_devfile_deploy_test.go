@@ -21,7 +21,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
 

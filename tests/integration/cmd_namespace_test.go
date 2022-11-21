@@ -20,7 +20,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 	var commonVar helper.CommonVar
 
 	BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 	})
 
 	AfterEach(func() {

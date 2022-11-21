@@ -13,8 +13,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 
-	dfutil "github.com/devfile/library/pkg/util"
-
 	"github.com/redhat-developer/odo/pkg/component"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -59,20 +57,14 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete ...
 func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-
-	// Check to see if KUBECONFIG exists, and if not, error the user that we would not be able to get cluster information
-	// Do this before anything else, or else we will just error out with the:
-	// invalid configuration: no configuration has been provided, try setting KUBERNETES_MASTER environment variable
-	// instead
-	if !dfutil.CheckKubeConfigExist() {
-		return errors.New("KUBECONFIG not found. Unable to retrieve cluster information. Please set your Kubernetes configuration via KUBECONFIG env variable or ~/.kube/config")
-	}
-
 	// If the namespace flag has been passed, we will search there.
 	// if it hasn't, we will search from the default project / namespace.
 	if lo.namespaceFlag != "" {
+		if lo.clientset.KubernetesClient == nil {
+			return errors.New("cluster is non accessible")
+		}
 		lo.namespaceFilter = lo.namespaceFlag
-	} else {
+	} else if lo.clientset.KubernetesClient != nil {
 		lo.namespaceFilter = odocontext.GetNamespace(ctx)
 	}
 
@@ -81,6 +73,9 @@ func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, ar
 
 // Validate ...
 func (lo *ListOptions) Validate(ctx context.Context) (err error) {
+	if lo.clientset.KubernetesClient == nil {
+		log.Warning("No connection to cluster defined")
+	}
 	return nil
 }
 
@@ -137,7 +132,7 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 		},
 		Aliases: []string{"components"},
 	}
-	clientset.Add(listCmd, clientset.KUBERNETES, clientset.FILESYSTEM)
+	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.FILESYSTEM)
 
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 

@@ -12,7 +12,7 @@ var _ = Describe("odo list services tests", func() {
 	var randomProject string
 
 	BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
+		commonVar = helper.CommonBeforeEach()
 
 		// Ensure that the operators are installed
 		commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
