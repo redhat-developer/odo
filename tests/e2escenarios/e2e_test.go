@@ -27,8 +27,7 @@ var _ = Describe("E2E Test", func() {
 
 	checkIfDevEnvIsUp := func(url, assertString string) {
 		Eventually(func() string {
-			resp, err := http.Get(fmt.Sprintf("http://%s", url))
-			Expect(err).ToNot(HaveOccurred())
+			resp, _ := http.Get(fmt.Sprintf("http://%s", url))
 			defer resp.Body.Close()
 
 			body, _ := io.ReadAll(resp.Body)
@@ -82,10 +81,10 @@ var _ = Describe("E2E Test", func() {
 				helper.SendLine(ctx, "JavaScript")
 
 				helper.ExpectString(ctx, "Select project type")
-				helper.SendLine(ctx, "Node.js\n")
+				helper.SendLine(ctx, "Node.js")
 
 				helper.ExpectString(ctx, "Which starter project do you want to use")
-				helper.SendLine(ctx, "nodejs-starter\n")
+				helper.SendLine(ctx, "nodejs-starter")
 
 				helper.ExpectString(ctx, "Enter component name")
 				helper.SendLine(ctx, componentName)
@@ -198,11 +197,11 @@ var _ = Describe("E2E Test", func() {
 				helper.ExpectString(ctx, "Project type: Node.js")
 				helper.ExpectString(ctx, "Is this correct")
 
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Enter component name")
 
@@ -322,11 +321,11 @@ var _ = Describe("E2E Test", func() {
 				helper.ExpectString(ctx, "Project type: Go")
 				helper.ExpectString(ctx, "Is this correct")
 
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Enter component name")
 
