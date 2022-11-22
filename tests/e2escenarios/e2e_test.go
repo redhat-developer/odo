@@ -27,7 +27,11 @@ var _ = Describe("E2E Test", func() {
 
 	checkIfDevEnvIsUp := func(url, assertString string) {
 		Eventually(func() string {
-			resp, _ := http.Get(fmt.Sprintf("http://%s", url))
+			resp, err := http.Get(fmt.Sprintf("http://%s", url))
+			if err != nil {
+				fmt.Fprintf(GinkgoWriter, "error while trying to GET %q: %v\n", url, err)
+				return ""
+			}
 			defer resp.Body.Close()
 
 			body, _ := io.ReadAll(resp.Body)
