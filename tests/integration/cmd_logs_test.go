@@ -77,7 +77,7 @@ var _ = Describe("odo logs command tests", func() {
 			var err error
 
 			BeforeEach(func() {
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 				// We need to wait for the pod deployed as a Kubernetes component
 				Eventually(func() bool {
@@ -175,7 +175,7 @@ var _ = Describe("odo logs command tests", func() {
 			var devSession helper.DevSession
 			var err error
 			BeforeEach(func() {
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 				Eventually(func() bool {

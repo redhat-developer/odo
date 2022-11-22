@@ -40,7 +40,9 @@ var _ = Describe("odo dev debug command tests", func() {
 			var ports map[string]string
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, ports, err = helper.StartDevMode(nil, "--debug")
+				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					CmdlineArgs: []string{"--debug"},
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -97,7 +99,9 @@ var _ = Describe("odo dev debug command tests", func() {
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, stdout, stderr, ports, err = helper.StartDevMode(nil, "--debug")
+				session, stdout, stderr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					CmdlineArgs: []string{"--debug"},
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -168,7 +172,10 @@ var _ = Describe("odo dev debug command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"}, "--debug")
+			session, sessionOut, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+				EnvVars:     []string{"PODMAN_CMD=echo"},
+				CmdlineArgs: []string{"--debug"},
+			})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("should execute the composite apply commands successfully", func() {
@@ -254,7 +261,9 @@ var _ = Describe("odo dev debug command tests", func() {
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, stdout, stderr, ports, err = helper.StartDevMode(nil, "--debug")
+				session, stdout, stderr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					CmdlineArgs: []string{"--debug"},
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 

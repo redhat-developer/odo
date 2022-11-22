@@ -177,7 +177,7 @@ var _ = Describe("odo delete command tests", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(nil)
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 					defer func() {
 						devSession.Kill()

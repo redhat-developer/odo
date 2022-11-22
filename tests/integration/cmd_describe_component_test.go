@@ -176,7 +176,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, ports, err = helper.StartDevMode(nil)
+				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 

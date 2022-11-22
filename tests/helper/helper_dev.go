@@ -114,25 +114,34 @@ type DevSession struct {
 	console *expect.Console
 }
 
+type DevSessionOpts struct {
+	EnvVars     []string
+	CmdlineArgs []string
+	RunOnPodman bool
+}
+
 // StartDevMode starts a dev session with `odo dev`
 // It returns a session structure, the contents of the standard and error outputs
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
-
+func StartDevMode(options DevSessionOpts) (DevSession, []byte, []byte, map[string]string, error) {
+	if options.RunOnPodman {
+		options.CmdlineArgs = append(options.CmdlineArgs, "--run-on", "podman")
+		options.EnvVars = append(options.EnvVars, "ODO_EXPERIMENTAL_MODE=true")
+	}
 	c, err := expect.NewConsole(expect.WithStdout(os.Stdout))
 	if err != nil {
 		return DevSession{}, nil, nil, nil, err
 	}
 
 	args := []string{"dev", "--random-ports"}
-	args = append(args, opts...)
+	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)
 	cmd.Cmd.Stdin = c.Tty()
 	cmd.Cmd.Stdout = c.Tty()
 	cmd.Cmd.Stderr = c.Tty()
 
-	session := cmd.AddEnv(envvars...).Runner().session
+	session := cmd.AddEnv(options.EnvVars...).Runner().session
 	WaitForOutputToContain("[Ctrl+c] - Exit", 360, 10, session)
 	result := DevSession{
 		session: session,
@@ -229,7 +238,10 @@ func (o DevSession) CheckNotSynced(timeout time.Duration) {
 // The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
 // and a slice of strings - ports - giving the redirections in the form localhost:<port_number> to access ports opened by component
 func RunDevMode(additionalOpts []string, envvars []string, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
-	session, outContents, errContents, urls, err := StartDevMode(envvars, additionalOpts...)
+	session, outContents, errContents, urls, err := StartDevMode(DevSessionOpts{
+		EnvVars:     envvars,
+		CmdlineArgs: additionalOpts,
+	})
 	if err != nil {
 		return err
 	}
