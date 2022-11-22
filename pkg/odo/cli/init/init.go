@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
@@ -17,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/files"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -229,6 +232,12 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 	if err = devfileObj.SetMetadataName(name); err != nil {
 		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
+
+	err = files.ReportLocalFileGeneratedByOdo(o.clientset.FS, workingDir, filepath.Base(devfilePath))
+	if err != nil {
+		klog.V(4).Infof("error trying to report local file generated: %v", err)
+	}
+
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)

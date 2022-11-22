@@ -2,10 +2,14 @@ package genericclioptions
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/files"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -34,7 +38,15 @@ func runPreInit(ctx context.Context, workingDir string, deps *clientset.Clientse
 			}
 		},
 		func(newDevfileObj parser.DevfileObj) error {
-			return newDevfileObj.WriteYamlDevfile()
+			dErr := newDevfileObj.WriteYamlDevfile()
+			if dErr != nil {
+				return dErr
+			}
+			dErr = files.ReportLocalFileGeneratedByOdo(deps.FS, workingDir, filepath.Base(newDevfileObj.Ctx.GetAbsPath()))
+			if dErr != nil {
+				klog.V(4).Infof("error trying to report local file generated: %v", dErr)
+			}
+			return nil
 		})
 	if err != nil {
 		return err

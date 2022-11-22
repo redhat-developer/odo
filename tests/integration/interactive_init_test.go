@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -279,8 +280,8 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 					// Make sure the original source code files are still present
 					Expect(helper.ListFilesInDir(commonVar.Context)).To(
 						SatisfyAll(
-							HaveLen(3),
-							ContainElements("devfile.yaml", "requirements.txt", "wsgi.py")))
+							HaveLen(4),
+							ContainElements("devfile.yaml", "requirements.txt", "wsgi.py", util.DotOdoDirectory)))
 				})
 			})
 		})

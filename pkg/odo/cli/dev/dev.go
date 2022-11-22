@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -140,8 +139,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		dest,
 		"odo version: "+version.VERSION)
 
-	// check for .gitignore file and add odo-file-index.json to .gitignore
-	gitIgnoreFile, err := util.TouchGitIgnoreFile(path)
+	// check for .gitignore file and add odo-file-index.json to .gitignore.
+	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
+	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).
+	gitIgnoreFile, _, err := util.TouchGitIgnoreFile(path)
 	if err != nil {
 		return err
 	}
