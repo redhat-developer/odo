@@ -58,6 +58,26 @@ func createPodFromComponent(
 		},
 	}
 
+	devfileVolumes, err := storage.ListStorage(devfileObj)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, devfileVolume := range devfileVolumes {
+		volumes = append(volumes, corev1.Volume{
+			Name: devfileVolume.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: getVolumeName(componentName, appName, devfileVolume.Name),
+				},
+			},
+		})
+		err = addVolumeMountToContainer(containers, devfileVolume)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// TODO add labels (for GetRunningPodFromSelector)
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
@@ -96,4 +116,17 @@ func addHostPorts(containers []corev1.Container) []api.ForwardedPort {
 		}
 	}
 	return result
+}
+
+func addVolumeMountToContainer(containers []corev1.Container, devfileVolume storage.LocalStorage) error {
+	for i := range containers {
+		if containers[i].Name == devfileVolume.Container {
+			containers[i].VolumeMounts = append(containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      devfileVolume.Name,
+				MountPath: devfileVolume.Path,
+			})
+			return nil
+		}
+	}
+	return fmt.Errorf("container %q not found", devfileVolume.Container)
 }
