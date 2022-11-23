@@ -84,7 +84,7 @@ var (
 					Name: "odo-projects",
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-projects-mycmp-app-source",
+							ClaimName: "odo-projects-mycmp-app",
 						},
 					},
 				},
@@ -92,7 +92,7 @@ var (
 					Name: "odo-shared-data",
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-projects-mycmp-app-shared",
+							ClaimName: "odo-shared-mycmp-app",
 						},
 					},
 				},
@@ -304,7 +304,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name: volume.Name,
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-projects-" + devfileName + "-" + appName + "-" + volume.Name,
+							ClaimName: volume.Name + "-" + devfileName + "-" + appName,
 						},
 					},
 				})
