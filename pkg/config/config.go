@@ -20,8 +20,12 @@ type Configuration struct {
 }
 
 func GetConfiguration() (*Configuration, error) {
+	return GetConfigurationWith(envconfig.OsLookuper())
+}
+
+func GetConfigurationWith(lookuper envconfig.Lookuper) (*Configuration, error) {
 	var s Configuration
-	err := envconfig.Process(context.Background(), &s)
+	err := envconfig.ProcessWith(context.Background(), &s, lookuper)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/sethvargo/go-envconfig"
 
 	"github.com/redhat-developer/odo/pkg/config"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -290,14 +291,11 @@ func TestIsTelemetryEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for k, v := range tt.env {
-				t.Setenv(k, v)
-			}
 			ctrl := gomock.NewController(t)
 			cfg := preference.NewMockClient(ctrl)
 			cfg.EXPECT().GetConsentTelemetry().Return(tt.consentTelemetryPref).AnyTimes()
 
-			envConfig, err := config.GetConfiguration()
+			envConfig, err := config.GetConfigurationWith(envconfig.MapLookuper(tt.env))
 			if err != nil {
 				t.Errorf("Get configuration fails: %v", err)
 			}
