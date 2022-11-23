@@ -7,17 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/fatih/color"
-
-	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
@@ -77,90 +70,10 @@ func (o *DevClient) Start(
 		componentStatus = watch.ComponentStatus{}
 	)
 
-	pod, fwPorts, err := o.deployPod(ctx, options)
+	err := o.reconcile(ctx, out, errOut, options, &componentStatus)
 	if err != nil {
 		return err
 	}
-	o.deployedPod = pod
-
-	for _, fwPort := range fwPorts {
-		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
-		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
-	}
-	err = o.stateClient.SetForwardedPorts(fwPorts)
-	if err != nil {
-		return err
-	}
-
-	execRequired, err := o.syncFiles(ctx, options, pod, path)
-	if err != nil {
-		return err
-	}
-
-	// PostStart events from the devfile will only be executed when the component
-	// didn't previously exist
-	if libdevfile.HasPostStartEvents(*devfileObj) {
-		execHandler := component.NewExecHandler(
-			o.podmanClient,
-			o.execClient,
-			appName,
-			componentName,
-			pod.Name,
-			"",
-			false, /* TODO */
-		)
-		err = libdevfile.ExecPostStartEvents(*devfileObj, execHandler)
-		if err != nil {
-			return err
-		}
-	}
-
-	if execRequired {
-		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(
-				o.podmanClient,
-				o.execClient,
-				appName,
-				componentName,
-				pod.Name,
-				"Building your application in container",
-				false, /* TODO */
-			)
-			return libdevfile.Build(*devfileObj, options.BuildCommand, execHandler)
-		}
-		err = doExecuteBuildCommand()
-		if err != nil {
-			return err
-		}
-
-		cmdKind := devfilev1.RunCommandGroupKind
-		cmdName := options.RunCommand
-		if options.Debug {
-			cmdKind = devfilev1.DebugCommandGroupKind
-			cmdName = options.DebugCommand
-		}
-		cmdHandler := commandHandler{
-			execClient:      o.execClient,
-			platformClient:  o.podmanClient,
-			componentExists: false, // TODO
-			podName:         pod.Name,
-			appName:         appName,
-			componentName:   componentName,
-		}
-		err = libdevfile.ExecuteCommandByNameAndKind(*devfileObj, cmdName, cmdKind, &cmdHandler, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Fprintf(
-		out,
-		" %s%s",
-		log.Sbold("Keyboard Commands:"),
-		PromptMessage,
-	)
-
-	componentStatus.State = watch.StateReady
 
 	watchParameters := watch.WatchParameters{
 		DevfilePath:         devfilePath,
@@ -168,7 +81,7 @@ func (o *DevClient) Start(
 		ComponentName:       componentName,
 		ApplicationName:     appName,
 		InitialDevfileObj:   *devfileObj,
-		DevfileWatchHandler: watchHandler,
+		DevfileWatchHandler: o.watchHandler,
 		FileIgnores:         options.IgnorePaths,
 		Debug:               options.Debug,
 		DevfileBuildCmd:     options.BuildCommand,
@@ -177,47 +90,11 @@ func (o *DevClient) Start(
 		RandomPorts:         options.RandomPorts,
 		WatchFiles:          options.WatchFiles,
 		WatchCluster:        false,
+		Out:                 out,
 		ErrOut:              errOut,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
-}
-
-// deployPod deploys the component as a Pod in podman
-func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*corev1.Pod, []api.ForwardedPort, error) {
-	var (
-		appName       = odocontext.GetApplication(ctx)
-		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
-	)
-
-	spinner := log.Spinner("Deploying pod")
-	defer spinner.End(false)
-
-	pod, fwPorts, err := createPodFromComponent(
-		*devfileObj,
-		componentName,
-		appName,
-		options.BuildCommand,
-		options.RunCommand,
-		"",
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	err = o.checkVolumesFree(pod)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	err = o.podmanClient.PlayKube(pod)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	spinner.End(true)
-	return pod, fwPorts, nil
 }
 
 // syncFiles syncs the local source files in path into the pod's source volume
@@ -275,7 +152,16 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 	return nil
 }
 
-func watchHandler(context.Context, adapters.PushParameters, watch.WatchParameters, *watch.ComponentStatus) error {
+func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 	fmt.Printf("watchHandler\n")
-	return nil
+	startOptions := dev.StartOptions{
+		IgnorePaths:  watchParams.FileIgnores,
+		Debug:        watchParams.Debug,
+		BuildCommand: watchParams.DevfileBuildCmd,
+		RunCommand:   watchParams.DevfileRunCmd,
+		RandomPorts:  watchParams.RandomPorts,
+		WatchFiles:   watchParams.WatchFiles,
+		Variables:    watchParams.Variables,
+	}
+	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
 }

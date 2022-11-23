@@ -99,6 +99,8 @@ type WatchParameters struct {
 	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
 	WatchCluster bool
 	// ErrOut is a Writer to output forwarded port information
+	Out io.Writer
+	// ErrOut is a Writer to output forwarded port information
 	ErrOut io.Writer
 }
 
@@ -229,6 +231,7 @@ func (o *WatchClient) eventWatcher(
 		case <-sourcesTimer.C:
 			// timer has fired
 			if !componentCanSyncFile(componentStatus.State) {
+				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.State)
 				continue
 			}
 
