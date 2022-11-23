@@ -1,12 +1,11 @@
 package binding
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
-	"github.com/kylelemons/godebug/pretty"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -226,11 +225,11 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				t.Errorf("BindingClient.ListAllBindings() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BindingClient.ListAllBindings(): %v ", pretty.Compare(got, tt.want))
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("BindingClient.ListAllBindings() mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(gotInDevfile, tt.wantInDevfile) {
-				t.Errorf("BindingClient.ListAllBindings(): %v", pretty.Compare(gotInDevfile, tt.wantInDevfile))
+			if diff := cmp.Diff(tt.wantInDevfile, gotInDevfile); diff != "" {
+				t.Errorf("BindingClient.ListAllBindings() wantInDevfile mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

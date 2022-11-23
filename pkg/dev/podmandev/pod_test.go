@@ -6,7 +6,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/kylelemons/godebug/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/labels"
@@ -14,7 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/version"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -336,12 +336,12 @@ func Test_createPodFromComponent(t *testing.T) {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			want := tt.wantPod()
-			if !equality.Semantic.DeepEqual(got, want) {
-				t.Errorf("createPodFromComponent() pod: %s", pretty.Compare(want, got))
+
+			if diff := cmp.Diff(tt.wantPod(), got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("createPodFromComponent() pod mismatch (-want +got):\n%s", diff)
 			}
-			if !equality.Semantic.DeepEqual(gotFwPorts, tt.wantFwPorts) {
-				t.Errorf("createPodFromComponent() fwPorts: %s", pretty.Compare(tt.wantFwPorts, gotFwPorts))
+			if diff := cmp.Diff(tt.wantFwPorts, gotFwPorts, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("createPodFromComponent() fwPorts mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

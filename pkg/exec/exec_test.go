@@ -3,9 +3,9 @@ package exec
 import (
 	"errors"
 	"io"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -87,11 +87,11 @@ func TestExecuteCommand(t *testing.T) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !reflect.DeepEqual(tt.wantStdout, stdout) {
-				t.Errorf("expected %+q for stdout, got %+q", tt.wantStdout, stdout)
+			if diff := cmp.Diff(tt.wantStdout, stdout); diff != "" {
+				t.Errorf("ExecClient.ExecuteCommand() wantStdout mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(tt.wantStderr, stderr) {
-				t.Errorf("expected %+q for stderr, got %+q", tt.wantStderr, stderr)
+			if diff := cmp.Diff(tt.wantStderr, stderr); diff != "" {
+				t.Errorf("ExecClient.ExecuteCommand() wantStderr mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

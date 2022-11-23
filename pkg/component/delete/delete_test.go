@@ -3,12 +3,12 @@ package delete
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -123,8 +123,8 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 				t.Errorf("DeleteComponentClient.ListResourcesToDelete() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DeleteComponentClient.ListResourcesToDelete() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DeleteComponentClient.ListClusterResourcesToDelete() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -234,8 +234,9 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
 			do := NewDeleteComponentClient(kubeClient, execClient)
-			if got := do.DeleteResources(tt.args.resources, false); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DeleteComponentClient.DeleteResources() = %v, want %v", got, tt.want)
+			got := do.DeleteResources(tt.args.resources, false)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DeleteComponentClient.DeleteResources() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -557,8 +558,8 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			if gotIsInnerLoopDeployed != tt.wantIsInnerLoopDeployed {
 				t.Errorf("ListResourcesToDeleteFromDevfile() gotIsInnerLoopDeployed = %v, want %v", gotIsInnerLoopDeployed, tt.wantIsInnerLoopDeployed)
 			}
-			if !reflect.DeepEqual(gotResources, tt.wantResources) {
-				t.Errorf("ListResourcesToDeleteFromDevfile() gotResources = %v, want %v", gotResources, tt.wantResources)
+			if diff := cmp.Diff(tt.wantResources, gotResources); diff != "" {
+				t.Errorf("DeleteComponentClient.ListResourcesToDeleteFromDevfile() wantResources mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

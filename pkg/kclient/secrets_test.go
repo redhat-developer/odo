@@ -2,9 +2,9 @@ package kclient
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/watch"
 
 	corev1 "k8s.io/api/core/v1"
@@ -221,8 +221,8 @@ func TestListSecrets(t *testing.T) {
 
 		secretsList, err := client.ListSecrets("")
 
-		if !reflect.DeepEqual(tt.output, secretsList) {
-			t.Errorf("expected output: %#v,got: %#v", tt.secretList, secretsList)
+		if diff := cmp.Diff(tt.output, secretsList); diff != "" {
+			t.Errorf("Client.ListSecrets() secretsList mismatch (-want +got):\n%s", diff)
 		}
 
 		if err == nil && !tt.wantErr {

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
@@ -17,7 +16,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
-	"github.com/kylelemons/godebug/pretty"
+	"github.com/google/go-cmp/cmp"
 	v12 "github.com/openshift/api/route/v1"
 	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -170,8 +169,8 @@ func TestListAllClusterComponents(t *testing.T) {
 				t.Errorf("ListAllClusterComponents error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListAllClusterComponents got = %+v\nwant = %+v\ncomparison:\n %v", got, tt.want, pretty.Compare(got, tt.want))
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("ListAllClusterComponents() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -361,8 +360,8 @@ func TestGetRunningModes(t *testing.T) {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetRunningModes() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetRunningModes() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -488,8 +487,8 @@ func TestGatherName(t *testing.T) {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 			}
 			want := tt.want(dir, d)
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("GatherName() = %q, want = %q", got, want)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("GatherName() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -673,11 +672,11 @@ func TestListRoutesAndIngresses(t *testing.T) {
 				t.Errorf("ListRoutesAndIngresses() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(gotIngs, tt.wantIngs) {
-				t.Errorf("ListRoutesAndIngresses() gotIngs = %v, want %v", gotIngs, tt.wantIngs)
+			if diff := cmp.Diff(tt.wantIngs, gotIngs); diff != "" {
+				t.Errorf("ListRoutesAndIngresses() wantIngs mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(gotRoutes, tt.wantRoutes) {
-				t.Errorf("ListRoutesAndIngresses() gotRoutes = %v, want %v", gotRoutes, tt.wantRoutes)
+			if diff := cmp.Diff(tt.wantRoutes, gotRoutes); diff != "" {
+				t.Errorf("ListRoutesAndIngresses() wantRoutes mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

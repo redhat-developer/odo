@@ -1,8 +1,9 @@
 package asker
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func Test_buildPersonalizedConfigurationOptions(t *testing.T) {
@@ -86,11 +87,12 @@ func Test_buildPersonalizedConfigurationOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotOptions, gotTracker := buildPersonalizedConfigurationOptions(tt.args.configuration)
-			if !reflect.DeepEqual(gotOptions, tt.wantOptions) {
-				t.Errorf("buildPersonalizedConfigurationOptions() gotOptions = %v, want %v", gotOptions, tt.wantOptions)
+
+			if diff := cmp.Diff(tt.wantOptions, gotOptions); diff != "" {
+				t.Errorf("buildPersonalizedConfigurationOptions() wantOptions mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(gotTracker, tt.wantTracker) {
-				t.Errorf("buildPersonalizedConfigurationOptions() gotTracker = %v, want %v", gotTracker, tt.wantTracker)
+			if diff := cmp.Diff(tt.wantTracker, gotTracker); diff != "" {
+				t.Errorf("buildPersonalizedConfigurationOptions() wantTracker mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

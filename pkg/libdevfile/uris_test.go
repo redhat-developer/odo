@@ -1,7 +1,6 @@
 package libdevfile
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -12,6 +11,7 @@ import (
 	context "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 
@@ -357,8 +357,8 @@ func TestGetReferencedLocalFiles(t *testing.T) {
 				t.Errorf("GetReferencedLocalFiles() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("GetReferencedLocalFiles() = %v, want %v", gotResult, tt.wantResult)
+			if diff := cmp.Diff(tt.wantResult, gotResult); diff != "" {
+				t.Errorf("GetReferencedLocalFiles() wantResult mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -412,8 +412,8 @@ func Test_appendUriIfFile(t *testing.T) {
 				t.Errorf("appendUriIfFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("appendUriIfFile() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("appendUriIfFile() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -519,8 +519,8 @@ func Test_getFromAttributes(t *testing.T) {
 				t.Errorf("getFromAttributes() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getFromAttributes() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("getFromAttributes() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

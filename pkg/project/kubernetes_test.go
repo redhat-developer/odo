@@ -1,12 +1,13 @@
 package project
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
 func TestCreate(t *testing.T) {
@@ -236,8 +237,8 @@ func TestList(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(list, tt.expectedList) {
-				t.Errorf("Expected value:\n%+v\ngot:\n%+v", tt.expectedList, list)
+			if diff := cmp.Diff(tt.expectedList, list); diff != "" {
+				t.Errorf("Client.List() expectedList mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -51,8 +51,8 @@ func TestNewStorage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotStorage := NewStorage(tt.storageName, tt.storageSize, tt.mountedPath, nil)
-			if !reflect.DeepEqual(tt.want, gotStorage) {
-				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
+			if diff := cmp.Diff(tt.want, gotStorage); diff != "" {
+				t.Errorf("NewStorage() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -175,8 +175,8 @@ func TestNewStorageList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotStorage := NewStorageList(tt.inputStorage)
-			if !reflect.DeepEqual(tt.want, gotStorage) {
-				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
+			if diff := cmp.Diff(tt.want, gotStorage); diff != "" {
+				t.Errorf("NewStorageList() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

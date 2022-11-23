@@ -2,16 +2,17 @@ package kclient
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	projectv1 "github.com/openshift/api/project/v1"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
+
+	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 func TestCreateNewProject(t *testing.T) {
@@ -90,10 +91,13 @@ func TestCreateNewProject(t *testing.T) {
 
 				if tt.wait {
 					expectedFields := fields.OneTermEqualSelector("metadata.name", tt.projName)
-					gotFields := actions[0].(ktesting.WatchAction).GetWatchRestrictions().Fields
+					expectedFieldsReq := expectedFields.Requirements()
 
-					if !reflect.DeepEqual(expectedFields, gotFields) {
-						t.Errorf("Fields not matching: expected: %s, got %s", expectedFields, gotFields)
+					gotFields := actions[0].(ktesting.WatchAction).GetWatchRestrictions().Fields
+					gotFieldsReq := gotFields.Requirements()
+
+					if diff := cmp.Diff(expectedFieldsReq, gotFieldsReq); diff != "" {
+						t.Errorf("OneTermEqualSelector() fieldsReq mismatch (-want +got):\n%s", diff)
 					}
 				}
 			}
@@ -136,8 +140,8 @@ func TestListProjects(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListProjects() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.ListProjects() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -176,8 +180,8 @@ func TestListProjectNames(t *testing.T) {
 				t.Errorf("ListProjectNames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListProjectNames() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.ListProjectNames() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

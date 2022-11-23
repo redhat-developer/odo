@@ -1,10 +1,11 @@
 package binding
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/google/go-cmp/cmp"
 
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 )
@@ -95,8 +96,8 @@ func TestBindingClient_RemoveBinding(t *testing.T) {
 				t.Errorf("RemoveBinding() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RemoveBinding() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(devfileCtx.DevfileCtx{})); diff != "" {
+				t.Errorf("BindingClient.RemoveBinding() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

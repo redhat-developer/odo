@@ -3,8 +3,9 @@ package registry
 import (
 	"context"
 	"io/ioutil"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
@@ -64,8 +65,8 @@ func TestIsSecure(t *testing.T) {
 			}
 
 			got := IsSecure(cfg, tt.registryName)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %t, want %t", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("IsSecure() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

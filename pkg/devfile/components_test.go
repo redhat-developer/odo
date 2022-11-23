@@ -1,9 +1,10 @@
 package devfile
 
 import (
-	"reflect"
-	"sort"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
 
@@ -161,28 +162,24 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 		},
 	}
 
-	sorterFuncProvider := func(x []devfilev1.Component) func(i, j int) bool {
-		return func(i, j int) bool {
-			return x[i].Name < x[j].Name
-		}
+	lessFunc := func(x, y devfilev1.Component) bool {
+		return x.Name < y.Name
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetKubernetesComponentsToPush(tt.devfileObj, tt.allowApply)
 			gotErr := err != nil
+			if gotErr != tt.wantErr {
+				t.Errorf("Got error %v, expected %v\n", err, tt.wantErr)
+			}
+
 			if len(got) != len(tt.want) {
 				t.Errorf("Got %d components, expected %d\n", len(got), len(tt.want))
 			}
 
-			sort.Slice(tt.want, sorterFuncProvider(tt.want))
-			sort.Slice(got, sorterFuncProvider(got))
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("\nGot      %+v\nExpected %+v\n", got, tt.want)
-			}
-			if gotErr != tt.wantErr {
-				t.Errorf("Got error %v, expected %v\n", err, tt.wantErr)
+			if diff := cmp.Diff(tt.want, got, cmpopts.SortSlices(lessFunc)); diff != "" {
+				t.Errorf("GetKubernetesComponentsToPush() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

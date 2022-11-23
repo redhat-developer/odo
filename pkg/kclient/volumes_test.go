@@ -3,8 +3,9 @@ package kclient
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
@@ -234,8 +235,8 @@ func TestListPVCs(t *testing.T) {
 					if PVC.Name != tt.pvcName {
 						t.Errorf("TestGetPVCsFromSelector: PVC found with incorrect name, expected: %s actual: %s", tt.pvcName, PVC.Name)
 					}
-					if !reflect.DeepEqual(PVC.Labels, tt.labels) {
-						t.Errorf("TestGetPVCsFromSelector: Labels do not match with expected labels, expected: %s, got %s", tt.labels, PVC.Labels)
+					if diff := cmp.Diff(tt.labels, PVC.Labels); diff != "" {
+						t.Errorf("Client.ListPVCs() labels mismatch (-want +got):\n%s", diff)
 					}
 				}
 			}
@@ -342,8 +343,8 @@ func TestListPVCNames(t *testing.T) {
 				t.Errorf("ListPVCNames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListPVCNames() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.ListPVCNames() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

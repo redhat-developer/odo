@@ -1,11 +1,11 @@
 package storage
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -337,8 +337,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				t.Errorf("List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("List() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("kubernetesClient.List() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -427,20 +427,20 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			odolabels.AddStorageInfo(wantLabels, tt.args.storage.Name, strings.Contains(tt.args.storage.Name, OdoSourceVolume))
 
 			// created PVC should be labeled with labels passed to CreatePVC
-			if !reflect.DeepEqual(createdPVC.Labels, wantLabels) {
-				t.Errorf("labels in created pvc is not matching expected labels, expected: %v, got: %v", wantLabels, createdPVC.Labels)
+			if diff := cmp.Diff(wantLabels, createdPVC.Labels); diff != "" {
+				t.Errorf("kubernetesClient.Create() wantLabels mismatch (-want +got):\n%s", diff)
 			}
 			// name, size of createdPVC should be matching to size, name passed to CreatePVC
-			if !reflect.DeepEqual(createdPVC.Spec.Resources.Requests["storage"], quantity) {
-				t.Errorf("size of PVC is not matching to expected size, expected: %v, got %v", quantity, createdPVC.Spec.Resources.Requests["storage"])
+			if diff := cmp.Diff(quantity, createdPVC.Spec.Resources.Requests["storage"]); diff != "" {
+				t.Errorf("kubernetesClient.Create() quantity mismatch (-want +got):\n%s", diff)
 			}
 
 			wantedPVCName, err := generatePVCName(tt.args.storage.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			if !reflect.DeepEqual(createdPVC.Name, wantedPVCName) {
-				t.Errorf("name of the PVC is not matching to expected name, expected: %v, got %v", wantedPVCName, createdPVC.Name)
+			if diff := cmp.Diff(wantedPVCName, createdPVC.Name); diff != "" {
+				t.Errorf("kubernetesClient.Create() wantedPVCName mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
