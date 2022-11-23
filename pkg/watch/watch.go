@@ -96,6 +96,8 @@ type WatchParameters struct {
 	RandomPorts bool
 	// WatchFiles indicates to watch for file changes and sync changes to the container
 	WatchFiles bool
+	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
+	WatchCluster bool
 	// ErrOut is a Writer to output forwarded port information
 	ErrOut io.Writer
 }
@@ -126,10 +128,20 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 	defer o.sourcesWatcher.Close()
 
-	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
-	o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
-	if err != nil {
-		return fmt.Errorf("error watching deployment: %v", err)
+	if parameters.WatchCluster {
+		selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
+		o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
+		if err != nil {
+			return fmt.Errorf("error watching deployment: %v", err)
+		}
+
+		o.podWatcher, err = o.kubeClient.PodWatcher(ctx, selector)
+		if err != nil {
+			return err
+		}
+	} else {
+		o.deploymentWatcher = NewNoOpWatcher()
+		o.podWatcher = NewNoOpWatcher()
 	}
 
 	o.devfileWatcher, err = fsnotify.NewWatcher()
@@ -151,18 +163,17 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		}
 	}
 
-	o.podWatcher, err = o.kubeClient.PodWatcher(ctx, selector)
-	if err != nil {
-		return err
-	}
-
-	var isForbidden bool
-	o.warningsWatcher, isForbidden, err = o.kubeClient.PodWarningEventWatcher(ctx)
-	if err != nil {
-		return err
-	}
-	if isForbidden {
-		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+	if parameters.WatchCluster {
+		var isForbidden bool
+		o.warningsWatcher, isForbidden, err = o.kubeClient.PodWarningEventWatcher(ctx)
+		if err != nil {
+			return err
+		}
+		if isForbidden {
+			log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+		}
+	} else {
+		o.warningsWatcher = NewNoOpWatcher()
 	}
 
 	o.keyWatcher = getKeyWatcher(ctx, out)

@@ -39,6 +39,8 @@ type DevClient struct {
 	execClient   exec.Client
 	stateClient  state.Client
 	watchClient  watch.Client
+
+	deployedPod *corev1.Pod
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -79,6 +81,7 @@ func (o *DevClient) Start(
 	if err != nil {
 		return err
 	}
+	o.deployedPod = pod
 
 	for _, fwPort := range fwPorts {
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
@@ -171,35 +174,11 @@ func (o *DevClient) Start(
 		Variables:           options.Variables,
 		RandomPorts:         options.RandomPorts,
 		WatchFiles:          options.WatchFiles,
+		WatchCluster:        false,
 		ErrOut:              errOut,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
-	//<-ctx.Done()
-	//
-	//fmt.Printf("Cleaning up resources\n")
-	//err = o.podmanClient.PodStop(pod.GetName())
-	//if err != nil {
-	//	return err
-	//}
-	//err = o.podmanClient.PodRm(pod.GetName())
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//for _, volume := range pod.Spec.Volumes {
-	//	if volume.PersistentVolumeClaim == nil {
-	//		continue
-	//	}
-	//	volumeName := volume.PersistentVolumeClaim.ClaimName
-	//	klog.V(3).Infof("deleting podman volume %q", volumeName)
-	//	err = o.podmanClient.VolumeRm(volumeName)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
-	//
-	//return nil
 }
 
 // deployPod deploys the component as a Pod in podman

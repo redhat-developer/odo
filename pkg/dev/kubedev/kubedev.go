@@ -121,6 +121,7 @@ func (o *DevClient) Start(
 		Variables:           options.Variables,
 		RandomPorts:         options.RandomPorts,
 		WatchFiles:          options.WatchFiles,
+		WatchCluster:        true,
 		ErrOut:              errOut,
 	}
 
