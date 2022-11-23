@@ -9,7 +9,9 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
+	"github.com/redhat-developer/odo/pkg/version"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -44,6 +46,15 @@ var (
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name: "mycmp-app",
+			Labels: map[string]string{
+				"app":                                  appName,
+				"app.kubernetes.io/instance":           devfileName,
+				"app.kubernetes.io/managed-by":         "odo",
+				"app.kubernetes.io/managed-by-version": version.VERSION,
+				"app.kubernetes.io/part-of":            appName,
+				"component":                            devfileName,
+				"odo.dev/mode":                         labels.ComponentDevMode,
+			},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{

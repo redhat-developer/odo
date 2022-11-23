@@ -7,7 +7,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -72,6 +74,9 @@ func createPodFromComponent(
 		return nil, nil, err
 	}
 	pod.SetName(name)
+
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(devfileObj.Data.GetMetadata())
+	pod.SetLabels(labels.GetLabels(componentName, appName, runtime, labels.ComponentDevMode, true))
 
 	return &pod, fwPorts, nil
 }
