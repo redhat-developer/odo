@@ -695,27 +695,29 @@ ComponentSettings:
 								})
 							}
 
-							//						helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
-							//
-							//						if manual {
-							//							if os.Getenv("SKIP_KEY_PRESS") == "true" {
-							//								Skip("This is a unix-terminal specific scenario, skipping")
-							//							}
-							//
-							//							devSession.PressKey('p')
-							//						}
-							//
-							//						_, _, _, err := devSession.WaitSync()
-							//						Expect(err).Should(Succeed())
-							//
-							//						for _, p := range containerPorts {
-							//							By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
-							//								func() {
-							//									Eventually(func() string {
-							//										return getServerResponse(p)
-							//									}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
-							//								})
-							//						}
+							if !podman {
+								helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
+
+								if manual {
+									if os.Getenv("SKIP_KEY_PRESS") == "true" {
+										Skip("This is a unix-terminal specific scenario, skipping")
+									}
+
+									devSession.PressKey('p')
+								}
+
+								_, _, _, err := devSession.WaitSync()
+								Expect(err).Should(Succeed())
+
+								for _, p := range containerPorts {
+									By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
+										func() {
+											Eventually(func() string {
+												return getServerResponse(p)
+											}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
+										})
+								}
+							}
 						})
 					})
 
