@@ -39,6 +39,10 @@ var (
 		},
 	})
 
+	volume = generator.GetVolumeComponent(generator.VolumeComponentParams{
+		Name: "myvolume",
+	})
+
 	basePod = &corev1.Pod{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: "v1",
@@ -91,7 +95,7 @@ var (
 					Name: "odo-projects",
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-projects-mycmp-app-source",
+							ClaimName: "odo-projects-mycmp-app",
 						},
 					},
 				},
@@ -99,7 +103,7 @@ var (
 					Name: "odo-shared-data",
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-projects-mycmp-app-shared",
+							ClaimName: "odo-shared-data-mycmp-app",
 						},
 					},
 				},
@@ -284,6 +288,45 @@ func Test_createPodFromComponent(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "basic component with volume mount",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					_ = data.AddComponents([]v1alpha2.Component{baseComponent, volume})
+					_ = data.AddVolumeMounts(baseComponent.Name, []v1alpha2.VolumeMount{
+						{
+							Name: volume.Name,
+							Path: "/path/to/mount",
+						},
+					})
+
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+			},
+			wantPod: func() *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+					Name: volume.Name,
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+							ClaimName: volume.Name + "-" + devfileName + "-" + appName,
+						},
+					},
+				})
+				pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      volume.Name,
+					MountPath: "/path/to/mount",
+				})
+				return pod
+			},
+		},
+
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {

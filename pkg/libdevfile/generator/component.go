@@ -90,3 +90,17 @@ func GetOpenshiftComponent(params OpenshiftComponentParams) v1alpha2.Component {
 	}
 	return cmp
 }
+
+type VolumeComponentParams struct {
+	Name string
+}
+
+func GetVolumeComponent(params VolumeComponentParams) v1alpha2.Component {
+	cmp := v1alpha2.Component{
+		Name: params.Name,
+		ComponentUnion: v1alpha2.ComponentUnion{
+			Volume: &v1alpha2.VolumeComponent{},
+		},
+	}
+	return cmp
+}

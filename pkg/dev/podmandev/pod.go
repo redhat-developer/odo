@@ -46,7 +46,7 @@ func createPodFromComponent(
 			Name: storage.OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: getVolumeName(componentName, appName, "source"),
+					ClaimName: getVolumeName(storage.OdoSourceVolume, componentName, appName),
 				},
 			},
 		},
@@ -54,10 +54,30 @@ func createPodFromComponent(
 			Name: storage.SharedDataVolumeName,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: getVolumeName(componentName, appName, "shared"),
+					ClaimName: getVolumeName(storage.SharedDataVolumeName, componentName, appName),
 				},
 			},
 		},
+	}
+
+	devfileVolumes, err := storage.ListStorage(devfileObj)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, devfileVolume := range devfileVolumes {
+		volumes = append(volumes, corev1.Volume{
+			Name: devfileVolume.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: getVolumeName(devfileVolume.Name, componentName, appName),
+				},
+			},
+		})
+		err = addVolumeMountToContainer(containers, devfileVolume)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// TODO add labels (for GetRunningPodFromSelector)
@@ -81,8 +101,8 @@ func createPodFromComponent(
 	return &pod, fwPorts, nil
 }
 
-func getVolumeName(componentName string, appName string, volume string) string {
-	return "odo-projects-" + componentName + "-" + appName + "-" + volume
+func getVolumeName(volume string, componentName string, appName string) string {
+	return volume + "-" + componentName + "-" + appName
 }
 
 func addHostPorts(containers []corev1.Container) []api.ForwardedPort {
@@ -101,4 +121,17 @@ func addHostPorts(containers []corev1.Container) []api.ForwardedPort {
 		}
 	}
 	return result
+}
+
+func addVolumeMountToContainer(containers []corev1.Container, devfileVolume storage.LocalStorage) error {
+	for i := range containers {
+		if containers[i].Name == devfileVolume.Container {
+			containers[i].VolumeMounts = append(containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      devfileVolume.Name,
+				MountPath: devfileVolume.Path,
+			})
+			return nil
+		}
+	}
+	return fmt.Errorf("container %q not found", devfileVolume.Container)
 }
