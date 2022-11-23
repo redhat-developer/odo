@@ -44,7 +44,7 @@ func createPodFromComponent(
 			Name: storage.OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: getVolumeName(componentName, appName, "odo-projects"),
+					ClaimName: getVolumeName(storage.OdoSourceVolume, componentName, appName),
 				},
 			},
 		},
@@ -52,7 +52,7 @@ func createPodFromComponent(
 			Name: storage.SharedDataVolumeName,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: getVolumeName(componentName, appName, "odo-shared"),
+					ClaimName: getVolumeName(storage.SharedDataVolumeName, componentName, appName),
 				},
 			},
 		},
@@ -68,7 +68,7 @@ func createPodFromComponent(
 			Name: devfileVolume.Name,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: getVolumeName(componentName, appName, devfileVolume.Name),
+					ClaimName: getVolumeName(devfileVolume.Name, componentName, appName),
 				},
 			},
 		})
@@ -96,7 +96,7 @@ func createPodFromComponent(
 	return &pod, fwPorts, nil
 }
 
-func getVolumeName(componentName string, appName string, volume string) string {
+func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 

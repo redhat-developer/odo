@@ -92,7 +92,7 @@ var (
 					Name: "odo-shared-data",
 					VolumeSource: corev1.VolumeSource{
 						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "odo-shared-mycmp-app",
+							ClaimName: "odo-shared-data-mycmp-app",
 						},
 					},
 				},
