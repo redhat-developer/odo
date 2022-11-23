@@ -160,6 +160,8 @@ func (o *DevClient) Start(
 		PromptMessage,
 	)
 
+	componentStatus.State = watch.StateReady
+
 	watchParameters := watch.WatchParameters{
 		DevfilePath:         devfilePath,
 		Path:                path,
@@ -274,6 +276,6 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 }
 
 func watchHandler(context.Context, adapters.PushParameters, watch.WatchParameters, *watch.ComponentStatus) error {
-
+	fmt.Printf("watchHandler\n")
 	return nil
 }
