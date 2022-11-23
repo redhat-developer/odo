@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -21,9 +22,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/sync"
+	"github.com/redhat-developer/odo/pkg/watch"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
 )
 
 const (
@@ -37,6 +38,7 @@ type DevClient struct {
 	syncClient   sync.Client
 	execClient   exec.Client
 	stateClient  state.Client
+	watchClient  watch.Client
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -46,12 +48,14 @@ func NewDevClient(
 	syncClient sync.Client,
 	execClient exec.Client,
 	stateClient state.Client,
+	watchClient watch.Client,
 ) *DevClient {
 	return &DevClient{
 		podmanClient: podmanClient,
 		syncClient:   syncClient,
 		execClient:   execClient,
 		stateClient:  stateClient,
+		watchClient:  watchClient,
 	}
 }
 
@@ -67,6 +71,8 @@ func (o *DevClient) Start(
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
+
+		componentStatus = watch.ComponentStatus{}
 	)
 
 	pod, fwPorts, err := o.deployPod(ctx, options)
@@ -151,31 +157,49 @@ func (o *DevClient) Start(
 		PromptMessage,
 	)
 
-	<-ctx.Done()
-
-	fmt.Printf("Cleaning up resources\n")
-	err = o.podmanClient.PodStop(pod.GetName())
-	if err != nil {
-		return err
-	}
-	err = o.podmanClient.PodRm(pod.GetName())
-	if err != nil {
-		return err
-	}
-
-	for _, volume := range pod.Spec.Volumes {
-		if volume.PersistentVolumeClaim == nil {
-			continue
-		}
-		volumeName := volume.PersistentVolumeClaim.ClaimName
-		klog.V(3).Infof("deleting podman volume %q", volumeName)
-		err = o.podmanClient.VolumeRm(volumeName)
-		if err != nil {
-			return err
-		}
+	watchParameters := watch.WatchParameters{
+		DevfilePath:         devfilePath,
+		Path:                path,
+		ComponentName:       componentName,
+		ApplicationName:     appName,
+		InitialDevfileObj:   *devfileObj,
+		DevfileWatchHandler: watchHandler,
+		FileIgnores:         options.IgnorePaths,
+		Debug:               options.Debug,
+		DevfileBuildCmd:     options.BuildCommand,
+		DevfileRunCmd:       options.RunCommand,
+		Variables:           options.Variables,
+		RandomPorts:         options.RandomPorts,
+		WatchFiles:          options.WatchFiles,
+		ErrOut:              errOut,
 	}
 
-	return nil
+	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+	//<-ctx.Done()
+	//
+	//fmt.Printf("Cleaning up resources\n")
+	//err = o.podmanClient.PodStop(pod.GetName())
+	//if err != nil {
+	//	return err
+	//}
+	//err = o.podmanClient.PodRm(pod.GetName())
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for _, volume := range pod.Spec.Volumes {
+	//	if volume.PersistentVolumeClaim == nil {
+	//		continue
+	//	}
+	//	volumeName := volume.PersistentVolumeClaim.ClaimName
+	//	klog.V(3).Infof("deleting podman volume %q", volumeName)
+	//	err = o.podmanClient.VolumeRm(volumeName)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+	//
+	//return nil
 }
 
 // deployPod deploys the component as a Pod in podman
@@ -267,5 +291,10 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 	if len(problematicVolumes) > 0 {
 		return fmt.Errorf("volumes already exist, please remove them before to run odo dev: %s", strings.Join(problematicVolumes, ", "))
 	}
+	return nil
+}
+
+func watchHandler(context.Context, adapters.PushParameters, watch.WatchParameters, *watch.ComponentStatus) error {
+
 	return nil
 }

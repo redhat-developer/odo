@@ -253,6 +253,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 				dep.SyncClient,
 				dep.ExecClient,
 				dep.StateClient,
+				dep.WatchClient,
 			)
 		default:
 			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
