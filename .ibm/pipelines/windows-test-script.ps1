@@ -81,6 +81,7 @@ function Run-Test {
     make install 
     Shout "Running test"
     make test-integration-no-cluster | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
+    Check-ExitCode $LASTEXITCODE
     make test-integration-cluster    | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
     Check-ExitCode $LASTEXITCODE
     make test-e2e                    | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
