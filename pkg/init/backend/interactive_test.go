@@ -2,10 +2,10 @@ package backend
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
@@ -94,11 +94,11 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 			ctx := context.Background()
 			got, err := o.SelectDevfile(ctx, map[string]string{}, nil, "")
 			if (err != nil) != tt.wantErr {
-				t.Errorf("InteractiveBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("InteractiveBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InteractiveBuilder.ParamsBuild() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("InteractiveBackend.SelectDevfile() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -194,8 +194,8 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(got1, tt.want) {
-				t.Errorf("InteractiveBackend.SelectStarterProject() got1 = %v, want %v", got1, tt.want)
+			if diff := cmp.Diff(tt.want, got1); diff != "" {
+				t.Errorf("InteractiveBackend.SelectStarterProject() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -510,7 +510,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 					Ports: []string{"7000", "8000"},
 					Envs:  map[string]string{"env1": "val1", "env2": "val2"},
 				}
-				return reflect.DeepEqual(config, checkConfig)
+				return cmp.Diff(checkConfig, config) == ""
 			},
 		},
 	}
@@ -614,8 +614,8 @@ func Test_getPortsAndEnvVar(t *testing.T) {
 				t.Errorf("getPortsAndEnvVar() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getPortsAndEnvVar() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("getPortsAndEnvVar mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

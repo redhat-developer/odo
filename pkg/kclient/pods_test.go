@@ -2,11 +2,11 @@ package kclient
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -100,8 +100,8 @@ func TestGetOnePodFromSelector(t *testing.T) {
 			} else if tt.wantErr && err != nil {
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetOnePodFromSelector() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.GetRunningPodFromSelector() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -149,8 +149,8 @@ func TestGetPodUsingComponentName(t *testing.T) {
 				t.Errorf("GetPodUsingComponentName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPodUsingComponentName() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.GetPodUsingComponentName() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

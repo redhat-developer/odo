@@ -1,8 +1,9 @@
 package registry
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -48,8 +49,9 @@ func TestTypesWithDetails_GetOrderedLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.types.GetOrderedLabels(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TypesWithDetails.GetOrderedLabels() = %v, want %v", got, tt.want)
+			got := tt.types.GetOrderedLabels()
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetOrderedLabels() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -216,8 +218,8 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 				t.Errorf("TypesWithDetails.GetAtOrderedPosition() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TypesWithDetails.GetAtOrderedPosition() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetAtOrderedPosition() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

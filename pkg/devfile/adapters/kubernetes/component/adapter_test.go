@@ -1,12 +1,12 @@
 package component
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -238,8 +238,8 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("generateDeploymentObjectMeta() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Adapter.generateDeploymentObjectMeta() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

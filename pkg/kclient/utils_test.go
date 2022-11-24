@@ -1,10 +1,10 @@
 package kclient
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -92,8 +92,8 @@ func TestGetInputEnvVarsFromStrings(t *testing.T) {
 			envVars, err := GetInputEnvVarsFromStrings(tt.envVars)
 
 			if err == nil && !tt.wantErr {
-				if !reflect.DeepEqual(tt.wantedEnvVars, envVars) {
-					t.Errorf("corev1.Env values are not matching with expected values, expected: %v, got %v", tt.wantedEnvVars, envVars)
+				if diff := cmp.Diff(tt.wantedEnvVars, envVars); diff != "" {
+					t.Errorf("GetInputEnvVarsFromStrings() wantedEnvVars mismatch (-want +got):\n%s", diff)
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")

@@ -4,12 +4,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
-	"sort"
 	"strings"
 	"testing"
 
-	"github.com/kylelemons/godebug/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -1097,23 +1096,23 @@ func Test_recursiveChecker(t *testing.T) {
 				return
 			}
 
-			sort.Strings(got.FilesDeleted)
-			sort.Strings(got.FilesChanged)
-			sort.Strings(got.RemoteDeleted)
-			if !reflect.DeepEqual(got.FilesChanged, tt.want.FilesChanged) {
-				t.Errorf("recursiveChecker() FilesChanged got = %v, want %v", got.FilesChanged, tt.want.FilesChanged)
+			sortOpt := cmpopts.SortSlices(func(x, y string) bool {
+				return x < y
+			})
+			if diff := cmp.Diff(tt.want.FilesChanged, got.FilesChanged, sortOpt); diff != "" {
+				t.Errorf("recursiveChecker() FilesChanged mismatch (-want +got):\n%s", diff)
 			}
 
-			if !reflect.DeepEqual(got.FilesDeleted, tt.want.FilesDeleted) {
-				t.Errorf("recursiveChecker() FilesDeleted got = %v, want %v", got.FilesDeleted, tt.want.FilesDeleted)
+			if diff := cmp.Diff(tt.want.FilesDeleted, got.FilesDeleted, sortOpt); diff != "" {
+				t.Errorf("recursiveChecker() FilesDeleted mismatch (-want +got):\n%s", diff)
 			}
 
-			if !reflect.DeepEqual(got.RemoteDeleted, tt.want.RemoteDeleted) {
-				t.Errorf("recursiveChecker() RemoteDeleted got = %v, want %v", got.RemoteDeleted, tt.want.RemoteDeleted)
+			if diff := cmp.Diff(tt.want.RemoteDeleted, got.RemoteDeleted, sortOpt); diff != "" {
+				t.Errorf("recursiveChecker() RemoteDeleted mismatch (-want +got):\n%s", diff)
 			}
 
-			if !reflect.DeepEqual(tt.want.NewFileMap, got.NewFileMap) {
-				t.Errorf("recursiveChecker() new file map is different, difference = %v", pretty.Compare(got.NewFileMap, tt.want.NewFileMap))
+			if diff := cmp.Diff(tt.want.NewFileMap, got.NewFileMap); diff != "" {
+				t.Errorf("recursiveChecker() NewFileMap mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1604,23 +1603,22 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				return
 			}
 
-			sort.Strings(gotRet.FilesDeleted)
-			sort.Strings(gotRet.FilesChanged)
-			sort.Strings(gotRet.RemoteDeleted)
-			if !reflect.DeepEqual(gotRet.FilesChanged, tt.wantRet.FilesChanged) {
-				t.Errorf("runIndexerWithExistingFileIndex() fileChanged gotRet = %v, want %v", gotRet.FilesChanged, tt.wantRet.FilesChanged)
+			sortOpt := cmpopts.SortSlices(func(x, y string) bool {
+				return x < y
+			})
+
+			if diff := cmp.Diff(tt.wantRet.FilesChanged, gotRet.FilesChanged, sortOpt); diff != "" {
+				t.Errorf("runIndexerWithExistingFileIndex() FilesChanged mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.wantRet.NewFileMap, gotRet.NewFileMap); diff != "" {
+				t.Errorf("runIndexerWithExistingFileIndex() NewFileMap mismatch (-want +got):\n%s", diff)
 			}
 
-			if !reflect.DeepEqual(gotRet.NewFileMap, tt.wantRet.NewFileMap) {
-				t.Errorf("runIndexerWithExistingFileIndex() new file map is different = %v", pretty.Compare(gotRet.NewFileMap, tt.wantRet.NewFileMap))
+			if diff := cmp.Diff(tt.wantRet.FilesDeleted, gotRet.FilesDeleted, sortOpt); diff != "" {
+				t.Errorf("runIndexerWithExistingFileIndex() FilesDeleted mismatch (-want +got):\n%s", diff)
 			}
-
-			if !reflect.DeepEqual(gotRet.FilesDeleted, tt.wantRet.FilesDeleted) {
-				t.Errorf("runIndexerWithExistingFileIndex() files deleted gotRet = %v, want %v", gotRet.FilesDeleted, tt.wantRet.FilesDeleted)
-			}
-
-			if !reflect.DeepEqual(gotRet.RemoteDeleted, tt.wantRet.RemoteDeleted) {
-				t.Errorf("runIndexerWithExistingFileIndex() files remote changed gotRet = %v, want %v", gotRet.RemoteDeleted, tt.wantRet.RemoteDeleted)
+			if diff := cmp.Diff(tt.wantRet.RemoteDeleted, gotRet.RemoteDeleted, sortOpt); diff != "" {
+				t.Errorf("runIndexerWithExistingFileIndex() RemoteDeleted mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

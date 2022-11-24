@@ -2,10 +2,10 @@ package service
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/go-openapi/spec"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestBuildCRDFromParams(t *testing.T) {
@@ -174,7 +174,8 @@ func TestBuildCRDFromParams(t *testing.T) {
 				t.Errorf("got err: %v, expected err: %v\n", gotErr != nil, tt.wantErr)
 			}
 			if gotErr == nil {
-				if !reflect.DeepEqual(got["spec"], tt.want) {
+				if diff := cmp.Diff(tt.want, got["spec"]); diff != "" {
+					t.Errorf("BuildCRDFromParams() mismatch (-want +got):\n%s", diff)
 					jsonGot, _ := json.Marshal(got["spec"])
 					jsonWant, _ := json.Marshal(tt.want)
 					t.Errorf("\ngot:  %+v\n\nwant: %v\n", string(jsonGot), string(jsonWant))

@@ -253,8 +253,8 @@ func TestPush(t *testing.T) {
 			for k := range ephemerals {
 				ephemeralKeys = append(ephemeralKeys, k)
 			}
-			if !reflect.DeepEqual(tt.wantEphemeralNames, ephemeralKeys) {
-				t.Errorf("Expected ephemeral names are %v, got %v\n", tt.wantEphemeralNames, ephemeralKeys)
+			if diff := cmp.Diff(tt.wantEphemeralNames, ephemeralKeys); diff != "" {
+				t.Errorf("Push() ephemeral names mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

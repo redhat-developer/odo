@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -304,8 +304,9 @@ func Test_listResourcesMissingFromDevfilePresentOnCluster(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := listResourcesMissingFromDevfilePresentOnCluster(tt.args.componentName, tt.args.devfileResources, tt.args.clusterResources); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("listResourcesMissingFromDevfilePresentOnCluster() = %v, want %v", got, tt.want)
+			got := listResourcesMissingFromDevfilePresentOnCluster(tt.args.componentName, tt.args.devfileResources, tt.args.clusterResources)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("listResourcesMissingFromDevfilePresentOnCluster() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

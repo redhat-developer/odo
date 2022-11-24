@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -138,8 +138,8 @@ func TestGetShellCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getShellCommand(tt.cmdName, tt.image, tt.devfilePath, tt.image.Dockerfile.Uri)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%s:\n  Expected %v,\n       got %v", tt.name, tt.want, got)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("getShellCommand() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

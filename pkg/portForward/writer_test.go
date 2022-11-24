@@ -1,8 +1,9 @@
 package portForward
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -55,8 +56,8 @@ func Test_getForwardedPort(t *testing.T) {
 				t.Errorf("getForwardedPort() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getForwardedPort() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("getForwardedPort() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

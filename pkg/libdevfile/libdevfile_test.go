@@ -3,7 +3,6 @@ package libdevfile
 import (
 	"fmt"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -13,6 +12,7 @@ import (
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
@@ -696,8 +696,8 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := GetContainerEndpointMapping(tt.args.containers)
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetContainerEndpointMapping() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetContainerEndpointMapping() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -800,8 +800,8 @@ func TestGetEndpointsFromDevfile(t *testing.T) {
 				t.Errorf("GetEndpointsFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetEndpointsFromDevfile() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetEndpointsFromDevfile() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1779,8 +1779,8 @@ func TestGetContainerComponentsForCommand(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error, wantErr: %v, err: %v", tt.wantErr, err)
 			}
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("want: %v, got %v", tt.want, got)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetContainerComponentsForCommand() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

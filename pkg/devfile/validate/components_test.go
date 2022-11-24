@@ -1,10 +1,10 @@
 package validate
 
 import (
-	"reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestValidateComponents(t *testing.T) {
@@ -17,8 +17,8 @@ func TestValidateComponents(t *testing.T) {
 		got := validateComponents(components)
 		want := &NoComponentsError{}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("validateComponents() mismatch (-want +got):\n%s", diff)
 		}
 	})
 

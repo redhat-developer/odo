@@ -3,11 +3,12 @@ package backend
 import (
 	"context"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
@@ -102,8 +103,8 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				t.Errorf("AlizerBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(gotLocation, tt.wantLocation) {
-				t.Errorf("AlizerBackend.SelectDevfile() = %v, want %v", gotLocation, tt.wantLocation)
+			if diff := cmp.Diff(tt.wantLocation, gotLocation); diff != "" {
+				t.Errorf("AlizerBackend.SelectDevfile() wantLocation mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

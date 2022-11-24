@@ -3,8 +3,9 @@ package service
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
@@ -115,8 +116,8 @@ spec:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotErr := listDevfileLinks(tt.devfileObj, testFolderName, fs)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%s: got %v, expect %v", t.Name(), got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("listDevfileLinks() mismatch (-want +got):\n%s", diff)
 			}
 			if gotErr != tt.wantErr {
 				t.Errorf("%s: got %v, expect %v", t.Name(), gotErr, tt.wantErr)

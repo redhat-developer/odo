@@ -2,10 +2,10 @@ package kclient
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/google/go-cmp/cmp"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -245,8 +245,8 @@ func TestListServices(t *testing.T) {
 				t.Errorf("ListServices() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListServices() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.ListServices() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -314,8 +314,8 @@ func TestClient_GetOneServiceFromSelector(t *testing.T) {
 				t.Errorf("GetOneServiceFromSelector() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetOneServiceFromSelector() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Client.GetOneServiceFromSelector() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

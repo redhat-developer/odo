@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/kylelemons/godebug/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/config"
@@ -88,8 +88,8 @@ OdoSettings:
 				t.Errorf("Error message is %v", err)
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("RegistryClient.GetDevfileRegistries() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -246,13 +246,7 @@ func TestListDevfileStacks(t *testing.T) {
 		{
 			name:         "Case 4: Expect nothing back if registry is not found",
 			registryName: "Foobar",
-			want: DevfileStackList{
-				// We use "nil" here as reflect.DeepEqual() returns false if one slice is nil,
-				// and the other is a non-nil slice with 0 length.
-				// So we simply just say 'nil'
-				DevfileRegistries: nil,
-				Items:             nil,
-			},
+			want:         DevfileStackList{},
 		},
 	}
 
@@ -274,10 +268,8 @@ func TestListDevfileStacks(t *testing.T) {
 				t.Error(err)
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %+v \n\n Want: %+v", got, tt.want)
-				t.Errorf("Comparison: %v", pretty.Compare(got, tt.want))
-				t.Logf("Error message is: %v", err)
+			if diff := cmp.Diff(tt.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("RegistryClient.ListDevfileStacks() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -349,8 +341,8 @@ func TestGetRegistryDevfiles(t *testing.T) {
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
 			got, err := getRegistryStacks(ctx, prefClient, tt.registry)
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("getRegistryStacks() mismatch (-want +got):\n%s", diff)
 				t.Logf("Error message is: %v", err)
 			}
 		})

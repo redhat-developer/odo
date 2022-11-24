@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -472,13 +472,11 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 					t.Errorf("empty command for container %q", c.Args)
 				}
 
-				if !reflect.DeepEqual(tt.expectedContainerCommand[c.Name], c.Command) {
-					t.Errorf("unexpected command for container %q, expected=%v, got %v",
-						c.Name, tt.expectedContainerCommand[c.Name], c.Command)
+				if diff := cmp.Diff(tt.expectedContainerCommand[c.Name], c.Command); diff != "" {
+					t.Errorf("UpdateContainersEntrypointsIfNeeded() expectedContainerCommand[%s] mismatch (-want +got):\n%s", c.Name, diff)
 				}
-				if !reflect.DeepEqual(tt.expectedContainerArgs[c.Name], c.Args) {
-					t.Errorf("unexpected args for container %q, expected=%v, got %v",
-						c.Name, tt.expectedContainerArgs[c.Name], c.Args)
+				if diff := cmp.Diff(tt.expectedContainerArgs[c.Name], c.Args); diff != "" {
+					t.Errorf("UpdateContainersEntrypointsIfNeeded() expectedContainerArgs[%s] mismatch (-want +got):\n%s", c.Name, diff)
 				}
 			}
 

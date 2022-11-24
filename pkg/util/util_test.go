@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
@@ -625,8 +625,8 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 		gotRules, err := dfutil.GetIgnoreRulesFromDirectory(testDir)
 
 		if err == nil && !tt.wantErr {
-			if !reflect.DeepEqual(gotRules, tt.wantRules) {
-				t.Errorf("the expected value of rules are different, excepted: %v, got: %v", tt.wantRules, gotRules)
+			if diff := cmp.Diff(tt.wantRules, gotRules); diff != "" {
+				t.Errorf("dfutil.GetIgnoreRulesFromDirectory() wantRules mismatch (-want +got):\n%s", diff)
 			}
 		} else if err == nil && tt.wantErr {
 			t.Error("error was expected, but no error was returned")
@@ -678,8 +678,8 @@ func TestGetAbsGlobExps(t *testing.T) {
 				}
 			}
 
-			if !reflect.DeepEqual(resultExps, tt.expectedGlobExps) {
-				t.Errorf("expected %v, got %v", tt.expectedGlobExps, resultExps)
+			if diff := cmp.Diff(tt.expectedGlobExps, resultExps); diff != "" {
+				t.Errorf("dfutil.GetAbsGlobExps() expectedGlobExps mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -702,8 +702,8 @@ func TestGetSortedKeys(t *testing.T) {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
 			actual := dfutil.GetSortedKeys(tt.input)
-			if !reflect.DeepEqual(tt.expected, actual) {
-				t.Errorf("expected: %+v, got: %+v", tt.expected, actual)
+			if diff := cmp.Diff(tt.expected, actual); diff != "" {
+				t.Errorf("dfutil.GetSortedKeys() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -736,8 +736,8 @@ func TestGetSplitValuesFromStr(t *testing.T) {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
 			actual := dfutil.GetSplitValuesFromStr(tt.input)
-			if !reflect.DeepEqual(tt.expected, actual) {
-				t.Errorf("expected: %+v, got: %+v", tt.expected, actual)
+			if diff := cmp.Diff(tt.expected, actual); diff != "" {
+				t.Errorf("dfutil.GetSplitValuesFromStr() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -821,8 +821,8 @@ func TestGetContainerPortsFromStrings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ports, err := dfutil.GetContainerPortsFromStrings(tt.ports)
 			if err == nil && !tt.wantErr {
-				if !reflect.DeepEqual(tt.containerPorts, ports) {
-					t.Errorf("the ports are not matching, expected %#v, got %#v", tt.containerPorts, ports)
+				if diff := cmp.Diff(tt.containerPorts, ports); diff != "" {
+					t.Errorf("dfutil.GetContainerPortsFromStrings() containerPorts mismatch (-want +got):\n%s", diff)
 				}
 			} else if err == nil && tt.wantErr {
 				t.Error("error was expected, but no error was returned")
@@ -956,8 +956,8 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 				return
 			}
 
-			if !(reflect.DeepEqual(output, tt.args.output)) {
-				t.Errorf("expected %v, got %v", tt.args.output, output)
+			if diff := cmp.Diff(tt.args.output, output); diff != "" {
+				t.Errorf("dfutil.RemoveRelativePathFromFiles() output mismatch (-want +got):\n%s", diff)
 			}
 
 		})
@@ -1027,8 +1027,8 @@ func TestGetRemoteFilesMarkedForDeletion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			remoteFiles := dfutil.GetRemoteFilesMarkedForDeletion(tt.files, tt.remotePath)
-			if !reflect.DeepEqual(tt.want, remoteFiles) {
-				t.Errorf("Expected %s, got %s", tt.want, remoteFiles)
+			if diff := cmp.Diff(tt.want, remoteFiles); diff != "" {
+				t.Errorf("dfutil.GetRemoteFilesMarkedForDeletion() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1072,8 +1072,8 @@ func TestHTTPGetRequest(t *testing.T) {
 			}
 			got, err := dfutil.HTTPGetRequest(request, 0)
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("dfutil.HTTPGetRequest() mismatch (-want +got):\n%s", diff)
 				t.Logf("Error message is: %v", err)
 			}
 		})
@@ -1127,12 +1127,12 @@ func TestFilterIgnores(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			filterChanged, filterDeleted := dfutil.FilterIgnores(tt.changedFiles, tt.deletedFiles, tt.ignoredFiles)
 
-			if !reflect.DeepEqual(tt.wantChangedFiles, filterChanged) {
-				t.Errorf("Expected %s, got %s", tt.wantChangedFiles, filterChanged)
+			if diff := cmp.Diff(tt.wantChangedFiles, filterChanged); diff != "" {
+				t.Errorf("dfutil.FilterIgnores() wantChangedFiles mismatch (-want +got):\n%s", diff)
 			}
 
-			if !reflect.DeepEqual(tt.wantDeletedFiles, filterDeleted) {
-				t.Errorf("Expected %s, got %s", tt.wantDeletedFiles, filterDeleted)
+			if diff := cmp.Diff(tt.wantDeletedFiles, filterDeleted); diff != "" {
+				t.Errorf("dfutil.FilterIgnores() wantDeletedFiles mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1195,8 +1195,8 @@ func TestDownloadFile(t *testing.T) {
 			if err != nil {
 				gotErr = true
 			}
-			if !reflect.DeepEqual(gotErr, tt.wantErr) {
-				t.Error("Failed to get expected error")
+			if gotErr != tt.wantErr {
+				t.Errorf("Failed to get expected error: %v", err)
 			}
 
 			if !tt.wantErr {
@@ -1209,8 +1209,8 @@ func TestDownloadFile(t *testing.T) {
 					t.Errorf("Failed to read file with error %s", err)
 				}
 
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("Got: %v, want: %v", got, tt.want)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Errorf("dfutil.DownloadFile() mismatch (-want +got):\n%s", diff)
 				}
 
 				// Clean up the file that downloaded in this test case
@@ -1254,8 +1254,8 @@ func TestValidateK8sResourceName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := dfutil.ValidateK8sResourceName(tt.key, tt.value)
 			got := err == nil
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got %t, want %t", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("dfutil.ValidateK8sResourceName() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1426,8 +1426,10 @@ func TestIsValidProjectDir(t *testing.T) {
 				expectedError = fmt.Sprintf(expectedError, tmpDir)
 			}
 
-			if err != nil && !reflect.DeepEqual(err.Error(), expectedError) {
-				t.Errorf("Got err: %s, expected err %s", err.Error(), expectedError)
+			if err != nil {
+				if diff := cmp.Diff(expectedError, err.Error()); diff != "" {
+					t.Errorf("IsValidProjectDir() mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
@@ -1469,8 +1471,8 @@ func TestDownloadFileInMemory(t *testing.T) {
 				t.Errorf("Failed to download file with error %s", err)
 			}
 
-			if !reflect.DeepEqual(data, tt.want) {
-				t.Errorf("Got: %v, want: %v", data, tt.want)
+			if diff := cmp.Diff(tt.want, data); diff != "" {
+				t.Errorf("DownloadFileInMemory() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1565,7 +1567,7 @@ func TestValidateURL(t *testing.T) {
 				gotErr = true
 			}
 
-			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+			if gotErr != tt.wantErr {
 				t.Errorf("Got %v, want %v", got, tt.wantErr)
 			}
 		})
@@ -1608,8 +1610,8 @@ func TestValidateFile(t *testing.T) {
 			if err != nil {
 				gotErr = true
 			}
-			if !reflect.DeepEqual(gotErr, tt.wantErr) {
-				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			if gotErr != tt.wantErr {
+				t.Errorf("Got error: %v, want error: %t", err, tt.wantErr)
 			}
 		})
 	}
@@ -1668,8 +1670,8 @@ func TestCopyFile(t *testing.T) {
 				gotErr = true
 			}
 
-			if !reflect.DeepEqual(gotErr, tt.wantErr) {
-				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			if gotErr != tt.wantErr {
+				t.Errorf("Got error: %v, want error: %t", err, tt.wantErr)
 			}
 		})
 	}
@@ -1712,8 +1714,8 @@ func TestPathEqual(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := dfutil.PathEqual(tt.firstPath, tt.secondPath)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %t, want %t", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("dfutil.PathEqual() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1750,8 +1752,8 @@ func TestSliceContainsString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotVal := sliceContainsString(tt.stringVal, tt.slice)
 
-			if !reflect.DeepEqual(gotVal, tt.wantVal) {
-				t.Errorf("Got %v, want %v", gotVal, tt.wantVal)
+			if diff := cmp.Diff(tt.wantVal, gotVal); diff != "" {
+				t.Errorf("sliceContainsString() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2692,8 +2694,8 @@ func TestDisplayLog(t *testing.T) {
 				}
 				lines = append(lines, line)
 			}
-			if !reflect.DeepEqual(lines, tt.want) {
-				t.Errorf("expected %v, got %v", tt.want, lines)
+			if diff := cmp.Diff(tt.want, lines); diff != "" {
+				t.Errorf("DisplayLog() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

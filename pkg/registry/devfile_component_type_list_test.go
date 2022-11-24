@@ -1,8 +1,9 @@
 package registry
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -66,8 +67,9 @@ func TestDevfileStackList_GetLanguages(t *testing.T) {
 			o := &DevfileStackList{
 				Items: tt.fields.Items,
 			}
-			if got := o.GetLanguages(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DevfileStackList.GetLanguages() = %v, want %v", got, tt.want)
+			got := o.GetLanguages()
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileStackList.GetLanguages() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -176,8 +178,9 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 			o := &DevfileStackList{
 				Items: tt.fields.Items,
 			}
-			if got := o.GetProjectTypes(tt.args.language); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DevfileStackList.GetProjectTypes() = \n%+v, want \n%+v", got, tt.want)
+			got := o.GetProjectTypes(tt.args.language)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileStackList.GetProjectTypes() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

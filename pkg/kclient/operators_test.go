@@ -1,10 +1,12 @@
 package kclient
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/go-openapi/jsonpointer"
+	"github.com/go-openapi/jsonreference"
 	"github.com/go-openapi/spec"
+	"github.com/google/go-cmp/cmp"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
@@ -85,8 +87,8 @@ func TestGetResourceSpecDefinitionFromSwagger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotErr := getResourceSpecDefinitionFromSwagger(tt.swagger, tt.group, tt.version, tt.kind)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("expected %+v\n\ngot %+v", tt.want, got)
+			if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(jsonreference.Ref{}, jsonpointer.Pointer{})); diff != "" {
+				t.Errorf("getResourceSpecDefinitionFromSwagger mismatch (-want +got):\n%s", diff)
 			}
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("Expected error %v, got %v", tt.wantErr, gotErr)
@@ -203,8 +205,8 @@ func TestToOpenAPISpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := toOpenAPISpec(&tt.repr)
-			if !reflect.DeepEqual(*result, tt.want) {
-				t.Errorf("Failed %s:\n\ngot: %+v\n\nwant: %+v", t.Name(), result, tt.want)
+			if diff := cmp.Diff(tt.want, *result, cmp.AllowUnexported(jsonreference.Ref{}, jsonpointer.Pointer{})); diff != "" {
+				t.Errorf("toOpenAPISpec mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
@@ -71,9 +72,8 @@ func TestNew(t *testing.T) {
 					t.Errorf("expected test to fail, but it passed!")
 				}
 			}
-			if !reflect.DeepEqual(test.output, cfi) {
-				t.Errorf("expected output: %#v", test.output)
-				t.Errorf("actual output: %#v", cfi)
+			if diff := cmp.Diff(test.output, cfi); diff != "" {
+				t.Errorf("newPreferenceInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -614,8 +614,8 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 				t.Logf("Error message is %v", err)
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("handleWithoutRegistryExist() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -667,8 +667,8 @@ func TestHandleWithRegistryExist(t *testing.T) {
 			t.Logf("Error message is %v", err)
 		}
 
-		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("Got: %v, want: %v", got, tt.want)
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Errorf("handleWithRegistryExist() mismatch (-want +got):\n%s", diff)
 		}
 	}
 }

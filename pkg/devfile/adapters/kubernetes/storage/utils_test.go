@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -10,10 +9,12 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 func TestGetPVC(t *testing.T) {
@@ -138,12 +139,11 @@ func TestGetVolumeInfos(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if odoSourcePVCName != tt.wantOdoSourcePVCName {
-				t.Errorf("Got odoSource PVC name %v, expected %v", odoSourcePVCName, tt.wantOdoSourcePVCName)
+			if diff := cmp.Diff(tt.wantOdoSourcePVCName, odoSourcePVCName); diff != "" {
+				t.Errorf("GetVolumeInfos() wantOdoSourcePVCName mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(infos, tt.wantInfos) {
-				t.Errorf("Got infos %v, expected %v", infos, tt.wantInfos)
-
+			if diff := cmp.Diff(tt.wantInfos, infos); diff != "" {
+				t.Errorf("GetVolumeInfos() wantInfos mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

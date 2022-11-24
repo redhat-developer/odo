@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -156,8 +156,8 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("expected %v, got %v", tt.want, got)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("kubeExecProcessHandler.GetProcessInfoForCommand() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -281,8 +281,8 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(tt.expectedStatuses, statusesReported) {
-				t.Errorf("expected %v, got %v", tt.expectedStatuses, statusesReported)
+			if diff := cmp.Diff(tt.expectedStatuses, statusesReported); diff != "" {
+				t.Errorf("kubeExecProcessHandler.StartProcessForCommand() expectedStatuses mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -566,8 +566,8 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("expected %v, got %v", tt.want, got)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("kubeExecProcessHandler.getProcessInfoFromPid() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -716,11 +716,11 @@ func Test_getRemoteProcessPID(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(tt.wantPid, got) {
-				t.Errorf("expected PID %v, got %v", tt.wantPid, got)
+			if diff := cmp.Diff(tt.wantPid, got); diff != "" {
+				t.Errorf("kubeExecProcessHandler.getRemoteProcessPID() wantPid mismatch (-want +got):\n%s", diff)
 			}
-			if !reflect.DeepEqual(tt.wantLastKnownExitCode, lastKnownExitStatus) {
-				t.Errorf("expected recorded exit code %v, got %v", tt.wantLastKnownExitCode, lastKnownExitStatus)
+			if diff := cmp.Diff(tt.wantLastKnownExitCode, lastKnownExitStatus); diff != "" {
+				t.Errorf("kubeExecProcessHandler.getRemoteProcessPID() wantLastKnownExitCode mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -944,10 +944,9 @@ func Test_getProcessChildren(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("expected %v, got %v", tt.want, got)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("kubeExecProcessHandler.getProcessChildren() mismatch (-want +got):\n%s", diff)
 			}
-
 		})
 	}
 }

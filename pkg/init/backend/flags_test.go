@@ -2,10 +2,10 @@ package backend
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -54,8 +54,8 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 				t.Errorf("FlagsBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FlagsBackend.SelectDevfile() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("FlagsBackend.SelectDevfile() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -381,8 +381,8 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 				t.Errorf("FlagsBackend.SelectStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got1, tt.want) {
-				t.Errorf("FlagsBackend.SelectStarterProject() got1 = %v, want %v", got1, tt.want)
+			if diff := cmp.Diff(tt.want, got1); diff != "" {
+				t.Errorf("FlagsBackend.SelectStarterProject() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -2,14 +2,15 @@ package binding
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
-	"github.com/kylelemons/godebug/pretty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,8 +66,9 @@ func TestBindingClient_GetFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &BindingClient{}
-			if got := o.GetFlags(tt.args.flags); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetFlags() = %v, want %v", got, tt.want)
+			got := o.GetFlags(tt.args.flags)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("BindingClient.GetFlags() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -209,8 +211,8 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 				t.Errorf("GetServiceInstances() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetServiceInstances() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("BindingClient.GetServiceInstances() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -408,8 +410,10 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				t.Errorf("AddBindingToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, *tt.want) {
-				t.Errorf("AddBindingToDevfile(): %v", pretty.Compare(got, tt.want))
+			if diff := cmp.Diff(*tt.want, got,
+				cmp.AllowUnexported(devfileCtx.DevfileCtx{}),
+				cmpopts.IgnoreInterfaces(struct{ filesystem.Filesystem }{})); diff != "" {
+				t.Errorf("BindingClient.AddBindingToDevfile() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

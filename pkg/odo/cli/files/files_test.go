@@ -6,9 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -151,8 +152,8 @@ func TestGetFilesGeneratedByOdo(t *testing.T) {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("expected %+q for stdout, got %+q", tt.want, got)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetFilesGeneratedByOdo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

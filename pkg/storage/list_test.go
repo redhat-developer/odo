@@ -1,12 +1,13 @@
 package storage
 
 import (
-	"reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
@@ -228,8 +229,8 @@ func TestEnvInfo_ListStorage(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListStorage() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListStorage() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("ListStorage() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

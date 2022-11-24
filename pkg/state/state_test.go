@@ -3,8 +3,9 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -63,8 +64,8 @@ func TestState_SetForwardedPorts(t *testing.T) {
 					return err
 				}
 				expected := []api.ForwardedPort{forwardedPort1}
-				if !reflect.DeepEqual(content.ForwardedPorts, expected) {
-					return fmt.Errorf("Forwarded ports is %+v, should be %+v", content.ForwardedPorts, expected)
+				if diff := cmp.Diff(expected, content.ForwardedPorts); diff != "" {
+					return fmt.Errorf("forwarded ports is %+v, should be %+v, diff: %s", content.ForwardedPorts, expected, diff)
 				}
 				return nil
 			},
@@ -198,8 +199,8 @@ func TestState_GetForwardedPorts(t *testing.T) {
 				t.Errorf("State.GetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("State.GetForwardedPorts() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("State.GetForwardedPorts() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

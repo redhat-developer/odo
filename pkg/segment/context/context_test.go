@@ -3,10 +3,10 @@ package context
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/pflag"
 )
 
@@ -18,8 +18,8 @@ func TestGetContextProperties(t *testing.T) {
 	got := GetContextProperties(ctx)
 	want := map[string]interface{}{ckey: value}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("want: %q got: %q", want, got)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("GetContextProperties() mismatch (-want +got):\n%s", diff)
 	}
 }
 

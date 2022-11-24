@@ -1,8 +1,9 @@
 package vars
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -92,8 +93,8 @@ G
 				t.Errorf("parseKeyValueFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseKeyValueFile() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("parseKeyValueFile() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -164,8 +165,8 @@ func Test_parseKeyValueStrings(t *testing.T) {
 				t.Errorf("parseKeyValueStrings() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseKeyValueStrings() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("parseKeyValueStrings() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -311,8 +312,8 @@ func TestGetVariables(t *testing.T) {
 				t.Errorf("GetVariables() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetVariables() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetVariables() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -355,8 +356,8 @@ func TestGetVariablesEmptyFilename(t *testing.T) {
 				t.Errorf("GetVariables() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetVariables() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetVariables() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

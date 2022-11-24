@@ -7,11 +7,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -38,8 +38,8 @@ func TestGetCmdToCreateSyncFolder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		cmdArr := getCmdToCreateSyncFolder(tt.syncFolder)
-		if !reflect.DeepEqual(tt.want, cmdArr) {
-			t.Errorf("Expected %s, got %s", tt.want, cmdArr)
+		if diff := cmp.Diff(tt.want, cmdArr); diff != "" {
+			t.Errorf("getCmdToCreateSyncFolder() mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -74,8 +74,8 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		cmdArr := getCmdToDeleteFiles(tt.delFiles, tt.syncFolder)
-		if !reflect.DeepEqual(tt.want, cmdArr) {
-			t.Errorf("Expected %s, got %s", tt.want, cmdArr)
+		if diff := cmp.Diff(tt.want, cmdArr); diff != "" {
+			t.Errorf("getCmdToDeleteFiles() mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
