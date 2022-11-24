@@ -159,6 +159,35 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
+	It("should download correct devfile-starter", func() {
+
+		command := []string{"odo", "init"}
+		output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+			By("showing the interactive mode notice message", func() {
+				helper.ExpectString(ctx, messages.InteractiveModeEnabled)
+			})
+
+			helper.ExpectString(ctx, "Select language")
+			helper.SendLine(ctx, "java")
+
+			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "Vert.x Java")
+
+			helper.ExpectString(ctx, "Which starter project do you want to use")
+			helper.SendLine(ctx, "vertx-cache-example-redhat")
+
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "my-app")
+
+			helper.ExpectString(ctx, "Your new component 'my-app' is ready in the current directory")
+
+		})
+
+		Expect(err).To(BeNil())
+		Expect(output).To(ContainSubstring("Downloading starter project \"vertx-cache-example-redhat\""))
+	})
+
 	Describe("displaying welcoming messages", func() {
 
 		// testFunc is a function that returns a `Tester` function (intended to be used via `helper.RunInteractive`),
