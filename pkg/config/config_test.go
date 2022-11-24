@@ -2,10 +2,12 @@ package config
 
 import (
 	"testing"
+
+	"github.com/sethvargo/go-envconfig"
 )
 
 func TestDefaultValues(t *testing.T) {
-	cfg, err := GetConfiguration()
+	cfg, err := GetConfigurationWith(envconfig.MapLookuper(nil))
 	if err != nil {
 		t.Errorf("Error is not expected: %v", err)
 	}
