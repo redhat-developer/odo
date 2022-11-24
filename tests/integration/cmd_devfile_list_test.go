@@ -101,7 +101,7 @@ var _ = Describe("odo list with devfile", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 			helper.Chdir(commonVar.Context)
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -214,7 +214,7 @@ var _ = Describe("odo list with devfile", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(nil)
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
@@ -241,7 +241,7 @@ var _ = Describe("odo list with devfile", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(nil)
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {

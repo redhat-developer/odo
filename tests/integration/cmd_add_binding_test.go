@@ -249,7 +249,7 @@ status:
 
 				When("odo dev is run", func() {
 					BeforeEach(func() {
-						devSession, _, _, _, err = helper.StartDevMode(nil)
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {
@@ -265,7 +265,7 @@ status:
 
 				When("odo dev is run", func() {
 					BeforeEach(func() {
-						devSession, _, _, _, err = helper.StartDevMode(nil)
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 						Expect(err).ToNot(HaveOccurred())
 					})
 

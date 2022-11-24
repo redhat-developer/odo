@@ -189,28 +189,36 @@ var _ = Describe("odo dev command tests", func() {
 			})
 		})
 
-		When("recording telemetry data", func() {
-			BeforeEach(func() {
-				helper.EnableTelemetryDebug()
-				session, _, _, _, _ := helper.StartDevMode(nil)
-				session.Stop()
-				session.WaitEnd()
-			})
-			AfterEach(func() {
-				helper.ResetTelemetry()
-			})
-			It("should record the telemetry data correctly", func() {
-				td := helper.GetTelemetryDebugData()
-				Expect(td.Event).To(ContainSubstring("odo dev"))
-				Expect(td.Properties.Success).To(BeFalse())
-				Expect(td.Properties.Error).ToNot(ContainSubstring("user interrupted"))
-				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
-				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
-				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
-				Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
-				Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
-			})
-		})
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When("recording telemetry data", helper.LabelPodmanIf(podman, func() {
+				BeforeEach(func() {
+					helper.EnableTelemetryDebug()
+					session, _, _, _, _ := helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					session.Stop()
+					session.WaitEnd()
+				})
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+				It("should record the telemetry data correctly", func() {
+					td := helper.GetTelemetryDebugData()
+					Expect(td.Event).To(ContainSubstring("odo dev"))
+					if !podman {
+						// TODO(feloy) what should be the correct exit code for odo dev after pressing ctrl-c?
+						Expect(td.Properties.Success).To(BeFalse())
+					}
+					Expect(td.Properties.Error).ToNot(ContainSubstring("user interrupted"))
+					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
+					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
+					Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
+					Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
+				})
+			}))
+		}
 
 		When("an env.yaml file contains a non-current Project", func() {
 			BeforeEach(func() {
@@ -230,7 +238,7 @@ ComponentSettings:
 
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(nil)
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -255,7 +263,7 @@ ComponentSettings:
 
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -279,7 +287,7 @@ ComponentSettings:
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -335,7 +343,7 @@ ComponentSettings:
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -382,7 +390,9 @@ ComponentSettings:
 
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(nil, "--no-watch")
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					CmdlineArgs: []string{"--no-watch"},
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -435,7 +445,7 @@ ComponentSettings:
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "sleep 20 ; npm start")
 
 				var err error
-				devSession, _, _, ports, err = helper.StartDevMode(nil)
+				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -493,7 +503,9 @@ ComponentSettings:
 					func() {
 						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile.devfileName), filepath.Join(commonVar.Context, "devfile.yaml"))
-						devSession, _, _, _, err = helper.StartDevMode(devfile.envvars)
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							EnvVars: devfile.envvars,
+						})
 						Expect(err).To(BeNil())
 
 						// ensure the deployment is created by `odo dev`
@@ -534,7 +546,7 @@ ComponentSettings:
 			func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-k8s-resource.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).To(BeNil())
 			})
 		AfterEach(func() {
@@ -548,153 +560,170 @@ ComponentSettings:
 	})
 
 	for _, manual := range []bool{false, true} {
-		manual := manual
-		Context("port-forwarding for the component", func() {
-			When("devfile has single endpoint", func() {
-				BeforeEach(func() {
-					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-					helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-				})
-
-				When("running odo dev", func() {
-					var devSession helper.DevSession
-					var ports map[string]string
+		for _, podman := range []bool{false, true} {
+			manual := manual
+			podman := podman
+			Context("port-forwarding for the component", helper.LabelPodmanIf(podman, func() {
+				When("devfile has single endpoint", func() {
 					BeforeEach(func() {
-						var err error
-						opts := []string{}
-						if manual {
-							opts = append(opts, "--no-watch")
+						if !podman {
+							helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 						}
-						devSession, _, _, ports, err = helper.StartDevMode(nil, opts...)
-						Expect(err).ToNot(HaveOccurred())
+						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 					})
 
-					AfterEach(func() {
-						devSession.Stop()
-						devSession.WaitEnd()
-					})
-
-					It("should expose the endpoint on localhost", func() {
-						url := fmt.Sprintf("http://%s", ports["3000"])
-						resp, err := http.Get(url)
-						Expect(err).ToNot(HaveOccurred())
-						defer resp.Body.Close()
-
-						body, _ := io.ReadAll(resp.Body)
-						helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-						Expect(err).ToNot(HaveOccurred())
-					})
-
-					When("modifying memoryLimit for container in Devfile", func() {
+					When("running odo dev", func() {
+						var devSession helper.DevSession
+						var ports map[string]string
 						BeforeEach(func() {
-							src := "memoryLimit: 1024Mi"
-							dst := "memoryLimit: 1023Mi"
-							helper.ReplaceString("devfile.yaml", src, dst)
-							if manual {
-								if os.Getenv("SKIP_KEY_PRESS") == "true" {
-									Skip("This is a unix-terminal specific scenario, skipping")
-								}
-
-								devSession.PressKey('p')
-							}
 							var err error
-							_, _, ports, err = devSession.WaitSync()
-							Expect(err).Should(Succeed())
+							opts := []string{}
+							if manual {
+								opts = append(opts, "--no-watch")
+							}
+							devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+								CmdlineArgs: opts,
+								RunOnPodman: podman,
+							})
+							Expect(err).ToNot(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							devSession.Stop()
+							devSession.WaitEnd()
 						})
 
 						It("should expose the endpoint on localhost", func() {
-							By("updating the pod", func() {
-								podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-								bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
-								output := string(bufferOutput)
-								Expect(output).To(ContainSubstring("1023Mi"))
-							})
-
-							By("exposing the endpoint", func() {
-								url := fmt.Sprintf("http://%s", ports["3000"])
-								resp, err := http.Get(url)
-								Expect(err).ToNot(HaveOccurred())
-								defer resp.Body.Close()
-
-								body, _ := io.ReadAll(resp.Body)
-								helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-								Expect(err).ToNot(HaveOccurred())
-							})
-						})
-					})
-				})
-			})
-
-			When("devfile has multiple endpoints", func() {
-				BeforeEach(func() {
-					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-					helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
-				})
-
-				When("running odo dev", func() {
-					var devSession helper.DevSession
-					var ports map[string]string
-					BeforeEach(func() {
-						opts := []string{}
-						if manual {
-							opts = append(opts, "--no-watch")
-						}
-						var err error
-						devSession, _, _, ports, err = helper.StartDevMode(nil, opts...)
-						Expect(err).ToNot(HaveOccurred())
-					})
-
-					AfterEach(func() {
-						devSession.Stop()
-						devSession.WaitEnd()
-					})
-
-					It("should expose all endpoints on localhost regardless of exposure", func() {
-						getServerResponse := func(p int) string {
-							resp, err := http.Get(fmt.Sprintf("http://%s", ports[strconv.Itoa(p)]))
+							url := fmt.Sprintf("http://%s", ports["3000"])
+							resp, err := http.Get(url)
 							Expect(err).ToNot(HaveOccurred())
 							defer resp.Body.Close()
 
 							body, _ := io.ReadAll(resp.Body)
-							return string(body)
-						}
-						containerPorts := []int{3000, 4567, 7890}
+							helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+							Expect(err).ToNot(HaveOccurred())
+						})
 
-						for _, p := range containerPorts {
-							By(fmt.Sprintf("exposing a port targeting container port %d", p), func() {
-								r := getServerResponse(p)
-								helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
-							})
-						}
+						if !podman {
+							When("modifying memoryLimit for container in Devfile", func() {
+								BeforeEach(func() {
+									src := "memoryLimit: 1024Mi"
+									dst := "memoryLimit: 1023Mi"
+									helper.ReplaceString("devfile.yaml", src, dst)
+									if manual {
+										if os.Getenv("SKIP_KEY_PRESS") == "true" {
+											Skip("This is a unix-terminal specific scenario, skipping")
+										}
 
-						helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
-
-						if manual {
-							if os.Getenv("SKIP_KEY_PRESS") == "true" {
-								Skip("This is a unix-terminal specific scenario, skipping")
-							}
-
-							devSession.PressKey('p')
-						}
-
-						_, _, _, err := devSession.WaitSync()
-						Expect(err).Should(Succeed())
-
-						for _, p := range containerPorts {
-							By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
-								func() {
-									Eventually(func() string {
-										return getServerResponse(p)
-									}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
+										devSession.PressKey('p')
+									}
+									var err error
+									_, _, ports, err = devSession.WaitSync()
+									Expect(err).Should(Succeed())
 								})
+
+								It("should expose the endpoint on localhost", func() {
+									By("updating the pod", func() {
+										podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+										bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
+										output := string(bufferOutput)
+										Expect(output).To(ContainSubstring("1023Mi"))
+									})
+
+									By("exposing the endpoint", func() {
+										url := fmt.Sprintf("http://%s", ports["3000"])
+										resp, err := http.Get(url)
+										Expect(err).ToNot(HaveOccurred())
+										defer resp.Body.Close()
+
+										body, _ := io.ReadAll(resp.Body)
+										helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+										Expect(err).ToNot(HaveOccurred())
+									})
+								})
+							})
 						}
 					})
 				})
 
-			})
-		})
+				When("devfile has multiple endpoints", func() {
+					BeforeEach(func() {
+						if !podman {
+							helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+						}
+						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+					})
+
+					When("running odo dev", func() {
+						var devSession helper.DevSession
+						var ports map[string]string
+						BeforeEach(func() {
+							opts := []string{}
+							if manual {
+								opts = append(opts, "--no-watch")
+							}
+							var err error
+							devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+								CmdlineArgs: opts,
+								RunOnPodman: podman,
+							})
+							Expect(err).ToNot(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							devSession.Stop()
+							devSession.WaitEnd()
+						})
+
+						It("should expose all endpoints on localhost regardless of exposure", func() {
+							getServerResponse := func(p int) string {
+								resp, err := http.Get(fmt.Sprintf("http://%s", ports[strconv.Itoa(p)]))
+								Expect(err).ToNot(HaveOccurred())
+								defer resp.Body.Close()
+
+								body, _ := io.ReadAll(resp.Body)
+								return string(body)
+							}
+							containerPorts := []int{3000, 4567, 7890}
+
+							for _, p := range containerPorts {
+								By(fmt.Sprintf("exposing a port targeting container port %d", p), func() {
+									r := getServerResponse(p)
+									helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
+								})
+							}
+
+							if !podman {
+								helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
+
+								if manual {
+									if os.Getenv("SKIP_KEY_PRESS") == "true" {
+										Skip("This is a unix-terminal specific scenario, skipping")
+									}
+
+									devSession.PressKey('p')
+								}
+
+								_, _, _, err := devSession.WaitSync()
+								Expect(err).Should(Succeed())
+
+								for _, p := range containerPorts {
+									By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
+										func() {
+											Eventually(func() string {
+												return getServerResponse(p)
+											}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
+										})
+								}
+							}
+						})
+					})
+
+				})
+			})...)
+		}
 	}
 
 	for _, devfileHandlerCtx := range []struct {
@@ -732,7 +761,7 @@ ComponentSettings:
 				var session helper.DevSession
 				BeforeEach(func() {
 					var err error
-					session, _, _, _, err = helper.StartDevMode(nil)
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
@@ -740,7 +769,7 @@ ComponentSettings:
 					session.WaitEnd()
 				})
 
-				It("should check if the env variable has a correct value", func() {
+				It("3. should check if the env variable has a correct value", func() {
 					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
 					// check if the env variable has a correct value. This value was substituted from in devfile from variable
 					Expect(envVars["FOO"]).To(Equal("bar"))
@@ -751,7 +780,9 @@ ComponentSettings:
 				var session helper.DevSession
 				BeforeEach(func() {
 					var err error
-					session, _, _, _, err = helper.StartDevMode(nil, "--var", "VALUE_TEST=baz")
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs: []string{"--var", "VALUE_TEST=baz"},
+					})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
@@ -773,7 +804,9 @@ ComponentSettings:
 					var err error
 					err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
 					Expect(err).ToNot(HaveOccurred())
-					session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs: []string{"--var-file", "vars.txt"},
+					})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
@@ -797,7 +830,9 @@ ComponentSettings:
 					_ = os.Setenv("VALUE_TEST", "baz")
 					err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
 					Expect(err).ToNot(HaveOccurred())
-					session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs: []string{"--var-file", "vars.txt"},
+					})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
@@ -898,7 +933,7 @@ ComponentSettings:
 				// Create a new directory
 				helper.MakeDir(newDirPath)
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -967,7 +1002,7 @@ ComponentSettings:
 					// Create a new directory
 					helper.MakeDir(newDirPath)
 					var err error
-					session, _, _, _, err = helper.StartDevMode(nil)
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -1034,7 +1069,7 @@ ComponentSettings:
 					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1100,7 +1135,7 @@ ComponentSettings:
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 
 			})
@@ -1140,7 +1175,7 @@ ComponentSettings:
 				}
 
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1176,7 +1211,7 @@ ComponentSettings:
 				// reset clonePath and change the workdir accordingly, it should sync to project name
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1207,7 +1242,7 @@ ComponentSettings:
 				}
 
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1238,7 +1273,7 @@ ComponentSettings:
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1268,7 +1303,7 @@ ComponentSettings:
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1340,7 +1375,7 @@ ComponentSettings:
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1378,7 +1413,9 @@ ComponentSettings:
 		When("odo dev is running", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				session, sessionOut, sessionErr, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
+				session, sessionOut, sessionErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					EnvVars: []string{"PODMAN_CMD=echo"},
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should execute the composite apply commands successfully", func() {
@@ -1464,7 +1501,9 @@ CMD ["npm", "start"]
 						url = server.URL
 
 						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
-						session, sessionOut, _, ports, err = helper.StartDevMode(env)
+						session, sessionOut, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+							EnvVars: env,
+						})
 						Expect(err).ToNot(HaveOccurred())
 					})
 
@@ -1539,7 +1578,7 @@ CMD ["npm", "start"]
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1576,7 +1615,7 @@ CMD ["npm", "start"]
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1613,7 +1652,7 @@ CMD ["npm", "start"]
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1652,7 +1691,7 @@ CMD ["npm", "start"]
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, stdout, stderr, _, err = helper.StartDevMode(nil)
+				session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -1717,7 +1756,7 @@ CMD ["npm", "start"]
 					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
 				var err error
-				session, stdout, stderr, _, err = helper.StartDevMode(nil)
+				session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -1793,7 +1832,7 @@ CMD ["npm", "start"]
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
 			var err error
-			session, _, initErr, _, err = helper.StartDevMode(nil)
+			session, _, initErr, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1833,7 +1872,7 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
+			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -2107,7 +2146,9 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			var err error
-			session, _, _, _, err = helper.StartDevMode(nil, "-v", "4")
+			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				CmdlineArgs: []string{"-v", "4"},
+			})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -2214,7 +2255,7 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
+			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -2253,7 +2294,7 @@ CMD ["npm", "start"]
 
 			helper.ReplaceString("package.json", "node server.js", "node server/server.js")
 			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
+			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -2284,7 +2325,7 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
-			session, _, errContents, _, err := helper.StartDevMode(nil)
+			session, _, errContents, _, err := helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 			defer func() {
 				session.Stop()
@@ -2306,7 +2347,7 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
-			session, _, errContents, err := helper.StartDevMode(nil)
+			session, _, errContents, err := helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 			defer session.Stop()
 			helper.MatchAllInOutput(string(errContents), []string{"odo may not work as expected in the default project"})
@@ -2327,7 +2368,7 @@ CMD ["npm", "start"]
 				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 
@@ -2400,7 +2441,7 @@ CMD ["npm", "start"]
 			})
 
 			It("should run odo dev successfully (#5620)", func() {
-				devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(nil)
+				devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ShouldNot(HaveOccurred())
 				defer devSession.Stop()
 				const errorMessage = "Failed to create the component:"
@@ -2435,7 +2476,7 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -2463,7 +2504,7 @@ CMD ["npm", "start"]
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -2495,7 +2536,7 @@ CMD ["npm", "start"]
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-parent.yaml"), filepath.Join(commonVar.Context, "devfile-parent.yaml"))
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
@@ -2531,7 +2572,7 @@ CMD ["npm", "start"]
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "java-quarkus"), commonVar.Context)
 			var err error
-			devSession, stdout, _, _, err = helper.StartDevMode(nil)
+			devSession, stdout, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -2570,7 +2611,7 @@ CMD ["npm", "start"]
 			var devSession helper.DevSession
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(nil)
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -2796,7 +2837,7 @@ CMD ["npm", "start"]
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(nil)
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 

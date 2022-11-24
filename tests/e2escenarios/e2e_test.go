@@ -76,7 +76,7 @@ var _ = Describe("E2E Test", func() {
 			var devSession helper.DevSession
 			var ports map[string]string
 
-			devSession, _, _, ports, err = helper.StartDevMode(nil)
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
 			_, _, _, err = devSession.WaitSync()
@@ -119,7 +119,7 @@ var _ = Describe("E2E Test", func() {
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
 
 			// start dev mode again
-			devSession, _, _, ports, err = helper.StartDevMode(nil)
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// making changes to the project again
@@ -193,7 +193,7 @@ var _ = Describe("E2E Test", func() {
 			var devSession helper.DevSession
 			var ports map[string]string
 
-			devSession, _, _, ports, err = helper.StartDevMode(nil)
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
 
@@ -239,7 +239,7 @@ var _ = Describe("E2E Test", func() {
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
 
 			// start dev mode again
-			devSession, _, _, ports, err = helper.StartDevMode(nil)
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// making changes to the project again

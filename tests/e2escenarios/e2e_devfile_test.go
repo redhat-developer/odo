@@ -42,7 +42,7 @@ var _ = Describe("odo devfile supported tests", func() {
 		defer helper.Chdir(workingDir)
 		helper.Chdir(projectDirPath)
 		helper.Cmd("odo", "init", "--name", componentName, "--devfile", component, "--starter", starter).ShouldPass()
-		session, _, _, _, err := helper.StartDevMode(nil)
+		session, _, _, _, err := helper.StartDevMode(helper.DevSessionOpts{})
 		Expect(err).ToNot(HaveOccurred())
 		session.Stop()
 		session.WaitEnd()
