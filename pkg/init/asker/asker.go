@@ -53,7 +53,6 @@ func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ api.Devf
 }
 
 func (o *Survey) AskStarterProject(projects []string) (bool, int, error) {
-	sort.Strings(projects)
 	projects = append(projects, "** NO STARTER PROJECT **")
 	question := &survey.Select{
 		Message: "Which starter project do you want to use?",

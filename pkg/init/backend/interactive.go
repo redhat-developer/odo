@@ -95,6 +95,11 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Slice(starterProjects, func(i, j int) bool {
+		return starterProjects[i].Name < starterProjects[j].Name
+	})
+
 	names := make([]string, 0, len(starterProjects))
 	for _, starterProject := range starterProjects {
 		names = append(names, starterProject.Name)
