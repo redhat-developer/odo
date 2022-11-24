@@ -94,6 +94,12 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 	})
 
 	It("should print automation command with proper values", func() {
+
+		// This test fails on Windows because of terminal emulator behaviour
+		if os.Getenv("SKIP_WELCOMING_MESSAGES") == "true" {
+			Skip("This is a Unix specific scenario, skipping")
+		}
+
 		command := []string{"odo", "init"}
 		starter := "go-starter"
 		componentName := "my-go-app"
