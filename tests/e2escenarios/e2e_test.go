@@ -39,32 +39,6 @@ var _ = Describe("E2E Test", func() {
 		}, 120*time.Second, 15*time.Second).Should(Equal(assertString))
 	}
 
-	sendDataEntry := func(url string) map[string]interface{} {
-		values := map[string]interface{}{"name": "joe",
-			"location": "tokyo",
-			"age":      23,
-		}
-		json_data, err := json.Marshal(values)
-		Expect(err).To(BeNil())
-		resp, err := http.Post(fmt.Sprintf("http://%s/api/newuser", url), "application/json", bytes.NewBuffer(json_data))
-		Expect(err).To(BeNil())
-		var res map[string]interface{}
-		err = json.NewDecoder(resp.Body).Decode(&res)
-		Expect(err).To(BeNil())
-		return res
-	}
-
-	receiveData := func(url string) (string, error) {
-		resp, err := http.Get(fmt.Sprintf("http://%s", url))
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		Expect(err).To(BeNil())
-		return string(body), nil
-	}
-
 	Context("starting with empty Directory", func() {
 		componentName := helper.RandString(6)
 		var _ = BeforeEach(func() {
@@ -301,6 +275,33 @@ var _ = Describe("E2E Test", func() {
 
 	Context("starting with non-empty Directory add Binding", func() {
 		componentName := helper.RandString(6)
+
+		sendDataEntry := func(url string) map[string]interface{} {
+			values := map[string]interface{}{"name": "joe",
+				"location": "tokyo",
+				"age":      23,
+			}
+			json_data, err := json.Marshal(values)
+			Expect(err).To(BeNil())
+			resp, err := http.Post(fmt.Sprintf("http://%s/api/newuser", url), "application/json", bytes.NewBuffer(json_data))
+			Expect(err).To(BeNil())
+			var res map[string]interface{}
+			err = json.NewDecoder(resp.Body).Decode(&res)
+			Expect(err).To(BeNil())
+			return res
+		}
+
+		receiveData := func(url string) (string, error) {
+			resp, err := http.Get(fmt.Sprintf("http://%s", url))
+			if err != nil {
+				return "", err
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).To(BeNil())
+			return string(body), nil
+		}
+
 		var _ = BeforeEach(func() {
 			commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
 			commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
