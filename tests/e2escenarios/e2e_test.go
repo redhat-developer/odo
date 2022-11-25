@@ -1,9 +1,8 @@
-//go:build linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-
 package e2escenarios
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +28,10 @@ var _ = Describe("E2E Test", func() {
 	checkIfDevEnvIsUp := func(url, assertString string) {
 		Eventually(func() string {
 			resp, err := http.Get(fmt.Sprintf("http://%s", url))
-			Expect(err).ToNot(HaveOccurred())
+			if err != nil {
+				fmt.Fprintf(GinkgoWriter, "error while trying to GET %q: %v\n", url, err)
+				return ""
+			}
 			defer resp.Body.Close()
 
 			body, _ := io.ReadAll(resp.Body)
@@ -57,10 +59,10 @@ var _ = Describe("E2E Test", func() {
 				helper.SendLine(ctx, "JavaScript")
 
 				helper.ExpectString(ctx, "Select project type")
-				helper.SendLine(ctx, "Node.js\n")
+				helper.SendLine(ctx, "Node.js")
 
 				helper.ExpectString(ctx, "Which starter project do you want to use")
-				helper.SendLine(ctx, "nodejs-starter\n")
+				helper.SendLine(ctx, "nodejs-starter")
 
 				helper.ExpectString(ctx, "Enter component name")
 				helper.SendLine(ctx, componentName)
@@ -173,11 +175,11 @@ var _ = Describe("E2E Test", func() {
 				helper.ExpectString(ctx, "Project type: Node.js")
 				helper.ExpectString(ctx, "Is this correct")
 
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Enter component name")
 
@@ -268,6 +270,139 @@ var _ = Describe("E2E Test", func() {
 			Expect(err).To(BeNil())
 			Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
 			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
+		})
+	})
+
+	Context("starting with non-empty Directory add Binding", func() {
+		componentName := helper.RandString(6)
+
+		sendDataEntry := func(url string) map[string]interface{} {
+			values := map[string]interface{}{"name": "joe",
+				"location": "tokyo",
+				"age":      23,
+			}
+			json_data, err := json.Marshal(values)
+			Expect(err).To(BeNil())
+			resp, err := http.Post(fmt.Sprintf("http://%s/api/newuser", url), "application/json", bytes.NewBuffer(json_data))
+			Expect(err).To(BeNil())
+			var res map[string]interface{}
+			err = json.NewDecoder(resp.Body).Decode(&res)
+			Expect(err).To(BeNil())
+			return res
+		}
+
+		receiveData := func(url string) (string, error) {
+			resp, err := http.Get(fmt.Sprintf("http://%s", url))
+			if err != nil {
+				return "", err
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).To(BeNil())
+			return string(body), nil
+		}
+
+		var _ = BeforeEach(func() {
+			commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
+			commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
+			Eventually(func() string {
+				out, _ := commonVar.CliRunner.GetBindableKinds()
+				return out
+			}, 120, 3).Should(ContainSubstring("Cluster"))
+			helper.Chdir(commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "go"), commonVar.Context)
+			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("source", "devfiles", "go", "cluster.yaml"))
+			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		It("should verify developer workflow of using binding as env in innerloop", func() {
+			bindingName := helper.RandString(6)
+
+			command := []string{"odo", "init"}
+			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+				// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
+				helper.ExpectString(ctx, "Language: Go")
+				helper.ExpectString(ctx, "Project type: Go")
+				helper.ExpectString(ctx, "Is this correct")
+
+				helper.SendLine(ctx, "")
+
+				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+
+				helper.SendLine(ctx, "")
+
+				helper.ExpectString(ctx, "Enter component name")
+
+				helper.SendLine(ctx, componentName)
+
+				helper.ExpectString(ctx, "Your new component '"+componentName+"' is ready in the current directory")
+
+			})
+			Expect(err).To(BeNil())
+			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
+
+			// // "execute odo dev and add changes to application"
+			var devSession helper.DevSession
+			var ports map[string]string
+
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			Expect(err).ToNot(HaveOccurred())
+
+			// "send data"
+			_, err = receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			Expect(err).ToNot(BeNil()) // should fail as application is not connected to DB
+
+			//add binding information (binding as ENV)
+			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
+
+			// Get new random port after restart
+			Eventually(func() map[string]string {
+				_, _, ports, err = devSession.GetInfo()
+				Expect(err).ToNot(HaveOccurred())
+				return ports
+			}, 180, 10).ShouldNot(BeEmpty())
+
+			// "send data"
+			data := sendDataEntry(ports["8080"])
+			Expect(data["message"]).To(Equal("User created successfully"))
+
+			// "get all data"
+			rec, err := receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			Expect(err).To(BeNil())
+			helper.MatchAllInOutput(rec, []string{"id", "1", "name", "joe", "location", "tokyo", "age", "23"})
+
+			// check odo describe to check for env
+			stdout := helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
+			helper.MatchAllInOutput(stdout, []string{"Available binding information:", "CLUSTER_HOST", "CLUSTER_PASSWORD", "CLUSTER_USERNAME"})
+
+			// "running odo list"
+			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
+			helper.MatchAllInOutput(stdout, []string{componentName, "Go", "Dev", bindingName})
+
+			// "exit dev mode"
+			devSession.Stop()
+			devSession.WaitEnd()
+
+			// remove bindings and check devfile to not contain binding info
+			// TODO: move `remove binding` inside devsession after https://github.com/redhat-developer/odo/issues/6101 is fixed
+			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
+
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+			Expect(err).To(BeNil())
+			stdout = helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("No ServiceBinding used by the current component"))
+
+			devSession.Stop()
+			devSession.WaitEnd()
+
+			// all resources should be deleted from the namespace
+			services := commonVar.CliRunner.GetServices(commonVar.Project)
+			Expect(services).NotTo(ContainSubstring(componentName))
+			pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+			Expect(pvcs).NotTo(ContainElement(componentName)) //To(Not(ContainSubstring(componentName)))
+			pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+			Expect(pods).NotTo(ContainElement(componentName))
 		})
 	})
 })

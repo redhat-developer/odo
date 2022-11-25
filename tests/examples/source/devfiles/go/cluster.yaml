@@ -1,0 +1,34 @@
+apiVersion: postgresql.k8s.enterprisedb.io/v1
+kind: Cluster
+metadata:
+  name: cluster-example-initdb
+spec:
+  instances: 1
+  bootstrap:
+    initdb:
+      database: appdb
+      owner: appuser
+      secret:
+        name: appuser-secret
+      postInitApplicationSQL:
+        - create table users (userid SERIAL PRIMARY KEY,  name TEXT,  age INT,  location TEXT)
+  storage:
+    size: 1Gi
+---
+apiVersion: v1
+stringData:
+  username: appuser
+  password: test-12password!
+kind: Secret
+metadata:
+  name: appuser-secret
+type: kubernetes.io/basic-auth
+---
+apiVersion: v1
+stringData:
+  username: appuser
+  password: test-12password!
+kind: Secret
+metadata:
+  name: cluster-example-initdb-appuser
+type: kubernetes.io/basic-auth
