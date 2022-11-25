@@ -32,10 +32,6 @@ import (
 const (
 	// PushErrorString is the string that is printed when an error occurs during watch's Push operation
 	PushErrorString = "Error occurred on Push"
-	PromptMessage   = `
-[Ctrl+c] - Exit and delete resources from the cluster
-     [p] - Manually apply local changes to the application on the cluster
-`
 )
 
 type WatchClient struct {
@@ -102,6 +98,8 @@ type WatchParameters struct {
 	Out io.Writer
 	// ErrOut is a Writer to output forwarded port information
 	ErrOut io.Writer
+	// PromptMessage
+	PromptMessage string
 }
 
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
@@ -490,7 +488,7 @@ func (o *WatchClient) processEvents(
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		printInfoMessage(out, parameters.Path, parameters.WatchFiles)
+		PrintInfoMessage(out, parameters.Path, parameters.WatchFiles, parameters.PromptMessage)
 	}
 	return nil, nil
 }
@@ -536,7 +534,7 @@ func removeDuplicates(input []string) []string {
 	return result
 }
 
-func printInfoMessage(out io.Writer, path string, watchFiles bool) {
+func PrintInfoMessage(out io.Writer, path string, watchFiles bool, promptMessage string) {
 	log.Sectionf("Dev mode")
 	if watchFiles {
 		fmt.Fprintf(
@@ -550,7 +548,7 @@ func printInfoMessage(out io.Writer, path string, watchFiles bool) {
 		out,
 		" %s%s",
 		log.Sbold("Keyboard Commands:"),
-		PromptMessage,
+		promptMessage,
 	)
 }
 

@@ -26,6 +26,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
+const (
+	promptMessage = `
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
+`
+)
+
 type DevClient struct {
 	kubernetesClient  kclient.ClientInterface
 	prefClient        preference.Client
@@ -123,6 +130,7 @@ func (o *DevClient) Start(
 		WatchFiles:          options.WatchFiles,
 		WatchCluster:        true,
 		ErrOut:              errOut,
+		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)

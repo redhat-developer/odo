@@ -114,14 +114,6 @@ func (o *DevClient) reconcile(
 			return err
 		}
 	}
-
-	fmt.Fprintf(
-		out,
-		" %s%s",
-		log.Sbold("Keyboard Commands:"),
-		PromptMessage,
-	)
-
 	componentStatus.State = watch.StateReady
 	return nil
 }

@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	PromptMessage = `
+	promptMessage = `
 [Ctrl+c] - Exit and delete resources from podman
+     [p] - Manually apply local changes to the application on podman
 `
 )
 
@@ -75,6 +76,8 @@ func (o *DevClient) Start(
 		return err
 	}
 
+	watch.PrintInfoMessage(out, path, options.WatchFiles, promptMessage)
+
 	watchParameters := watch.WatchParameters{
 		DevfilePath:         devfilePath,
 		Path:                path,
@@ -92,6 +95,7 @@ func (o *DevClient) Start(
 		WatchCluster:        false,
 		Out:                 out,
 		ErrOut:              errOut,
+		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
@@ -153,7 +157,6 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 }
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
-	fmt.Printf("watchHandler\n")
 	startOptions := dev.StartOptions{
 		IgnorePaths:  watchParams.FileIgnores,
 		Debug:        watchParams.Debug,
