@@ -346,7 +346,7 @@ var _ = Describe("E2E Test", func() {
 			var devSession helper.DevSession
 			var ports map[string]string
 
-			devSession, _, _, ports, err = helper.StartDevMode(nil)
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// "send data"
@@ -388,7 +388,7 @@ var _ = Describe("E2E Test", func() {
 			// TODO: move `remove binding` inside devsession after https://github.com/redhat-developer/odo/issues/6101 is fixed
 			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 
-			devSession, _, _, _, err = helper.StartDevMode(nil)
+			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).To(BeNil())
 			stdout = helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("No ServiceBinding used by the current component"))
