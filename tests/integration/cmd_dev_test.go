@@ -2480,103 +2480,116 @@ CMD ["npm", "start"]
 		})
 	}
 
-	When("a component with multiple endpoints is run", func() {
-		stateFile := ".odo/devstate.json"
-		var devSession helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-			helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
-			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
-			var err error
-			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		When("odo dev is stopped", func() {
+	for _, podman := range []bool{true, false} {
+		podman := podman
+		When("a component with multiple endpoints is run", helper.LabelPodmanIf(podman, func() {
+			stateFile := ".odo/devstate.json"
+			var devSession helper.DevSession
 			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+				if !podman {
+					helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+				}
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+				Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			When("odo dev is stopped", func() {
+				BeforeEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should remove forwarded ports from state file", func() {
+					Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
+					contentJSON, err := ioutil.ReadFile(stateFile)
+					Expect(err).ToNot(HaveOccurred())
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
+				})
+			})
+		}))
+
+		When("a component with multiple endpoints is run", helper.LabelPodmanIf(podman, func() {
+			stateFile := ".odo/devstate.json"
+			var devSession helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+				if !podman {
+					helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+				}
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+				Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				// We stop the process so the process does not remain after the end of the tests
 				devSession.Stop()
 				devSession.WaitEnd()
 			})
 
-			It("should remove forwarded ports from state file", func() {
+			It("should create a state file containing forwarded ports", func() {
 				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
 				contentJSON, err := ioutil.ReadFile(stateFile)
 				Expect(err).ToNot(HaveOccurred())
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerName", "runtime")
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerName", "runtime")
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.localAddress", "127.0.0.1")
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.localAddress", "127.0.0.1")
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerPort", "3000")
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
+				helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
+				helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
 			})
-		})
-	})
+		}))
 
-	When("a component with multiple endpoints is run", func() {
-		stateFile := ".odo/devstate.json"
-		var devSession helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-			helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
-			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
-			var err error
-			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			// We stop the process so the process does not remain after the end of the tests
-			devSession.Kill()
-			devSession.WaitEnd()
-		})
-
-		It("should create a state file containing forwarded ports", func() {
-			Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
-			contentJSON, err := ioutil.ReadFile(stateFile)
-			Expect(err).ToNot(HaveOccurred())
-			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerName", "runtime")
-			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerName", "runtime")
-			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.localAddress", "127.0.0.1")
-			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.localAddress", "127.0.0.1")
-			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerPort", "3000")
-			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
-			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
-			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
-		})
-	})
-
-	When("a devfile with a local parent is used for odo dev and the parent is not synced", func() {
-		var devSession helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-child.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-parent.yaml"), filepath.Join(commonVar.Context, "devfile-parent.yaml"))
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			var err error
-			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-
-			gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
-			err = helper.AppendToFile(gitignorePath, "\n/devfile-parent.yaml\n")
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			// We stop the process so the process does not remain after the end of the tests
-			devSession.Kill()
-			devSession.WaitEnd()
-		})
-
-		When("updating the parent", func() {
+		When("a devfile with a local parent is used for odo dev and the parent is not synced", helper.LabelPodmanIf(podman, func() {
+			var devSession helper.DevSession
 			BeforeEach(func() {
-				helper.ReplaceString("devfile-parent.yaml", "1024Mi", "1023Mi")
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-child.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-parent.yaml"), filepath.Join(commonVar.Context, "devfile-parent.yaml"))
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+
+				gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
+				err = helper.AppendToFile(gitignorePath, "\n/devfile-parent.yaml\n")
+				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should update the component", func() {
-				Eventually(func() string {
-					stdout, _, _, err := devSession.GetInfo()
-					Expect(err).ToNot(HaveOccurred())
-					return string(stdout)
-				}, 180, 10).Should(ContainSubstring("Updating Component"))
+			AfterEach(func() {
+				// We stop the process so the process does not remain after the end of the tests
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
-		})
-	})
+
+			When("updating the parent", func() {
+				BeforeEach(func() {
+					helper.ReplaceString("devfile-parent.yaml", "1024Mi", "1023Mi")
+				})
+
+				It("should update the component", func() {
+					Eventually(func() string {
+						stdout, _, _, err := devSession.GetInfo()
+						Expect(err).ToNot(HaveOccurred())
+						return string(stdout)
+					}, 180, 10).Should(ContainSubstring("Updating Component"))
+				})
+			})
+		}))
+	}
 
 	When("a hotReload capable project is used with odo dev", func() {
 		var devSession helper.DevSession
@@ -2591,12 +2604,12 @@ CMD ["npm", "start"]
 
 		AfterEach(func() {
 			// We stop the process so the process does not remain after the end of the tests
-			devSession.Kill()
+			devSession.Stop()
 			devSession.WaitEnd()
 		})
 
 		It("should execute the run command", func() {
-			Expect(stdout).To(ContainSubstring(executeRunCommand))
+			Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
 		})
 
 		When("a source file is modified", func() {
@@ -2608,7 +2621,7 @@ CMD ["npm", "start"]
 			})
 
 			It("should not re-execute the run command", func() {
-				Expect(stdout).ToNot(ContainSubstring(executeRunCommand))
+				Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
 			})
 		})
 	})
