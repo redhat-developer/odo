@@ -240,14 +240,9 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 
 func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
 	var backend backend.InitBackend
-	onlyDevfile, err := location.DirContainsOnlyDevfile(fs, dir)
-	if err != nil {
-		return parser.DevfileObj{}, err
-	}
 
 	// Interactive mode since no flags are provided
-	if len(flags) == 0 && !onlyDevfile {
-		// Other files present in the directory; hence alizer is run
+	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
