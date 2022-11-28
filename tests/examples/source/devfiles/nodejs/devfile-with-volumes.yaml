@@ -1,4 +1,4 @@
-schemaVersion: 2.0.0
+schemaVersion: 2.2.0
 metadata:
   name: nodejs
 starterProjects:
@@ -33,8 +33,11 @@ components:
   - name: myvol
     volume:
       size: 200Mi
+      ephemeral : true
   - name: myvol2
-    volume: {}
+    volume:
+      ephemeral : true
+
 commands:
   - id: devbuild
     exec:

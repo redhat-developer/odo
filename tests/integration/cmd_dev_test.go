@@ -285,6 +285,9 @@ ComponentSettings:
 
 			var devSession helper.DevSession
 			BeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
@@ -341,6 +344,9 @@ ComponentSettings:
 
 			var devSession helper.DevSession
 			BeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
@@ -348,6 +354,9 @@ ComponentSettings:
 			})
 
 			AfterEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					return
+				}
 				// We stop the process so the process does not remain after the end of the tests
 				devSession.Kill()
 				devSession.WaitEnd()
@@ -1368,6 +1377,9 @@ ComponentSettings:
 			var devfileCmpName string
 			var session helper.DevSession
 			BeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 				devfileCmpName = devfileHandlerCtx.cmpName
@@ -1379,6 +1391,9 @@ ComponentSettings:
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					return
+				}
 				session.Stop()
 				session.WaitEnd()
 			})

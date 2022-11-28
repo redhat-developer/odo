@@ -1,5 +1,5 @@
 ---
-schemaVersion: 2.0.0
+schemaVersion: 2.2.0
 metadata:
   name: myspringbootproject
   language: java
@@ -31,7 +31,8 @@ components:
           path: /data/cache/.m2
       mountSources: false
   - name: springbootpvc
-    volume: {}
+    volume:
+      ephemeral: true
 commands:
   - id: defaultbuild
     exec:
