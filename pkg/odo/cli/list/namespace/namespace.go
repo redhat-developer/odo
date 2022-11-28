@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -98,11 +99,9 @@ func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 	if len(os.Args) > 2 {
 		o.commandName = os.Args[2]
 	}
+
 	// trim commandName if user passed a plural form
-	lastElement := len(o.commandName) - 1
-	if o.commandName[lastElement] == byte('s') {
-		o.commandName = o.commandName[:lastElement]
-	}
+	o.commandName = strings.TrimSuffix(o.commandName, "s")
 	projectListCmd := &cobra.Command{
 		Use:     name,
 		Short:   listLongDesc,
