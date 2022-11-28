@@ -125,8 +125,8 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 		Short:   versionLongDesc,
 		Long:    versionLongDesc,
 		Example: fmt.Sprintf(versionExample, fullName),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(versionCmd, clientset.PREFERENCE)

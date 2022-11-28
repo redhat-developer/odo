@@ -85,8 +85,8 @@ func NewCmdTelemetry(name string) *cobra.Command {
 		DisableFlagsInUseLine:  true,
 		DisableSuggestions:     true,
 		FParseErrWhitelist:     cobra.FParseErrWhitelist{},
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(telemetryCmd)

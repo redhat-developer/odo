@@ -161,8 +161,8 @@ func NewCmdServicesList(name, fullName string) *cobra.Command {
 		Long:    listLongDesc,
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.ExactArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 		Aliases: []string{"service"},
 	}

@@ -208,8 +208,8 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 It forwards endpoints with any exposure values ('public', 'internal' or 'none') to a port on localhost.`,
 		Example: fmt.Sprintf(devExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")

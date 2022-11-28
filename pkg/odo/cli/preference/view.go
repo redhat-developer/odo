@@ -128,8 +128,8 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
 
 		Args: cobra.ExactArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(preferenceViewCmd, clientset.PREFERENCE)

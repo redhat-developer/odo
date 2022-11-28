@@ -65,8 +65,8 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 		Long:        "Detect devfile to use based on files present in current directory",
 		Args:        cobra.MaximumNArgs(0),
 		Annotations: map[string]string{},
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)

@@ -195,8 +195,8 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		Long:    "Add a binding between a service and the component in the devfile",
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(addBindingExample, fullName),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")

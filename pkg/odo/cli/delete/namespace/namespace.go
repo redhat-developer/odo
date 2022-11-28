@@ -3,9 +3,10 @@ package namespace
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"os"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -117,8 +118,8 @@ func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
 		Long:    deleteLongDesc,
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(do, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(do, cmd, args)
 		},
 		Annotations: map[string]string{"command": "main"},
 		Aliases:     []string{"project"},

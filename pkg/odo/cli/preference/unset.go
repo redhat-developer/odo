@@ -104,8 +104,8 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			return "\n" + exampleString + "\n"
 		}(unsetExample, fullName),
 		Args: cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(preferenceUnsetCmd, clientset.PREFERENCE)

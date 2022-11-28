@@ -96,8 +96,8 @@ func NewCmdNamespaceSet(name, fullName string) *cobra.Command {
 		Long:    setLongDesc,
 		Example: fmt.Sprintf(setExample, fullName),
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 		Annotations: map[string]string{"command": "main"},
 		Aliases:     []string{"project"},

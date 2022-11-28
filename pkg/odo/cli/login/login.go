@@ -100,8 +100,8 @@ func NewCmdLogin(name, fullName string) *cobra.Command {
 		Long:    "Login to cluster",
 		Example: fmt.Sprintf(loginExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

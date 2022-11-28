@@ -108,8 +108,8 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 		Short:   "List all components from the Devfile registry",
 		Long:    "List all components from the Devfile registry",
 		Example: fmt.Sprintf(Example, fullName),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

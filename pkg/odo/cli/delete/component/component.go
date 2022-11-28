@@ -316,8 +316,8 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		Long:    "Delete component",
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(deleteExample, fullName),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
