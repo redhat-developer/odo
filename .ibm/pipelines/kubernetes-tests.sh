@@ -16,7 +16,6 @@ export SKIP_USER_LOGIN_TESTS=true
     echo Using Devfile proxy: ${DEVFILE_PROXY}
     make install
     make test-integration-cluster
-    make test-e2e
 ) |& tee "/tmp/${LOGFILE}"
 
 RESULT=${PIPESTATUS[0]}
