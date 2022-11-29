@@ -3,7 +3,6 @@ package integration
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/tidwall/gjson"
@@ -185,19 +184,19 @@ ComponentSettings:
 					return out
 				}, 10*time.Second, 1*time.Second).Should(ContainSubstring(commonVar.Project))
 			})
-			It(fmt.Sprintf("should successfully list all the %ss in JSON format", commandName), func() {
-				Eventually(func() bool {
-					ns := helper.Cmd("odo", "list", commandName).ShouldPass().Out()
-					return strings.Contains(ns, commonVar.Project)
-				}).WithTimeout(10 * time.Second).Should(BeTrue())
 
-				out := helper.Cmd("odo", "list", commandName, "-o", "json").ShouldPass().Out()
-				Expect(helper.IsJSON(out)).To(BeTrue())
-				// check if the namespace/project created for this test is marked as active in the JSON output
-				gjsonStr := fmt.Sprintf("namespaces.#[name==%s].active", commonVar.Project)
-				Expect(gjson.Get(out, gjsonStr).String()).To(Equal("true"))
-				// ensure that some namespace is marked as "active: false"
-				Expect(gjson.Get(out, "namespaces.#[active==false]#.name").String()).ShouldNot(ContainSubstring(commonVar.Project))
+			It(fmt.Sprintf("should successfully list all the %ss in JSON format", commandName), func() {
+				Eventually(func(g Gomega) {
+					// NOTE: Make sure not to use the global Gomega expectations, as this would make the test fail.
+					// Use expectations on the Gomega argument passed to this function instead.
+					out := helper.Cmd("odo", "list", commandName, "-o", "json").ShouldRun().Out()
+					g.Expect(helper.IsJSON(out)).To(BeTrue())
+					// check if the namespace/project created for this test is marked as active in the JSON output
+					gjsonStr := fmt.Sprintf("namespaces.#[name==%s].active", commonVar.Project)
+					g.Expect(gjson.Get(out, gjsonStr).String()).To(Equal("true"))
+					// ensure that some namespace is marked as "active: false"
+					g.Expect(gjson.Get(out, "namespaces.#[active==false]#.name").String()).ShouldNot(ContainSubstring(commonVar.Project))
+				}).WithTimeout(10 * time.Second).Should(Succeed())
 			})
 		})
 	}
