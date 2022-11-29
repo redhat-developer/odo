@@ -16,8 +16,8 @@ odo list services
 $ odo list services
  ✓  Listing bindable services from namespace "myproject" [82ms]
 
- NAME                                               NAMESPACE 
- redis-standalone/Redis.redis.redis.opstreelabs.in  myproject 
+ NAME                                                  NAMESPACE 
+ redis-standalone/Redis.redis.redis.opstreelabs.in/v1  myproject 
 ```
 
 To list bindable services in all projects/namespaces accessible to the user:
@@ -28,9 +28,9 @@ odo list services -A
 odo list services -A
  ✓  Listing bindable services from all namespaces [182ms]
 
- NAME                                               NAMESPACE  
- redis-standalone/Redis.redis.redis.opstreelabs.in  myproject  
- hello-world/RabbitmqCluster.rabbitmq.com           newproject 
+ NAME                                                  NAMESPACE  
+ redis-standalone/Redis.redis.redis.opstreelabs.in/v1  myproject  
+ hello-world/RabbitmqCluster.rabbitmq.com/v1           newproject 
 ```
 
 To list bindable services in a particular project/namespace that is accessible to the user:
@@ -41,8 +41,8 @@ odo list services -n <project-name>
 $ odo list services -n newproject
  ✓  Listing bindable services from namespace "newproject" [45ms]
 
- NAME                                      NAMESPACE  
- hello-world/RabbitmqCluster.rabbitmq.com  newproject 
+ NAME                                         NAMESPACE  
+ hello-world/RabbitmqCluster.rabbitmq.com/v1  newproject 
 ```
 
 To get the JSON formatted output for any of the above commands, add `-o json` to the commands shown above. That 

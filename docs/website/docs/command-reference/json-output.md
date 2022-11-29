@@ -740,8 +740,8 @@ $ odo list services -o json
 			"name": "cluster-sample",
 			"namespace": "myproject",
 			"kind": "Cluster",
-			"group": "postgresql.k8s.enterprisedb.io",
-			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io"
+			"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
+			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io/v1"
 		}
 	]
 }
@@ -758,8 +758,8 @@ $ odo list services -o json -n newproject
 			"name": "hello-world",
 			"namespace": "newproject",
 			"kind": "RabbitmqCluster",
-			"group": "rabbitmq.com",
-			"service": "hello-world/RabbitmqCluster.rabbitmq.com"
+			"apiVersion": "rabbitmq.com/v1",
+			"service": "hello-world/RabbitmqCluster.rabbitmq.com/v1"
 		}
 	]
 }
@@ -777,15 +777,15 @@ $ odo list services -o json -A
 			"name": "cluster-sample",
 			"namespace": "myproject",
 			"kind": "Cluster",
-			"group": "postgresql.k8s.enterprisedb.io",
-			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io"
+			"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
+			"service": "cluster-sample/Cluster.postgresql.k8s.enterprisedb.io/v1"
 		},
 		{
 			"name": "hello-world",
 			"namespace": "newproject",
 			"kind": "RabbitmqCluster",
-			"group": "rabbitmq.com",
-			"service": "hello-world/RabbitmqCluster.rabbitmq.com"
+			"apiVersion": "rabbitmq.com/v1",
+			"service": "hello-world/RabbitmqCluster.rabbitmq.com/v1"
 		}
 	]
 }

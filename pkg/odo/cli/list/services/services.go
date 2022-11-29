@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/redhat-developer/odo/pkg/api"
@@ -119,12 +118,12 @@ func (o *ServiceListOptions) run() (api.ResourcesList, error) {
 	var servicesList []api.BindableService
 	for _, svc := range services {
 		s := api.BindableService{
-			Name:      svc.GetName(),
-			Namespace: svc.GetNamespace(),
-			Kind:      svc.GetKind(),
-			Group:     strings.Split(svc.GetAPIVersion(), "/")[0],
+			Name:       svc.GetName(),
+			Namespace:  svc.GetNamespace(),
+			Kind:       svc.GetKind(),
+			APIVersion: svc.GetAPIVersion(),
 		}
-		s.Service = fmt.Sprintf("%s/%s.%s", s.Name, s.Kind, s.Group)
+		s.Service = fmt.Sprintf("%s/%s.%s", s.Name, s.Kind, s.APIVersion)
 		servicesList = append(servicesList, s)
 
 	}
