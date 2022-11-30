@@ -27,7 +27,7 @@ install_postgres_operator(){
     name: my-cloud-native-postgresql
     namespace: $2
   spec:
-    channel: stable
+    channel: stable-v1.18
     name: cloud-native-postgresql
     source: $3
     sourceNamespace: $4

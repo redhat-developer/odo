@@ -3,7 +3,6 @@ kind: Cluster
 metadata:
   name: cluster-example-initdb
 spec:
-  instances: 1
   bootstrap:
     initdb:
       database: appdb
@@ -12,8 +11,30 @@ spec:
         name: appuser-secret
       postInitApplicationSQL:
         - create table users (userid SERIAL PRIMARY KEY,  name TEXT,  age INT,  location TEXT)
-  storage:
+  logLevel: info
+  startDelay: 30
+  stopDelay: 30
+  nodeMaintenanceWindow:
+    inProgress: false
+    reusePVC: true
+  enableSuperuserAccess: true
+  monitoring:
+    disableDefaultQueries: false
+    enablePodMonitor: false
+  minSyncReplicas: 0
+  postgresGID: 26
+  primaryUpdateMethod: switchover
+  postgresUID: 26
+  walStorage:
+    resizeInUseVolumes: true
     size: 1Gi
+  maxSyncReplicas: 0
+  switchoverDelay: 40000000
+  storage:
+    resizeInUseVolumes: true
+    size: 1Gi
+  primaryUpdateStrategy: unsupervised
+  instances: 1
 ---
 apiVersion: v1
 stringData:
