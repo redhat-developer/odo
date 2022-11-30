@@ -137,6 +137,7 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	commonflags.UseOutputFlag(listCmd)
+	commonflags.UseRunOnFlag(listCmd)
 
 	return listCmd
 }
