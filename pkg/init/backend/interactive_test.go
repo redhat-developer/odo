@@ -28,7 +28,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *api.DevfileLocation
+		want    *api.DetectionResult
 		wantErr bool
 	}{
 		{
@@ -51,7 +51,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 					return client
 				},
 			},
-			want: &api.DevfileLocation{
+			want: &api.DetectionResult{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "MyRegistry1",
 			},
@@ -78,7 +78,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 					return client
 				},
 			},
-			want: &api.DevfileLocation{
+			want: &api.DetectionResult{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "MyRegistry1",
 			},

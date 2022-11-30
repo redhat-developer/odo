@@ -39,7 +39,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DownloadDevfile mocks base method.
-func (m *MockClient) DownloadDevfile(ctx context.Context, devfileLocation *api.DevfileLocation, destDir string) (string, error) {
+func (m *MockClient) DownloadDevfile(ctx context.Context, devfileLocation *api.DetectionResult, destDir string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadDevfile", ctx, devfileLocation, destDir)
 	ret0, _ := ret[0].(string)
@@ -126,12 +126,12 @@ func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags interface{}) *g
 }
 
 // SelectAndPersonalizeDevfile mocks base method.
-func (m *MockClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
+func (m *MockClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DetectionResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectAndPersonalizeDevfile", ctx, flags, contextDir)
 	ret0, _ := ret[0].(parser.DevfileObj)
 	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(*api.DevfileLocation)
+	ret2, _ := ret[2].(*api.DetectionResult)
 	ret3, _ := ret[3].(error)
 	return ret0, ret1, ret2, ret3
 }
@@ -143,10 +143,10 @@ func (mr *MockClientMockRecorder) SelectAndPersonalizeDevfile(ctx, flags, contex
 }
 
 // SelectDevfile mocks base method.
-func (m *MockClient) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
+func (m *MockClient) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DetectionResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", ctx, flags, fs, dir)
-	ret0, _ := ret[0].(*api.DevfileLocation)
+	ret0, _ := ret[0].(*api.DetectionResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

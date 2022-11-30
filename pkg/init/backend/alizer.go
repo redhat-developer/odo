@@ -3,9 +3,12 @@ package backend
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
@@ -31,13 +34,27 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 }
 
 // SelectDevfile calls thz Alizer to detect the devfile and asks for confirmation to the user
-func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DevfileLocation, err error) {
+func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DetectionResult, err error) {
 	selected, registry, err := o.alizerClient.DetectFramework(ctx, dir)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("Based on the files in the current directory odo detected\nLanguage: %s\nProject type: %s\n", selected.Language, selected.ProjectType)
+	msg := fmt.Sprintf("Based on the files in the current directory odo detected\nLanguage: %s\nProject type: %s", selected.Language, selected.ProjectType)
+
+	appPorts, err := o.alizerClient.DetectPorts(dir)
+	if err != nil {
+		return nil, err
+	}
+	appPortsAsString := make([]string, 0, len(appPorts))
+	for _, p := range appPorts {
+		appPortsAsString = append(appPortsAsString, strconv.Itoa(p))
+	}
+	if len(appPorts) > 0 {
+		msg += fmt.Sprintf("\nApplication ports: %s", strings.Join(appPortsAsString, ", "))
+	}
+
+	fmt.Println(msg)
 	fmt.Printf("The devfile %q from the registry %q will be downloaded.\n", selected.Name, registry.Name)
 	confirm, err := o.askerClient.AskCorrect()
 	if err != nil {
@@ -46,7 +63,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 	if !confirm {
 		return nil, nil
 	}
-	return alizer.GetDevfileLocationFromDetection(selected, registry), nil
+	return alizer.NewDetectionResult(selected, registry, appPorts), nil
 }
 
 func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error) {

@@ -86,8 +86,8 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 	return nil
 }
 
-func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
-	return &api.DevfileLocation{
+func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DetectionResult, error) {
+	return &api.DetectionResult{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],
 		DevfilePath:     flags[FLAG_DEVFILE_PATH],

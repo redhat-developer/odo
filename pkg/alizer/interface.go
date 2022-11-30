@@ -10,4 +10,5 @@ import (
 type Client interface {
 	DetectFramework(ctx context.Context, path string) (model.DevFileType, api.Registry, error)
 	DetectName(path string) (string, error)
+	DetectPorts(path string) ([]int, error)
 }

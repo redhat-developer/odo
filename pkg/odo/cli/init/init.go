@@ -159,8 +159,8 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	}, nil
 }
 
-// run downloads the devfile and starter project and returns the content of the devfile, path of the devfile, name of the component, api.DevfileLocation object for DevfileRegistry info and StarterProject object
-func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DevfileLocation, starterInfo *v1alpha2.StarterProject, err error) {
+// run downloads the devfile and starter project and returns the content of the devfile, path of the devfile, name of the component, api.DetectionResult object for DevfileRegistry info and StarterProject object
+func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DetectionResult, starterInfo *v1alpha2.StarterProject, err error) {
 	var starterDownloaded bool
 
 	workingDir := odocontext.GetWorkingDirectory(ctx)

@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -38,9 +39,83 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 		name         string
 		fields       fields
 		args         args
-		wantLocation *api.DevfileLocation
+		wantLocation *api.DetectionResult
 		wantErr      bool
 	}{
+		{
+			name: "error while trying to detect devfile",
+			fields: fields{
+				askerClient: func(ctrl *gomock.Controller) asker.Asker {
+					askerClient := asker.NewMockAsker(ctrl)
+					askerClient.EXPECT().AskCorrect().Return(true, nil).Times(0)
+					return askerClient
+				},
+				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
+					alizerClient := alizer.NewMockClient(ctrl)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
+						Name: "a-devfile-name",
+					}, api.Registry{
+						Name: "a-registry",
+					}, errors.New("unable to detect framework"))
+					return alizerClient
+				},
+			},
+			args: args{
+				fs:  filesystem.DefaultFs{},
+				dir: GetTestProjectPath("nodejs"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error while trying to detect ports",
+			fields: fields{
+				askerClient: func(ctrl *gomock.Controller) asker.Asker {
+					askerClient := asker.NewMockAsker(ctrl)
+					askerClient.EXPECT().AskCorrect().Return(true, nil).Times(0)
+					return askerClient
+				},
+				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
+					alizerClient := alizer.NewMockClient(ctrl)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
+						Name: "a-devfile-name",
+					}, api.Registry{
+						Name: "a-registry",
+					}, nil)
+					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, errors.New("unable to detect ports"))
+					return alizerClient
+				},
+			},
+			args: args{
+				fs:  filesystem.DefaultFs{},
+				dir: GetTestProjectPath("nodejs"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error while asking consent to user",
+			fields: fields{
+				askerClient: func(ctrl *gomock.Controller) asker.Asker {
+					askerClient := asker.NewMockAsker(ctrl)
+					askerClient.EXPECT().AskCorrect().Return(false, errors.New("error while prompting user"))
+					return askerClient
+				},
+				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
+					alizerClient := alizer.NewMockClient(ctrl)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
+						Name: "a-devfile-name",
+					}, api.Registry{
+						Name: "a-registry",
+					}, nil)
+					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, nil)
+					return alizerClient
+				},
+			},
+			args: args{
+				fs:  filesystem.DefaultFs{},
+				dir: GetTestProjectPath("nodejs"),
+			},
+			wantErr: true,
+		},
 		{
 			name: "devfile found and accepted",
 			fields: fields{
@@ -56,6 +131,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					}, api.Registry{
 						Name: "a-registry",
 					}, nil)
+					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, nil)
 					return alizerClient
 				},
 			},
@@ -63,7 +139,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				fs:  filesystem.DefaultFs{},
 				dir: GetTestProjectPath("nodejs"),
 			},
-			wantLocation: &api.DevfileLocation{
+			wantLocation: &api.DetectionResult{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "a-registry",
 			},
@@ -79,6 +155,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{}, api.Registry{}, nil)
+					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, nil)
 					return alizerClient
 				},
 			},
@@ -87,6 +164,35 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				dir: GetTestProjectPath("nodejs"),
 			},
 			wantLocation: nil,
+		},
+		{
+			name: "devfile and ports detected and accepted",
+			fields: fields{
+				askerClient: func(ctrl *gomock.Controller) asker.Asker {
+					askerClient := asker.NewMockAsker(ctrl)
+					askerClient.EXPECT().AskCorrect().Return(true, nil)
+					return askerClient
+				},
+				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
+					alizerClient := alizer.NewMockClient(ctrl)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
+						Name: "a-devfile-name",
+					}, api.Registry{
+						Name: "a-registry",
+					}, nil)
+					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return([]int{1234, 5678}, nil)
+					return alizerClient
+				},
+			},
+			args: args{
+				fs:  filesystem.DefaultFs{},
+				dir: GetTestProjectPath("nodejs"),
+			},
+			wantLocation: &api.DetectionResult{
+				Devfile:          "a-devfile-name",
+				DevfileRegistry:  "a-registry",
+				ApplicationPorts: []int{1234, 5678},
+			},
 		},
 		// TODO: Add test cases.
 	}

@@ -69,10 +69,10 @@ func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{
 }
 
 // SelectDevfile mocks base method.
-func (m *MockInitBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
+func (m *MockInitBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DetectionResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", ctx, flags, fs, dir)
-	ret0, _ := ret[0].(*api.DevfileLocation)
+	ret0, _ := ret[0].(*api.DetectionResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

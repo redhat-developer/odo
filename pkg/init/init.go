@@ -77,7 +77,7 @@ func (o *InitClient) Validate(flags map[string]string, fs filesystem.Filesystem,
 }
 
 // SelectDevfile calls SelectDevfile methods of the adequate backend
-func (o *InitClient) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
+func (o *InitClient) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DetectionResult, error) {
 	var backend backend.InitBackend
 
 	empty, err := location.DirIsEmpty(fs, dir)
@@ -109,7 +109,7 @@ func (o *InitClient) SelectDevfile(ctx context.Context, flags map[string]string,
 	return location, err
 }
 
-func (o *InitClient) DownloadDevfile(ctx context.Context, devfileLocation *api.DevfileLocation, destDir string) (string, error) {
+func (o *InitClient) DownloadDevfile(ctx context.Context, devfileLocation *api.DetectionResult, destDir string) (string, error) {
 	destDevfile := filepath.Join(destDir, "devfile.yaml")
 	if devfileLocation.DevfilePath != "" {
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
@@ -273,7 +273,7 @@ func (o InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[s
 	return devfileObj, devfilePath, devfileLocation, nil
 }
 
-func (o InitClient) InitDevfile(ctx context.Context, flags map[string]string, contextDir string,
+func (o *InitClient) InitDevfile(ctx context.Context, flags map[string]string, contextDir string,
 	preInitHandlerFunc func(interactiveMode bool), newDevfileHandlerFunc func(newDevfileObj parser.DevfileObj) error) error {
 
 	containsDevfile, err := location.DirectoryContainsDevfile(o.fsys, contextDir)
