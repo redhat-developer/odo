@@ -32,10 +32,6 @@ import (
 const (
 	// PushErrorString is the string that is printed when an error occurs during watch's Push operation
 	PushErrorString = "Error occurred on Push"
-	PromptMessage   = `
-[Ctrl+c] - Exit and delete resources from the cluster
-     [p] - Manually apply local changes to the application on the cluster
-`
 )
 
 type WatchClient struct {
@@ -96,8 +92,14 @@ type WatchParameters struct {
 	RandomPorts bool
 	// WatchFiles indicates to watch for file changes and sync changes to the container
 	WatchFiles bool
+	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
+	WatchCluster bool
+	// ErrOut is a Writer to output forwarded port information
+	Out io.Writer
 	// ErrOut is a Writer to output forwarded port information
 	ErrOut io.Writer
+	// PromptMessage
+	PromptMessage string
 }
 
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
@@ -126,10 +128,20 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 	defer o.sourcesWatcher.Close()
 
-	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
-	o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
-	if err != nil {
-		return fmt.Errorf("error watching deployment: %v", err)
+	if parameters.WatchCluster {
+		selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
+		o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
+		if err != nil {
+			return fmt.Errorf("error watching deployment: %v", err)
+		}
+
+		o.podWatcher, err = o.kubeClient.PodWatcher(ctx, selector)
+		if err != nil {
+			return err
+		}
+	} else {
+		o.deploymentWatcher = NewNoOpWatcher()
+		o.podWatcher = NewNoOpWatcher()
 	}
 
 	o.devfileWatcher, err = fsnotify.NewWatcher()
@@ -151,18 +163,17 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		}
 	}
 
-	o.podWatcher, err = o.kubeClient.PodWatcher(ctx, selector)
-	if err != nil {
-		return err
-	}
-
-	var isForbidden bool
-	o.warningsWatcher, isForbidden, err = o.kubeClient.PodWarningEventWatcher(ctx)
-	if err != nil {
-		return err
-	}
-	if isForbidden {
-		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+	if parameters.WatchCluster {
+		var isForbidden bool
+		o.warningsWatcher, isForbidden, err = o.kubeClient.PodWarningEventWatcher(ctx)
+		if err != nil {
+			return err
+		}
+		if isForbidden {
+			log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+		}
+	} else {
+		o.warningsWatcher = NewNoOpWatcher()
 	}
 
 	o.keyWatcher = getKeyWatcher(ctx, out)
@@ -218,6 +229,7 @@ func (o *WatchClient) eventWatcher(
 		case <-sourcesTimer.C:
 			// timer has fired
 			if !componentCanSyncFile(componentStatus.State) {
+				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.State)
 				continue
 			}
 
@@ -476,7 +488,7 @@ func (o *WatchClient) processEvents(
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		printInfoMessage(out, parameters.Path, parameters.WatchFiles)
+		PrintInfoMessage(out, parameters.Path, parameters.WatchFiles, parameters.PromptMessage)
 	}
 	return nil, nil
 }
@@ -522,7 +534,7 @@ func removeDuplicates(input []string) []string {
 	return result
 }
 
-func printInfoMessage(out io.Writer, path string, watchFiles bool) {
+func PrintInfoMessage(out io.Writer, path string, watchFiles bool, promptMessage string) {
 	log.Sectionf("Dev mode")
 	if watchFiles {
 		fmt.Fprintf(
@@ -536,7 +548,7 @@ func printInfoMessage(out io.Writer, path string, watchFiles bool) {
 		out,
 		" %s%s",
 		log.Sbold("Keyboard Commands:"),
-		PromptMessage,
+		promptMessage,
 	)
 }
 
