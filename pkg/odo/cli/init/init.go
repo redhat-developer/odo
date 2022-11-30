@@ -128,11 +128,12 @@ To start editing your component, use 'odo dev' and open this folder in your favo
 Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
 
 	if len(o.flags) == 0 {
-		automateCommad := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
+		automateCommand := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
 		if starterInfo != nil {
-			automateCommad = fmt.Sprintf("%s --starter %s", automateCommad, starterInfo.Name)
+			automateCommand = fmt.Sprintf("%s --starter %s", automateCommand, starterInfo.Name)
 		}
-		log.Infof("\nPort configuration using flag is currently not supported  \n\nYou can automate this command by executing:\n   %s\n", automateCommad)
+		klog.V(2).Infof("Port configuration using flag is currently not supported")
+		log.Infof("\nYou can automate this command by executing:\n   %s", automateCommand)
 	}
 
 	if libdevfile.HasDeployCommand(devfileObj.Data) {
