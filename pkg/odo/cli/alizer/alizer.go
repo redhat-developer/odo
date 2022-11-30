@@ -46,15 +46,19 @@ func (o *AlizerOptions) Run(ctx context.Context) (err error) {
 	return errors.New("this command can be run with json output only, please use the flag: -o json")
 }
 
-// Run contains the logic for the odo command
+// RunForJsonOutput contains the logic for the odo command
 func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	workingDir := odocontext.GetWorkingDirectory(ctx)
 	df, reg, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
 	if err != nil {
 		return nil, err
 	}
-	result := alizer.GetDevfileLocationFromDetection(df, reg)
-	return []api.DevfileLocation{*result}, nil
+	appPorts, err := o.clientset.AlizerClient.DetectPorts(workingDir)
+	if err != nil {
+		return nil, err
+	}
+	result := alizer.NewDetectionResult(df, reg, appPorts)
+	return []api.DetectionResult{*result}, nil
 }
 
 func NewCmdAlizer(name, fullName string) *cobra.Command {
