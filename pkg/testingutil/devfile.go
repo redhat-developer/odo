@@ -1,6 +1,7 @@
 package testingutil
 
 import (
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -15,12 +16,20 @@ import (
 )
 
 // GetFakeContainerComponent returns a fake container component for testing
-func GetFakeContainerComponent(name string) v1.Component {
+func GetFakeContainerComponent(name string, ports ...int) v1.Component {
 	image := "docker.io/maven:latest"
 	memoryLimit := "128Mi"
 	volumeName := "myvolume1"
 	volumePath := "/my/volume/mount/path1"
 	mountSources := true
+
+	var endpoints []v1.Endpoint
+	for _, p := range ports {
+		endpoints = append(endpoints, v1.Endpoint{
+			Name:       fmt.Sprintf("port-%d", p),
+			TargetPort: p,
+		})
+	}
 
 	return v1.Component{
 		Name: name,
@@ -36,6 +45,7 @@ func GetFakeContainerComponent(name string) v1.Component {
 					}},
 					MountSources: &mountSources,
 				},
+				Endpoints: endpoints,
 			}}}
 
 }

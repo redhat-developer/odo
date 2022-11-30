@@ -238,7 +238,24 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 	return backend.PersonalizeName(devfile, flags)
 }
 
-func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
+func (o *InitClient) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
+	var backend backend.InitBackend
+	onlyDevfile, err := location.DirContainsOnlyDevfile(fs, dir)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+
+	// Interactive mode since no flags are provided
+	if len(flags) == 0 && !onlyDevfile {
+		// Other files present in the directory; hence alizer is run
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	return backend.HandleApplicationPorts(devfileobj, ports, flags)
+}
+
+func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
 	var backend backend.InitBackend
 
 	// Interactive mode since no flags are provided
@@ -250,7 +267,7 @@ func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags
 	return backend.PersonalizeDevfileConfig(devfileobj)
 }
 
-func (o InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error) {
+func (o *InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DetectionResult, error) {
 	devfileLocation, err := o.SelectDevfile(ctx, flags, o.fsys, contextDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", nil, err
@@ -264,6 +281,11 @@ func (o InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[s
 	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 	if err != nil {
 		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to parse devfile: %w", err)
+	}
+
+	devfileObj, err = o.HandleApplicationPorts(devfileObj, devfileLocation.ApplicationPorts, flags, o.fsys, contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to set application ports in devfile: %w", err)
 	}
 
 	devfileObj, err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)

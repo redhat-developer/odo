@@ -60,5 +60,8 @@ type Client interface {
 
 	// SelectAndPersonalizeDevfile selects a devfile, then downloads, parse and personalize it
 	// Returns the devfile object, its path and pointer to *api.devfileLocation
-	SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error)
+	SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DetectionResult, error)
+
+	// HandleApplicationPorts updates the ports in the Devfile accordingly.
+	HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error)
 }

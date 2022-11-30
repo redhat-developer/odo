@@ -82,3 +82,7 @@ func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[str
 func (o *AlizerBackend) PersonalizeDevfileConfig(devfile parser.DevfileObj) (parser.DevfileObj, error) {
 	return devfile, nil
 }
+
+func (o *AlizerBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error) {
+	return devfileobj, nil
+}

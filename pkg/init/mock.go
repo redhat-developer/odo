@@ -81,6 +81,21 @@ func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlags", reflect.TypeOf((*MockClient)(nil).GetFlags), flags)
 }
 
+// HandleApplicationPorts mocks base method.
+func (m *MockClient) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HandleApplicationPorts", devfileobj, ports, flags, fs, dir)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HandleApplicationPorts indicates an expected call of HandleApplicationPorts.
+func (mr *MockClientMockRecorder) HandleApplicationPorts(devfileobj, ports, flags, fs, dir interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleApplicationPorts", reflect.TypeOf((*MockClient)(nil).HandleApplicationPorts), devfileobj, ports, flags, fs, dir)
+}
+
 // InitDevfile mocks base method.
 func (m *MockClient) InitDevfile(ctx context.Context, flags map[string]string, contextDir string, preInitHandlerFunc func(bool), newDevfileHandlerFunc func(parser.DevfileObj) error) error {
 	m.ctrl.T.Helper()

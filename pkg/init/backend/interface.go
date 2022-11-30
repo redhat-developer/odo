@@ -31,4 +31,7 @@ type InitBackend interface {
 
 	// PersonalizeDevfileConfig updates the devfile config for ports and environment variables
 	PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error)
+
+	// HandleApplicationPorts updates the ports in the Devfile accordingly.
+	HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error)
 }

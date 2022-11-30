@@ -38,6 +38,21 @@ func (m *MockInitBackend) EXPECT() *MockInitBackendMockRecorder {
 	return m.recorder
 }
 
+// HandleApplicationPorts mocks base method.
+func (m *MockInitBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HandleApplicationPorts", devfileobj, ports, flags)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HandleApplicationPorts indicates an expected call of HandleApplicationPorts.
+func (mr *MockInitBackendMockRecorder) HandleApplicationPorts(devfileobj, ports, flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleApplicationPorts", reflect.TypeOf((*MockInitBackend)(nil).HandleApplicationPorts), devfileobj, ports, flags)
+}
+
 // PersonalizeDevfileConfig mocks base method.
 func (m *MockInitBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()

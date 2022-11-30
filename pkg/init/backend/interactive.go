@@ -260,6 +260,10 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 	return devfileobj, nil
 }
 
+func (o *InteractiveBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error) {
+	return handleApplicationPorts(log.GetStdout(), devfileobj, ports)
+}
+
 func PrintConfiguration(config asker.DevfileConfiguration) {
 
 	var keys []string
