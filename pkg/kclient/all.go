@@ -34,7 +34,7 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 	var apisOfInterest []apiResource
 	for _, api := range apis {
 		if !api.r.Namespaced {
-			klog.V(4).Infof("[query api] api (%s) is non-namespaced, skipping", api.r.Name)
+			klog.V(5).Infof("[query api] api (%s) is non-namespaced, skipping", api.r.Name)
 			continue
 		}
 		apisOfInterest = append(apisOfInterest, api)
@@ -47,14 +47,14 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 	for _, api := range apisOfInterest {
 		api := api // shadowing because go vet complains "loop variable api captured by func literal"
 		group.Go(func() error {
-			klog.V(4).Infof("[query api] start: %s", api.GroupVersionResource())
+			klog.V(5).Infof("[query api] start: %s", api.GroupVersionResource())
 			v, err := queryAPI(client, api, ns, selector)
 			if err != nil {
-				klog.V(4).Infof("[query api] error querying: %s, error=%v", api.GroupVersionResource(), err)
+				klog.V(5).Infof("[query api] error querying: %s, error=%v", api.GroupVersionResource(), err)
 				return err
 			}
 			outChan <- v
-			klog.V(4).Infof("[query api]  done: %s, found %d apis", api.GroupVersionResource(), len(v))
+			klog.V(5).Infof("[query api]  done: %s, found %d apis", api.GroupVersionResource(), len(v))
 			return nil
 		})
 	}
@@ -90,7 +90,7 @@ func queryAPI(client dynamic.Interface, api apiResource, ns string, selector str
 			LabelSelector: selector,
 		})
 		if err != nil {
-			klog.V(2).Infof("listing resources failed (%s): %v", api.GroupVersionResource(), err)
+			klog.V(5).Infof("listing resources failed (%s): %v", api.GroupVersionResource(), err)
 			return nil, nil
 		}
 		out = append(out, resp.Items...)
@@ -129,8 +129,8 @@ func findAPIs(client discovery.DiscoveryInterface) (*resourceMap, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch api groups from kubernetes: %w", err)
 	}
-	klog.V(2).Infof("queried api discovery in %v", time.Since(start))
-	klog.V(3).Infof("found %d items (groups) in server-preferred APIResourceList", len(resList))
+	klog.V(5).Infof("queried api discovery in %v", time.Since(start))
+	klog.V(5).Infof("found %d items (groups) in server-preferred APIResourceList", len(resList))
 
 	rm := &resourceMap{
 		m: make(resourceNameLookup),
@@ -145,7 +145,7 @@ func findAPIs(client discovery.DiscoveryInterface) (*resourceMap, error) {
 		for _, apiRes := range group.APIResources {
 			klog.V(5).Infof("  api=%s namespaced=%v", apiRes.Name, apiRes.Namespaced)
 			if !contains(apiRes.Verbs, "list") {
-				klog.V(4).Infof("    api (%s) doesn't have required verb, skipping: %v", apiRes.Name, apiRes.Verbs)
+				klog.V(5).Infof("    api (%s) doesn't have required verb, skipping: %v", apiRes.Name, apiRes.Verbs)
 				continue
 			}
 			v := apiResource{
@@ -153,7 +153,7 @@ func findAPIs(client discovery.DiscoveryInterface) (*resourceMap, error) {
 				r:  apiRes,
 			}
 			names := apiNames(apiRes, gv)
-			klog.V(6).Infof("names: %s", strings.Join(names, ", "))
+			klog.V(5).Infof("names: %s", strings.Join(names, ", "))
 			for _, name := range names {
 				rm.m[name] = append(rm.m[name], v)
 			}
