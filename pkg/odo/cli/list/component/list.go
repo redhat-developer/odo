@@ -127,8 +127,8 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 		Example:     fmt.Sprintf(listExample, fullName),
 		Args:        genericclioptions.NoArgsAndSilenceJSON,
 		Annotations: map[string]string{"command": "management"},
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 		Aliases: []string{"components"},
 	}

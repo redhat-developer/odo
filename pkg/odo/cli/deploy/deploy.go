@@ -99,8 +99,8 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 		Long:    "Deploy the components defined in the devfile",
 		Example: fmt.Sprintf(deployExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY, clientset.FILESYSTEM)

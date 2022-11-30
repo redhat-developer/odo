@@ -256,8 +256,8 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		Long:    "Bootstraps a new project",
 		Example: fmt.Sprintf(initExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(initCmd, clientset.PREFERENCE, clientset.FILESYSTEM, clientset.REGISTRY, clientset.INIT)

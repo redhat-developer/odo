@@ -41,7 +41,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
 type Runnable interface {
@@ -79,12 +78,19 @@ const (
 	defaultAppName = "app"
 )
 
-func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
+func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	var (
 		err       error
 		startTime = time.Now()
 		ctx       = cmd.Context()
 	)
+
+	defer func() {
+		if err != nil {
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+		}
+	}()
 
 	userConfig, _ := preference.NewClient(ctx)
 	envConfig := envcontext.GetEnvConfig(ctx)
@@ -101,9 +107,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// check for conflicting settings
 	if trackingConsentErr == nil && disableTelemetryEnvSet && trackingConsentEnvSet && disableTelemetry == isTrackingConsentEnabled {
 		//lint:ignore SA1019 We deprecated this env var, but we really want users to know there is a conflict here
-		util.LogErrorAndExit(
-			fmt.Errorf("%[1]s and %[2]s values are in conflict. %[1]s is deprecated, please use only %[2]s",
-				segment.DisableTelemetryEnv, segment.TrackingConsentEnv), "")
+		return fmt.Errorf("%[1]s and %[2]s values are in conflict. %[1]s is deprecated, please use only %[2]s",
+			segment.DisableTelemetryEnv, segment.TrackingConsentEnv)
 	}
 
 	// Prompt the user to consent for telemetry if a value is not set already
@@ -154,6 +159,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	err = scontext.SetCaller(cmd.Context(), envConfig.TelemetryCaller)
 	if err != nil {
 		klog.V(3).Infof("error handling caller property for telemetry: %v", err)
+		err = nil
 	}
 
 	scontext.SetFlags(cmd.Context(), cmd.Flags())
@@ -174,15 +180,25 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	})
 
-	util.LogErrorAndExit(commonflags.CheckMachineReadableOutputCommand(&envConfig, cmd), "")
-	util.LogErrorAndExit(commonflags.CheckRunOnCommand(cmd), "")
-	util.LogErrorAndExit(commonflags.CheckVariablesCommand(cmd), "")
+	err = commonflags.CheckMachineReadableOutputCommand(&envConfig, cmd)
+	if err != nil {
+		return err
+	}
+	err = commonflags.CheckRunOnCommand(cmd)
+	if err != nil {
+		return err
+	}
+	err = commonflags.CheckVariablesCommand(cmd)
+	if err != nil {
+		return err
+	}
 
 	cmdLineObj := cmdline.NewCobra(cmd)
 	platform := commonflags.GetRunOnValue(cmdLineObj)
 	deps, err := clientset.Fetch(cmd, platform)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return err
+
 	}
 	o.SetClientset(deps)
 
@@ -200,13 +216,16 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		cwd, err = deps.FS.Getwd()
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
+			return err
 		}
-		util.LogErrorAndExit(err, "")
 		ctx = odocontext.WithWorkingDirectory(ctx, cwd)
 
 		var variables map[string]string
 		variables, err = commonflags.GetVariablesValues(cmdLineObj)
-		util.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+
+		}
 		ctx = fcontext.WithVariables(ctx, variables)
 
 		if preiniter, ok := o.(PreIniter); ok {
@@ -214,8 +233,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			err = runPreInit(ctx, cwd, deps, cmdLineObj, msg)
 			if err != nil {
 				startTelemetry(cmd, err, startTime)
+				return err
 			}
-			util.LogErrorAndExit(err, "")
 		}
 
 		var devfilePath, componentName string
@@ -223,8 +242,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables)
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
+			return err
 		}
-		util.LogErrorAndExit(err, "")
 		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
 		ctx = odocontext.WithDevfileObj(ctx, devfileObj)
 		ctx = odocontext.WithComponentName(ctx, componentName)
@@ -235,14 +254,14 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	err = o.Complete(ctx, cmdLineObj, args)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
+		return err
 	}
-	util.LogErrorAndExit(err, "")
 
 	err = o.Validate(ctx)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
+		return err
 	}
-	util.LogErrorAndExit(err, "")
 
 	if jsonOutputter, ok := o.(JsonOutputter); ok && log.IsJSON() {
 		var out interface{}
@@ -254,13 +273,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		err = o.Run(ctx)
 	}
 	startTelemetry(cmd, err, startTime)
-	util.LogError(err, "")
 	if cleanuper, ok := o.(Cleanuper); ok {
 		cleanuper.Cleanup(ctx, err)
 	}
-	if err != nil {
-		os.Exit(1)
-	}
+	return err
 }
 
 // startTelemetry uploads the data to segment if user has consented to usage data collection and the command is not telemetry

@@ -97,8 +97,8 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 		Long:    removeLongDesc,
 		Example: fmt.Sprintf(fmt.Sprint(removeExample), fullName),
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	clientset.Add(registryDeleteCmd, clientset.PREFERENCE)

@@ -61,8 +61,8 @@ func NewCmdLogout(name, fullName string) *cobra.Command {
 		Long:    "Logout of the cluster.",
 		Example: fmt.Sprintf(example, fullName),
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 

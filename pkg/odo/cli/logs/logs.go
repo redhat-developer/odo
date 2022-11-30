@@ -234,8 +234,8 @@ func NewCmdLogs(name, fullname string) *cobra.Command {
 By default it shows logs of all containers running in both Dev and Deploy mode. It prefixes each log message with the container name.`,
 		Example: fmt.Sprintf(logsExample, fullname),
 		Args:    cobra.MaximumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(o, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	logsCmd.Flags().BoolVar(&o.devMode, string(DevMode), false, "Show logs for containers running only in Dev mode")
