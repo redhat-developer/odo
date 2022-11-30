@@ -52,6 +52,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
 
+			helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+			helper.SendLine(ctx, "")
+
 			helper.ExpectString(ctx, "Which starter project do you want to use")
 			helper.SendLine(ctx, "")
 
@@ -74,6 +77,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 			helper.SendLine(ctx, "Go")
 
 			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "")
+
+			helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")
@@ -113,6 +119,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
 
+			helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+			helper.SendLine(ctx, "")
+
 			helper.ExpectString(ctx, "Which starter project do you want to use")
 			helper.SendLine(ctx, starter)
 
@@ -144,6 +153,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "")
 
+			helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+			helper.SendLine(ctx, "")
+
 			helper.ExpectString(ctx, "Which starter project do you want to use")
 			helper.SendLine(ctx, "")
 
@@ -173,6 +185,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 
 			helper.ExpectString(ctx, "Select project type")
 			helper.SendLine(ctx, "Vert.x Java")
+
+			helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")
 			helper.SendLine(ctx, "vertx-cache-example-redhat")
@@ -263,6 +278,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 					helper.SendLine(ctx, language)
 
 					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Which starter project do you want to use")
@@ -412,6 +430,9 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 			helper.SendLine(ctx, ".NET")
 
 			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "")
+
+			helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")

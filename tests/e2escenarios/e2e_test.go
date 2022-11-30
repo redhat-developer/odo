@@ -61,6 +61,9 @@ var _ = Describe("E2E Test", func() {
 				helper.ExpectString(ctx, "Select project type")
 				helper.SendLine(ctx, "Node.js")
 
+				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+				helper.SendLine(ctx, "")
+
 				helper.ExpectString(ctx, "Which starter project do you want to use")
 				helper.SendLine(ctx, "nodejs-starter")
 
