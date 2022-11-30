@@ -6,9 +6,8 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/fatih/color"
-
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -43,15 +42,6 @@ func (o *DevClient) reconcile(
 		return err
 	}
 	o.deployedPod = pod
-
-	for _, fwPort := range fwPorts {
-		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
-		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
-	}
-	err = o.stateClient.SetForwardedPorts(fwPorts)
-	if err != nil {
-		return err
-	}
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
@@ -114,6 +104,16 @@ func (o *DevClient) reconcile(
 			return err
 		}
 	}
+
+	for _, fwPort := range fwPorts {
+		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
+		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
+	}
+	err = o.stateClient.SetForwardedPorts(fwPorts)
+	if err != nil {
+		return err
+	}
+
 	componentStatus.State = watch.StateReady
 	return nil
 }
