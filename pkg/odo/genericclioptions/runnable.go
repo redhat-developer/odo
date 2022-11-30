@@ -216,10 +216,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 		cwd, err = deps.FS.Getwd()
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
-		}
-		if err != nil {
 			return err
-
 		}
 		ctx = odocontext.WithWorkingDirectory(ctx, cwd)
 
@@ -236,10 +233,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 			err = runPreInit(ctx, cwd, deps, cmdLineObj, msg)
 			if err != nil {
 				startTelemetry(cmd, err, startTime)
-			}
-			if err != nil {
 				return err
-
 			}
 		}
 
@@ -248,10 +242,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables)
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
-		}
-		if err != nil {
 			return err
-
 		}
 		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
 		ctx = odocontext.WithDevfileObj(ctx, devfileObj)
@@ -263,19 +254,13 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	err = o.Complete(ctx, cmdLineObj, args)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
-	}
-	if err != nil {
 		return err
-
 	}
 
 	err = o.Validate(ctx)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
-	}
-	if err != nil {
 		return err
-
 	}
 
 	if jsonOutputter, ok := o.(JsonOutputter); ok && log.IsJSON() {
