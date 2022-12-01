@@ -64,6 +64,8 @@ const (
 	LOGS = "DEP_LOGS"
 	// PODMAN instantiates client for pkg/podman
 	PODMAN = "DEP_PODMAN"
+	// PODMAN_NULLABLE instantiates client for pkg/podman, can be nil
+	PODMAN_NULLABLE = "DEP_PODMAN_NULLABLE"
 	// PORT_FORWARD instantiates client for pkg/portForward
 	PORT_FORWARD = "PORT_FORWARD"
 	// PREFERENCE instantiates client for pkg/preference
@@ -87,10 +89,10 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
+	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN_NULLABLE, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
-	LOGS:             {KUBERNETES_NULLABLE, PODMAN},
+	LOGS:             {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
 	PORT_FORWARD:     {KUBERNETES_NULLABLE, STATE},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
@@ -143,8 +145,11 @@ func isDefined(command *cobra.Command, dependency string) bool {
 }
 
 func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
-	dep := Clientset{}
-	var err error
+	var (
+		err error
+		dep = Clientset{}
+		ctx = command.Context()
+	)
 
 	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {
@@ -160,11 +165,17 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 
 	}
-	if isDefined(command, PODMAN) {
-		dep.PodmanClient = podman.NewPodmanCli()
+	if isDefined(command, PODMAN) || isDefined(command, PODMAN_NULLABLE) {
+		dep.PodmanClient, err = podman.NewPodmanCli(ctx)
+		if err != nil {
+			if isDefined(command, PODMAN) {
+				return nil, err
+			}
+			dep.PodmanClient = nil
+		}
 	}
 	if isDefined(command, PREFERENCE) {
-		dep.PreferenceClient, err = preference.NewClient(command.Context())
+		dep.PreferenceClient, err = preference.NewClient(ctx)
 		if err != nil {
 			return nil, err
 		}

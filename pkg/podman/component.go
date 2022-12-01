@@ -18,7 +18,7 @@ type ListPodsReport struct {
 }
 
 func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
-	out, err := exec.Command("podman", "pod", "ps", "--format", "json", "--filter", "status=running").Output()
+	out, err := exec.Command(o.podmanCmd, "pod", "ps", "--format", "json", "--filter", "status=running").Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))

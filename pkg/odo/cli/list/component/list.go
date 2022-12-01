@@ -154,7 +154,7 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.FILESYSTEM)
 	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
-		clientset.Add(listCmd, clientset.PODMAN)
+		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
