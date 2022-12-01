@@ -63,9 +63,5 @@ func CheckRunOnCommand(cmd *cobra.Command) error {
 
 // GetRunOnValue returns value of --run-on flag or default value
 func GetRunOnValue(cmd cmdline.Cmdline) string {
-	val := cmd.FlagValueIfSet(RunOnFlagName)
-	if val == "" {
-		val = RunOnDefault
-	}
-	return val
+	return cmd.FlagValueIfSet(RunOnFlagName)
 }

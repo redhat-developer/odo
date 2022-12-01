@@ -203,7 +203,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	o.SetClientset(deps)
 
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
-	ctx = fcontext.WithRunOn(ctx, platform)
+	if platform != "" {
+		ctx = fcontext.WithRunOn(ctx, platform)
+	}
 	ctx = odocontext.WithApplication(ctx, defaultAppName)
 
 	if deps.KubernetesClient != nil {

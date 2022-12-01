@@ -18,6 +18,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -105,9 +106,20 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 	var (
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
+
+		kubeClient   = lo.clientset.KubernetesClient
+		podmanClient = lo.clientset.PodmanClient
 	)
+
+	switch fcontext.GetRunOn(ctx, "") {
+	case commonflags.RunOnCluster:
+		podmanClient = nil
+	case commonflags.RunOnPodman:
+		kubeClient = nil
+	}
+
 	allComponents, componentInDevfile, err := component.ListAllComponents(
-		lo.clientset.KubernetesClient, lo.clientset.PodmanClient, lo.namespaceFilter, devfileObj, componentName)
+		kubeClient, podmanClient, lo.namespaceFilter, devfileObj, componentName)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
