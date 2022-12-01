@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 
 // handleApplicationPorts updates the ports in the Devfile as needed.
@@ -33,33 +34,33 @@ func handleApplicationPorts(w io.Writer, devfileobj parser.DevfileObj, ports []i
 		klog.V(3).Infof("found more than 1 container components in Devfile at path %q => cannot find out which component needs to be updated."+
 			"This case will be handled in https://github.com/redhat-developer/odo/issues/6264", devfileobj.Ctx.GetAbsPath())
 		fmt.Fprintln(w, "\nApplication ports detected but the current Devfile contains multiple container components. Could not determine which component to update. "+
-			"Please feel free to customize the Devfile configuration below.")
+			"Please feel free to customize the Devfile configuration.")
 		return devfileobj, nil
 	}
 
 	component := components[0]
 
-	//Remove all but Debug endpoints
-	var portsToRemove []string
-	for _, ep := range component.Container.Endpoints {
-		if ep.Name == "debug" || strings.HasPrefix(ep.Name, "debug-") {
-			continue
-		}
-		portsToRemove = append(portsToRemove, strconv.Itoa(ep.TargetPort))
-	}
-	err = devfileobj.Data.RemovePorts(map[string][]string{component.Name: portsToRemove})
-	if err != nil {
-		return parser.DevfileObj{}, err
-	}
-
+	// Add the new ports at the beginning of the list (that is before any Debug endpoints).
+	// This way, application ports will be port-forwarded first.
 	portsToSet := make([]string, 0, len(ports))
 	for _, p := range ports {
 		portsToSet = append(portsToSet, strconv.Itoa(p))
 	}
+	debugEndpoints, err := libdevfile.GetDebugEndpointsForComponent(component)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	// Clear the existing endpoint list
+	component.Container.Endpoints = nil
+
+	// Add the new application ports first
 	err = devfileobj.Data.SetPorts(map[string][]string{component.Name: portsToSet})
 	if err != nil {
 		return parser.DevfileObj{}, err
 	}
 
-	return devfileobj, err
+	// Append debug endpoints to the end of the list
+	component.Container.Endpoints = append(component.Container.Endpoints, debugEndpoints...)
+
+	return devfileobj, nil
 }

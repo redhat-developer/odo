@@ -54,13 +54,15 @@ func Test_handleApplicationPorts(t *testing.T) {
 				devfileObjProvider: func() parser.DevfileObj {
 					return buildDevfileObjWithComponents(
 						testingutil.GetFakeContainerComponent("cont1", 8080, 8081, 8082),
-						testingutil.GetFakeContainerComponent("cont2", 9080, 9081, 9082))
+						testingutil.GetFakeContainerComponent("cont2", 9080, 9081, 9082),
+					)
 				},
 			},
 			wantProvider: func() parser.DevfileObj {
 				return buildDevfileObjWithComponents(
 					testingutil.GetFakeContainerComponent("cont1", 8080, 8081, 8082),
-					testingutil.GetFakeContainerComponent("cont2", 9080, 9081, 9082))
+					testingutil.GetFakeContainerComponent("cont2", 9080, 9081, 9082),
+				)
 			},
 		},
 		{
@@ -82,7 +84,8 @@ func Test_handleApplicationPorts(t *testing.T) {
 					return buildDevfileObjWithComponents(
 						testingutil.GetFakeContainerComponent("cont1", 8080, 8081, 8082),
 						testingutil.GetFakeContainerComponent("cont2", 9080, 9081, 9082),
-						testingutil.GetFakeVolumeComponent("vol1", "1Gi"))
+						testingutil.GetFakeVolumeComponent("vol1", "1Gi"),
+					)
 				},
 				ports: []int{8888, 8889, 8890},
 			},
@@ -90,7 +93,8 @@ func Test_handleApplicationPorts(t *testing.T) {
 				return buildDevfileObjWithComponents(
 					testingutil.GetFakeContainerComponent("cont1", 8080, 8081, 8082),
 					testingutil.GetFakeContainerComponent("cont2", 9080, 9081, 9082),
-					testingutil.GetFakeVolumeComponent("vol1", "1Gi"))
+					testingutil.GetFakeVolumeComponent("vol1", "1Gi"),
+				)
 			},
 		},
 		{
@@ -100,7 +104,8 @@ func Test_handleApplicationPorts(t *testing.T) {
 					contWithDebug := testingutil.GetFakeContainerComponent("cont1", 18080, 18081, 18082)
 					contWithDebug.ComponentUnion.Container.Endpoints = append(contWithDebug.ComponentUnion.Container.Endpoints,
 						v1.Endpoint{Name: "debug", TargetPort: 5005},
-						v1.Endpoint{Name: "debug-another", TargetPort: 5858})
+						v1.Endpoint{Name: "debug-another", TargetPort: 5858},
+					)
 					return buildDevfileObjWithComponents(
 						contWithDebug,
 						testingutil.GetFakeVolumeComponent("vol1", "1Gi"))
@@ -110,10 +115,11 @@ func Test_handleApplicationPorts(t *testing.T) {
 			wantProvider: func() parser.DevfileObj {
 				newCont := testingutil.GetFakeContainerComponent("cont1")
 				newCont.ComponentUnion.Container.Endpoints = append(newCont.ComponentUnion.Container.Endpoints,
+					v1.Endpoint{Name: "port-3000-tcp", TargetPort: 3000, Protocol: v1.TCPEndpointProtocol},
+					v1.Endpoint{Name: "port-9000-tcp", TargetPort: 9000, Protocol: v1.TCPEndpointProtocol},
 					v1.Endpoint{Name: "debug", TargetPort: 5005},
 					v1.Endpoint{Name: "debug-another", TargetPort: 5858},
-					v1.Endpoint{Name: "port-3000-tcp", TargetPort: 3000, Protocol: v1.TCPEndpointProtocol},
-					v1.Endpoint{Name: "port-9000-tcp", TargetPort: 9000, Protocol: v1.TCPEndpointProtocol})
+				)
 				return buildDevfileObjWithComponents(
 					newCont,
 					testingutil.GetFakeVolumeComponent("vol1", "1Gi"))
