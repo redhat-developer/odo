@@ -99,7 +99,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 	listSpinner.End(true)
 
 	fmt.Printf("\nComponents:\n")
-	clicomponent.HumanReadableOutput(list)
+	clicomponent.HumanReadableOutput(ctx, list)
 	fmt.Printf("\nBindings:\n")
 	binding.HumanReadableOutput(lo.namespaceFilter, list)
 	return nil
@@ -116,7 +116,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 		componentName = odocontext.GetComponentName(ctx)
 	)
 	devfileComponents, componentInDevfile, err := component.ListAllComponents(
-		lo.clientset.KubernetesClient, lo.namespaceFilter, devfileObj, componentName)
+		lo.clientset.KubernetesClient, lo.clientset.PodmanClient, lo.namespaceFilter, devfileObj, componentName)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
@@ -136,7 +136,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 }
 
 // NewCmdList implements the list odo command
-func NewCmdList(name, fullName string) *cobra.Command {
+func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -154,7 +154,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 
 	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
 	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
-	componentCmd := clicomponent.NewCmdComponentList(clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName))
+	componentCmd := clicomponent.NewCmdComponentList(ctx, clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName))
 	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName))
 	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd, servicesCmd)
 

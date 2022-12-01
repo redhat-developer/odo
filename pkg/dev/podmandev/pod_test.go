@@ -58,6 +58,7 @@ var (
 				"app.kubernetes.io/part-of":            appName,
 				"component":                            devfileName,
 				"odo.dev/mode":                         labels.ComponentDevMode,
+				"odo.dev/project-type":                 "Not available",
 			},
 		},
 		Spec: corev1.PodSpec{

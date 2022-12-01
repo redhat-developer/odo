@@ -180,7 +180,7 @@ func odoRootCmd(ctx context.Context, name, fullName string) *cobra.Command {
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 		preference.NewCmdPreference(ctx, preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
-		list.NewCmdList(list.RecommendedCommandName, util.GetFullName(fullName, list.RecommendedCommandName)),
+		list.NewCmdList(ctx, list.RecommendedCommandName, util.GetFullName(fullName, list.RecommendedCommandName)),
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
 		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 
@@ -91,7 +92,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 
 	listSpinner.End(true)
 
-	HumanReadableOutput(list)
+	HumanReadableOutput(ctx, list)
 	return nil
 }
 
@@ -105,19 +106,26 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 	)
-	devfileComponents, componentInDevfile, err := component.ListAllComponents(
-		lo.clientset.KubernetesClient, lo.namespaceFilter, devfileObj, componentName)
+	allComponents, componentInDevfile, err := component.ListAllComponents(
+		lo.clientset.KubernetesClient, lo.clientset.PodmanClient, lo.namespaceFilter, devfileObj, componentName)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
+
+	// RunningOn is displayed only when RunOn is active
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		for i := range allComponents {
+			allComponents[i].RunningOn = ""
+		}
+	}
 	return api.ResourcesList{
 		ComponentInDevfile: componentInDevfile,
-		Components:         devfileComponents,
+		Components:         allComponents,
 	}, nil
 }
 
 // NewCmdList implements the list odo command
-func NewCmdComponentList(name, fullName string) *cobra.Command {
+func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -133,7 +141,9 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 		Aliases: []string{"components"},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.FILESYSTEM)
-
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		clientset.Add(listCmd, clientset.PODMAN)
+	}
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	commonflags.UseOutputFlag(listCmd)
@@ -142,7 +152,7 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 	return listCmd
 }
 
-func HumanReadableOutput(list api.ResourcesList) {
+func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 	components := list.Components
 	if len(components) == 0 {
 		log.Error("There are no components deployed.")
@@ -152,7 +162,11 @@ func HumanReadableOutput(list api.ResourcesList) {
 	t := ui.NewTable()
 
 	// Create the header and then sort accordingly
-	t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
+	headers := table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"}
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		headers = append(headers, "RUNNING ON")
+	}
+	t.AppendHeader(headers)
 	t.SortBy([]table.SortBy{
 		{Name: "MANAGED", Mode: table.Asc},
 		{Name: "NAME", Mode: table.Dsc},
@@ -191,7 +205,11 @@ func HumanReadableOutput(list api.ResourcesList) {
 			managedBy = text.Colors{text.FgBlue}.Sprintf(managedBy)
 		}
 
-		t.AppendRow(table.Row{name, componentType, mode, managedBy})
+		row := table.Row{name, componentType, mode, managedBy}
+		if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+			row = append(row, comp.RunningOn)
+		}
+		t.AppendRow(row)
 	}
 	t.Render()
 

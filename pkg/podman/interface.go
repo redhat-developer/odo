@@ -3,6 +3,7 @@ package podman
 import (
 	"io"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -41,4 +42,6 @@ type Client interface {
 	// GetRunningPodFromSelector returns any pod matching the given label selector.
 	// If multiple pods are found, implementations might have different behavior, by either returning an error or returning any element.
 	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
+
+	ListAllComponents() ([]api.ComponentAbstract, error)
 }

@@ -80,7 +80,6 @@ func createPodFromComponent(
 		}
 	}
 
-	// TODO add labels (for GetRunningPodFromSelector)
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
 			Containers: containers,
@@ -97,6 +96,7 @@ func createPodFromComponent(
 
 	runtime := component.GetComponentRuntimeFromDevfileMetadata(devfileObj.Data.GetMetadata())
 	pod.SetLabels(labels.GetLabels(componentName, appName, runtime, labels.ComponentDevMode, true))
+	labels.SetProjectType(pod.GetLabels(), component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	return &pod, fwPorts, nil
 }
