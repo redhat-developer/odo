@@ -94,7 +94,7 @@ var subdeps map[string][]string = map[string][]string{
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES_NULLABLE, PODMAN},
 	PORT_FORWARD:     {KUBERNETES_NULLABLE, STATE},
-	PROJECT:          {KUBERNETES_NULLABLE},
+	PROJECT:          {KUBERNETES},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
 	SYNC:             {EXEC},
