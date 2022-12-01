@@ -17,6 +17,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
+const DebugEndpointNamePrefix = "debug"
+
 type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
 	ApplyKubernetes(kubernetes v1alpha2.Component) error
@@ -322,6 +324,34 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 		}
 	}
 	return endpoints, nil
+}
+
+// GetDebugEndpointsForComponent returns all Debug endpoints for the specified component.
+// It returns an error if the component specified is not a container component.
+func GetDebugEndpointsForComponent(cmp v1alpha2.Component) ([]v1alpha2.Endpoint, error) {
+	if cmp.Container == nil {
+		return nil, fmt.Errorf("component %q is not a container component", cmp.Name)
+	}
+
+	var result []v1alpha2.Endpoint
+	for _, ep := range cmp.Container.Endpoints {
+		if IsDebugEndpoint(ep) {
+			result = append(result, ep)
+		}
+	}
+	return result, nil
+}
+
+// IsDebugEndpoint returns whether the specified endpoint represents a Debug endpoint,
+// based on the following naming convention: it is considered a Debug endpoint if it's named "debug" or if its name starts with "debug-".
+func IsDebugEndpoint(ep v1alpha2.Endpoint) bool {
+	return IsDebugPort(ep.Name)
+}
+
+// IsDebugPort returns whether the specified string represents a Debug endpoint,
+// based on the following naming convention: it is considered a Debug endpoint if it's named "debug" or if its name starts with "debug-".
+func IsDebugPort(name string) bool {
+	return name == DebugEndpointNamePrefix || strings.HasPrefix(name, DebugEndpointNamePrefix+"-")
 }
 
 // GetContainerComponentsForCommand returns the list of container components that would get used if the specified command runs.
