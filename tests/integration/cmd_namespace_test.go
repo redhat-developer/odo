@@ -196,7 +196,7 @@ ComponentSettings:
 					g.Expect(gjson.Get(out, gjsonStr).String()).To(Equal("true"))
 					// ensure that some namespace is marked as "active: false"
 					g.Expect(gjson.Get(out, "namespaces.#[active==false]#.name").String()).ShouldNot(ContainSubstring(commonVar.Project))
-				}).WithTimeout(10 * time.Second).Should(Succeed())
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 		})
 	}
