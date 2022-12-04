@@ -74,14 +74,14 @@ func ListKubernetesComponents(devfileObj parser.DevfileObj, path string) (list [
 	if err != nil {
 		return
 	}
-	var u unstructured.Unstructured
+	var u []unstructured.Unstructured
 	for _, kComponent := range components {
 		if kComponent.Kubernetes != nil {
-			u, err = GetK8sComponentAsUnstructured(devfileObj, kComponent.Name, path, devfilefs.DefaultFs{})
+			u, err = GetK8sComponentAsUnstructuredList(devfileObj, kComponent.Name, path, devfilefs.DefaultFs{})
 			if err != nil {
 				return
 			}
-			list = append(list, u)
+			list = append(list, u...)
 		}
 	}
 	return
