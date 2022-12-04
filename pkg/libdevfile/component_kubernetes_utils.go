@@ -13,21 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// GetK8sComponentAsUnstructured returns the first resource that appears in the Inlined/URI K8s of the devfile K8s component
-// TODO: Replace this method with GetK8sComponentAsUnstructuredList
-func GetK8sComponentAsUnstructured(devfileObj parser.DevfileObj, componentName string,
-	context string, fs devfilefs.Filesystem) (unstructured.Unstructured, error) {
-	uList, err := GetK8sComponentAsUnstructuredList(devfileObj, componentName, context, fs)
-	if err != nil {
-		return unstructured.Unstructured{}, err
-	}
-	if len(uList) != 0 {
-		return uList[0], nil
-	}
-	return unstructured.Unstructured{}, nil
-}
-
-// GetK8sComponentAsUnstructuredList parses the Inlined/URI K8s of the devfile K8s component
+// GetK8sComponentAsUnstructuredList parses the Inlined/URI K8s of the Devfile K8s component and returns a list of unstructured.Unstructured objects;
+// List is returned here because it is possible to define multiple K8s resources against a single Devfile K8s component
 func GetK8sComponentAsUnstructuredList(devfileObj parser.DevfileObj, componentName string,
 	context string, fs devfilefs.Filesystem) ([]unstructured.Unstructured, error) {
 
@@ -48,13 +35,14 @@ func GetK8sComponentAsUnstructuredList(devfileObj parser.DevfileObj, componentNa
 			return nil, err
 		}
 
-		// Marshal the object's data
+		// Marshal the object's data so that it can be unmarshalled again into unstructured.Unstructured object
+		// We do this again because yaml3 "gopkg.in/yaml.v3" pkg is unable to properly unmarshal the data into an unstructured object
 		rawData, err := yaml3.Marshal(decodeU.Object)
 		if err != nil {
 			return nil, err
 		}
 
-		// Unmarshal the data into an unstructured object
+		// Use "github.com/ghodss/yaml" pkg to correctly unmarshal the data into an unstructured object;
 		var u unstructured.Unstructured
 		if err = yaml.Unmarshal(rawData, &u.Object); err != nil {
 			return nil, err
