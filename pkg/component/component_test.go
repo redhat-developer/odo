@@ -506,7 +506,8 @@ func TestListRoutesAndIngresses(t *testing.T) {
 	)
 	createFakeIngressFromDevfile := func(devfileObj parser.DevfileObj, ingressComponentName string, label map[string]string) *v1.Ingress {
 		ing := &v1.Ingress{}
-		u, _ := libdevfile.GetK8sComponentAsUnstructured(devfileObj, ingressComponentName, "", filesystem.DefaultFs{})
+		uList, _ := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, ingressComponentName, "", filesystem.DefaultFs{})
+		u := uList[0]
 		_ = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), ing)
 		ing.SetLabels(label)
 		return ing
@@ -514,7 +515,8 @@ func TestListRoutesAndIngresses(t *testing.T) {
 
 	createFakeRouteFromDevfile := func(devfileObj parser.DevfileObj, routeComponentName string, label map[string]string) *v12.Route {
 		route := &v12.Route{}
-		u, _ := libdevfile.GetK8sComponentAsUnstructured(devfileObj, routeComponentName, "", filesystem.DefaultFs{})
+		uList, _ := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, routeComponentName, "", filesystem.DefaultFs{})
+		u := uList[0]
 		_ = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), route)
 		route.SetLabels(label)
 		return route
