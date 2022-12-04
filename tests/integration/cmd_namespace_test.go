@@ -178,6 +178,11 @@ ComponentSettings:
 		})
 
 		Describe("list "+commandName, func() {
+			It("should fail, without cluster", Label(helper.LabelNoCluster), func() {
+				out := helper.Cmd("odo", "list", commandName).ShouldFail().Err()
+				Expect(out).To(ContainSubstring("Please ensure you have an active kubernetes context to your cluster."))
+			})
+
 			It(fmt.Sprintf("should successfully list all the %ss", commandName), func() {
 				Eventually(func() string {
 					out := helper.Cmd("odo", "list", commandName).ShouldPass().Out()
