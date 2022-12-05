@@ -489,23 +489,6 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				cmpName := "my-nodejs-app"
 				BeforeEach(func() {
 					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", ctx.devfile).ShouldPass()
-
-					if ctx.isServiceNsSupported && ns != "" {
-						ns = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
-
-						commonVar.CliRunner.SetProject(commonVar.Project)
-
-						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"),
-							"name: cluster-sample",
-							fmt.Sprintf(`name: cluster-sample
-          namespace: %s`, ns))
-					}
-				})
-
-				AfterEach(func() {
-					if ctx.isServiceNsSupported && ns != "" {
-						commonVar.CliRunner.DeleteNamespaceProject(ns, false)
-					}
 				})
 
 				When("Starting a Pg service", func() {
@@ -517,11 +500,12 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							out, _ := commonVar.CliRunner.GetBindableKinds()
 							return out
 						}, 120, 3).Should(ContainSubstring("Cluster"))
-						addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
-						Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
-						commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "cluster-sample-1")
 
 						if ctx.isServiceNsSupported && ns != "" {
+							ns = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+							// Reset the original project
+							commonVar.CliRunner.SetProject(commonVar.Project)
+
 							addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", ns, "apply", "-f",
 								helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 							Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
@@ -530,6 +514,17 @@ var _ = Describe("odo describe/list binding command tests", func() {
 								"name: cluster-sample",
 								fmt.Sprintf(`name: cluster-sample
           namespace: %s`, ns))
+							commonVar.CliRunner.EnsurePodIsUp(ns, "cluster-sample-1")
+						} else {
+							addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+							Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+							commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "cluster-sample-1")
+						}
+					})
+
+					AfterEach(func() {
+						if ctx.isServiceNsSupported && ns != "" {
+							commonVar.CliRunner.DeleteNamespaceProject(ns, false)
 						}
 					})
 
