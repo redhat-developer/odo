@@ -540,33 +540,53 @@ ComponentSettings:
 		}
 	})
 
-	When("odo dev is executed to run a devfile containing a k8s resource ", func() {
-		var (
-			devSession    helper.DevSession
-			err           error
-			getDeployArgs = []string{"get", "deployments", "-n", commonVar.Project}
-		)
+	for _, ctx := range []struct {
+		title          string
+		devfile        string
+		matchResources []string
+	}{
+		{
+			title:          "odo dev is executed to run a devfile containing a k8s resource",
+			devfile:        "devfile-with-k8s-resource.yaml",
+			matchResources: []string{"my-component"},
+		},
+		{
+			title:          "odo dev is executed to run a devfile containing multiple k8s resource defined under a single Devfile component",
+			devfile:        "devfile-with-multiple-k8s-resources-in-single-component.yaml",
+			matchResources: []string{"my-component", "my-component-2"},
+		},
+	} {
+		ctx := ctx
+		When(ctx.title, func() {
+			var (
+				devSession    helper.DevSession
+				out           []byte
+				err           error
+				getDeployArgs = []string{"get", "deployments", "-n", commonVar.Project}
+			)
 
-		const (
-			deploymentName = "my-component" // hard-coded from the devfile-with-k8s-resource.yaml
-		)
-
-		BeforeEach(
-			func() {
+			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-k8s-resource.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devSession, out, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).To(BeNil())
 			})
-		AfterEach(func() {
-			devSession.Stop()
-			devSession.WaitEnd()
-		})
 
-		It("should have created the k8s resource", func() {
-			Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(deploymentName))
+			AfterEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			It("should have created the necessary k8s resources", func() {
+				By("checking the output for the resources", func() {
+					helper.MatchAllInOutput(string(out), ctx.matchResources)
+				})
+				By("fetching the resources from the cluster", func() {
+					helper.MatchAllInOutput(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), ctx.matchResources)
+				})
+			})
 		})
-	})
+	}
 
 	for _, manual := range []bool{false, true} {
 		for _, podman := range []bool{false, true} {

@@ -1,0 +1,83 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  projectType: nodejs
+  language: nodejs
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+      mountSources: true
+  - name: deploy-k8s-resource
+    kubernetes:
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: my-component
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: node-app
+          template:
+            metadata:
+              labels:
+                app: node-app
+            spec:
+              containers:
+                - name: main
+                  image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+                  resources:
+                    limits:
+                      memory: "128Mi"
+                      cpu: "500m"
+        ---
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: my-component-2
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: node-app
+          template:
+            metadata:
+              labels:
+                app: node-app
+            spec:
+              containers:
+                - name: main
+                  image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+                  resources:
+                    limits:
+                      memory: "128Mi"
+                      cpu: "500m"
+
+commands:
+  - id: build
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true
