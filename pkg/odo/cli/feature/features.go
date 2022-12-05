@@ -2,6 +2,7 @@ package feature
 
 import (
 	"context"
+	"sort"
 
 	"github.com/redhat-developer/odo/pkg/log"
 )
@@ -28,6 +29,8 @@ var (
 		isExperimental: true,
 		description:    "flag: --run-on",
 	}
+
+	enabledFeatures = map[OdoFeature]struct{}{}
 )
 
 // IsEnabled returns whether the specified feature should be enabled or not.
@@ -42,8 +45,21 @@ func IsEnabled(ctx context.Context, feat OdoFeature) bool {
 	// Features marked as experimental are enabled only if the experimental mode is set
 	experimentalModeEnabled := isExperimentalModeEnabled(ctx)
 	if experimentalModeEnabled {
+		enabledFeatures[feat] = struct{}{}
+	}
+	return experimentalModeEnabled
+}
+
+func DisplayWarnings() {
+	features := make([]OdoFeature, 0, len(enabledFeatures))
+	for k := range enabledFeatures {
+		features = append(features, k)
+	}
+	sort.Slice(features, func(i, j int) bool {
+		return features[i].id < features[j].id
+	})
+	for _, feat := range features {
 		log.Experimentalf("Experimental mode enabled for %s. Use at your own risk. More details on https://odo.dev/docs/user-guides/advanced/experimental-mode",
 			feat.description)
 	}
-	return experimentalModeEnabled
 }
