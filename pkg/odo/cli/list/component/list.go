@@ -218,9 +218,15 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 		}
 
 		row := table.Row{name, componentType, mode, managedBy}
+
 		if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
-			row = append(row, comp.RunningOn)
+			runningOn := comp.RunningOn
+			if runningOn == "" {
+				runningOn = "None"
+			}
+			row = append(row, runningOn)
 		}
+
 		t.AppendRow(row)
 	}
 	t.Render()
