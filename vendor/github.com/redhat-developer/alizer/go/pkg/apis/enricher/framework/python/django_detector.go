@@ -8,14 +8,20 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
-package recognizer
+package enricher
 
 import (
+	"regexp"
+
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type DjangoDetector struct{}
+
+func (d DjangoDetector) GetSupportedFrameworks() []string {
+	return []string{"Django"}
+}
 
 func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
 	managePy := utils.GetFile(files, "manage.py")
@@ -32,4 +38,23 @@ func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]
 	if hasFramework(&djangoFiles, "from django.") {
 		language.Frameworks = append(language.Frameworks, "Django")
 	}
+}
+
+type ApplicationPropertiesFile struct {
+	Dir  string
+	File string
+}
+
+func (d DjangoDetector) DoPortsDetection(component *model.Component) {
+	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
+		{
+			Dir:  "",
+			File: "manage.py",
+		},
+	})
+	if err != nil {
+		return
+	}
+	re := regexp.MustCompile(`.default_port\s*=\s*"([^"]*)`)
+	component.Ports = utils.FindAllPortsSubmatch(re, string(bytes), 1)
 }

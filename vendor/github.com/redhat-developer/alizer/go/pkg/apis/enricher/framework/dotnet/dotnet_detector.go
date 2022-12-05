@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
-package recognizer
+package enricher
 
 import (
 	"encoding/xml"
@@ -23,7 +23,11 @@ import (
 
 type DotNetDetector struct{}
 
-func (m DotNetDetector) DoFrameworkDetection(language *model.Language, configFilePath string) {
+func (d DotNetDetector) GetSupportedFrameworks() []string {
+	return []string{""}
+}
+
+func (d DotNetDetector) DoFrameworkDetection(language *model.Language, configFilePath string) {
 	framework := getFrameworks(configFilePath)
 	if framework == "" {
 		return
@@ -40,6 +44,9 @@ func (m DotNetDetector) DoFrameworkDetection(language *model.Language, configFil
 			language.Frameworks = append(language.Frameworks, frm)
 		}
 	}
+}
+
+func (d DotNetDetector) DoPortsDetection(component *model.Component) {
 }
 
 func getFrameworks(configFilePath string) string {

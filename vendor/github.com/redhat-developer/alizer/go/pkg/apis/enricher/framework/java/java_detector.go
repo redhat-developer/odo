@@ -8,11 +8,16 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
-package recognizer
+package enricher
 
 import (
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
 )
+
+type ApplicationPropertiesFile struct {
+	Dir  string
+	File string
+}
 
 func hasFramework(configFile string, tag string) (bool, error) {
 	if utils.IsPathOfWantedFile(configFile, "build.gradle") {

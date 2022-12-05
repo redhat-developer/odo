@@ -1,6 +1,7 @@
 C#:
   aliases:
     - "dotnet"
+    - ".NET"
   configuration_files:
     - ".*\\.\\w+proj"
     - "appsettings.json"
@@ -8,6 +9,7 @@ C#:
 F#:
   aliases:
     - "dotnet"
+    - ".NET"
   configuration_files:
     - ".*\\.\\w+proj"
     - "appsettings.json"
@@ -36,9 +38,16 @@ Rust:
   configuration_files:
     - "Cargo.toml"
   component: true
+TypeScript:
+  exclude_folders:
+    - "node_modules"
+  configuration_files:
+    - "package.json"
+  component: true
 Visual Basic .NET:
   aliases:
     - "dotnet"
+    - ".NET"
   configuration_files:
     - ".*\\.\\w+proj"
     - "appsettings.json"

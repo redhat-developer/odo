@@ -11,17 +11,13 @@
 package recognizer
 
 import (
-	"errors"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	enricher "github.com/redhat-developer/alizer/go/pkg/apis/enricher"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 	langfile "github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
-	ignore "github.com/sabhiram/go-gitignore"
 )
 
 type languageItem struct {
@@ -33,7 +29,7 @@ func Analyze(path string) ([]model.Language, error) {
 	languagesFile := langfile.Get()
 	languagesDetected := make(map[string]languageItem)
 
-	paths, err := GetFilePathsFromRoot(path)
+	paths, err := utils.GetFilePathsFromRoot(path)
 	if err != nil {
 		return []model.Language{}, err
 	}
@@ -108,51 +104,4 @@ func extractExtensions(paths []string) map[string]int {
 		extensions[extension] = count
 	}
 	return extensions
-}
-
-func GetFilePathsFromRoot(root string) ([]string, error) {
-	var files []string
-	ignoreFile, errorIgnoreFile := getIgnoreFile(root)
-	errWalk := filepath.Walk(root,
-		func(path string, info os.FileInfo, err error) error {
-			if errorIgnoreFile == nil && ignoreFile.MatchesPath(path) {
-				if info.IsDir() {
-					return filepath.SkipDir
-				} else {
-					return nil
-				}
-			}
-			if !info.IsDir() && isFileInRoot(root, path) {
-				files = append([]string{path}, files...)
-			} else {
-				files = append(files, path)
-			}
-			return nil
-		})
-	return files, errWalk
-}
-
-func getIgnoreFile(root string) (*ignore.GitIgnore, error) {
-	gitIgnorePath := filepath.Join(root, ".gitignore")
-	if _, err := os.Stat(gitIgnorePath); err == nil {
-		return ignore.CompileIgnoreFile(gitIgnorePath)
-	}
-	return nil, errors.New("no git ignore file found")
-}
-
-func isFileInRoot(root string, file string) bool {
-	dir, _ := filepath.Split(file)
-	return strings.EqualFold(filepath.Clean(dir), filepath.Clean(root))
-}
-
-func getFilePathsInRoot(root string) ([]string, error) {
-	fileInfos, err := ioutil.ReadDir(root)
-	if err != nil {
-		return nil, err
-	}
-	var files []string
-	for _, fileInfo := range fileInfos {
-		files = append(files, filepath.Join(root, fileInfo.Name()))
-	}
-	return files, nil
 }

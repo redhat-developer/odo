@@ -8,11 +8,12 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
-package recognizer
+package enricher
 
 import (
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/python"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
+	utils "github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type PythonEnricher struct{}
@@ -32,9 +33,41 @@ func (p PythonEnricher) DoEnrichLanguage(language *model.Language, files *[]stri
 	detectPythonFrameworks(language, files)
 }
 
-func (j PythonEnricher) DoEnrichComponent(component *model.Component) {
+func (j PythonEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
+
+	for _, algorithm := range settings.PortDetectionStrategy {
+		ports := []int{}
+		switch algorithm {
+		case model.DockerFile:
+			{
+				ports = GetPortsFromDockerFile(component.Path)
+				break
+			}
+		case model.Compose:
+			{
+				ports = GetPortsFromDockerComposeFile(component.Path, settings)
+				break
+			}
+		case model.Source:
+			{
+				for _, detector := range getPythonFrameworkDetectors() {
+					for _, framework := range component.Languages[0].Frameworks {
+						if utils.Contains(detector.GetSupportedFrameworks(), framework) {
+							detector.DoPortsDetection(component)
+						}
+					}
+				}
+			}
+		}
+		if len(ports) > 0 {
+			component.Ports = ports
+		}
+		if len(component.Ports) > 0 {
+			return
+		}
+	}
 }
 
 func (p PythonEnricher) IsConfigValidForComponentDetection(language string, config string) bool {

@@ -24,5 +24,15 @@ type Pom struct {
 	Modules struct {
 		Module string `xml:"module"`
 	} `xml:"modules,omitempty"`
+	Build struct {
+		Plugins struct {
+			Plugin []struct {
+				GroupId    string `xml:"groupId"`
+				ArtifactId string `xml:"artifactId"`
+				Version    string `xml:"version"`
+				Scope      string `xml:"scope"`
+			} `xml:"plugin"`
+		} `xml:"plugins"`
+	} `xml:"build,omitempty"`
 	ArtifactId string `xml:"artifactId"`
 }
