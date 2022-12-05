@@ -200,7 +200,7 @@ func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string
 	endPort := startPort + 10000
 	for name, ports := range ceMap {
 		for _, p := range ports {
-			freePort, err := util.NextFreePort(startPort, endPort)
+			freePort, err := util.NextFreePort(startPort, endPort, nil)
 			if err != nil {
 				klog.Infof("%s", err)
 				continue

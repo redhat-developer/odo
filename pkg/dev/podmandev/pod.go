@@ -24,6 +24,7 @@ func createPodFromComponent(
 	buildCommand string,
 	runCommand string,
 	debugCommand string,
+	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	containers, err := generator.GetContainers(devfileObj, common.DevfileOptions{})
 	if err != nil {
@@ -40,7 +41,7 @@ func createPodFromComponent(
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	fwPorts := addHostPorts(containers)
+	fwPorts := addHostPorts(containers, usedPorts)
 
 	volumes := []corev1.Volume{
 		{
@@ -106,13 +107,13 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func addHostPorts(containers []corev1.Container) []api.ForwardedPort {
+func addHostPorts(containers []corev1.Container, usedPorts []int) []api.ForwardedPort {
 	result := []api.ForwardedPort{}
 	startPort := 40001
 	endPort := startPort + 10000
 	for i := range containers {
 		for j := range containers[i].Ports {
-			freePort, err := util.NextFreePort(startPort, endPort)
+			freePort, err := util.NextFreePort(startPort, endPort, usedPorts)
 			if err != nil {
 				klog.Infof("%s", err)
 				continue
@@ -141,4 +142,12 @@ func addVolumeMountToContainer(containers []corev1.Container, devfileVolume stor
 		}
 	}
 	return fmt.Errorf("container %q not found", devfileVolume.Container)
+}
+
+func getUsedPorts(ports []api.ForwardedPort) []int {
+	res := make([]int, 0, len(ports))
+	for _, port := range ports {
+		res = append(res, port.LocalPort)
+	}
+	return res
 }

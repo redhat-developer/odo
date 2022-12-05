@@ -787,9 +787,14 @@ func IsPortFree(port int) bool {
 // NextFreePort returns the next free port on system, starting at start
 // end finishing at end.
 // If no port is found in the range [start, end], 0 is returned
-func NextFreePort(start, end int) (int, error) {
+func NextFreePort(start, end int, usedPorts []int) (int, error) {
 	port := start
 	for {
+		for _, usedPort := range usedPorts {
+			if usedPort == port {
+				return port, nil
+			}
+		}
 		if IsPortFree(port) {
 			return port, nil
 		}

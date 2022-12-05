@@ -136,10 +136,12 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.BuildCommand,
 		options.RunCommand,
 		"",
+		o.usedPorts,
 	)
 	if err != nil {
 		return nil, nil, err
 	}
+	o.usedPorts = getUsedPorts(fwPorts)
 
 	if equality.Semantic.DeepEqual(o.deployedPod, pod) {
 		klog.V(4).Info("pod is already deployed as required")

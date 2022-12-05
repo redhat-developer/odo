@@ -35,6 +35,7 @@ type DevClient struct {
 	watchClient  watch.Client
 
 	deployedPod *corev1.Pod
+	usedPorts   []int
 }
 
 var _ dev.Client = (*DevClient)(nil)
