@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	recognizer "github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
+	model "github.com/redhat-developer/alizer/go/pkg/apis/model"
 	api "github.com/redhat-developer/odo/pkg/api"
 )
 
@@ -37,10 +37,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DetectFramework mocks base method.
-func (m *MockClient) DetectFramework(ctx context.Context, path string) (recognizer.DevFileType, api.Registry, error) {
+func (m *MockClient) DetectFramework(ctx context.Context, path string) (model.DevFileType, api.Registry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DetectFramework", ctx, path)
-	ret0, _ := ret[0].(recognizer.DevFileType)
+	ret0, _ := ret[0].(model.DevFileType)
 	ret1, _ := ret[1].(api.Registry)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
