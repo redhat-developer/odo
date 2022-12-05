@@ -552,7 +552,7 @@ func (a *Adapter) createOrUpdateComponent(
 }
 
 func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string, ownerReference metav1.OwnerReference) error {
-	oldSvc, err := a.kubeClient.GetOneService(a.ComponentName, a.AppName)
+	oldSvc, err := a.kubeClient.GetOneService(a.ComponentName, a.AppName, true)
 	originOwnerReferences := svc.OwnerReferences
 	if err != nil {
 		// no old service was found, create a new one
