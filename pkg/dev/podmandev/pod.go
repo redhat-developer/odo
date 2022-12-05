@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 func createPodFromComponent(
@@ -107,17 +108,23 @@ func getVolumeName(volume string, componentName string, appName string) string {
 
 func addHostPorts(containers []corev1.Container) []api.ForwardedPort {
 	result := []api.ForwardedPort{}
-	hostPort := int32(39001)
+	startPort := 40001
+	endPort := startPort + 10000
 	for i := range containers {
 		for j := range containers[i].Ports {
+			freePort, err := util.NextFreePort(startPort, endPort)
+			if err != nil {
+				klog.Infof("%s", err)
+				continue
+			}
 			result = append(result, api.ForwardedPort{
 				ContainerName: containers[i].Name,
 				LocalAddress:  "127.0.0.1",
-				LocalPort:     int(hostPort),
+				LocalPort:     freePort,
 				ContainerPort: int(containers[i].Ports[j].ContainerPort),
 			})
-			containers[i].Ports[j].HostPort = hostPort
-			hostPort++
+			containers[i].Ports[j].HostPort = int32(freePort)
+			startPort = freePort + 1
 		}
 	}
 	return result
