@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
@@ -51,7 +51,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				},
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
-					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(recognizer.DevFileType{
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
 						Name: "a-devfile-name",
 					}, api.Registry{
 						Name: "a-registry",
@@ -78,7 +78,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				},
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
-					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(recognizer.DevFileType{}, api.Registry{}, nil)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{}, api.Registry{}, nil)
 					return alizerClient
 				},
 			},
