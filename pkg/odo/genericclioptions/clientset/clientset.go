@@ -46,9 +46,6 @@ const (
 	ALIZER = "DEP_ALIZER"
 	// BINDING instantiates client for pkg/binding
 	BINDING = "DEP_BINDING"
-	// REMOVE_BINDING instantiates client for pkg/binding for removing a binding;
-	// this is required so that the command can be run even when the cluster is inaccessible
-	REMOVE_BINDING = "DEP_REMOVE_BINDING"
 	// DELETE_COMPONENT instantiates client for pkg/component/delete
 	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 	// DEPLOY instantiates client for pkg/deploy
@@ -103,7 +100,6 @@ var subdeps map[string][]string = map[string][]string{
 	SYNC:             {EXEC},
 	WATCH:            {KUBERNETES_NULLABLE},
 	BINDING:          {PROJECT, KUBERNETES_NULLABLE},
-	REMOVE_BINDING:   {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -159,7 +155,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		dep.KubernetesClient, err = kclient.New()
 		if err != nil {
-			if isDefined(command, KUBERNETES) {
+			// only return error is KUBERNETES_NULLABLE is not defined in combination with KUBERNETES
+			if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
 				return nil, err
 			}
 			dep.KubernetesClient = nil
@@ -231,7 +228,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	if isDefined(command, WATCH) {
 		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient)
 	}
-	if isDefined(command, BINDING) || isDefined(command, REMOVE_BINDING) {
+	if isDefined(command, BINDING) {
 		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)
 	}
 	if isDefined(command, PORT_FORWARD) {

@@ -86,7 +86,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		},
 	}
 	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")
-	clientset.Add(bindingCmd, clientset.REMOVE_BINDING, clientset.FILESYSTEM)
+	clientset.Add(bindingCmd, clientset.BINDING, clientset.FILESYSTEM)
 
 	return bindingCmd
 }
