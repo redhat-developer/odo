@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
-package recognizer
+package enricher
 
 import (
 	"errors"
@@ -23,7 +23,9 @@ import (
 type GoEnricher struct{}
 
 type GoFrameworkDetector interface {
+	GetSupportedFrameworks() []string
 	DoFrameworkDetection(language *model.Language, goMod *modfile.File)
+	DoPortsDetection(component *model.Component)
 }
 
 func getGoFrameworkDetectors() []GoFrameworkDetector {
@@ -56,9 +58,41 @@ func (j GoEnricher) DoEnrichLanguage(language *model.Language, files *[]string) 
 	}
 }
 
-func (j GoEnricher) DoEnrichComponent(component *model.Component) {
+func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
+
+	for _, algorithm := range settings.PortDetectionStrategy {
+		ports := []int{}
+		switch algorithm {
+		case model.DockerFile:
+			{
+				ports = GetPortsFromDockerFile(component.Path)
+				break
+			}
+		case model.Compose:
+			{
+				ports = GetPortsFromDockerComposeFile(component.Path, settings)
+				break
+			}
+		case model.Source:
+			{
+				for _, detector := range getGoFrameworkDetectors() {
+					for _, framework := range component.Languages[0].Frameworks {
+						if utils.Contains(detector.GetSupportedFrameworks(), framework) {
+							detector.DoPortsDetection(component)
+						}
+					}
+				}
+			}
+		}
+		if len(ports) > 0 {
+			component.Ports = ports
+		}
+		if len(component.Ports) > 0 {
+			return
+		}
+	}
 }
 
 func (j GoEnricher) IsConfigValidForComponentDetection(language string, config string) bool {

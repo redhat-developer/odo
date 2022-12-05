@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
@@ -27,14 +28,14 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 
 // DetectFramework uses the alizer library in order to detect the devfile
 // to use depending on the files in the path
-func (o *Alizer) DetectFramework(ctx context.Context, path string) (recognizer.DevFileType, api.Registry, error) {
-	types := []recognizer.DevFileType{}
+func (o *Alizer) DetectFramework(ctx context.Context, path string) (model.DevFileType, api.Registry, error) {
+	types := []model.DevFileType{}
 	components, err := o.registryClient.ListDevfileStacks(ctx, "", "", "", false)
 	if err != nil {
-		return recognizer.DevFileType{}, api.Registry{}, err
+		return model.DevFileType{}, api.Registry{}, err
 	}
 	for _, component := range components.Items {
-		types = append(types, recognizer.DevFileType{
+		types = append(types, model.DevFileType{
 			Name:        component.Name,
 			Language:    component.Language,
 			ProjectType: component.ProjectType,
@@ -43,7 +44,7 @@ func (o *Alizer) DetectFramework(ctx context.Context, path string) (recognizer.D
 	}
 	typ, err := recognizer.SelectDevFileFromTypes(path, types)
 	if err != nil {
-		return recognizer.DevFileType{}, api.Registry{}, err
+		return model.DevFileType{}, api.Registry{}, err
 	}
 	return types[typ], components.Items[typ].Registry, nil
 }
@@ -115,7 +116,7 @@ func (o *Alizer) DetectName(path string) (string, error) {
 	return name, nil
 }
 
-func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry api.Registry) *api.DevfileLocation {
+func GetDevfileLocationFromDetection(typ model.DevFileType, registry api.Registry) *api.DevfileLocation {
 	return &api.DevfileLocation{
 		Devfile:         typ.Name,
 		DevfileRegistry: registry.Name,

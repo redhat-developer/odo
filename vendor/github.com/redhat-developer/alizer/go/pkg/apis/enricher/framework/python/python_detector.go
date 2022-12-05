@@ -8,7 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
-package recognizer
+package enricher
 
 import (
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"

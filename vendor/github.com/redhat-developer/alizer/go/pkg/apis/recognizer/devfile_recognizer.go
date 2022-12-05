@@ -11,20 +11,17 @@
 package recognizer
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 )
 
-type DevFileType struct {
-	Name        string
-	Language    string
-	ProjectType string
-	Tags        []string
-}
-
-func SelectDevFileFromTypes(path string, devFileTypes []DevFileType) (int, error) {
+func SelectDevFileFromTypes(path string, devFileTypes []model.DevFileType) (int, error) {
 	components, _ := DetectComponentsInRoot(path)
 	if len(components) > 0 {
 		devfile, err := selectDevFileByLanguage(components[0].Languages[0], devFileTypes)
@@ -52,7 +49,7 @@ func SelectDevFileFromTypes(path string, devFileTypes []DevFileType) (int, error
 	return devfile, nil
 }
 
-func SelectDevFileUsingLanguagesFromTypes(languages []model.Language, devFileTypes []DevFileType) (int, error) {
+func SelectDevFileUsingLanguagesFromTypes(languages []model.Language, devFileTypes []model.DevFileType) (int, error) {
 	for _, language := range languages {
 		devfile, err := selectDevFileByLanguage(language, devFileTypes)
 		if err == nil {
@@ -62,7 +59,73 @@ func SelectDevFileUsingLanguagesFromTypes(languages []model.Language, devFileTyp
 	return -1, errors.New("no valid devfile found by using those languages")
 }
 
-func selectDevFileByLanguage(language model.Language, devFileTypes []DevFileType) (int, error) {
+func SelectDevFileFromRegistry(path string, url string) (model.DevFileType, error) {
+	devFileTypes, err := downloadDevFileTypesFromRegistry(url)
+	if err != nil {
+		return model.DevFileType{}, err
+	}
+
+	index, err := SelectDevFileFromTypes(path, devFileTypes)
+	if err != nil {
+		return model.DevFileType{}, err
+	}
+	return devFileTypes[index], nil
+}
+
+func downloadDevFileTypesFromRegistry(url string) ([]model.DevFileType, error) {
+	url = adaptUrl(url)
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		// retry by appending index to url
+		url = appendIndexPath(url)
+		resp, err = http.Get(url)
+		if err != nil {
+			return []model.DevFileType{}, err
+		}
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		return []model.DevFileType{}, errors.New("unable to fetch devfiles from the registry")
+	}
+
+	body, err2 := ioutil.ReadAll(resp.Body)
+	if err2 != nil {
+		return []model.DevFileType{}, errors.New("unable to fetch devfiles from the registry")
+	}
+
+	var devFileTypes []model.DevFileType
+	err = json.Unmarshal(body, &devFileTypes)
+	if err != nil {
+		return []model.DevFileType{}, errors.New("unable to fetch devfiles from the registry")
+	}
+
+	return devFileTypes, nil
+}
+
+func appendIndexPath(url string) string {
+	if strings.HasSuffix(url, "/") {
+		return url + "index"
+	}
+	return url + "/index"
+}
+
+func adaptUrl(url string) string {
+	re := regexp.MustCompile(`^https://github.com/(.*)/blob/(.*)$`)
+	url = re.ReplaceAllString(url, `https://raw.githubusercontent.com/$1/$2`)
+
+	re = regexp.MustCompile(`^https://gitlab.com/(.*)/-/blob/(.*)$`)
+	url = re.ReplaceAllString(url, `https://gitlab.com/$1/-/raw/$2`)
+
+	re = regexp.MustCompile(`^https://bitbucket.org/(.*)/src/(.*)$`)
+	url = re.ReplaceAllString(url, `https://bitbucket.org/$1/raw/$2`)
+
+	return url
+}
+
+func selectDevFileByLanguage(language model.Language, devFileTypes []model.DevFileType) (int, error) {
 	scoreTarget := 0
 	devfileTarget := -1
 	FRAMEWORK_WEIGHT := 10

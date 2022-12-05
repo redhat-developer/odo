@@ -19,9 +19,9 @@ import (
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
 	v11 "k8s.io/api/core/v1"
-	v13 "k8s.io/api/networking/v1"
+	v12 "k8s.io/api/networking/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v13 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -159,7 +159,7 @@ func (mr *MockClientInterfaceMockRecorder) CreatePVC(pvc interface{}) *gomock.Ca
 }
 
 // CreateSecret mocks base method.
-func (m *MockClientInterface) CreateSecret(objectMeta v12.ObjectMeta, data map[string]string, ownerReference v12.OwnerReference) error {
+func (m *MockClientInterface) CreateSecret(objectMeta v13.ObjectMeta, data map[string]string, ownerReference v13.OwnerReference) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecret", objectMeta, data, ownerReference)
 	ret0, _ := ret[0].(error)
@@ -173,7 +173,7 @@ func (mr *MockClientInterfaceMockRecorder) CreateSecret(objectMeta, data, ownerR
 }
 
 // CreateSecrets mocks base method.
-func (m *MockClientInterface) CreateSecrets(componentName string, commonObjectMeta v12.ObjectMeta, svc *v11.Service, ownerReference v12.OwnerReference) error {
+func (m *MockClientInterface) CreateSecrets(componentName string, commonObjectMeta v13.ObjectMeta, svc *v11.Service, ownerReference v13.OwnerReference) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecrets", componentName, commonObjectMeta, svc, ownerReference)
 	ret0, _ := ret[0].(error)
@@ -202,7 +202,7 @@ func (mr *MockClientInterfaceMockRecorder) CreateService(svc interface{}) *gomoc
 }
 
 // CreateTLSSecret mocks base method.
-func (m *MockClientInterface) CreateTLSSecret(tlsCertificate, tlsPrivKey []byte, objectMeta v12.ObjectMeta) (*v11.Secret, error) {
+func (m *MockClientInterface) CreateTLSSecret(tlsCertificate, tlsPrivKey []byte, objectMeta v13.ObjectMeta) (*v11.Secret, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTLSSecret", tlsCertificate, tlsPrivKey, objectMeta)
 	ret0, _ := ret[0].(*v11.Secret)
@@ -1056,7 +1056,7 @@ func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
 }
 
-// ListDynamicResources mocks base method
+// ListDynamicResources mocks base method.
 func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr, selector)
@@ -1065,10 +1065,25 @@ func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.
 	return ret0, ret1
 }
 
-// ListDynamicResources indicates an expected call of ListDynamicResources
+// ListDynamicResources indicates an expected call of ListDynamicResources.
 func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr, selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr, selector)
+}
+
+// ListIngresses mocks base method.
+func (m *MockClientInterface) ListIngresses(namespace, selector string) (*v12.IngressList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIngresses", namespace, selector)
+	ret0, _ := ret[0].(*v12.IngressList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIngresses indicates an expected call of ListIngresses.
+func (mr *MockClientInterfaceMockRecorder) ListIngresses(namespace, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIngresses", reflect.TypeOf((*MockClientInterface)(nil).ListIngresses), namespace, selector)
 }
 
 // ListPVCNames mocks base method.
@@ -1305,7 +1320,7 @@ func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, o
 }
 
 // TryWithBlockOwnerDeletion mocks base method.
-func (m *MockClientInterface) TryWithBlockOwnerDeletion(ownerReference v12.OwnerReference, exec func(v12.OwnerReference) error) error {
+func (m *MockClientInterface) TryWithBlockOwnerDeletion(ownerReference v13.OwnerReference, exec func(v13.OwnerReference) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TryWithBlockOwnerDeletion", ownerReference, exec)
 	ret0, _ := ret[0].(error)
@@ -1392,7 +1407,7 @@ func (mr *MockClientInterfaceMockRecorder) UpdateService(svc interface{}) *gomoc
 }
 
 // UpdateStorageOwnerReference mocks base method.
-func (m *MockClientInterface) UpdateStorageOwnerReference(pvc *v11.PersistentVolumeClaim, ownerReference ...v12.OwnerReference) error {
+func (m *MockClientInterface) UpdateStorageOwnerReference(pvc *v11.PersistentVolumeClaim, ownerReference ...v13.OwnerReference) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{pvc}
 	for _, a := range ownerReference {
@@ -1437,19 +1452,4 @@ func (m *MockClientInterface) WaitForServiceAccountInNamespace(namespace, servic
 func (mr *MockClientInterfaceMockRecorder) WaitForServiceAccountInNamespace(namespace, serviceAccountName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForServiceAccountInNamespace", reflect.TypeOf((*MockClientInterface)(nil).WaitForServiceAccountInNamespace), namespace, serviceAccountName)
-}
-
-// ListIngresses mocks base method
-func (m *MockClientInterface) ListIngresses(namespace, selector string) (*v13.IngressList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListIngresses", namespace, selector)
-	ret0, _ := ret[0].(*v13.IngressList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListIngresses indicates an expected call of ListIngresses
-func (mr *MockClientInterfaceMockRecorder) ListIngresses(namespace, selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIngresses", reflect.TypeOf((*MockClientInterface)(nil).ListIngresses), namespace, selector)
 }

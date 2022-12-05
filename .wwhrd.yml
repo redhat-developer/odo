@@ -41,3 +41,5 @@ exceptions:
   - sigs.k8s.io/yaml/...
   # MIT licence - wwhrd is not detecting it correctly
   - github.com/ActiveState/vt10x
+  # MIT licence - wwhrd is not detecting it correctly
+  - github.com/acomagu/bufpipe
