@@ -94,7 +94,7 @@ var subdeps map[string][]string = map[string][]string{
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES_NULLABLE, PODMAN},
 	PORT_FORWARD:     {KUBERNETES_NULLABLE, STATE},
-	PROJECT:          {KUBERNETES_NULLABLE},
+	PROJECT:          {KUBERNETES},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
 	SYNC:             {EXEC},
@@ -155,7 +155,8 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		dep.KubernetesClient, err = kclient.New()
 		if err != nil {
-			if isDefined(command, KUBERNETES) {
+			// only return error is KUBERNETES_NULLABLE is not defined in combination with KUBERNETES
+			if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
 				return nil, err
 			}
 			dep.KubernetesClient = nil
