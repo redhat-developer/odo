@@ -47,6 +47,7 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 	)
 
 	cmd := exec.Command(o.podmanCmd, "play", "kube", "-")
+	klog.V(3).Infof("executing %v", cmd.Args)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -89,7 +90,9 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 }
 
 func (o *PodmanCli) PodStop(podname string) error {
-	out, err := exec.Command(o.podmanCmd, "pod", "stop", podname).Output()
+	cmd := exec.Command(o.podmanCmd, "pod", "stop", podname)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -101,7 +104,9 @@ func (o *PodmanCli) PodStop(podname string) error {
 }
 
 func (o *PodmanCli) PodRm(podname string) error {
-	out, err := exec.Command(o.podmanCmd, "pod", "rm", podname).Output()
+	cmd := exec.Command(o.podmanCmd, "pod", "rm", podname)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -113,7 +118,9 @@ func (o *PodmanCli) PodRm(podname string) error {
 }
 
 func (o *PodmanCli) VolumeRm(volumeName string) error {
-	out, err := exec.Command(o.podmanCmd, "volume", "rm", volumeName).Output()
+	cmd := exec.Command(o.podmanCmd, "volume", "rm", volumeName)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -125,7 +132,9 @@ func (o *PodmanCli) VolumeRm(volumeName string) error {
 }
 
 func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
-	out, err := exec.Command(o.podmanCmd, "volume", "ls", "--format", "{{.Name}}", "--noheading").Output()
+	cmd := exec.Command(o.podmanCmd, "volume", "ls", "--format", "{{.Name}}", "--noheading")
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))

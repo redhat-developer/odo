@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+
+	"k8s.io/klog"
 )
 
 type Version struct {
@@ -22,7 +24,9 @@ type SystemVersionReport struct {
 }
 
 func (o *PodmanCli) Version() (SystemVersionReport, error) {
-	out, err := exec.Command(o.podmanCmd, "version", "--format", "json").Output()
+	cmd := exec.Command(o.podmanCmd, "version", "--format", "json")
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))

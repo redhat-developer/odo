@@ -18,7 +18,9 @@ type ListPodsReport struct {
 }
 
 func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
-	out, err := exec.Command(o.podmanCmd, "pod", "ps", "--format", "json", "--filter", "status=running").Output()
+	cmd := exec.Command(o.podmanCmd, "pod", "ps", "--format", "json", "--filter", "status=running")
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -32,10 +34,10 @@ func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
 	}
 
 	for _, pod := range list {
-		klog.V(5).Infof("\npod name: %s\n", pod.Name)
-		klog.V(5).Infof("labels:\n")
+		klog.V(5).Infof("\npod name: %s", pod.Name)
+		klog.V(5).Infof("labels:")
 		for k, v := range pod.Labels {
-			klog.V(5).Infof(" - %s: %s\n", k, v)
+			klog.V(5).Infof(" - %s: %s", k, v)
 		}
 	}
 
