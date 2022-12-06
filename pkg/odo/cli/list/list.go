@@ -5,25 +5,25 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/list/services"
-	"github.com/redhat-developer/odo/pkg/odo/commonflags"
-
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/binding"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/list/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
-
-	dfutil "github.com/devfile/library/pkg/util"
-
+	"github.com/redhat-developer/odo/pkg/odo/cli/list/services"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -74,7 +74,7 @@ func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, ar
 	// if it hasn't, we will search from the default project / namespace.
 	if lo.namespaceFlag != "" {
 		lo.namespaceFilter = lo.namespaceFlag
-	} else {
+	} else if lo.clientset.KubernetesClient != nil {
 		lo.namespaceFilter = odocontext.GetNamespace(ctx)
 	}
 
@@ -114,22 +114,43 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 	var (
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
+
+		kubeClient   = lo.clientset.KubernetesClient
+		podmanClient = lo.clientset.PodmanClient
 	)
-	devfileComponents, componentInDevfile, err := component.ListAllComponents(
-		lo.clientset.KubernetesClient, lo.clientset.PodmanClient, lo.namespaceFilter, devfileObj, componentName)
+
+	switch fcontext.GetRunOn(ctx, "") {
+	case commonflags.RunOnCluster:
+		podmanClient = nil
+	case commonflags.RunOnPodman:
+		kubeClient = nil
+	}
+
+	allComponents, componentInDevfile, err := component.ListAllComponents(
+		kubeClient, podmanClient, lo.namespaceFilter, devfileObj, componentName)
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
 
+	var bindings []api.ServiceBinding
+	var inDevfile []string
+
 	workingDir := odocontext.GetWorkingDirectory(ctx)
-	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(devfileObj, workingDir)
+	bindings, inDevfile, err = lo.clientset.BindingClient.ListAllBindings(devfileObj, workingDir)
 	if err != nil {
 		return api.ResourcesList{}, err
+	}
+
+	// RunningOn is displayed only when RunOn is active
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		for i := range allComponents {
+			allComponents[i].RunningOn = ""
+		}
 	}
 
 	return api.ResourcesList{
 		ComponentInDevfile: componentInDevfile,
-		Components:         devfileComponents,
+		Components:         allComponents,
 		BindingsInDevfile:  inDevfile,
 		Bindings:           bindings,
 	}, nil
@@ -150,7 +171,10 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(listCmd, clientset.KUBERNETES, clientset.BINDING, clientset.FILESYSTEM)
+	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.BINDING, clientset.FILESYSTEM)
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
+	}
 
 	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
 	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
@@ -162,6 +186,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	commonflags.UseOutputFlag(listCmd)
+	commonflags.UseRunOnFlag(listCmd)
 
 	return listCmd
 }
