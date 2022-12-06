@@ -3,8 +3,27 @@ kind: Cluster
 metadata:
   name: cluster-sample
 spec:
-  instances: 1
   logLevel: info
-  primaryUpdateStrategy: unsupervised
-  storage:
+  startDelay: 30
+  stopDelay: 30
+  nodeMaintenanceWindow:
+    inProgress: false
+    reusePVC: true
+  enableSuperuserAccess: true
+  monitoring:
+    disableDefaultQueries: false
+    enablePodMonitor: false
+  minSyncReplicas: 0
+  postgresGID: 26
+  primaryUpdateMethod: switchover
+  postgresUID: 26
+  walStorage:
+    resizeInUseVolumes: true
     size: 1Gi
+  maxSyncReplicas: 0
+  switchoverDelay: 40000000
+  storage:
+    resizeInUseVolumes: true
+    size: 1Gi
+  primaryUpdateStrategy: unsupervised
+  instances: 1
