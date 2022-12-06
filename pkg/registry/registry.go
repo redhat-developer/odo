@@ -13,6 +13,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	"github.com/devfile/registry-support/registry-library/library"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -40,6 +41,7 @@ func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.C
 
 // PullStackFromRegistry pulls stack from registry with all stack resources (all media types) to the destination directory
 func (o RegistryClient) PullStackFromRegistry(registry string, stack string, destDir string, options library.RegistryOptions) error {
+	klog.V(3).Infof("sending telemetry data: %#v", options.Telemetry)
 	return library.PullStackFromRegistry(registry, stack, destDir, options)
 }
 
