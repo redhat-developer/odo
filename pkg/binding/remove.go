@@ -39,7 +39,7 @@ func (o *BindingClient) RemoveBinding(servicebindingName string, obj parser.Devf
 		var unstructuredObjs []unstructured.Unstructured
 		// Parse the K8s manifest
 		unstructuredObjs, err = libdevfile.GetK8sComponentAsUnstructuredList(obj, component.Name, filepath.Dir(obj.Ctx.GetAbsPath()), devfilefs.DefaultFs{})
-		if err != nil {
+		if err != nil || len(unstructuredObjs) == 0 {
 			continue
 		}
 		// We default to the first object in the list because as far as ServiceBinding is concerned,
