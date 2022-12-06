@@ -26,6 +26,7 @@ import (
 
 	"gopkg.in/AlecAivazis/survey.v1"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"k8s.io/klog"
@@ -201,6 +202,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 
 	}
 	o.SetClientset(deps)
+
+	feature.DisplayWarnings()
 
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	ctx = fcontext.WithRunOn(ctx, platform)
