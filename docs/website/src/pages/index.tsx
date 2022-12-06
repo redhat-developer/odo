@@ -76,9 +76,9 @@ export default function Home(): JSX.Element {
         </div>
         <div className={styles.overview}>
           <div className="container text--center margin-top--md">
-          <h1>A developer-focused CLI for blazingly fast Kubernetes application development</h1>
+            <h1>A developer-focused tool for blazingly fast Kubernetes application development</h1>
             <div className="row">
-            <div className="col col--6">
+              <div className="col col--6">
                 <h2 className={clsx(styles.featureHeading)}>
                   Initialize and develop your application
                 </h2>
@@ -96,6 +96,21 @@ export default function Home(): JSX.Element {
                 </p>
                 <img className={styles.terminalImage} alt="deploy" src={useBaseUrl('/img/deploy.png')}/>
               </div>
+            </div>
+              <h2 className={clsx(styles.featureHeading)}>
+                  Integrated with your favourite IDE
+              </h2>
+              <p className="padding-horiz--md">
+                  No need to leave your development environment of choice!
+                  Use the <a href={useBaseUrl('/docs/overview/installation#ide-installation')}>available extensions</a> to initialize and then iterate on your application running directly on the cluster.
+              </p>
+              <div className="row">
+                <div className="col col--6">
+                  <img className={styles.terminalImage} alt="init" src={useBaseUrl('/img/ide_jetbrains.png')}/>
+                </div>
+                <div className="col col--6">
+                  <img className={styles.terminalImage} alt="init" src={useBaseUrl('/img/ide_vscode.png')}/>
+                </div>
             </div>
           </div>
         </div>
