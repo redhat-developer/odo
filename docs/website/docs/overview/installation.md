@@ -335,3 +335,12 @@ mvn software.tnb:odo-downloader-maven-plugin:0.1.3:download \
   -Dodo.target.file=$HOME/bin/odo \
   -Dodo.version=v3.3.0
 ```
+
+### asdf
+The [asdf version manager](https://asdf-vm.com/) is a tool for managing multiple runtime versions using a common CLI.
+With `asdf` installed, the [asdf plugin for odo](https://github.com/rm3l/asdf-odo) can be used to install any released version of `odo`:
+```
+asdf plugin add odo
+asdf install odo 3.3.0
+asdf global odo 3.3.0
+```
