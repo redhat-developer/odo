@@ -4,7 +4,6 @@ import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import styles from './index.module.css';
-import HomepageFeatures from '../components/HomepageFeatures';
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
@@ -13,7 +12,6 @@ export default function Home(): JSX.Element {
     siteConfig: {customFields, tagline},
   } = useDocusaurusContext();
   const {description} = customFields as {description: string};
-  const {siteConfig} = useDocusaurusContext();
   return (
     <Layout title={tagline} description={description}>
       <main>
