@@ -2,11 +2,14 @@ package api
 
 // ComponentAbstract represents a component as part of a list of components
 type ComponentAbstract struct {
-	Name             string       `json:"name"`
-	ManagedBy        string       `json:"managedBy"`
-	ManagedByVersion string       `json:"managedByVersion"`
-	RunningIn        RunningModes `json:"runningIn"`
-	Type             string       `json:"projectType"`
+	Name             string `json:"name"`
+	ManagedBy        string `json:"managedBy"`
+	ManagedByVersion string `json:"managedByVersion"`
+	// RunningIn are the modes the component is running in, among Dev and Deploy
+	RunningIn RunningModes `json:"runningIn"`
+	Type      string       `json:"projectType"`
+	// RunningOn is the platform the component is running on, either cluster or podman
+	RunningOn string `json:"runningOn,omitempty"`
 }
 
 const (

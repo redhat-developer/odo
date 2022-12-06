@@ -21,10 +21,10 @@ func (o *PodmanCli) ExecCMDInContainer(containerName, podName string, cmd []stri
 	args = append(args, name)
 	args = append(args, cmd...)
 
-	command := exec.Command("podman", args...)
+	command := exec.Command(o.podmanCmd, args...)
+	klog.V(3).Infof("executing %v", command.Args)
 	command.Stdin = stdin
 
-	klog.V(4).Infof("exec podman %v\n", args)
 	out, err := command.Output()
 	if err != nil {
 		return err

@@ -2,8 +2,6 @@ package context
 
 import (
 	"context"
-
-	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 )
 
 const (
@@ -42,12 +40,12 @@ func WithRunOn(ctx context.Context, val string) context.Context {
 }
 
 // GetRunOn gets value of run-on flag in ctx
-func GetRunOn(ctx context.Context) string {
+func GetRunOn(ctx context.Context, defaultValue string) string {
 	value := ctx.Value(runOnKey)
 	if cast, ok := value.(string); ok {
 		return cast
 	}
-	return commonflags.RunOnDefault
+	return defaultValue
 }
 
 // WithVariables sets the value for the --var-file and --var flags in ctx

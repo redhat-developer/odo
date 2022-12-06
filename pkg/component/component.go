@@ -19,8 +19,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/platform"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -170,6 +172,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			ManagedBy:        managedBy,
 			Type:             componentType,
 			ManagedByVersion: managedByVersion,
+			RunningOn:        commonflags.RunOnCluster,
 		}
 		mode := odolabels.GetMode(labels)
 		componentFound := false
@@ -204,14 +207,26 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 	return components, nil
 }
 
-func ListAllComponents(client kclient.ClientInterface, namespace string, devObj *parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
-	var devfileComponents []api.ComponentAbstract
-	var err error
+func ListAllComponents(client kclient.ClientInterface, podmanClient podman.Client, namespace string, devObj *parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
+	var (
+		allComponents []api.ComponentAbstract
+	)
+
 	if client != nil {
-		devfileComponents, err = ListAllClusterComponents(client, namespace)
+		clusterComponents, err := ListAllClusterComponents(client, namespace)
 		if err != nil {
 			return nil, "", err
 		}
+		allComponents = append(allComponents, clusterComponents...)
+	}
+
+	// PdomanClient can be nil if experimental mode is not active
+	if podmanClient != nil {
+		podmanComponents, err := podmanClient.ListAllComponents()
+		if err != nil {
+			return nil, "", err
+		}
+		allComponents = append(allComponents, podmanComponents...)
 	}
 
 	localComponent := api.ComponentAbstract{
@@ -225,12 +240,12 @@ func ListAllComponents(client kclient.ClientInterface, namespace string, devObj 
 
 	componentInDevfile := ""
 	if localComponent.Name != "" {
-		if !Contains(localComponent, devfileComponents) {
-			devfileComponents = append(devfileComponents, localComponent)
+		if !Contains(localComponent, allComponents) {
+			allComponents = append(allComponents, localComponent)
 		}
 		componentInDevfile = localComponent.Name
 	}
-	return devfileComponents, componentInDevfile, nil
+	return allComponents, componentInDevfile, nil
 }
 
 func getResourcesForComponent(

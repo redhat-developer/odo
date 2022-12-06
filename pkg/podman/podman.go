@@ -2,9 +2,12 @@ package podman
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
+
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -12,10 +15,25 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 )
 
-type PodmanCli struct{}
+type PodmanCli struct {
+	podmanCmd string
+}
 
-func NewPodmanCli() *PodmanCli {
-	return &PodmanCli{}
+// NewPodmanCli returns a new podman client, or nil if the podman command is not accessible in the system
+func NewPodmanCli(ctx context.Context) (*PodmanCli, error) {
+	// Check if podman is available in the system
+	cli := &PodmanCli{
+		podmanCmd: envcontext.GetEnvConfig(ctx).PodmanCmd,
+	}
+	version, err := cli.Version()
+	if err != nil {
+		return nil, fmt.Errorf("executable %q not found", cli.podmanCmd)
+	}
+	if version.Client == nil {
+		return nil, fmt.Errorf("executable %q not recognized as podman client", cli.podmanCmd)
+	}
+
+	return cli, nil
 }
 
 func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
@@ -28,7 +46,8 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		},
 	)
 
-	cmd := exec.Command("podman", "play", "kube", "-")
+	cmd := exec.Command(o.podmanCmd, "play", "kube", "-")
+	klog.V(3).Infof("executing %v", cmd.Args)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -71,7 +90,9 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 }
 
 func (o *PodmanCli) PodStop(podname string) error {
-	out, err := exec.Command("podman", "pod", "stop", podname).Output()
+	cmd := exec.Command(o.podmanCmd, "pod", "stop", podname)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -83,7 +104,9 @@ func (o *PodmanCli) PodStop(podname string) error {
 }
 
 func (o *PodmanCli) PodRm(podname string) error {
-	out, err := exec.Command("podman", "pod", "rm", podname).Output()
+	cmd := exec.Command(o.podmanCmd, "pod", "rm", podname)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -95,7 +118,9 @@ func (o *PodmanCli) PodRm(podname string) error {
 }
 
 func (o *PodmanCli) VolumeRm(volumeName string) error {
-	out, err := exec.Command("podman", "volume", "rm", volumeName).Output()
+	cmd := exec.Command(o.podmanCmd, "volume", "rm", volumeName)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
@@ -107,7 +132,9 @@ func (o *PodmanCli) VolumeRm(volumeName string) error {
 }
 
 func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
-	out, err := exec.Command("podman", "volume", "ls", "--format", "{{.Name}}", "--noheading").Output()
+	cmd := exec.Command(o.podmanCmd, "volume", "ls", "--format", "{{.Name}}", "--noheading")
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))

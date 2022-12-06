@@ -12,8 +12,6 @@
 package clientset
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
@@ -66,6 +64,8 @@ const (
 	LOGS = "DEP_LOGS"
 	// PODMAN instantiates client for pkg/podman
 	PODMAN = "DEP_PODMAN"
+	// PODMAN_NULLABLE instantiates client for pkg/podman, can be nil
+	PODMAN_NULLABLE = "DEP_PODMAN_NULLABLE"
 	// PORT_FORWARD instantiates client for pkg/portForward
 	PORT_FORWARD = "PORT_FORWARD"
 	// PREFERENCE instantiates client for pkg/preference
@@ -89,10 +89,10 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
+	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN_NULLABLE, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
-	LOGS:             {KUBERNETES_NULLABLE, PODMAN},
+	LOGS:             {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
 	PORT_FORWARD:     {KUBERNETES_NULLABLE, STATE},
 	PROJECT:          {KUBERNETES},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
@@ -145,8 +145,11 @@ func isDefined(command *cobra.Command, dependency string) bool {
 }
 
 func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
-	dep := Clientset{}
-	var err error
+	var (
+		err error
+		dep = Clientset{}
+		ctx = command.Context()
+	)
 
 	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {
@@ -163,11 +166,17 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 
 	}
-	if isDefined(command, PODMAN) {
-		dep.PodmanClient = podman.NewPodmanCli()
+	if isDefined(command, PODMAN) || isDefined(command, PODMAN_NULLABLE) {
+		dep.PodmanClient, err = podman.NewPodmanCli(ctx)
+		if err != nil {
+			if isDefined(command, PODMAN) {
+				return nil, err
+			}
+			dep.PodmanClient = nil
+		}
 	}
 	if isDefined(command, PREFERENCE) {
-		dep.PreferenceClient, err = preference.NewClient(command.Context())
+		dep.PreferenceClient, err = preference.NewClient(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -182,12 +191,10 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, EXEC) {
 		switch platform {
-		case commonflags.RunOnCluster:
-			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
 		case commonflags.RunOnPodman:
 			dep.ExecClient = exec.NewExecClient(dep.PodmanClient)
 		default:
-			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
+			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
 		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
@@ -201,12 +208,10 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, LOGS) {
 		switch platform {
-		case commonflags.RunOnCluster:
-			dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
 		case commonflags.RunOnPodman:
 			dep.LogsClient = logs.NewLogsClient(dep.PodmanClient)
 		default:
-			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
+			dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
 		}
 	}
 	if isDefined(command, PROJECT) {
@@ -217,12 +222,10 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, SYNC) {
 		switch platform {
-		case commonflags.RunOnCluster:
-			dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient, dep.ExecClient)
 		case commonflags.RunOnPodman:
 			dep.SyncClient = sync.NewSyncClient(dep.PodmanClient, dep.ExecClient)
 		default:
-			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
+			dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient, dep.ExecClient)
 		}
 	}
 	if isDefined(command, WATCH) {
@@ -236,7 +239,15 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, DEV) {
 		switch platform {
-		case commonflags.RunOnCluster:
+		case commonflags.RunOnPodman:
+			dep.DevClient = podmandev.NewDevClient(
+				dep.PodmanClient,
+				dep.SyncClient,
+				dep.ExecClient,
+				dep.StateClient,
+				dep.WatchClient,
+			)
+		default:
 			dep.DevClient = kubedev.NewDevClient(
 				dep.KubernetesClient,
 				dep.PreferenceClient,
@@ -248,16 +259,6 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 				dep.ExecClient,
 				dep.DeleteClient,
 			)
-		case commonflags.RunOnPodman:
-			dep.DevClient = podmandev.NewDevClient(
-				dep.PodmanClient,
-				dep.SyncClient,
-				dep.ExecClient,
-				dep.StateClient,
-				dep.WatchClient,
-			)
-		default:
-			panic(fmt.Sprintf("not implemented yet for platform %q", platform))
 		}
 	}
 

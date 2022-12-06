@@ -96,83 +96,187 @@ var _ = Describe("odo list with devfile", func() {
 	When("a component created in 'app' application", func() {
 
 		var devSession helper.DevSession
+		var componentName = "nodejs-prj1-api-abhz" // from devfile-deploy.yaml
+
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 			helper.Chdir(commonVar.Context)
-			var err error
-			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			devSession.Stop()
-			devSession.WaitEnd()
 		})
 
-		var checkList = func(componentType string) {
-			By("checking the normal output", func() {
-				stdOut := helper.Cmd("odo", "list", "component").ShouldPass().Out()
-				Expect(stdOut).To(ContainSubstring(componentType))
-			})
-		}
-		Context("verifying the managedBy Version in the odo list output", func() {
-			var version string
+		When("dev is running on cluster", func() {
 			BeforeEach(func() {
-				versionOut := helper.Cmd("odo", "version").ShouldPass().Out()
-				reOdoVersion := regexp.MustCompile(`v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?`)
-				version = reOdoVersion.FindString(versionOut)
-
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				Expect(err).ToNot(HaveOccurred())
 			})
-			It("should show managedBy Version", func() {
+			AfterEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			var checkList = func(componentType string) {
 				By("checking the normal output", func() {
-					stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
-					Expect(stdout).To(ContainSubstring(version))
+					stdOut := helper.Cmd("odo", "list", "component").ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(componentType))
 				})
-				By("checking the JSON output", func() {
-					stdout := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
-					helper.JsonPathContentContain(stdout, "components.0.managedByVersion", version)
+			}
+
+			It("should display runningOn depending on experimental mode", func() {
+				for _, cmd := range [][]string{
+					{"list", "component"},
+					{"list"},
+				} {
+					cmd := cmd
+					By("returning runningOn when experimental mode is enabled with json output", func() {
+						args := append(cmd, "-o", "json")
+						res := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass()
+						stdout, stderr := res.Out(), res.Err()
+						Expect(stderr).To(BeEmpty())
+						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
+						helper.JsonPathContentIs(stdout, "components.#", "1")
+						helper.JsonPathContentIs(stdout, "components.0.runningOn", "cluster")
+					})
+					By("not returning runningOn when experimental mode is not enabled with json output", func() {
+						args := append(cmd, "-o", "json")
+						res := helper.Cmd("odo", args...).ShouldPass()
+						stdout, stderr := res.Out(), res.Err()
+						Expect(stderr).To(BeEmpty())
+						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
+						helper.JsonPathContentIs(stdout, "components.#", "1")
+						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn")
+					})
+					By("displaying runningOn when experimental mode is enabled", func() {
+						stdout := helper.Cmd("odo", cmd...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
+						Expect(stdout).To(ContainSubstring("RUNNING ON"))
+					})
+					By("not displaying runningOn when experimental mode is not enabled", func() {
+						stdout := helper.Cmd("odo", cmd...).ShouldPass().Out()
+						Expect(stdout).ToNot(ContainSubstring("RUNNING ON"))
+					})
+				}
+			})
+
+			Context("verifying the managedBy Version in the odo list output", func() {
+				var version string
+				BeforeEach(func() {
+					versionOut := helper.Cmd("odo", "version").ShouldPass().Out()
+					reOdoVersion := regexp.MustCompile(`v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?`)
+					version = reOdoVersion.FindString(versionOut)
+
+				})
+				It("should show managedBy Version", func() {
+					By("checking the normal output", func() {
+						stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
+						Expect(stdout).To(ContainSubstring(version))
+					})
+					By("checking the JSON output", func() {
+						stdout := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
+						helper.JsonPathContentContain(stdout, "components.0.managedByVersion", version)
+					})
+				})
+			})
+
+			It("show an odo deploy or dev in the list", func() {
+				By("should display the component as 'Dev' in odo list", func() {
+					checkList("Dev")
+				})
+
+				By("should display the component as 'Dev' in odo list -o json", func() {
+					res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stderr).To(BeEmpty())
+					Expect(helper.IsJSON(stdout)).To(BeTrue())
+					helper.JsonPathContentIs(stdout, "components.#", "1")
+					helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
+					helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "")
+				})
+
+				// Fake the odo deploy image build / push passing in "echo" to PODMAN
+				stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				By("building and pushing image to registry", func() {
+					Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage"))
+					Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+				})
+
+				By("should display the component as 'Deploy' in odo list", func() {
+					checkList("Dev, Deploy")
+				})
+
+				By("should display the component as 'Dev, Deploy' in odo list -o json", func() {
+					res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stderr).To(BeEmpty())
+					Expect(helper.IsJSON(stdout)).To(BeTrue())
+					helper.JsonPathContentIs(stdout, "components.#", "1")
+					helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
+					helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "true")
 				})
 			})
 		})
 
-		It("show an odo deploy or dev in the list", func() {
-			By("should display the component as 'Dev' in odo list", func() {
-				checkList("Dev")
+		When("dev is running on podman", Label(helper.LabelPodman), func() {
+			BeforeEach(func() {
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: true,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
-			By("should display the component as 'Dev' in odo list -o json", func() {
-				res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
-				stdout, stderr := res.Out(), res.Err()
-				Expect(stderr).To(BeEmpty())
-				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "components.#", "1")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "")
+			It("should display component depending on experimental mode and run-on flag", func() {
+				for _, cmd := range [][]string{
+					{"list", "component"},
+					{"list"},
+				} {
+					cmd := cmd
+					By("returning component in dev mode when experimental mode is enabled with json output", func() {
+						args := append(cmd, "-o", "json")
+						stdout := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
+						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
+						helper.JsonPathContentIs(stdout, "components.#", "1")
+						helper.JsonPathContentIs(stdout, "components.0.name", componentName)
+						helper.JsonPathContentIs(stdout, "components.0.runningIn.dev", "true")
+						helper.JsonPathContentIs(stdout, "components.0.runningOn", "podman")
+					})
+					By("returning component not in dev mode when experimental mode is enabled with json output and run-on is cluster", func() {
+						args := append(cmd, "-o", "json", "--run-on", "cluster")
+						stdout := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
+						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
+						helper.JsonPathContentIs(stdout, "components.#", "1")
+						helper.JsonPathContentIs(stdout, "components.0.name", componentName)
+						helper.JsonPathContentIs(stdout, "components.0.runningIn.dev", "false")
+						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn")
+					})
+					By("returning component not in dev mode when experimental mode is not enabled with json output", func() {
+						args := append(cmd, "-o", "json")
+						stdout := helper.Cmd("odo", args...).ShouldPass().Out()
+						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
+						helper.JsonPathContentIs(stdout, "components.#", "1")
+						helper.JsonPathContentIs(stdout, "components.0.name", componentName)
+						helper.JsonPathContentIs(stdout, "components.0.runningIn.dev", "false")
+						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn")
+					})
+					By("displaying component in dev mode when experimental mode is enabled", func() {
+						stdout := helper.Cmd("odo", cmd...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
+						Expect(stdout).To(ContainSubstring(componentName))
+						Expect(stdout).To(ContainSubstring("RUNNING ON"))
+						Expect(stdout).To(ContainSubstring("podman"))
+						Expect(stdout).To(ContainSubstring("Dev"))
+					})
+					By("displaying component not in dev mode when experimental mode is not enabled", func() {
+						stdout := helper.Cmd("odo", cmd...).ShouldPass().Out()
+						Expect(stdout).To(ContainSubstring(componentName))
+						Expect(stdout).ToNot(ContainSubstring("RUNNING ON"))
+						Expect(stdout).To(ContainSubstring("None"))
+					})
+				}
 			})
-
-			// Fake the odo deploy image build / push passing in "echo" to PODMAN
-			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-			By("building and pushing image to registry", func() {
-				Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage"))
-				Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
-			})
-
-			By("should display the component as 'Deploy' in odo list", func() {
-				checkList("Dev, Deploy")
-			})
-
-			By("should display the component as 'Dev, Deploy' in odo list -o json", func() {
-				res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
-				stdout, stderr := res.Out(), res.Err()
-				Expect(stderr).To(BeEmpty())
-				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "components.#", "1")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "true")
-			})
-
 		})
-
 	})
 
 	Context("devfile has missing metadata", func() {
