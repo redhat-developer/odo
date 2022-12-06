@@ -5,16 +5,20 @@ title: odo init
 The `odo init` command is the first command to be executed when you want to bootstrap a new component, using `odo`. If sources already exist,
 the command `odo dev` should be considered instead.
 
-This command must be executed from an empty directory, and as a result, the command will download a `devfile.yaml` file and, optionally, a starter project.
+This command must be executed from a directory with no `devfile.yaml` file.
 
 The command can be executed in two flavors, either interactive or non-interactive.
 
 ## Running the command
 ### Interactive mode
 
-In interactive mode, you will be guided to:
+In interactive mode, the behavior of `odo init` depends on whether the current directory already contains source code or not.
+
+#### Empty directory
+
+If the directory is empty, you will be guided to:
 - choose a devfile from the list of devfiles present in the registry or registries referenced (using the `odo registry` command),
-- configure the devfile if there is an existing project
+- configure the devfile
 - choose a starter project referenced by the selected devfile,
 - choose a name for the component present in the devfile; this name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
 
@@ -41,6 +45,63 @@ To deploy your component to a cluster use "odo deploy".
 ```
 </details>
 
+#### Directory with sources
+
+If the current directory is not empty, `odo init` will make its best to autodetect the type of application and propose you a Devfile that should suit your project.
+It will try to detect the following, based on the files in the current directory:
+- Language
+- Project Type
+- Ports used in your application
+- A Devfile that should help you start with `odo` 
+
+If the information detected does not seem correct to you, you are able to select a different Devfile.
+
+In all cases, you will be guided to:
+- configure the devfile
+- choose a name for the component present in the devfile; this name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
+
+```console
+odo init
+```
+
+<details>
+<summary>Example</summary>
+
+```console
+$ odo init                                                                                                                                                                                                          
+  __                                                                                                                                                                                                                
+ /  \__     Initializing a new component                                                                                                                                                                            
+ \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection                                                                                                          
+ /  \__/    odo version: v3.3.0                                                                                                                                                                                     
+ \__/                                                                                                                                                                                                               
+                                                                                                                                                                                                                    
+Interactive mode enabled, please answer the following questions:                                                                                                                                                    
+Based on the files in the current directory odo detected                                                                                                                                                            
+Language: JavaScript                                                                                                                                                                                                
+Project type: Node.js                                                                                                                                                                                               
+Application ports: 3000                                                                                                                                                                                             
+The devfile "nodejs" from the registry "DefaultDevfileRegistry" will be downloaded.                                                                                                                                 
+? Is this correct? Yes                                                                                                                                                                                              
+ ✓  Downloading devfile "nodejs" from registry "DefaultDevfileRegistry" [1s]                                                                                                                                        
+                                                                                                                                                                                                                    
+↪ Container Configuration "runtime":                                                                                                                                                                                
+  OPEN PORTS:                                                                                                                                                                                                       
+    - 5858                                                                                                                                                                                                          
+    - 3000                                                                                                                                                                                                          
+  ENVIRONMENT VARIABLES:                                                                                                                                                                                            
+    - DEBUG_PORT = 5858                                                                                                                                                                                             
+                                                                                                                                                                                                                    
+? Select container for which you want to change configuration? NONE - configuration is correct                                                                                                                      
+? Enter component name: nodejs                                                                                                                                                                                      
+                                                                                                                                                                                                                    
+You can automate this command by executing:
+   odo init --name nodejs --devfile nodejs --devfile-registry DefaultDevfileRegistry
+
+Your new component 'nodejs' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+```
+</details>
 
 ### Non-interactive mode
 

@@ -25,7 +25,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *api.DevfileLocation
+		want    *api.DetectionResult
 		wantErr bool
 	}{
 		{
@@ -38,7 +38,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want: &api.DevfileLocation{
+			want: &api.DetectionResult{
 				Devfile:         "adevfile",
 				DevfilePath:     "apath",
 				DevfileRegistry: "aregistry",

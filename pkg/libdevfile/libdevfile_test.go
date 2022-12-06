@@ -807,6 +807,139 @@ func TestGetEndpointsFromDevfile(t *testing.T) {
 	}
 }
 
+func TestIsDebugEndpoint(t *testing.T) {
+	type args struct {
+		endpoint v1alpha2.Endpoint
+	}
+	for _, tt := range []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "exactly debug",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "debug", TargetPort: 5005}},
+			want: true,
+		},
+		{
+			name: "exactly debug - case-sensitive",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "DEBUG", TargetPort: 5005}},
+		},
+		{
+			name: "starting with debug",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "debug-port", TargetPort: 5005}},
+			want: true,
+		},
+		{
+			name: "starting with debug - case sensitive",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "DEBUG-PORT", TargetPort: 5005}},
+		},
+		{
+			name: "containing debug",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "my-debug", TargetPort: 5005}},
+		},
+		{
+			name: "containing debug prefix",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "my-debug-port", TargetPort: 5005}},
+		},
+		{
+			name: "any other string",
+			args: args{endpoint: v1alpha2.Endpoint{Name: "lorem-ipsum", TargetPort: 5005}},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsDebugEndpoint(tt.args.endpoint)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("IsDebugEndpoint() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetDebugEndpointsForComponent(t *testing.T) {
+	type args struct {
+		cmpProvider func() v1alpha2.Component
+	}
+
+	for _, tt := range []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    []v1alpha2.Endpoint
+	}{
+		{
+			name: "not a container component",
+			args: args{
+				cmpProvider: func() v1alpha2.Component { return testingutil.GetFakeVolumeComponent("vol-comp", "1Gi") },
+			},
+			wantErr: true,
+		},
+		{
+			name: "no endpoints in container component",
+			args: args{
+				cmpProvider: func() v1alpha2.Component { return testingutil.GetFakeContainerComponent("my-container-comp") },
+			},
+		},
+		{
+			name: "mix of debug and non-debug endpoints in container component",
+			args: args{
+				cmpProvider: func() v1alpha2.Component {
+					comp := testingutil.GetFakeContainerComponent("my-container-comp", 8080, 3000, 9090)
+					comp.Container.Endpoints = append(comp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5005,
+						Exposure:   v1alpha2.NoneEndpointExposure,
+					})
+					comp.Container.Endpoints = append(comp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug1",
+						TargetPort: 15005,
+						Exposure:   v1alpha2.InternalEndpointExposure,
+					})
+					comp.Container.Endpoints = append(comp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug-port2",
+						TargetPort: 5006,
+						Exposure:   v1alpha2.InternalEndpointExposure,
+					})
+					comp.Container.Endpoints = append(comp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug-port3-public",
+						TargetPort: 5007,
+						Exposure:   v1alpha2.PublicEndpointExposure,
+					})
+					return comp
+				},
+			},
+			want: []v1alpha2.Endpoint{
+				{
+					Name:       "debug",
+					TargetPort: 5005,
+					Exposure:   v1alpha2.NoneEndpointExposure,
+				},
+				{
+					Name:       "debug-port2",
+					TargetPort: 5006,
+					Exposure:   v1alpha2.InternalEndpointExposure,
+				},
+				{
+					Name:       "debug-port3-public",
+					TargetPort: 5007,
+					Exposure:   v1alpha2.PublicEndpointExposure,
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetDebugEndpointsForComponent(tt.args.cmpProvider())
+
+			if tt.wantErr != (err != nil) {
+				t.Errorf("GetDebugEndpointsForComponent(), wantErr: %v, err: %v", tt.wantErr, err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetDebugEndpointsForComponent() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGetK8sManifestWithVariablesSubstituted(t *testing.T) {
 	fakeFs := devfileFileSystem.NewFakeFs()
 	cmpName := "my-cmp-1"

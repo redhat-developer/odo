@@ -1,4 +1,4 @@
-// package backend provides different backends to initiate projects.
+// Package backend provides different backends to initiate projects.
 // - `Flags` backend gets needed information from command line flags.
 // - `Interactive` backend interacts with the user to get needed information.
 package backend
@@ -8,6 +8,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -18,7 +19,7 @@ type InitBackend interface {
 	Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error
 
 	// SelectDevfile selects a devfile and returns its location information, depending on the flags
-	SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DevfileLocation, err error)
+	SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DetectionResult, err error)
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
 	// depending on the flags. If not starter project is selected, a nil starter is returned
@@ -30,4 +31,7 @@ type InitBackend interface {
 
 	// PersonalizeDevfileConfig updates the devfile config for ports and environment variables
 	PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error)
+
+	// HandleApplicationPorts updates the ports in the Devfile accordingly.
+	HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error)
 }

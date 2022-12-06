@@ -179,7 +179,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 	type fields struct {
 		fsys           func(fs filesystem.Filesystem) filesystem.Filesystem
 		registryClient func(ctrl *gomock.Controller) registry.Client
-		InitParams     api.DevfileLocation
+		InitParams     api.DetectionResult
 	}
 	type args struct {
 		URL  string

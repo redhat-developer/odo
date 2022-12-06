@@ -7,6 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"k8s.io/utils/pointer"
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -463,5 +468,53 @@ var _ = Describe("odo init interactive command tests", Label(helper.LabelNoClust
 		), "Action 'Downloading starter project' should have been displayed after the last interactive question ('Enter component name')")
 
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+	})
+
+	Context("Automatic port detection via Alizer", func() {
+
+		When("starting with an existing project", func() {
+			const appPort = 34567
+
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.ReplaceString(filepath.Join(commonVar.Context, "Dockerfile"), "EXPOSE 8080", fmt.Sprintf("EXPOSE %d", appPort))
+			})
+
+			It("should display ports detected", func() {
+				_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, fmt.Sprintf("Application ports: %d", appPort))
+
+					helper.SendLine(ctx, "Is this correct")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select container for which you want to change configuration")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, "my-nodejs-app-with-port-detected")
+
+					helper.ExpectString(ctx, "Your new component 'my-nodejs-app-with-port-detected' is ready in the current directory")
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+
+				// Now make sure the Devfile contains a single container component with the right endpoint
+				d, err := parser.ParseDevfile(parser.ParserArgs{Path: filepath.Join(commonVar.Context, "devfile.yaml"), FlattenedDevfile: pointer.BoolPtr(false)})
+				Expect(err).ShouldNot(HaveOccurred())
+
+				containerComponents, err := d.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+				Expect(err).ShouldNot(HaveOccurred())
+
+				allPortsExtracter := func(comps []v1alpha2.Component) []int {
+					var ports []int
+					for _, c := range comps {
+						for _, ep := range c.Container.Endpoints {
+							ports = append(ports, ep.TargetPort)
+						}
+					}
+					return ports
+				}
+				Expect(containerComponents).Should(WithTransform(allPortsExtracter, ContainElements(appPort)))
+			})
+		})
 	})
 })

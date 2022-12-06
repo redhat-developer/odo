@@ -128,11 +128,12 @@ To start editing your component, use 'odo dev' and open this folder in your favo
 Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
 
 	if len(o.flags) == 0 {
-		automateCommad := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
+		automateCommand := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
 		if starterInfo != nil {
-			automateCommad = fmt.Sprintf("%s --starter %s", automateCommad, starterInfo.Name)
+			automateCommand = fmt.Sprintf("%s --starter %s", automateCommand, starterInfo.Name)
 		}
-		log.Infof("\nPort configuration using flag is currently not supported  \n\nYou can automate this command by executing:\n   %s\n", automateCommad)
+		klog.V(2).Infof("Port configuration using flag is currently not supported")
+		log.Infof("\nYou can automate this command by executing:\n   %s", automateCommand)
 	}
 
 	if libdevfile.HasDeployCommand(devfileObj.Data) {
@@ -158,8 +159,8 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	}, nil
 }
 
-// run downloads the devfile and starter project and returns the content of the devfile, path of the devfile, name of the component, api.DevfileLocation object for DevfileRegistry info and StarterProject object
-func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DevfileLocation, starterInfo *v1alpha2.StarterProject, err error) {
+// run downloads the devfile and starter project and returns the content of the devfile, path of the devfile, name of the component, api.DetectionResult object for DevfileRegistry info and StarterProject object
+func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, name string, devfileLocation *api.DetectionResult, starterInfo *v1alpha2.StarterProject, err error) {
 	var starterDownloaded bool
 
 	workingDir := odocontext.GetWorkingDirectory(ctx)

@@ -86,8 +86,8 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 	return nil
 }
 
-func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
-	return &api.DevfileLocation{
+func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DetectionResult, error) {
+	return &api.DetectionResult{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],
 		DevfilePath:     flags[FLAG_DEVFILE_PATH],
@@ -121,5 +121,10 @@ func (o *FlagsBackend) PersonalizeName(_ parser.DevfileObj, flags map[string]str
 }
 
 func (o FlagsBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
+	return devfileobj, nil
+}
+
+func (o FlagsBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error) {
+	// Currently not supported, but this will be done in a separate issue: https://github.com/redhat-developer/odo/issues/6211
 	return devfileobj, nil
 }

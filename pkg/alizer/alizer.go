@@ -49,7 +49,7 @@ func (o *Alizer) DetectFramework(ctx context.Context, path string) (model.DevFil
 	return types[typ], components.Items[typ].Registry, nil
 }
 
-// DetectName retrieves the name of the project (if available)
+// DetectName retrieves the name of the project (if available).
 // If source code is detected:
 // 1. Detect the name (pom.xml for java, package.json for nodejs, etc.)
 // 2. If unable to detect the name, use the directory name
@@ -58,11 +58,11 @@ func (o *Alizer) DetectFramework(ctx context.Context, path string) (model.DevFil
 // 1. Use the directory name
 //
 // Last step. Sanitize the name so it's valid for a component name
-
+//
 // Use:
 // import "github.com/redhat-developer/alizer/pkg/apis/recognizer"
 // components, err := recognizer.DetectComponents("./")
-
+//
 // In order to detect the name, the name will first try to find out the name based on the program (pom.xml, etc.) but then if not, it will use the dir name.
 func (o *Alizer) DetectName(path string) (string, error) {
 	if path == "" {
@@ -116,9 +116,25 @@ func (o *Alizer) DetectName(path string) (string, error) {
 	return name, nil
 }
 
-func GetDevfileLocationFromDetection(typ model.DevFileType, registry api.Registry) *api.DevfileLocation {
-	return &api.DevfileLocation{
-		Devfile:         typ.Name,
-		DevfileRegistry: registry.Name,
+func (o *Alizer) DetectPorts(path string) ([]int, error) {
+	//TODO(rm3l): Find a better way not to call recognizer.DetectComponents multiple times (in DetectFramework, DetectName and DetectPorts)
+	components, err := recognizer.DetectComponents(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(components) == 0 {
+		klog.V(4).Infof("no components found at path %q", path)
+		return nil, nil
+	}
+
+	return components[0].Ports, nil
+}
+
+func NewDetectionResult(typ model.DevFileType, registry api.Registry, appPorts []int) *api.DetectionResult {
+	return &api.DetectionResult{
+		Devfile:          typ.Name,
+		DevfileRegistry:  registry.Name,
+		ApplicationPorts: appPorts,
 	}
 }

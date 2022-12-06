@@ -66,3 +66,18 @@ func (mr *MockClientMockRecorder) DetectName(path interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectName", reflect.TypeOf((*MockClient)(nil).DetectName), path)
 }
+
+// DetectPorts mocks base method.
+func (m *MockClient) DetectPorts(path string) ([]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetectPorts", path)
+	ret0, _ := ret[0].([]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DetectPorts indicates an expected call of DetectPorts.
+func (mr *MockClientMockRecorder) DetectPorts(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectPorts", reflect.TypeOf((*MockClient)(nil).DetectPorts), path)
+}

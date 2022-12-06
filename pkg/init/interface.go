@@ -37,11 +37,11 @@ type Client interface {
 	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
 	// or based on the flags if the directory is empty, or
 	// interactively if flags is empty
-	SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error)
+	SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DetectionResult, error)
 
 	// DownloadDevfile downloads a devfile given its location information and a destination directory
 	// and returns the path of the downloaded file
-	DownloadDevfile(ctx context.Context, devfileLocation *api.DevfileLocation, destDir string) (string, error)
+	DownloadDevfile(ctx context.Context, devfileLocation *api.DetectionResult, destDir string) (string, error)
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
 	// depending on the flags. If not starter project is selected, a nil starter is returned
@@ -60,5 +60,8 @@ type Client interface {
 
 	// SelectAndPersonalizeDevfile selects a devfile, then downloads, parse and personalize it
 	// Returns the devfile object, its path and pointer to *api.devfileLocation
-	SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DevfileLocation, error)
+	SelectAndPersonalizeDevfile(ctx context.Context, flags map[string]string, contextDir string) (parser.DevfileObj, string, *api.DetectionResult, error)
+
+	// HandleApplicationPorts updates the ports in the Devfile accordingly.
+	HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error)
 }
