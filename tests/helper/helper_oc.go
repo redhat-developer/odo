@@ -341,8 +341,7 @@ func (oc OcRunner) SetProject(namespace string) string {
 // DeleteNamespaceProject deletes a specified project in oc cluster
 func (oc OcRunner) DeleteNamespaceProject(projectName string, wait bool) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	session := Cmd("odo", "delete", "project", projectName, "-f", "--wait="+strconv.FormatBool(wait)).ShouldPass().Out()
-	Expect(session).To(ContainSubstring(fmt.Sprintf("Project %q deleted", projectName)))
+	Cmd(oc.path, "delete", "project", projectName, "--wait="+strconv.FormatBool(wait)).ShouldPass()
 }
 
 func (oc OcRunner) GetAllPVCNames(namespace string) []string {

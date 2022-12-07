@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -14,8 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const RecommendedCommandName = "namespace"
@@ -93,10 +93,12 @@ func (do *DeleteOptions) Run(ctx context.Context) error {
 		}
 		s.End(true)
 
-		caser := cases.Title(language.Und)
-		successMessage := fmt.Sprintf(`%s %q deleted`,
-			caser.String(do.commandName), do.namespaceName)
-		log.Successf(successMessage)
+		cmdNameTitled := cases.Title(language.Und).String(do.commandName)
+		msg := fmt.Sprintf("%s %q deleted", cmdNameTitled, do.namespaceName)
+		if !do.waitFlag {
+			msg = fmt.Sprintf("%s %q will be deleted asynchronously", cmdNameTitled, do.namespaceName)
+		}
+		log.Success(msg)
 
 		return nil
 	}
