@@ -1,15 +1,19 @@
 ---
 title: Installation
 sidebar_position: 4
+toc_min_heading_level: 2
+toc_max_heading_level: 4
 ---
 
-`odo` can be used as a CLI tool on Mac, Windows or Linux.
+`odo` can be used as either a [CLI tool](#cli-installation) or an [IDE plugin](#ide-installation) on [Mac](#macos), [Windows](#windows) or [Linux](#linux).
 
-Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/). 
+Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/).
 
 For more information on the changes of each release, they can be viewed either on [GitHub](https://github.com/redhat-developer/odo/releases) or the [blog](/blog).
 
-## Linux
+## CLI Installation
+
+### Linux
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -29,12 +33,12 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -60,12 +64,12 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -91,12 +95,12 @@ Installing `odo` on `ppc64le` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-ppc64le -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-ppc64le -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-ppc64le.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -122,12 +126,12 @@ Installing `odo` on `s390x` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-s390x -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-s390x -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-linux-s390x.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -151,9 +155,9 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 ---
 
-## MacOS
+### MacOS
 
-### Homebrew
+#### Homebrew
 
 **NOTE:** This will install from the *main* branch on GitHub
 
@@ -171,7 +175,7 @@ brew install --HEAD odo-dev
 odo version
 ```
 
-### Binary
+#### Binary
 
 <Tabs
 defaultValue="intel"
@@ -186,12 +190,12 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-darwin-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-darwin-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-darwin-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -218,12 +222,12 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-darwin-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-darwin-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-darwin-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -248,18 +252,18 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 ---
 
-## Windows
+### Windows
 
 1. Open a PowerShell terminal
 
 2. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-windows-amd64.exe -o odo.exe
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-windows-amd64.exe -o odo.exe
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.0.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.3.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
 Get-FileHash odo.exe
 type odo.exe.sha256
@@ -267,9 +271,36 @@ type odo.exe.sha256
 
 4. Add the binary to your `PATH`
 
+## IDE Installation
+
+### Visual Studio Code (VSCode)
+
+The [OpenShift Toolkit](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) VSCode extension uses both `odo` and `oc` binaries
+to interact with Kubernetes or OpenShift cluster.
+
+To install it:
+
+1. Open VS Code.
+2. Launch VS Code **Quick Open** (`Ctrl+P`).
+3. Paste the following command and press `Enter`:
+
+```
+ext install redhat.vscode-openshift-connector
+```
+
+### JetBrains IDEs
+The [OpenShift Toolkit by Red Hat](https://plugins.jetbrains.com/plugin/12030-openshift-toolkit-by-red-hat/) plugin can be installed
+to interact with OpenShift or Kubernetes clusters right from your JetBrains IDEs like IntelliJ IDEA, WebStorm or PyCharm.
+It uses `odo` and `oc` binaries for fast iterative application development on those clusters.
+
+To install it:
+
+1. Press `Ctrl+Alt+S` to open the IDE settings and select **Plugins**.
+2. Find the "**OpenShift Toolkit by Red Hat**" plugin in the **Marketplace** and click **Install**.
+
 ## Alternative installation methods
 
-### Source code
+#### Source code
 1. Clone the repository and cd into it.
    ```shell
    git clone https://github.com/redhat-developer/odo.git
@@ -297,10 +328,19 @@ type odo.exe.sha256
    ```
 
 ### Maven plugin
-It is possible to integrate the odo binary download in a Maven project using [odo Downloader Plugin](https://github.com/tnb-software/odo-downloader).
-The download can be executed using `download` goal which automatically retrieves the version for the current architecture:
+It is possible to integrate the `odo` binary download in a Maven project using [odo Downloader Plugin](https://github.com/tnb-software/odo-downloader).
+The download can be executed using the `download` goal which automatically retrieves the version for the current architecture:
 ```shell
 mvn software.tnb:odo-downloader-maven-plugin:0.1.3:download \
   -Dodo.target.file=$HOME/bin/odo \
-  -Dodo.version=v3.0.0
+  -Dodo.version=v3.3.0
+```
+
+### asdf
+The [asdf version manager](https://asdf-vm.com/) is a tool for managing multiple runtime versions using a common CLI.
+With `asdf` installed, the [asdf plugin for odo](https://github.com/rm3l/asdf-odo) can be used to install any released version of `odo`:
+```
+asdf plugin add odo
+asdf install odo 3.3.0
+asdf global odo 3.3.0
 ```
