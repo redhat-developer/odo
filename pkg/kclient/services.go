@@ -52,8 +52,8 @@ func (c *Client) DeleteService(serviceName string) error {
 
 // GetOneService retrieves the service with the given component and app name
 // An error is thrown when exactly one service is not found for the selector.
-func (c *Client) GetOneService(componentName, appName string) (*corev1.Service, error) {
-	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false)
+func (c *Client) GetOneService(componentName, appName string, isPartOfComponent bool) (*corev1.Service, error) {
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, isPartOfComponent)
 	return c.GetOneServiceFromSelector(selector)
 }
 

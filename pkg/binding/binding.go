@@ -126,7 +126,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 	}
 
 	for _, component := range kubeComponents {
-		strCRD, err := libdevfile.GetK8sManifestWithVariablesSubstituted(devfileObj, component.Name, context, devfilefs.DefaultFs{})
+		strCRD, err := libdevfile.GetK8sManifestsWithVariablesSubstituted(devfileObj, component.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return nil, err
 		}

@@ -148,7 +148,7 @@ type ClientInterface interface {
 	UpdateService(svc corev1.Service) (*corev1.Service, error)
 	ListServices(selector string) ([]corev1.Service, error)
 	DeleteService(serviceName string) error
-	GetOneService(componentName, appName string) (*corev1.Service, error)
+	GetOneService(componentName, appName string, isPartOfComponent bool) (*corev1.Service, error)
 	GetOneServiceFromSelector(selector string) (*corev1.Service, error)
 
 	// user.go

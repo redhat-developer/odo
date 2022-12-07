@@ -163,10 +163,11 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 	}
 	var services []string
 	for _, c := range components {
-		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, fs)
+		uList, err := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, c.Name, context, fs)
 		if err != nil {
 			return nil, err
 		}
+		u := uList[0]
 		if !isLinkResource(u.GetKind()) {
 			continue
 		}
@@ -218,28 +219,30 @@ func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.D
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
-		u, er := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, devfilefs.DefaultFs{})
+		uList, er := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if er != nil {
 			return er
 		}
-		var found bool
-		currentOwnerReferences := u.GetOwnerReferences()
-		for _, ref := range currentOwnerReferences {
-			if ref.UID == reference.UID {
-				found = true
-				break
+		for _, u := range uList {
+			var found bool
+			currentOwnerReferences := u.GetOwnerReferences()
+			for _, ref := range currentOwnerReferences {
+				if ref.UID == reference.UID {
+					found = true
+					break
+				}
 			}
-		}
-		if !found {
-			currentOwnerReferences = append(currentOwnerReferences, reference)
-			u.SetOwnerReferences(currentOwnerReferences)
-		}
-		er = PushKubernetesResource(client, u, labels, annotations, mode)
-		if er != nil {
-			return er
-		}
-		if csvSupported {
-			delete(deployed, u.GetKind()+"/"+u.GetName())
+			if !found {
+				currentOwnerReferences = append(currentOwnerReferences, reference)
+				u.SetOwnerReferences(currentOwnerReferences)
+			}
+			er = PushKubernetesResource(client, u, labels, annotations, mode)
+			if er != nil {
+				return er
+			}
+			if csvSupported {
+				delete(deployed, u.GetKind()+"/"+u.GetName())
+			}
 		}
 	}
 

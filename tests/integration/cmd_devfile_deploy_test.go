@@ -259,7 +259,26 @@ ComponentSettings:
 			})
 		}
 	})
-
+	When("deploying a Devfile K8s component with multiple K8s resources defined", func() {
+		var out string
+		var resources []string
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-multiple-k8s-resources-in-single-component.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			out = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			resources = []string{"Deployment/my-component", "Service/my-component-svc"}
+		})
+		It("should have created all the resources defined in the Devfile K8s component", func() {
+			By("checking the output", func() {
+				helper.MatchAllInOutput(out, resources)
+			})
+			By("fetching the resources from the cluster", func() {
+				for _, resource := range resources {
+					Expect(commonVar.CliRunner.Run("get", resource).Out.Contents()).ToNot(BeEmpty())
+				}
+			})
+		})
+	})
 	When("deploying a ServiceBinding k8s resource", func() {
 		const serviceBindingName = "my-nodejs-app-cluster-sample" // hard-coded from devfile-deploy-with-SB.yaml
 		BeforeEach(func() {

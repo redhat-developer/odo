@@ -36,12 +36,15 @@ func (o *BindingClient) RemoveBinding(servicebindingName string, obj parser.Devf
 		return obj, err
 	}
 	for _, component := range components {
-		var unstructuredObj unstructured.Unstructured
+		var unstructuredObjs []unstructured.Unstructured
 		// Parse the K8s manifest
-		unstructuredObj, err = libdevfile.GetK8sComponentAsUnstructured(obj, component.Name, filepath.Dir(obj.Ctx.GetAbsPath()), devfilefs.DefaultFs{})
-		if err != nil {
+		unstructuredObjs, err = libdevfile.GetK8sComponentAsUnstructuredList(obj, component.Name, filepath.Dir(obj.Ctx.GetAbsPath()), devfilefs.DefaultFs{})
+		if err != nil || len(unstructuredObjs) == 0 {
 			continue
 		}
+		// We default to the first object in the list because as far as ServiceBinding is concerned,
+		// we assume that only one resource will be defined for the Devfile K8s component; which is true
+		unstructuredObj := unstructuredObjs[0]
 		if unstructuredObj.GetKind() == kclient.ServiceBindingKind {
 			options = append(options, unstructuredObj.GetName())
 			if unstructuredObj.GetName() == servicebindingName {

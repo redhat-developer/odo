@@ -940,7 +940,7 @@ func TestGetDebugEndpointsForComponent(t *testing.T) {
 	}
 }
 
-func TestGetK8sManifestWithVariablesSubstituted(t *testing.T) {
+func TestGetK8sManifestsWithVariablesSubstituted(t *testing.T) {
 	fakeFs := devfileFileSystem.NewFakeFs()
 	cmpName := "my-cmp-1"
 	for _, tt := range []struct {
@@ -1258,14 +1258,14 @@ func TestGetK8sManifestWithVariablesSubstituted(t *testing.T) {
 				return
 			}
 
-			got, err := GetK8sManifestWithVariablesSubstituted(tt.devfileObjFunc(), cmpName, "", fakeFs)
+			got, err := GetK8sManifestsWithVariablesSubstituted(tt.devfileObjFunc(), cmpName, "", fakeFs)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetK8sManifestWithVariablesSubstituted() error = %v, wantErr %v",
+				t.Errorf("GetK8sManifestsWithVariablesSubstituted() error = %v, wantErr %v",
 					err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("GetK8sManifestWithVariablesSubstituted() got = %v, want %v",
+				t.Errorf("GetK8sManifestsWithVariablesSubstituted() got = %v, want %v",
 					got, tt.want)
 			}
 		})
@@ -1623,7 +1623,7 @@ func TestValidateAndGetPushCommands(t *testing.T) {
 			buildCommand: emptyString,
 			runCommand:   "customcommand",
 			execCommands: execCommands,
-			//only the specified run command is returned, because the build command is not marked as default
+			// only the specified run command is returned, because the build command is not marked as default
 			numberOfCommands: 2,
 			wantErr:          false,
 		},

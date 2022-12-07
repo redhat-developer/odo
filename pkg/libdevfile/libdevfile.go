@@ -356,7 +356,7 @@ func IsDebugPort(name string) bool {
 
 // GetContainerComponentsForCommand returns the list of container components that would get used if the specified command runs.
 func GetContainerComponentsForCommand(devfileObj parser.DevfileObj, cmd v1alpha2.Command) ([]string, error) {
-	//No error if cmd is empty
+	// No error if cmd is empty
 	if reflect.DeepEqual(cmd, v1alpha2.Command{}) {
 		return nil, nil
 	}
@@ -416,12 +416,12 @@ func GetContainerComponentsForCommand(devfileObj parser.DevfileObj, cmd v1alpha2
 	}
 }
 
-// GetK8sManifestWithVariablesSubstituted returns the full content of either a Kubernetes or an Openshift
+// GetK8sManifestsWithVariablesSubstituted returns the full content of either a Kubernetes or an Openshift
 // Devfile component, either Inlined or referenced via a URI.
 // No matter how the component is defined, it returns the content with all variables substituted
 // using the global variables map defined in `devfileObj`.
 // An error is returned if the content references an invalid variable key not defined in the Devfile object.
-func GetK8sManifestWithVariablesSubstituted(devfileObj parser.DevfileObj, devfileCmpName string,
+func GetK8sManifestsWithVariablesSubstituted(devfileObj parser.DevfileObj, devfileCmpName string,
 	context string, fs devfilefs.Filesystem) (string, error) {
 
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{FilterByName: devfileCmpName})

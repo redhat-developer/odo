@@ -696,19 +696,19 @@ func (mr *MockClientInterfaceMockRecorder) GetOneDeploymentFromSelector(selector
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeploymentFromSelector), selector)
 }
 
-// GetOneService mocks base method.
-func (m *MockClientInterface) GetOneService(componentName, appName string) (*v11.Service, error) {
+// GetOneService mocks base method
+func (m *MockClientInterface) GetOneService(componentName, appName string, isPartOfComponent bool) (*v11.Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneService", componentName, appName)
+	ret := m.ctrl.Call(m, "GetOneService", componentName, appName, isPartOfComponent)
 	ret0, _ := ret[0].(*v11.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetOneService indicates an expected call of GetOneService.
-func (mr *MockClientInterfaceMockRecorder) GetOneService(componentName, appName interface{}) *gomock.Call {
+// GetOneService indicates an expected call of GetOneService
+func (mr *MockClientInterfaceMockRecorder) GetOneService(componentName, appName, isPartOfComponent interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneService", reflect.TypeOf((*MockClientInterface)(nil).GetOneService), componentName, appName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneService", reflect.TypeOf((*MockClientInterface)(nil).GetOneService), componentName, appName, isPartOfComponent)
 }
 
 // GetOneServiceFromSelector mocks base method.

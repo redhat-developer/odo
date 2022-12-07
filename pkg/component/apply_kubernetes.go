@@ -6,12 +6,13 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/service"
-	"k8s.io/klog"
 )
 
 // ApplyKubernetes contains the logic to create the k8s resources defined by the `apply` command
@@ -30,10 +31,11 @@ func ApplyKubernetes(
 	kubeClient kclient.ClientInterface,
 	path string,
 ) error {
+	// TODO: Use GetK8sComponentAsUnstructured here and pass it to ValidateResourcesExistInK8sComponent
 	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := ValidateResourceExist(kubeClient, devfile, kubernetes, path)
+	kind, err := ValidateResourcesExistInK8sComponent(kubeClient, devfile, kubernetes, path)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", kind, err)
 	}
 
 	// Get the most common labels that's applicable to all resources being deployed.
@@ -49,17 +51,17 @@ func ApplyKubernetes(
 	odolabels.SetProjectType(annotations, GetComponentTypeFromDevfileMetadata(devfile.Data.GetMetadata()))
 
 	// Get the Kubernetes component
-	u, err := libdevfile.GetK8sComponentAsUnstructured(devfile, kubernetes.Name, path, devfilefs.DefaultFs{})
+	uList, err := libdevfile.GetK8sComponentAsUnstructuredList(devfile, kubernetes.Name, path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}
-
-	// Deploy the actual Kubernetes component and error out if there's an issue.
-	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
-	err = service.PushKubernetesResource(kubeClient, u, labels, annotations, mode)
-	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+	for _, u := range uList {
+		// Deploy the actual Kubernetes component and error out if there's an issue.
+		log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
+		err = service.PushKubernetesResource(kubeClient, u, labels, annotations, mode)
+		if err != nil {
+			return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+		}
 	}
-
 	return nil
 }

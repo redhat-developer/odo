@@ -552,7 +552,7 @@ func (a *Adapter) createOrUpdateComponent(
 }
 
 func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string, ownerReference metav1.OwnerReference) error {
-	oldSvc, err := a.kubeClient.GetOneService(a.ComponentName, a.AppName)
+	oldSvc, err := a.kubeClient.GetOneService(a.ComponentName, a.AppName, true)
 	originOwnerReferences := svc.OwnerReferences
 	if err != nil {
 		// no old service was found, create a new one
@@ -635,12 +635,12 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	// convert all devfileK8sResources to unstructured data
 	var devfileK8sResourcesUnstructured []unstructured.Unstructured
 	for _, devfileK := range devfileK8sResources {
-		var devfileKUnstructured unstructured.Unstructured
-		devfileKUnstructured, err = libdevfile.GetK8sComponentAsUnstructured(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
+		var devfileKUnstructuredList []unstructured.Unstructured
+		devfileKUnstructuredList, err = libdevfile.GetK8sComponentAsUnstructuredList(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
 		if err != nil {
 			return nil, nil, fmt.Errorf("unable to read the resource: %w", err)
 		}
-		devfileK8sResourcesUnstructured = append(devfileK8sResourcesUnstructured, devfileKUnstructured)
+		devfileK8sResourcesUnstructured = append(devfileK8sResourcesUnstructured, devfileKUnstructuredList...)
 	}
 
 	isSBOSupported, err := a.kubeClient.IsServiceBindingSupported()
