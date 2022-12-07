@@ -1,0 +1,13 @@
+---
+name_prefix: odo-test-automation
+vsi_image: ibm-ubuntu-20-04-2-minimal-amd64-1
+vsi_profile: bx2-2x8
+vpc_name: "{{ name_prefix }}-vpc"
+subnet_name: "{{ name_prefix }}-subnet"
+total_ipv4_address_count: 256
+zone: eu-de-2 #us-south-3
+ssh_key_name: "automation-key"
+ssh_public_key: AAAAB3NzaC1yc2EAAAADAQABAAABAQDO/TwSo9O3qT3wwZ0vH2HNlhhjyIlp6/MGZuEJOJFTw0eJa7nFzOmX4XcLZjj6nruaRQlTKpX5IlIaY+OKg8xDj/StxIyRkHHmhRoqkYty22480MTXzr5aCj1ABk3x0TTs0M3g7h+Xn/QttKIrPudic6U/+8gzwNLwiXKgecPb4nRW9lM44QudxXXZw3DPLg4r7qW0Vyhm5VGNGQHiZ8MAf+8GTf6KPi4XunBjpTKPGf2NMpXMU7U1+TJn+l1g3aRnhc+DphV86C0ELL7PAYHcXvo6AmWPCBbA7eNwz3/OiQI0rNwgb4YmS+MS4YZjSgWnUSk9dUD7bxDH9ID7WpS1
+vsi_name: "{{ name_prefix }}-vsi"
+fip_name: "{{ name_prefix }}-fip"
+ssh_login_key: ~/work/ODO/PSI/lib/common/old-keys/releng-key

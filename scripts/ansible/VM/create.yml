@@ -1,0 +1,165 @@
+---
+- name: Create IBM Cloud VPC VSI
+  hosts: localhost
+  collections:
+   - ibm.cloudcollection
+  tasks:
+    - name: Fetch the variables from var file
+      include_vars:
+        file: vars.yml
+
+    - name: Checking for existing VPC
+      ibm_is_vpc_info:
+        name: "{{ vpc_name }}"
+      failed_when:
+        - vpc.rc != 0
+        - '"No VPC found" not in vpc.stderr'
+      register: vpc
+
+    - name: Configure VPC
+      ibm_is_vpc:
+        name: "{{ vpc_name }}"
+        state: available
+        id: "{{ vpc.resource.id | default(omit) }}"
+      register: vpc
+
+    - name: Checking for existing VPC Subnet
+      ibm_is_subnet_info:
+        name: "{{ subnet_name }}"
+      failed_when:
+        - subnet.rc != 0
+        - '"No subnet found" not in subnet.stderr'
+      register: subnet
+
+    - name: Configure VPC Subnet
+      ibm_is_subnet:
+        name: "{{ subnet_name }}"
+        state: available
+        id: "{{ subnet.id | default(omit) }}"
+        vpc: "{{ vpc.resource.id }}"
+        total_ipv4_address_count: "{{ total_ipv4_address_count }}"
+        zone: "{{ zone }}"
+      register: subnet
+
+    - name: Checking for existing SSH key
+      ibm_is_ssh_key_info:
+        name: "{{ ssh_key_name }}"
+      failed_when:
+        - ssh_key.rc != 0
+        - '"No SSH Key found" not in ssh_key.stderr'
+      register: ssh_key
+
+    - name: Configure SSH Key
+      ibm_is_ssh_key:
+        name: "{{ ssh_key_name }}"
+        public_key: "{{ ssh_public_key.split()[:2]|join(' ') }}"
+        id: "{{ ssh_key.resource.id | default(omit) }}"
+      register: ssh_key
+
+    - name: Retrieve image list
+      ibm_is_images_info:
+      register: images_list
+
+    - name: Set VM image name/id dictionary fact
+      set_fact:
+        image_dict: "{{ images_list.resource.images |
+                        items2dict(key_name='name', value_name='id') }}"
+
+    - name: Check for existing VSI
+      ibm_is_instance_info:
+        name: "{{ vsi_name }}"
+      failed_when:
+        - vsi.rc != 0
+        - '"No Instance found" not in vsi.stderr'
+      register: vsi
+
+    - name: Configure VSI
+      ibm_is_instance:
+        name: "{{ vsi_name }}"
+        state: available
+        id: "{{ vsi.resource.id | default(omit) }}"
+        vpc: "{{ vpc.resource.id }}"
+        profile: "{{ vsi_profile }}"
+        image: "{{ image_dict[vsi_image] }}"
+        keys:
+         - "{{ ssh_key.resource.id }}"
+        primary_network_interface:
+         - subnet: "{{ subnet.resource.id }}"
+        zone: "{{ zone }}"
+      register: vsi
+
+    - name: Check for existing Floating IP
+      ibm_is_floating_ip_info:
+        name: "{{ fip_name }}"
+      failed_when:
+        - fip.rc != 0
+        - '"No floatingIP found" not in fip.stderr'
+      register: fip
+
+    - name: Configure Floating IP Address
+      ibm_is_floating_ip:
+        name: "{{ fip_name }}"
+        state: available
+        id: "{{ fip.resource.id | default(omit) }}"
+        target: "{{ vsi.resource.primary_network_interface[0]['id'] }}"
+      register: fip
+
+    - name: Print Floating IP Address
+      debug:
+        msg: "{{ vsi_name }} IP Address: {{ fip.resource.address }}"
+
+    - name: Configure Security Group Rule to open SSH on the VSI
+      ibm_is_security_group_rule:
+        state: available
+        group: "{{ vpc.resource.default_security_group }}"
+        direction: inbound
+        remote: 0.0.0.0/0
+        tcp:
+          - port_max: 22
+            port_min: 22
+
+    - name: Add VSI to Ansible inventory
+      add_host:
+        name: "{{ fip.resource.address }}"
+        ansible_user: root
+        groups: new_vsi
+        ansible_ssh_extra_args: -o StrictHostKeyChecking=no -i "{{ ssh_login_key }}" 
+
+- name: Check Ansible connection to new DEMO VSI
+  hosts: new_vsi
+  gather_facts: False
+  tasks:
+    - name: Wait for VSI to become reachable over SSH
+      wait_for_connection:
+
+- name: Check Ansible connection to new DEMO VSI
+  hosts: new_vsi
+  tasks:
+    - name: Collect OS information
+      command: cat /etc/os-release
+      register: os_info
+
+    - name: Print OS information
+      debug:
+        var: os_info.stdout_lines
+
+# above this line all the steps are working 
+# next steps are for installation of podman and other similar configurations
+
+- name: copy installation scirpt
+  hosts: new_vsi
+  tasks:
+    - name: copying file with playbook
+      become: true 
+      copy:
+        src: ~/go/src/github.com/redhat-developer/odo/scripts/ansible/VM/install_dependency.sh
+        dest: ~/      
+        mode: 0644
+    - name: install podman and golang
+      command: bash ~/install_dependency.sh
+      register: output
+    
+    - name: Print install log
+      debug:
+        var: output.stdout_lines
+

@@ -1,0 +1,45 @@
+---
+- name: Destroy IBM Cloud VPC VSI
+  hosts: localhost
+  collections:
+   - ibm.cloudcollection
+  tasks:
+    - name: Fetch the variables from var file
+      include_vars:
+        file: vars.yml
+
+    - name: Check for existing Floating IP
+      ibm_is_floating_ip_info:
+        name: "{{ fip_name }}"
+      failed_when:
+        - fip.rc != 0
+        - '"No floatingIP found" not in fip.stderr'
+      register: fip
+
+    - name: Release Floating IP
+      ibm_is_floating_ip:
+        state: absent
+        id: "{{ fip.resource.id }}"
+        target: eth0
+      when: fip.resource.id is defined
+
+    - name: Check for existing VSI
+      ibm_is_instance_info:
+        name: "{{ vsi_name }}"
+      failed_when:
+        - vsi.rc != 0
+        - '"No Instance found" not in vsi.stderr'
+      register: vsi
+
+    - name: Remove VSI
+      ibm_is_instance:
+        state: absent
+        id: "{{ vsi.resource.id }}"
+        vpc: "{{ vsi.resource.vpc }}"
+        keys: []
+        image: "{{ vsi.resource.image }}"
+        profile: "{{ vsi.resource.profile }}"
+        zone: "{{ vsi.resource.zone }}"
+        primary_network_interface:
+          - subnet: "{{ vsi.resource.primary_network_interface[0].subnet }}"
+      when: vsi.resource.id is defined

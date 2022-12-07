@@ -1,0 +1,87 @@
+---
+- name: Destroy IBM Cloud VPC VSI
+  hosts: localhost
+  collections:
+   - ibm.cloudcollection
+  tasks:
+    - name: Fetch the variables from var file
+      include_vars:
+        file: vars.yml
+
+    - name: Check for existing Floating IP
+      ibm_is_floating_ip_info:
+        name: "{{ fip_name }}"
+      failed_when:
+        - fip.rc != 0
+        - '"No floatingIP found" not in fip.stderr'
+      register: fip
+
+    - name: Release Floating IP
+      ibm_is_floating_ip:
+        state: absent
+        id: "{{ fip.resource.id }}"
+        target: eth0
+      when: fip.resource.id is defined
+
+    - name: Check for existing VSI
+      ibm_is_instance_info:
+        name: "{{ vsi_name }}"
+      failed_when:
+        - vsi.rc != 0
+        - '"No Instance found" not in vsi.stderr'
+      register: vsi
+
+    - name: Remove VSI
+      ibm_is_instance:
+        state: absent
+        id: "{{ vsi.resource.id }}"
+        vpc: "{{ vsi.resource.vpc }}"
+        keys: []
+        image: "{{ vsi.resource.image }}"
+        profile: "{{ vsi.resource.profile }}"
+        zone: "{{ vsi.resource.zone }}"
+        primary_network_interface:
+          - subnet: "{{ vsi.resource.primary_network_interface[0].subnet }}"
+      when: vsi.resource.id is defined
+
+    - name: Checking for existing SSH key
+      ibm_is_ssh_key_info:
+        name: "{{ ssh_key_name }}"
+      failed_when:
+        - ssh_key.rc != 0
+        - '"No SSH Key found" not in ssh_key.stderr'
+      register: ssh_key
+
+    - name: Remove SSH Key
+      ibm_is_ssh_key:
+        state: absent
+        id: "{{ ssh_key.resource.id }}"
+      when: ssh_key.resource.id is defined
+
+    - name: Checking for existing VPC Subnet
+      ibm_is_subnet_info:
+        name: "{{ subnet_name }}"
+      failed_when:
+        - subnet.rc != 0
+        - '"No subnet found" not in subnet.stderr'
+      register: subnet
+
+    - name: Remove VPC Subnet
+      ibm_is_subnet:
+        state: absent
+        id: "{{ subnet.resource.id }}"
+      when: subnet.resource.id is defined
+
+    - name: Checking for existing VPC
+      ibm_is_vpc_info:
+        name: "{{ vpc_name }}"
+      failed_when:
+        - vpc.rc != 0
+        - '"No VPC found" not in vpc.stderr'
+      register: vpc
+
+    - name: Remove VPC
+      ibm_is_vpc:
+        state: absent
+        id: "{{ vpc.resource.id }}"
+      when: vpc.resource.id is defined
