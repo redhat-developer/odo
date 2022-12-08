@@ -8,8 +8,6 @@ ibmcloud login --apikey "${API_KEY_QE}"
 ibmcloud target -r eu-de
 ibmcloud oc cluster config -c "${CLUSTER_ID}"
 
-cleanup_namespaces
-
 (
     set -e
     make install
