@@ -197,9 +197,18 @@ func getRegistryStacks(ctx context.Context, preferenceClient preference.Client, 
 		return nil, &ErrGithubRegistryNotSupported{}
 	}
 	// OCI-based registry
-	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(ctx), indexSchema.StackDevfileType)
+	options := segment.GetRegistryOptions(ctx)
+	options.NewIndexSchema = true
+	devfileIndex, err := library.GetRegistryIndex(registry.URL, options, indexSchema.StackDevfileType)
 	if err != nil {
-		return nil, err
+		// Fallback to the "old" index
+		klog.V(3).Infof("error while accessing the v2index endpoint for registry %s (%s) => falling back to the old index endpoint: %v",
+			registry.Name, registry.URL, err)
+		options.NewIndexSchema = false
+		devfileIndex, err = library.GetRegistryIndex(registry.URL, options, indexSchema.StackDevfileType)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return createRegistryDevfiles(registry, devfileIndex)
 }
