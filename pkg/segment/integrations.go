@@ -22,6 +22,11 @@ func getTelemetryForDevfileRegistry(ctx context.Context) (registryLibrary.Teleme
 	}
 
 	envConfig := envcontext.GetEnvConfig(ctx)
+
+	if envConfig.TelemetryCaller != "" {
+		td.Client += "-" + envConfig.TelemetryCaller
+	}
+
 	if envConfig.OdoDebugTelemetryFile != nil {
 		return td, nil
 	}

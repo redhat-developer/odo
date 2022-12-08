@@ -2,12 +2,10 @@ package segment
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
-	"github.com/devfile/registry-support/registry-library/library"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/config"
@@ -21,36 +19,78 @@ func TestGetRegistryOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tempConfigFile.Close()
+	err = tempConfigFile.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tempConfigFile.Name())
 
 	t.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
 
+	type want struct {
+		localeUserEmpty bool
+		skipTLSVerify   bool
+		caller          string
+	}
 	tests := []struct {
 		testName      string
 		consent       bool
 		telemetryFile bool
+		caller        string
 		cfg           preference.Client
+		want          want
 	}{
 		{
 			testName:      "Registry options with telemetry consent and telemetry file",
 			consent:       true,
 			telemetryFile: true,
+			want: want{
+				localeUserEmpty: true,
+				skipTLSVerify:   false,
+				caller:          "odo",
+			},
 		},
 		{
 			testName:      "Registry options with telemetry consent and no telemetry file",
 			consent:       true,
 			telemetryFile: false,
+			want: want{
+				localeUserEmpty: false,
+				skipTLSVerify:   false,
+				caller:          "odo",
+			},
 		},
 
 		{
 			testName:      "Registry options without telemetry consent and telemetry file",
 			consent:       false,
 			telemetryFile: true,
+			want: want{
+				localeUserEmpty: true,
+				skipTLSVerify:   false,
+				caller:          "odo",
+			},
 		},
 		{
 			testName:      "Registry options without telemetry consent and no telemetry file",
 			consent:       false,
 			telemetryFile: false,
+			want: want{
+				localeUserEmpty: true,
+				skipTLSVerify:   false,
+				caller:          "odo",
+			},
+		},
+		{
+			testName:      "Registry options without telemetry consent and no telemetry file, with caller",
+			consent:       false,
+			telemetryFile: false,
+			caller:        "vscode",
+			want: want{
+				localeUserEmpty: true,
+				skipTLSVerify:   false,
+				caller:          "odo-vscode",
+			},
 		},
 	}
 
@@ -61,40 +101,25 @@ func TestGetRegistryOptions(t *testing.T) {
 			if tt.telemetryFile {
 				envConfig.OdoDebugTelemetryFile = pointer.String("/a/telemetry/file")
 			}
+			if tt.caller != "" {
+				envConfig.TelemetryCaller = tt.caller
+			}
 			ctx = envcontext.WithEnvConfig(ctx, envConfig)
 			scontext.SetTelemetryStatus(ctx, tt.consent)
 
 			ro := GetRegistryOptions(ctx)
-			err = verifyRegistryOptions(tt.consent, tt.telemetryFile, ro)
-			if err != nil {
-				t.Error(err)
+
+			if len(ro.Telemetry.Locale) == 0 != tt.want.localeUserEmpty || len(ro.Telemetry.User) == 0 != tt.want.localeUserEmpty {
+				t.Errorf("Locale %q and User %q emptiness should be %v when telemetry enabled is %v and telemetry file is %v", ro.Telemetry.Locale, ro.Telemetry.User, tt.want.localeUserEmpty, tt.consent, tt.telemetryFile)
+			}
+
+			if ro.SkipTLSVerify != tt.want.skipTLSVerify {
+				t.Errorf("SkipTLSVerify should be set to %v by default", tt.want.skipTLSVerify)
+			}
+
+			if ro.Telemetry.Client != tt.want.caller {
+				t.Errorf("caller should be %q but is %q", tt.want.caller, ro.Telemetry.Client)
 			}
 		})
-	}
-}
-
-func verifyRegistryOptions(isSet bool, telemetryFile bool, ro library.RegistryOptions) error {
-	if ro.SkipTLSVerify {
-		return errors.New("SkipTLSVerify should be set to false by default")
-	}
-
-	return verifyTelemetryData(isSet, telemetryFile, ro.Telemetry)
-}
-
-func verifyTelemetryData(isSet bool, telemetryFile bool, data library.TelemetryData) error {
-	if !isSet || telemetryFile {
-		if data.Locale == "" && data.User == "" {
-			return nil
-		}
-
-		return fmt.Errorf("Locale %s and User %s should be unset when telemetry is not enabled ", data.Locale, data.User)
-
-	} else {
-		//we don't care what value locale and user have been set to.  We just want to make sure they are not empty
-		if data.Locale != "" && data.User != "" {
-			return nil
-		}
-
-		return fmt.Errorf("Locale %s and User %s should be set when telemetry is enabled ", data.Locale, data.User)
 	}
 }
