@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/blang/semver"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
@@ -239,6 +240,17 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 				SchemaVersion: v.SchemaVersion,
 			})
 		}
+		sort.Slice(stackDevfile.Versions, func(i, j int) bool {
+			vi, err := semver.Make(stackDevfile.Versions[i].Version)
+			if err != nil {
+				return false
+			}
+			vj, err := semver.Make(stackDevfile.Versions[j].Version)
+			if err != nil {
+				return false
+			}
+			return vi.LT(vj)
+		})
 
 		registryDevfiles = append(registryDevfiles, stackDevfile)
 	}
