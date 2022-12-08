@@ -157,11 +157,34 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 	})
 	t.SetOutputMirror(log.GetStdout())
 
-	t.AppendHeader(table.Row{"NAME", "REGISTRY", "DESCRIPTION"})
+	t.AppendHeader(table.Row{"NAME", "REGISTRY", "DESCRIPTION", "VERSIONS"})
 
 	for _, devfileComponent := range DevfileList {
 		// Mark the name as yellow in the index so it's easier to see.
 		name := text.Colors{text.FgHiYellow}.Sprint(devfileComponent.Name)
+
+		defaultVersion := devfileComponent.DefaultVersion
+		if defaultVersion == "" {
+			for _, v := range devfileComponent.Versions {
+				if v.IsDefault {
+					defaultVersion = v.Version
+					break
+				}
+			}
+		}
+
+		var vList []string
+		for _, v := range devfileComponent.Versions {
+			s := v.Version
+			if v.IsDefault {
+				s = log.Sbold(s)
+			}
+			vList = append(vList, s)
+		}
+		if len(vList) == 0 {
+			//For backward compatibility, add the default version
+			vList = append(vList, log.Sbold(defaultVersion))
+		}
 
 		if o.detailsFlag {
 
@@ -181,12 +204,15 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
   - Dev: %s
   - Deploy: %s
   - Debug: %s
+%s:
+  - %s
 %s`,
 				log.Sbold("Name"), name,
 				log.Sbold("Display Name"), devfileComponent.DisplayName,
 				log.Sbold("Registry"), devfileComponent.Registry.Name,
 				log.Sbold("Registry URL"), devfileComponent.Registry.URL,
-				log.Sbold("Version"), devfileComponent.Version,
+				// Version is kept for backward compatibility
+				log.Sbold("Version"), defaultVersion,
 				log.Sbold("Description"), devfileComponent.Description,
 				log.Sbold("Tags"), strings.Join(devfileComponent.Tags[:], ", "),
 				log.Sbold("Project Type"), devfileComponent.ProjectType,
@@ -196,10 +222,17 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Dev),
 				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Deploy),
 				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Debug),
+				log.Sbold("Versions"),
+				strings.Join(vList, "\n  - "),
 				"\n")
 		} else {
-			// Create a simplified row only showing the name, registry and description.
-			t.AppendRow(table.Row{name, devfileComponent.Registry.Name, util.TruncateString(devfileComponent.Description, 40, "...")})
+			// Create a simplified row only showing the name, registry and description and versions
+			t.AppendRow(table.Row{
+				name,
+				devfileComponent.Registry.Name,
+				util.TruncateString(devfileComponent.Description, 40, "..."),
+				strings.Join(vList, ", "),
+			})
 		}
 
 	}
