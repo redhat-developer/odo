@@ -11,14 +11,24 @@ type Registry struct {
 
 // DevfileStack is the main struct for devfile stack
 type DevfileStack struct {
-	Name            string       `json:"name"`
-	DisplayName     string       `json:"displayName"`
-	Description     string       `json:"description"`
-	Registry        Registry     `json:"registry"`
-	Language        string       `json:"language"`
-	Tags            []string     `json:"tags"`
-	ProjectType     string       `json:"projectType"`
-	Version         string       `json:"version"`
-	StarterProjects []string     `json:"starterProjects"`
-	DevfileData     *DevfileData `json:"devfileData,omitempty"`
+	Name        string   `json:"name"`
+	DisplayName string   `json:"displayName"`
+	Description string   `json:"description"`
+	Registry    Registry `json:"registry"`
+	Language    string   `json:"language"`
+	Tags        []string `json:"tags"`
+	ProjectType string   `json:"projectType"`
+
+	// DefaultVersion is the default version. Marshalled as "version" for backward compatibility.
+	// Deprecated. Use Versions instead.
+	DefaultVersion  string                `json:"version"`
+	Versions        []DevfileStackVersion `json:"versions,omitempty"`
+	StarterProjects []string              `json:"starterProjects"`
+	DevfileData     *DevfileData          `json:"devfileData,omitempty"`
+}
+
+type DevfileStackVersion struct {
+	Version       string `json:"version,omitempty"`
+	IsDefault     bool   `json:"isDefault"`
+	SchemaVersion string `json:"schemaVersion,omitempty"`
 }

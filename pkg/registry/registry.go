@@ -216,8 +216,21 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 			Tags:            devfileIndexEntry.Tags,
 			ProjectType:     devfileIndexEntry.ProjectType,
 			StarterProjects: devfileIndexEntry.StarterProjects,
-			Version:         devfileIndexEntry.Version,
+			DefaultVersion:  devfileIndexEntry.Version,
 		}
+		hasDefaultVersion := devfileIndexEntry.Version != ""
+		for _, v := range devfileIndexEntry.Versions {
+			if !hasDefaultVersion && v.Default {
+				stackDevfile.DefaultVersion = v.Version
+				hasDefaultVersion = true
+			}
+			stackDevfile.Versions = append(stackDevfile.Versions, api.DevfileStackVersion{
+				IsDefault:     v.Default,
+				Version:       v.Version,
+				SchemaVersion: v.SchemaVersion,
+			})
+		}
+
 		registryDevfiles = append(registryDevfiles, stackDevfile)
 	}
 
