@@ -192,7 +192,11 @@ openshiftci-presubmit-unittests:
 
 .PHONY: test-integration-cluster
 test-integration-cluster:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!nocluster && !podman" tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!unauth && !nocluster && !podman" tests/integration
+
+.PHONY: test-integration-cluster-unauth
+test-integration-cluster-unauth:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration-unauth.xml" --label-filter="unauth" tests/integration
 
 .PHONY: test-integration-no-cluster
 test-integration-no-cluster:

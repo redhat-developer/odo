@@ -197,7 +197,9 @@ func CommonBeforeEach() CommonVar {
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
 	if NeedsCluster(CurrentSpecReport().Labels()) {
 		LocalKubeconfigSet(commonVar.ConfigDir)
-		commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+		if IsAuth(CurrentSpecReport().Labels()) {
+			commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+		}
 	} else {
 		// Disable the use of in-cluster configuration (seen in IBM Cloud pipeline)
 		os.Unsetenv("KUBERNETES_SERVICE_HOST")
