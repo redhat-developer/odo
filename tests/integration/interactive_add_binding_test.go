@@ -223,11 +223,11 @@ var _ = Describe("odo add binding interactive command tests", func() {
 
 			BeforeEach(func() {
 				otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
 					helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 				Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
 				commonVar.CliRunner.EnsurePodIsUp(otherNS, "cluster-sample-1")
-				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				commonVar.CliRunner.ListNamespaceProject(nsWithNoService)
 				commonVar.CliRunner.ListNamespaceProject(otherNS)
 
@@ -556,11 +556,11 @@ var _ = Describe("odo add binding interactive command tests", func() {
 
 			BeforeEach(func() {
 				otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
 					helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 				Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
 				commonVar.CliRunner.EnsurePodIsUp(otherNS, "cluster-sample-1")
-				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				commonVar.CliRunner.ListNamespaceProject(nsWithNoService)
 				commonVar.CliRunner.ListNamespaceProject(otherNS)
 
