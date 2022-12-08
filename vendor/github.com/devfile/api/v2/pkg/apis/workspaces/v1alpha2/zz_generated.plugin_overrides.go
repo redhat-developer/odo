@@ -314,7 +314,8 @@ type EndpointPluginOverride struct {
 	Name string `json:"name"`
 
 	//  +optional
-	// The port number should be unique.
+	// Port number to be used within the container component. The same port cannot
+	// be used by two different container components.
 	TargetPort int `json:"targetPort,omitempty"`
 
 	// Describes how the endpoint should be exposed on the network.
@@ -570,7 +571,7 @@ type DockerfileSrcPluginOverride struct {
 
 type DockerfilePluginOverride struct {
 
-	// Path of source directory to establish build context. Defaults to ${PROJECT_ROOT} in the container
+	// Path of source directory to establish build context. Defaults to ${PROJECT_SOURCE} in the container
 	// +optional
 	BuildContext string `json:"buildContext,omitempty"`
 

@@ -7,9 +7,10 @@ import (
 
 // DevWorkspaceSpec defines the desired state of DevWorkspace
 type DevWorkspaceSpec struct {
-	Started      bool                     `json:"started"`
-	RoutingClass string                   `json:"routingClass,omitempty"`
-	Template     DevWorkspaceTemplateSpec `json:"template,omitempty"`
+	Started       bool                     `json:"started"`
+	RoutingClass  string                   `json:"routingClass,omitempty"`
+	Template      DevWorkspaceTemplateSpec `json:"template,omitempty"`
+	Contributions []ComponentContribution  `json:"contributions,omitempty"`
 }
 
 // DevWorkspaceStatus defines the observed state of DevWorkspace
