@@ -104,21 +104,26 @@ var _ = Describe("odo list with devfile", func() {
 			helper.Chdir(commonVar.Context)
 		})
 
-		It("should list the local component when no authenticated", Label(helper.LabelUnauth), func() {
-			By("checking the normal output", func() {
-				stdOut := helper.Cmd("odo", "list", "component").ShouldPass().Out()
-				Expect(stdOut).To(ContainSubstring(componentName))
-			})
+		for _, label := range []string{
+			helper.LabelNoCluster, helper.LabelUnauth,
+		} {
+			label := label
+			It("should list the local component when no authenticated", Label(label), func() {
+				By("checking the normal output", func() {
+					stdOut := helper.Cmd("odo", "list", "component").ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(componentName))
+				})
 
-			By("checking the JSON output", func() {
-				res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
-				stdout, stderr := res.Out(), res.Err()
-				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				Expect(stderr).To(BeEmpty())
-				helper.JsonPathContentIs(stdout, "componentInDevfile", componentName)
-				helper.JsonPathContentIs(stdout, "components.0.name", componentName)
+				By("checking the JSON output", func() {
+					res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(helper.IsJSON(stdout)).To(BeTrue())
+					Expect(stderr).To(BeEmpty())
+					helper.JsonPathContentIs(stdout, "componentInDevfile", componentName)
+					helper.JsonPathContentIs(stdout, "components.0.name", componentName)
+				})
 			})
-		})
+		}
 
 		When("dev is running on cluster", func() {
 			BeforeEach(func() {
@@ -330,6 +335,11 @@ var _ = Describe("odo list with devfile", func() {
 			It("should show the language for 'Type' in odo list", Label(helper.LabelNoCluster), func() {
 				checkList(metadata.Language)
 			})
+
+			It("should show the language for 'Type' in odo list", Label(helper.LabelUnauth), func() {
+				checkList(metadata.Language)
+			})
+
 			When("the component is pushed in dev mode", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
@@ -355,6 +365,9 @@ var _ = Describe("odo list with devfile", func() {
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 			It("should show 'Not available' for 'Type' in odo list", Label(helper.LabelNoCluster), func() {
+				checkList("Not available")
+			})
+			It("should show 'Not available' for 'Type' in odo list", Label(helper.LabelUnauth), func() {
 				checkList("Not available")
 			})
 			When("the component is pushed", func() {
