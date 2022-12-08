@@ -103,6 +103,9 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 // Run contains the logic for the odo command
 func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	result, _, err := o.run(ctx) // TODO(feloy) handle warning
+	if clierrors.AsWarning(err) {
+		err = nil
+	}
 	return result, err
 }
 
