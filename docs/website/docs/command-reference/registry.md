@@ -18,10 +18,9 @@ These flags let you filter the listed Devfile stacks:
 when adding the registry to the preferences with `odo preference add registry <name> <url>`)
 * `--filter <term>` to list the Devfile for which the term is found in the devfile name or description
 
-By default, the name, registry and description 
-of the Devfile stacks are displayed on a table.
+By default, the name, registry, description and versions of the Devfile stacks are displayed on a table.
 
-This flag lets you change the content of the output:
+The flags below let you change the content of the output:
 
 * `--details` to display details about the Devfile stacks
 * `-o json` to output the information in a JSON format
@@ -50,18 +49,18 @@ odo registry
 
 ```console
 $ odo registry
- NAME                          REGISTRY                DESCRIPTION                                 
- dotnet50                      Staging                 Stack with .NET 5.0                         
- dotnet50                      DefaultDevfileRegistry  Stack with .NET 5.0                         
- dotnet60                      Staging                 Stack with .NET 6.0                         
- dotnet60                      DefaultDevfileRegistry  Stack with .NET 6.0                         
- dotnetcore31                  Staging                 Stack with .NET Core 3.1                    
- dotnetcore31                  DefaultDevfileRegistry  Stack with .NET Core 3.1                    
- go                            Staging                 Stack with the latest Go version            
- go                            DefaultDevfileRegistry  Stack with the latest Go version            
- java-maven                    Staging                 Upstream Maven and OpenJDK 11               
- java-maven                    DefaultDevfileRegistry  Upstream Maven and OpenJDK 11               
-[...]
+ NAME                          REGISTRY                DESCRIPTION                                  VERSIONS
+ dotnet50                      Staging                 Stack with .NET 5.0                          1.0.3
+ dotnet50                      DefaultDevfileRegistry  Stack with .NET 5.0                          1.0.3
+ dotnet60                      Staging                 Stack with .NET 6.0                          1.0.2
+ dotnet60                      DefaultDevfileRegistry  Stack with .NET 6.0                          1.0.2
+ dotnetcore31                  Staging                 Stack with .NET Core 3.1                     1.0.3
+ dotnetcore31                  DefaultDevfileRegistry  Stack with .NET Core 3.1                     1.0.3
+ go                            Staging                 Go is an open source programming languag...  1.0.2, 2.0.0
+ go                            DefaultDevfileRegistry  Go is an open source programming languag...  1.0.2, 2.0.0
+ java-maven                    Staging                 Upstream Maven and OpenJDK 11                1.2.0
+ java-maven                    DefaultDevfileRegistry  Upstream Maven and OpenJDK 11                1.2.0
+ [...]
 ```
 </details>
 
@@ -77,13 +76,13 @@ odo registry --devfile-registry <registry>
 
 ```console
 $ odo registry --devfile-registry Staging
- NAME                          REGISTRY                DESCRIPTION                                 
- dotnet50                      Staging                 Stack with .NET 5.0                         
- dotnet60                      Staging                 Stack with .NET 6.0                         
- dotnetcore31                  Staging                 Stack with .NET Core 3.1                    
- go                            Staging                 Stack with the latest Go version            
- java-maven                    Staging                 Upstream Maven and OpenJDK 11               
-[...]
+ NAME                          REGISTRY  DESCRIPTION                                  VERSIONS
+ dotnet50                      Staging   Stack with .NET 5.0                          1.0.3
+ dotnet60                      Staging   Stack with .NET 6.0                          1.0.2
+ dotnetcore31                  Staging   Stack with .NET Core 3.1                     1.0.3
+ go                            Staging   Go is an open source programming languag...  1.0.2, 2.0.0
+ java-maven                    Staging   Upstream Maven and OpenJDK 11                1.2.0
+ [...]
 ```
 </details>
 
@@ -98,15 +97,15 @@ odo registry --filter <keyword>
 
 ```console
 $ odo registry --filter Maven
- NAME                       REGISTRY                DESCRIPTION                                 
- java-maven                 Staging                 Upstream Maven and OpenJDK 11               
- java-maven                 DefaultDevfileRegistry  Upstream Maven and OpenJDK 11               
- java-openliberty           Staging                 Java application Maven-built stack using... 
- java-openliberty           DefaultDevfileRegistry  Java application Maven-built stack using... 
- java-websphereliberty      Staging                 Java application Maven-built stack using... 
- java-websphereliberty      DefaultDevfileRegistry  Java application Maven-built stack using... 
- java-wildfly-bootable-jar  Staging                 Java stack with WildFly in bootable Jar ... 
- java-wildfly-bootable-jar  DefaultDevfileRegistry  Java stack with WildFly in bootable Jar ... 
+ NAME                       REGISTRY                DESCRIPTION                                  VERSIONS
+ java-maven                 Staging                 Upstream Maven and OpenJDK 11                1.2.0
+ java-maven                 DefaultDevfileRegistry  Upstream Maven and OpenJDK 11                1.2.0
+ java-openliberty           Staging                 Java application Maven-built stack using...  0.9.0
+ java-openliberty           DefaultDevfileRegistry  Java application Maven-built stack using...  0.9.0
+ java-websphereliberty      Staging                 Java application Maven-built stack using...  0.9.0
+ java-websphereliberty      DefaultDevfileRegistry  Java application Maven-built stack using...  0.9.0
+ java-wildfly-bootable-jar  Staging                 Java stack with WildFly in bootable Jar ...  1.1.0
+ java-wildfly-bootable-jar  DefaultDevfileRegistry  Java stack with WildFly in bootable Jar ...  1.1.0
 ```
 </details>
 
@@ -125,17 +124,20 @@ Name: java-maven
 Display Name: Maven Java
 Registry: Staging
 Registry URL: https://registry.stage.devfile.io
-Version: 1.1.0
+Version: 1.2.0
 Description: Upstream Maven and OpenJDK 11 
 Tags: Java, Maven
-Project Type: maven
-Language: java
+Project Type: Maven
+Language: Java
 Starter Projects:
   - springbootproject
 Supported odo Features:
   - Dev: Y
   - Deploy: N
   - Debug: Y
+Versions:
+  - 1.2.0
+
 ```
 </details>
 

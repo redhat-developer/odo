@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tidwall/gjson"
 
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -53,7 +54,27 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 				By("using human readable output", func() {
 					output := helper.Cmd("odo", args...).ShouldPass().Out()
-					helper.MatchAllInOutput(output, []string{"nodejs-starter", "JavaScript", "Node.js Runtime", "Dev: Y"})
+					By("checking headers", func() {
+						for _, h := range []string{
+							"Name",
+							"Display Name",
+							"Registry",
+							"Registry URL",
+							"Version",
+							"Description",
+							"Tags",
+							"Project Type",
+							"Language",
+							"Starter Projects",
+							"Supported odo Features",
+							"Versions",
+						} {
+							Expect(output).Should(ContainSubstring(h + ":"))
+						}
+					})
+					By("checking values", func() {
+						helper.MatchAllInOutput(output, []string{"nodejs-starter", "JavaScript", "Node.js Runtime", "Dev: Y"})
+					})
 				})
 				By("using JSON output", func() {
 					args = append(args, "-o", "json")
@@ -66,9 +87,21 @@ var _ = Describe("odo devfile registry command tests", func() {
 					helper.JsonPathContentContain(stdout, "0.description", "Node")
 					helper.JsonPathContentContain(stdout, "0.language", "JavaScript")
 					helper.JsonPathContentContain(stdout, "0.projectType", "Node.js")
-					helper.JsonPathContentContain(stdout, "0.starterProjects.0", "nodejs-starter")
 					helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
 					helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
+
+					defaultVersion := gjson.Get(stdout, "0.version").String()
+					By("returning backward-compatible information linked to the default stack version", func() {
+						helper.JsonPathContentContain(stdout, "0.starterProjects.0", "nodejs-starter")
+						Expect(defaultVersion).ShouldNot(BeEmpty())
+					})
+					By("returning a non-empty list of versions", func() {
+						versions := gjson.Get(stdout, "0.versions").Array()
+						Expect(versions).ShouldNot(BeEmpty())
+					})
+					By("listing the default version as such in the versions list", func() {
+						Expect(gjson.Get(stdout, "0.versions.#(isDefault==true).version").String()).Should(Equal(defaultVersion))
+					})
 				})
 			})
 
@@ -76,7 +109,12 @@ var _ = Describe("odo devfile registry command tests", func() {
 				args := []string{"registry", "--devfile", "python", "--devfile-registry", "DefaultDevfileRegistry"}
 				By("using human readable output", func() {
 					output := helper.Cmd("odo", args...).ShouldPass().Out()
-					helper.MatchAllInOutput(output, []string{"python"})
+					By("checking table header", func() {
+						helper.MatchAllInOutput(output, []string{"NAME", "REGISTRY", "DESCRIPTION", "VERSIONS"})
+					})
+					By("checking table row", func() {
+						helper.MatchAllInOutput(output, []string{"python"})
+					})
 				})
 				By("using JSON output", func() {
 					args = append(args, "-o", "json")
@@ -89,9 +127,20 @@ var _ = Describe("odo devfile registry command tests", func() {
 					helper.JsonPathContentContain(stdout, "0.description", "Python is an interpreted")
 					helper.JsonPathContentContain(stdout, "0.language", "Python")
 					helper.JsonPathContentContain(stdout, "0.projectType", "Python")
-					helper.JsonPathContentContain(stdout, "0.starterProjects.0", "flask-example")
 					helper.JsonPathContentContain(stdout, "0.devfileData", "")
 
+					defaultVersion := gjson.Get(stdout, "0.version").String()
+					By("returning backward-compatible information linked to the default stack version", func() {
+						helper.JsonPathContentContain(stdout, "0.starterProjects.0", "flask-example")
+						Expect(defaultVersion).ShouldNot(BeEmpty())
+					})
+					By("returning a non-empty list of versions", func() {
+						versions := gjson.Get(stdout, "0.versions").Array()
+						Expect(versions).ShouldNot(BeEmpty())
+					})
+					By("listing the default version as such in the versions list", func() {
+						Expect(gjson.Get(stdout, "0.versions.#(isDefault==true).version").String()).Should(Equal(defaultVersion))
+					})
 				})
 			})
 

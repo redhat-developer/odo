@@ -314,69 +314,106 @@ odo registry -o json
 ```
 ```json
 [
-	{
-		"name": "python-django",
-		"displayName": "Django",
-		"description": "Python3.7 with Django",
-		"registry": {
-			"name": "DefaultDevfileRegistry",
-			"url": "https://registry.devfile.io",
-			"secure": false
-		},
-		"language": "python",
-		"tags": [
-			"Python",
-			"pip",
-			"Django"
-		],
-		"projectType": "django",
-		"version": "1.0.0",
-		"starterProjects": [
-			"django-example"
-		]
-	}, [...]
+  {
+    "name": "python",
+    "displayName": "Python",
+    "description": "Python is an interpreted, object-oriented, high-level programming language with dynamic semantics. Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together.",
+    "registry": {
+      "name": "DefaultDevfileRegistry",
+      "url": "https://registry.devfile.io",
+      "secure": false
+    },
+    "language": "Python",
+    "tags": [
+      "Python",
+      "Pip",
+      "Flask"
+    ],
+    "projectType": "Python",
+    "version": "2.1.0",
+    "versions": [
+      {
+        "version": "2.1.0",
+        "isDefault": true,
+        "schemaVersion": "2.1.0",
+        "starterProjects": [
+          "flask-example"
+        ]
+      },
+      {
+        "version": "3.0.0",
+        "isDefault": false,
+        "schemaVersion": "2.2.0",
+        "starterProjects": [
+          "flask-example"
+        ]
+      }
+    ],
+    "starterProjects": [
+      "flask-example"
+    ]
+  },
+  [...]
 ]
 ```
 
 Using the `--details` flag, you will also get information about the Devfile:
 
 ```shell
-odo registry --details -o json
+odo registry --devfile java-springboot --details -o json
 ```
 ```json
 [
-	{
-		"name": "python-django",
-		"displayName": "Django",
-		"description": "Python3.7 with Django",
-		"registry": {
-			"name": "DefaultDevfileRegistry",
-			"url": "https://registry.devfile.io",
-			"secure": false
-		},
-		"language": "python",
-		"tags": [
-			"Python",
-			"pip",
-			"Django"
-		],
-		"projectType": "django",
-		"version": "1.0.0",
-		"starterProjects": [
-			"django-example"
-		],
-		"devfileData": {
-			"devfile": {
-				"schemaVersion": "2.0.0",
-				[ devfile.yaml file content ]
-			},
-			"supportedOdoFeatures": {
-				"dev": true,
-				"deploy": false,
-				"debug": true
-			}
-		},
-	}, [...]
+  {
+    "name": "java-springboot",
+    "displayName": "Spring Boot",
+    "description": "Spring Boot using Java",
+    "registry": {
+      "name": "DefaultDevfileRegistry",
+      "url": "https://registry.devfile.io",
+      "secure": false
+    },
+    "language": "Java",
+    "tags": [
+      "Java",
+      "Spring Boot"
+    ],
+    "projectType": "springboot",
+    "version": "1.2.0",
+    "versions": [
+      {
+        "version": "1.2.0",
+        "isDefault": true,
+        "schemaVersion": "2.1.0",
+        "starterProjects": [
+          "springbootproject"
+        ]
+      },
+      {
+        "version": "2.0.0",
+        "isDefault": false,
+        "schemaVersion": "2.2.0",
+        "starterProjects": [
+          "springbootproject"
+        ]
+      }
+    ],
+    "starterProjects": [
+      "springbootproject"
+    ],
+    "devfileData": {
+      "devfile": {
+        "schemaVersion": "2.0.0",
+        [ devfile.yaml file content ]
+      },
+      "supportedOdoFeatures": {
+        "dev": true,
+        "deploy": false,
+        "debug": true
+      }
+    }
+  },
+  [...]
 ]
 ```
 

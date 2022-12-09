@@ -276,59 +276,246 @@ func TestListDevfileStacks(t *testing.T) {
 }
 
 func TestGetRegistryDevfiles(t *testing.T) {
-	// Start a local HTTP server
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// Send response to be tested
-		_, err := rw.Write([]byte(
-			`
-			[
-				{
-					"name": "nodejs",
-					"displayName": "NodeJS Angular Web Application",
-					"description": "Stack for developing NodeJS Angular Web Application",
-					"tags": [
-						"NodeJS",
-						"Angular",
-						"Alpine"
-					],
-					"language": "nodejs",
-					"icon": "/images/angular.svg",
-					"globalMemoryLimit": "2686Mi",
-					"links": {
-						"self": "/devfiles/angular/devfile.yaml"
-					}
-				}
-			]
-			`,
-		))
-		if err != nil {
-			t.Error(err)
-		}
-	}))
-	// Close the server when test finishes
-	defer server.Close()
-
 	const registryName = "some registry"
-	tests := []struct {
-		name     string
-		registry api.Registry
-		want     []api.DevfileStack
-	}{
+	const (
+		v1IndexResponse = `
+[
+	{
+		"name": "nodejs",
+		"displayName": "NodeJS Angular Web Application",
+		"description": "Stack for developing NodeJS Angular Web Application",
+		"version": "1.2.3",
+		"tags": [
+			"NodeJS",
+			"Angular",
+			"Alpine"
+		],
+		"language": "nodejs",
+		"icon": "/images/angular.svg",
+		"globalMemoryLimit": "2686Mi",
+		"links": {
+			"self": "/devfiles/angular/devfile.yaml"
+		}
+	}
+]
+`
+		v2IndexResponse = `
+[
+	{
+    "name": "go",
+    "displayName": "Go Runtime",
+    "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+    "type": "stack",
+    "tags": [
+      "Go"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+    "projectType": "Go",
+    "language": "Go",
+    "provider": "Red Hat",
+    "versions": [
+      {
+        "version": "2.0.0",
+        "schemaVersion": "2.2.0",
+        "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+        "tags": [
+          "Go"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+        "links": {
+          "self": "devfile-catalog/go:2.0.0"
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "go-starter"
+        ]
+      },
+      {
+        "version": "1.0.2",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+        "tags": [
+          "Go"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+        "links": {
+          "self": "devfile-catalog/go:1.0.2"
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "go-starter"
+        ]
+      }
+    ]
+  }
+]
+`
+	)
+
+	type test struct {
+		name                   string
+		registryServerProvider func(t *testing.T) (*httptest.Server, string)
+		wantErr                bool
+		wantProvider           func(registryUrl string) []api.DevfileStack
+	}
+	tests := []test{
 		{
-			name:     "Test NodeJS devfile index",
-			registry: api.Registry{Name: registryName, URL: server.URL},
-			want: []api.DevfileStack{
-				{
-					Name:        "nodejs",
-					DisplayName: "NodeJS Angular Web Application",
-					Description: "Stack for developing NodeJS Angular Web Application",
-					Registry: api.Registry{
-						Name: registryName,
-						URL:  server.URL,
+			name: "GitHub-based registry: github.com",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				return nil, "https://github.com/redhat-developer/odo"
+			},
+			wantErr: true,
+		},
+		{
+			name: "GitHub-based registry: raw.githubusercontent.com",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				return nil, "https://raw.githubusercontent.com/redhat-developer/odo"
+			},
+			wantErr: true,
+		},
+		{
+			name: "GitHub-based registry: *.github.com",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				return nil, "https://redhat-developer.github.com/odo"
+			},
+			wantErr: true,
+		},
+		{
+			name: "GitHub-based registry: *.raw.githubusercontent.com",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				return nil, "https://redhat-developer.raw.githubusercontent.com/odo"
+			},
+			wantErr: true,
+		},
+		{
+			name: "Devfile registry server: client error (4xx)",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					rw.WriteHeader(http.StatusNotFound)
+				}))
+				return server, server.URL
+			},
+			wantErr: true,
+		},
+		{
+			name: "Devfile registry server: server error (5xx)",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					rw.WriteHeader(http.StatusInternalServerError)
+				}))
+				return server, server.URL
+			},
+			wantErr: true,
+		},
+		{
+			name: "Devfile registry: only /index",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					if req.URL.Path != "/index" {
+						rw.WriteHeader(http.StatusNotFound)
+						return
+					}
+					_, err := rw.Write([]byte(v1IndexResponse))
+					if err != nil {
+						t.Error(err)
+					}
+				}))
+				return server, server.URL
+			},
+			wantProvider: func(registryUrl string) []api.DevfileStack {
+				return []api.DevfileStack{
+					{
+						Name:           "nodejs",
+						DisplayName:    "NodeJS Angular Web Application",
+						Description:    "Stack for developing NodeJS Angular Web Application",
+						Registry:       api.Registry{Name: registryName, URL: registryUrl},
+						Language:       "nodejs",
+						Tags:           []string{"NodeJS", "Angular", "Alpine"},
+						DefaultVersion: "1.2.3",
 					},
-					Language: "nodejs",
-					Tags:     []string{"NodeJS", "Angular", "Alpine"},
-				},
+				}
+			},
+		},
+		{
+			name: "Devfile registry: only /v2index",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					if req.URL.Path != "/v2index" {
+						rw.WriteHeader(http.StatusNotFound)
+						return
+					}
+					_, err := rw.Write([]byte(v2IndexResponse))
+					if err != nil {
+						t.Error(err)
+					}
+				}))
+				return server, server.URL
+			},
+			wantProvider: func(registryUrl string) []api.DevfileStack {
+				return []api.DevfileStack{
+					{
+						Name:                   "go",
+						DisplayName:            "Go Runtime",
+						Description:            "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+						Registry:               api.Registry{Name: registryName, URL: registryUrl},
+						Language:               "Go",
+						ProjectType:            "Go",
+						Tags:                   []string{"Go"},
+						DefaultVersion:         "1.0.2",
+						DefaultStarterProjects: []string{"go-starter"},
+						Versions: []api.DevfileStackVersion{
+							{Version: "1.0.2", IsDefault: true, SchemaVersion: "2.1.0", StarterProjects: []string{"go-starter"}},
+							{Version: "2.0.0", IsDefault: false, SchemaVersion: "2.2.0", StarterProjects: []string{"go-starter"}},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "Devfile registry: both /index and /v2index => v2index has precedence",
+			registryServerProvider: func(t *testing.T) (*httptest.Server, string) {
+				server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					var resp string
+					switch req.URL.Path {
+					case "/index":
+						resp = v1IndexResponse
+					case "/v2index":
+						resp = v2IndexResponse
+					}
+					if resp == "" {
+						rw.WriteHeader(http.StatusNotFound)
+						return
+					}
+					_, err := rw.Write([]byte(resp))
+					if err != nil {
+						t.Error(err)
+					}
+				}))
+				return server, server.URL
+			},
+			wantProvider: func(registryUrl string) []api.DevfileStack {
+				return []api.DevfileStack{
+					{
+						Name:                   "go",
+						DisplayName:            "Go Runtime",
+						Description:            "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+						Registry:               api.Registry{Name: registryName, URL: registryUrl},
+						Language:               "Go",
+						ProjectType:            "Go",
+						Tags:                   []string{"Go"},
+						DefaultVersion:         "1.0.2",
+						DefaultStarterProjects: []string{"go-starter"},
+						Versions: []api.DevfileStackVersion{
+							{Version: "1.0.2", IsDefault: true, SchemaVersion: "2.1.0", StarterProjects: []string{"go-starter"}},
+							{Version: "2.0.0", IsDefault: false, SchemaVersion: "2.2.0", StarterProjects: []string{"go-starter"}},
+						},
+					},
+				}
 			},
 		},
 	}
@@ -337,13 +524,24 @@ func TestGetRegistryDevfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			ctx := context.Background()
-			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
-			got, err := getRegistryStacks(ctx, prefClient, tt.registry)
+			ctx := envcontext.WithEnvConfig(context.Background(), config.Configuration{})
+			server, url := tt.registryServerProvider(t)
+			if server != nil {
+				defer server.Close()
+			}
 
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("getRegistryStacks() mismatch (-want +got):\n%s", diff)
-				t.Logf("Error message is: %v", err)
+			got, err := getRegistryStacks(ctx, prefClient, api.Registry{Name: registryName, URL: url})
+
+			if tt.wantErr != (err != nil) {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantProvider != nil {
+				want := tt.wantProvider(url)
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("getRegistryStacks() mismatch (-want +got):\n%s", diff)
+					t.Logf("Error message is: %v", err)
+				}
 			}
 		})
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/blang/semver"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
@@ -197,9 +198,18 @@ func getRegistryStacks(ctx context.Context, preferenceClient preference.Client, 
 		return nil, &ErrGithubRegistryNotSupported{}
 	}
 	// OCI-based registry
-	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(ctx), indexSchema.StackDevfileType)
+	options := segment.GetRegistryOptions(ctx)
+	options.NewIndexSchema = true
+	devfileIndex, err := library.GetRegistryIndex(registry.URL, options, indexSchema.StackDevfileType)
 	if err != nil {
-		return nil, err
+		// Fallback to the "old" index
+		klog.V(3).Infof("error while accessing the v2index endpoint for registry %s (%s) => falling back to the old index endpoint: %v",
+			registry.Name, registry.URL, err)
+		options.NewIndexSchema = false
+		devfileIndex, err = library.GetRegistryIndex(registry.URL, options, indexSchema.StackDevfileType)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return createRegistryDevfiles(registry, devfileIndex)
 }
@@ -208,16 +218,41 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 	registryDevfiles := make([]api.DevfileStack, 0, len(devfileIndex))
 	for _, devfileIndexEntry := range devfileIndex {
 		stackDevfile := api.DevfileStack{
-			Name:            devfileIndexEntry.Name,
-			DisplayName:     devfileIndexEntry.DisplayName,
-			Description:     devfileIndexEntry.Description,
-			Registry:        registry,
-			Language:        devfileIndexEntry.Language,
-			Tags:            devfileIndexEntry.Tags,
-			ProjectType:     devfileIndexEntry.ProjectType,
-			StarterProjects: devfileIndexEntry.StarterProjects,
-			Version:         devfileIndexEntry.Version,
+			Name:                   devfileIndexEntry.Name,
+			DisplayName:            devfileIndexEntry.DisplayName,
+			Description:            devfileIndexEntry.Description,
+			Registry:               registry,
+			Language:               devfileIndexEntry.Language,
+			Tags:                   devfileIndexEntry.Tags,
+			ProjectType:            devfileIndexEntry.ProjectType,
+			DefaultStarterProjects: devfileIndexEntry.StarterProjects,
+			DefaultVersion:         devfileIndexEntry.Version,
 		}
+		for _, v := range devfileIndexEntry.Versions {
+			if v.Default {
+				// There should be only 1 default version. But if there is more than one, the last one will be used.
+				stackDevfile.DefaultVersion = v.Version
+				stackDevfile.DefaultStarterProjects = v.StarterProjects
+			}
+			stackDevfile.Versions = append(stackDevfile.Versions, api.DevfileStackVersion{
+				IsDefault:       v.Default,
+				Version:         v.Version,
+				SchemaVersion:   v.SchemaVersion,
+				StarterProjects: v.StarterProjects,
+			})
+		}
+		sort.Slice(stackDevfile.Versions, func(i, j int) bool {
+			vi, err := semver.Make(stackDevfile.Versions[i].Version)
+			if err != nil {
+				return false
+			}
+			vj, err := semver.Make(stackDevfile.Versions[j].Version)
+			if err != nil {
+				return false
+			}
+			return vi.LT(vj)
+		})
+
 		registryDevfiles = append(registryDevfiles, stackDevfile)
 	}
 
