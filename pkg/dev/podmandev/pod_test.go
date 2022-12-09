@@ -331,7 +331,7 @@ func Test_createPodFromComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotFwPorts, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand, nil)
+			got, gotFwPorts, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand, []int{40001, 40002})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
 				return
