@@ -21,14 +21,19 @@ type DevfileStack struct {
 
 	// DefaultVersion is the default version. Marshalled as "version" for backward compatibility.
 	// Deprecated. Use Versions instead.
-	DefaultVersion  string                `json:"version"`
-	Versions        []DevfileStackVersion `json:"versions,omitempty"`
-	StarterProjects []string              `json:"starterProjects"`
-	DevfileData     *DevfileData          `json:"devfileData,omitempty"`
+	DefaultVersion string                `json:"version"`
+	Versions       []DevfileStackVersion `json:"versions,omitempty"`
+
+	// DefaultStarterProjects is the list of starter projects for the default stack.
+	// Marshalled as "starterProjects" for backward compatibility.
+	// Deprecated. Use Versions.StarterProjects instead.
+	DefaultStarterProjects []string     `json:"starterProjects"`
+	DevfileData            *DevfileData `json:"devfileData,omitempty"`
 }
 
 type DevfileStackVersion struct {
-	Version       string `json:"version,omitempty"`
-	IsDefault     bool   `json:"isDefault"`
-	SchemaVersion string `json:"schemaVersion,omitempty"`
+	Version         string   `json:"version,omitempty"`
+	IsDefault       bool     `json:"isDefault"`
+	SchemaVersion   string   `json:"schemaVersion,omitempty"`
+	StarterProjects []string `json:"starterProjects"`
 }

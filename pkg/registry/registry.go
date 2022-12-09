@@ -218,26 +218,27 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 	registryDevfiles := make([]api.DevfileStack, 0, len(devfileIndex))
 	for _, devfileIndexEntry := range devfileIndex {
 		stackDevfile := api.DevfileStack{
-			Name:            devfileIndexEntry.Name,
-			DisplayName:     devfileIndexEntry.DisplayName,
-			Description:     devfileIndexEntry.Description,
-			Registry:        registry,
-			Language:        devfileIndexEntry.Language,
-			Tags:            devfileIndexEntry.Tags,
-			ProjectType:     devfileIndexEntry.ProjectType,
-			StarterProjects: devfileIndexEntry.StarterProjects,
-			DefaultVersion:  devfileIndexEntry.Version,
+			Name:                   devfileIndexEntry.Name,
+			DisplayName:            devfileIndexEntry.DisplayName,
+			Description:            devfileIndexEntry.Description,
+			Registry:               registry,
+			Language:               devfileIndexEntry.Language,
+			Tags:                   devfileIndexEntry.Tags,
+			ProjectType:            devfileIndexEntry.ProjectType,
+			DefaultStarterProjects: devfileIndexEntry.StarterProjects,
+			DefaultVersion:         devfileIndexEntry.Version,
 		}
-		hasDefaultVersion := devfileIndexEntry.Version != ""
 		for _, v := range devfileIndexEntry.Versions {
-			if !hasDefaultVersion && v.Default {
+			if v.Default {
+				// There should be only 1 default version. But if there is more than one, the last one will be used.
 				stackDevfile.DefaultVersion = v.Version
-				hasDefaultVersion = true
+				stackDevfile.DefaultStarterProjects = v.StarterProjects
 			}
 			stackDevfile.Versions = append(stackDevfile.Versions, api.DevfileStackVersion{
-				IsDefault:     v.Default,
-				Version:       v.Version,
-				SchemaVersion: v.SchemaVersion,
+				IsDefault:       v.Default,
+				Version:         v.Version,
+				SchemaVersion:   v.SchemaVersion,
+				StarterProjects: v.StarterProjects,
 			})
 		}
 		sort.Slice(stackDevfile.Versions, func(i, j int) bool {

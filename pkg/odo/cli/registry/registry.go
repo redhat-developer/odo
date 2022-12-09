@@ -217,7 +217,7 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 				log.Sbold("Tags"), strings.Join(devfileComponent.Tags[:], ", "),
 				log.Sbold("Project Type"), devfileComponent.ProjectType,
 				log.Sbold("Language"), devfileComponent.Language,
-				log.Sbold("Starter Projects"), strings.Join(devfileComponent.StarterProjects, "\n  - "),
+				log.Sbold("Starter Projects"), strings.Join(devfileComponent.DefaultStarterProjects, "\n  - "),
 				log.Sbold("Supported odo Features"),
 				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Dev),
 				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Deploy),
