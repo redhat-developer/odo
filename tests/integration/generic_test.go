@@ -26,66 +26,73 @@ var _ = Describe("odo generic", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("running odo --help", Label(helper.LabelNoCluster), func() {
-		var output string
-		BeforeEach(func() {
-			output = helper.Cmd("odo", "--help").ShouldPass().Out()
-		})
-		It("retuns full help contents including usage, examples, commands, utility commands, component shortcuts, and flags sections", func() {
-			helper.MatchAllInOutput(output, []string{"Usage:", "Examples:", "Main Commands:", "OpenShift Commands:", "Utility Commands:", "Flags:"})
-		})
+	for _, label := range []string{
+		helper.LabelNoCluster, helper.LabelUnauth,
+	} {
+		label := label
+		Context("label "+label, Label(label), func() {
+			When("running odo --help", func() {
+				var output string
+				BeforeEach(func() {
+					output = helper.Cmd("odo", "--help").ShouldPass().Out()
+				})
+				It("retuns full help contents including usage, examples, commands, utility commands, component shortcuts, and flags sections", func() {
+					helper.MatchAllInOutput(output, []string{"Usage:", "Examples:", "Main Commands:", "OpenShift Commands:", "Utility Commands:", "Flags:"})
+				})
 
-	})
+			})
 
-	When("running odo without subcommand and flags", Label(helper.LabelNoCluster), func() {
-		var output string
-		BeforeEach(func() {
-			output = helper.Cmd("odo").ShouldPass().Out()
+			When("running odo without subcommand and flags", func() {
+				var output string
+				BeforeEach(func() {
+					output = helper.Cmd("odo").ShouldPass().Out()
+				})
+				It("a short vesion of help contents is returned, an error is not expected", func() {
+					Expect(output).To(ContainSubstring("To see a full list of commands, run 'odo --help'"))
+				})
+			})
+
+			It("returns error when using an invalid command", func() {
+				output := helper.Cmd("odo", "hello").ShouldFail().Err()
+				Expect(output).To(ContainSubstring("Invalid command - see available commands/subcommands above"))
+			})
+
+			It("returns JSON error", func() {
+				By("using an invalid command with JSON output", func() {
+					res := helper.Cmd("odo", "unknown-command", "-o", "json").ShouldFail()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stdout).To(BeEmpty())
+					Expect(helper.IsJSON(stderr)).To(BeTrue())
+				})
+
+				By("using an invalid describe sub-command with JSON output", func() {
+					res := helper.Cmd("odo", "describe", "unknown-sub-command", "-o", "json").ShouldFail()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stdout).To(BeEmpty())
+					Expect(helper.IsJSON(stderr)).To(BeTrue())
+				})
+
+				By("using an invalid list sub-command with JSON output", func() {
+					res := helper.Cmd("odo", "list", "unknown-sub-command", "-o", "json").ShouldFail()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stdout).To(BeEmpty())
+					Expect(helper.IsJSON(stderr)).To(BeTrue())
+				})
+
+				By("omitting required subcommand with JSON output", func() {
+					res := helper.Cmd("odo", "describe", "-o", "json").ShouldFail()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stdout).To(BeEmpty())
+					Expect(helper.IsJSON(stderr)).To(BeTrue())
+				})
+			})
+
+			It("returns error when using an invalid command with --help", func() {
+				output := helper.Cmd("odo", "hello", "--help").ShouldFail().Err()
+				Expect(output).To(ContainSubstring("unknown command 'hello', type --help for a list of all commands"))
+			})
 		})
-		It("a short vesion of help contents is returned, an error is not expected", func() {
-			Expect(output).To(ContainSubstring("To see a full list of commands, run 'odo --help'"))
-		})
-	})
-
-	It("returns error when using an invalid command", Label(helper.LabelNoCluster), func() {
-		output := helper.Cmd("odo", "hello").ShouldFail().Err()
-		Expect(output).To(ContainSubstring("Invalid command - see available commands/subcommands above"))
-	})
-
-	It("returns JSON error", Label(helper.LabelNoCluster), func() {
-		By("using an invalid command with JSON output", func() {
-			res := helper.Cmd("odo", "unknown-command", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(stdout).To(BeEmpty())
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-		})
-
-		By("using an invalid describe sub-command with JSON output", func() {
-			res := helper.Cmd("odo", "describe", "unknown-sub-command", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(stdout).To(BeEmpty())
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-		})
-
-		By("using an invalid list sub-command with JSON output", func() {
-			res := helper.Cmd("odo", "list", "unknown-sub-command", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(stdout).To(BeEmpty())
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-		})
-
-		By("omitting required subcommand with JSON output", func() {
-			res := helper.Cmd("odo", "describe", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(stdout).To(BeEmpty())
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-		})
-	})
-
-	It("returns error when using an invalid command with --help", Label(helper.LabelNoCluster), func() {
-		output := helper.Cmd("odo", "hello", "--help").ShouldFail().Err()
-		Expect(output).To(ContainSubstring("unknown command 'hello', type --help for a list of all commands"))
-	})
+	}
 
 	Context("When deleting two project one after the other", func() {
 		It("should be able to delete sequentially", func() {
@@ -121,6 +128,10 @@ var _ = Describe("odo generic", func() {
 		})
 
 		It("should show the version of odo major components", Label(helper.LabelNoCluster), func() {
+			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
+			Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
+		})
+		It("should show the version of odo major components", Label(helper.LabelUnauth), func() {
 			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
 			Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
 		})

@@ -186,6 +186,10 @@ ComponentSettings:
 				Expect(out).To(ContainSubstring("Please ensure you have an active kubernetes context to your cluster."))
 			})
 
+			It("should fail, with unauth cluster", Label(helper.LabelUnauth), func() {
+				_ = helper.Cmd("odo", "list", commandName).ShouldFail()
+			})
+
 			It(fmt.Sprintf("should successfully list all the %ss", commandName), func() {
 				Eventually(func() string {
 					out := helper.Cmd("odo", "list", commandName).ShouldPass().Out()

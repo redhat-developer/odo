@@ -28,38 +28,43 @@ var _ = Describe("odo describe component command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	It("should fail, without cluster", Label(helper.LabelNoCluster), func() {
-		By("running odo describe component -o json with namespace flag without name flag", func() {
-			res := helper.Cmd("odo", "describe", "component", "--namespace", "default", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-			Expect(stdout).To(BeEmpty())
-			helper.JsonPathContentContain(stderr, "message", "--namespace can be used only with --name")
-		})
+	for _, label := range []string{
+		helper.LabelNoCluster, helper.LabelUnauth,
+	} {
+		label := label
+		It("should fail, without cluster", Label(label), func() {
+			By("running odo describe component -o json with namespace flag without name flag", func() {
+				res := helper.Cmd("odo", "describe", "component", "--namespace", "default", "-o", "json").ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(helper.IsJSON(stderr)).To(BeTrue())
+				Expect(stdout).To(BeEmpty())
+				helper.JsonPathContentContain(stderr, "message", "--namespace can be used only with --name")
+			})
 
-		By("running odo describe component -o json without name and without devfile in the current directory", func() {
-			res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(helper.IsJSON(stderr)).To(BeTrue())
-			Expect(stdout).To(BeEmpty())
-			helper.JsonPathContentContain(stderr, "message", "The current directory does not represent an odo component")
-		})
+			By("running odo describe component -o json without name and without devfile in the current directory", func() {
+				res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(helper.IsJSON(stderr)).To(BeTrue())
+				Expect(stdout).To(BeEmpty())
+				helper.JsonPathContentContain(stderr, "message", "The current directory does not represent an odo component")
+			})
 
-		By("running odo describe component with namespace flag without name flag", func() {
-			res := helper.Cmd("odo", "describe", "component", "--namespace", "default").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(stdout).To(BeEmpty())
-			Expect(stderr).To(ContainSubstring("--namespace can be used only with --name"))
-		})
+			By("running odo describe component with namespace flag without name flag", func() {
+				res := helper.Cmd("odo", "describe", "component", "--namespace", "default").ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stdout).To(BeEmpty())
+				Expect(stderr).To(ContainSubstring("--namespace can be used only with --name"))
+			})
 
-		By("running odo describe component without name and without devfile in the current directory", func() {
-			res := helper.Cmd("odo", "describe", "component").ShouldFail()
-			stdout, stderr := res.Out(), res.Err()
-			Expect(stdout).To(BeEmpty())
-			Expect(stderr).To(ContainSubstring("The current directory does not represent an odo component"))
-		})
+			By("running odo describe component without name and without devfile in the current directory", func() {
+				res := helper.Cmd("odo", "describe", "component").ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stdout).To(BeEmpty())
+				Expect(stderr).To(ContainSubstring("The current directory does not represent an odo component"))
+			})
 
-	})
+		})
+	}
 
 	It("should fail, with cluster", func() {
 		By("running odo describe component -o json with an unknown name", func() {
