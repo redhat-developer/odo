@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 func createPodFromComponent(
@@ -23,6 +24,7 @@ func createPodFromComponent(
 	buildCommand string,
 	runCommand string,
 	debugCommand string,
+	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	containers, err := generator.GetContainers(devfileObj, common.DevfileOptions{})
 	if err != nil {
@@ -39,7 +41,7 @@ func createPodFromComponent(
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	fwPorts := addHostPorts(containers)
+	fwPorts := addHostPorts(containers, usedPorts)
 
 	volumes := []corev1.Volume{
 		{
@@ -105,19 +107,25 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func addHostPorts(containers []corev1.Container) []api.ForwardedPort {
+func addHostPorts(containers []corev1.Container, usedPorts []int) []api.ForwardedPort {
 	result := []api.ForwardedPort{}
-	hostPort := int32(39001)
+	startPort := 40001
+	endPort := startPort + 10000
 	for i := range containers {
 		for j := range containers[i].Ports {
+			freePort, err := util.NextFreePort(startPort, endPort, usedPorts)
+			if err != nil {
+				klog.Infof("%s", err)
+				continue
+			}
 			result = append(result, api.ForwardedPort{
 				ContainerName: containers[i].Name,
 				LocalAddress:  "127.0.0.1",
-				LocalPort:     int(hostPort),
+				LocalPort:     freePort,
 				ContainerPort: int(containers[i].Ports[j].ContainerPort),
 			})
-			containers[i].Ports[j].HostPort = hostPort
-			hostPort++
+			containers[i].Ports[j].HostPort = int32(freePort)
+			startPort = freePort + 1
 		}
 	}
 	return result
@@ -134,4 +142,12 @@ func addVolumeMountToContainer(containers []corev1.Container, devfileVolume stor
 		}
 	}
 	return fmt.Errorf("container %q not found", devfileVolume.Container)
+}
+
+func getUsedPorts(ports []api.ForwardedPort) []int {
+	res := make([]int, 0, len(ports))
+	for _, port := range ports {
+		res = append(res, port.LocalPort)
+	}
+	return res
 }

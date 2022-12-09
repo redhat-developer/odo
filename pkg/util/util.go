@@ -784,6 +784,27 @@ func IsPortFree(port int) bool {
 	return err == nil
 }
 
+// NextFreePort returns the next free port on system, starting at start
+// end finishing at end.
+// If no port is found in the range [start, end], 0 is returned
+func NextFreePort(start, end int, usedPorts []int) (int, error) {
+	port := start
+	for {
+		for _, usedPort := range usedPorts {
+			if usedPort == port {
+				return port, nil
+			}
+		}
+		if IsPortFree(port) {
+			return port, nil
+		}
+		port++
+		if port > end {
+			return 0, fmt.Errorf("no free port in range [%d-%d]", start, end)
+		}
+	}
+}
+
 // WriteToJSONFile writes a struct to json file
 func WriteToJSONFile(c interface{}, filename string) error {
 	data, err := json.Marshal(c)

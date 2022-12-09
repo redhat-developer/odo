@@ -222,7 +222,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      39001,
+					HostPort:      40001,
 				})
 				return pod
 			},
@@ -230,7 +230,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				{
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     39001,
+					LocalPort:     40001,
 					ContainerPort: 8080,
 				},
 			},
@@ -264,13 +264,13 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      39001,
+					HostPort:      40001,
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 5858,
 					Protocol:      "TCP",
-					HostPort:      39002,
+					HostPort:      40002,
 				})
 				return pod
 			},
@@ -278,13 +278,13 @@ func Test_createPodFromComponent(t *testing.T) {
 				{
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     39001,
+					LocalPort:     40001,
 					ContainerPort: 8080,
 				},
 				{
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     39002,
+					LocalPort:     40002,
 					ContainerPort: 5858,
 				},
 			},
@@ -332,7 +332,7 @@ func Test_createPodFromComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotFwPorts, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand)
+			got, gotFwPorts, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand, []int{40001, 40002})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
 				return

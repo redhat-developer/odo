@@ -11,6 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -192,23 +193,21 @@ func randomPortPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]
 
 // portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
 // it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
-// "container1": {"400001:3000", "400002:3001"}
+// "container1": {"40001:3000", "40002:3001"}
 func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
 	portPairs := make(map[string][]string)
-	port := 40000
-
+	startPort := 40001
+	endPort := startPort + 10000
 	for name, ports := range ceMap {
 		for _, p := range ports {
-			port++
-			for {
-				isPortFree := util.IsPortFree(port)
-				if isPortFree {
-					pair := fmt.Sprintf("%d:%d", port, p)
-					portPairs[name] = append(portPairs[name], pair)
-					break
-				}
-				port++
+			freePort, err := util.NextFreePort(startPort, endPort, nil)
+			if err != nil {
+				klog.Infof("%s", err)
+				continue
 			}
+			pair := fmt.Sprintf("%d:%d", freePort, p)
+			portPairs[name] = append(portPairs[name], pair)
+			startPort = freePort + 1
 		}
 	}
 	return portPairs
