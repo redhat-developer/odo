@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -90,14 +91,21 @@ func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
 func (o *ComponentOptions) Run(ctx context.Context) error {
 	result, devfileObj, err := o.run(ctx)
 	if err != nil {
-		return err
+		if clierrors.AsWarning(err) {
+			log.Warning(err.Error())
+		} else {
+			return err
+		}
 	}
 	return printHumanReadableOutput(result, devfileObj)
 }
 
 // Run contains the logic for the odo command
 func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	result, _, err := o.run(ctx)
+	result, _, err := o.run(ctx) // TODO(feloy) handle warning
+	if clierrors.AsWarning(err) {
+		err = nil
+	}
 	return result, err
 }
 
@@ -162,7 +170,8 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 	}
 	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName, odocontext.GetApplication(ctx))
 	if err != nil {
-		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+		err = clierrors.NewWarning("failed to get ingresses/routes", err)
+		// Do not return the error yet, as it is only a warning
 	}
 
 	return api.Component{
@@ -173,7 +182,7 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		ManagedBy:         "odo",
 		Ingresses:         ingresses,
 		Routes:            routes,
-	}, devfileObj, nil
+	}, devfileObj, err
 }
 
 func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) error {
