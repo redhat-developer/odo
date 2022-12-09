@@ -11,7 +11,7 @@ ibmcloud oc cluster config -c "${CLUSTER_ID}"
 (
     set -e
     make install
-    make test-integration-cluster-unauth
+    make test-integration-openshift-unauth
 ) |& tee "/tmp/${LOGFILE}"
 
 RESULT=${PIPESTATUS[0]}
