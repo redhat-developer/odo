@@ -431,3 +431,7 @@ func (kubectl KubectlRunner) AssertNoContainsLabel(kind, namespace, componentNam
 	all := Cmd(kubectl.path, "get", kind, selector, "-n", namespace, "-o", "jsonpath={.items[0].metadata.labels}").ShouldPass().Out()
 	Expect(all).ToNot(ContainSubstring(fmt.Sprintf(`"%s"`, key)))
 }
+
+func (kubectl KubectlRunner) AssertNonAuthenticated() {
+	// Nothing to do
+}

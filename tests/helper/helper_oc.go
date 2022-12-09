@@ -623,3 +623,7 @@ func (oc OcRunner) EnsurePodIsUp(namespace, podName string) {
 		return strings.Contains(output, podName)
 	})
 }
+
+func (oc OcRunner) AssertNonAuthenticated() {
+	Cmd(oc.path, "whoami").ShouldFail()
+}

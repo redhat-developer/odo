@@ -199,6 +199,8 @@ func CommonBeforeEach() CommonVar {
 		LocalKubeconfigSet(commonVar.ConfigDir)
 		if IsAuth(CurrentSpecReport().Labels()) {
 			commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+		} else {
+			commonVar.CliRunner.AssertNonAuthenticated()
 		}
 	} else {
 		// Disable the use of in-cluster configuration (seen in IBM Cloud pipeline)

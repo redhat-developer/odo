@@ -56,4 +56,5 @@ type CliRunner interface {
 	AssertContainsLabel(kind, namespace, componentName, appName, mode, key, value string)
 	AssertNoContainsLabel(kind, namespace, componentName, appName, mode, key string)
 	EnsurePodIsUp(namespace, podName string)
+	AssertNonAuthenticated()
 }
