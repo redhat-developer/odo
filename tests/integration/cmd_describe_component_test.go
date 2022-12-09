@@ -127,27 +127,6 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 		})
 
-		It("should not describe the component from another directory", func() {
-			By("running with json output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
-				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").ShouldFail()
-				stdout, stderr := res.Out(), res.Err()
-				Expect(helper.IsJSON(stderr)).To(BeTrue())
-				Expect(stdout).To(BeEmpty())
-				helper.JsonPathContentContain(stderr, "message", "no component found with name \""+cmpName+"\" in the namespace \""+commonVar.Project+"\"")
-			})
-
-			By("running with default output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
-				res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldFail()
-				stdout, stderr := res.Out(), res.Err()
-				Expect(stdout).To(BeEmpty())
-				Expect(stderr).To(ContainSubstring("no component found with name \"" + cmpName + "\" in the namespace \"" + commonVar.Project + "\""))
-			})
-		})
-
 		When("renaming to hide devfile.yaml file", Label(helper.LabelNoCluster), func() {
 			BeforeEach(func() {
 				err := os.Rename("devfile.yaml", ".devfile.yaml")
@@ -172,6 +151,27 @@ var _ = Describe("odo describe component command tests", func() {
 					Expect(stdout).To(ContainSubstring("Running in: None"))
 					Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
 				})
+			})
+		})
+
+		It("should not describe the component from another directory", func() {
+			By("running with json output", func() {
+				err := os.Chdir("/")
+				Expect(err).NotTo(HaveOccurred())
+				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(helper.IsJSON(stderr)).To(BeTrue())
+				Expect(stdout).To(BeEmpty())
+				helper.JsonPathContentContain(stderr, "message", "no component found with name \""+cmpName+"\" in the namespace \""+commonVar.Project+"\"")
+			})
+
+			By("running with default output", func() {
+				err := os.Chdir("/")
+				Expect(err).NotTo(HaveOccurred())
+				res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stdout).To(BeEmpty())
+				Expect(stderr).To(ContainSubstring("no component found with name \"" + cmpName + "\" in the namespace \"" + commonVar.Project + "\""))
 			})
 		})
 
