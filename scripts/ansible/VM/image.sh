@@ -3,11 +3,17 @@
 # set -e, to exit if any of the commands fails
 set -e
 
-# VARIABLES FOR SCRIPT
+##################################################
+# pre requiests for this script
+# 1. need ibmcloud cli
+# 2. need to be logged in ibmcloud env
+# 3. While using delete passing image name with env var `IMAGE`
 
+# VARIABLES FOR SCRIPT
 VSI_NAME=${VSI_NAME:-"odo-test-automation-vsi"}
 IMAGE=${IMAGE:-""}
 
+# create vsi image in ibmcloud  
 create_image() {
     # 2
     ibmcloud is instance-stop --force $VSI_NAME
