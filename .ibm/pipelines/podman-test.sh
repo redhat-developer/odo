@@ -33,7 +33,7 @@ RESULT=$?
 echo "RESULT: $RESULT"
 
 # fetch logs from remote vsi
-scp -o StrictHostKeyChecking=no -i ./key root@VSI_FIP:~/${LOGFILE} /tmp/${LOGFILE}
+scp -o StrictHostKeyChecking=no -i ./key root@VSI_FIP:/tmp/${LOGFILE} /tmp/${LOGFILE}
 
 RESULT=${PIPESTATUS[0]}
 
