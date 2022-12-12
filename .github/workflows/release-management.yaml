@@ -1,0 +1,194 @@
+name: Release Management
+
+on:
+  release:
+    types:
+      - created
+
+env:
+  TAG_NAME: ${{ github.event.release.tag_name }}
+
+jobs:
+
+  generate_release_notes:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: get_previous_tag
+        run: |
+          prevTag=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1))
+          echo "prev_tag=${prevTag}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
+        run: |
+          ./scripts/changelog-script.sh ${{ steps.get_previous_tag.outputs.prev_tag }} ${TAG_NAME}
+
+      - name: Upload Release Notes Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-changelog
+          path: release-changelog.md
+          retention-days: 30
+
+  create_draft_release_pr:
+    name: Create Draft Release PR
+    runs-on: ubuntu-latest
+    needs: generate_release_notes
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - run: mkdir -p /tmp/release-notes
+      - uses: actions/download-artifact@v3
+        with:
+          name: release-changelog
+          path: /tmp/release-notes
+      - run: find /tmp/release-notes -name release-changelog.md
+
+      - name: Update VERSION file
+        run: echo ${TAG_NAME} > build/VERSION
+
+      - name: Create draft release blog article with release notes
+        id: generate_draft_blog_post
+        run: |
+          export blogFileName=docs/website/blog/$(date -I)-odo-${TAG_NAME}.md
+          cat <<EOF > "$blogFileName"
+          ---
+          title: odo ${TAG_NAME} Released
+          author: $GITHUB_ACTOR
+          author_url: https://github.com/$GITHUB_ACTOR
+          author_image_url: https://github.com/$GITHUB_ACTOR.png
+          tags: ["release"]
+          slug: odo-${TAG_NAME}
+          ---
+          
+          odo \`${TAG_NAME}\` is now out!
+          
+          <!--truncate-->
+          
+          To install \`odo\`, follow [the installation guide](../docs/overview/installation).
+            
+          ## Notable Changes
+          Check this Playlist for an overview of the most notable changes in this release: [TODO Add Link to Youtube Playlist]
+          
+          ### Features
+          
+          [TODO - Complete with embedded demos!]
+          
+          ## Detailed Changelog
+          
+          As with every release, you can find the full list of changes and bug fixes on the [GitHub release page](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG_NAME}).
+          
+          EOF
+
+          cat /tmp/release-notes/release-changelog.md >> "$blogFileName"
+
+          cat <<EOF >> "$blogFileName"
+
+          ## Contributing to odo
+          If \`odo\` interests you, and you would like to contribute to it, we welcome you!
+          
+          You can contribute to \`odo\` in a lot of different ways!
+          
+          Take it for a spin 🚘 and report back bugs🐞 that you encountered, or features🌟 that you would like to see.
+          
+          Help us with the documentation📜, or tell us how you used \`odo\` 🖍.
+          
+          Review the PRs👀, or help us fix a failing test 🚩.
+          
+          Work on the TODOs📝, or help us cleanup the code🚮.
+          
+          Or, simply tune in📻 to our [contributor calls](https://github.com/redhat-developer/odo#meetings) and learn more about \`odo\`.
+          
+          \`odo\` is your playground!
+          
+          Read the developer reference guide on [contributing to odo](/docs/development/contribution) to know more.
+  
+          EOF
+
+          cat "$blogFileName"
+          echo "blogFileName=${blogFileName}" >> $GITHUB_OUTPUT
+
+      - name: Upload Release Notes Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-blog-post-draft
+          path: ${{ steps.generate_draft_blog_post.outputs.blogFileName }}
+          retention-days: 30
+
+      - name: Update version in installation docs
+        run: |
+          prevTag=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1))
+          prevTagWithoutPrefix=${prevTag#v}
+          newTagWithoutPrefix=${TAG_NAME#v}
+          sed -i 's/'${prevTagWithoutPrefix}'/'${newTagWithoutPrefix}'/g' docs/website/docs/overview/installation.md
+
+      - name: Set Git identity
+        run: |
+          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config --global user.name "$GITHUB_ACTOR"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      - name: Create and push branch
+        id: push_branch
+        run: |
+          git switch -c blog_post_${TAG_NAME}
+          git push -u origin blog_post_${TAG_NAME} 
+          if git status --porcelain | grep build/VERSION; then
+            git add build/VERSION
+            git commit -m "Set version in build/VERSION file"
+          fi
+          if git status --porcelain | grep docs/website/docs/; then
+            git add docs/website/docs/
+            git commit -m "Bump version in installation docs"
+          fi
+          if git status --porcelain | grep docs/website/blog/; then
+            git add docs/website/blog/
+            git commit -m "Add release blog post"
+          fi
+          unpushed=$(git cherry -v)
+          if [ -n "$unpushed" ]; then
+            git push
+            echo "pushed=true" >> $GITHUB_OUTPUT
+          else
+            echo "pushed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create draft PR
+        if: ${{ steps.push_branch.outputs.pushed == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat <<EOF | gh pr create --draft \
+            --title "[WIP] Release PR for ${TAG_NAME}" \
+            --reviewer "$GITHUB_ACTOR" \
+            --base main \
+            --repo ${GITHUB_REPOSITORY} \
+            --body-file -
+          
+          /area documentation
+          /area release-eng
+          /hold
+          
+          Draft Release PR for new release: $TAG_NAME
+
+          Fixes #
+
+          Feel free to edit and push to this branch.
+          
+          NOTE: Remove the hold and consider merging this PR only when binaries for this release are publicly available.
+
+          EOF
