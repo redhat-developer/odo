@@ -18,7 +18,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-openapi/jsonpointer v0.19.5
-	github.com/go-openapi/jsonreference v0.19.5
+	github.com/go-openapi/jsonreference v0.20.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
@@ -83,8 +83,6 @@ require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
-	github.com/PuerkitoBio/purell v1.1.1 // indirect
-	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/RangelReale/osincli v0.0.0-20160924135400-fababb0555f2 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
