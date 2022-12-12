@@ -26,7 +26,7 @@ save_logs() {
     else
         STATUS="with errors"
     fi
-    cat <<EOF | odo-robot -key-from-env-var ODO_ROBOT_KEY -pr-comment ${GIT_PR_NUMBER} -pipeline ${NAME}
+    cat <<EOF | odo-robot -key-from-env-var ROBOT_KEY -pr-comment ${GIT_PR_NUMBER} -pipeline ${NAME}
 ${NAME} on commit ${GIT_COMMIT} finished ${STATUS}.
 View logs: [TXT](${BASE_URL}/${LOGFILE}.txt) [HTML](${BASE_URL}/${LOGFILE}.html)
 EOF
