@@ -5,6 +5,8 @@ on:
     types:
     - opened
     - reopened
+    - labeled
+    - unlabeled
 
 env:
   ORGANIZATION: redhat-developer
@@ -12,13 +14,15 @@ env:
   PROJECT_NUMBER: 16
 
 jobs:
-  label_issue:
+  manage_issue_labels:
     name: Label issue
+    if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
     runs-on: ubuntu-latest
+    concurrency: issue_labels
     permissions:
       issues: write
     steps:
-    - name: Label issue
+    - name: Add needs-triage label
       # Action recommended in https://docs.github.com/en/actions/managing-issues-and-pull-requests/adding-labels-to-issues
       # Recommended to pin unofficial Actions to a specific commit SHA
       uses: andymckay/labeler@3a4296e9dcdf9576b0456050db78cfd34853f260
@@ -26,14 +30,179 @@ jobs:
         add-labels: "needs-triage"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  add_issue_to_project:
-    name: Add issue to Project
+  manage_issue_in_project:
+    name: Manage issue in Project
     runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: manage_issue_labels
+    concurrency: issue_management_in_project-${{ github.event.action }}
+    env:
+      # Personal Access Token (PAT) to be created with 'repo' and 'project' scopes and be added as repository secret.
+      GITHUB_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
     steps:
+
+    - name: Get project data
+      run: |
+        gh api graphql -f query='
+          query($org: String!, $number: Int!) {
+            organization(login: $org){
+              projectV2(number: $number) {
+                id
+                fields(first:20) {
+                  nodes {
+                    ... on ProjectV2Field {
+                      id
+                      name
+                    }
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+        
+        cat project_data.json
+        
+        echo 'PROJECT_ID='$(jq '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
+        echo 'PRIORITY_FIELD_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") |.id' project_data.json) >> $GITHUB_ENV
+        echo 'PRIORITY_URGENT_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .options[] | select(.name | startswith("Urgent")) |.id' project_data.json) >> $GITHUB_ENV
+        echo 'PRIORITY_HIGH_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .options[] | select(.name | startswith("High")) |.id' project_data.json) >> $GITHUB_ENV
+        echo 'PRIORITY_MEDIUM_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .options[] | select(.name | startswith("Medium")) |.id' project_data.json) >> $GITHUB_ENV
+        echo 'PRIORITY_LOW_OPTION_ID='$(jq '.data.organization.projectV2.fields.nodes[] | select(.name== "Priority") | .options[] | select(.name | startswith("Low")) |.id' project_data.json) >> $GITHUB_ENV
+
     - name: Add issue to Project
-      uses: actions/add-to-project@v0.3.0
-      with:
-        project-url: https://github.com/orgs/${{ env.ORGANIZATION }}/projects/${{ env.PROJECT_NUMBER }}
-        # This action needs a Personal Access Token (PAT) to be created with 'repo' and 'project' scopes and be added as repository secret.
-        # See https://github.com/actions/add-to-project#creating-a-pat-and-adding-it-to-your-repository and https://github.com/settings/tokens/new
-        github-token: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
+      env:
+        ISSUE_ID: ${{ github.event.issue.node_id }}
+      run: |
+        gh api graphql -f query='
+          mutation($project: ID!, $issue: ID!) {
+            addProjectV2ItemById(
+              input: {
+                projectId: $project
+                contentId: $issue
+              }
+            ) {
+              item {
+                id
+              }
+            }
+          }' -f project=${{ env.PROJECT_ID }} -f issue=$ISSUE_ID > project_mutation_result.json
+        
+        cat project_mutation_result.json
+        
+        echo 'ITEM_ID='$(jq '.data.addProjectV2ItemById.item.id' project_mutation_result.json) >> $GITHUB_ENV
+
+    - name: Set Priority field in Project based on label added
+      if: ${{ github.event.action == 'labeled' && startsWith(github.event.label.name, 'priority/') }}
+      env:
+        ISSUE_ID: ${{ github.event.issue.node_id }}
+        PRIORITY_LABEL: ${{ github.event.label.name }}
+      run: |
+        if [[ "$PRIORITY_LABEL" == "priority/critical-urgent" ]] || [[ "$PRIORITY_LABEL" == "priority/Critical" ]]; then
+          echo Setting Urgent priority value: ${{ env.PRIORITY_URGENT_OPTION_ID }}
+          export priority_field_value=${{ env.PRIORITY_URGENT_OPTION_ID }}
+        elif [[ "$PRIORITY_LABEL" == "priority/High" ]]; then
+          echo Setting High priority value: ${{ env.PRIORITY_HIGH_OPTION_ID }}
+          export priority_field_value=${{ env.PRIORITY_HIGH_OPTION_ID }}
+        elif [[ "$PRIORITY_LABEL" == "priority/Medium" ]]; then
+          echo Setting Medium priority value: ${{ env.PRIORITY_MEDIUM_OPTION_ID }}
+          export priority_field_value=${{ env.PRIORITY_MEDIUM_OPTION_ID }}
+        elif [[ "$PRIORITY_LABEL" == "priority/Low" ]]; then
+          echo Setting Low priority value: ${{ env.PRIORITY_LOW_OPTION_ID }}
+          export priority_field_value=${{ env.PRIORITY_LOW_OPTION_ID }}
+        else
+          echo "Ignoring unknown priority label value: $PRIORITY_LABEL"
+        fi
+        echo "priority_field_value: $priority_field_value"
+        if [ -n "$priority_field_value" ]; then
+          gh api graphql -f query='
+            mutation($project: ID!, $item: ID!, $priority_field: ID!, $priority_value: String!) {
+              updateProjectV2ItemFieldValue(
+                input: {
+                  projectId: $project
+                  itemId: $item
+                  fieldId: $priority_field
+                  value: { 
+                    singleSelectOptionId: $priority_value
+                  }
+                }
+              ) {
+                projectV2Item {
+                  id
+                }
+              }
+            }' -f project=${{ env.PROJECT_ID }} -f item=${{ env.ITEM_ID }} -f priority_field=${{ env.PRIORITY_FIELD_ID }} -f priority_value=$priority_field_value
+        fi
+
+    - name: Set Priority field in Project based on label removed
+      if: ${{ github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'priority/') }}
+      env:
+        ISSUE_ID: ${{ github.event.issue.node_id }}
+      run: |
+        # Find an already existing label for that issue, and set the field in the Project. Otherwise, clear the field.
+        priorityLabels=$(gh issue view ${{ github.event.issue.number }} -R ${GITHUB_REPOSITORY} --json labels --jq '.labels.[] | select(.name | startswith("priority/")) |.name')
+        if [ -n "$priorityLabels" ]; then
+          echo "Handling priority labels: $priorityLabels"
+          for priorityLabel in $priorityLabels; do
+            # The last value wins
+            if [[ "$priorityLabel" == "priority/critical-urgent" ]] || [[ "$priorityLabel" == "priority/Critical" ]]; then
+              echo Setting Urgent priority value: ${{ env.PRIORITY_URGENT_OPTION_ID }}
+              export priority_field_value=${{ env.PRIORITY_URGENT_OPTION_ID }}
+            elif [[ "$priorityLabel" == "priority/High" ]]; then
+              echo Setting High priority value: ${{ env.PRIORITY_HIGH_OPTION_ID }}
+              export priority_field_value=${{ env.PRIORITY_HIGH_OPTION_ID }}
+            elif [[ "$priorityLabel" == "priority/Medium" ]]; then
+              echo Setting Medium priority value: ${{ env.PRIORITY_MEDIUM_OPTION_ID }}
+              export priority_field_value=${{ env.PRIORITY_MEDIUM_OPTION_ID }}
+            elif [[ "$priorityLabel" == "priority/Low" ]]; then
+              echo Setting Low priority value: ${{ env.PRIORITY_LOW_OPTION_ID }}
+              export priority_field_value=${{ env.PRIORITY_LOW_OPTION_ID }}
+            else
+              echo "Ignoring unknown priority label value: $priorityLabel"
+            fi
+            echo "priority_field_value: $priority_field_value"
+            if [ -n "$priority_field_value" ]; then
+              gh api graphql -f query='
+                mutation($project: ID!, $item: ID!, $priority_field: ID!, $priority_value: String!) {
+                  updateProjectV2ItemFieldValue(
+                    input: {
+                      projectId: $project
+                      itemId: $item
+                      fieldId: $priority_field
+                      value: {
+                        singleSelectOptionId: $priority_value
+                      }
+                    }
+                  ) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }' -f project=${{ env.PROJECT_ID }} -f item=${{ env.ITEM_ID }} -f priority_field=${{ env.PRIORITY_FIELD_ID }} -f priority_value=$priority_field_value
+            fi
+          done
+        else
+          # Clear the field
+          echo "Found no priority labels => clearing the field in the Project"
+          gh api graphql -f query='
+            mutation($project: ID!, $item: ID!, $priority_field: ID!) {
+              clearProjectV2ItemFieldValue(
+                input: {
+                  projectId: $project
+                  itemId: $item
+                  fieldId: $priority_field
+                }
+              ) {
+                projectV2Item {
+                  id
+                }
+              }
+            }' -f project=${{ env.PROJECT_ID }} -f item=${{ env.ITEM_ID }} -f priority_field=${{ env.PRIORITY_FIELD_ID }}
+        fi
