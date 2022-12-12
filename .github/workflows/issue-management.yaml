@@ -14,13 +14,15 @@ env:
   PROJECT_NUMBER: 16
 
 jobs:
-  label_issue:
+  manage_issue_labels:
     name: Label issue
+    if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
     runs-on: ubuntu-latest
+    concurrency: issue_labels
     permissions:
       issues: write
     steps:
-    - name: Label issue
+    - name: Add needs-triage label
       # Action recommended in https://docs.github.com/en/actions/managing-issues-and-pull-requests/adding-labels-to-issues
       # Recommended to pin unofficial Actions to a specific commit SHA
       uses: andymckay/labeler@3a4296e9dcdf9576b0456050db78cfd34853f260
@@ -31,6 +33,9 @@ jobs:
   manage_issue_in_project:
     name: Manage issue in Project
     runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: manage_issue_labels
+    concurrency: issue_management_in_project-${{ github.event.action }}
     env:
       # Personal Access Token (PAT) to be created with 'repo' and 'project' scopes and be added as repository secret.
       GITHUB_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
