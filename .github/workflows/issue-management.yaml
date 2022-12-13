@@ -18,7 +18,7 @@ jobs:
     name: Label issue
     if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
     runs-on: ubuntu-latest
-    concurrency: issue_labels
+    concurrency: issue_labels-${{ github.event.issue.number }}
     permissions:
       issues: write
     steps:
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() }}
     needs: manage_issue_labels
-    concurrency: issue_management_in_project-${{ github.event.action }}
+    concurrency: issue_management_in_project-${{ github.event.issue.number }}-${{ github.event.action }}
     env:
       # Personal Access Token (PAT) to be created with 'repo' and 'project' scopes and be added as repository secret.
       GITHUB_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
