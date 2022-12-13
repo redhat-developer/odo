@@ -33,18 +33,29 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 oc whoami
 
 if [ "${ARCH}" == "s390x" ]; then
-    # Integration tests
+    # Integration tests for no cluster
     make test-integration
+
+    # Integration tests for cluster
+    make test-integration-cluster
+
     # E2e tests
     make test-e2e
 elif [ "${ARCH}" == "ppc64le" ]; then
-    # Integration tests
+    # Integration tests for no cluster
     make test-integration
+
+    # Integration tests for cluster
+    make test-integration-cluster
+
     # E2e tests
     make test-e2e
 else
-    # Integration tests
+    # Integration tests for no cluster
     make test-integration || error=true
+
+    # Integration tests for cluster
+    make test-integration-cluster || error=true
 
     # E2e tests
     make test-e2e || error=true
