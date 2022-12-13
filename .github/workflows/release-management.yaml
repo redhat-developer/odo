@@ -68,11 +68,12 @@ jobs:
         run: |
           export blogFileName=docs/website/blog/$(date -I)-odo-${TAG_NAME}.md
 
-          envsubst < .github/workflow-data/release-management/blog-post-header.tpl.md > $blogFileName
-          cat /tmp/release-notes/release-changelog.md >> $blogFileName
-          echo "" >> $blogFileName
-          envsubst < .github/workflow-data/release-management/blog-post-footer.tpl.md >> $blogFileName
-
+          (
+              envsubst < .github/workflow-data/release-management/blog-post-header.tpl.md 
+              cat /tmp/release-notes/release-changelog.md
+              echo ""
+              envsubst < .github/workflow-data/release-management/blog-post-footer.tpl.md
+          ) > $blogFileName
           cat $blogFileName
           echo "blogFileName=${blogFileName}" >> $GITHUB_OUTPUT
 
