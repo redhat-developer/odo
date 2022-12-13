@@ -37,7 +37,7 @@ if [ "${ARCH}" == "s390x" ]; then
     make test-integration
     # E2e tests
     make test-e2e
-elif  [ "${ARCH}" == "ppc64le" ]; then
+elif [ "${ARCH}" == "ppc64le" ]; then
     # Integration tests
     make test-integration
     # E2e tests
@@ -55,7 +55,9 @@ else
     fi
 fi
 
-#copy artifact to shared volume
-cp -r test-*.xml $ARTIFACT_DIR
-
+if [ ! -z "$ARTIFACT_DIR" ]
+then
+    #copy artifact to $ARTIFACT_DIR if ARTIFACT_DIR var is exposed
+    cp -r test-*.xml $ARTIFACT_DIR
+fi
 oc logout
