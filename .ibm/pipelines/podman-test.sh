@@ -15,15 +15,17 @@ VSI_VPC="odo-test-automation-vpc"
 IBM_REGION_ZONE="${IBM_REGION}-2"
 
 source .ibm/pipelines/functions.sh
-
 set -e
+#login ibmcloud account
+ibmcloud login --apikey "${API_KEY_QE}"
 # create new vsi for podman test
 VSI_NIC_ID=$(ibmcloud is inc $VSI_NAME $VSI_VPC $IBM_REGION_ZONE $VSI_SPEC $VSI_SUBNET --image $IMAGE --keys $VSI_KEYS) | jq -r '.primary_network_interface.id'
 # create Floating IP for ssh
 VSI_FIP=$(ibmcloud is floating-ip-reserve $VSI_FIP_NAME --nic $VSI_NIC_ID) | jq -r '.address'
+# fetch SSH-key
+$FETCH_SSHKEY_SECRET_COMMAND --output json | jq -r ".resources[0].secret_data.payload" | base64 --decode > key
 
 #start testing
-echo $SSH_KEY > key
 #copy test script
 scp -o StrictHostKeyChecking=no -i ./key ./.ibm/pipelines/podman-test-script.sh root@VSI_FIP:/tmp/podman-test-script.sh
 # execute test script
