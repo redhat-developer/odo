@@ -82,6 +82,7 @@ By default, `odo` adds the following annotations to the Deployment:
 | Key                                    | Description                                                                                                                                                                                                 | Example Value       |
 |----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
 | `odo.dev/project-type `                | the application runtime, if available. Value is read in order from the `metadata.projectType` or `metadata.language` fields in the Devfile. As both metadata are optional, this annotation can be omitted.  | `spring`            |
+| `alpha.image.policy.openshift.io/resolve-names` | Enable the use of ImageStreams on OpenShift | `*` |
 
 Notes:
 - Any additional annotations defined via the `components[].container.annotation.deployment` field will also be added to this resource.

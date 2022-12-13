@@ -389,6 +389,7 @@ func (a *Adapter) createOrUpdateComponent(
 
 	annotations := make(map[string]string)
 	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
+	odolabels.AddCommonAnnotations(annotations)
 	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
 	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})

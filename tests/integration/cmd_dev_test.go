@@ -64,6 +64,16 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
+
+		It("should add annotation to use ImageStreams", func() {
+			// #6376
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
+				Expect(annotations["alpha.image.policy.openshift.io/resolve-names"]).To(Equal("*"))
+			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should show validation errors if the devfile is incorrect", func() {
 			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
