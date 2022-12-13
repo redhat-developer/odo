@@ -67,61 +67,13 @@ jobs:
         id: generate_draft_blog_post
         run: |
           export blogFileName=docs/website/blog/$(date -I)-odo-${TAG_NAME}.md
-          cat <<EOF > "$blogFileName"
-          ---
-          title: odo ${TAG_NAME} Released
-          author: $GITHUB_ACTOR
-          author_url: https://github.com/$GITHUB_ACTOR
-          author_image_url: https://github.com/$GITHUB_ACTOR.png
-          tags: ["release"]
-          slug: odo-${TAG_NAME}
-          ---
-          
-          odo \`${TAG_NAME}\` is now out!
-          
-          <!--truncate-->
-          
-          To install \`odo\`, follow [the installation guide](../docs/overview/installation).
-            
-          ## Notable Changes
-          Check this Playlist for an overview of the most notable changes in this release: [TODO Add Link to Youtube Playlist]
-          
-          ### Features
-          
-          [TODO - Complete with embedded demos!]
-          
-          ## Detailed Changelog
-          
-          As with every release, you can find the full list of changes and bug fixes on the [GitHub release page](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG_NAME}).
-          
-          EOF
 
-          cat /tmp/release-notes/release-changelog.md >> "$blogFileName"
+          envsubst < .github/workflow-data/release-management/blog-post-header.tpl.md > $blogFileName
+          cat /tmp/release-notes/release-changelog.md >> $blogFileName
+          echo "" >> $blogFileName
+          envsubst < .github/workflow-data/release-management/blog-post-footer.tpl.md >> $blogFileName
 
-          cat <<EOF >> "$blogFileName"
-
-          ## Contributing to odo
-          If \`odo\` interests you, and you would like to contribute to it, we welcome you!
-          
-          You can contribute to \`odo\` in a lot of different ways!
-          
-          Take it for a spin 🚘 and report back bugs🐞 that you encountered, or features🌟 that you would like to see.
-          
-          Help us with the documentation📜, or tell us how you used \`odo\` 🖍.
-          
-          Review the PRs👀, or help us fix a failing test 🚩.
-          
-          Work on the TODOs📝, or help us cleanup the code🚮.
-          
-          Or, simply tune in📻 to our [contributor calls](https://github.com/redhat-developer/odo#meetings) and learn more about \`odo\`.
-          
-          \`odo\` is your playground!
-          
-          Read the developer reference guide on [contributing to odo](/docs/development/contribution) to know more.
-  
-          EOF
-
-          cat "$blogFileName"
+          cat $blogFileName
           echo "blogFileName=${blogFileName}" >> $GITHUB_OUTPUT
 
       - name: Upload Release Notes Artifact
@@ -174,23 +126,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cat <<EOF | gh pr create --draft \
+          envsubst < .github/workflow-data/release-management/pr.tpl.md | gh pr create --draft \
             --title "[WIP] Release PR for ${TAG_NAME}" \
             --reviewer "$GITHUB_ACTOR" \
             --base main \
             --repo ${GITHUB_REPOSITORY} \
             --body-file -
-          
-          /area documentation
-          /area release-eng
-          /hold
-          
-          Draft Release PR for new release: $TAG_NAME
-
-          Fixes #
-
-          Feel free to edit and push to this branch.
-          
-          NOTE: Remove the hold and consider merging this PR only when binaries for this release are publicly available.
-
-          EOF
