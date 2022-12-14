@@ -11,6 +11,7 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
@@ -74,8 +75,8 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)
+	util.SetCommandGroup(alizerCmd, util.UtilityGroup)
 	commonflags.UseOutputFlag(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	alizerCmd.Annotations["command"] = "utility"
 	return alizerCmd
 }

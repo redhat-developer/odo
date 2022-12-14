@@ -24,12 +24,11 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf("%s\n",
 			namespaceSetCmd.Example,
 		),
-		Annotations: map[string]string{"command": "management"},
 	}
 
 	setCmd.AddCommand(namespaceSetCmd)
 
-	// Add a defined annotation in order to appear in the help menu
+	util.SetCommandGroup(setCmd, util.ManagementGroup)
 	setCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return setCmd

@@ -31,7 +31,7 @@ func NewCmdRemove(name, fullName string) *cobra.Command {
 
 	removeCmd.AddCommand(registryCmd)
 	removeCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	removeCmd.Annotations = map[string]string{"command": "main"}
+	util.SetCommandGroup(removeCmd, util.MainGroup)
 
 	return removeCmd
 }

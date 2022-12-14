@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
@@ -243,7 +244,7 @@ By default it shows logs of all containers running in both Dev and Deploy mode. 
 	logsCmd.Flags().BoolVar(&o.follow, "follow", false, "Follow/tail the logs of the pods")
 
 	clientset.Add(logsCmd, clientset.LOGS, clientset.FILESYSTEM)
-	logsCmd.Annotations["command"] = "main"
+	util.SetCommandGroup(logsCmd, util.MainGroup)
 	logsCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return logsCmd
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -105,8 +106,7 @@ func NewCmdLogin(name, fullName string) *cobra.Command {
 		},
 	}
 
-	// Add a defined annotation in order to appear in the help menu
-	loginCmd.Annotations = map[string]string{"command": "openshift"}
+	util.SetCommandGroup(loginCmd, util.OpenshiftGroup)
 	loginCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	loginCmd.Flags().StringVarP(&o.userNameFlag, "username", "u", "", "username, will prompt if not provided")
 	loginCmd.Flags().StringVarP(&o.passwordFlag, "password", "p", "", "password, will prompt if not provided")

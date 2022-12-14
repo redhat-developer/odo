@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/create/namespace"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -23,12 +24,12 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf("%s\n",
 			namespaceCreateCmd.Example,
 		),
-		Annotations: map[string]string{"command": "management"},
 	}
 
 	createCmd.AddCommand(namespaceCreateCmd)
 
 	// Add a defined annotation in order to appear in the help menu
+	util.SetCommandGroup(createCmd, util.ManagementGroup)
 	createCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return createCmd

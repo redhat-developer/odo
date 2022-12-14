@@ -90,6 +90,6 @@ func NewCmdCompletion(name, fullName string) *cobra.Command {
 	}
 
 	completionCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	completionCmd.Annotations = map[string]string{"command": "utility"}
+	util.SetCommandGroup(completionCmd, util.UtilityGroup)
 	return completionCmd
 }

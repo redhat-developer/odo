@@ -19,7 +19,7 @@ func NewCmdRemove(name, fullName string) *cobra.Command {
 
 	bindingCmd := binding.NewCmdBinding(binding.BindingRecommendedCommandName, util.GetFullName(fullName, binding.BindingRecommendedCommandName))
 	removeCmd.AddCommand(bindingCmd)
-	removeCmd.Annotations = map[string]string{"command": "management"}
+	util.SetCommandGroup(removeCmd, util.ManagementGroup)
 	removeCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return removeCmd

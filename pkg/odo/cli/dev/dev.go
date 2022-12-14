@@ -238,7 +238,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.WATCH,
 	)
 	// Add a defined annotation in order to appear in the help menu
-	devCmd.Annotations["command"] = "main"
+	odoutil.SetCommandGroup(devCmd, odoutil.MainGroup)
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	commonflags.UseVariablesFlags(devCmd)
 	commonflags.UseRunOnFlag(devCmd)

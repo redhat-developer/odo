@@ -122,7 +122,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of each component")
 
 	// Add a defined annotation in order to appear in the help menu
-	listCmd.Annotations["command"] = "main"
+	odoutil.SetCommandGroup(listCmd, odoutil.MainGroup)
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	commonflags.UseOutputFlag(listCmd)

@@ -12,6 +12,7 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -79,8 +80,7 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 		},
 	}
 
-	// Add a defined annotation in order to appear in the help menu
-	buildImagesCmd.Annotations = map[string]string{"command": "main"}
+	util.SetCommandGroup(buildImagesCmd, util.MainGroup)
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
 	clientset.Add(buildImagesCmd, clientset.FILESYSTEM)

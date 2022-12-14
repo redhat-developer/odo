@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -67,7 +68,7 @@ func NewCmdLogout(name, fullName string) *cobra.Command {
 	}
 
 	// Add a defined annotation in order to appear in the help menu
-	logoutCmd.Annotations = map[string]string{"command": "openshift"}
+	util.SetCommandGroup(logoutCmd, util.OpenshiftGroup)
 	logoutCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	clientset.Add(logoutCmd, clientset.KUBERNETES)
