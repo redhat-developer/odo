@@ -132,7 +132,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 	clientset.Add(versionCmd, clientset.PREFERENCE)
 
 	// Add a defined annotation in order to appear in the help menu
-	versionCmd.Annotations = map[string]string{"command": "utility"}
+	versionCmd.Annotations["command"] = "utility"
 	versionCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	versionCmd.Flags().BoolVar(&o.clientFlag, "client", false, "Client version only (no server required).")
 
