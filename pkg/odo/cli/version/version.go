@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/preference"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/spf13/cobra"
@@ -63,16 +61,7 @@ func (o *VersionOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, 
 		client, err := kclient.New()
 
 		if err == nil {
-			// checking the value of timeout in preference
-			var timeout time.Duration
-			if o.clientset.PreferenceClient != nil {
-				timeout = o.clientset.PreferenceClient.GetTimeout()
-			} else {
-				// the default timeout will be used
-				// when the value is not readable from preference
-				timeout = preference.DefaultTimeout
-			}
-			o.serverInfo, err = client.GetServerVersion(timeout)
+			o.serverInfo, err = client.GetServerVersion(o.clientset.PreferenceClient.GetTimeout())
 			if err != nil {
 				klog.V(4).Info("unable to fetch the server version: ", err)
 			}
