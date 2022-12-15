@@ -1,0 +1,37 @@
+name: odo-podman-test
+on:
+  pull_request:
+    branches:    
+      - main
+
+jobs:
+  ODO-PODMAN-TEST:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Build odo
+      run: make install
+
+    - name: Run Integration tests
+      run: |
+        make test-integration-podman
+    
+    - name: Test config is supported or not
+      run: |
+        mkdir -p ~/.config/containers/
+        cp ./test/example/config/containers.conf ~/.config/containers/containers.conf
+        CONTAINER_CONNECTION=podman-machine-default podman pod ps 
+
+    - uses: actions/upload-artifact@v2  
+      if: success() || failure()        
+      with:
+        name: test-results
+        path: test-integration-podman.xml
