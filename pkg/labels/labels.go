@@ -201,6 +201,12 @@ func SetProjectType(annotations map[string]string, value string) {
 	annotations[odoProjectTypeAnnotation] = value
 }
 
+func AddCommonAnnotations(annotations map[string]string) {
+	// Enable use of ImageStreams on OpenShift:
+	// https://github.com/redhat-developer/odo/issues/6376
+	annotations["alpha.image.policy.openshift.io/resolve-names"] = "*"
+}
+
 // GetSelector returns a selector string used for selection of resources which are part of the given component in given mode
 // Note: isPartOfComponent denotes if the selector is required for a core resource(deployment, svc, pvc, pv) of a given component deployed with `odo dev`
 // it is the only thing that sets it apart from the resources created via other ways (`odo deploy`, deploying resource with apply command during `odo dev`)
