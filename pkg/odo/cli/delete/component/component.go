@@ -16,6 +16,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/files"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -140,7 +141,11 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	log.Info("Searching resources to delete, please wait...")
 	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
 	if err != nil {
-		return err
+		if clierrors.AsWarning(err) {
+			log.Warning(err.Error())
+		} else {
+			return err
+		}
 	}
 
 	var hasClusterResources bool
