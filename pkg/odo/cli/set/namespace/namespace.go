@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -99,11 +100,11 @@ func NewCmdNamespaceSet(name, fullName string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
-		Annotations: map[string]string{"command": "main"},
-		Aliases:     []string{"project"},
+		Aliases: []string{"project"},
 	}
 
 	clientset.Add(namespaceSetCmd, clientset.KUBERNETES, clientset.FILESYSTEM, clientset.PROJECT)
+	util.SetCommandGroup(namespaceSetCmd, util.MainGroup)
 
 	return namespaceSetCmd
 }

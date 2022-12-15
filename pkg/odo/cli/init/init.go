@@ -27,6 +27,7 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -271,7 +272,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 
 	commonflags.UseOutputFlag(initCmd)
 	// Add a defined annotation in order to appear in the help menu
-	initCmd.Annotations["command"] = "main"
+	util.SetCommandGroup(initCmd, util.MainGroup)
 	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return initCmd
 }

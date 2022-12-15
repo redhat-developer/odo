@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 )
 
@@ -128,13 +129,13 @@ func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
-		Annotations: map[string]string{"command": "main"},
-		Aliases:     []string{"project"},
+		Aliases: []string{"project"},
 	}
 
 	namespaceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the namespace is ready")
 
 	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT)
+	util.SetCommandGroup(namespaceCreateCmd, util.MainGroup)
 
 	return namespaceCreateCmd
 }

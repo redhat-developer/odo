@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 )
 
@@ -123,8 +124,7 @@ func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return genericclioptions.GenericRun(do, cmd, args)
 		},
-		Annotations: map[string]string{"command": "main"},
-		Aliases:     []string{"project"},
+		Aliases: []string{"project"},
 	}
 
 	namespaceDeleteCmd.Flags().BoolVarP(&do.forceFlag, "force", "f", false, "Delete namespace without prompting")
@@ -134,5 +134,6 @@ func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
 		"Wait until the namespace no longer exists")
 
 	clientset.Add(namespaceDeleteCmd, clientset.KUBERNETES, clientset.PROJECT)
+	util.SetCommandGroup(namespaceDeleteCmd, util.MainGroup)
 	return namespaceDeleteCmd
 }

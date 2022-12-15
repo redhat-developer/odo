@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
 
@@ -141,12 +142,11 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
-		Use:         name,
-		Short:       "List all components in the current namespace",
-		Long:        "List all components in the current namespace.",
-		Example:     fmt.Sprintf(listExample, fullName),
-		Args:        genericclioptions.NoArgsAndSilenceJSON,
-		Annotations: map[string]string{"command": "management"},
+		Use:     name,
+		Short:   "List all components in the current namespace",
+		Long:    "List all components in the current namespace.",
+		Example: fmt.Sprintf(listExample, fullName),
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
@@ -158,6 +158,7 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 	}
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
+	util.SetCommandGroup(listCmd, util.ManagementGroup)
 	commonflags.UseOutputFlag(listCmd)
 	commonflags.UseRunOnFlag(listCmd)
 

@@ -7,8 +7,16 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+)
+
+var (
+	MainGroup       = "main"
+	ManagementGroup = "management"
+	OpenshiftGroup  = "openshift"
+	UtilityGroup    = "utility"
 )
 
 func LogError(err error, context string) {
@@ -78,3 +86,10 @@ Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
 
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
+
+func SetCommandGroup(cmd *cobra.Command, groupName string) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations["command"] = groupName
+}

@@ -13,9 +13,8 @@ const RecommendedCommandName = "delete"
 // NewCmdDelete implements the delete odo command
 func NewCmdDelete(name, fullName string) *cobra.Command {
 	var deleteCmd = &cobra.Command{
-		Use:         name,
-		Short:       "Delete resources",
-		Annotations: map[string]string{"command": "management"},
+		Use:   name,
+		Short: "Delete resources",
 	}
 
 	componentCmd := component.NewCmdComponent(component.ComponentRecommendedCommandName,
@@ -26,6 +25,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		util.GetFullName(fullName, namespace.RecommendedCommandName))
 	deleteCmd.AddCommand(namespaceDeleteCmd)
 
+	util.SetCommandGroup(deleteCmd, util.ManagementGroup)
 	deleteCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return deleteCmd

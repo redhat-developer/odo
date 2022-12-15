@@ -21,6 +21,7 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -161,12 +162,11 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
-		Use:         name,
-		Short:       "List all components in the current namespace",
-		Long:        "List all components in the current namespace.",
-		Example:     fmt.Sprintf(listExample, fullName),
-		Args:        genericclioptions.NoArgsAndSilenceJSON,
-		Annotations: map[string]string{"command": "management"},
+		Use:     name,
+		Short:   "List all components in the current namespace",
+		Long:    "List all components in the current namespace.",
+		Example: fmt.Sprintf(listExample, fullName),
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
@@ -182,6 +182,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName))
 	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd, servicesCmd)
 
+	util.SetCommandGroup(listCmd, util.ManagementGroup)
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 

@@ -49,7 +49,7 @@ func NewCmdPreference(ctx context.Context, name, fullName string) *cobra.Command
 	// Add the commands, help, usage and annotations
 	preferenceCmd.AddCommand(preferenceViewCmd, preferenceSetCmd, preferenceUnsetCmd, preferenceAddCmd, preferenceRemoveCmd)
 	preferenceCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	preferenceCmd.Annotations = map[string]string{"command": "utility"}
+	util.SetCommandGroup(preferenceCmd, util.UtilityGroup)
 
 	return preferenceCmd
 }

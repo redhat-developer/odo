@@ -31,7 +31,7 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 
 	addCmd.AddCommand(registryCmd)
 	addCmd.SetUsageTemplate(util.CmdUsageTemplate)
-	addCmd.Annotations = map[string]string{"command": "main"}
+	util.SetCommandGroup(addCmd, util.MainGroup)
 
 	return addCmd
 }
