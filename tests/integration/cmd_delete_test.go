@@ -154,6 +154,10 @@ var _ = Describe("odo delete command tests", func() {
 					Expect(stdOut).To(ContainSubstring("No resource found for component %q in namespace %q", cmpName, commonVar.Project))
 				})
 
+				It("should work if cluster is not accessible", Label(helper.LabelNoCluster), func() {
+					helper.Cmd("odo", "delete", "component").ShouldPass()
+				})
+
 				It("should delete the respective files with --files", func() {
 					stdOut := helper.Cmd("odo", "delete", "component", "--files", "-f").ShouldPass().Out()
 					By("not finding resources in namepace", func() {

@@ -133,8 +133,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	var (
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
-		namespace     = odocontext.GetNamespace(ctx)
 		appName       = odocontext.GetApplication(ctx)
+		namespace     string
 	)
 
 	log.Info("Searching resources to delete, please wait...")
@@ -142,14 +142,19 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	hasClusterResources := len(devfileResources) != 0
-	if hasClusterResources {
-		// Print all the resources that odo will attempt to delete
-		printDevfileComponents(componentName, namespace, devfileResources)
-	} else {
-		log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
-		if !o.withFilesFlag {
-			return nil
+
+	var hasClusterResources bool
+	if o.clientset.KubernetesClient != nil {
+		namespace = odocontext.GetNamespace(ctx)
+		hasClusterResources = len(devfileResources) != 0
+		if hasClusterResources {
+			// Print all the resources that odo will attempt to delete
+			printDevfileComponents(componentName, namespace, devfileResources)
+		} else {
+			log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
+			if !o.withFilesFlag {
+				return nil
+			}
 		}
 	}
 

@@ -99,55 +99,59 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 	var deployment *v1.Deployment
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		// Inner Loop
-		var deploymentName string
-		deploymentName, err = util.NamespaceKubernetesObject(componentName, appName)
-		if err != nil {
-			return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, componentName, err)
-		}
-
-		deployment, err = do.kubeClient.GetDeploymentByName(deploymentName)
-		if err != nil && !kerrors.IsNotFound(err) {
-			return isInnerLoopDeployed, resources, err
-		}
-
-		// if the deployment is found on the cluster,
-		// then convert it to unstructured.Unstructured object so that it can be appended to resources;
-		// else continue to outer loop
-		if deployment.Name != "" {
-			isInnerLoopDeployed = true
-			var unstructuredDeploy unstructured.Unstructured
-			unstructuredDeploy, err = kclient.ConvertK8sResourceToUnstructured(deployment)
+		if do.kubeClient != nil {
+			var deploymentName string
+			deploymentName, err = util.NamespaceKubernetesObject(componentName, appName)
 			if err != nil {
-				return isInnerLoopDeployed, resources, fmt.Errorf("failed to parse the resource %q: %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
+				return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, componentName, err)
 			}
-			resources = append(resources, unstructuredDeploy)
+
+			deployment, err = do.kubeClient.GetDeploymentByName(deploymentName)
+			if err != nil && !kerrors.IsNotFound(err) {
+				return isInnerLoopDeployed, resources, err
+			}
+
+			// if the deployment is found on the cluster,
+			// then convert it to unstructured.Unstructured object so that it can be appended to resources;
+			// else continue to outer loop
+			if deployment.Name != "" {
+				isInnerLoopDeployed = true
+				var unstructuredDeploy unstructured.Unstructured
+				unstructuredDeploy, err = kclient.ConvertK8sResourceToUnstructured(deployment)
+				if err != nil {
+					return isInnerLoopDeployed, resources, fmt.Errorf("failed to parse the resource %q: %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
+				}
+				resources = append(resources, unstructuredDeploy)
+			}
 		}
 	}
 
-	// Parse the devfile for K8s resources; these may belong to either innerloop or outerloop
-	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
-	if err != nil {
-		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
-	}
-	for _, lr := range localResources {
-		var gvr *meta.RESTMapping
-		gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
+	if do.kubeClient != nil {
+		// Parse the devfile for K8s resources; these may belong to either innerloop or outerloop
+		localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
 		if err != nil {
-			continue
+			return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
 		}
-		// Try to fetch the resource from the cluster; if it exists, append it to the resources list
-		var cr *unstructured.Unstructured
-		cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
-		// If a specific mode is asked for, then make sure it matches with the cr's mode.
-		if err != nil || (mode != odolabels.ComponentAnyMode && odolabels.GetMode(cr.GetLabels()) != mode) {
-			if cr != nil {
-				klog.V(4).Infof("Ignoring resource: %s/%s; its mode(%s) does not match with the given mode(%s)", gvr.Resource.Resource, lr.GetName(), odolabels.GetMode(cr.GetLabels()), mode)
-			} else {
-				klog.V(4).Infof("Ignoring resource: %s/%s; it does not exist on the cluster", gvr.Resource.Resource, lr.GetName())
+		for _, lr := range localResources {
+			var gvr *meta.RESTMapping
+			gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
+			if err != nil {
+				continue
 			}
-			continue
+			// Try to fetch the resource from the cluster; if it exists, append it to the resources list
+			var cr *unstructured.Unstructured
+			cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
+			// If a specific mode is asked for, then make sure it matches with the cr's mode.
+			if err != nil || (mode != odolabels.ComponentAnyMode && odolabels.GetMode(cr.GetLabels()) != mode) {
+				if cr != nil {
+					klog.V(4).Infof("Ignoring resource: %s/%s; its mode(%s) does not match with the given mode(%s)", gvr.Resource.Resource, lr.GetName(), odolabels.GetMode(cr.GetLabels()), mode)
+				} else {
+					klog.V(4).Infof("Ignoring resource: %s/%s; it does not exist on the cluster", gvr.Resource.Resource, lr.GetName())
+				}
+				continue
+			}
+			resources = append(resources, *cr)
 		}
-		resources = append(resources, *cr)
 	}
 
 	return isInnerLoopDeployed, resources, nil
