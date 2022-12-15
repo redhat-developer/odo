@@ -131,6 +131,7 @@ metadata:
    name: my-sample-java-springboot-app
    annotations:
       # highlight-start
+      alpha.image.policy.openshift.io/resolve-names: '*'
       odo.dev/project-type: spring
       example.com/my-annotation: value-1
       # highlight-end
@@ -141,6 +142,7 @@ spec:
          name: my-sample-java-springboot-app
          annotations:
             # highlight-start
+            alpha.image.policy.openshift.io/resolve-names: '*'
             odo.dev/project-type: spring
             example.com/my-annotation: value-1
             # highlight-end
