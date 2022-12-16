@@ -115,13 +115,23 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
-	log.Info("Searching resources to delete, please wait...")
-	list, err := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
-	if err != nil {
-		return err
+	var (
+		list []unstructured.Unstructured
+		err  error
+	)
+	if o.clientset.KubernetesClient != nil {
+		log.Info("Searching resources to delete, please wait...")
+		list, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
+		if err != nil {
+			return err
+		}
 	}
 	if len(list) == 0 {
-		log.Infof("No resource found for component %q in namespace %q\n", o.name, o.namespace)
+		log.Infof(messageWithPlatforms(
+			o.clientset.KubernetesClient != nil,
+			o.clientset.PodmanClient != nil,
+			o.name, o.namespace,
+		))
 		return nil
 	}
 	printDevfileComponents(o.name, o.namespace, list)
@@ -136,6 +146,17 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 
 	log.Error("Aborting deletion of component")
 	return nil
+}
+
+func messageWithPlatforms(cluster, podman bool, name, namespace string) string {
+	details := []string{}
+	if cluster {
+		details = append(details, fmt.Sprintf(" in namespace %q", namespace))
+	}
+	if podman {
+		details = append(details, " on podman")
+	}
+	return fmt.Sprintf("No resource found for component %q%s\n", name, strings.Join(details, " or"))
 }
 
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory

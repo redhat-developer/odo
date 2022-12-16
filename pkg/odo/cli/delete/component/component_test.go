@@ -12,17 +12,16 @@ import (
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
-
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 )
 
 func TestComponentOptions_deleteNamedComponent(t *testing.T) {
@@ -307,6 +306,58 @@ func Test_listResourcesMissingFromDevfilePresentOnCluster(t *testing.T) {
 			got := listResourcesMissingFromDevfilePresentOnCluster(tt.args.componentName, tt.args.devfileResources, tt.args.clusterResources)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("listResourcesMissingFromDevfilePresentOnCluster() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_messageWithPlatforms(t *testing.T) {
+	type args struct {
+		cluster   bool
+		podman    bool
+		name      string
+		namespace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "cluster only",
+			args: args{
+				cluster:   true,
+				name:      "componame",
+				namespace: "def",
+			},
+			want: `No resource found for component "componame" in namespace "def"
+`,
+		},
+		{
+			name: "podman only",
+			args: args{
+				podman: true,
+				name:   "componame",
+			},
+			want: `No resource found for component "componame" on podman
+`,
+		},
+		{
+			name: "cluster and podman",
+			args: args{
+				cluster:   true,
+				podman:    true,
+				name:      "componame",
+				namespace: "def",
+			},
+			want: `No resource found for component "componame" in namespace "def" or on podman
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := messageWithPlatforms(tt.args.cluster, tt.args.podman, tt.args.name, tt.args.namespace); got != tt.want {
+				t.Errorf("messageWithPlatforms() = %q, want %q", got, tt.want)
 			}
 		})
 	}
