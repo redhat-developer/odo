@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	api "github.com/redhat-developer/odo/pkg/api"
 	v1 "k8s.io/api/core/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -123,6 +124,21 @@ func (m *MockClient) GetRunningPodFromSelector(selector string) (*v1.Pod, error)
 func (mr *MockClientMockRecorder) GetRunningPodFromSelector(selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClient)(nil).GetRunningPodFromSelector), selector)
+}
+
+// ListAllComponents mocks base method.
+func (m *MockClient) ListAllComponents() ([]api.ComponentAbstract, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllComponents")
+	ret0, _ := ret[0].([]api.ComponentAbstract)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllComponents indicates an expected call of ListAllComponents.
+func (mr *MockClientMockRecorder) ListAllComponents() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllComponents", reflect.TypeOf((*MockClient)(nil).ListAllComponents))
 }
 
 // PlayKube mocks base method.

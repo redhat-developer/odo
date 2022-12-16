@@ -145,26 +145,30 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 		appName       = odocontext.GetApplication(ctx)
-		namespace     string
+
+		namespace           string
+		isInnerLoopDeployed bool
+		hasClusterResources bool
+		clusterResources    []unstructured.Unstructured
+		err                 error
 	)
 
-	log.Info("Searching resources to delete, please wait...")
-	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
-	if err != nil {
-		if clierrors.AsWarning(err) {
-			log.Warning(err.Error())
-		} else {
-			return err
-		}
-	}
-
-	var hasClusterResources bool
 	if o.clientset.KubernetesClient != nil {
+		log.Info("Searching resources to delete, please wait...")
+		isInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
+		if err != nil {
+			if clierrors.AsWarning(err) {
+				log.Warning(err.Error())
+			} else {
+				return err
+			}
+		}
+
 		namespace = odocontext.GetNamespace(ctx)
-		hasClusterResources = len(devfileResources) != 0
+		hasClusterResources = len(clusterResources) != 0
 		if hasClusterResources {
 			// Print all the resources that odo will attempt to delete
-			printDevfileComponents(componentName, namespace, devfileResources)
+			printDevfileComponents(componentName, namespace, clusterResources)
 		} else {
 			log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
 			if !o.withFilesFlag {
@@ -191,9 +195,9 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
 		if hasClusterResources {
 			// Get a list of component's resources present on the cluster
-			clusterResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
+			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
 			// Get a list of component's resources absent from the devfile, but present on the cluster
-			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, devfileResources, clusterResources)
+			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
 
 			// if innerloop deployment resource is present, then execute preStop events
 			if isInnerLoopDeployed {
@@ -204,7 +208,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			}
 
 			// delete all the resources
-			failed := o.clientset.DeleteClient.DeleteResources(devfileResources, o.waitFlag)
+			failed := o.clientset.DeleteClient.DeleteResources(clusterResources, o.waitFlag)
 			for _, fail := range failed {
 				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}

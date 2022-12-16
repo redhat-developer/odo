@@ -242,7 +242,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 	}
 }
 
-func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
+func TestDeleteComponentClient_ListClusterResourcesToDeleteFromDevfile(t *testing.T) {
 	const compName = "nodejs-prj1-api-abhz"
 	innerLoopCoreDeploymentName, _ := util.NamespaceKubernetesObject(compName, appName)
 
@@ -550,7 +550,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			do := DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName(), tt.args.mode)
+			gotIsInnerLoopDeployed, gotResources, err := do.ListClusterResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName(), tt.args.mode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return

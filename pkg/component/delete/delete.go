@@ -97,11 +97,7 @@ func references(list []unstructured.Unstructured, ownerRef metav1.OwnerReference
 
 // ListResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on the cluster and can be deleted
 // Returns a Warning if an error happens communicating with the cluster
-func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string, mode string) (isInnerLoopDeployed bool, resources []unstructured.Unstructured, err error) {
-	if do.kubeClient == nil {
-		return
-	}
-
+func (do DeleteComponentClient) ListClusterResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string, mode string) (isInnerLoopDeployed bool, resources []unstructured.Unstructured, err error) {
 	var deployment *v1.Deployment
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		// Inner Loop

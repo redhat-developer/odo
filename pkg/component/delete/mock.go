@@ -79,18 +79,18 @@ func (mr *MockClientMockRecorder) ListClusterResourcesToDelete(ctx, componentNam
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDelete), ctx, componentName, namespace)
 }
 
-// ListResourcesToDeleteFromDevfile mocks base method.
-func (m *MockClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName, componentName, mode string) (bool, []unstructured.Unstructured, error) {
+// ListClusterResourcesToDeleteFromDevfile mocks base method.
+func (m *MockClient) ListClusterResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName, componentName, mode string) (bool, []unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListResourcesToDeleteFromDevfile", devfileObj, appName, componentName, mode)
+	ret := m.ctrl.Call(m, "ListClusterResourcesToDeleteFromDevfile", devfileObj, appName, componentName, mode)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].([]unstructured.Unstructured)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// ListResourcesToDeleteFromDevfile indicates an expected call of ListResourcesToDeleteFromDevfile.
-func (mr *MockClientMockRecorder) ListResourcesToDeleteFromDevfile(devfileObj, appName, componentName, mode interface{}) *gomock.Call {
+// ListClusterResourcesToDeleteFromDevfile indicates an expected call of ListClusterResourcesToDeleteFromDevfile.
+func (mr *MockClientMockRecorder) ListClusterResourcesToDeleteFromDevfile(devfileObj, appName, componentName, mode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourcesToDeleteFromDevfile", reflect.TypeOf((*MockClient)(nil).ListResourcesToDeleteFromDevfile), devfileObj, appName, componentName, mode)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDeleteFromDevfile", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDeleteFromDevfile), devfileObj, appName, componentName, mode)
 }
