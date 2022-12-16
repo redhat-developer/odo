@@ -17,9 +17,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/files"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -97,6 +100,13 @@ func (o *ComponentOptions) Validate(ctx context.Context) error {
 }
 
 func (o *ComponentOptions) Run(ctx context.Context) error {
+	switch fcontext.GetRunOn(ctx, "") {
+	case commonflags.RunOnCluster:
+		o.clientset.PodmanClient = nil
+	case commonflags.RunOnPodman:
+		o.clientset.KubernetesClient = nil
+	}
+
 	if o.name != "" {
 		return o.deleteNamedComponent(ctx)
 	}
@@ -317,7 +327,7 @@ func (o *ComponentOptions) deleteFilesCreatedByOdo(filesys filesystem.Filesystem
 }
 
 // NewCmdComponent implements the component odo sub-command
-func NewCmdComponent(name, fullName string) *cobra.Command {
+func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
@@ -336,6 +346,10 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait for deletion of all dependent resources")
 	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES, clientset.FILESYSTEM)
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
+	}
+	commonflags.UseRunOnFlag(componentCmd)
 
 	return componentCmd
 }
