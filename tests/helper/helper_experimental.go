@@ -11,7 +11,7 @@ import (
 
 // EnableExperimentalMode enables the experimental mode, so that experimental features of odo can be used.
 func EnableExperimentalMode() {
-	err := os.Setenv(feature.OdoExperimentalModeEnvVar, feature.OdoExperimentalModeTrue)
+	err := os.Setenv(feature.OdoExperimentalModeEnvVar, "true")
 	Expect(err).ShouldNot(HaveOccurred())
 }
 

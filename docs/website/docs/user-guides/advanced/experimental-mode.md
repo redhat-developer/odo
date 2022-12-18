@@ -25,8 +25,11 @@ Example:
 ```shell
 $ ODO_EXPERIMENTAL_MODE=true odo dev --run-on=some-platform
 
-Experimental mode enabled for flag: --run-on. Use at your own risk. More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
-...
+============================================================================
+⚠ Experimental mode enabled. Use at your own risk.
+More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
+============================================================================
+
 ...
 -  Forwarding from 127.0.0.1:40001 -> 8080
 ```

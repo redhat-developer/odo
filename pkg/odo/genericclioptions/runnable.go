@@ -203,7 +203,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	}
 	o.SetClientset(deps)
 
-	feature.DisplayWarnings()
+	if feature.IsExperimentalModeEnabled(ctx) {
+		log.DisplayExperimentalWarning()
+	}
 
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	if platform != "" {
