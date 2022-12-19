@@ -37,6 +37,20 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// CleanupPodResources mocks base method.
+func (m *MockClient) CleanupPodResources(pod *v1.Pod) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanupPodResources", pod)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CleanupPodResources indicates an expected call of CleanupPodResources.
+func (mr *MockClientMockRecorder) CleanupPodResources(pod interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupPodResources", reflect.TypeOf((*MockClient)(nil).CleanupPodResources), pod)
+}
+
 // ExecCMDInContainer mocks base method.
 func (m *MockClient) ExecCMDInContainer(containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
 	m.ctrl.T.Helper()
@@ -126,6 +140,21 @@ func (mr *MockClientMockRecorder) GetRunningPodFromSelector(selector interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClient)(nil).GetRunningPodFromSelector), selector)
 }
 
+// KubeGenerate mocks base method.
+func (m *MockClient) KubeGenerate(name string) (*v1.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KubeGenerate", name)
+	ret0, _ := ret[0].(*v1.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// KubeGenerate indicates an expected call of KubeGenerate.
+func (mr *MockClientMockRecorder) KubeGenerate(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KubeGenerate", reflect.TypeOf((*MockClient)(nil).KubeGenerate), name)
+}
+
 // ListAllComponents mocks base method.
 func (m *MockClient) ListAllComponents() ([]api.ComponentAbstract, error) {
 	m.ctrl.T.Helper()
@@ -153,6 +182,21 @@ func (m *MockClient) PlayKube(pod *v1.Pod) error {
 func (mr *MockClientMockRecorder) PlayKube(pod interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlayKube", reflect.TypeOf((*MockClient)(nil).PlayKube), pod)
+}
+
+// PodLs mocks base method.
+func (m *MockClient) PodLs() (map[string]bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodLs")
+	ret0, _ := ret[0].(map[string]bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PodLs indicates an expected call of PodLs.
+func (mr *MockClientMockRecorder) PodLs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodLs", reflect.TypeOf((*MockClient)(nil).PodLs))
 }
 
 // PodRm mocks base method.

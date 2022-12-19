@@ -12,11 +12,17 @@ type Client interface {
 	// PlayKube creates the Pod with Podman
 	PlayKube(pod *corev1.Pod) error
 
+	// KubeGenerate returns a Kubernetes Pod definition of an existing Pod
+	KubeGenerate(name string) (*corev1.Pod, error)
+
 	// PodStop stops the pod with given podname
 	PodStop(podname string) error
 
 	// PodRm deletes the pod with given podname
 	PodRm(podname string) error
+
+	// PodLs lists the names of existing pods
+	PodLs() (map[string]bool, error)
 
 	// VolumeLs lists the names of existing volumes
 	VolumeLs() (map[string]bool, error)
