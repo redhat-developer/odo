@@ -5,6 +5,9 @@ import (
 	"os/exec"
 
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/kubectl/pkg/scheme"
 )
 
 // PodmanComponent is an abstraction for a Devfile Component deployed on podman
@@ -40,4 +43,33 @@ func (o *PodmanComponent) Exec(container string, args ...string) string {
 	out, err := command.Output()
 	Expect(err).ToNot(HaveOccurred())
 	return string(out)
+}
+
+func (o *PodmanComponent) GetEnvVars() map[string]string {
+	podName := fmt.Sprintf("%s-%s", o.name, o.app)
+	podDef := getPodDef(podName)
+	res := map[string]string{}
+	for _, env := range podDef.Spec.Containers[0].Env {
+		res[env.Name] = env.Value
+	}
+	return res
+}
+
+func getPodDef(podname string) *corev1.Pod {
+	serializer := jsonserializer.NewSerializerWithOptions(
+		jsonserializer.SimpleMetaFactory{},
+		scheme.Scheme,
+		scheme.Scheme,
+		jsonserializer.SerializerOptions{
+			Yaml: true,
+		},
+	)
+
+	cmd := exec.Command("podman", "kube", "generate", podname)
+	resultBytes, err := cmd.Output()
+	Expect(err).ToNot(HaveOccurred())
+	var pod corev1.Pod
+	_, _, err = serializer.Decode(resultBytes, nil, &pod)
+	Expect(err).ToNot(HaveOccurred())
+	return &pod
 }
