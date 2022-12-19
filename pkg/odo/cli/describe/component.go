@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -286,7 +287,7 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 }
 
 // NewCmdComponent implements the component odo sub-command
-func NewCmdComponent(name, fullName string) *cobra.Command {
+func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
@@ -302,7 +303,11 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
 	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE)
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
+	}
 	commonflags.UseOutputFlag(componentCmd)
+	commonflags.UseRunOnFlag(componentCmd)
 
 	return componentCmd
 }
