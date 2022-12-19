@@ -228,6 +228,31 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 				})
 			}))
+
+			When("odo dev is executed", helper.LabelPodmanIf(podman, func() {
+
+				var devSession helper.DevSession
+
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				When("odo dev is stopped", func() {
+					BeforeEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should delete component from the cluster", func() {
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+						component.ExpectIsNotDeployed()
+					})
+				})
+			}))
 		}
 
 		When("an env.yaml file contains a non-current Project", func() {
@@ -263,30 +288,6 @@ ComponentSettings:
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
 					out := commonVar.CliRunner.Run("get", "deployments", deploymentName, "-n", commonVar.Project).Out.Contents()
 					Expect(out).To(ContainSubstring(deploymentName))
-				})
-			})
-		})
-
-		When("odo dev is executed", func() {
-
-			var devSession helper.DevSession
-
-			BeforeEach(func() {
-				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			When("odo dev is stopped", func() {
-				BeforeEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should delete component from the cluster", func() {
-					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
-					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
 				})
 			})
 		})
