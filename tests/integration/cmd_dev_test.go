@@ -67,7 +67,7 @@ var _ = Describe("odo dev command tests", func() {
 
 		It("should add annotation to use ImageStreams", func() {
 			// #6376
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
 				Expect(annotations["alpha.image.policy.openshift.io/resolve-names"]).To(Equal("*"))
 			})
@@ -75,7 +75,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should show validation errors if the devfile is incorrect", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
 			})
@@ -85,7 +85,7 @@ var _ = Describe("odo dev command tests", func() {
 			// Create a new file A
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 			// watch that project
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				// Change some other file B
 				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
@@ -97,7 +97,7 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("ensure that index information is updated", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
 				Expect(err).ToNot(HaveOccurred())
 
@@ -900,7 +900,7 @@ ComponentSettings:
 			})
 
 			It("should be able to exec command", func() {
-				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 					helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
@@ -921,7 +921,7 @@ ComponentSettings:
 			})
 
 			It("should be able to exec command", func() {
-				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 					helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
@@ -942,7 +942,7 @@ ComponentSettings:
 			})
 
 			It("should be able to exec command", func() {
-				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 					helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
@@ -1959,7 +1959,7 @@ CMD ["npm", "start"]
 		})
 
 		It("should create vcs-uri annotation for the deployment when running odo dev", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
 				var valueFound bool
 				for key, value := range annotations {
@@ -2003,7 +2003,9 @@ CMD ["npm", "start"]
 				checkFunc         func(stdout, stderr string)
 			}
 			testForCmd := func(tt testCase) {
-				err := helper.RunDevMode(tt.devAdditionalOpts, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{
+					CmdlineArgs: tt.devAdditionalOpts,
+				}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 					stdout := string(outContents)
 					stderr := string(errContents)
 
