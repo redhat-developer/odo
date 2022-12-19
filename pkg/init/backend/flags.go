@@ -24,6 +24,7 @@ const (
 	FLAG_DEVFILE_REGISTRY = "devfile-registry"
 	FLAG_STARTER          = "starter"
 	FLAG_DEVFILE_PATH     = "devfile-path"
+	FLAG_DEVFILE_VERSION = "devfile-version"
 )
 
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
@@ -91,6 +92,7 @@ func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]strin
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],
 		DevfilePath:     flags[FLAG_DEVFILE_PATH],
+		DevfileVersion: flags[FLAG_DEVFILE_VERSION],
 	}, nil
 }
 

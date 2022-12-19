@@ -58,7 +58,7 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 func (o *InitClient) GetFlags(flags map[string]string) map[string]string {
 	initFlags := map[string]string{}
 	for flag, value := range flags {
-		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH {
+		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH || flag==backend.FLAG_DEVFILE_VERSION {
 			initFlags[flag] = value
 		}
 	}

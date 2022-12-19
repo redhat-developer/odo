@@ -269,6 +269,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo preference view\"). It can be used in combination with --devfile, but not with --devfile-path")
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_VERSION, "", "version of the devfile stack")
 
 	commonflags.UseOutputFlag(initCmd)
 	// Add a defined annotation in order to appear in the help menu
