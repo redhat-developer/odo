@@ -8,6 +8,8 @@ import (
 type Component interface {
 	// ExpectIsNotDeployed checks that the component is not deployed
 	ExpectIsNotDeployed()
+	// Exec executes the command in specific container of the component
+	Exec(container string, args ...string) string
 }
 
 func NewComponent(name string, app string, namespace string, cli CliRunner) Component {

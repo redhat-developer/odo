@@ -28,3 +28,8 @@ func (o *ClusterComponent) ExpectIsNotDeployed() {
 	stdout := o.cli.Run("get", "deployment", "-n", o.namespace).Out.Contents()
 	Expect(string(stdout)).To(Not(ContainSubstring(deploymentName)))
 }
+
+func (o *ClusterComponent) Exec(container string, args ...string) string {
+	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
+	return o.cli.Exec(podName, o.namespace, args...)
+}

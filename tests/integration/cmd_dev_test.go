@@ -81,21 +81,28 @@ var _ = Describe("odo dev command tests", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("should use the index information from previous push operation", func() {
-			// Create a new file A
-			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
-			// watch that project
-				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-				// Change some other file B
-				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				// File should exist, and its content should match what we initially set it to
-				execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base(fileAPath))
-				Expect(execResult).To(ContainSubstring(fileAText))
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			It("should use the index information from previous push operation", helper.LabelPodmanIf(podman, func() {
+				// Create a new file A
+				fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
+				// watch that project
+				err := helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+					// Change some other file B
+					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+
+					// File should exist, and its content should match what we initially set it to
+					component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+					execResult := component.Exec("runtime", "cat", "/projects/"+filepath.Base(fileAPath))
+					Expect(execResult).To(ContainSubstring(fileAText))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}))
+		}
+
 		It("ensure that index information is updated", func() {
 			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))

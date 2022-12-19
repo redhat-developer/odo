@@ -27,3 +27,17 @@ func (o *PodmanComponent) ExpectIsNotDeployed() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(string(stdout)).ToNot(ContainSubstring(podName))
 }
+
+func (o *PodmanComponent) Exec(container string, args ...string) string {
+	containerName := fmt.Sprintf("%s-%s-%s", o.name, o.app, container)
+	cmdargs := []string{"exec", "--interactive"}
+	cmdargs = append(cmdargs, "--tty")
+	cmdargs = append(cmdargs, containerName)
+	cmdargs = append(cmdargs, args...)
+
+	command := exec.Command("podman", cmdargs...)
+	fmt.Printf("exec %v\n", cmdargs)
+	out, err := command.Output()
+	Expect(err).ToNot(HaveOccurred())
+	return string(out)
+}
