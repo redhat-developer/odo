@@ -144,6 +144,30 @@ func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
 	return SplitLinesAsSet(string(out)), nil
 }
 
+func (o *PodmanCli) CleanupPodResources(pod *corev1.Pod) error {
+	err := o.PodStop(pod.GetName())
+	if err != nil {
+		return err
+	}
+	err = o.PodRm(pod.GetName())
+	if err != nil {
+		return err
+	}
+
+	for _, volume := range pod.Spec.Volumes {
+		if volume.PersistentVolumeClaim == nil {
+			continue
+		}
+		volumeName := volume.PersistentVolumeClaim.ClaimName
+		klog.V(3).Infof("deleting podman volume %q", volumeName)
+		err = o.VolumeRm(volumeName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func SplitLinesAsSet(s string) map[string]bool {
 	lines := map[string]bool{}
 	sc := bufio.NewScanner(strings.NewReader(s))

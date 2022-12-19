@@ -24,6 +24,9 @@ type Client interface {
 	// VolumeRm deletes the volume with given volumeName
 	VolumeRm(volumeName string) error
 
+	// CleanupResources stops and removes a pod and its associated resources (volumes)
+	CleanupPodResources(pod *corev1.Pod) error
+
 	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 
 	// GetPodLogs returns the logs of the specified pod container.
