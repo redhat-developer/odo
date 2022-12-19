@@ -22,20 +22,27 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type DeleteComponentClient struct {
-	kubeClient kclient.ClientInterface
-	execClient exec.Client
+	kubeClient   kclient.ClientInterface
+	podmanClient podman.Client
+	execClient   exec.Client
 }
 
 var _ Client = (*DeleteComponentClient)(nil)
 
-func NewDeleteComponentClient(kubeClient kclient.ClientInterface, execClient exec.Client) *DeleteComponentClient {
+func NewDeleteComponentClient(
+	kubeClient kclient.ClientInterface,
+	podmanClient podman.Client,
+	execClient exec.Client,
+) *DeleteComponentClient {
 	return &DeleteComponentClient{
-		kubeClient: kubeClient,
-		execClient: execClient,
+		kubeClient:   kubeClient,
+		podmanClient: podmanClient,
+		execClient:   execClient,
 	}
 }
 
@@ -200,4 +207,28 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 	}
 
 	return nil
+}
+
+func (do *DeleteComponentClient) ListPodmanResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error) {
+	// Inner Loop
+	var podName string
+	podName, err = util.NamespaceKubernetesObject(componentName, appName)
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, componentName, err)
+	}
+
+	allPods, err := do.podmanClient.PodLs()
+	if err != nil {
+		err = clierrors.NewWarning("failed to get pods on podman", err)
+		return false, nil, err
+	}
+
+	if _, isInnerLoopDeployed = allPods[podName]; isInnerLoopDeployed {
+		podDef, err := do.podmanClient.KubeGenerate(podName)
+		if err != nil {
+			return false, nil, err
+		}
+		pods = append(pods, podDef)
+	}
+	return isInnerLoopDeployed, pods, nil
 }

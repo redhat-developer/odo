@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -167,16 +168,21 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		componentName = odocontext.GetComponentName(ctx)
 		appName       = odocontext.GetApplication(ctx)
 
-		namespace           string
-		isInnerLoopDeployed bool
-		hasClusterResources bool
-		clusterResources    []unstructured.Unstructured
-		err                 error
+		namespace                  string
+		isClusterInnerLoopDeployed bool
+		hasClusterResources        bool
+		clusterResources           []unstructured.Unstructured
+
+		isPodmanInnerLoopDeployed bool
+		hasPodmanResources        bool
+		podmanPods                []*corev1.Pod
+
+		err error
 	)
 
 	if o.clientset.KubernetesClient != nil {
 		log.Info("Searching resources to delete, please wait...")
-		isInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
+		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
@@ -188,13 +194,32 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		namespace = odocontext.GetNamespace(ctx)
 		hasClusterResources = len(clusterResources) != 0
 		if hasClusterResources {
-			// Print all the resources that odo will attempt to delete
 			printDevfileComponents(componentName, namespace, clusterResources)
-		} else {
-			log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
-			if !o.withFilesFlag {
-				return nil
+		}
+	}
+
+	if o.clientset.PodmanClient != nil {
+		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDeleteFromDevfile(*devfileObj, appName, componentName)
+		if err != nil {
+			if clierrors.AsWarning(err) {
+				log.Warning(err.Error())
+			} else {
+				return err
 			}
+		}
+		hasPodmanResources = len(podmanPods) != 0
+		if hasPodmanResources {
+			log.Printf("The following pods and associated volumes will be deleted:")
+			for _, pod := range podmanPods {
+				fmt.Printf("\t- %s\n", pod.GetName())
+			}
+		}
+	}
+
+	if !(hasClusterResources || hasPodmanResources) {
+		log.Infof("No resource found for component %q in namespace %q nor in podman\n", componentName, namespace)
+		if !o.withFilesFlag {
+			return nil
 		}
 	}
 
@@ -208,7 +233,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 	hasFilesToDelete := len(filesToDelete) != 0
 
-	if !(hasClusterResources || hasFilesToDelete) {
+	if !(hasClusterResources || hasPodmanResources || hasFilesToDelete) {
 		klog.V(2).Info("no cluster resources and no files to delete")
 		return nil
 	}
@@ -221,7 +246,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
 
 			// if innerloop deployment resource is present, then execute preStop events
-			if isInnerLoopDeployed {
+			if isClusterInnerLoopDeployed {
 				err = o.clientset.DeleteClient.ExecutePreStopEvents(*devfileObj, appName, componentName)
 				if err != nil {
 					log.Errorf("Failed to execute preStop events: %v", err)
@@ -241,6 +266,19 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 					fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
 				}
 				log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
+			}
+		}
+
+		if hasPodmanResources {
+			if isPodmanInnerLoopDeployed {
+				// TODO(feloy) #6424
+				_ = isPodmanInnerLoopDeployed
+			}
+			for _, pod := range podmanPods {
+				err = o.clientset.PodmanClient.CleanupPodResources(pod)
+				if err != nil {
+					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
+				}
 			}
 		}
 
