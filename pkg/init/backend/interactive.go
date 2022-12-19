@@ -24,6 +24,7 @@ import (
 const (
 	STATE_ASK_LANG = iota
 	STATE_ASK_TYPE
+	STATE_ASK_VERSION
 	STATE_END
 )
 
@@ -81,6 +82,22 @@ loop:
 			}
 			result.DevfileRegistry = details.Registry.Name
 			result.Devfile = details.Name
+			if len(details.Versions) > 1 {
+				state = STATE_ASK_VERSION
+			} else {
+				state = STATE_END
+			}
+		case STATE_ASK_VERSION:
+			var back bool
+			back, version, err := o.askerClient.AskVersion(details.Versions)
+			if err != nil {
+				return nil, err
+			}
+			if back {
+				state = STATE_ASK_TYPE
+				continue loop
+			}
+			result.DevfileVersion = version
 			state = STATE_END
 		case STATE_END:
 			break loop

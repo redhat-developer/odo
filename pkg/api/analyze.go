@@ -15,5 +15,6 @@ type DetectionResult struct {
 	DevfilePath string `json:"devfilePath,omitempty"`
 
 	// ApplicationPorts represents the list of ports detected
-	ApplicationPorts []int `json:"ports,omitempty"`
+	ApplicationPorts []int  `json:"ports,omitempty"`
+	DevfileVersion   string `json:"devfileVersion,omitempty"`
 }
