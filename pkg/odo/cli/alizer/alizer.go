@@ -50,7 +50,7 @@ func (o *AlizerOptions) Run(ctx context.Context) (err error) {
 // RunForJsonOutput contains the logic for the odo command
 func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	workingDir := odocontext.GetWorkingDirectory(ctx)
-	df, reg, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
+	df, defaultVersion, reg, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	result := alizer.NewDetectionResult(df, reg, appPorts)
+	result := alizer.NewDetectionResult(df, reg, appPorts, defaultVersion)
 	return []api.DetectionResult{*result}, nil
 }
 
