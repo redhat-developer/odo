@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOGFILE="pr-${GIT_PR_NUMBER}-openshift-tests-${BUILD_NUMBER}"
+LOGFILE="pr-${GIT_PR_NUMBER}-openshift-unauth-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
