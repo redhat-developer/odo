@@ -59,9 +59,13 @@ func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ api.Devf
 func (o *Survey) AskVersion(versions []api.DevfileStackVersion) (back bool, version string, _ error) {
 	var stringVersions []string
 	for _, version := range versions {
-		stringVersions = append(stringVersions, version.Version)
+		sVersion := version.Version
+		if version.IsDefault {
+			sVersion += " (default)"
+		}
+		stringVersions = append(stringVersions, sVersion)
 	}
-	stringVersions = append(stringVersions, "latest",GOBACK)
+	stringVersions = append(stringVersions, "latest", GOBACK)
 	question := &survey.Select{
 		Message: "Select version: ",
 		Options: stringVersions,
