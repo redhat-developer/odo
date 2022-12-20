@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// NoCommandFoundError is returned when no command of the specified kind is found in devfile
+// NoComponentFoundError is returned when no component of the specified name was found.
 type NoComponentFoundError struct {
 	name      string
 	namespace string
@@ -17,5 +17,8 @@ func NewNoComponentFoundError(name string, namespace string) NoComponentFoundErr
 	}
 }
 func (e NoComponentFoundError) Error() string {
-	return fmt.Sprintf("no component found with name %q in the namespace %q", e.name, e.namespace)
+	if e.namespace != "" {
+		return fmt.Sprintf("no component found with name %q in the namespace %q", e.name, e.namespace)
+	}
+	return fmt.Sprintf("no component found with name %q", e.name)
 }
