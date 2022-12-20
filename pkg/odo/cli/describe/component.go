@@ -14,14 +14,17 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/podman"
 )
 
 // ComponentRecommendedCommandName is the recommended component sub-command name
@@ -59,9 +62,11 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
+	runOn := fcontext.GetRunOn(ctx, commonflags.RunOnCluster)
+
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.nameFlag == "" {
-		if len(o.namespaceFlag) > 0 {
+		if runOn == commonflags.RunOnCluster && len(o.namespaceFlag) > 0 {
 			return errors.New("--namespace can be used only with --name")
 		}
 		devfileObj := odocontext.GetDevfileObj(ctx)
@@ -83,12 +88,21 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 }
 
 func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
-	if o.clientset.KubernetesClient == nil {
-		log.Warning("No connection to cluster defined")
+	switch fcontext.GetRunOn(ctx, commonflags.RunOnCluster) {
+	case commonflags.RunOnCluster:
+		if o.clientset.KubernetesClient == nil {
+			log.Warning("No connection to cluster defined")
+		}
+	case commonflags.RunOnPodman:
+		if o.namespaceFlag != "" {
+			log.Warning("--namespace flag ignored on Podman")
+		}
 	}
+
 	return nil
 }
 
+// Run contains the logic for the odo command
 func (o *ComponentOptions) Run(ctx context.Context) error {
 	result, devfileObj, err := o.run(ctx)
 	if err != nil {
@@ -101,7 +115,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 	return printHumanReadableOutput(result, devfileObj)
 }
 
-// Run contains the logic for the odo command
+// RunForJsonOutput contains the logic for the JSON Output
 func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	result, _, err := o.run(ctx) // TODO(feloy) handle warning
 	if clierrors.AsWarning(err) {
