@@ -133,32 +133,75 @@ func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfi
 
 // describeNamedComponent describes a component given its name
 func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
-	if o.clientset.KubernetesClient == nil {
-		return api.Component{}, nil, errors.New("cluster is non accessible")
+	var (
+		kubeClient   = o.clientset.KubernetesClient
+		podmanClient = o.clientset.PodmanClient
+	)
+
+	isRunOnFeatureEnabled := feature.IsEnabled(ctx, feature.GenericRunOnFlag)
+	runOn := fcontext.GetRunOn(ctx, "")
+	switch runOn {
+	case "":
+		if isRunOnFeatureEnabled {
+			//Get info from all platforms
+			if kubeClient == nil {
+				log.Warning("cluster is non accessible")
+			}
+			if podmanClient == nil {
+				log.Warning("unable to access podman. Do you have podman client installed?")
+			}
+		} else {
+			if kubeClient == nil {
+				return api.Component{}, nil, errors.New("cluster is non accessible")
+			}
+			podmanClient = nil
+		}
+	case commonflags.RunOnCluster:
+		if kubeClient == nil {
+			return api.Component{}, nil, errors.New("cluster is non accessible")
+		}
+		podmanClient = nil
+	case commonflags.RunOnPodman:
+		if podmanClient == nil {
+			return api.Component{}, nil, errors.New("unable to access podman. Do you have podman client installed?")
+		}
+		kubeClient = nil
 	}
 
-	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, name)
+	runningOn, err := getRunningOn(ctx, name, kubeClient, podmanClient)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	devfile, err := component.GetDevfileInfoFromCluster(ctx, o.clientset.KubernetesClient, name)
+
+	devfile, err := component.GetDevfileInfo(ctx, kubeClient, podmanClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name, odocontext.GetApplication(ctx))
-	if err != nil {
-		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+
+	var ingresses []api.ConnectionData
+	var routes []api.ConnectionData
+	if kubeClient != nil {
+		ingresses, routes, err = component.ListRoutesAndIngresses(kubeClient, name, odocontext.GetApplication(ctx))
+		if err != nil {
+			return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+		}
 	}
 
-	return api.Component{
+	cmp := api.Component{
 		DevfileData: &api.DevfileData{
 			Devfile: devfile.Data,
 		},
-		RunningIn: runningIn,
+		RunningIn: api.MergeRunningModes(runningOn),
+		RunningOn: runningOn,
 		ManagedBy: "odo",
 		Ingresses: ingresses,
 		Routes:    routes,
-	}, &devfile, nil
+	}
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		// Display RunningOn field only if the feature is enabled
+		cmp.RunningOn = nil
+	}
+	return cmp, &devfile, nil
 }
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
