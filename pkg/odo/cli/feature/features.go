@@ -7,9 +7,6 @@ import (
 // OdoFeature represents a uniquely identifiable feature of odo.
 // It can either be a CLI command or flag.
 type OdoFeature struct {
-	// id is a free-form but unique identifier of this feature.
-	id string
-
 	// isExperimental indicates whether this feature should be considered in early or intermediate stages of development.
 	// Features that are not experimental by default will always be enabled, regardless of the experimental mode.
 	isExperimental bool
@@ -18,7 +15,6 @@ type OdoFeature struct {
 var (
 	// GenericRunOnFlag is the feature supporting the `--run-on` generic CLI flag.
 	GenericRunOnFlag = OdoFeature{
-		id:             "generic-run-on",
 		isExperimental: true,
 	}
 )
