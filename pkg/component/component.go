@@ -250,7 +250,7 @@ func ListAllComponents(client kclient.ClientInterface, podmanClient podman.Clien
 
 func getResourcesForComponent(
 	ctx context.Context,
-	client kclient.ClientInterface,
+	client platform.Client,
 	name string,
 	namespace string,
 ) ([]unstructured.Unstructured, error) {
@@ -272,29 +272,54 @@ func getResourcesForComponent(
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(ctx context.Context, client kclient.ClientInterface, name string) (api.RunningModes, error) {
-	if client == nil {
-		return nil, nil
-	}
-
-	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
-	if err != nil {
-		return nil, nil
-	}
-
-	if len(list) == 0 {
-		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
-	}
-
-	mapResult := api.NewRunningModes()
-	for _, resource := range list {
-		resourceLabels := resource.GetLabels()
-		mode := odolabels.GetMode(resourceLabels)
-		if mode != "" {
-			mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
+func GetRunningModes(ctx context.Context, kubeClient kclient.ClientInterface, podmanClient podman.Client, name string) (map[platform.Client]api.RunningModes, error) {
+	var hasErr bool
+	var ns string
+	listByPlatform := make(map[platform.Client][]unstructured.Unstructured)
+	if kubeClient != nil {
+		ns = kubeClient.GetCurrentNamespace()
+		list, err := getResourcesForComponent(ctx, kubeClient, name, ns)
+		if err != nil {
+			klog.V(4).Infof("error while listing cluster components: %v", err)
+			hasErr = true
+		} else if len(list) > 0 {
+			listByPlatform[kubeClient] = list
 		}
 	}
-	return mapResult, nil
+
+	if podmanClient != nil {
+		ns = ""
+		list, err := getResourcesForComponent(ctx, podmanClient, name, ns)
+		if err != nil {
+			klog.V(4).Infof("error while listing Podman components: %v", err)
+			hasErr = true
+		} else if len(list) > 0 {
+			listByPlatform[podmanClient] = list
+		}
+	}
+
+	if hasErr {
+		return nil, nil
+	}
+
+	if len(listByPlatform) == 0 {
+		return nil, NewNoComponentFoundError(name, ns)
+	}
+
+	result := make(map[platform.Client]api.RunningModes)
+	for plt, list := range listByPlatform {
+		mapResult := api.NewRunningModes()
+		for _, resource := range list {
+			resourceLabels := resource.GetLabels()
+			mode := odolabels.GetMode(resourceLabels)
+			if mode != "" {
+				mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
+			}
+		}
+		result[plt] = mapResult
+	}
+
+	return result, nil
 }
 
 // Contains checks to see if the component exists in an array or not
