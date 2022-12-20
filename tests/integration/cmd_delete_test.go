@@ -182,120 +182,141 @@ var _ = Describe("odo delete command tests", func() {
 				})
 			})
 
-			When("the component is deployed in DEV mode and dev mode stopped", func() {
-				var devSession helper.DevSession
-				BeforeEach(func() {
-					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-					Expect(err).ToNot(HaveOccurred())
-					defer func() {
+			for _, podman := range []bool{true, false} {
+				podman := podman
+				When("the component is deployed in DEV mode and dev mode stopped", helper.LabelPodmanIf(podman, func() {
+					var devSession helper.DevSession
+					BeforeEach(func() {
+						if podman {
+							helper.EnableExperimentalMode()
+						}
+						var err error
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+
 						devSession.Kill()
 						devSession.WaitEnd()
-					}()
-					Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(cmpName))
-				})
 
-				When("the component is deleted using its name and namespace from another directory", func() {
-					var out string
-					BeforeEach(func() {
-						otherDir := filepath.Join(commonVar.Context, "tmp")
-						helper.MakeDir(otherDir)
-						helper.Chdir(otherDir)
-						out = helper.Cmd("odo", "delete", "component", "--name", cmpName, "--namespace", commonVar.Project, "-f").ShouldPass().Out()
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+						component.ExpectIsDeployed()
 					})
 
-					It("should have deleted the component", func() {
-						By("listing the resource to delete", func() {
-							Expect(out).To(ContainSubstring("Deployment: " + cmpName))
-						})
-						By("deleting the deployment", func() {
-							// odo delete does not wait for resources to be deleted; hence we wait for .
-							Eventually(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(cmpName))
-						})
+					AfterEach(func() {
+						if podman {
+							helper.ResetExperimentalMode()
+						}
 					})
-					When("odo delete command is run again with nothing deployed on the cluster", func() {
-						var stdOut string
-						BeforeEach(func() {
-							// wait until the resources are deleted from the first delete
-							Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-							Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
-						})
-						It("should output that there are no resources to be deleted", func() {
-							Eventually(func() string {
-								stdOut = helper.Cmd("odo", "delete", "component", "--name", cmpName, "--namespace", commonVar.Project, "-f").ShouldPass().Out()
-								return stdOut
-							}, 60, 3).Should(ContainSubstring("No resource found for component %q in namespace %q", cmpName, commonVar.Project))
-						})
-					})
-				})
 
-				When("the component is deleted while having access to the devfile.yaml", func() {
-					When("the component is deleted without --files", func() {
-						var stdOut string
-						BeforeEach(func() {
-							stdOut = helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
-						})
+					if !podman {
+						When("the component is deleted using its name and namespace from another directory", func() {
+							var out string
+							BeforeEach(func() {
+								otherDir := filepath.Join(commonVar.Context, "tmp")
+								helper.MakeDir(otherDir)
+								helper.Chdir(otherDir)
+								out = helper.Cmd("odo", "delete", "component", "--name", cmpName, "--namespace", commonVar.Project, "-f").ShouldPass().Out()
+							})
 
-						It("should have deleted the component", func() {
-							By("listing the resources to delete", func() {
-								Expect(stdOut).To(ContainSubstring(cmpName))
+							It("should have deleted the component", func() {
+								By("listing the resource to delete", func() {
+									Expect(out).To(ContainSubstring("Deployment: " + cmpName))
+								})
+								By("deleting the deployment", func() {
+									// odo delete does not wait for resources to be deleted; hence we wait for .
+									Eventually(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(cmpName))
+								})
 							})
-							By("deleting the deployment", func() {
-								Eventually(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(cmpName))
-							})
-							By("ensuring that devfile.yaml and .odo still exists", func() {
-								files := helper.ListFilesInDir(commonVar.Context)
-								Expect(files).To(ContainElement(util.DotOdoDirectory))
-								Expect(files).To(ContainElement("devfile.yaml"))
+							When("odo delete command is run again with nothing deployed on the cluster", func() {
+								var stdOut string
+								BeforeEach(func() {
+									// wait until the resources are deleted from the first delete
+									Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
+									Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
+								})
+								It("should output that there are no resources to be deleted", func() {
+									Eventually(func() string {
+										stdOut = helper.Cmd("odo", "delete", "component", "--name", cmpName, "--namespace", commonVar.Project, "-f").ShouldPass().Out()
+										return stdOut
+									}, 60, 3).Should(ContainSubstring("No resource found for component %q in namespace %q", cmpName, commonVar.Project))
+								})
 							})
 						})
+					}
 
-						When("odo delete command is run again with nothing deployed on the cluster", func() {
+					Context("the component is deleted while having access to the devfile.yaml", func() {
+						When("the component is deleted without --files", func() {
 							var stdOut string
 							BeforeEach(func() {
-								// wait until the resources are deleted from the first delete
-								Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-								Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
 								stdOut = helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
 							})
-							It("should output that there are no resources to be deleted", func() {
-								Expect(stdOut).To(ContainSubstring("No resource found for component %q in namespace %q", cmpName, commonVar.Project))
+
+							It("should have deleted the component", func() {
+								By("listing the resources to delete", func() {
+									Expect(stdOut).To(ContainSubstring(cmpName))
+								})
+								By("deleting the deployment", func() {
+									component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+									component.ExpectIsNotDeployed()
+								})
+								By("ensuring that devfile.yaml and .odo still exists", func() {
+									files := helper.ListFilesInDir(commonVar.Context)
+									Expect(files).To(ContainElement(util.DotOdoDirectory))
+									Expect(files).To(ContainElement("devfile.yaml"))
+								})
+							})
+
+							if !podman {
+								When("odo delete command is run again with nothing deployed on the cluster", func() {
+									var stdOut string
+									BeforeEach(func() {
+										// wait until the resources are deleted from the first delete
+										Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
+										Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
+										stdOut = helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
+									})
+									It("should output that there are no resources to be deleted", func() {
+										Expect(stdOut).To(ContainSubstring("No resource found for component %q in namespace %q", cmpName, commonVar.Project))
+									})
+								})
+							}
+						})
+
+						When("the component is deleted with --files", func() {
+							var stdOut string
+							BeforeEach(func() {
+								stdOut = helper.Cmd("odo", "delete", "component", "--files", "-f").ShouldPass().Out()
+							})
+
+							It("should have deleted the component", func() {
+								By("listing the resources to delete", func() {
+									Expect(stdOut).To(ContainSubstring(cmpName))
+								})
+								By("deleting the deployment", func() {
+									component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+									component.ExpectIsNotDeployed()
+								})
+
+								deletableFileNames := []string{util.DotOdoDirectory, "devfile.yaml"}
+								var deletableFilesPaths []string
+								By("listing the files to delete", func() {
+									for _, f := range deletableFileNames {
+										deletableFilesPaths = append(deletableFilesPaths, filepath.Join(commonVar.Context, f))
+									}
+									helper.MatchAllInOutput(stdOut, deletableFilesPaths)
+								})
+								By("ensuring that appropriate files have been removed", func() {
+									files := helper.ListFilesInDir(commonVar.Context)
+									for _, f := range deletableFileNames {
+										Expect(files).ShouldNot(ContainElement(f))
+									}
+								})
 							})
 						})
 					})
-
-					When("the component is deleted with --files", func() {
-						var stdOut string
-						BeforeEach(func() {
-							stdOut = helper.Cmd("odo", "delete", "component", "--files", "-f").ShouldPass().Out()
-						})
-
-						It("should have deleted the component", func() {
-							By("listing the resources to delete", func() {
-								Expect(stdOut).To(ContainSubstring(cmpName))
-							})
-							By("deleting the deployment", func() {
-								Eventually(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(cmpName))
-							})
-
-							deletableFileNames := []string{util.DotOdoDirectory, "devfile.yaml"}
-							var deletableFilesPaths []string
-							By("listing the files to delete", func() {
-								for _, f := range deletableFileNames {
-									deletableFilesPaths = append(deletableFilesPaths, filepath.Join(commonVar.Context, f))
-								}
-								helper.MatchAllInOutput(stdOut, deletableFilesPaths)
-							})
-							By("ensuring that appropriate files have been removed", func() {
-								files := helper.ListFilesInDir(commonVar.Context)
-								for _, f := range deletableFileNames {
-									Expect(files).ShouldNot(ContainElement(f))
-								}
-							})
-						})
-					})
-				})
-			})
+				}))
+			}
 
 			When("the component is deployed in DEPLOY mode", func() {
 				BeforeEach(func() {

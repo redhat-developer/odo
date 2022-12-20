@@ -23,6 +23,12 @@ func NewClusterComponent(name string, app string, namespace string, cli CliRunne
 	}
 }
 
+func (o *ClusterComponent) ExpectIsDeployed() {
+	deploymentName := fmt.Sprintf("%s-%s", o.name, o.app)
+	stdout := o.cli.Run("get", "deployment", "-n", o.namespace).Out.Contents()
+	Expect(string(stdout)).To(ContainSubstring(deploymentName))
+}
+
 func (o *ClusterComponent) ExpectIsNotDeployed() {
 	deploymentName := fmt.Sprintf("%s-%s", o.name, o.app)
 	stdout := o.cli.Run("get", "deployment", "-n", o.namespace).Out.Contents()
