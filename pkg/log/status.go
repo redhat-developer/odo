@@ -301,16 +301,16 @@ func Fsuccess(out io.Writer, a ...interface{}) {
 	}
 }
 
-// Experimental will output in an appropriate "progress" manner
-func Experimental(a ...interface{}) {
-	Experimentalf("%s", a)
-}
-
-// Experimentalf will output in an appropriate "progress" manner
-func Experimentalf(format string, a ...interface{}) {
+// DisplayExperimentalWarning displays the experimental mode warning message.
+func DisplayExperimentalWarning() {
 	if !IsJSON() {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s\n", yellow(fmt.Sprintf(format, a...)))
+		h := "============================================================================"
+		fmt.Fprintln(GetStdout(), yellow(fmt.Sprintf(`%[1]s
+%s Experimental mode enabled. Use at your own risk.
+More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
+%[1]s
+`, h, getWarningString())))
 	}
 }
 

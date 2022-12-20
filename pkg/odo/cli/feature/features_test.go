@@ -22,15 +22,8 @@ func TestIsEnabled(t *testing.T) {
 		want bool
 	}
 
-	nonExperimentalFeature := OdoFeature{
-		id:          "my-awesome-feature",
-		description: "command: my awesome feature",
-	}
-	experimentalFeature := OdoFeature{
-		id:             "my-wip-flag",
-		isExperimental: true,
-		description:    "flag: --my-awesome-flag",
-	}
+	nonExperimentalFeature := OdoFeature{}
+	experimentalFeature := OdoFeature{isExperimental: true}
 
 	for _, tt := range []testCase{
 		{
