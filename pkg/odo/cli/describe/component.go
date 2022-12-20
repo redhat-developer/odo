@@ -112,7 +112,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	return printHumanReadableOutput(result, devfileObj)
+	return printHumanReadableOutput(ctx, result, devfileObj)
 }
 
 // RunForJsonOutput contains the logic for the JSON Output
@@ -345,6 +345,16 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 
 	log.Describef("Running in: ", cmp.RunningIn.String())
 	fmt.Println()
+
+	withRunOnFeature := feature.IsEnabled(ctx, feature.GenericRunOnFlag)
+
+	if withRunOnFeature && len(cmp.RunningOn) > 0 {
+		log.Info("Running on:")
+		for p, r := range cmp.RunningOn {
+			log.Printf("%s: %s", p, r)
+		}
+		fmt.Println()
+	}
 
 	if len(cmp.DevForwardedPorts) > 0 {
 		log.Info("Forwarded ports:")
