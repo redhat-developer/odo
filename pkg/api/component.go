@@ -55,6 +55,7 @@ type Component struct {
 }
 
 type ForwardedPort struct {
+	Platform      string `json:"platform,omitempty"`
 	ContainerName string `json:"containerName"`
 	LocalAddress  string `json:"localAddress"`
 	LocalPort     int    `json:"localPort"`

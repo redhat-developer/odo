@@ -228,6 +228,7 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 			wantFwPorts: []api.ForwardedPort{
 				{
+					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     40001,
@@ -276,12 +277,14 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 			wantFwPorts: []api.ForwardedPort{
 				{
+					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     40001,
 					ContainerPort: 8080,
 				},
 				{
+					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     40002,

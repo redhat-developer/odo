@@ -204,7 +204,15 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 	if len(cmp.DevForwardedPorts) > 0 {
 		log.Info("Forwarded ports:")
 		for _, port := range cmp.DevForwardedPorts {
-			log.Printf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			if withRunOnFeature {
+				p := port.Platform
+				if p == "" {
+					p = commonflags.RunOnCluster
+				}
+				log.Printf("[%s] %s:%d -> %s:%d", p, port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			} else {
+				log.Printf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			}
 		}
 		fmt.Println()
 	}

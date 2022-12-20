@@ -6,10 +6,12 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -108,7 +110,7 @@ func getVolumeName(volume string, componentName string, appName string) string {
 }
 
 func addHostPorts(containers []corev1.Container, usedPorts []int) []api.ForwardedPort {
-	result := []api.ForwardedPort{}
+	var result []api.ForwardedPort
 	startPort := 40001
 	endPort := startPort + 10000
 	for i := range containers {
@@ -119,6 +121,7 @@ func addHostPorts(containers []corev1.Container, usedPorts []int) []api.Forwarde
 				continue
 			}
 			result = append(result, api.ForwardedPort{
+				Platform:      commonflags.RunOnPodman,
 				ContainerName: containers[i].Name,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,
