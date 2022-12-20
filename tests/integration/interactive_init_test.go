@@ -61,6 +61,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
+					helper.ExpectString(ctx, "Select version")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
 
@@ -86,6 +89,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "Go")
 
 					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select version")
 					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
@@ -119,6 +125,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				starter := "go-starter"
 				componentName := "my-go-app"
 				devfileName := "go"
+				devfileVersion := "1.0.2"
 
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
@@ -126,6 +133,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "Go")
 
 					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select version")
 					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
@@ -142,7 +152,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				})
 
 				Expect(err).To(BeNil())
-				Expect(output).To(ContainSubstring("odo init --name %s --devfile %s --devfile-registry DefaultDevfileRegistry --starter %s", componentName, devfileName, starter))
+				Expect(output).To(ContainSubstring("odo init --name %s --devfile %s --devfile-registry DefaultDevfileRegistry --devfile-version %s --starter %s", componentName, devfileName, devfileVersion, starter))
 				Expect(output).To(ContainSubstring("Your new component 'my-go-app' is ready in the current directory"))
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
@@ -160,6 +170,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "Go")
 
 					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select version")
 					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
@@ -318,7 +331,7 @@ var _ = Describe("odo init interactive command tests", func() {
 
 						language := "Python"
 						projectType := "Python"
-						devfileName := "python"
+						versionedDevfileName := "python:2.1.0"
 						welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 						output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
@@ -329,7 +342,7 @@ var _ = Describe("odo init interactive command tests", func() {
 							helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 							helper.ExpectString(ctx,
-								fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
+								fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", versionedDevfileName))
 
 							helper.ExpectString(ctx, "Is this correct")
 							helper.SendLine(ctx, "")
@@ -362,7 +375,7 @@ var _ = Describe("odo init interactive command tests", func() {
 						language := "JavaScript"
 						projectType := "Node.js"
 						projectName := "node-echo"
-						devfileName := "nodejs"
+						versionedDevfileName := "nodejs:2.1.1"
 
 						output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 							helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -372,7 +385,7 @@ var _ = Describe("odo init interactive command tests", func() {
 							helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 							helper.ExpectString(ctx,
-								fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
+								fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", versionedDevfileName))
 
 							helper.ExpectString(ctx, "Is this correct")
 							helper.SendLine(ctx, "")
@@ -397,7 +410,7 @@ var _ = Describe("odo init interactive command tests", func() {
 						language := "JavaScript"
 						projectType := "Node.js"
 						projectName := "node-echo"
-						devfileName := "nodejs"
+						versionedDevfileName := "nodejs:2.1.1"
 
 						_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 							helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -407,7 +420,7 @@ var _ = Describe("odo init interactive command tests", func() {
 							helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 							helper.ExpectString(ctx,
-								fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
+								fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", versionedDevfileName))
 
 							helper.ExpectString(ctx, "Is this correct")
 							helper.SendLine(ctx, "")

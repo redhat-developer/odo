@@ -3,6 +3,7 @@ package asker
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 
@@ -78,7 +79,7 @@ func (o *Survey) AskVersion(versions []api.DevfileStackVersion) (back bool, vers
 	if answerPos == len(stringVersions)-1 {
 		return true, "", nil
 	}
-	return false, stringVersions[answerPos], err
+	return false, strings.ReplaceAll(stringVersions[answerPos], " (default)", ""), err
 }
 
 func (o *Survey) AskStarterProject(projects []string) (bool, int, error) {
