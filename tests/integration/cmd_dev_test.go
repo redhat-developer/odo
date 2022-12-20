@@ -67,7 +67,7 @@ var _ = Describe("odo dev command tests", func() {
 
 		It("should add annotation to use ImageStreams", func() {
 			// #6376
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
 				Expect(annotations["alpha.image.policy.openshift.io/resolve-names"]).To(Equal("*"))
 			})
@@ -75,29 +75,36 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should show validation errors if the devfile is incorrect", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
 			})
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("should use the index information from previous push operation", func() {
-			// Create a new file A
-			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
-			// watch that project
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-				// Change some other file B
-				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				// File should exist, and its content should match what we initially set it to
-				execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base(fileAPath))
-				Expect(execResult).To(ContainSubstring(fileAText))
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			It("should use the index information from previous push operation", helper.LabelPodmanIf(podman, func() {
+				// Create a new file A
+				fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
+				// watch that project
+				err := helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+					// Change some other file B
+					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+
+					// File should exist, and its content should match what we initially set it to
+					component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+					execResult := component.Exec("runtime", "cat", "/projects/"+filepath.Base(fileAPath))
+					Expect(execResult).To(ContainSubstring(fileAText))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}))
+		}
+
 		It("ensure that index information is updated", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
 				Expect(err).ToNot(HaveOccurred())
 
@@ -228,6 +235,31 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 				})
 			}))
+
+			When("odo dev is executed", helper.LabelPodmanIf(podman, func() {
+
+				var devSession helper.DevSession
+
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				When("odo dev is stopped", func() {
+					BeforeEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should delete component from the cluster", func() {
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+						component.ExpectIsNotDeployed()
+					})
+				})
+			}))
 		}
 
 		When("an env.yaml file contains a non-current Project", func() {
@@ -263,30 +295,6 @@ ComponentSettings:
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
 					out := commonVar.CliRunner.Run("get", "deployments", deploymentName, "-n", commonVar.Project).Out.Contents()
 					Expect(out).To(ContainSubstring(deploymentName))
-				})
-			})
-		})
-
-		When("odo dev is executed", func() {
-
-			var devSession helper.DevSession
-
-			BeforeEach(func() {
-				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			When("odo dev is stopped", func() {
-				BeforeEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should delete component from the cluster", func() {
-					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
-					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
 				})
 			})
 		})
@@ -403,57 +411,61 @@ ComponentSettings:
 			})
 		})
 
-		When("odo is executed with --no-watch flag", func() {
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When("odo is executed with --no-watch flag", helper.LabelPodmanIf(podman, func() {
 
-			var devSession helper.DevSession
-
-			BeforeEach(func() {
-				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-					CmdlineArgs: []string{"--no-watch"},
-				})
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				devSession.Kill()
-				devSession.WaitEnd()
-			})
-
-			When("a file in component directory is modified", func() {
+				var devSession helper.DevSession
 
 				BeforeEach(func() {
-					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs: []string{"--no-watch"},
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("should not trigger a push", func() {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/server.js")
-					Expect(execResult).To(ContainSubstring("App started"))
-					Expect(execResult).ToNot(ContainSubstring("App is super started"))
-
+				AfterEach(func() {
+					devSession.Kill()
+					devSession.WaitEnd()
 				})
 
-				When("p is pressed", func() {
+				When("a file in component directory is modified", func() {
 
 					BeforeEach(func() {
-						if os.Getenv("SKIP_KEY_PRESS") == "true" {
-							Skip("This is a unix-terminal specific scenario, skipping")
-						}
-
-						devSession.PressKey('p')
+						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 					})
 
-					It("should trigger a push", func() {
-						_, _, _, err := devSession.WaitSync()
-						Expect(err).ToNot(HaveOccurred())
-						podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-						execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/server.js")
-						Expect(execResult).To(ContainSubstring("App is super started"))
+					It("should not trigger a push", func() {
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+						execResult := component.Exec("runtime", "cat", "/projects/server.js")
+						Expect(execResult).To(ContainSubstring("App started"))
+						Expect(execResult).ToNot(ContainSubstring("App is super started"))
+
+					})
+
+					When("p is pressed", func() {
+
+						BeforeEach(func() {
+							if os.Getenv("SKIP_KEY_PRESS") == "true" {
+								Skip("This is a unix-terminal specific scenario, skipping")
+							}
+
+							devSession.PressKey('p')
+						})
+
+						It("should trigger a push", func() {
+							_, _, _, err := devSession.WaitSync()
+							Expect(err).ToNot(HaveOccurred())
+							component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
+							execResult := component.Exec("runtime", "cat", "/projects/server.js")
+							Expect(execResult).To(ContainSubstring("App is super started"))
+						})
 					})
 				})
-			})
-		})
+			}))
+		}
 
 		When("a delay is necessary for the component to start and running odo dev", func() {
 
@@ -783,172 +795,190 @@ ComponentSettings:
 		},
 	} {
 		devfileHandlerCtx := devfileHandlerCtx
-		When("Devfile 2.1.0 is used - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-			})
-
-			When("doing odo dev", func() {
-				var session helper.DevSession
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When("Devfile 2.1.0 is used - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
 				BeforeEach(func() {
-					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-					Expect(err).ToNot(HaveOccurred())
-				})
-				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
 				})
 
-				It("3. should check if the env variable has a correct value", func() {
-					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-					// check if the env variable has a correct value. This value was substituted from in devfile from variable
-					Expect(envVars["FOO"]).To(Equal("bar"))
-				})
-			})
+				When("doing odo dev", func() {
+					var session helper.DevSession
+					BeforeEach(func() {
+						var err error
+						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						session.Stop()
+						session.WaitEnd()
+					})
 
-			When("doing odo dev with --var flag", func() {
-				var session helper.DevSession
+					It("3. should check if the env variable has a correct value", func() {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars()
+						// check if the env variable has a correct value. This value was substituted from in devfile from variable
+						Expect(envVars["FOO"]).To(Equal("bar"))
+					})
+				})
+
+				When("doing odo dev with --var flag", func() {
+					var session helper.DevSession
+					BeforeEach(func() {
+						var err error
+						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs: []string{"--var", "VALUE_TEST=baz"},
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						session.Stop()
+						session.WaitEnd()
+					})
+
+					It("should check if the env variable has a correct value", func() {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars()
+						// check if the env variable has a correct value. This value was substituted from in devfile from variable
+						Expect(envVars["FOO"]).To(Equal("baz"))
+					})
+				})
+
+				When("doing odo dev with --var-file flag", func() {
+					var session helper.DevSession
+					varfilename := "vars.txt"
+					BeforeEach(func() {
+						var err error
+						err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
+						Expect(err).ToNot(HaveOccurred())
+						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs: []string{"--var-file", "vars.txt"},
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						session.Stop()
+						session.WaitEnd()
+						helper.DeleteFile(varfilename)
+					})
+
+					It("should check if the env variable has a correct value", func() {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars()
+						// check if the env variable has a correct value. This value was substituted from in devfile from variable
+						Expect(envVars["FOO"]).To(Equal("baz"))
+					})
+				})
+
+				When("doing odo dev with --var-file flag and setting value in env", func() {
+					var session helper.DevSession
+					varfilename := "vars.txt"
+					BeforeEach(func() {
+						var err error
+						_ = os.Setenv("VALUE_TEST", "baz")
+						err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
+						Expect(err).ToNot(HaveOccurred())
+						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs: []string{"--var-file", "vars.txt"},
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						session.Stop()
+						session.WaitEnd()
+						helper.DeleteFile(varfilename)
+						_ = os.Unsetenv("VALUE_TEST")
+					})
+
+					It("should check if the env variable has a correct value", func() {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars()
+						// check if the env variable has a correct value. This value was substituted from in devfile from variable
+						Expect(envVars["FOO"]).To(Equal("baz"))
+					})
+				})
+			}))
+
+			When("running odo dev and single env var is set - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
 				BeforeEach(func() {
-					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-						CmdlineArgs: []string{"--var", "VALUE_TEST=baz"},
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-single-env.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+				})
+
+				It("should be able to exec command", func() {
+					err := helper.RunDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						output := component.Exec("runtime", "ls", "-lai", "/projects")
+						helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
-				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
-				})
+			}))
 
-				It("should check if the env variable has a correct value", func() {
-					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-					// check if the env variable has a correct value. This value was substituted from in devfile from variable
-					Expect(envVars["FOO"]).To(Equal("baz"))
-				})
-			})
-
-			When("doing odo dev with --var-file flag", func() {
-				var session helper.DevSession
-				varfilename := "vars.txt"
+			When("running odo dev and multiple env variables are set - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
 				BeforeEach(func() {
-					var err error
-					err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
-					Expect(err).ToNot(HaveOccurred())
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-						CmdlineArgs: []string{"--var-file", "vars.txt"},
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-multiple-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+				})
+
+				It("should be able to exec command", func() {
+					err := helper.RunDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						output := component.Exec("runtime", "ls", "-lai", "/projects")
+						helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
-				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
-					helper.DeleteFile(varfilename)
-				})
+			}))
 
-				It("should check if the env variable has a correct value", func() {
-					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-					// check if the env variable has a correct value. This value was substituted from in devfile from variable
-					Expect(envVars["FOO"]).To(Equal("baz"))
-				})
-			})
-
-			When("doing odo dev with --var-file flag and setting value in env", func() {
-				var session helper.DevSession
-				varfilename := "vars.txt"
+			When("doing odo dev and there is a env variable with spaces - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
 				BeforeEach(func() {
-					var err error
-					_ = os.Setenv("VALUE_TEST", "baz")
-					err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
-					Expect(err).ToNot(HaveOccurred())
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-						CmdlineArgs: []string{"--var-file", "vars.txt"},
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-env-with-space.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+				})
+
+				It("should be able to exec command", func() {
+					err := helper.RunDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						output := component.Exec("runtime", "ls", "-lai", "/projects")
+						helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
-				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
-					helper.DeleteFile(varfilename)
-					_ = os.Unsetenv("VALUE_TEST")
-				})
-
-				It("should check if the env variable has a correct value", func() {
-					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-					// check if the env variable has a correct value. This value was substituted from in devfile from variable
-					Expect(envVars["FOO"]).To(Equal("baz"))
-				})
-			})
-		})
-
-		When("running odo dev and single env var is set - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-single-env.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-			})
-
-			It("should be able to exec command", func() {
-				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-					helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
-				})
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
-
-		When("running odo dev and multiple env variables are set - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-multiple-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-			})
-
-			It("should be able to exec command", func() {
-				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-					helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
-				})
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
-
-		When("doing odo dev and there is a env variable with spaces - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-env-with-space.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-			})
-
-			It("should be able to exec command", func() {
-				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-					helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
-				})
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
+			}))
+		}
 
 		When("creating local files and dir and running odo dev - "+devfileHandlerCtx.name, func() {
 			var newDirPath, newFilePath, stdOut, podName string
@@ -1958,7 +1988,7 @@ CMD ["npm", "start"]
 		})
 
 		It("should create vcs-uri annotation for the deployment when running odo dev", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
 				var valueFound bool
 				for key, value := range annotations {
@@ -2002,7 +2032,9 @@ CMD ["npm", "start"]
 				checkFunc         func(stdout, stderr string)
 			}
 			testForCmd := func(tt testCase) {
-				err := helper.RunDevMode(tt.devAdditionalOpts, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{
+					CmdlineArgs: tt.devAdditionalOpts,
+				}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 					stdout := string(outContents)
 					stderr := string(errContents)
 
