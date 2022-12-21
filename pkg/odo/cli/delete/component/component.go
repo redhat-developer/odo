@@ -101,6 +101,9 @@ func (o *ComponentOptions) Validate(ctx context.Context) error {
 }
 
 func (o *ComponentOptions) Run(ctx context.Context) error {
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		o.clientset.PodmanClient = nil
+	}
 	switch fcontext.GetRunOn(ctx, "") {
 	case commonflags.RunOnCluster:
 		o.clientset.PodmanClient = nil
@@ -209,7 +212,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		}
 		hasPodmanResources = len(podmanPods) != 0
 		if hasPodmanResources {
-			log.Printf("The following pods and associated volumes will be deleted:")
+			log.Printf("The following pods and associated volumes will be deleted from podman:")
 			for _, pod := range podmanPods {
 				fmt.Printf("\t- %s\n", pod.GetName())
 			}
