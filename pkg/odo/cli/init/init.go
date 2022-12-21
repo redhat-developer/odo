@@ -133,8 +133,8 @@ Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata
 
 	if len(o.flags) == 0 {
 		automateCommand := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
-		if devfileLocation.DevfileVersion!=""{
-			automateCommand = fmt.Sprintf("%s --devfile-version %s",automateCommand, devfileLocation.DevfileVersion)
+		if devfileLocation.DevfileVersion != "" {
+			automateCommand = fmt.Sprintf("%s --devfile-version %s", automateCommand, devfileLocation.DevfileVersion)
 		}
 		if starterInfo != nil {
 			automateCommand = fmt.Sprintf("%s --starter %s", automateCommand, starterInfo.Name)

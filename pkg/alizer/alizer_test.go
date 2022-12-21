@@ -119,7 +119,7 @@ func TestDetectFramework(t *testing.T) {
 			registryClient.EXPECT().ListDevfileStacks(ctx, "", "", "", false).Return(list, nil)
 			alizerClient := NewAlizerClient(registryClient)
 			// Run function DetectFramework
-			detected, registry, err := alizerClient.DetectFramework(ctx, tt.args.path)
+			detected, _, registry, err := alizerClient.DetectFramework(ctx, tt.args.path)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

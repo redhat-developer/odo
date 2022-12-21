@@ -48,8 +48,8 @@ func (o *Alizer) DetectFramework(ctx context.Context, path string) (_ model.DevF
 		return model.DevFileType{}, defaultVersion, api.Registry{}, err
 	}
 	// Get the default stack version that will be downloaded
-	for _, version := range components.Items[typ].Versions{
-		if version.IsDefault{
+	for _, version := range components.Items[typ].Versions {
+		if version.IsDefault {
 			defaultVersion = version.Version
 		}
 	}
@@ -143,6 +143,6 @@ func NewDetectionResult(typ model.DevFileType, registry api.Registry, appPorts [
 		Devfile:          typ.Name,
 		DevfileRegistry:  registry.Name,
 		ApplicationPorts: appPorts,
-		DevfileVersion: devfileVersion,
+		DevfileVersion:   devfileVersion,
 	}
 }
