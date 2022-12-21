@@ -265,6 +265,16 @@ func TestGetRunningModes(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "no kube client and no podman client",
+			args: args{
+				name: "aname",
+			},
+			want: func(kubeClient, podmanClient platform.Client) map[platform.Client]api.RunningModes {
+				return nil
+			},
+			wantErr: true,
+		},
+		{
 			name: "No cluster resources",
 			args: args{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
@@ -753,6 +763,327 @@ func TestListRoutesAndIngresses(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.wantRoutes, gotRoutes); diff != "" {
 				t.Errorf("ListRoutesAndIngresses() wantRoutes mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetDevfileInfo(t *testing.T) {
+	const kubeNs = "a-namespace"
+
+	packageManifestResource := unstructured.Unstructured{}
+	packageManifestResource.SetKind("PackageManifest")
+	packageManifestResource.SetLabels(labels.Builder().WithMode(labels.ComponentDevMode).Labels())
+
+	type args struct {
+		kubeClient    func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface
+		podmanClient  func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client
+		componentName string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    func() (parser.DevfileObj, error)
+		wantErr bool
+	}{
+		{
+			name: "no kube client and no podman client",
+			args: args{
+				componentName: "aname",
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "only kube client returning an error",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+					return c
+				},
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "only kube client returning an empty list",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(nil, nil)
+					return c
+				},
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "only kube client returning PackageManifest resource",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(
+						[]unstructured.Unstructured{packageManifestResource}, nil)
+					return c
+				},
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "only podman client returning an error",
+			args: args{
+				componentName: "some-name",
+				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
+					c := podman.NewMockClient(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+					return c
+				},
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "only podman client returning an empty list",
+			args: args{
+				componentName: "some-name",
+				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
+					c := podman.NewMockClient(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(nil, nil)
+					return c
+				},
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "kube and podman clients returning same component with mismatching labels",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					u1 := unstructured.Unstructured{}
+					u1.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDevMode).
+						WithProjectType("spring").
+						Labels())
+					u2 := unstructured.Unstructured{}
+					u2.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDeployMode).
+						WithProjectType("spring").
+						Labels())
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
+						Return([]unstructured.Unstructured{u1, packageManifestResource, u2}, nil)
+					return c
+				},
+				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
+					u1 := unstructured.Unstructured{}
+					u1.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDevMode).
+						WithProjectType("quarkus").
+						Labels())
+					c := podman.NewMockClient(ctrl)
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).
+						Return([]unstructured.Unstructured{u1}, nil)
+					return c
+				},
+			},
+			wantErr: true,
+			want: func() (parser.DevfileObj, error) {
+				return parser.DevfileObj{}, nil
+			},
+		},
+		{
+			name: "only kube client returning component",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					u1 := unstructured.Unstructured{}
+					u1.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDeployMode).
+						WithProjectType("spring").
+						Labels())
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
+						Return([]unstructured.Unstructured{u1}, nil)
+					return c
+				},
+				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
+					c := podman.NewMockClient(ctrl)
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).Return(nil, nil)
+					return c
+				},
+			},
+			wantErr: false,
+			want: func() (parser.DevfileObj, error) {
+				devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				metadata := devfileData.GetMetadata()
+				metadata.Name = "some-name"
+				metadata.DisplayName = UnknownValue
+				metadata.ProjectType = "spring"
+				metadata.Language = UnknownValue
+				metadata.Version = UnknownValue
+				metadata.Description = UnknownValue
+				devfileData.SetMetadata(metadata)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}, nil
+			},
+		},
+		{
+			name: "only podman client returning component",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
+						Return(nil, nil)
+					return c
+				},
+				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
+					u1 := unstructured.Unstructured{}
+					u1.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDevMode).
+						WithProjectType("quarkus").
+						Labels())
+					c := podman.NewMockClient(ctrl)
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).Return(
+						[]unstructured.Unstructured{u1}, nil)
+					return c
+				},
+			},
+			wantErr: false,
+			want: func() (parser.DevfileObj, error) {
+				devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				metadata := devfileData.GetMetadata()
+				metadata.Name = "some-name"
+				metadata.DisplayName = UnknownValue
+				metadata.ProjectType = "quarkus"
+				metadata.Language = UnknownValue
+				metadata.Version = UnknownValue
+				metadata.Description = UnknownValue
+				devfileData.SetMetadata(metadata)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}, nil
+			},
+		},
+		{
+			name: "both kube and podman clients returning component",
+			args: args{
+				componentName: "some-name",
+				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
+					u1 := unstructured.Unstructured{}
+					u1.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDeployMode).
+						WithProjectType("nodejs").
+						Labels())
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
+						Return([]unstructured.Unstructured{u1}, nil)
+					return c
+				},
+				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
+					u1 := unstructured.Unstructured{}
+					u1.SetLabels(labels.Builder().
+						WithComponentName(componentName).
+						WithMode(labels.ComponentDevMode).
+						WithProjectType("nodejs").
+						Labels())
+					c := podman.NewMockClient(ctrl)
+					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).Return(
+						[]unstructured.Unstructured{u1}, nil)
+					return c
+				},
+			},
+			wantErr: false,
+			want: func() (parser.DevfileObj, error) {
+				devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				metadata := devfileData.GetMetadata()
+				metadata.Name = "some-name"
+				metadata.DisplayName = UnknownValue
+				metadata.ProjectType = "nodejs"
+				metadata.Language = UnknownValue
+				metadata.Version = UnknownValue
+				metadata.Description = UnknownValue
+				devfileData.SetMetadata(metadata)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}, nil
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			ctx := odocontext.WithApplication(context.TODO(), "app")
+			var kubeClient kclient.ClientInterface
+			if tt.args.kubeClient != nil {
+				kubeClient = tt.args.kubeClient(ctx, ctrl, tt.args.componentName)
+			}
+			var podmanClient podman.Client
+			if tt.args.podmanClient != nil {
+				podmanClient = tt.args.podmanClient(ctx, ctrl, tt.args.componentName)
+			}
+
+			got, err := GetDevfileInfo(ctx, kubeClient, podmanClient, tt.args.componentName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+			}
+			want, err := tt.want()
+			if err != nil {
+				t.Errorf("GetDevfileInfo() error while building wanted DevfileObj: %v", err)
+				return
+			}
+			if diff := cmp.Diff(want, got, cmp.AllowUnexported(devfileCtx.DevfileCtx{})); diff != "" {
+				t.Errorf("GetDevfileInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
