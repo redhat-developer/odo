@@ -153,6 +153,52 @@ var _ = Describe("odo devfile init command tests", func() {
 						helper.JsonPathContentIs(stdout, "managedBy", "odo")
 					})
 				})
+
+				for _, ctx := range []struct {
+					title, devfileVersion, requiredVersion string
+				}{
+					{
+						title:           "to download the latest version",
+						devfileVersion:  "latest",
+						requiredVersion: "2.0.0",
+					},
+					{
+						title:           "to download a specific version",
+						devfileVersion:  "1.0.2",
+						requiredVersion: "1.0.2",
+					},
+				} {
+					ctx := ctx
+					const (
+						devfileName = "go"
+					)
+					When(fmt.Sprintf("using --devfile-version flag %s", ctx.title), func() {
+						BeforeEach(func() {
+							helper.Cmd("odo", "init", "--name", "aname", "--devfile", devfileName, "--devfile-version", ctx.devfileVersion).ShouldPass()
+						})
+
+						It("should download the devfile with the requested version", func() {
+							files := helper.ListFilesInDir(commonVar.Context)
+							Expect(files).To(ContainElements("devfile.yaml"))
+							metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+							Expect(metadata.Version).To(BeEquivalentTo(ctx.requiredVersion))
+						})
+					})
+
+					When(fmt.Sprintf("using --devfile-version flag and JSON output %s", ctx.title), func() {
+						var res *helper.CmdWrapper
+						BeforeEach(func() {
+							res = helper.Cmd("odo", "init", "--name", "aname", "--devfile", devfileName, "--devfile-version", ctx.devfileVersion, "-o", "json").ShouldPass()
+						})
+
+						It("should show the requested devfile version", func() {
+							stdout := res.Out()
+							Expect(helper.IsJSON(stdout)).To(BeTrue())
+							helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.version", ctx.requiredVersion)
+						})
+					})
+				}
+
 				When("using --devfile-path flag with a local devfile", func() {
 					var newContext string
 					BeforeEach(func() {

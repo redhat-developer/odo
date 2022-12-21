@@ -36,14 +36,15 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// DetectFramework mocks base method.
-func (m *MockClient) DetectFramework(ctx context.Context, path string) (model.DevFileType, api.Registry, error) {
+// DetectFramework mocks base method
+func (m *MockClient) DetectFramework(ctx context.Context, path string) (model.DevFileType, string, api.Registry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DetectFramework", ctx, path)
 	ret0, _ := ret[0].(model.DevFileType)
-	ret1, _ := ret[1].(api.Registry)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(api.Registry)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
 }
 
 // DetectFramework indicates an expected call of DetectFramework.

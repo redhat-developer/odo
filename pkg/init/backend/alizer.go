@@ -35,7 +35,7 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 
 // SelectDevfile calls thz Alizer to detect the devfile and asks for confirmation to the user
 func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DetectionResult, err error) {
-	selected, registry, err := o.alizerClient.DetectFramework(ctx, dir)
+	selected, defaultVersion, registry, err := o.alizerClient.DetectFramework(ctx, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 	}
 
 	fmt.Println(msg)
-	fmt.Printf("The devfile %q from the registry %q will be downloaded.\n", selected.Name, registry.Name)
+	fmt.Printf("The devfile \"%s:%s\" from the registry %q will be downloaded.\n", selected.Name, defaultVersion, registry.Name)
 	confirm, err := o.askerClient.AskCorrect()
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 	if !confirm {
 		return nil, nil
 	}
-	return alizer.NewDetectionResult(selected, registry, appPorts), nil
+	return alizer.NewDetectionResult(selected, registry, appPorts, defaultVersion), nil
 }
 
 func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error) {

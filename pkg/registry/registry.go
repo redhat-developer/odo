@@ -270,7 +270,8 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 
 	registries := o.preferenceClient.RegistryList()
 	var reg preference.Registry
-
+	registryOptions := segment.GetRegistryOptions(ctx)
+	registryOptions.NewIndexSchema = true
 	// Get the file and save it to the temporary file
 	// Why do we do that?
 	// 1. We need to get the file from the registry
@@ -279,7 +280,7 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	// 4. We need to read the file from the temporary file, unmarshal it and then return the devfile data
 	for _, reg = range registries {
 		if reg.Name == registryName {
-			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, segment.GetRegistryOptions(ctx))
+			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, registryOptions)
 			if err != nil {
 				return api.DevfileData{}, err
 			}

@@ -54,7 +54,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
 						Name: "a-devfile-name",
-					}, api.Registry{
+					}, "1.0.0", api.Registry{
 						Name: "a-registry",
 					}, errors.New("unable to detect framework"))
 					return alizerClient
@@ -78,7 +78,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
 						Name: "a-devfile-name",
-					}, api.Registry{
+					}, "1.0.0", api.Registry{
 						Name: "a-registry",
 					}, nil)
 					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, errors.New("unable to detect ports"))
@@ -103,7 +103,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
 						Name: "a-devfile-name",
-					}, api.Registry{
+					}, "1.0.0", api.Registry{
 						Name: "a-registry",
 					}, nil)
 					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, nil)
@@ -128,7 +128,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
 						Name: "a-devfile-name",
-					}, api.Registry{
+					}, "1.0.0", api.Registry{
 						Name: "a-registry",
 					}, nil)
 					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, nil)
@@ -142,6 +142,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 			wantLocation: &api.DetectionResult{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "a-registry",
+				DevfileVersion:  "1.0.0",
 			},
 		},
 		{
@@ -154,7 +155,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				},
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
-					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{}, api.Registry{}, nil)
+					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{}, "", api.Registry{}, nil)
 					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return(nil, nil)
 					return alizerClient
 				},
@@ -177,7 +178,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(model.DevFileType{
 						Name: "a-devfile-name",
-					}, api.Registry{
+					}, "1.0.0", api.Registry{
 						Name: "a-registry",
 					}, nil)
 					alizerClient.EXPECT().DetectPorts(gomock.Any()).Return([]int{1234, 5678}, nil)
@@ -192,6 +193,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				Devfile:          "a-devfile-name",
 				DevfileRegistry:  "a-registry",
 				ApplicationPorts: []int{1234, 5678},
+				DevfileVersion:   "1.0.0",
 			},
 		},
 		// TODO: Add test cases.

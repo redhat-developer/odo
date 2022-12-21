@@ -3,12 +3,17 @@ package asker
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/registry"
+)
+
+const (
+	GOBACK = "** GO BACK **"
 )
 
 type Survey struct{}
@@ -35,7 +40,7 @@ func (o *Survey) AskLanguage(langs []string) (string, error) {
 
 func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ api.DevfileStack, _ error) {
 	stringTypes := types.GetOrderedLabels()
-	stringTypes = append(stringTypes, "** GO BACK **")
+	stringTypes = append(stringTypes, GOBACK)
 	question := &survey.Select{
 		Message: "Select project type:",
 		Options: stringTypes,
@@ -50,6 +55,31 @@ func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ api.Devf
 	}
 	compType, err := types.GetAtOrderedPosition(answerPos)
 	return false, compType, err
+}
+
+func (o *Survey) AskVersion(versions []api.DevfileStackVersion) (back bool, version string, _ error) {
+	var stringVersions []string
+	for _, version := range versions {
+		sVersion := version.Version
+		if version.IsDefault {
+			sVersion += " (default)"
+		}
+		stringVersions = append(stringVersions, sVersion)
+	}
+	stringVersions = append(stringVersions, GOBACK)
+	question := &survey.Select{
+		Message: "Select version: ",
+		Options: stringVersions,
+	}
+	var answerPos int
+	err := survey.AskOne(question, &answerPos)
+	if err != nil {
+		return false, "", err
+	}
+	if answerPos == len(stringVersions)-1 {
+		return true, "", nil
+	}
+	return false, strings.ReplaceAll(stringVersions[answerPos], " (default)", ""), err
 }
 
 func (o *Survey) AskStarterProject(projects []string) (bool, int, error) {

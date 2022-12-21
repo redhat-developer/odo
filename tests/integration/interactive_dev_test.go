@@ -41,7 +41,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 				language := "Python"
 				projectType := "Python"
-				devfileName := "python"
+				versionedDevfileName := "python:2.1.0"
 				_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "-v", "4"},
 					nil,
 					func(ctx helper.InteractiveContext) {
@@ -52,7 +52,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 						helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 						helper.ExpectString(ctx,
-							fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
+							fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", versionedDevfileName))
 
 						helper.ExpectString(ctx, "Is this correct")
 						helper.SendLine(ctx, "")
@@ -74,7 +74,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 				language := "Python"
 				projectType := "Python"
-				devfileName := "python"
+				versionedDevfileName := "python:2.1.0"
 				_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
 					nil,
 					func(ctx helper.InteractiveContext) {
@@ -85,7 +85,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 						helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 						helper.ExpectString(ctx,
-							fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
+							fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", versionedDevfileName))
 
 						helper.ExpectString(ctx, "Is this correct")
 						helper.SendLine(ctx, "")
@@ -111,7 +111,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 				language := "Python"
 				projectType := "Python"
-				devfileName := "python"
+				versionedDevfileName := "python:2.1.0"
 				output, _ := helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
 					// Setting verbosity level to 0, because we would be asserting the welcoming message is the first
 					// message displayed to the end user. So we do not want any potential debug lines to be printed first.
@@ -125,7 +125,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 						helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
 
 						helper.ExpectString(ctx,
-							fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", devfileName))
+							fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", versionedDevfileName))
 
 						helper.ExpectString(ctx, "Is this correct")
 						helper.SendLine(ctx, "")
@@ -160,6 +160,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.SendLine(ctx, "Python")
 
 					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "Python")
+
+					helper.ExpectString(ctx, "Select version")
 					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")

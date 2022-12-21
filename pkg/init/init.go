@@ -58,7 +58,7 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 func (o *InitClient) GetFlags(flags map[string]string) map[string]string {
 	initFlags := map[string]string{}
 	for flag, value := range flags {
-		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH {
+		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH || flag == backend.FLAG_DEVFILE_VERSION {
 			initFlags[flag] = value
 		}
 	}
@@ -114,7 +114,11 @@ func (o *InitClient) DownloadDevfile(ctx context.Context, devfileLocation *api.D
 	if devfileLocation.DevfilePath != "" {
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
 	} else {
-		return destDevfile, o.downloadFromRegistry(ctx, devfileLocation.DevfileRegistry, devfileLocation.Devfile, destDir)
+		devfile := devfileLocation.Devfile
+		if devfileLocation.DevfileVersion != "" {
+			devfile = fmt.Sprintf("%s:%s", devfileLocation.Devfile, devfileLocation.DevfileVersion)
+		}
+		return destDevfile, o.downloadFromRegistry(ctx, devfileLocation.DevfileRegistry, devfile, destDir)
 	}
 }
 
@@ -163,6 +167,10 @@ func (o *InitClient) downloadDirect(URL string, dest string) error {
 // downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
 // If registryName is empty, will try to download the devfile from the list of registries in preferences
 func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName string, devfile string, dest string) error {
+	// setting NewIndexSchema ensures that the Devfile library pulls registry based on the stack version
+	registryOptions := segment.GetRegistryOptions(ctx)
+	registryOptions.NewIndexSchema = true
+
 	var downloadSpinner *log.Status
 	var forceRegistry bool
 	if registryName == "" {
@@ -178,14 +186,14 @@ func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName stri
 	var reg preference.Registry
 	for _, reg = range registries {
 		if forceRegistry && reg.Name == registryName {
-			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions(ctx))
+			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, registryOptions)
 			if err != nil {
 				return err
 			}
 			downloadSpinner.End(true)
 			return nil
 		} else if !forceRegistry {
-			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions(ctx))
+			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, registryOptions)
 			if err != nil {
 				continue
 			}

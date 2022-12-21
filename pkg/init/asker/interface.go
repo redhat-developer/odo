@@ -16,6 +16,10 @@ type Asker interface {
 	// or the selected type is returned
 	AskType(types registry.TypesWithDetails) (back bool, _ api.DevfileStack, _ error)
 
+	// AskVersion asks for the Devfile version, or to go back. back is returned as true if the user selected to go back,
+	// or the selected version is returned
+	AskVersion(versions []api.DevfileStackVersion) (back bool, version string, _ error)
+
 	// AskStarterProject asks for an optional project, from a list of projects. If no project is selected, false is returned.
 	// Or the index of the selected project is returned
 	AskStarterProject(projects []string) (selected bool, _ int, _ error)

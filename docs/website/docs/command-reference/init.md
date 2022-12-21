@@ -107,7 +107,9 @@ Changes will be directly reflected on the cluster.
 
 In non-interactive mode, you will have to specify from the command-line the information needed to get a devfile.
 
-If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference view`), and the first one matching will be downloaded. If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
+If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference view`), and the first one matching will be downloaded.
+If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
+If you want to download a version devfile, you must specify the version with `--devfile-version` flag.
 
 If you prefer to download a devfile from an URL or from the local filesystem, you can use the `--devfile-path` instead.
 
@@ -115,7 +117,7 @@ The `--starter` flag indicates the name of the starter project (as referenced in
 
 The required `--name` flag indicates how the component initialized by this command should be named. The name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
 
-#### Non-interactive mode from any registry of the list
+#### Fetch Devfile from any registry of the list
 
 In this example, the devfile will be downloaded from the **Staging** registry, which is the first one in the list containing the `nodejs-react` devfile.
 ```shell
@@ -136,7 +138,7 @@ Devfile registries:
 </details>
 
 
-#### Non-interactive mode from a specific registry of the list
+#### Fetch Devfile from a specific registry of the list
 
 In this example, the devfile will be downloaded from the **DefaultDevfileRegistry** registry, as explicitly indicated by the `--devfile-registry` flag.
 <details>
@@ -165,7 +167,7 @@ To deploy your component to a cluster use "odo deploy".
 </details>
 
 
-#### Non-interactive mode from a URL
+#### Fetch Devfile from a URL
 
 ```console
 odo init --devfile-path <URL> --name <component-name> [--starter STARTER]
@@ -185,3 +187,53 @@ To deploy your component to a cluster use "odo deploy".
 ```
 </details>
 
+#### Fetch Devfile of a specific version
+
+```console
+odo init --devfile <devfile-name> --devfile-version <devfile-version> --name <component-name> [--starter STARTER]
+```
+
+<details>
+<summary>Examples</summary>
+
+```console
+$ odo init --devfile go --name my-go-app  --devfile-version 2.0.0
+  __
+ /  \__     Initializing a new component
+ \__/  \    
+ /  \__/    odo version: v3.4.0
+ \__/
+
+ ✓  Downloading devfile "go:2.0.0" [4s]
+
+Your new component 'my-go-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+To deploy your component to a cluster use "odo deploy".
+```
+
+</details>
+
+:::note
+Use "latest" as the version name to fetch the latest version of a given Devfile.
+
+<details>
+<summary>Example</summary>
+
+```console
+$ odo init --devfile go --name my-go-app  --devfile-version latest
+  __
+ /  \__     Initializing a new component
+ \__/  \    
+ /  \__/    odo version: v3.4.0
+ \__/
+
+ ✓  Downloading devfile "go:latest" [4s]
+
+Your new component 'my-go-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+To deploy your component to a cluster use "odo deploy".
+```
+</details>
+:::

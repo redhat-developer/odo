@@ -43,9 +43,16 @@ var initExample = templates.Examples(`
   # Boostrap a new component in interactive mode
   %[1]s
 
-  # Bootstrap a new component with a specific devfile from registry
+  # Bootstrap a new component with a specific devfile from registry;
+  # if several versions of the devfile exists then it will download the default version 
   %[1]s --name my-app --devfile nodejs
   
+  # Bootstrap a new component with a specific versioned devfile from registry
+  %[1]s --name my-app --devfile nodejs --devfile-version 2.1.0
+
+ # Bootstrap a new component with the latest devfile from registry
+  %[1]s --name my-app --devfile nodejs --devfile-version latest
+
   # Bootstrap a new component with a specific devfile from a specific registry
   %[1]s --name my-app --devfile nodejs --devfile-registry MyRegistry
   
@@ -130,9 +137,13 @@ Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata
 
 	if len(o.flags) == 0 {
 		automateCommand := fmt.Sprintf("odo init --name %s --devfile %s --devfile-registry %s", name, devfileLocation.Devfile, devfileLocation.DevfileRegistry)
+		if devfileLocation.DevfileVersion != "" {
+			automateCommand = fmt.Sprintf("%s --devfile-version %s", automateCommand, devfileLocation.DevfileVersion)
+		}
 		if starterInfo != nil {
 			automateCommand = fmt.Sprintf("%s --starter %s", automateCommand, starterInfo.Name)
 		}
+
 		klog.V(2).Infof("Port configuration using flag is currently not supported")
 		log.Infof("\nYou can automate this command by executing:\n   %s", automateCommand)
 	}
@@ -269,6 +280,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo preference view\"). It can be used in combination with --devfile, but not with --devfile-path")
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_VERSION, "", "version of the devfile stack; use \"latest\" to dowload the latest stack")
 
 	commonflags.UseOutputFlag(initCmd)
 	// Add a defined annotation in order to appear in the help menu
