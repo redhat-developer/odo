@@ -58,7 +58,7 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 func (o *InitClient) GetFlags(flags map[string]string) map[string]string {
 	initFlags := map[string]string{}
 	for flag, value := range flags {
-		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH || flag==backend.FLAG_DEVFILE_VERSION {
+		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH || flag == backend.FLAG_DEVFILE_VERSION {
 			initFlags[flag] = value
 		}
 	}
@@ -115,7 +115,7 @@ func (o *InitClient) DownloadDevfile(ctx context.Context, devfileLocation *api.D
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
 	} else {
 		devfile := devfileLocation.Devfile
-		if devfileLocation.DevfileVersion != ""{
+		if devfileLocation.DevfileVersion != "" {
 			devfile = fmt.Sprintf("%s:%s", devfileLocation.Devfile, devfileLocation.DevfileVersion)
 		}
 		return destDevfile, o.downloadFromRegistry(ctx, devfileLocation.DevfileRegistry, devfile, destDir)

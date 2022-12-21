@@ -66,7 +66,7 @@ func (o *Survey) AskVersion(versions []api.DevfileStackVersion) (back bool, vers
 		}
 		stringVersions = append(stringVersions, sVersion)
 	}
-	stringVersions = append(stringVersions, "latest", GOBACK)
+	stringVersions = append(stringVersions, GOBACK)
 	question := &survey.Select{
 		Message: "Select version: ",
 		Options: stringVersions,
