@@ -43,7 +43,8 @@ var initExample = templates.Examples(`
   # Boostrap a new component in interactive mode
   %[1]s
 
-  # Bootstrap a new component with a specific devfile from registry
+  # Bootstrap a new component with a specific devfile from registry;
+  # if several versions of the devfile exists then it will download the default version 
   %[1]s --name my-app --devfile nodejs
   
   # Bootstrap a new component with a specific versioned devfile from registry
