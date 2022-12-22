@@ -134,6 +134,25 @@ Devfile registries:
  NAME                       URL                                   SECURE
  Staging                    https://registry.stage.devfile.io     No
  DefaultDevfileRegistry     https://registry.devfile.io           No
+
+$  odo registry --devfile nodejs-react
+ NAME          REGISTRY                DESCRIPTION                                  VERSIONS 
+ nodejs-react  StagingRegistry         React is a free and open-source front-en...  2.0.2    
+ nodejs-react  DefaultDevfileRegistry  React is a free and open-source front-en...  2.0.2   
+
+$ odo init --devfile nodejs-react --name my-nr-app 
+  __
+ /  \__     Initializing a new component
+ \__/  \    
+ /  \__/    odo version: v3.4.0
+ \__/
+
+ ✓  Downloading devfile "nodejs-react" [3s]
+
+Your new component 'my-nr-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+
 ```
 </details>
 
@@ -152,9 +171,7 @@ Devfile registries:
  NAME                       URL                                   SECURE
  Staging                    https://registry.stage.devfile.io     No
  DefaultDevfileRegistry     https://registry.devfile.io           No
-```
 
-```shell
 $ odo init --name my-spring-app --devfile java-springboot --devfile-registry DefaultDevfileRegistry --starter springbootproject
  ✓  Downloading devfile "java-springboot" from registry "DefaultDevfileRegistry" [980ms]
  ✓  Downloading starter project "springbootproject" [399ms]
