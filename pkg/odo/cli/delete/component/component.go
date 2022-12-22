@@ -90,6 +90,18 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 	} else {
 		o.namespace = o.clientset.KubernetesClient.GetCurrentNamespace()
 	}
+
+	// Limit access to platforms if necessary
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		o.clientset.PodmanClient = nil
+	}
+	switch fcontext.GetRunOn(ctx, "") {
+	case commonflags.RunOnCluster:
+		o.clientset.PodmanClient = nil
+	case commonflags.RunOnPodman:
+		o.clientset.KubernetesClient = nil
+	}
+
 	return nil
 }
 
@@ -101,16 +113,6 @@ func (o *ComponentOptions) Validate(ctx context.Context) error {
 }
 
 func (o *ComponentOptions) Run(ctx context.Context) error {
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
-		o.clientset.PodmanClient = nil
-	}
-	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
-		o.clientset.PodmanClient = nil
-	case commonflags.RunOnPodman:
-		o.clientset.KubernetesClient = nil
-	}
-
 	if o.name != "" {
 		return o.deleteNamedComponent(ctx)
 	}
@@ -183,8 +185,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		err error
 	)
 
+	log.Info("Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
-		log.Info("Searching resources to delete, please wait...")
 		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
 		if err != nil {
 			if clierrors.AsWarning(err) {
@@ -220,7 +222,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 
 	if !(hasClusterResources || hasPodmanResources) {
-		log.Infof("No resource found for component %q in namespace %q nor in podman\n", componentName, namespace)
+		log.Infof(messageWithPlatforms(o.clientset.KubernetesClient != nil, o.clientset.PodmanClient != nil, componentName, namespace))
 		if !o.withFilesFlag {
 			return nil
 		}

@@ -21,7 +21,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
-	"github.com/redhat-developer/odo/pkg/podman"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -117,8 +116,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			podmanClient := podman.NewMockClient(ctrl)
-			do := NewDeleteComponentClient(kubeClient, podmanClient, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient)
 			ctx := odocontext.WithApplication(context.TODO(), "app")
 			got, err := do.ListClusterResourcesToDelete(ctx, tt.args.componentName, tt.args.namespace)
 			if (err != nil) != tt.wantErr {
@@ -234,9 +232,8 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
-			podmanClient := podman.NewMockClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, podmanClient, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient)
 			got := do.DeleteResources(tt.args.resources, false)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("DeleteComponentClient.DeleteResources() mismatch (-want +got):\n%s", diff)
@@ -708,9 +705,8 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
-			podmanClient := podman.NewMockClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, podmanClient, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient)
 			if err := do.ExecutePreStopEvents(tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}

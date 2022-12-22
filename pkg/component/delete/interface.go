@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -22,5 +22,5 @@ type Client interface {
 	ListClusterResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string, mode string) (bool, []unstructured.Unstructured, error)
 	// ListPodmanResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on podman in Dev mode that can be deleted,
 	// and a bool that indicates if the devfile component has been pushed to the innerloop
-	ListPodmanResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string) (isInnerLoopDeployed bool, pods []*v1.Pod, err error)
+	ListPodmanResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error)
 }
