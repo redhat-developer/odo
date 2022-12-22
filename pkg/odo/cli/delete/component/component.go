@@ -76,6 +76,17 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
+	// Limit access to platforms if necessary
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		o.clientset.PodmanClient = nil
+	}
+	switch fcontext.GetRunOn(ctx, "") {
+	case commonflags.RunOnCluster:
+		o.clientset.PodmanClient = nil
+	case commonflags.RunOnPodman:
+		o.clientset.KubernetesClient = nil
+	}
+
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.name == "" {
 		devfileObj := odocontext.GetDevfileObj(ctx)
@@ -89,17 +100,6 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 		o.clientset.KubernetesClient.SetNamespace(o.namespace)
 	} else {
 		o.namespace = o.clientset.KubernetesClient.GetCurrentNamespace()
-	}
-
-	// Limit access to platforms if necessary
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
-		o.clientset.PodmanClient = nil
-	}
-	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
-		o.clientset.PodmanClient = nil
-	case commonflags.RunOnPodman:
-		o.clientset.KubernetesClient = nil
 	}
 
 	return nil
