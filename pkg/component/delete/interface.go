@@ -20,7 +20,7 @@ type Client interface {
 	// and a bool that indicates if the devfile component has been pushed to the innerloop
 	// the mode indicates which component to list, either Dev, Deploy or Any (using constant labels.Component*Mode)
 	ListClusterResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string, mode string) (bool, []unstructured.Unstructured, error)
-	// ListPodmanResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on podman in Dev mode that can be deleted,
+	// ListPodmanResourcesToDelete returns a list of resources that are present on podman in Dev mode that can be deleted for the given component/app,
 	// and a bool that indicates if the devfile component has been pushed to the innerloop
-	ListPodmanResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error)
+	ListPodmanResourcesToDelete(appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error)
 }

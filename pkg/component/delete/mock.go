@@ -96,18 +96,18 @@ func (mr *MockClientMockRecorder) ListClusterResourcesToDeleteFromDevfile(devfil
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDeleteFromDevfile", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDeleteFromDevfile), devfileObj, appName, componentName, mode)
 }
 
-// ListPodmanResourcesToDeleteFromDevfile mocks base method.
-func (m *MockClient) ListPodmanResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName, componentName string) (bool, []*v1.Pod, error) {
+// ListPodmanResourcesToDelete mocks base method.
+func (m *MockClient) ListPodmanResourcesToDelete(appName, componentName string) (bool, []*v1.Pod, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListPodmanResourcesToDeleteFromDevfile", devfileObj, appName, componentName)
+	ret := m.ctrl.Call(m, "ListPodmanResourcesToDelete", appName, componentName)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].([]*v1.Pod)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// ListPodmanResourcesToDeleteFromDevfile indicates an expected call of ListPodmanResourcesToDeleteFromDevfile.
-func (mr *MockClientMockRecorder) ListPodmanResourcesToDeleteFromDevfile(devfileObj, appName, componentName interface{}) *gomock.Call {
+// ListPodmanResourcesToDelete indicates an expected call of ListPodmanResourcesToDelete.
+func (mr *MockClientMockRecorder) ListPodmanResourcesToDelete(appName, componentName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPodmanResourcesToDeleteFromDevfile", reflect.TypeOf((*MockClient)(nil).ListPodmanResourcesToDeleteFromDevfile), devfileObj, appName, componentName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPodmanResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListPodmanResourcesToDelete), appName, componentName)
 }

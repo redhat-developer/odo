@@ -96,10 +96,12 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 		return nil
 	}
 	// 2. Name is passed, and odo does not have access to devfile.yaml; if Name is passed, then we assume that odo does not have access to the devfile.yaml
-	if o.namespace != "" {
-		o.clientset.KubernetesClient.SetNamespace(o.namespace)
-	} else {
-		o.namespace = o.clientset.KubernetesClient.GetCurrentNamespace()
+	if o.clientset.KubernetesClient != nil {
+		if o.namespace != "" {
+			o.clientset.KubernetesClient.SetNamespace(o.namespace)
+		} else {
+			o.namespace = o.clientset.KubernetesClient.GetCurrentNamespace()
+		}
 	}
 
 	return nil
@@ -122,17 +124,28 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	var (
-		list []unstructured.Unstructured
-		err  error
+		appName = odocontext.GetApplication(ctx)
+
+		clusterResources []unstructured.Unstructured
+		podmanResources  []*corev1.Pod
+		err              error
 	)
+	log.Info("Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
-		log.Info("Searching resources to delete, please wait...")
-		list, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
+		clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
 		if err != nil {
 			return err
 		}
 	}
-	if len(list) == 0 {
+
+	if o.clientset.PodmanClient != nil {
+		_, podmanResources, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, o.name)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(clusterResources) == 0 && len(podmanResources) == 0 {
 		log.Infof(messageWithPlatforms(
 			o.clientset.KubernetesClient != nil,
 			o.clientset.PodmanClient != nil,
@@ -140,13 +153,34 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 		))
 		return nil
 	}
-	printDevfileComponents(o.name, o.namespace, list)
-	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
-		failed := o.clientset.DeleteClient.DeleteResources(list, o.waitFlag)
-		for _, fail := range failed {
-			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+	printDevfileComponents(o.name, o.namespace, clusterResources)
+
+	if len(podmanResources) > 0 {
+		log.Printf("The following pods and associated volumes will be deleted from podman:")
+		for _, pod := range podmanResources {
+			fmt.Printf("\t- %s\n", pod.GetName())
 		}
-		log.Infof("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
+	}
+
+	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
+		if len(clusterResources) > 0 {
+			failed := o.clientset.DeleteClient.DeleteResources(clusterResources, o.waitFlag)
+			for _, fail := range failed {
+				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+			}
+			log.Infof("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
+		}
+
+		if len(podmanResources) > 0 {
+			for _, pod := range podmanResources {
+				err = o.clientset.PodmanClient.CleanupPodResources(pod)
+				if err != nil {
+					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
+				}
+			}
+			log.Infof("The component %q is successfully deleted from podman", o.name)
+		}
+
 		return nil
 	}
 
@@ -204,7 +238,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 
 	if o.clientset.PodmanClient != nil {
-		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDeleteFromDevfile(*devfileObj, appName, componentName)
+		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
@@ -285,6 +319,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
 			}
+			log.Infof("The component %q is successfully deleted from podman", o.name)
 		}
 
 		if o.withFilesFlag {

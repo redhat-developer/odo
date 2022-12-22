@@ -737,7 +737,6 @@ func TestDeleteComponentClient_ListPodmanResourcesToDeleteFromDevfile(t *testing
 		podmanClient func(ctrl *gomock.Controller) podman.Client
 	}
 	type args struct {
-		devfileObj    parser.DevfileObj
 		appName       string
 		componentName string
 	}
@@ -855,7 +854,7 @@ func TestDeleteComponentClient_ListPodmanResourcesToDeleteFromDevfile(t *testing
 			do := &DeleteComponentClient{
 				podmanClient: tt.fields.podmanClient(ctrl),
 			}
-			gotIsInnerLoopDeployed, gotPods, err := do.ListPodmanResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.componentName)
+			gotIsInnerLoopDeployed, gotPods, err := do.ListPodmanResourcesToDelete(tt.args.appName, tt.args.componentName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponentClient.ListPodmanResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return

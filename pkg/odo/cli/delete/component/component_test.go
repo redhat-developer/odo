@@ -93,6 +93,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 			}
 			ctx := odocontext.WithApplication(context.TODO(), "app")
+			ctx = odocontext.WithComponentName(ctx, "a-name")
 			if err := o.deleteNamedComponent(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("ComponentOptions.deleteNamedComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
