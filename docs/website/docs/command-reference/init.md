@@ -29,20 +29,10 @@ odo init
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init
-? Select language: java
-? Select project type: Maven Java (java-maven, registry: DefaultDevfileRegistry)
-? Which starter project do you want to use? springbootproject
-? Enter component name: my-java-maven-app
- ✓  Downloading devfile "java-maven" from registry "DefaultDevfileRegistry" [949ms]
- ✓  Downloading starter project "springbootproject" [430ms]
+import EmptyDirOutput from './docs-mdx/init/empty_directory_output.mdx';
 
-Your new component "my-java-maven-app" is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<EmptyDirOutput />
+
 </details>
 
 #### Directory with sources
@@ -213,21 +203,9 @@ odo init --devfile <devfile-name> --devfile-version <devfile-version> --name <co
 <details>
 <summary>Examples</summary>
 
-```console
-$ odo init --devfile go --name my-go-app  --devfile-version 2.0.0
-  __
- /  \__     Initializing a new component
- \__/  \    
- /  \__/    odo version: v3.4.0
- \__/
+import VersionedOutput from './docs-mdx/init/versioned_devfile_output.mdx';
 
- ✓  Downloading devfile "go:2.0.0" [4s]
-
-Your new component 'my-go-app' is ready in the current directory.
-To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<VersionedOutput />
 
 </details>
 
