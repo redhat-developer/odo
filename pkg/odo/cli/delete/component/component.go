@@ -10,15 +10,20 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/files"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -71,6 +76,17 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
+	// Limit access to platforms if necessary
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		o.clientset.PodmanClient = nil
+	}
+	switch fcontext.GetRunOn(ctx, "") {
+	case commonflags.RunOnCluster:
+		o.clientset.PodmanClient = nil
+	case commonflags.RunOnPodman:
+		o.clientset.KubernetesClient = nil
+	}
+
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.name == "" {
 		devfileObj := odocontext.GetDevfileObj(ctx)
@@ -85,6 +101,7 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 	} else {
 		o.namespace = o.clientset.KubernetesClient.GetCurrentNamespace()
 	}
+
 	return nil
 }
 
@@ -104,13 +121,23 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
-	log.Info("Searching resources to delete, please wait...")
-	list, err := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
-	if err != nil {
-		return err
+	var (
+		list []unstructured.Unstructured
+		err  error
+	)
+	if o.clientset.KubernetesClient != nil {
+		log.Info("Searching resources to delete, please wait...")
+		list, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
+		if err != nil {
+			return err
+		}
 	}
 	if len(list) == 0 {
-		log.Infof("No resource found for component %q in namespace %q\n", o.name, o.namespace)
+		log.Infof(messageWithPlatforms(
+			o.clientset.KubernetesClient != nil,
+			o.clientset.PodmanClient != nil,
+			o.name, o.namespace,
+		))
 		return nil
 	}
 	printDevfileComponents(o.name, o.namespace, list)
@@ -127,27 +154,75 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	return nil
 }
 
+func messageWithPlatforms(cluster, podman bool, name, namespace string) string {
+	details := []string{}
+	if cluster {
+		details = append(details, fmt.Sprintf(" in namespace %q", namespace))
+	}
+	if podman {
+		details = append(details, " on podman")
+	}
+	return fmt.Sprintf("No resource found for component %q%s\n", name, strings.Join(details, " or"))
+}
+
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
 // devfileObj in context must not be nil when this method is called
 func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	var (
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
-		namespace     = odocontext.GetNamespace(ctx)
 		appName       = odocontext.GetApplication(ctx)
+
+		namespace                  string
+		isClusterInnerLoopDeployed bool
+		hasClusterResources        bool
+		clusterResources           []unstructured.Unstructured
+
+		isPodmanInnerLoopDeployed bool
+		hasPodmanResources        bool
+		podmanPods                []*corev1.Pod
+
+		err error
 	)
 
 	log.Info("Searching resources to delete, please wait...")
-	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
-	if err != nil {
-		return err
+	if o.clientset.KubernetesClient != nil {
+		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
+		if err != nil {
+			if clierrors.AsWarning(err) {
+				log.Warning(err.Error())
+			} else {
+				return err
+			}
+		}
+
+		namespace = odocontext.GetNamespace(ctx)
+		hasClusterResources = len(clusterResources) != 0
+		if hasClusterResources {
+			printDevfileComponents(componentName, namespace, clusterResources)
+		}
 	}
-	hasClusterResources := len(devfileResources) != 0
-	if hasClusterResources {
-		// Print all the resources that odo will attempt to delete
-		printDevfileComponents(componentName, namespace, devfileResources)
-	} else {
-		log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
+
+	if o.clientset.PodmanClient != nil {
+		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDeleteFromDevfile(*devfileObj, appName, componentName)
+		if err != nil {
+			if clierrors.AsWarning(err) {
+				log.Warning(err.Error())
+			} else {
+				return err
+			}
+		}
+		hasPodmanResources = len(podmanPods) != 0
+		if hasPodmanResources {
+			log.Printf("The following pods and associated volumes will be deleted from podman:")
+			for _, pod := range podmanPods {
+				fmt.Printf("\t- %s\n", pod.GetName())
+			}
+		}
+	}
+
+	if !(hasClusterResources || hasPodmanResources) {
+		log.Infof(messageWithPlatforms(o.clientset.KubernetesClient != nil, o.clientset.PodmanClient != nil, componentName, namespace))
 		if !o.withFilesFlag {
 			return nil
 		}
@@ -163,7 +238,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 	hasFilesToDelete := len(filesToDelete) != 0
 
-	if !(hasClusterResources || hasFilesToDelete) {
+	if !(hasClusterResources || hasPodmanResources || hasFilesToDelete) {
 		klog.V(2).Info("no cluster resources and no files to delete")
 		return nil
 	}
@@ -171,12 +246,12 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
 		if hasClusterResources {
 			// Get a list of component's resources present on the cluster
-			clusterResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
+			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
 			// Get a list of component's resources absent from the devfile, but present on the cluster
-			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, devfileResources, clusterResources)
+			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
 
 			// if innerloop deployment resource is present, then execute preStop events
-			if isInnerLoopDeployed {
+			if isClusterInnerLoopDeployed {
 				err = o.clientset.DeleteClient.ExecutePreStopEvents(*devfileObj, appName, componentName)
 				if err != nil {
 					log.Errorf("Failed to execute preStop events: %v", err)
@@ -184,7 +259,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			}
 
 			// delete all the resources
-			failed := o.clientset.DeleteClient.DeleteResources(devfileResources, o.waitFlag)
+			failed := o.clientset.DeleteClient.DeleteResources(clusterResources, o.waitFlag)
 			for _, fail := range failed {
 				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
@@ -196,6 +271,19 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 					fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
 				}
 				log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
+			}
+		}
+
+		if hasPodmanResources {
+			if isPodmanInnerLoopDeployed {
+				// TODO(feloy) #6424
+				_ = isPodmanInnerLoopDeployed
+			}
+			for _, pod := range podmanPods {
+				err = o.clientset.PodmanClient.CleanupPodResources(pod)
+				if err != nil {
+					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
+				}
 			}
 		}
 
@@ -307,7 +395,7 @@ func (o *ComponentOptions) deleteFilesCreatedByOdo(filesys filesystem.Filesystem
 }
 
 // NewCmdComponent implements the component odo sub-command
-func NewCmdComponent(name, fullName string) *cobra.Command {
+func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
@@ -326,6 +414,10 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait for deletion of all dependent resources")
 	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES, clientset.FILESYSTEM)
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
+	}
+	commonflags.UseRunOnFlag(componentCmd)
 
 	return componentCmd
 }

@@ -6,6 +6,8 @@ import (
 
 // Component is an abstraction for a Devfile Component deployed on a specific platform
 type Component interface {
+	// ExpectIsDeployed checks that the component is deployed
+	ExpectIsDeployed()
 	// ExpectIsNotDeployed checks that the component is not deployed
 	ExpectIsNotDeployed()
 	// Exec executes the command in specific container of the component

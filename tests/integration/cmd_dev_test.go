@@ -427,7 +427,7 @@ ComponentSettings:
 				})
 
 				AfterEach(func() {
-					devSession.Kill()
+					devSession.Stop()
 					devSession.WaitEnd()
 				})
 

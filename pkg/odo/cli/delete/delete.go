@@ -1,6 +1,8 @@
 package delete
 
 import (
+	"context"
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/delete/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/delete/namespace"
 	"github.com/redhat-developer/odo/pkg/odo/util"
@@ -11,13 +13,13 @@ import (
 const RecommendedCommandName = "delete"
 
 // NewCmdDelete implements the delete odo command
-func NewCmdDelete(name, fullName string) *cobra.Command {
+func NewCmdDelete(ctx context.Context, name, fullName string) *cobra.Command {
 	var deleteCmd = &cobra.Command{
 		Use:   name,
 		Short: "Delete resources",
 	}
 
-	componentCmd := component.NewCmdComponent(component.ComponentRecommendedCommandName,
+	componentCmd := component.NewCmdComponent(ctx, component.ComponentRecommendedCommandName,
 		util.GetFullName(fullName, component.ComponentRecommendedCommandName))
 	deleteCmd.AddCommand(componentCmd)
 

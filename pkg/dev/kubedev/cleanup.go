@@ -17,7 +17,7 @@ func (o *DevClient) CleanupResources(ctx context.Context, out io.Writer) error {
 	)
 	fmt.Fprintln(out, "Cleaning resources, please wait")
 	appname := odocontext.GetApplication(ctx)
-	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(*devfileObj, appname, componentName, labels.ComponentDevMode)
+	isInnerLoopDeployed, resources, err := o.deleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appname, componentName, labels.ComponentDevMode)
 	if err != nil {
 		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
 			fmt.Fprintf(out, "Error connecting to the cluster, the resources were not cleaned up.\nPlease log in again and cleanup the resource with `odo delete component`\n\n")

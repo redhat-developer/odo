@@ -87,7 +87,7 @@ const (
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
-	DELETE_COMPONENT: {KUBERNETES_NULLABLE, EXEC},
+	DELETE_COMPONENT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE, EXEC},
 	DEPLOY:           {KUBERNETES, FILESYSTEM},
 	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN_NULLABLE, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
 	EXEC:             {KUBERNETES_NULLABLE},
@@ -198,7 +198,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
-		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.ExecClient)
+		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.PodmanClient, dep.ExecClient)
 	}
 	if isDefined(command, DEPLOY) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient, dep.FS)
