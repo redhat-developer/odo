@@ -17,6 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,12 +26,17 @@ import (
 )
 
 func TestComponentOptions_deleteNamedComponent(t *testing.T) {
+
+	pod1 := corev1.Pod{}
+	pod1.SetName("a-name-app")
+
 	type fields struct {
 		name                  string
 		namespace             string
 		forceFlag             bool
 		kubernetesClient      func(ctrl *gomock.Controller) kclient.ClientInterface
 		deleteComponentClient func(ctrl *gomock.Controller) _delete.Client
+		podmanClient          func(ctrl *gomock.Controller) podman.Client
 	}
 	tests := []struct {
 		name    string
@@ -38,7 +44,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "No resource found",
+			name: "No cluster resource found",
 			fields: fields{
 				name:      "my-component",
 				namespace: "my-namespace",
@@ -46,6 +52,9 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return nil
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
@@ -57,13 +66,63 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "2 resources to delete",
+			name: "2 cluster resources to delete",
 			fields: fields{
 				name:      "my-component",
 				namespace: "my-namespace",
 				forceFlag: true,
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return nil
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					var resources []unstructured.Unstructured
+					res1 := getUnstructured("dep1", "deployment", "v1")
+					res2 := getUnstructured("svc1", "service", "v1")
+					resources = append(resources, res1, res2)
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(resources, nil)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "1 podman resource to delete",
+			fields: fields{
+				name:      "my-component",
+				forceFlag: true,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					return nil
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					client := podman.NewMockClient(ctrl)
+					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					return client
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component").Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "2 cluster and 1 podman resources to delete",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: true,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					client := podman.NewMockClient(ctrl)
+					client.EXPECT().CleanupPodResources(&pod1).Times(1)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -73,6 +132,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
 					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(resources, nil)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component").Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
 					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
 					return client
 				},
@@ -90,6 +150,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				clientset: &clientset.Clientset{
 					KubernetesClient: tt.fields.kubernetesClient(ctrl),
 					DeleteClient:     tt.fields.deleteComponentClient(ctrl),
+					PodmanClient:     tt.fields.podmanClient(ctrl),
 				},
 			}
 			ctx := odocontext.WithApplication(context.TODO(), "app")
