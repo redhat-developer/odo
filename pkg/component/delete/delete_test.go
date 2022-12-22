@@ -3,12 +3,20 @@ package delete
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/podman"
+	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -16,13 +24,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/kclient"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
-	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 const (
@@ -728,5 +729,143 @@ func getGVR(group, version, resource string) schema.GroupVersionResource {
 		Group:    group,
 		Version:  version,
 		Resource: resource,
+	}
+}
+
+func TestDeleteComponentClient_ListPodmanResourcesToDeleteFromDevfile(t *testing.T) {
+	type fields struct {
+		podmanClient func(ctrl *gomock.Controller) podman.Client
+	}
+	type args struct {
+		devfileObj    parser.DevfileObj
+		appName       string
+		componentName string
+	}
+
+	podName := "a-component-an-app"
+	podDef := corev1.Pod{}
+	podDef.SetName(podName)
+
+	tests := []struct {
+		name                    string
+		fields                  fields
+		args                    args
+		wantIsInnerLoopDeployed bool
+		wantPods                []*corev1.Pod
+		wantErr                 bool
+	}{
+		{
+			name: "blank name",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return podman.NewMockClient(ctrl)
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "error get pods on podman",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(nil, errors.New("error running PodLs"))
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+			},
+			wantErr: true,
+		},
+		{
+			name: "no pod running on podman",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(map[string]bool{}, nil)
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+			},
+			wantErr:                 false,
+			wantIsInnerLoopDeployed: false,
+			wantPods:                nil,
+		},
+		{
+			name: "another pod running on podman",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(map[string]bool{"another-pod": true}, nil)
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+			},
+			wantErr:                 false,
+			wantIsInnerLoopDeployed: false,
+			wantPods:                nil,
+		},
+		{
+			name: "component's pod running on podman",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(map[string]bool{podName: true}, nil)
+
+					podmanCli.EXPECT().KubeGenerate(podName).Return(&podDef, nil)
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+			},
+			wantErr:                 false,
+			wantIsInnerLoopDeployed: true,
+			wantPods:                []*corev1.Pod{&podDef},
+		},
+		{
+			name: "kube generate fails",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(map[string]bool{podName: true}, nil)
+
+					podmanCli.EXPECT().KubeGenerate(podName).Return(nil, errors.New("error executing KubeGenerate"))
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			do := &DeleteComponentClient{
+				podmanClient: tt.fields.podmanClient(ctrl),
+			}
+			gotIsInnerLoopDeployed, gotPods, err := do.ListPodmanResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.componentName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeleteComponentClient.ListPodmanResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotIsInnerLoopDeployed != tt.wantIsInnerLoopDeployed {
+				t.Errorf("DeleteComponentClient.ListPodmanResourcesToDeleteFromDevfile() gotIsInnerLoopDeployed = %v, want %v", gotIsInnerLoopDeployed, tt.wantIsInnerLoopDeployed)
+			}
+			if !reflect.DeepEqual(gotPods, tt.wantPods) {
+				t.Errorf("DeleteComponentClient.ListPodmanResourcesToDeleteFromDevfile() gotPods = %v, want %v", gotPods, tt.wantPods)
+			}
+		})
 	}
 }
