@@ -143,7 +143,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 	}
 
 	// RunningOn is displayed only when RunOn is active
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		for i := range allComponents {
 			allComponents[i].RunningOn = ""
 		}
@@ -172,7 +172,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.BINDING, clientset.FILESYSTEM)
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 

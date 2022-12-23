@@ -34,7 +34,7 @@ func UsePlatformFlag(cmd *cobra.Command) {
 // above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 // package
 func AddPlatformFlag(ctx context.Context) {
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		flag.CommandLine.String(PlatformFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
 		_ = pflag.CommandLine.MarkHidden(PlatformFlagName)
 	}

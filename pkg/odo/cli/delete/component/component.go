@@ -77,7 +77,7 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	// Limit access to platforms if necessary
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		o.clientset.PodmanClient = nil
 	}
 	switch fcontext.GetRunOn(ctx, "") {
@@ -457,7 +457,7 @@ func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command 
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait for deletion of all dependent resources")
 	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES, clientset.FILESYSTEM)
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
 	}
 	commonflags.UsePlatformFlag(componentCmd)
