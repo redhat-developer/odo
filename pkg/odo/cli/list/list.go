@@ -121,9 +121,9 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 	)
 
 	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
+	case commonflags.PlatformCluster:
 		podmanClient = nil
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		kubeClient = nil
 	}
 
@@ -187,7 +187,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	commonflags.UseOutputFlag(listCmd)
-	commonflags.UseRunOnFlag(listCmd)
+	commonflags.UsePlatformFlag(listCmd)
 
 	return listCmd
 }

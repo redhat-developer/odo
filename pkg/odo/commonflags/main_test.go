@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	ctx = envcontext.WithEnvConfig(ctx, cfg)
 	klog.InitFlags(nil)
 	AddOutputFlag()
-	AddRunOnFlag(ctx)
+	AddPlatformFlag(ctx)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	os.Exit(m.Run())

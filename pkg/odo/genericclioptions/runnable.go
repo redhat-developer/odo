@@ -185,7 +185,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	err = commonflags.CheckRunOnCommand(cmd)
+	err = commonflags.CheckPlatformCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	}
 
 	cmdLineObj := cmdline.NewCobra(cmd)
-	platform := commonflags.GetRunOnValue(cmdLineObj)
+	platform := commonflags.GetPlatformValue(cmdLineObj)
 	deps, err := clientset.Fetch(cmd, platform)
 	if err != nil {
 		return err
