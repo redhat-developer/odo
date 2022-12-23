@@ -146,6 +146,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		for i := range allComponents {
 			allComponents[i].RunningOn = ""
+			allComponents[i].Platform = ""
 		}
 	}
 
