@@ -138,7 +138,7 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Describe("Experimental Mode", Label(helper.LabelNoCluster), func() {
-		experimentalFlag := "--run-on"
+		experimentalFlag := "--platform"
 
 		AfterEach(func() {
 			helper.ResetExperimentalMode()

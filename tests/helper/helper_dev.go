@@ -126,7 +126,7 @@ type DevSessionOpts struct {
 // when the dev mode is completely started
 func StartDevMode(options DevSessionOpts) (DevSession, []byte, []byte, map[string]string, error) {
 	if options.RunOnPodman {
-		options.CmdlineArgs = append(options.CmdlineArgs, "--run-on", "podman")
+		options.CmdlineArgs = append(options.CmdlineArgs, "--platform", "podman")
 		options.EnvVars = append(options.EnvVars, "ODO_EXPERIMENTAL_MODE=true")
 	}
 	c, err := expect.NewConsole(expect.WithStdout(os.Stdout))
