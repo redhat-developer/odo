@@ -142,7 +142,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 		return api.ResourcesList{}, err
 	}
 
-	// RunningOn is displayed only when RunOn is active
+	// RunningOn is displayed only when Platform is active
 	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		for i := range allComponents {
 			allComponents[i].RunningOn = ""
