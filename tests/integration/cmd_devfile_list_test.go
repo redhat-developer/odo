@@ -143,37 +143,39 @@ var _ = Describe("odo list with devfile", func() {
 				})
 			}
 
-			It("should display runningOn depending on experimental mode", func() {
+			It("should display platform depending on experimental mode", func() {
 				for _, cmd := range [][]string{
 					{"list", "component"},
 					{"list"},
 				} {
 					cmd := cmd
-					By("returning runningOn when experimental mode is enabled with json output", func() {
+					By("returning platform when experimental mode is enabled with json output", func() {
 						args := append(cmd, "-o", "json")
 						res := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass()
 						stdout, stderr := res.Out(), res.Err()
 						Expect(stderr).To(BeEmpty())
 						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
 						helper.JsonPathContentIs(stdout, "components.#", "1")
-						helper.JsonPathContentIs(stdout, "components.0.runningOn", "cluster")
+						helper.JsonPathContentIs(stdout, "components.0.runningOn", "cluster") // Deprecated
+						helper.JsonPathContentIs(stdout, "components.0.platform", "cluster")
 					})
-					By("not returning runningOn when experimental mode is not enabled with json output", func() {
+					By("not returning platform when experimental mode is not enabled with json output", func() {
 						args := append(cmd, "-o", "json")
 						res := helper.Cmd("odo", args...).ShouldPass()
 						stdout, stderr := res.Out(), res.Err()
 						Expect(stderr).To(BeEmpty())
 						Expect(helper.IsJSON(stdout)).To(BeTrue(), "output should be in JSON format")
 						helper.JsonPathContentIs(stdout, "components.#", "1")
-						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn")
+						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn") // Deprecated
+						helper.JsonPathDoesNotExist(stdout, "components.0.platform")
 					})
-					By("displaying runningOn when experimental mode is enabled", func() {
+					By("displaying platform when experimental mode is enabled", func() {
 						stdout := helper.Cmd("odo", cmd...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
-						Expect(stdout).To(ContainSubstring("RUNNING ON"))
+						Expect(stdout).To(ContainSubstring("PLATFORM"))
 					})
-					By("not displaying runningOn when experimental mode is not enabled", func() {
+					By("not displaying platform when experimental mode is not enabled", func() {
 						stdout := helper.Cmd("odo", cmd...).ShouldPass().Out()
-						Expect(stdout).ToNot(ContainSubstring("RUNNING ON"))
+						Expect(stdout).ToNot(ContainSubstring("PLATFORM"))
 					})
 				}
 			})
@@ -262,7 +264,8 @@ var _ = Describe("odo list with devfile", func() {
 						helper.JsonPathContentIs(stdout, "components.#", "1")
 						helper.JsonPathContentIs(stdout, "components.0.name", componentName)
 						helper.JsonPathContentIs(stdout, "components.0.runningIn.dev", "true")
-						helper.JsonPathContentIs(stdout, "components.0.runningOn", "podman")
+						helper.JsonPathContentIs(stdout, "components.0.runningOn", "podman") // Deprecated
+						helper.JsonPathContentIs(stdout, "components.0.platform", "podman")
 					})
 					By("returning component not in dev mode when experimental mode is enabled with json output and run-on is cluster", func() {
 						args := append(cmd, "-o", "json", "--platform", "cluster")
@@ -271,7 +274,8 @@ var _ = Describe("odo list with devfile", func() {
 						helper.JsonPathContentIs(stdout, "components.#", "1")
 						helper.JsonPathContentIs(stdout, "components.0.name", componentName)
 						helper.JsonPathContentIs(stdout, "components.0.runningIn.dev", "false")
-						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn")
+						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn") // Deprecated
+						helper.JsonPathDoesNotExist(stdout, "components.0.platform")
 					})
 					By("returning component not in dev mode when experimental mode is not enabled with json output", func() {
 						args := append(cmd, "-o", "json")
@@ -280,19 +284,20 @@ var _ = Describe("odo list with devfile", func() {
 						helper.JsonPathContentIs(stdout, "components.#", "1")
 						helper.JsonPathContentIs(stdout, "components.0.name", componentName)
 						helper.JsonPathContentIs(stdout, "components.0.runningIn.dev", "false")
-						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn")
+						helper.JsonPathDoesNotExist(stdout, "components.0.runningOn") // Deprecated
+						helper.JsonPathDoesNotExist(stdout, "components.0.platform")
 					})
 					By("displaying component in dev mode when experimental mode is enabled", func() {
 						stdout := helper.Cmd("odo", cmd...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
 						Expect(stdout).To(ContainSubstring(componentName))
-						Expect(stdout).To(ContainSubstring("RUNNING ON"))
+						Expect(stdout).To(ContainSubstring("PLATFORM"))
 						Expect(stdout).To(ContainSubstring("podman"))
 						Expect(stdout).To(ContainSubstring("Dev"))
 					})
 					By("displaying component not in dev mode when experimental mode is not enabled", func() {
 						stdout := helper.Cmd("odo", cmd...).ShouldPass().Out()
 						Expect(stdout).To(ContainSubstring(componentName))
-						Expect(stdout).ToNot(ContainSubstring("RUNNING ON"))
+						Expect(stdout).ToNot(ContainSubstring("PLATFORM"))
 						Expect(stdout).To(ContainSubstring("None"))
 					})
 				}

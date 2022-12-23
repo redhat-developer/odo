@@ -129,6 +129,7 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		for i := range allComponents {
 			allComponents[i].RunningOn = ""
+			allComponents[i].Platform = ""
 		}
 	}
 	return api.ResourcesList{
@@ -177,7 +178,7 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 	// Create the header and then sort accordingly
 	headers := table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"}
 	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
-		headers = append(headers, "RUNNING ON")
+		headers = append(headers, "PLATFORM")
 	}
 	t.AppendHeader(headers)
 	t.SortBy([]table.SortBy{
@@ -221,11 +222,11 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 		row := table.Row{name, componentType, mode, managedBy}
 
 		if feature.IsEnabled(ctx, feature.GenericPformFlag) {
-			runningOn := comp.RunningOn
-			if runningOn == "" {
-				runningOn = "None"
+			platform := comp.Platform
+			if platform == "" {
+				platform = "None"
 			}
-			row = append(row, runningOn)
+			row = append(row, platform)
 		}
 
 		t.AppendRow(row)
