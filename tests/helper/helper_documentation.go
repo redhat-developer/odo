@@ -15,8 +15,8 @@ const (
 
 // CompareDocOutput compares the output from test and the mdx file line by line;
 // it ignores the time output if any is present in the line
-// the function returns
-func CompareDocOutput(cmdOut string, filePath string) (unmatchedString []string, err error) {
+// the function returns a list strings missing from the cmd out and from the file along with an error
+func CompareDocOutput(cmdOut string, filePath string) (stringsMissingFromCmdOut, stringsMissingFromFile []string, err error) {
 	// store lines of the cmdOut in this map
 	var got = map[string]struct{}{}
 	for _, line := range strings.Split(cmdOut, "\n") {
@@ -40,7 +40,7 @@ func CompareDocOutput(cmdOut string, filePath string) (unmatchedString []string,
 
 	readFile, err := os.Open(filepath.Join(mdxDir, filePath))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer readFile.Close()
 
@@ -63,13 +63,22 @@ func CompareDocOutput(cmdOut string, filePath string) (unmatchedString []string,
 		if _, ok := got[line]; !ok {
 			// match partially, if cannot match exactly; this is helpful in case of backslash characters present in the cmdOut lines
 			if !strings.Contains(cmdOut, line) {
-				unmatchedString = append(unmatchedString, line)
+				stringsMissingFromFile = append(stringsMissingFromFile, line)
 			}
+		} else {
+			delete(got, line)
 		}
 	}
-	return unmatchedString, nil
+
+	for line := range got {
+		stringsMissingFromCmdOut = append(stringsMissingFromCmdOut, line)
+	}
+
+	return stringsMissingFromCmdOut, stringsMissingFromFile, nil
 }
 
+// removeTimeIfExists removes time string from a line
+// e.g. of a time string: [4s], [1m], [3ms]
 func removeTimeIfExists(line string) string {
 	// check if a line has time data by checking for closing bracket of [4s]
 	if hasTimeDataInLine := strings.HasSuffix(line, "]"); !hasTimeDataInLine {
