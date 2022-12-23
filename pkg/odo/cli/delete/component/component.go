@@ -156,21 +156,26 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	printDevfileComponents(o.name, o.namespace, clusterResources, podmanResources)
 
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
+
 		if len(clusterResources) > 0 {
+			spinner := log.Spinnerf("Deleting resources from cluster")
 			failed := o.clientset.DeleteClient.DeleteResources(clusterResources, o.waitFlag)
 			for _, fail := range failed {
 				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
+			spinner.End(true)
 			log.Infof("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
 		}
 
 		if len(podmanResources) > 0 {
+			spinner := log.Spinnerf("Deleting resources from podman")
 			for _, pod := range podmanResources {
 				err = o.clientset.PodmanClient.CleanupPodResources(pod)
 				if err != nil {
 					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
 			}
+			spinner.End(true)
 			log.Infof("The component %q is successfully deleted from podman", o.name)
 		}
 
@@ -264,7 +269,9 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
+
 		if hasClusterResources {
+			spinner := log.Spinnerf("Deleting resources from cluster")
 			// Get a list of component's resources present on the cluster
 			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
 			// Get a list of component's resources absent from the devfile, but present on the cluster
@@ -283,6 +290,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			for _, fail := range failed {
 				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
+
+			spinner.End(true)
 			log.Infof("The component %q is successfully deleted from namespace %q\n", componentName, namespace)
 
 			if len(remainingResources) != 0 {
@@ -295,6 +304,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		}
 
 		if hasPodmanResources {
+			spinner := log.Spinnerf("Deleting resources from podman")
 			if isPodmanInnerLoopDeployed {
 				// TODO(feloy) #6424
 				_ = isPodmanInnerLoopDeployed
@@ -305,6 +315,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
 			}
+			spinner.End(true)
 			log.Infof("The component %q is successfully deleted from podman", componentName)
 		}
 
@@ -322,7 +333,6 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 				log.Info("You need to manually delete those.")
 			}
 		}
-
 		return nil
 	}
 
@@ -360,20 +370,20 @@ func printDevfileComponents(
 	log.Infof("This will delete %q from the namespace %q.", componentName, namespace)
 
 	if len(k8sResources) != 0 {
-		log.Printf("The component contains the following resources that will get deleted:")
+		log.Printf("The following resources will get deleted from cluster:")
 		for _, resource := range k8sResources {
-			log.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+			log.Printf("\t- %s: %s", resource.GetKind(), resource.GetName())
 		}
+		log.Println()
 	}
-	log.Println()
 
 	if len(podmanResources) != 0 {
-		log.Printf("The following pods and associated volumes will be deleted from podman:")
+		log.Printf("The following pods and associated volumes will get deleted from podman:")
 		for _, pod := range podmanResources {
-			log.Printf("\t- %s\n", pod.GetName())
+			log.Printf("\t- %s", pod.GetName())
 		}
+		log.Println()
 	}
-	log.Println()
 }
 
 // getFilesCreatedByOdo gets the list of all files that were initially created by odo.
