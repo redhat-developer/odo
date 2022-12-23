@@ -153,14 +153,7 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 		))
 		return nil
 	}
-	printDevfileComponents(o.name, o.namespace, clusterResources)
-
-	if len(podmanResources) > 0 {
-		log.Printf("The following pods and associated volumes will be deleted from podman:")
-		for _, pod := range podmanResources {
-			fmt.Printf("\t- %s\n", pod.GetName())
-		}
-	}
+	printDevfileComponents(o.name, o.namespace, clusterResources, podmanResources)
 
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
 		if len(clusterResources) > 0 {
@@ -232,9 +225,6 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 		namespace = odocontext.GetNamespace(ctx)
 		hasClusterResources = len(clusterResources) != 0
-		if hasClusterResources {
-			printDevfileComponents(componentName, namespace, clusterResources)
-		}
 	}
 
 	if o.clientset.PodmanClient != nil {
@@ -247,12 +237,6 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			}
 		}
 		hasPodmanResources = len(podmanPods) != 0
-		if hasPodmanResources {
-			log.Printf("The following pods and associated volumes will be deleted from podman:")
-			for _, pod := range podmanPods {
-				fmt.Printf("\t- %s\n", pod.GetName())
-			}
-		}
 	}
 
 	if !(hasClusterResources || hasPodmanResources) {
@@ -261,6 +245,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			return nil
 		}
 	}
+
+	printDevfileComponents(componentName, namespace, clusterResources, podmanPods)
 
 	var filesToDelete []string
 	if o.withFilesFlag {
@@ -366,16 +352,28 @@ func listResourcesMissingFromDevfilePresentOnCluster(componentName string, devfi
 }
 
 // printDevfileResources prints the devfile components for ComponentOptions.deleteDevfileComponent
-func printDevfileComponents(componentName, namespace string, k8sResources []unstructured.Unstructured) {
+func printDevfileComponents(
+	componentName, namespace string,
+	k8sResources []unstructured.Unstructured,
+	podmanResources []*corev1.Pod,
+) {
 	log.Infof("This will delete %q from the namespace %q.", componentName, namespace)
 
 	if len(k8sResources) != 0 {
 		log.Printf("The component contains the following resources that will get deleted:")
 		for _, resource := range k8sResources {
-			fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+			log.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
 		}
 	}
-	fmt.Println()
+	log.Println()
+
+	if len(podmanResources) != 0 {
+		log.Printf("The following pods and associated volumes will be deleted from podman:")
+		for _, pod := range podmanResources {
+			log.Printf("\t- %s\n", pod.GetName())
+		}
+	}
+	log.Println()
 }
 
 // getFilesCreatedByOdo gets the list of all files that were initially created by odo.
