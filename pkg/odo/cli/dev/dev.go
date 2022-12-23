@@ -101,7 +101,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return clierrors.NewNoCommandInDevfileError("debug")
 	}
 
-	platform := fcontext.GetRunOn(ctx, commonflags.PlatformCluster)
+	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 	switch platform {
 	case commonflags.PlatformCluster:
 		if o.clientset.KubernetesClient == nil {
@@ -122,7 +122,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)
 		variables     = fcontext.GetVariables(ctx)
-		platform      = fcontext.GetRunOn(ctx, commonflags.PlatformCluster)
+		platform      = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 	)
 
 	var dest string

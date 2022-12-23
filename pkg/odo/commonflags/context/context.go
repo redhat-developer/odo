@@ -10,13 +10,13 @@ const (
 
 type (
 	outputKeyType    struct{}
-	runOnKeyType     struct{}
+	platformKeyType  struct{}
 	variablesKeyType struct{}
 )
 
 var (
 	outputKey    outputKeyType
-	runOnKey     runOnKeyType
+	platformKey  platformKeyType
 	variablesKey variablesKeyType
 )
 
@@ -34,14 +34,14 @@ func IsJsonOutput(ctx context.Context) bool {
 	return false
 }
 
-// WithRunOn sets the value for the run-on flag in ctx
-func WithRunOn(ctx context.Context, val string) context.Context {
-	return context.WithValue(ctx, runOnKey, val)
+// WithPlatform sets the value for the platform flag in ctx
+func WithPlatform(ctx context.Context, val string) context.Context {
+	return context.WithValue(ctx, platformKey, val)
 }
 
-// GetRunOn gets value of run-on flag in ctx
-func GetRunOn(ctx context.Context, defaultValue string) string {
-	value := ctx.Value(runOnKey)
+// GetPlatform gets value of platform flag in ctx
+func GetPlatform(ctx context.Context, defaultValue string) string {
+	value := ctx.Value(platformKey)
 	if cast, ok := value.(string); ok {
 		return cast
 	}

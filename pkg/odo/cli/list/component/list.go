@@ -112,7 +112,7 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 		podmanClient = lo.clientset.PodmanClient
 	)
 
-	switch fcontext.GetRunOn(ctx, "") {
+	switch fcontext.GetPlatform(ctx, "") {
 	case commonflags.PlatformCluster:
 		podmanClient = nil
 	case commonflags.PlatformPodman:

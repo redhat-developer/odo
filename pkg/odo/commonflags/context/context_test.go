@@ -29,23 +29,23 @@ func TestOutput(t *testing.T) {
 	}
 }
 
-func TestRunOn(t *testing.T) {
+func TestPlatform(t *testing.T) {
 	ctx := context.TODO()
-	ctx = WithRunOn(ctx, commonflags.PlatformCluster)
-	res := GetRunOn(ctx, commonflags.PlatformCluster)
+	ctx = WithPlatform(ctx, commonflags.PlatformCluster)
+	res := GetPlatform(ctx, commonflags.PlatformCluster)
 	if res != commonflags.PlatformCluster {
 		t.Errorf("GetOutput should return %q but returns %q", commonflags.PlatformCluster, res)
 	}
 
 	ctx = context.TODO()
-	ctx = WithRunOn(ctx, commonflags.PlatformPodman)
-	res = GetRunOn(ctx, commonflags.PlatformCluster)
+	ctx = WithPlatform(ctx, commonflags.PlatformPodman)
+	res = GetPlatform(ctx, commonflags.PlatformCluster)
 	if res != commonflags.PlatformPodman {
 		t.Errorf("GetOutput should return %q but returns %q", commonflags.PlatformPodman, res)
 	}
 
 	ctx = context.TODO()
-	res = GetRunOn(ctx, commonflags.PlatformCluster)
+	res = GetPlatform(ctx, commonflags.PlatformCluster)
 	if res != commonflags.PlatformCluster {
 		t.Errorf("GetOutput should return %q (default) but returns %q", commonflags.PlatformCluster, res)
 	}
