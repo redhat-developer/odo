@@ -4,16 +4,30 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 )
 
-func CompareDocOutput(cmdOut string, filePath string) ([]string, error) {
+const (
+	timePatternInOdo = `(\[[0-9smh]+\])` // e.g. [4s], [1m], [3ms]
+)
+
+// CompareDocOutput compares the output from test and the mdx file line by line;
+// it ignores the time output if any is present in the line
+// the function returns
+func CompareDocOutput(cmdOut string, filePath string) (unmatchedString []string, err error) {
+	// store lines of the cmdOut in this map
 	var got = map[string]struct{}{}
 	for _, line := range strings.Split(cmdOut, "\n") {
+		// trim any space present at the beginning or end of a line
+		line = strings.TrimSpace(line)
+
 		if strings.Contains(line, "...") || line == "" {
 			continue
 		}
+
+		line = removeTimeIfExists(line)
 		got[line] = struct{}{}
 	}
 
@@ -33,18 +47,34 @@ func CompareDocOutput(cmdOut string, filePath string) ([]string, error) {
 	fileScanner := bufio.NewScanner(readFile)
 
 	fileScanner.Split(bufio.ScanLines)
-	var errString []string
+
 	for fileScanner.Scan() {
-		line := fileScanner.Text()
+		// trim any space present at the beginning or end of a line
+		line := strings.TrimSpace(fileScanner.Text())
+
+		// ignore the line that starts with: 1) a code block "```", 2) the command "$", or 3) an empty line
 		if strings.Contains(line, "```") || strings.Contains(line, "$") || line == "" {
 			continue
 		}
+
+		line = removeTimeIfExists(line)
+
+		// check if the line can be retrieved from the cmdOut map
 		if _, ok := got[line]; !ok {
-			// match partially, if cannot match exactly
+			// match partially, if cannot match exactly; this is helpful in case of backslash characters present in the cmdOut lines
 			if !strings.Contains(cmdOut, line) {
-				errString = append(errString, line)
+				unmatchedString = append(unmatchedString, line)
 			}
 		}
 	}
-	return errString, nil
+	return unmatchedString, nil
+}
+
+func removeTimeIfExists(line string) string {
+	// check if a line has time data by checking for closing bracket of [4s]
+	if hasTimeDataInLine := strings.HasSuffix(line, "]"); !hasTimeDataInLine {
+		return line
+	}
+	reg := regexp.MustCompile(timePatternInOdo)
+	return reg.ReplaceAllString(line, "")
 }

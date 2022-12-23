@@ -20,10 +20,25 @@ var _ = Describe("doc command reference init", Label(helper.LabelNoCluster), fun
 		helper.CommonAfterEach(commonVar)
 	})
 
-	FIt("should check good versioned devfile output", func() {
+	It("should check good versioned devfile output", func() {
 		out := helper.Cmd("odo", "init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "2.0.0").ShouldPass().Out()
 		match, err := helper.CompareDocOutput(out, filepath.Join(commonPath, "versioned_devfile_output.mdx"))
 		Expect(err).To(BeNil())
 		Expect(match).To(BeEmpty())
 	})
+
+	It("should check latest versioned devfile output", func() {
+		out := helper.Cmd("odo", "init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "latest").ShouldPass().Out()
+		match, err := helper.CompareDocOutput(out, filepath.Join(commonPath, "latest_versioned_devfile_output.mdx"))
+		Expect(err).To(BeNil())
+		Expect(match).To(BeEmpty())
+	})
+
+	It("should check devfile obtained from URL output", func() {
+		out := helper.Cmd("odo", "init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter").ShouldPass().Out()
+		match, err := helper.CompareDocOutput(out, filepath.Join(commonPath, "devfile_from_url_output.mdx"))
+		Expect(err).To(BeNil())
+		Expect(match).To(BeEmpty())
+	})
+
 })

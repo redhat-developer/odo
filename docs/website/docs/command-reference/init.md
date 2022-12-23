@@ -182,16 +182,10 @@ odo init --devfile-path <URL> --name <component-name> [--starter STARTER]
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
- ✓  Downloading devfile from "https://registry.devfile.io/devfiles/nodejs-angular" [415ms]
- ✓  Downloading starter project "nodejs-angular-starter" [484ms]
+import DevfileFromURLOutput from './docs-mdx/init/devfile_from_url_output.mdx';
 
-Your new component "my-nodejs-app" is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<DevfileFromURLOutput />
+
 </details>
 
 #### Fetch Devfile of a specific version
@@ -209,26 +203,15 @@ import VersionedOutput from './docs-mdx/init/versioned_devfile_output.mdx';
 
 </details>
 
+import LatestVersionedOutput from './docs-mdx/init/latest_versioned_devfile_output.mdx';
+
 :::note
 Use "latest" as the version name to fetch the latest version of a given Devfile.
 
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init --devfile go --name my-go-app  --devfile-version latest
-  __
- /  \__     Initializing a new component
- \__/  \    
- /  \__/    odo version: v3.4.0
- \__/
+<LatestVersionedOutput />
 
- ✓  Downloading devfile "go:latest" [4s]
-
-Your new component 'my-go-app' is ready in the current directory.
-To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
 </details>
 :::
