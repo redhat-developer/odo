@@ -14,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// --run-on is considered experimental for now. As such, to exist, it requires the ODO_EXPERIMENTAL_MODE env var to be set.
+	// --platform is considered experimental for now. As such, to exist, it requires the ODO_EXPERIMENTAL_MODE env var to be set.
 	ctx := context.Background()
 	cfg := config.Configuration{
 		OdoExperimentalMode: true,
