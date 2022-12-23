@@ -209,7 +209,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 
 	ctx = fcontext.WithJsonOutput(ctx, commonflags.GetJsonOutputValue(cmdLineObj))
 	if platform != "" {
-		ctx = fcontext.WithRunOn(ctx, platform)
+		ctx = fcontext.WithPlatform(ctx, platform)
 	}
 	ctx = odocontext.WithApplication(ctx, defaultAppName)
 

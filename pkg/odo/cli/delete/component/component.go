@@ -80,7 +80,7 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		o.clientset.PodmanClient = nil
 	}
-	switch fcontext.GetRunOn(ctx, "") {
+	switch fcontext.GetPlatform(ctx, "") {
 	case commonflags.PlatformCluster:
 		o.clientset.PodmanClient = nil
 	case commonflags.PlatformPodman:
