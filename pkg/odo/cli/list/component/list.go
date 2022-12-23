@@ -113,9 +113,9 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 	)
 
 	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
+	case commonflags.PlatformCluster:
 		podmanClient = nil
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		kubeClient = nil
 	}
 
@@ -160,7 +160,7 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 
 	util.SetCommandGroup(listCmd, util.ManagementGroup)
 	commonflags.UseOutputFlag(listCmd)
-	commonflags.UseRunOnFlag(listCmd)
+	commonflags.UsePlatformFlag(listCmd)
 
 	return listCmd
 }

@@ -81,9 +81,9 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 		o.clientset.PodmanClient = nil
 	}
 	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
+	case commonflags.PlatformCluster:
 		o.clientset.PodmanClient = nil
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		o.clientset.KubernetesClient = nil
 	}
 
@@ -460,7 +460,7 @@ func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command 
 	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
 		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
 	}
-	commonflags.UseRunOnFlag(componentCmd)
+	commonflags.UsePlatformFlag(componentCmd)
 
 	return componentCmd
 }

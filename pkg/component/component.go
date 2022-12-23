@@ -172,7 +172,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			ManagedBy:        managedBy,
 			Type:             componentType,
 			ManagedByVersion: managedByVersion,
-			RunningOn:        commonflags.RunOnCluster,
+			RunningOn:        commonflags.PlatformCluster,
 		}
 		mode := odolabels.GetMode(labels)
 		componentFound := false

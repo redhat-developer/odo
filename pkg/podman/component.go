@@ -70,7 +70,7 @@ func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
 			ManagedBy:        managedBy,
 			Type:             componentType,
 			ManagedByVersion: managedByVersion,
-			RunningOn:        commonflags.RunOnPodman,
+			RunningOn:        commonflags.PlatformPodman,
 		}
 		mode := odolabels.GetMode(labels)
 		if mode != "" {
