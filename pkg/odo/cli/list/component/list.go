@@ -126,7 +126,7 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 	}
 
 	// RunningOn is displayed only when RunOn is active
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		for i := range allComponents {
 			allComponents[i].RunningOn = ""
 		}
@@ -153,7 +153,7 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 		Aliases: []string{"components"},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.FILESYSTEM)
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
@@ -176,7 +176,7 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 
 	// Create the header and then sort accordingly
 	headers := table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"}
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
 		headers = append(headers, "RUNNING ON")
 	}
 	t.AppendHeader(headers)
@@ -220,7 +220,7 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 
 		row := table.Row{name, componentType, mode, managedBy}
 
-		if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		if feature.IsEnabled(ctx, feature.GenericPformFlag) {
 			runningOn := comp.RunningOn
 			if runningOn == "" {
 				runningOn = "None"
