@@ -23,7 +23,7 @@ Doing so unlocks all experimental commands and flags.
 
 Example:
 ```shell
-$ ODO_EXPERIMENTAL_MODE=true odo dev --run-on=some-platform
+$ ODO_EXPERIMENTAL_MODE=true odo dev --platform=some-platform
 
 ============================================================================
 ⚠ Experimental mode enabled. Use at your own risk.
@@ -38,27 +38,27 @@ More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
 Running `odo` with an experimental command or flag without enabling the experimental mode returns an error.
 
 ```shell
-$ odo dev --run-on=some-platform
+$ odo dev --platform=some-platform
 ...
 ...
- ✗  unknown flag: --run-on
+ ✗  unknown flag: --platform
 ```
 :::
 
 ## List of experimental features
 
-### Generic `--run-on` flag
+### Generic `--platform` flag
 
 This is a generic flag that allows running `odo` on any supported platform (other than the default Kubernetes or OpenShift cluster mode).
 
 The supported platforms are `cluster` and `podman`.
 
-By default, if you do not use the `--run-on` flag, or if you do not activate the experimental mode, the `cluster` platform is used.
+By default, if you do not use the `--platform` flag, or if you do not activate the experimental mode, the `cluster` platform is used.
 
 The `cluster` platform uses the current Kubernetes or OpenShift cluster.
 
 The `podman` platform uses the local installation of `podman`. It relies on the `podman` binary to be installed on your system.
 
-These commands support the `--run-on`  flag:
+These commands support the `--platform`  flag:
 
 - `odo dev`
