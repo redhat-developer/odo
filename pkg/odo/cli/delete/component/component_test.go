@@ -424,3 +424,52 @@ func Test_messageWithPlatforms(t *testing.T) {
 		})
 	}
 }
+
+func Test_infoMsg(t *testing.T) {
+	type args struct {
+		cluster       bool
+		podman        bool
+		componentName string
+		namespace     string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "cluster only",
+			args: args{
+				cluster:       true,
+				componentName: "compo",
+				namespace:     "def",
+			},
+			want: `This will delete "compo" from the namespace "def".`,
+		},
+		{
+			name: "podman only",
+			args: args{
+				podman:        true,
+				componentName: "compo",
+			},
+			want: `This will delete "compo" from podman.`,
+		},
+		{
+			name: "cluster and podman",
+			args: args{
+				cluster:       true,
+				podman:        true,
+				componentName: "compo",
+				namespace:     "def",
+			},
+			want: `This will delete "compo" from the namespace "def" and from podman.`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := infoMsg(tt.args.cluster, tt.args.podman, tt.args.componentName, tt.args.namespace); got != tt.want {
+				t.Errorf("infoMsg() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

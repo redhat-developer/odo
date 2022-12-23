@@ -367,7 +367,12 @@ func printDevfileComponents(
 	k8sResources []unstructured.Unstructured,
 	podmanResources []*corev1.Pod,
 ) {
-	log.Infof("This will delete %q from the namespace %q.", componentName, namespace)
+	log.Infof(infoMsg(
+		len(k8sResources) != 0,
+		len(podmanResources) != 0,
+		componentName,
+		namespace,
+	))
 
 	if len(k8sResources) != 0 {
 		log.Printf("The following resources will get deleted from cluster:")
@@ -384,6 +389,21 @@ func printDevfileComponents(
 		}
 		log.Println()
 	}
+}
+
+func infoMsg(
+	cluster, podman bool,
+	componentName, namespace string,
+) string {
+	froms := []string{}
+	if cluster {
+		froms = append(froms, fmt.Sprintf("from the namespace %q", namespace))
+	}
+	if podman {
+		froms = append(froms, "from podman")
+	}
+	return fmt.Sprintf("This will delete %q %s.", componentName, strings.Join(froms, " and "))
+
 }
 
 // getFilesCreatedByOdo gets the list of all files that were initially created by odo.
