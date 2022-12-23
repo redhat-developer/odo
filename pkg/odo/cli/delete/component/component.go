@@ -305,7 +305,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
 			}
-			log.Infof("The component %q is successfully deleted from podman", o.name)
+			log.Infof("The component %q is successfully deleted from podman", componentName)
 		}
 
 		if o.withFilesFlag {
