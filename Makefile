@@ -212,3 +212,8 @@ test-integration: test-integration-no-cluster test-integration-cluster
 .PHONY: test-e2e
 test-e2e:
 	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-e2e.xml"  tests/e2escenarios
+
+
+.PHONY: test-doc-automation
+test-doc-automation:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-doc-automation.xml"  tests/documentation
