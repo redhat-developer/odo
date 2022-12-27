@@ -1,0 +1,33 @@
+```console
+$ odo init
+  __
+ /  \__     Initializing a new component
+ \__/  \    Files: No source code detected, a starter project will be created in the current directory
+ /  \__/    odo version: v3.4.0
+ \__/
+
+Interactive mode enabled, please answer the following questions:
+? Select language: Java
+? Select project type: Maven Java (java-maven, registry: DefaultDevfileRegistry)
+ ✓  Downloading devfile "java-maven" from registry "DefaultDevfileRegistry" [4s]
+
+↪ Container Configuration "tools":
+  OPEN PORTS:
+    - 8080
+    - 5858
+  ENVIRONMENT VARIABLES:
+    - DEBUG_PORT = 5858
+
+? Select container for which you want to change configuration? NONE - configuration is correct
+? Which starter project do you want to use? springbootproject
+? Enter component name: my-java-maven-app
+ ✓  Downloading starter project "springbootproject" [1s]
+
+You can automate this command by executing:
+   odo init --name my-java-maven-app --devfile java-maven --devfile-registry DefaultDevfileRegistry --starter springbootproject
+
+Your new component 'my-java-maven-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+
+```
