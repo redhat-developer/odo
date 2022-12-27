@@ -49,8 +49,8 @@ func GetMDXContent(filePath string) (mdxContent string) {
 	mdxDir := filepath.Join(filepath.Dir(filename), "..", "..", "docs", "website", "docs")
 
 	readFile, err := os.Open(filepath.Join(mdxDir, filePath))
-	Expect(err).ToNot(HaveOccurred())
 	defer readFile.Close()
+	Expect(err).ToNot(HaveOccurred())
 
 	fileScanner := bufio.NewScanner(readFile)
 
