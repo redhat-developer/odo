@@ -1,0 +1,34 @@
+```console
+$ odo init
+  __
+ /  \__     Initializing a new component
+ \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
+ /  \__/    odo version: v3.4.0
+ \__/
+
+Interactive mode enabled, please answer the following questions:
+Based on the files in the current directory odo detected
+Language: Java
+Project type: Maven
+The devfile "java-maven:1.2.0" from the registry "DefaultDevfileRegistry" will be downloaded.
+? Is this correct? Yes
+ ✓  Downloading devfile "java-maven:1.2.0" from registry "DefaultDevfileRegistry" [3s]
+
+↪ Container Configuration "tools":
+  OPEN PORTS:
+    - 8080
+    - 5858
+  ENVIRONMENT VARIABLES:
+    - DEBUG_PORT = 5858
+
+? Select container for which you want to change configuration? NONE - configuration is correct
+? Enter component name: my-java-app
+
+You can automate this command by executing:
+   odo init --name my-java-app --devfile java-maven --devfile-registry DefaultDevfileRegistry --devfile-version 1.2.0
+
+Your new component 'my-java-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+
+```

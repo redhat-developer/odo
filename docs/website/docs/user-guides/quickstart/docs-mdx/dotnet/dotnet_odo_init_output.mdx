@@ -1,0 +1,38 @@
+```console
+$ odo init
+  __
+ /  \__     Initializing a new component
+ \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
+ /  \__/    odo version: v3.4.0
+ \__/
+
+Interactive mode enabled, please answer the following questions:
+Based on the files in the current directory odo detected
+Language: .NET
+Project type: dotnet
+The devfile "dotnet50:1.0.3" from the registry "DefaultDevfileRegistry" will be downloaded.
+? Is this correct? No
+? Select language: .NET
+? Select project type: .NET 6.0
+ ✓  Downloading devfile "dotnet60" from registry "DefaultDevfileRegistry" [3s]
+
+↪ Container Configuration "dotnet":
+  OPEN PORTS:
+    - 8080
+  ENVIRONMENT VARIABLES:
+    - ASPNETCORE_URLS = http://*:8080
+    - CONFIGURATION = Debug
+    - STARTUP_PROJECT = app.csproj
+    - ASPNETCORE_ENVIRONMENT = Development
+
+? Select container for which you want to change configuration? NONE - configuration is correct
+? Enter component name: my-dotnet-app
+
+You can automate this command by executing:
+   odo init --name my-dotnet-app --devfile dotnet60 --devfile-registry DefaultDevfileRegistry
+
+Your new component 'my-dotnet-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+
+```
