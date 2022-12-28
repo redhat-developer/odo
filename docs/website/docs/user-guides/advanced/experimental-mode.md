@@ -21,7 +21,9 @@ If a feature is labeled as Experimental, this specifically means:
 Experimental mode is currently opt-in. You can enable it by setting the `ODO_EXPERIMENTAL_MODE` environment variable to `true` prior to running `odo`.
 Doing so unlocks all experimental commands and flags.
 
-Example:
+<details>
+<summary>Example</summary>
+
 ```shell
 $ ODO_EXPERIMENTAL_MODE=true odo dev --run-on=some-platform
 
@@ -33,9 +35,13 @@ More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
 ...
 -  Forwarding from 127.0.0.1:40001 -> 8080
 ```
+</details>
 
 :::info NOTE
 Running `odo` with an experimental command or flag without enabling the experimental mode returns an error.
+
+<details>
+<summary>Example</summary>
 
 ```shell
 $ odo dev --run-on=some-platform
@@ -43,6 +49,8 @@ $ odo dev --run-on=some-platform
 ...
  ✗  unknown flag: --run-on
 ```
+</details>
+
 :::
 
 ## List of experimental features

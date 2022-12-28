@@ -7,7 +7,7 @@ title: odo set namespace
 ## Running the command
 To set the current active namespace you can run `odo set namespace <name>`:
 ```console
-odo set namespace mynamespace
+odo set namespace <namespace>
 ```
 
 <details>
@@ -23,7 +23,7 @@ Optionally, you can also use `project` as an alias to `namespace`.
 
 To set the current active project you can run `odo set project <name>`:
 ```console
-odo set project myproject
+odo set project <project>
 ```
 
 <details>
