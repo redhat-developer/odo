@@ -1,0 +1,28 @@
+```console
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-java-app Devfile
+ \__/  \    Namespace: odo-dev
+ /  \__/    odo version: v3.4.0
+ \__/
+
+↪ Building & Pushing Container: quay.io/MYUSERNAME/java-odo-example
+ •  Building image locally  ...
+build -t quay.io/MYUSERNAME/java-odo-example -f /home/user/quickstart-demo/java-demo/Dockerfile /home/user/quickstart-demo/java-demo
+ ✓  Building image locally [5ms]
+ •  Pushing image to container registry  ...
+push quay.io/MYUSERNAME/java-odo-example
+ ✓  Pushing image to container registry
+
+↪ Deploying Kubernetes Component: my-java-app
+ ✓  Creating resource Deployment/my-java-app
+
+↪ Deploying Kubernetes Component: my-java-app
+ ✓  Creating resource Service/my-java-app
+
+↪ Deploying Kubernetes Component: my-java-app
+ ✓  Creating resource Ingress/my-java-app
+
+Your Devfile has been successfully deployed
+
+```
