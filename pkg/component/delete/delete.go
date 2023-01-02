@@ -209,7 +209,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 	return nil
 }
 
-func (do *DeleteComponentClient) ListPodmanResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error) {
+func (do *DeleteComponentClient) ListPodmanResourcesToDelete(appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error) {
 	// Inner Loop
 	var podName string
 	podName, err = util.NamespaceKubernetesObject(componentName, appName)
