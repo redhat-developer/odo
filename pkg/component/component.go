@@ -250,7 +250,7 @@ func ListAllComponents(client kclient.ClientInterface, podmanClient podman.Clien
 
 func getResourcesForComponent(
 	ctx context.Context,
-	client kclient.ClientInterface,
+	client platform.Client,
 	name string,
 	namespace string,
 ) ([]unstructured.Unstructured, error) {
@@ -272,29 +272,54 @@ func getResourcesForComponent(
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(ctx context.Context, client kclient.ClientInterface, name string) (api.RunningModes, error) {
-	if client == nil {
-		return nil, nil
-	}
-
-	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
-	if err != nil {
-		return nil, nil
-	}
-
-	if len(list) == 0 {
-		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
-	}
-
-	mapResult := api.NewRunningModes()
-	for _, resource := range list {
-		resourceLabels := resource.GetLabels()
-		mode := odolabels.GetMode(resourceLabels)
-		if mode != "" {
-			mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
+func GetRunningModes(ctx context.Context, kubeClient kclient.ClientInterface, podmanClient podman.Client, name string) (map[platform.Client]api.RunningModes, error) {
+	var hasErr bool
+	var ns string
+	listByPlatform := make(map[platform.Client][]unstructured.Unstructured)
+	if kubeClient != nil {
+		ns = kubeClient.GetCurrentNamespace()
+		list, err := getResourcesForComponent(ctx, kubeClient, name, ns)
+		if err != nil {
+			klog.V(4).Infof("error while listing cluster components: %v", err)
+			hasErr = true
+		} else if len(list) > 0 {
+			listByPlatform[kubeClient] = list
 		}
 	}
-	return mapResult, nil
+
+	if podmanClient != nil {
+		ns = ""
+		list, err := getResourcesForComponent(ctx, podmanClient, name, ns)
+		if err != nil {
+			klog.V(4).Infof("error while listing Podman components: %v", err)
+			hasErr = true
+		} else if len(list) > 0 {
+			listByPlatform[podmanClient] = list
+		}
+	}
+
+	if hasErr {
+		return nil, nil
+	}
+
+	if len(listByPlatform) == 0 {
+		return nil, NewNoComponentFoundError(name, ns)
+	}
+
+	result := make(map[platform.Client]api.RunningModes)
+	for plt, list := range listByPlatform {
+		mapResult := api.NewRunningModes()
+		for _, resource := range list {
+			resourceLabels := resource.GetLabels()
+			mode := odolabels.GetMode(resourceLabels)
+			if mode != "" {
+				mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
+			}
+		}
+		result[plt] = mapResult
+	}
+
+	return result, nil
 }
 
 // Contains checks to see if the component exists in an array or not
@@ -308,17 +333,100 @@ func Contains(component api.ComponentAbstract, components []api.ComponentAbstrac
 	return false
 }
 
-// GetDevfileInfoFromCluster extracts information from the labels and annotations of resources to rebuild a Devfile
-func GetDevfileInfoFromCluster(ctx context.Context, client kclient.ClientInterface, name string) (parser.DevfileObj, error) {
-	list, err := getResourcesForComponent(ctx, client, name, client.GetCurrentNamespace())
-	if err != nil {
-		return parser.DevfileObj{}, nil
+// GetDevfileInfo extracts information from the labels and annotations of resources to rebuild a Devfile
+func GetDevfileInfo(ctx context.Context, kubeClient kclient.ClientInterface, podmanClient podman.Client, name string) (parser.DevfileObj, error) {
+	var ns string
+	listByPlatform := make(map[platform.Client][]unstructured.Unstructured)
+	if kubeClient != nil {
+		ns = kubeClient.GetCurrentNamespace()
+		list, err := getResourcesForComponent(ctx, kubeClient, name, ns)
+		if err != nil {
+			klog.V(4).Infof("error while listing cluster components: %v", err)
+		} else if len(list) > 0 {
+			listByPlatform[kubeClient] = list
+		}
+	}
+	if podmanClient != nil {
+		ns = ""
+		list, err := getResourcesForComponent(ctx, podmanClient, name, "")
+		if err != nil {
+			klog.V(4).Infof("error while listing Podman components: %v", err)
+		} else if len(list) > 0 {
+			listByPlatform[podmanClient] = list
+		}
 	}
 
-	if len(list) == 0 {
-		return parser.DevfileObj{}, nil
+	if len(listByPlatform) == 0 {
+		return parser.DevfileObj{}, NewNoComponentFoundError(name, ns)
 	}
 
+	// If a same resource is found on both platforms, make sure it has the same labels.
+	// Otherwise, we don't know how to extract Devfile information from it.
+	kList := listByPlatform[kubeClient]
+	pList := listByPlatform[podmanClient]
+	if len(kList) > 0 {
+		err := checkLabelsForDevfileInfo(kList, pList)
+		if err != nil {
+			return parser.DevfileObj{}, err
+		}
+	}
+	if len(pList) > 0 {
+		err := checkLabelsForDevfileInfo(pList, kList)
+		if err != nil {
+			return parser.DevfileObj{}, err
+		}
+	}
+
+	if len(kList) > 0 {
+		return getDevfileInfoFromList(kList)
+	}
+	return getDevfileInfoFromList(pList)
+}
+
+func checkLabelsForDevfileInfo(l1 []unstructured.Unstructured, l2 []unstructured.Unstructured) error {
+	for _, k := range l1 {
+		var found bool
+		var (
+			kLabels      = k.GetLabels()
+			kAnnotations = k.GetAnnotations()
+			kName        = odolabels.GetComponentName(kLabels)
+		)
+		kProjectType, err := odolabels.GetProjectType(kLabels, kAnnotations)
+		if err != nil {
+			klog.V(7).Infof("error while working on cluster resource %q: %v", kName, err)
+			continue
+		}
+
+		var (
+			pName        string
+			pProjectType string
+		)
+		for _, p := range l2 {
+			pLabels := p.GetLabels()
+			pAnnotations := p.GetAnnotations()
+			pName = odolabels.GetComponentName(pLabels)
+			pProjectType, err = odolabels.GetProjectType(pLabels, pAnnotations)
+			if err != nil {
+				klog.V(7).Infof("error while working on resource %q: %v", pName, err)
+				continue
+			}
+			if kName == pName {
+				found = true
+				break
+			}
+		}
+		if found {
+			// Error out if there is a mismatch
+			if kProjectType != pProjectType {
+				return fmt.Errorf("found resource %q on both platforms, but with different project types: %q vs %q",
+					kName, kProjectType, pProjectType)
+			}
+		}
+	}
+	return nil
+}
+
+func getDevfileInfoFromList(list []unstructured.Unstructured) (parser.DevfileObj, error) {
 	devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
 	if err != nil {
 		return parser.DevfileObj{}, err

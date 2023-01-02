@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -83,8 +84,28 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 	})
 
+	It("should fail, with podman", Label(helper.LabelPodman), func() {
+		By("running odo describe component -o json with an unknown name", func() {
+			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--run-on", "podman", "-o", "json").
+				AddEnv("ODO_EXPERIMENTAL_MODE=true").
+				ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+			Expect(stdout).To(BeEmpty())
+			helper.JsonPathContentContain(stderr, "message", "no component found with name \"unknown-name\"")
+		})
+
+		By("running odo describe component with an unknown name", func() {
+			stderr := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--run-on", "podman").
+				AddEnv("ODO_EXPERIMENTAL_MODE=true").
+				ShouldFail().Err()
+			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\""))
+		})
+	})
+
 	When("creating a component", func() {
 		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 		})
 
@@ -100,10 +121,23 @@ var _ = Describe("odo describe component command tests", func() {
 		checkDevfileDescription := func(content string, withUnknown bool) {
 			Expect(content).To(ContainSubstring("Name: " + cmpName))
 			Expect(content).To(ContainSubstring("Project Type: nodejs"))
+			Expect(content).To(ContainSubstring("Supported odo features:"))
 			if withUnknown {
 				for _, v := range []string{"Version", "Display Name", "Description", "Language"} {
 					Expect(content).To(ContainSubstring(v + ": Unknown"))
 				}
+				Expect(content).To(ContainSubstring("Dev: Unknown"))
+				Expect(content).To(ContainSubstring("Debug: Unknown"))
+				Expect(content).To(ContainSubstring("Deploy: Unknown"))
+			} else {
+				Expect(content).To(ContainSubstring("Display Name: "))
+				Expect(content).To(ContainSubstring("Language: "))
+				Expect(content).To(ContainSubstring("Version: "))
+				Expect(content).To(ContainSubstring("Description: "))
+				Expect(content).To(ContainSubstring("Tags: "))
+				Expect(content).To(ContainSubstring("Dev: true"))
+				Expect(content).To(ContainSubstring("Debug: true"))
+				Expect(content).To(ContainSubstring("Deploy: false"))
 			}
 		}
 
@@ -111,53 +145,74 @@ var _ = Describe("odo describe component command tests", func() {
 			helper.LabelNoCluster, helper.LabelUnauth,
 		} {
 			label := label
+			for _, experimental := range []bool{false, true} {
+				experimental := experimental
 
-			It("should describe the component in the current directory", Label(label), func() {
-				By("running with json output", func() {
-					res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
-					stdout, stderr := res.Out(), res.Err()
-					Expect(helper.IsJSON(stdout)).To(BeTrue())
-					Expect(stderr).To(BeEmpty())
-					checkDevfileJSONDescription(stdout, "devfile.yaml")
-					helper.JsonPathContentIs(stdout, "runningIn", "")
-					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
-				})
+				When("experimental mode="+strconv.FormatBool(experimental), func() {
 
-				By("running with default output", func() {
-					res := helper.Cmd("odo", "describe", "component").ShouldPass()
-					stdout := res.Out()
-					checkDevfileDescription(stdout, false)
-					Expect(stdout).To(ContainSubstring("Running in: None"))
-					Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
-				})
-			})
-
-			When("renaming to hide devfile.yaml file", Label(label), func() {
-				BeforeEach(func() {
-					err := os.Rename("devfile.yaml", ".devfile.yaml")
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("should describe the component in the current directory using the hidden devfile", func() {
-					By("running with json output", func() {
-						res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
-						stdout, stderr := res.Out(), res.Err()
-						Expect(helper.IsJSON(stdout)).To(BeTrue())
-						Expect(stderr).To(BeEmpty())
-						checkDevfileJSONDescription(stdout, ".devfile.yaml")
-						helper.JsonPathContentIs(stdout, "runningIn", "")
-						helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+					BeforeEach(func() {
+						if experimental {
+							helper.EnableExperimentalMode()
+						}
+					})
+					AfterEach(func() {
+						if experimental {
+							helper.ResetExperimentalMode()
+						}
 					})
 
-					By("running with default output", func() {
-						res := helper.Cmd("odo", "describe", "component").ShouldPass()
-						stdout := res.Out()
-						checkDevfileDescription(stdout, false)
-						Expect(stdout).To(ContainSubstring("Running in: None"))
-						Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
+					It("should describe the component in the current directory", Label(label), func() {
+						By("running with json output", func() {
+							res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
+							stdout, stderr := res.Out(), res.Err()
+							Expect(helper.IsJSON(stdout)).To(BeTrue())
+							Expect(stderr).To(BeEmpty())
+							checkDevfileJSONDescription(stdout, "devfile.yaml")
+							helper.JsonPathContentIs(stdout, "runningIn", "")
+							helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+							helper.JsonPathDoesNotExist(stdout, "runningOn")
+						})
+
+						By("running with default output", func() {
+							res := helper.Cmd("odo", "describe", "component").ShouldPass()
+							stdout := res.Out()
+							checkDevfileDescription(stdout, false)
+							Expect(stdout).To(ContainSubstring("Running in: None"))
+							Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
+							Expect(stdout).ToNot(ContainSubstring("Running on:"))
+						})
+					})
+
+					When("renaming to hide devfile.yaml file", Label(label), func() {
+						BeforeEach(func() {
+							err := os.Rename("devfile.yaml", ".devfile.yaml")
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						It("should describe the component in the current directory using the hidden devfile", func() {
+							By("running with json output", func() {
+								res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
+								stdout, stderr := res.Out(), res.Err()
+								Expect(helper.IsJSON(stdout)).To(BeTrue())
+								Expect(stderr).To(BeEmpty())
+								checkDevfileJSONDescription(stdout, ".devfile.yaml")
+								helper.JsonPathContentIs(stdout, "runningIn", "")
+								helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+								helper.JsonPathDoesNotExist(stdout, "runningOn")
+							})
+
+							By("running with default output", func() {
+								res := helper.Cmd("odo", "describe", "component").ShouldPass()
+								stdout := res.Out()
+								checkDevfileDescription(stdout, false)
+								Expect(stdout).To(ContainSubstring("Running in: None"))
+								Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
+								Expect(stdout).ToNot(ContainSubstring("Running on:"))
+							})
+						})
 					})
 				})
-			})
+			}
 		}
 
 		It("should not describe the component from another directory", func() {
@@ -181,79 +236,294 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 		})
 
-		When("running odo dev", func() {
-			var devSession helper.DevSession
-			var ports map[string]string
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When(fmt.Sprintf("running odo dev (podman=%s)", strconv.FormatBool(podman)), helper.LabelPodmanIf(podman, func() {
+				var devSession helper.DevSession
+				var ports map[string]string
 
-			BeforeEach(func() {
-				var err error
-				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				devSession.Kill()
-				devSession.WaitEnd()
-			})
-
-			It("should describe the component in dev mode", func() {
-				By("running with json output", func() {
-					res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
-					stdout, stderr := res.Out(), res.Err()
-					Expect(helper.IsJSON(stdout)).To(BeTrue())
-					Expect(stderr).To(BeEmpty())
-					checkDevfileJSONDescription(stdout, "devfile.yaml")
-					helper.JsonPathContentIs(stdout, "devForwardedPorts.#", "1")
-					helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerName", "runtime")
-					helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localAddress", "127.0.0.1")
-					helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", ports["3000"][len("127.0.0.1:"):])
-					helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerPort", "3000")
-				})
-
-				By("running with default output", func() {
-					res := helper.Cmd("odo", "describe", "component").ShouldPass()
-					stdout := res.Out()
-					checkDevfileDescription(stdout, false)
-					Expect(stdout).To(ContainSubstring("Forwarded ports"))
-					Expect(stdout).To(ContainSubstring("127.0.0.1:" + ports["3000"][len("127.0.0.1:"):] + " -> runtime:3000"))
-				})
-			})
-
-			It("should describe the component from another directory", func() {
-				By("running with json output", func() {
-					err := os.Chdir("/")
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
 					Expect(err).NotTo(HaveOccurred())
-					res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").ShouldPass()
-					stdout, stderr := res.Out(), res.Err()
-					Expect(helper.IsJSON(stdout)).To(BeTrue())
-					Expect(stderr).To(BeEmpty())
-					helper.JsonPathContentIs(stdout, "devfilePath", "")
-					helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.name", cmpName)
-					helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.projectType", "nodejs")
-					for _, v := range []string{"version", "displayName", "description", "language"} {
-						helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata."+v, "Unknown")
-					}
-					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
-					helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
-					helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
-					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 				})
 
-				By("running with default output", func() {
-					err := os.Chdir("/")
-					Expect(err).NotTo(HaveOccurred())
-					res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldPass()
-					stdout := res.Out()
-					checkDevfileDescription(stdout, true)
-					Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
-					Expect(stdout).To(ContainSubstring("Running in: Dev"))
-					Expect(stdout).To(ContainSubstring("Dev: Unknown"))
-					Expect(stdout).To(ContainSubstring("Deploy: Unknown"))
-					Expect(stdout).To(ContainSubstring("Debug: Unknown"))
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
-			})
 
-		})
+				Context(fmt.Sprintf("Default output (podman=%s)", strconv.FormatBool(podman)), func() {
+
+					When("describing the component in dev mode and without the experimental mode", func() {
+						var stdout string
+						BeforeEach(func() {
+							stdout = helper.Cmd("odo", "describe", "component").ShouldPass().Out()
+						})
+
+						It("should describe the component", func() {
+							checkDevfileDescription(stdout, false)
+							if podman {
+								// Information available only when running under the experimental mode
+								Expect(stdout).To(ContainSubstring("Running in: None"))
+								Expect(stdout).NotTo(ContainSubstring("Forwarded ports"))
+								Expect(stdout).NotTo(ContainSubstring("127.0.0.1:"))
+							} else {
+								Expect(stdout).To(ContainSubstring("Running in: Dev"))
+								Expect(stdout).To(ContainSubstring("Forwarded ports"))
+								Expect(stdout).To(ContainSubstring("127.0.0.1:" + ports["3000"][len("127.0.0.1:"):] + " -> runtime:3000"))
+							}
+							Expect(stdout).NotTo(ContainSubstring("[cluster] 127.0.0.1:"))
+							Expect(stdout).NotTo(ContainSubstring("[podman] 127.0.0.1:"))
+							Expect(stdout).NotTo(ContainSubstring("Running on:"))
+							Expect(stdout).NotTo(ContainSubstring("podman: "))
+							Expect(stdout).NotTo(ContainSubstring("cluster: "))
+						})
+					})
+
+					When("describing the component in dev mode and with the experimental mode enabled", func() {
+						var stdout string
+						BeforeEach(func() {
+							stdout = helper.Cmd("odo", "describe", "component").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
+						})
+
+						It("should describe the component", func() {
+							checkDevfileDescription(stdout, false)
+							Expect(stdout).To(ContainSubstring("Running on:"))
+							Expect(stdout).To(ContainSubstring("Forwarded ports"))
+							if podman {
+								Expect(stdout).To(ContainSubstring("[podman] 127.0.0.1:" + ports["3000"][len("127.0.0.1:"):] + " -> runtime:3000"))
+								Expect(stdout).NotTo(ContainSubstring("[cluster] 127.0.0.1:"))
+								Expect(stdout).To(ContainSubstring("podman: Dev"))
+								Expect(stdout).NotTo(ContainSubstring("cluster: "))
+							} else {
+								Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:" + ports["3000"][len("127.0.0.1:"):] + " -> runtime:3000"))
+								Expect(stdout).NotTo(ContainSubstring("[podman] 127.0.0.1:"))
+								Expect(stdout).To(ContainSubstring("cluster: Dev"))
+								Expect(stdout).NotTo(ContainSubstring("podman: "))
+							}
+						})
+
+					})
+
+					When("switching to another directory", func() {
+						BeforeEach(func() {
+							err := os.Chdir("/")
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						When("describing the component from another directory and without the experimental mode", func() {
+							var stdout, stderr string
+							BeforeEach(func() {
+								cmd := helper.Cmd("odo", "describe", "component", "--name", cmpName)
+								if podman {
+									cmd = cmd.ShouldFail()
+								} else {
+									cmd = cmd.ShouldPass()
+								}
+								stdout, stderr = cmd.OutAndErr()
+							})
+
+							if podman {
+								It("should fail to describe the named component", func() {
+									// Podman mode assumes the test does not require a cluster.
+									// But running "odo describe component --name" in non-experimental mode attempts to get information from a cluster first.
+									// TODO We need to think about how to test both Cluster and Podman modes.
+									Expect(stderr).To(ContainSubstring("cluster is non accessible"))
+									Expect(stdout).NotTo(ContainSubstring("Forwarded ports"))
+									Expect(stdout).NotTo(ContainSubstring("Running on"))
+									Expect(stdout).NotTo(ContainSubstring("podman:"))
+									Expect(stdout).NotTo(ContainSubstring("cluster:"))
+								})
+							} else {
+								It("should describe the named component", func() {
+									checkDevfileDescription(stdout, true)
+									Expect(stdout).NotTo(ContainSubstring("Forwarded ports"))
+									Expect(stdout).NotTo(ContainSubstring("Running on"))
+									Expect(stdout).NotTo(ContainSubstring("podman:"))
+									Expect(stdout).NotTo(ContainSubstring("cluster:"))
+								})
+							}
+
+						})
+
+						When("describing the component from another directory and with the experimental mode enabled", func() {
+							var stdout string
+							BeforeEach(func() {
+								stdout = helper.Cmd("odo", "describe", "component", "--name", cmpName).
+									AddEnv("ODO_EXPERIMENTAL_MODE=true").
+									ShouldPass().
+									Out()
+							})
+
+							It("should describe the named component", func() {
+								checkDevfileDescription(stdout, true)
+								Expect(stdout).NotTo(ContainSubstring("Forwarded ports"))
+								Expect(stdout).To(ContainSubstring("Running in: Dev"))
+								Expect(stdout).To(ContainSubstring("Running on"))
+								if podman {
+									Expect(stdout).To(ContainSubstring("podman: Dev"))
+									Expect(stdout).NotTo(ContainSubstring("cluster:"))
+								} else {
+									Expect(stdout).To(ContainSubstring("cluster: Dev"))
+									Expect(stdout).NotTo(ContainSubstring("podman:"))
+								}
+							})
+						})
+					})
+				})
+
+				Context(fmt.Sprintf("JSON output (podman=%s)", strconv.FormatBool(podman)), func() {
+					When("describing the component in dev mode and without the experimental mode", func() {
+						var stdout, stderr string
+						BeforeEach(func() {
+							stdout, stderr = helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass().OutAndErr()
+						})
+
+						It("should describe the component", func() {
+							Expect(helper.IsJSON(stdout)).To(BeTrue())
+							Expect(stderr).To(BeEmpty())
+							checkDevfileJSONDescription(stdout, "devfile.yaml")
+							helper.JsonPathDoesNotExist(stdout, "runningOn")
+							if podman {
+								// Information available only when running under the experimental mode
+								helper.JsonPathDoesNotExist(stdout, "devForwardedPorts")
+								helper.JsonPathContentIs(stdout, "runningIn.dev", "")
+							} else {
+								helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
+								helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.#", "1")
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerName", "runtime")
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localAddress", "127.0.0.1")
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", ports["3000"][len("127.0.0.1:"):])
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerPort", "3000")
+							}
+						})
+					})
+
+					When("describing the component in dev mode and with the experimental mode enabled", func() {
+						var stdout, stderr string
+						BeforeEach(func() {
+							stdout, stderr = helper.Cmd("odo", "describe", "component", "-o", "json").
+								AddEnv("ODO_EXPERIMENTAL_MODE=true").
+								ShouldPass().
+								OutAndErr()
+						})
+
+						It("should describe the component", func() {
+							Expect(helper.IsJSON(stdout)).To(BeTrue())
+							Expect(stderr).To(BeEmpty())
+							checkDevfileJSONDescription(stdout, "devfile.yaml")
+							helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
+							helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
+							helper.JsonPathContentIs(stdout, "devForwardedPorts.#", "1")
+							helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerName", "runtime")
+							helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localAddress", "127.0.0.1")
+							helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", ports["3000"][len("127.0.0.1:"):])
+							helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerPort", "3000")
+							if podman {
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.platform", "podman")
+								helper.JsonPathContentIs(stdout, "runningOn.podman.dev", "true")
+								helper.JsonPathContentIs(stdout, "runningOn.podman.deploy", "false")
+								helper.JsonPathDoesNotExist(stdout, "runningOn.cluster")
+							} else {
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.platform", "cluster")
+								helper.JsonPathContentIs(stdout, "runningOn.cluster.dev", "true")
+								helper.JsonPathContentIs(stdout, "runningOn.cluster.deploy", "false")
+								helper.JsonPathDoesNotExist(stdout, "runningOn.podman")
+							}
+						})
+					})
+
+					When("switching to another directory", func() {
+						BeforeEach(func() {
+							err := os.Chdir("/")
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						When("describing the component from another directory and without the experimental mode", func() {
+							var stdout, stderr string
+							BeforeEach(func() {
+								cmd := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json")
+								if podman {
+									cmd = cmd.ShouldFail()
+								} else {
+									cmd = cmd.ShouldPass()
+								}
+								stdout, stderr = cmd.OutAndErr()
+							})
+
+							if podman {
+								It("should fail to describe the named component", func() {
+									// Podman mode assumes the test does not require a cluster.
+									// But running "odo describe component --name" in non-experimental mode attempts to get information from a cluster first.
+									// TODO We need to think about how to test both Cluster and Podman modes.
+									Expect(helper.IsJSON(stderr)).To(BeTrue())
+									Expect(stdout).To(BeEmpty())
+									helper.JsonPathDoesNotExist(stderr, "runningOn")
+									helper.JsonPathContentIs(stderr, "message", "cluster is non accessible")
+									helper.JsonPathDoesNotExist(stderr, "devfilePath")
+									helper.JsonPathDoesNotExist(stderr, "devForwardedPorts")
+									helper.JsonPathDoesNotExist(stderr, "devfileData")
+									helper.JsonPathDoesNotExist(stderr, "runningIn")
+									helper.JsonPathDoesNotExist(stderr, "runningOn")
+								})
+							} else {
+								It("should describe the named component", func() {
+									Expect(helper.IsJSON(stdout)).To(BeTrue())
+									Expect(stderr).To(BeEmpty())
+									helper.JsonPathContentIs(stdout, "devfilePath", "")
+									helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.name", cmpName)
+									helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.projectType", "nodejs")
+									for _, v := range []string{"version", "displayName", "description", "language"} {
+										helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata."+v, "Unknown")
+									}
+									helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+									helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
+									helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
+									helper.JsonPathDoesNotExist(stdout, "runningOn")
+								})
+							}
+						})
+
+						When("describing the component from another directory and with the experimental mode enabled", func() {
+							var stdout, stderr string
+							BeforeEach(func() {
+								stdout, stderr = helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").
+									AddEnv("ODO_EXPERIMENTAL_MODE=true").
+									ShouldPass().
+									OutAndErr()
+							})
+
+							It("should describe the named component", func() {
+								Expect(helper.IsJSON(stdout)).To(BeTrue())
+								Expect(stderr).To(BeEmpty())
+								helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
+								helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
+								helper.JsonPathContentIs(stdout, "devfilePath", "")
+								helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.name", cmpName)
+								helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.projectType", "nodejs")
+								for _, v := range []string{"version", "displayName", "description", "language"} {
+									helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata."+v, "Unknown")
+								}
+								helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+								if podman {
+									helper.JsonPathContentIs(stdout, "runningOn.podman.dev", "true")
+									helper.JsonPathContentIs(stdout, "runningOn.podman.deploy", "false")
+									helper.JsonPathDoesNotExist(stdout, "runningOn.cluster")
+								} else {
+									helper.JsonPathContentIs(stdout, "runningOn.cluster.dev", "true")
+									helper.JsonPathContentIs(stdout, "runningOn.cluster.deploy", "false")
+									helper.JsonPathDoesNotExist(stdout, "runningOn.podman")
+								}
+							})
+						})
+					})
+				})
+			}))
+		}
 
 		for _, ctx := range []struct {
 			title           string

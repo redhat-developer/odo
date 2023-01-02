@@ -14,13 +14,17 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/podman"
 )
 
 // ComponentRecommendedCommandName is the recommended component sub-command name
@@ -58,9 +62,11 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
+	runOn := fcontext.GetRunOn(ctx, commonflags.RunOnCluster)
+
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.nameFlag == "" {
-		if len(o.namespaceFlag) > 0 {
+		if runOn == commonflags.RunOnCluster && len(o.namespaceFlag) > 0 {
 			return errors.New("--namespace can be used only with --name")
 		}
 		devfileObj := odocontext.GetDevfileObj(ctx)
@@ -82,12 +88,21 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 }
 
 func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
-	if o.clientset.KubernetesClient == nil {
-		log.Warning("No connection to cluster defined")
+	switch fcontext.GetRunOn(ctx, commonflags.RunOnCluster) {
+	case commonflags.RunOnCluster:
+		if o.clientset.KubernetesClient == nil {
+			log.Warning("No connection to cluster defined")
+		}
+	case commonflags.RunOnPodman:
+		if o.namespaceFlag != "" {
+			log.Warning("--namespace flag ignored on Podman")
+		}
 	}
+
 	return nil
 }
 
+// Run contains the logic for the odo command
 func (o *ComponentOptions) Run(ctx context.Context) error {
 	result, devfileObj, err := o.run(ctx)
 	if err != nil {
@@ -97,10 +112,10 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	return printHumanReadableOutput(result, devfileObj)
+	return printHumanReadableOutput(ctx, result, devfileObj)
 }
 
-// Run contains the logic for the odo command
+// RunForJsonOutput contains the logic for the JSON Output
 func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	result, _, err := o.run(ctx) // TODO(feloy) handle warning
 	if clierrors.AsWarning(err) {
@@ -118,32 +133,75 @@ func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfi
 
 // describeNamedComponent describes a component given its name
 func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
-	if o.clientset.KubernetesClient == nil {
-		return api.Component{}, nil, errors.New("cluster is non accessible")
+	var (
+		kubeClient   = o.clientset.KubernetesClient
+		podmanClient = o.clientset.PodmanClient
+	)
+
+	isRunOnFeatureEnabled := feature.IsEnabled(ctx, feature.GenericRunOnFlag)
+	runOn := fcontext.GetRunOn(ctx, "")
+	switch runOn {
+	case "":
+		if isRunOnFeatureEnabled {
+			//Get info from all platforms
+			if kubeClient == nil {
+				log.Warning("cluster is non accessible")
+			}
+			if podmanClient == nil {
+				log.Warning("unable to access podman. Do you have podman client installed?")
+			}
+		} else {
+			if kubeClient == nil {
+				return api.Component{}, nil, errors.New("cluster is non accessible")
+			}
+			podmanClient = nil
+		}
+	case commonflags.RunOnCluster:
+		if kubeClient == nil {
+			return api.Component{}, nil, errors.New("cluster is non accessible")
+		}
+		podmanClient = nil
+	case commonflags.RunOnPodman:
+		if podmanClient == nil {
+			return api.Component{}, nil, errors.New("unable to access podman. Do you have podman client installed?")
+		}
+		kubeClient = nil
 	}
 
-	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, name)
+	runningOn, err := getRunningOn(ctx, name, kubeClient, podmanClient)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	devfile, err := component.GetDevfileInfoFromCluster(ctx, o.clientset.KubernetesClient, name)
+
+	devfile, err := component.GetDevfileInfo(ctx, kubeClient, podmanClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, name, odocontext.GetApplication(ctx))
-	if err != nil {
-		return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+
+	var ingresses []api.ConnectionData
+	var routes []api.ConnectionData
+	if kubeClient != nil {
+		ingresses, routes, err = component.ListRoutesAndIngresses(kubeClient, name, odocontext.GetApplication(ctx))
+		if err != nil {
+			return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
+		}
 	}
 
-	return api.Component{
+	cmp := api.Component{
 		DevfileData: &api.DevfileData{
 			Devfile: devfile.Data,
 		},
-		RunningIn: runningIn,
+		RunningIn: api.MergeRunningModes(runningOn),
+		RunningOn: runningOn,
 		ManagedBy: "odo",
 		Ingresses: ingresses,
 		Routes:    routes,
-	}, &devfile, nil
+	}
+	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		// Display RunningOn field only if the feature is enabled
+		cmp.RunningOn = nil
+	}
+	return cmp, &devfile, nil
 }
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
@@ -153,39 +211,127 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 	)
+	var (
+		kubeClient   = o.clientset.KubernetesClient
+		podmanClient = o.clientset.PodmanClient
+	)
 
-	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
+	isRunOnFeatureEnabled := feature.IsEnabled(ctx, feature.GenericRunOnFlag)
+	runOn := fcontext.GetRunOn(ctx, "")
+	switch runOn {
+	case "":
+		if kubeClient == nil {
+			log.Warning("cluster is non accessible")
+		}
+		if isRunOnFeatureEnabled && podmanClient == nil {
+			log.Warning("unable to access podman. Do you have podman client installed?")
+		}
+	case commonflags.RunOnCluster:
+		if kubeClient == nil {
+			return api.Component{}, nil, errors.New("cluster is non accessible")
+		}
+		podmanClient = nil
+	case commonflags.RunOnPodman:
+		if podmanClient == nil {
+			return api.Component{}, nil, errors.New("unable to access podman. Do you have podman client installed?")
+		}
+		kubeClient = nil
+	}
+
+	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts()
+	if err != nil {
+		return api.Component{}, nil, err
+	}
+	if isRunOnFeatureEnabled {
+		for i := range allFwdPorts {
+			if allFwdPorts[i].Platform == "" {
+				allFwdPorts[i].Platform = commonflags.RunOnCluster
+			}
+		}
+	}
+	var forwardedPorts []api.ForwardedPort
+	switch runOn {
+	case "":
+		if isRunOnFeatureEnabled {
+			// Read ports from all platforms
+			forwardedPorts = allFwdPorts
+		} else {
+			// Limit to cluster ports only
+			for _, p := range allFwdPorts {
+				if p.Platform == "" || p.Platform == commonflags.RunOnCluster {
+					forwardedPorts = append(forwardedPorts, p)
+				}
+			}
+		}
+	case commonflags.RunOnCluster:
+		for _, p := range allFwdPorts {
+			if p.Platform == "" || p.Platform == commonflags.RunOnCluster {
+				forwardedPorts = append(forwardedPorts, p)
+			}
+		}
+	case commonflags.RunOnPodman:
+		for _, p := range allFwdPorts {
+			if p.Platform == commonflags.RunOnPodman {
+				forwardedPorts = append(forwardedPorts, p)
+			}
+		}
+	}
+
+	runningOn, err := getRunningOn(ctx, componentName, kubeClient, podmanClient)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
 
-	runningIn, err := component.GetRunningModes(ctx, o.clientset.KubernetesClient, componentName)
-	if err != nil {
-		if !errors.As(err, &component.NoComponentFoundError{}) {
-			return api.Component{}, nil, err
-		} else {
-			// it is ok if the component is not deployed
-			runningIn = nil
+	var ingresses []api.ConnectionData
+	var routes []api.ConnectionData
+	if kubeClient != nil {
+		ingresses, routes, err = component.ListRoutesAndIngresses(kubeClient, componentName, odocontext.GetApplication(ctx))
+		if err != nil {
+			err = clierrors.NewWarning("failed to get ingresses/routes", err)
+			// Do not return the error yet, as it is only a warning
 		}
 	}
-	ingresses, routes, err := component.ListRoutesAndIngresses(o.clientset.KubernetesClient, componentName, odocontext.GetApplication(ctx))
-	if err != nil {
-		err = clierrors.NewWarning("failed to get ingresses/routes", err)
-		// Do not return the error yet, as it is only a warning
-	}
 
-	return api.Component{
+	cmp := api.Component{
 		DevfilePath:       devfilePath,
 		DevfileData:       api.GetDevfileData(*devfileObj),
 		DevForwardedPorts: forwardedPorts,
-		RunningIn:         runningIn,
+		RunningIn:         api.MergeRunningModes(runningOn),
+		RunningOn:         runningOn,
 		ManagedBy:         "odo",
 		Ingresses:         ingresses,
 		Routes:            routes,
-	}, devfileObj, err
+	}
+	if !isRunOnFeatureEnabled {
+		// Display RunningOn field only if the feature is enabled
+		cmp.RunningOn = nil
+	}
+	return cmp, devfileObj, err
 }
 
-func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) error {
+func getRunningOn(ctx context.Context, n string, kubeClient kclient.ClientInterface, podmanClient podman.Client) (map[string]api.RunningModes, error) {
+	var runningOn map[string]api.RunningModes
+	runningModesMap, err := component.GetRunningModes(ctx, kubeClient, podmanClient, n)
+	if err != nil {
+		if !errors.As(err, &component.NoComponentFoundError{}) {
+			return nil, err
+		}
+		// it is ok if the component is not deployed
+		runningModesMap = nil
+	}
+	if runningModesMap != nil {
+		runningOn = make(map[string]api.RunningModes, len(runningModesMap))
+		if kubeClient != nil && runningModesMap[kubeClient] != nil {
+			runningOn[commonflags.RunOnCluster] = runningModesMap[kubeClient]
+		}
+		if podmanClient != nil && runningModesMap[podmanClient] != nil {
+			runningOn[commonflags.RunOnPodman] = runningModesMap[podmanClient]
+		}
+	}
+	return runningOn, nil
+}
+
+func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj *parser.DevfileObj) error {
 	if cmp.DevfileData != nil {
 		log.Describef("Name: ", cmp.DevfileData.Devfile.GetMetadata().Name)
 		log.Describef("Display Name: ", cmp.DevfileData.Devfile.GetMetadata().DisplayName)
@@ -200,10 +346,28 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 	log.Describef("Running in: ", cmp.RunningIn.String())
 	fmt.Println()
 
+	withRunOnFeature := feature.IsEnabled(ctx, feature.GenericRunOnFlag)
+
+	if withRunOnFeature && len(cmp.RunningOn) > 0 {
+		log.Info("Running on:")
+		for p, r := range cmp.RunningOn {
+			log.Printf("%s: %s", p, r)
+		}
+		fmt.Println()
+	}
+
 	if len(cmp.DevForwardedPorts) > 0 {
 		log.Info("Forwarded ports:")
 		for _, port := range cmp.DevForwardedPorts {
-			log.Printf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			if withRunOnFeature {
+				p := port.Platform
+				if p == "" {
+					p = commonflags.RunOnCluster
+				}
+				log.Printf("[%s] %s:%d -> %s:%d", p, port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			} else {
+				log.Printf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			}
 		}
 		fmt.Println()
 	}
@@ -286,7 +450,7 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 }
 
 // NewCmdComponent implements the component odo sub-command
-func NewCmdComponent(name, fullName string) *cobra.Command {
+func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
@@ -302,7 +466,11 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
 	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE)
+	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
+	}
 	commonflags.UseOutputFlag(componentCmd)
+	commonflags.UseRunOnFlag(componentCmd)
 
 	return componentCmd
 }
