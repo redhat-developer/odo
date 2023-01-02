@@ -5,9 +5,6 @@ import (
 )
 
 const (
-	// LabelCluster is the default label, indicating tests that want to run with a cluster.
-	// If no label is set, tests are assumed to be running in cluster mode.
-	LabelCluster   = "cluster"
 	LabelNoCluster = "nocluster"
 	LabelUnauth    = "unauth"
 	LabelPodman    = "podman"
@@ -15,19 +12,10 @@ const (
 
 func NeedsCluster(labels []string) bool {
 	for _, label := range labels {
-		if label == LabelCluster {
-			return true
-		}
 		if label == LabelNoCluster {
 			return false
 		}
 		if label == LabelPodman {
-			// Check if there is any "cluster" label
-			for _, l := range labels {
-				if l == LabelCluster {
-					return true
-				}
-			}
 			return false
 		}
 	}

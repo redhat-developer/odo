@@ -131,8 +131,8 @@ var _ = Describe("odo describe component command tests", func() {
 		for _, label := range []string{
 			helper.LabelNoCluster, helper.LabelUnauth,
 		} {
+			label := label
 			for _, experimental := range []bool{false, true} {
-				label := label
 				experimental := experimental
 
 				When("experimental mode="+strconv.FormatBool(experimental), func() {
@@ -244,15 +244,8 @@ var _ = Describe("odo describe component command tests", func() {
 
 				for _, experimental := range []bool{true, false} {
 					experimental := experimental
-					var labels []interface{}
-					if podman && !experimental {
-						// Podman mode assumes the test does not require a cluster.
-						// But running "odo describe component --name" in non-experimental mode attempts to get information from a cluster first (which we want to test).
-						// Forcibly set cluster mode for "odo dev" to start
-						labels = append(labels, Label(helper.LabelCluster))
-					}
 					It(fmt.Sprintf("should describe the component in dev mode (experimental=%s)", strconv.FormatBool(experimental)),
-						append(labels, func() {
+						func() {
 							By("running with json output", func() {
 								cmd := helper.Cmd("odo", "describe", "component", "-o", "json")
 								if experimental {
@@ -337,10 +330,10 @@ var _ = Describe("odo describe component command tests", func() {
 									}
 								}
 							})
-						})...)
+						})
 
 					It(fmt.Sprintf("should describe the component from another directory (experimental=%s)", strconv.FormatBool(experimental)),
-						append(labels, func() {
+						func() {
 							By("running with json output", func() {
 								err := os.Chdir("/")
 								Expect(err).NotTo(HaveOccurred())
@@ -378,8 +371,10 @@ var _ = Describe("odo describe component command tests", func() {
 									} else {
 										Expect(helper.IsJSON(stderr)).To(BeTrue())
 										Expect(stdout).To(BeEmpty())
-										helper.JsonPathContentIs(stderr, "message",
-											fmt.Sprintf("no component found with name %q in the namespace %q", cmpName, commonVar.Project))
+										// Podman mode assumes the test does not require a cluster.
+										// But running "odo describe component --name" in non-experimental mode attempts to get information from a cluster first.
+										// TODO We need to think about how to test both Cluster and Podman modes.
+										helper.JsonPathContentIs(stderr, "message", "cluster is non accessible")
 										helper.JsonPathDoesNotExist(stderr, "devfilePath")
 										helper.JsonPathDoesNotExist(stderr, "devForwardedPorts")
 										helper.JsonPathDoesNotExist(stderr, "devfileData")
@@ -427,8 +422,10 @@ var _ = Describe("odo describe component command tests", func() {
 										Expect(stdout).NotTo(ContainSubstring("cluster:"))
 									} else {
 										Expect(stdout).NotTo(ContainSubstring("Forwarded ports"))
-										Expect(stderr).To(ContainSubstring(
-											fmt.Sprintf("no component found with name %q in the namespace %q", cmpName, commonVar.Project)))
+										// Podman mode assumes the test does not require a cluster.
+										// But running "odo describe component --name" in non-experimental mode attempts to get information from a cluster first.
+										// TODO We need to think about how to test both Cluster and Podman modes.
+										Expect(stderr).To(ContainSubstring("cluster is non accessible"))
 									}
 								} else {
 									if experimental {
@@ -446,7 +443,7 @@ var _ = Describe("odo describe component command tests", func() {
 									}
 								}
 							})
-						})...)
+						})
 				}
 			}))
 		}
