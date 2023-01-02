@@ -9,7 +9,8 @@ type ComponentAbstract struct {
 	RunningIn RunningModes `json:"runningIn"`
 	Type      string       `json:"projectType"`
 	// RunningOn is the platform the component is running on, either cluster or podman
-	// This field is deprecated and will be replaced by Platform
+	//
+	// Deprecated: This field is deprecated and will be replaced by Platform
 	RunningOn string `json:"runningOn,omitempty"`
 	// Platform is the platform the component is running on, either cluster or podman
 	Platform string `json:"platform,omitempty"`
