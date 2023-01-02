@@ -143,7 +143,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 	}
 
 	// RunningOn is displayed only when Platform is active
-	if !feature.IsEnabled(ctx, feature.GenericPformFlag) {
+	if !feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		for i := range allComponents {
 			//lint:ignore SA1019 we need to output the deprecated value, before to remove it in a future release
 			allComponents[i].RunningOn = ""
@@ -174,7 +174,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.BINDING, clientset.FILESYSTEM)
-	if feature.IsEnabled(ctx, feature.GenericPformFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 
