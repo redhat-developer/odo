@@ -12,6 +12,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Test config is supported or not
+      run: |
+        mkdir -p ~/.config/containers/
+        cp ./tests/examples/config/containers.conf ~/.config/containers/containers.conf
+        CONTAINER_CONNECTION=podman-machine-default podman pod ps 
+
     - name: Setup Go
       uses: actions/setup-go@v3
       with:
@@ -23,15 +29,12 @@ jobs:
     - name: Run Integration tests
       run: |
         make test-integration-podman
-    
-    - name: Test config is supported or not
-      run: |
-        mkdir -p ~/.config/containers/
-        cp ./test/example/config/containers.conf ~/.config/containers/containers.conf
-        CONTAINER_CONNECTION=podman-machine-default podman pod ps 
 
-    - uses: actions/upload-artifact@v2  
+    - name: test Reporter
+      uses: dorny/test-reporter@v1 
       if: success() || failure()        
       with:
         name: test-results
         path: test-integration-podman.xml
+        reporter: jest-junit
+    
