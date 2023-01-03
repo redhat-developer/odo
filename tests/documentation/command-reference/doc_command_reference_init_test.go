@@ -26,10 +26,10 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-	Context("Interactive Mode", func() {
-		// interactive tests do not provide the same output every time,
-		// so we'll skip this test until we have more coverage and then investigate a better way to test this
-		XIt("Empty directory", func() {
+	// interactive tests do not provide the same output every time,
+	// so we'll skip these tests until we have more coverage and then investigate a better way to test this
+	XContext("Interactive Mode", func() {
+		It("Empty directory", func() {
 			args := []string{"odo", "init"}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
 				helper.ExpectString(ctx, "Select language")

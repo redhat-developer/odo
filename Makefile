@@ -111,7 +111,7 @@ vet:
 
 .PHONY: sec
 sec:
-	go run $(COMMON_GOFLAGS) github.com/securego/gosec/v2/cmd/gosec -severity medium -confidence medium -exclude G304,G204,G107 -quiet  ./tests/integration/... ./tests/helper... ./tests/e2escenarios/...
+	go run $(COMMON_GOFLAGS) github.com/securego/gosec/v2/cmd/gosec -severity medium -confidence medium -exclude G304,G204,G107 -quiet  ./tests/integration/... ./tests/helper... ./tests/e2escenarios/... ./tests/documentation/...
 	go run $(COMMON_GOFLAGS) github.com/securego/gosec/v2/cmd/gosec -severity medium -confidence medium -exclude G304,G204 -quiet  ./cmd/... ./pkg/...
 
 .PHONY: clean
@@ -216,4 +216,4 @@ test-e2e:
 
 .PHONY: test-doc-automation
 test-doc-automation:
-	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-doc-automation.xml"  tests/documentation
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-doc-automation.xml"  tests/documentation/...
