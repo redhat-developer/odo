@@ -199,7 +199,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")
+	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to add")
 	bindingCmd.Flags().String(backend.FLAG_WORKLOAD, "", "Name of the workload to bind, only when no devfile is present in current directory")
 	bindingCmd.Flags().String(backend.FLAG_SERVICE, "", "Name of the service to bind")
 	bindingCmd.Flags().String(backend.FLAG_SERVICE_NAMESPACE, "", "Namespace of the service to bind to. Default is the component namespace.")
