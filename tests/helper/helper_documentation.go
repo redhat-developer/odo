@@ -14,6 +14,7 @@ import (
 
 const (
 	timePatternInOdo = `(\[[0-9smh]+\])` // e.g. [4s], [1m], [3ms]
+	staticTimeValue  = "[1s]"
 	// Credit: https://github.com/acarl005/stripansi/blob/master/stripansi.go
 	ansiPattern          = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
 	unicodeSpinnerFrames = "◓◐◑◒"
@@ -37,6 +38,8 @@ func StripSpinner(docString string) (returnString string) {
 		}
 		returnString += line + "\n"
 	}
+	// replace all instances of time to [1s], this is also done for mdx out
+	returnString = ReplaceAllTimeInString(returnString, staticTimeValue)
 	return
 }
 
@@ -65,6 +68,9 @@ func GetMDXContent(filePath string) (mdxContent string) {
 		line = strings.TrimFunc(line, unicode.IsSpace)
 		mdxContent += line + "\n"
 	}
+
+	// replace all instances of time to [1s], this is also done for cmd out
+	mdxContent = ReplaceAllTimeInString(mdxContent, staticTimeValue)
 	return
 }
 
@@ -76,5 +82,16 @@ func StripAnsi(docString string) (returnString string) {
 	reg, err := regexp.Compile(ansiPattern)
 	Expect(err).To(BeNil())
 	returnString = reg.ReplaceAllString(docString, "")
+	return
+}
+
+func CleanupInteractiveQuestions(docString string) (returnString string) {
+	splitDocString := strings.Split(docString, "\n")
+	for _, line := range splitDocString {
+		if strings.Contains(line, "[Use arrows to move, type to filter]") {
+			continue
+		}
+		returnString += line + "\n"
+	}
 	return
 }

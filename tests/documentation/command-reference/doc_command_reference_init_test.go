@@ -48,10 +48,8 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				helper.ExpectString(ctx, "Your new component 'my-java-maven-app' is ready in the current directory")
 			})
 			Expect(err).To(BeNil())
-			got := fmt.Sprintf(outputStringFormat, " init", helper.StripSpinner(out))
-			got = helper.ReplaceAllTimeInString(got, "[1s]")
+			got := fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(out))
 			want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_empty_directory_output.mdx"))
-			want = helper.ReplaceAllTimeInString(want, "[1s]")
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
 		})
@@ -79,9 +77,12 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				})
 				Expect(err).To(BeNil())
 				got := helper.StripAnsi(out)
-				got = fmt.Sprintf(outputStringFormat, "init", helper.StripSpinner(got))
+				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
 				got = strings.Replace(got, "? Is this correct? (Y/n) ", "", 1)
-				got = strings.Replace(got, "? Is this correct? Yes", "? Is this correct? Yes\n✓  Downloading devfile \"nodejs:2.1.1\" from registry \"DefaultDevfileRegistry\" [3s]", 1)
+				// for some reason strings.Split(got, "\n") does not split the strings properly
+				// and for this reason "✓  Downloading devfile " is stripped from the output when helper.StripSpinner is called.
+				// So we add the line back.
+				got = strings.Replace(got, "? Is this correct? Yes", "? Is this correct? Yes\n✓  Downloading devfile \"nodejs:2.1.1\" from registry \"DefaultDevfileRegistry\" [1s]", 1)
 				got = strings.Replace(got, "\n? Select container for which you want to change configuration?  [Use arrows to move, type to filter]\nruntime\n> NONE - configuration is correct\n", "", 1)
 				got = strings.Replace(got, "? Enter component name: (node-echo) ", "", 1)
 				want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_directory_with_sources_output.mdx"))
@@ -96,7 +97,6 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "2.0.0"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			got = helper.ReplaceAllTimeInString(got, "[3s]")
 			want := helper.GetMDXContent(filepath.Join(commonPath, "versioned_devfile_output.mdx"))
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
@@ -106,7 +106,6 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "latest"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			got = helper.ReplaceAllTimeInString(got, "[4s]")
 			want := helper.GetMDXContent(filepath.Join(commonPath, "latest_versioned_devfile_output.mdx"))
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
@@ -116,9 +115,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			got = helper.ReplaceAllTimeInString(got, "[4s]")
 			want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_url_output.mdx"))
-			want = helper.ReplaceAllTimeInString(want, "[4s]")
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
 		})
@@ -169,9 +166,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 						args := []string{"init", "--name", "my-spring-app", "--devfile", "java-springboot", "--devfile-registry", "DefaultDevfileRegistry", "--starter", "springbootproject"}
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-						got = helper.ReplaceAllTimeInString(got, "[4s]")
 						want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_specific_registry_output.mdx"))
-						want = helper.ReplaceAllTimeInString(want, "[4s]")
 						diff := cmp.Diff(want, got)
 						Expect(diff).To(BeEmpty())
 					})
@@ -195,7 +190,6 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 						args := []string{"init", "--devfile", "nodejs-react", "--name", "my-nr-app"}
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-						got = helper.ReplaceAllTimeInString(got, "[3s]")
 						want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_any_registry_output.mdx"))
 						diff := cmp.Diff(want, got)
 						Expect(diff).To(BeEmpty())
@@ -209,9 +203,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			got = helper.ReplaceAllTimeInString(got, "[1s]")
 			want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_url_output.mdx"))
-			want = helper.ReplaceAllTimeInString(want, "[1s]")
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
 		})
