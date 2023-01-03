@@ -70,7 +70,9 @@ func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
 			ManagedBy:        managedBy,
 			Type:             componentType,
 			ManagedByVersion: managedByVersion,
-			RunningOn:        commonflags.RunOnPodman,
+			//lint:ignore SA1019 we need to output the deprecated value, before to remove it in a future release
+			RunningOn: commonflags.PlatformPodman,
+			Platform:  commonflags.PlatformPodman,
 		}
 		mode := odolabels.GetMode(labels)
 		if mode != "" {

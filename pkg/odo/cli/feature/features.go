@@ -13,8 +13,8 @@ type OdoFeature struct {
 }
 
 var (
-	// GenericRunOnFlag is the feature supporting the `--run-on` generic CLI flag.
-	GenericRunOnFlag = OdoFeature{
+	// GenericPlatformFlag is the feature supporting the `--platform` generic CLI flag.
+	GenericPlatformFlag = OdoFeature{
 		isExperimental: true,
 	}
 )

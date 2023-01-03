@@ -112,10 +112,10 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 		podmanClient = lo.clientset.PodmanClient
 	)
 
-	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
+	switch fcontext.GetPlatform(ctx, "") {
+	case commonflags.PlatformCluster:
 		podmanClient = nil
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		kubeClient = nil
 	}
 
@@ -125,10 +125,12 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 		return api.ResourcesList{}, err
 	}
 
-	// RunningOn is displayed only when RunOn is active
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	// RunningOn is displayed only when Platform is active
+	if !feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		for i := range allComponents {
+			//lint:ignore SA1019 we need to output the deprecated value, before to remove it in a future release
 			allComponents[i].RunningOn = ""
+			allComponents[i].Platform = ""
 		}
 	}
 	return api.ResourcesList{
@@ -153,14 +155,14 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 		Aliases: []string{"components"},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.FILESYSTEM)
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	util.SetCommandGroup(listCmd, util.ManagementGroup)
 	commonflags.UseOutputFlag(listCmd)
-	commonflags.UseRunOnFlag(listCmd)
+	commonflags.UsePlatformFlag(listCmd)
 
 	return listCmd
 }
@@ -176,8 +178,8 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 
 	// Create the header and then sort accordingly
 	headers := table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"}
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
-		headers = append(headers, "RUNNING ON")
+	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
+		headers = append(headers, "PLATFORM")
 	}
 	t.AppendHeader(headers)
 	t.SortBy([]table.SortBy{
@@ -220,12 +222,12 @@ func HumanReadableOutput(ctx context.Context, list api.ResourcesList) {
 
 		row := table.Row{name, componentType, mode, managedBy}
 
-		if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
-			runningOn := comp.RunningOn
-			if runningOn == "" {
-				runningOn = "None"
+		if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
+			platform := comp.Platform
+			if platform == "" {
+				platform = "None"
 			}
-			row = append(row, runningOn)
+			row = append(row, platform)
 		}
 
 		t.AppendRow(row)

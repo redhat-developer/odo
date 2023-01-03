@@ -172,7 +172,9 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			ManagedBy:        managedBy,
 			Type:             componentType,
 			ManagedByVersion: managedByVersion,
-			RunningOn:        commonflags.RunOnCluster,
+			//lint:ignore SA1019 we need to output the deprecated value, before to remove it in a future release
+			RunningOn: commonflags.PlatformCluster,
+			Platform:  commonflags.PlatformCluster,
 		}
 		mode := odolabels.GetMode(labels)
 		componentFound := false

@@ -101,13 +101,13 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return clierrors.NewNoCommandInDevfileError("debug")
 	}
 
-	platform := fcontext.GetRunOn(ctx, commonflags.RunOnCluster)
+	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 	switch platform {
-	case commonflags.RunOnCluster:
+	case commonflags.PlatformCluster:
 		if o.clientset.KubernetesClient == nil {
 			return errors.New("no connection to cluster defined")
 		}
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		if o.clientset.PodmanClient == nil {
 			return errors.New("unable to access podman. Do you have podman client installed?")
 		}
@@ -122,16 +122,16 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)
 		variables     = fcontext.GetVariables(ctx)
-		platform      = fcontext.GetRunOn(ctx, commonflags.RunOnCluster)
+		platform      = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 	)
 
 	var dest string
 	var deployingTo string
 	switch platform {
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		dest = "Platform: podman"
 		deployingTo = "podman"
-	case commonflags.RunOnCluster:
+	case commonflags.PlatformCluster:
 		dest = "Namespace: " + odocontext.GetNamespace(ctx)
 		deployingTo = "the cluster"
 	default:
@@ -241,6 +241,6 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	odoutil.SetCommandGroup(devCmd, odoutil.MainGroup)
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	commonflags.UseVariablesFlags(devCmd)
-	commonflags.UseRunOnFlag(devCmd)
+	commonflags.UsePlatformFlag(devCmd)
 	return devCmd
 }

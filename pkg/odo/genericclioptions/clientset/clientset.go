@@ -191,7 +191,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, EXEC) {
 		switch platform {
-		case commonflags.RunOnPodman:
+		case commonflags.PlatformPodman:
 			dep.ExecClient = exec.NewExecClient(dep.PodmanClient)
 		default:
 			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
@@ -208,7 +208,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, LOGS) {
 		switch platform {
-		case commonflags.RunOnPodman:
+		case commonflags.PlatformPodman:
 			dep.LogsClient = logs.NewLogsClient(dep.PodmanClient)
 		default:
 			dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
@@ -222,7 +222,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, SYNC) {
 		switch platform {
-		case commonflags.RunOnPodman:
+		case commonflags.PlatformPodman:
 			dep.SyncClient = sync.NewSyncClient(dep.PodmanClient, dep.ExecClient)
 		default:
 			dep.SyncClient = sync.NewSyncClient(dep.KubernetesClient, dep.ExecClient)
@@ -239,7 +239,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	}
 	if isDefined(command, DEV) {
 		switch platform {
-		case commonflags.RunOnPodman:
+		case commonflags.PlatformPodman:
 			dep.DevClient = podmandev.NewDevClient(
 				dep.PodmanClient,
 				dep.SyncClient,

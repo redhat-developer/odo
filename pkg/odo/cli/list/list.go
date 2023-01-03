@@ -120,10 +120,10 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 		podmanClient = lo.clientset.PodmanClient
 	)
 
-	switch fcontext.GetRunOn(ctx, "") {
-	case commonflags.RunOnCluster:
+	switch fcontext.GetPlatform(ctx, "") {
+	case commonflags.PlatformCluster:
 		podmanClient = nil
-	case commonflags.RunOnPodman:
+	case commonflags.PlatformPodman:
 		kubeClient = nil
 	}
 
@@ -142,10 +142,12 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 		return api.ResourcesList{}, err
 	}
 
-	// RunningOn is displayed only when RunOn is active
-	if !feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	// RunningOn is displayed only when Platform is active
+	if !feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		for i := range allComponents {
+			//lint:ignore SA1019 we need to output the deprecated value, before to remove it in a future release
 			allComponents[i].RunningOn = ""
+			allComponents[i].Platform = ""
 		}
 	}
 
@@ -172,7 +174,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.BINDING, clientset.FILESYSTEM)
-	if feature.IsEnabled(ctx, feature.GenericRunOnFlag) {
+	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 
@@ -187,7 +189,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	commonflags.UseOutputFlag(listCmd)
-	commonflags.UseRunOnFlag(listCmd)
+	commonflags.UsePlatformFlag(listCmd)
 
 	return listCmd
 }

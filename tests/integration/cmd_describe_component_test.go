@@ -86,7 +86,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with podman", Label(helper.LabelPodman), func() {
 		By("running odo describe component -o json with an unknown name", func() {
-			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--run-on", "podman", "-o", "json").
+			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman", "-o", "json").
 				AddEnv("ODO_EXPERIMENTAL_MODE=true").
 				ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
@@ -96,7 +96,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
-			stderr := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--run-on", "podman").
+			stderr := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman").
 				AddEnv("ODO_EXPERIMENTAL_MODE=true").
 				ShouldFail().Err()
 			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\""))
@@ -170,7 +170,8 @@ var _ = Describe("odo describe component command tests", func() {
 							checkDevfileJSONDescription(stdout, "devfile.yaml")
 							helper.JsonPathContentIs(stdout, "runningIn", "")
 							helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
-							helper.JsonPathDoesNotExist(stdout, "runningOn")
+							helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
+							helper.JsonPathDoesNotExist(stdout, "platform")
 						})
 
 						By("running with default output", func() {
@@ -198,7 +199,8 @@ var _ = Describe("odo describe component command tests", func() {
 								checkDevfileJSONDescription(stdout, ".devfile.yaml")
 								helper.JsonPathContentIs(stdout, "runningIn", "")
 								helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
-								helper.JsonPathDoesNotExist(stdout, "runningOn")
+								helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
+								helper.JsonPathDoesNotExist(stdout, "platform")
 							})
 
 							By("running with default output", func() {
@@ -387,6 +389,7 @@ var _ = Describe("odo describe component command tests", func() {
 							Expect(stderr).To(BeEmpty())
 							checkDevfileJSONDescription(stdout, "devfile.yaml")
 							helper.JsonPathDoesNotExist(stdout, "runningOn")
+							helper.JsonPathDoesNotExist(stdout, "platform") // Deprecated
 							if podman {
 								// Information available only when running under the experimental mode
 								helper.JsonPathDoesNotExist(stdout, "devForwardedPorts")
@@ -462,13 +465,13 @@ var _ = Describe("odo describe component command tests", func() {
 									// TODO We need to think about how to test both Cluster and Podman modes.
 									Expect(helper.IsJSON(stderr)).To(BeTrue())
 									Expect(stdout).To(BeEmpty())
-									helper.JsonPathDoesNotExist(stderr, "runningOn")
+									helper.JsonPathDoesNotExist(stderr, "runningOn") // Deprecated
+									helper.JsonPathDoesNotExist(stderr, "platform")
 									helper.JsonPathContentIs(stderr, "message", "cluster is non accessible")
 									helper.JsonPathDoesNotExist(stderr, "devfilePath")
 									helper.JsonPathDoesNotExist(stderr, "devForwardedPorts")
 									helper.JsonPathDoesNotExist(stderr, "devfileData")
 									helper.JsonPathDoesNotExist(stderr, "runningIn")
-									helper.JsonPathDoesNotExist(stderr, "runningOn")
 								})
 							} else {
 								It("should describe the named component", func() {
@@ -483,7 +486,8 @@ var _ = Describe("odo describe component command tests", func() {
 									helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 									helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
 									helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
-									helper.JsonPathDoesNotExist(stdout, "runningOn")
+									helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
+									helper.JsonPathDoesNotExist(stdout, "platform")
 								})
 							}
 						})

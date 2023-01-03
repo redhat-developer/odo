@@ -14,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// --run-on is considered experimental for now. As such, to exist, it requires the ODO_EXPERIMENTAL_MODE env var to be set.
+	// --platform is considered experimental for now. As such, to exist, it requires the ODO_EXPERIMENTAL_MODE env var to be set.
 	ctx := context.Background()
 	cfg := config.Configuration{
 		OdoExperimentalMode: true,
@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	ctx = envcontext.WithEnvConfig(ctx, cfg)
 	klog.InitFlags(nil)
 	AddOutputFlag()
-	AddRunOnFlag(ctx)
+	AddPlatformFlag(ctx)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	os.Exit(m.Run())
