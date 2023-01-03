@@ -19,9 +19,9 @@ const (
 	unicodeSpinnerFrames = "◓◐◑◒"
 )
 
-// ReplaceTimeInString replaces the time taken to download a Devfile or a starter project for an odo command with a custom value;
+// ReplaceAllTimeInString replaces the time taken to download a Devfile or a starter project for an odo command with a custom value;
 // this function is helpful because the time value is variable and replacing it with the value in mdx content helps in comparing.
-func ReplaceTimeInString(docString string, timeString string) string {
+func ReplaceAllTimeInString(docString string, timeString string) string {
 	reg := regexp.MustCompile(timePatternInOdo)
 	return reg.ReplaceAllString(docString, timeString)
 }
