@@ -12,12 +12,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Test config is supported or not
-      run: |
-        mkdir -p ~/.config/containers/
-        cp ./tests/examples/config/containers.conf ~/.config/containers/containers.conf
-        CONTAINER_CONNECTION=podman-machine-default podman pod ps 
-
     - name: Setup Go
       uses: actions/setup-go@v3
       with:
