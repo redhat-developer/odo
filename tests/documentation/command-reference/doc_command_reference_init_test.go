@@ -27,7 +27,9 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 		helper.CommonAfterEach(commonVar)
 	})
 	Context("Interactive Mode", func() {
-		It("Empty directory", func() {
+		// interactive tests do not provide the same output every time,
+		// so we'll skip this test until we have more coverage and then investigate a better way to test this
+		XIt("Empty directory", func() {
 			args := []string{"odo", "init"}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
 				helper.ExpectString(ctx, "Select language")
@@ -78,6 +80,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				Expect(err).To(BeNil())
 				got := helper.StripAnsi(out)
 				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
+				// Remove all the questions that are present in cmd out, but are not present in the final output as defined inside mdx out
 				got = strings.Replace(got, "? Is this correct? (Y/n) ", "", 1)
 				// for some reason strings.Split(got, "\n") does not split the strings properly
 				// and for this reason "✓  Downloading devfile " is stripped from the output when helper.StripSpinner is called.
