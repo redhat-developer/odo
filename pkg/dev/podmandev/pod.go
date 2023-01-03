@@ -121,7 +121,7 @@ func addHostPorts(containers []corev1.Container, usedPorts []int) []api.Forwarde
 				continue
 			}
 			result = append(result, api.ForwardedPort{
-				Platform:      commonflags.RunOnPodman,
+				Platform:      commonflags.PlatformPodman,
 				ContainerName: containers[i].Name,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,
