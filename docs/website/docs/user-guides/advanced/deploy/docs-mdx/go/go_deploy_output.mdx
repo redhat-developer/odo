@@ -1,0 +1,28 @@
+```console
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-go-app Devfile
+ \__/  \    Namespace: odo-dev
+ /  \__/    odo version: v3.4.0
+ \__/
+
+↪ Building & Pushing Container: quay.io/MYUSERNAME/go-odo-example
+ •  Building image locally  ...
+build -t quay.io/MYUSERNAME/go-odo-example -f /home/user/quickstart-demo/go-demo/Dockerfile /home/user/quickstart-demo/go-demo
+ ✓  Building image locally
+ •  Pushing image to container registry  ...
+push quay.io/MYUSERNAME/go-odo-example
+ ✓  Pushing image to container registry
+
+↪ Deploying Kubernetes Component: my-go-app
+ ✓  Creating resource Deployment/my-go-app
+
+↪ Deploying Kubernetes Component: my-go-app
+ ✓  Creating resource Service/my-go-app
+
+↪ Deploying Kubernetes Component: my-go-app
+ ✓  Creating resource Ingress/my-go-app
+
+Your Devfile has been successfully deployed
+
+```

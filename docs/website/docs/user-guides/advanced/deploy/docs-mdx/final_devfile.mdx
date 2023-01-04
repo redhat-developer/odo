@@ -1,0 +1,21 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<details>
+<summary> Your final Devfile should look something like this:</summary>
+
+:::note
+Your Devfile might slightly vary from the example below, but the example should give you an idea about the placements of all the components and commands.
+:::
+
+
+<Tabs groupId="quickstart">
+    <TabItem value="kubernetes" label="Kubernetes">
+        {props.k8sdata}
+    </TabItem>
+    <TabItem value="openshift" label="OpenShift">
+        {props.ocdata}
+    </TabItem>
+</Tabs>
+
+</details>

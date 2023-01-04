@@ -1,0 +1,28 @@
+```console
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-dotnet-app Devfile
+ \__/  \    Namespace: odo-dev
+ /  \__/    odo version: v3.4.0
+ \__/
+
+↪ Building & Pushing Container: quay.io/MYUSERNAME/dotnet-odo-example
+ •  Building image locally  ...
+build -t quay.io/MYUSERNAME/dotnet-odo-example -f /home/user/quickstart-demo/dotnet-demo/Dockerfile /home/user/quickstart-demo/dotnet-demo
+ ✓  Building image locally
+ •  Pushing image to container registry  ...
+push quay.io/MYUSERNAME/dotnet-odo-example
+ ✓  Pushing image to container registry
+
+↪ Deploying Kubernetes Component: my-dotnet-app
+ ✓  Creating resource Deployment/my-dotnet-app
+
+↪ Deploying Kubernetes Component: my-dotnet-app
+ ✓  Creating resource Service/my-dotnet-app
+
+↪ Deploying Kubernetes Component: my-dotnet-app
+ ✓  Creating resource Ingress/my-dotnet-app
+
+Your Devfile has been successfully deployed
+
+```

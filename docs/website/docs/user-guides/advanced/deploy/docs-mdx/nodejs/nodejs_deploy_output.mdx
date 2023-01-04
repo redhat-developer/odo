@@ -1,0 +1,28 @@
+```console
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-nodejs-app Devfile
+ \__/  \    Namespace: odo-dev
+ /  \__/    odo version: v3.4.0
+ \__/
+
+↪ Building & Pushing Container: quay.io/MYUSERNAME/nodejs-odo-example
+ •  Building image locally  ...
+build -t quay.io/MYUSERNAME/nodejs-odo-example -f /home/user/quickstart-demo/nodejs-demo/Dockerfile /home/user/quickstart-demo/nodejs-demo
+ ✓  Building image locally
+ •  Pushing image to container registry  ...
+push quay.io/MYUSERNAME/nodejs-odo-example
+ ✓  Pushing image to container registry
+
+↪ Deploying Kubernetes Component: my-nodejs-app
+ ✓  Creating resource Deployment/my-nodejs-app
+
+↪ Deploying Kubernetes Component: my-nodejs-app
+ ✓  Creating resource Service/my-nodejs-app
+
+↪ Deploying Kubernetes Component: my-nodejs-app
+ ✓  Creating resource Ingress/my-nodejs-app
+
+Your Devfile has been successfully deployed
+
+```

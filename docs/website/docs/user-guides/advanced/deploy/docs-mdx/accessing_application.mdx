@@ -1,0 +1,22 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+You can now determine how to access the application by running `odo describe component`:
+
+```console
+odo describe component
+```
+
+Check for _Kubernetes Ingresses_ if you are on a Kubernetes cluster or _OpenShift Routes_ if you are an OpenShift cluster to obtain the URI for accessing your application.
+
+<details>
+    <summary>Sample Output</summary>
+    <Tabs groupId="quickstart">
+        <TabItem value="kubernetes" label="Kubernetes">
+            {props.k8sdata}
+        </TabItem>
+        <TabItem value="openshift" label="OpenShift">
+            {props.ocdata}
+        </TabItem>
+    </Tabs>
+</details>
