@@ -29,6 +29,7 @@ func ReplaceAllTimeInString(docString string, timeString string) string {
 
 // StripSpinner strips the cmd out string of spaces, spinner statements and spinner frames
 func StripSpinner(docString string) (returnString string) {
+	// var parsedUnicodeOnce bool
 	for _, line := range strings.Split(docString, "\n") {
 		// trim any special character present in the line
 		line = strings.TrimFunc(line, unicode.IsSpace)
@@ -38,7 +39,14 @@ func StripSpinner(docString string) (returnString string) {
 			continue
 		}
 		if strings.ContainsAny(line, unicodeSpinnerFrames) {
-			continue
+			// if !parsedUnicodeOnce {
+			// 	line = "✓" + strings.SplitAfter(line, "✓")[1]
+			// 	parsedUnicodeOnce = true
+			// } else {
+			// 	continue
+			// }
+			line = "✓" + strings.SplitAfter(line, "✓")[1]
+
 		}
 		returnString += line + "\n"
 	}
@@ -86,5 +94,15 @@ func StripAnsi(docString string) (returnString string) {
 	reg, err := regexp.Compile(ansiPattern)
 	Expect(err).To(BeNil())
 	returnString = reg.ReplaceAllString(docString, "")
+	return
+}
+
+func StripInteractiveQuestion(docString string) (returnString string) {
+	returnString = docString
+	for _, question := range []string{"? Select language:", "? Select project type:", "? Select container for which you want to change configuration?", "? Is this correct?", "? Enter component name:", "? Which starter project do you want to use?"} {
+		if strings.Count(returnString, question) > 1 {
+			returnString = returnString[:strings.Index(returnString, question)] + returnString[strings.LastIndex(returnString, question):]
+		}
+	}
 	return
 }

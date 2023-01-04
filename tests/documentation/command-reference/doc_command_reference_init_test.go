@@ -28,7 +28,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 	})
 	// interactive tests do not provide the same output every time,
 	// so we'll skip these tests until we have more coverage and then investigate a better way to test this
-	XContext("Interactive Mode", func() {
+	Context("Interactive Mode", func() {
 		It("Empty directory", func() {
 			args := []string{"odo", "init"}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
@@ -47,10 +47,12 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				helper.ExpectString(ctx, "Enter component name")
 				helper.SendLine(ctx, "my-java-maven-app")
 
-				helper.ExpectString(ctx, "Your new component 'my-java-maven-app' is ready in the current directory")
+				helper.ExpectString(ctx, "Changes will be directly reflected on the cluster.")
 			})
 			Expect(err).To(BeNil())
-			got := fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(out))
+			got := helper.StripAnsi(out)
+			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
+			got = helper.StripInteractiveQuestion(got)
 			want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_empty_directory_output.mdx"))
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
@@ -80,14 +82,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				Expect(err).To(BeNil())
 				got := helper.StripAnsi(out)
 				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
-				// Remove all the questions that are present in cmd out, but are not present in the final output as defined inside mdx out
-				got = strings.Replace(got, "? Is this correct? (Y/n) ", "", 1)
-				// for some reason strings.Split(got, "\n") does not split the strings properly
-				// and for this reason "✓  Downloading devfile " is stripped from the output when helper.StripSpinner is called.
-				// So we add the line back.
-				got = strings.Replace(got, "? Is this correct? Yes", "? Is this correct? Yes\n✓  Downloading devfile \"nodejs:2.1.1\" from registry \"DefaultDevfileRegistry\" [1s]", 1)
-				got = strings.Replace(got, "\n? Select container for which you want to change configuration?  [Use arrows to move, type to filter]\nruntime\n> NONE - configuration is correct\n", "", 1)
-				got = strings.Replace(got, "? Enter component name: (node-echo) ", "", 1)
+				got = helper.StripInteractiveQuestion(got)
 				want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_directory_with_sources_output.mdx"))
 				diff := cmp.Diff(want, got)
 				Expect(diff).To(BeEmpty())
