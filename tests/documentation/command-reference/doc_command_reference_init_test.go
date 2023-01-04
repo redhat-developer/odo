@@ -51,8 +51,8 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			})
 			Expect(err).To(BeNil())
 			got := helper.StripAnsi(out)
-			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
 			got = helper.StripInteractiveQuestion(got)
+			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
 			want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_empty_directory_output.mdx"))
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty())
@@ -81,8 +81,8 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				})
 				Expect(err).To(BeNil())
 				got := helper.StripAnsi(out)
-				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
 				got = helper.StripInteractiveQuestion(got)
+				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
 				want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_directory_with_sources_output.mdx"))
 				diff := cmp.Diff(want, got)
 				Expect(diff).To(BeEmpty())
@@ -138,18 +138,15 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 					helper.SetDefaultDevfileRegistryAsStaging()
 				})
 
-				removePreferenceKeys := func(docString string) (returnString string) {
-					command := strings.SplitAfter(docString, "odo preference view\n")
-					devfileRegistries := strings.Split(command[1], "\n\n")
-					returnString = command[0] + "[...]\n\n" + devfileRegistries[1] + "\n\n" + devfileRegistries[2]
-					return
+				removePreferenceKeys := func(docString string) string {
+					return "[...]\n\n" + docString[strings.Index(docString, "Devfile registries"):]
 				}
 				checkRegistriesOutput := func() {
 					args := []string{"preference", "view"}
 					out := helper.Cmd("odo", args...).ShouldPass().Out()
 					got := helper.StripAnsi(out)
-					got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 					got = removePreferenceKeys(got)
+					got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 					want := helper.GetMDXContent(filepath.Join(commonPath, "registry_output.mdx"))
 					diff := cmp.Diff(want, got)
 					Expect(diff).To(BeEmpty())

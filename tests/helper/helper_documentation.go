@@ -29,25 +29,23 @@ func ReplaceAllTimeInString(docString string, timeString string) string {
 
 // StripSpinner strips the cmd out string of spaces, spinner statements and spinner frames
 func StripSpinner(docString string) (returnString string) {
-	// var parsedUnicodeOnce bool
 	for _, line := range strings.Split(docString, "\n") {
 		// trim any special character present in the line
 		line = strings.TrimFunc(line, unicode.IsSpace)
 		// This check is to avoid spinner statements in the cmd output
 		// currently it does so for init and dev
+		// e.g. " •  Syncing file changes ..."
 		if (strings.HasPrefix(line, "•  Downloading") || strings.HasPrefix(line, "•  Syncing") || strings.HasPrefix(line, "•  Building")) && strings.HasSuffix(line, "...") {
 			continue
 		}
-		if strings.ContainsAny(line, unicodeSpinnerFrames) {
-			// if !parsedUnicodeOnce {
-			// 	line = "✓" + strings.SplitAfter(line, "✓")[1]
-			// 	parsedUnicodeOnce = true
-			// } else {
-			// 	continue
-			// }
-			line = "✓" + strings.SplitAfter(line, "✓")[1]
 
+		// for some reason, splitting the docString by \n does not split the spinner frames,
+		// so we perform a side operation to remove the extra spinner frames that are not present in the final output
+		// e.g. "◐  Downloading devfile "java-maven" from registry "DefaultDevfileReg... \n ◓  Downloading devfile "java-maven" from registry "DefaultDevfileReg...\n\n [32m✓[0m  Downloading devfile "java-maven" from registry "DefaultDevfileRegistry" [2s]"
+		if strings.ContainsAny(line, unicodeSpinnerFrames) {
+			line = "✓" + strings.SplitAfter(line, "✓")[1]
 		}
+
 		returnString += line + "\n"
 	}
 	// replace all instances of time to [1s], this is also done for mdx out
@@ -97,6 +95,8 @@ func StripAnsi(docString string) (returnString string) {
 	return
 }
 
+// StripInteractiveQuestion strips the extra output from interactive questions, leaving the final output
+// e.g. "? Is this correct? (Y/n) No? Is this correct? No"
 func StripInteractiveQuestion(docString string) (returnString string) {
 	returnString = docString
 	for _, question := range []string{"? Select language:", "? Select project type:", "? Select container for which you want to change configuration?", "? Is this correct?", "? Enter component name:", "? Which starter project do you want to use?"} {
