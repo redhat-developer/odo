@@ -24,11 +24,4 @@ jobs:
       run: |
         make test-integration-podman
 
-    - name: test Reporter
-      uses: dorny/test-reporter@v1 
-      if: success() || failure()        
-      with:
-        name: test-results
-        path: test-integration-podman.xml
-        reporter: jest-junit
     
