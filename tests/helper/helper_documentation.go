@@ -16,7 +16,8 @@ const (
 	timePatternInOdo = `(\[[0-9smh]+\])` // e.g. [4s], [1m], [3ms]
 	staticTimeValue  = "[1s]"
 	// Credit: https://github.com/acarl005/stripansi/blob/master/stripansi.go
-	ansiPattern = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+	ansiPattern          = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+	unicodeSpinnerFrames = "◓◐◑◒"
 )
 
 // ReplaceAllTimeInString replaces the time taken to download a Devfile or a starter project for an odo command with a custom value;
@@ -34,6 +35,9 @@ func StripSpinner(docString string) (returnString string) {
 		// This check is to avoid spinner statements in the cmd output
 		// currently it does so for init and dev
 		if (strings.HasPrefix(line, "•  Downloading") || strings.HasPrefix(line, "•  Syncing") || strings.HasPrefix(line, "•  Building")) && strings.HasSuffix(line, "...") {
+			continue
+		}
+		if strings.ContainsAny(line, unicodeSpinnerFrames) {
 			continue
 		}
 		returnString += line + "\n"
