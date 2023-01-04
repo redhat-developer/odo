@@ -5,7 +5,7 @@ sidebar_position: 3
 
 ## Step 0. Creating the initial source code (optional)
 
-import InitialSourceCodeInfo from './_initial_source_code.mdx';
+import InitialSourceCodeInfo from './docs-mdx/initial_source_code_description.mdx';
 
 <InitialSourceCodeInfo/>
 
@@ -45,20 +45,24 @@ Your source code has now been generated and created in the directory.
 
 ## Step 1. Connect to your cluster and create a new namespace or project
 
-import ConnectingToCluster from './_connecting_to_cluster.mdx';
+import ConnectingToCluster from './docs-mdx/connecting_to_the_cluster_description.mdx';
 
 <ConnectingToCluster/>
 
 ## Step 2. Initializing your application (`odo init`)
 
-import CreatingApp from './_creating_app.mdx';
+import InitSampleOutput from './docs-mdx/dotnet/dotnet_odo_init_output.mdx';
+import InitDescription from './docs-mdx/odo_init_description.mdx';
 
-<CreatingApp name="dotnet" port="8080" language="dotnet" framework=".NET"/>
+<InitDescription framework=".NET" initout=<InitSampleOutput/> />
 
 ## Step 3. Developing your application continuously (`odo dev`)
 
-import RunningCommand from './_running_command.mdx';
+import DevSampleOutput from './docs-mdx/dotnet/dotnet_odo_dev_output.mdx';
 
-<RunningCommand name="dotnet" port="8080" language="dotnet" framework=".NET"/>
+import DevDescription from './docs-mdx/odo_dev_description.mdx';
+
+<DevDescription framework=".NET" devout=<DevSampleOutput/> />
+
 
 _You can now follow the [advanced guide](../advanced/deploy/dotnet.md) to deploy the application to production._
