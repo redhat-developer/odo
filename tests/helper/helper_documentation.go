@@ -16,8 +16,7 @@ const (
 	timePatternInOdo = `(\[[0-9smh]+\])` // e.g. [4s], [1m], [3ms]
 	staticTimeValue  = "[1s]"
 	// Credit: https://github.com/acarl005/stripansi/blob/master/stripansi.go
-	ansiPattern          = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
-	unicodeSpinnerFrames = "◓◐◑◒"
+	ansiPattern = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
 )
 
 // ReplaceAllTimeInString replaces the time taken to download a Devfile or a starter project for an odo command with a custom value;
@@ -33,7 +32,8 @@ func StripSpinner(docString string) (returnString string) {
 		// trim any special character present in the line
 		line = strings.TrimFunc(line, unicode.IsSpace)
 		// This check is to avoid spinner statements in the cmd output
-		if strings.ContainsAny(line, unicodeSpinnerFrames) || strings.HasSuffix(line, "...") {
+		// currently it does so for init and dev
+		if (strings.HasPrefix(line, "•  Downloading") || strings.HasPrefix(line, "•  Syncing") || strings.HasPrefix(line, "•  Building")) && strings.HasSuffix(line, "...") {
 			continue
 		}
 		returnString += line + "\n"
@@ -82,16 +82,5 @@ func StripAnsi(docString string) (returnString string) {
 	reg, err := regexp.Compile(ansiPattern)
 	Expect(err).To(BeNil())
 	returnString = reg.ReplaceAllString(docString, "")
-	return
-}
-
-func CleanupInteractiveQuestions(docString string) (returnString string) {
-	splitDocString := strings.Split(docString, "\n")
-	for _, line := range splitDocString {
-		if strings.Contains(line, "[Use arrows to move, type to filter]") {
-			continue
-		}
-		returnString += line + "\n"
-	}
 	return
 }
