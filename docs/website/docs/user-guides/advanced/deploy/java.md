@@ -5,7 +5,7 @@ sidebar_position: 2
 
 ## Overview
 
-import Overview from './docs-mdx/prerequisites.mdx';
+import Overview from './docs-mdx/overview.mdx';
 
 <Overview/>
 
@@ -23,17 +23,9 @@ Complete the [Developing with Java (Spring Boot)](/docs/user-guides/quickstart/j
 
 In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
 
-```dockerfile
-FROM registry.access.redhat.com/ubi8/openjdk-11 as builder
+import Dockerfile from './docs-mdx/java/java_Dockerfile.mdx';
 
-USER jboss
-WORKDIR /tmp/src
-COPY --chown=jboss . /tmp/src
-RUN mvn package
-
-FROM registry.access.redhat.com/ubi8/openjdk-11
-COPY --from=builder /tmp/src/target/*.jar /deployments/app.jar
-```
+<Dockerfile />
 
 ## Step 3. Modify the Devfile
 

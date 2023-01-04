@@ -5,7 +5,7 @@ sidebar_position: 3
 
 ## Overview
 
-import Overview from './docs-mdx/prerequisites.mdx';
+import Overview from './docs-mdx/overview.mdx';
 
 <Overview/>
 
@@ -22,20 +22,9 @@ Complete the [Developing with .Net](/docs/user-guides/quickstart/dotnet) guide b
 ## Step 2. Containerize the application
 
 In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
+import Dockerfile from './docs-mdx/dotnet/dotnet_Dockerfile.mdx';
 
-```dockerfile
-FROM registry.access.redhat.com/ubi8/dotnet-60:6.0 as builder
-WORKDIR /opt/app-root/src
-COPY --chown=1001 . .
-RUN dotnet publish -c Release
-
-
-FROM registry.access.redhat.com/ubi8/dotnet-60:6.0
-EXPOSE 8080
-COPY --from=builder /opt/app-root/src/bin /opt/app-root/src/bin
-WORKDIR /opt/app-root/src/bin/Release/net6.0/publish
-CMD ["dotnet", "app.dll"]
-```
+<Dockerfile />
 
 ## Step 3. Modify the Devfile
 

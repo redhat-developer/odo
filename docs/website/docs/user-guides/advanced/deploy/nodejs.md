@@ -5,7 +5,7 @@ sidebar_position: 1
 
 ## Overview
 
-import Overview from './docs-mdx/prerequisites.mdx';
+import Overview from './docs-mdx/overview.mdx';
 
 <Overview/>
 
@@ -23,30 +23,9 @@ Complete the [Developing with Node.JS](/docs/user-guides/quickstart/nodejs) guid
 
 In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
 
-```dockerfile
-# Sample copied from https://github.com/nodeshift-starters/devfile-sample/blob/main/Dockerfile
+import Dockerfile from './docs-mdx/nodejs/nodejs_Dockerfile.mdx';
 
-# Install the app dependencies in a full Node docker image
-FROM registry.access.redhat.com/ubi8/nodejs-14:latest
-
-# Copy package.json and package-lock.json
-COPY package*.json ./
-
-# Install app dependencies
-RUN npm install --production
-
-# Copy the dependencies into a Slim Node docker image
-FROM registry.access.redhat.com/ubi8/nodejs-14-minimal:latest
-
-# Install app dependencies
-COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
-COPY . /opt/app-root/src
-
-ENV NODE_ENV production
-ENV PORT 3000
-
-CMD ["npm", "start"]
-```
+<Dockerfile />
 
 ## Step 3. Modify the Devfile
 

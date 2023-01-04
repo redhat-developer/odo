@@ -5,7 +5,7 @@ sidebar_position: 4
 
 ## Overview
 
-import Overview from './docs-mdx/prerequisites.mdx';
+import Overview from './docs-mdx/overview.mdx';
 
 <Overview/>
 
@@ -23,28 +23,9 @@ Complete the [Developing with Go](/docs/user-guides/quickstart/go) guide before 
 
 In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
 
-```dockerfile
-# This Dockerfile is referenced from:
-# https://github.com/GoogleCloudPlatform/golang-samples/blob/main/run/helloworld/Dockerfile
+import Dockerfile from './docs-mdx/go/go_Dockerfile.mdx';
 
-# Build
-FROM golang:1.17-buster as builder
-WORKDIR /app
-COPY go.* ./
-RUN go mod download
-COPY . ./
-RUN go build -v -o server
-
-# Create a "lean" container
-FROM debian:buster-slim
-RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/server /app/server
-
-# Run
-CMD ["/app/server"]
-```
+<Dockerfile />
 
 ## Step 3. Modify the Devfile
 
