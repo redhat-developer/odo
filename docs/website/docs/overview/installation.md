@@ -33,12 +33,12 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -64,12 +64,12 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -95,12 +95,12 @@ Installing `odo` on `ppc64le` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-ppc64le -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-ppc64le -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-ppc64le.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -126,12 +126,12 @@ Installing `odo` on `s390x` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-s390x -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-s390x -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-linux-s390x.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -190,12 +190,12 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-darwin-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-darwin-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-darwin-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -222,12 +222,12 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-darwin-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-darwin-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-darwin-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -258,12 +258,12 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 2. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-windows-amd64.exe -o odo.exe
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-windows-amd64.exe -o odo.exe
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.4.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.5.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
 Get-FileHash odo.exe
 type odo.exe.sha256
@@ -333,7 +333,7 @@ The download can be executed using the `download` goal which automatically retri
 ```shell
 mvn software.tnb:odo-downloader-maven-plugin:0.1.3:download \
   -Dodo.target.file=$HOME/bin/odo \
-  -Dodo.version=v3.4.0
+  -Dodo.version=v3.5.0
 ```
 
 ### asdf
@@ -341,6 +341,6 @@ The [asdf version manager](https://asdf-vm.com/) is a tool for managing multiple
 With `asdf` installed, the [asdf plugin for odo](https://github.com/rm3l/asdf-odo) can be used to install any released version of `odo`:
 ```
 asdf plugin add odo
-asdf install odo 3.4.0
-asdf global odo 3.4.0
+asdf install odo 3.5.0
+asdf global odo 3.5.0
 ```
