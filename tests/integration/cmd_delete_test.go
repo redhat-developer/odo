@@ -136,8 +136,6 @@ var _ = Describe("odo delete command tests", func() {
 		ctx := ctx
 		When(ctx.title, func() {
 			BeforeEach(func() {
-				// Hardcoded names from `ctx.devfileName`
-				cmpName = "mynodejs"
 				deploymentName = "my-component"
 				serviceName = "my-cs"
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)

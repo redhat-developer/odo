@@ -1,0 +1,30 @@
+name: odo-podman-test
+on:
+  pull_request:
+    branches:    
+      - main
+
+jobs:
+  ODO-PODMAN-TEST:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: 'go.mod'
+
+    - name: Build odo
+      run: make install
+
+    - name: Run Integration tests
+      # TODO Make the job fail when this step fails once we check the compatibility with podman v3.
+      # See https://github.com/redhat-developer/odo/issues/6446
+      continue-on-error: true
+      run: |
+        make test-integration-podman
+
+    
