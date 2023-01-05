@@ -41,48 +41,52 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				}
 			})
 
-			It("should describe the binding without running odo dev", func() {
-				By("JSON output", func() {
-					res := helper.Cmd("odo", "describe", "binding", "-o", "json").ShouldPass()
-					stdout, stderr := res.Out(), res.Err()
-					Expect(stderr).To(BeEmpty())
-					Expect(helper.IsJSON(stdout)).To(BeTrue())
-					helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
-					helper.JsonPathContentIs(stdout, "0.spec.application.kind", "Deployment")
-					helper.JsonPathContentIs(stdout, "0.spec.application.name", "my-nodejs-app-app")
-					helper.JsonPathContentIs(stdout, "0.spec.application.apiVersion", "apps/v1")
-					helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-					helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-					helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-					if ns != "" {
-						helper.JsonPathContentIs(stdout, "0.spec.services.0.namespace", ns)
-					} else {
-						helper.JsonPathDoesNotExist(stdout, "0.spec.services.0.namespace")
-					}
-					helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
-					helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
-					helper.JsonPathContentIs(stdout, "0.spec.namingStrategy", "lowercase")
-					helper.JsonPathContentIs(stdout, "0.status", "")
+			for _, label := range []string{
+				helper.LabelNoCluster, helper.LabelUnauth,
+			} {
+				label := label
+				It("should describe the binding without running odo dev", Label(label), func() {
+					By("JSON output", func() {
+						res := helper.Cmd("odo", "describe", "binding", "-o", "json").ShouldPass()
+						stdout, stderr := res.Out(), res.Err()
+						Expect(stderr).To(BeEmpty())
+						Expect(helper.IsJSON(stdout)).To(BeTrue())
+						helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
+						helper.JsonPathContentIs(stdout, "0.spec.application.kind", "Deployment")
+						helper.JsonPathContentIs(stdout, "0.spec.application.name", "my-nodejs-app-app")
+						helper.JsonPathContentIs(stdout, "0.spec.application.apiVersion", "apps/v1")
+						helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
+						helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
+						helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
+						if ns != "" {
+							helper.JsonPathContentIs(stdout, "0.spec.services.0.namespace", ns)
+						} else {
+							helper.JsonPathDoesNotExist(stdout, "0.spec.services.0.namespace")
+						}
+						helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
+						helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
+						helper.JsonPathContentIs(stdout, "0.spec.namingStrategy", "lowercase")
+						helper.JsonPathContentIs(stdout, "0.status", "")
+					})
+					By("human readable output", func() {
+						res := helper.Cmd("odo", "describe", "binding").ShouldPass()
+						stdout, _ := res.Out(), res.Err()
+						Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+						Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
+						if ns != "" {
+							Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: %s)", ns)))
+						} else {
+							Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+							Expect(stdout).ToNot(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: "))
+						}
+						Expect(stdout).To(ContainSubstring("Bind as files: true"))
+						Expect(stdout).To(ContainSubstring("Detect binding resources: true"))
+						Expect(stdout).To(ContainSubstring("Naming strategy: lowercase"))
+						Expect(stdout).To(ContainSubstring("Available binding information: unknown"))
+						Expect(stdout).To(ContainSubstring("Binding information for one or more ServiceBinding is not available"))
+					})
 				})
-				By("human readable output", func() {
-					res := helper.Cmd("odo", "describe", "binding").ShouldPass()
-					stdout, _ := res.Out(), res.Err()
-					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
-					Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
-					if ns != "" {
-						Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: %s)", ns)))
-					} else {
-						Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-						Expect(stdout).ToNot(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: "))
-					}
-					Expect(stdout).To(ContainSubstring("Bind as files: true"))
-					Expect(stdout).To(ContainSubstring("Detect binding resources: true"))
-					Expect(stdout).To(ContainSubstring("Naming strategy: lowercase"))
-					Expect(stdout).To(ContainSubstring("Available binding information: unknown"))
-					Expect(stdout).To(ContainSubstring("Binding information for one or more ServiceBinding is not available"))
-				})
-			})
-
+			}
 			for _, command := range [][]string{
 				{"list", "binding"},
 				{"list"},

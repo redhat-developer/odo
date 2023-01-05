@@ -21,12 +21,12 @@ import (
 var apiServiceBinding = api.ServiceBinding{
 	Name: "my-nodejs-app-cluster-sample",
 	Spec: api.ServiceBindingSpec{
-		Application: corev1.ObjectReference{
+		Application: api.ServiceBindingReference{
 			Name:       "my-nodejs-app-app",
 			APIVersion: deploymentApiVersion,
 			Kind:       deploymentKind,
 		},
-		Services: []corev1.ObjectReference{
+		Services: []api.ServiceBindingReference{
 			{
 				Name:       "cluster-sample",
 				APIVersion: ClusterAPIVersion,
@@ -109,7 +109,6 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 							"my-nodejs-app-cluster-sample",
 						),
 					)
-					client.EXPECT().APIServiceBindingFromBinding(gomock.Any()).Return(apiServiceBinding, nil)
 					return client
 				},
 			}, args: args{
@@ -133,7 +132,6 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					).AnyTimes()
 					client.EXPECT().GetCurrentNamespace().Return("anamespace").AnyTimes()
 					client.EXPECT().GetSecret("asecret", "anamespace").Return(&sbSecret, nil).AnyTimes()
-					client.EXPECT().APIServiceBindingFromBinding(gomock.Any()).Return(apiServiceBinding, nil).AnyTimes()
 					return client
 				},
 			}, args: args{
@@ -144,12 +142,12 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				{
 					Name: "my-nodejs-app-cluster-sample",
 					Spec: api.ServiceBindingSpec{
-						Application: corev1.ObjectReference{
+						Application: api.ServiceBindingReference{
 							Name:       "my-nodejs-app-app",
 							APIVersion: deploymentApiVersion,
 							Kind:       deploymentKind,
 						},
-						Services: []corev1.ObjectReference{
+						Services: []api.ServiceBindingReference{
 							{
 								Name:       "cluster-sample",
 								APIVersion: ClusterAPIVersion,
@@ -181,7 +179,6 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					).AnyTimes()
 					client.EXPECT().GetCurrentNamespace().Return("anamespace").AnyTimes()
 					client.EXPECT().GetSecret("asecret", "anamespace").Return(&sbSecret, nil).AnyTimes()
-					client.EXPECT().APIServiceBindingFromBinding(gomock.Any()).Return(apiServiceBinding, nil).AnyTimes()
 					return client
 				},
 			}, args: args{},
@@ -189,12 +186,12 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				{
 					Name: "my-nodejs-app-cluster-sample",
 					Spec: api.ServiceBindingSpec{
-						Application: corev1.ObjectReference{
+						Application: api.ServiceBindingReference{
 							Name:       "my-nodejs-app-app",
 							APIVersion: deploymentApiVersion,
 							Kind:       deploymentKind,
 						},
-						Services: []corev1.ObjectReference{
+						Services: []api.ServiceBindingReference{
 							{
 								Name:       "cluster-sample",
 								APIVersion: ClusterAPIVersion,

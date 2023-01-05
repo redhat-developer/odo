@@ -1,9 +1,5 @@
 package api
 
-import (
-	corev1 "k8s.io/api/core/v1"
-)
-
 // ServiceBinding describes a service binding, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
 type ServiceBinding struct {
 	Name   string                `json:"name"`
@@ -12,11 +8,19 @@ type ServiceBinding struct {
 }
 
 type ServiceBindingSpec struct {
-	Application            corev1.ObjectReference   `json:"application"`
-	Services               []corev1.ObjectReference `json:"services"`
-	DetectBindingResources bool                     `json:"detectBindingResources"`
-	BindAsFiles            bool                     `json:"bindAsFiles"`
-	NamingStrategy         string                   `json:"namingStrategy,omitempty"`
+	Application            ServiceBindingReference   `json:"application"`
+	Services               []ServiceBindingReference `json:"services"`
+	DetectBindingResources bool                      `json:"detectBindingResources"`
+	BindAsFiles            bool                      `json:"bindAsFiles"`
+	NamingStrategy         string                    `json:"namingStrategy,omitempty"`
+}
+
+type ServiceBindingReference struct {
+	Kind       string `json:"kind,omitempty"`
+	Resource   string `json:"resource,omitempty"`
+	Namespace  string `json:"namespace,omitempty"`
+	Name       string `json:"name,omitempty"`
+	APIVersion string `json:"apiVersion,omitempty"`
 }
 
 type ServiceBindingStatus struct {

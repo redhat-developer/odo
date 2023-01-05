@@ -2,6 +2,7 @@ package describe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -96,11 +98,30 @@ func (o *BindingOptions) runWithoutName(ctx context.Context) ([]api.ServiceBindi
 		devfileObj = odocontext.GetDevfileObj(ctx)
 	)
 
-	return o.clientset.BindingClient.GetBindingsFromDevfile(*devfileObj, workingDir)
+	result, err := o.clientset.BindingClient.GetBindingsFromDevfile(*devfileObj, workingDir)
+	if err != nil {
+		if clierrors.AsWarning(err) {
+			log.Warning(err.Error())
+			return result, nil
+		}
+		return nil, err
+	}
+	return result, nil
 }
 
 func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
-	return o.clientset.BindingClient.GetBindingFromCluster(o.nameFlag)
+	if o.clientset.KubernetesClient == nil {
+		return api.ServiceBinding{}, errors.New("unable to access the cluster")
+	}
+	result, err := o.clientset.BindingClient.GetBindingFromCluster(o.nameFlag)
+	if err != nil {
+		if clierrors.AsWarning(err) {
+			log.Warning(err.Error())
+			return result, nil
+		}
+		return api.ServiceBinding{}, err
+	}
+	return result, nil
 }
 
 // NewCmdBinding implements the binding odo sub-command

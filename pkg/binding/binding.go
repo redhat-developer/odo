@@ -29,6 +29,7 @@ import (
 	backendpkg "github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 )
 
 type BindingClient struct {
@@ -114,6 +115,7 @@ func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstru
 
 // GetBindingsFromDevfile returns all ServiceBinding resources declared as Kubernertes component from a Devfile
 // from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
+// The function also returns status information of the binding in the cluster, if accessible, or a warning if the cluster is not accessible
 func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
 	result := []api.ServiceBinding{}
 	kubeComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
@@ -125,6 +127,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		return nil, err
 	}
 
+	var warning error
 	for _, component := range kubeComponents {
 		strCRD, err := libdevfile.GetK8sManifestsWithVariablesSubstituted(devfileObj, component.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
@@ -145,13 +148,13 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 				return nil, err
 			}
 
-			sb, err := o.kubernetesClient.APIServiceBindingFromBinding(sbo)
+			sb, err := kclient.APIServiceBindingFromBinding(sbo)
 			if err != nil {
 				return nil, err
 			}
 			sb.Status, err = o.getStatusFromBinding(sb.Name)
 			if err != nil {
-				return nil, err
+				warning = clierrors.NewWarning("unable to access the cluster", err)
 			}
 
 			result = append(result, sb)
@@ -164,27 +167,26 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 				return nil, err
 			}
 
-			sb := o.kubernetesClient.APIServiceBindingFromSpec(sbc)
+			sb := kclient.APIServiceBindingFromSpec(sbc)
 			sb.Status, err = o.getStatusFromSpec(sb.Name)
 			if err != nil {
-				return nil, err
+				warning = clierrors.NewWarning("unable to access the cluster", err)
 			}
 
 			result = append(result, sb)
 
 		}
 	}
-	return result, nil
+	return result, warning
 }
 
 // GetBindingFromCluster returns the ServiceBinding resource with the given name
 // from the cluster, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
 func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, error) {
-
 	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err == nil {
 		var sb api.ServiceBinding
-		sb, err = o.kubernetesClient.APIServiceBindingFromBinding(bindingSB)
+		sb, err = kclient.APIServiceBindingFromBinding(bindingSB)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
@@ -200,7 +202,7 @@ func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, 
 
 	specSB, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err == nil {
-		sb := o.kubernetesClient.APIServiceBindingFromSpec(specSB)
+		sb := kclient.APIServiceBindingFromSpec(specSB)
 		sb.Status, err = o.getStatusFromSpec(specSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err
@@ -218,6 +220,9 @@ func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, 
 // getStatusFromBinding returns status information from a ServiceBinding in the cluster
 // from group binding.operators.coreos.com/v1alpha1
 func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingStatus, error) {
+	if o.kubernetesClient == nil {
+		return nil, nil
+	}
 	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err != nil {
 		if kerrors.IsNotFound(err) {

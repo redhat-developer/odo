@@ -152,7 +152,12 @@ func HumanReadableOutput(namespace string, list api.ResourcesList) {
 		}
 
 		appSpec := binding.Spec.Application
-		application := fmt.Sprintf("%s (%s)", appSpec.Name, appSpec.Kind)
+		var application string
+		if appSpec.Kind != "" {
+			application = fmt.Sprintf("%s (%s)", appSpec.Name, appSpec.Kind)
+		} else {
+			application = fmt.Sprintf("%s (%s)", appSpec.Name, appSpec.Resource)
+		}
 
 		servicesSpecs := binding.Spec.Services
 		services := ""

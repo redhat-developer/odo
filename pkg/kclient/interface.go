@@ -24,8 +24,6 @@ import (
 
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
-
-	"github.com/redhat-developer/odo/pkg/api"
 )
 
 type ClientInterface interface {
@@ -43,8 +41,6 @@ type ClientInterface interface {
 	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
 	ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error)
 	NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
-	APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) (api.ServiceBinding, error)
-	APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding
 	GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error)
 
 	// deployment.go
