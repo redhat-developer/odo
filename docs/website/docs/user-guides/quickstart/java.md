@@ -21,10 +21,6 @@ For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devf
 5. Select "Spring Web"
 6. Click "Generate" to generate and download the source code
 
-:::caution
-For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devfile.io](https://registry.devfile.io/) with Java 17.
-:::
-
 Finally, open a terminal and navigate to the directory.
 
 Your source code has now been generated and created in the directory.
