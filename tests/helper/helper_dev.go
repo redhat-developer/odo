@@ -115,16 +115,17 @@ type DevSession struct {
 }
 
 type DevSessionOpts struct {
-	EnvVars     []string
-	CmdlineArgs []string
-	RunOnPodman bool
+	EnvVars          []string
+	CmdlineArgs      []string
+	RunOnPodman      bool
+	TimeoutInSeconds int
 }
 
 // StartDevMode starts a dev session with `odo dev`
 // It returns a session structure, the contents of the standard and error outputs
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode(options DevSessionOpts) (DevSession, []byte, []byte, map[string]string, error) {
+func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, errOut []byte, endpoints map[string]string, err error) {
 	if options.RunOnPodman {
 		options.CmdlineArgs = append(options.CmdlineArgs, "--platform", "podman")
 		options.EnvVars = append(options.EnvVars, "ODO_EXPERIMENTAL_MODE=true")
@@ -142,7 +143,11 @@ func StartDevMode(options DevSessionOpts) (DevSession, []byte, []byte, map[strin
 	cmd.Cmd.Stderr = c.Tty()
 
 	session := cmd.AddEnv(options.EnvVars...).Runner().session
-	WaitForOutputToContain("[Ctrl+c] - Exit", 360, 10, session)
+	timeoutInSeconds := 360
+	if options.TimeoutInSeconds != 0 {
+		timeoutInSeconds = options.TimeoutInSeconds
+	}
+	WaitForOutputToContain("[Ctrl+c] - Exit", timeoutInSeconds, 10, session)
 	result := DevSession{
 		session: session,
 		console: c,
