@@ -12,10 +12,18 @@ import InitialSourceCodeInfo from './docs-mdx/initial_source_code_description.md
 For Java, we will use the [Spring Initializr](https://start.spring.io/) to generate the example source code:
 
 1. Navigate to [start.spring.io](https://start.spring.io/) 
-2. Select **11** under **Java**
-3. Click on "Add" under "Dependencies"
-4. Select "Spring Web"
-5. Click "Generate" to generate and download the source code
+2. Under **Spring Boot** select **2.7.\*** version.
+:::caution
+For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devfile.io](https://registry.devfile.io/) with Java 17.
+:::
+3. Select **11** under **Java**
+4. Click on "Add" under "Dependencies"
+5. Select "Spring Web"
+6. Click "Generate" to generate and download the source code
+
+:::caution
+For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devfile.io](https://registry.devfile.io/) with Java 17.
+:::
 
 Finally, open a terminal and navigate to the directory.
 
