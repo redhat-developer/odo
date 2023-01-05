@@ -29,20 +29,10 @@ odo init
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init
-? Select language: java
-? Select project type: Maven Java (java-maven, registry: DefaultDevfileRegistry)
-? Which starter project do you want to use? springbootproject
-? Enter component name: my-java-maven-app
- ✓  Downloading devfile "java-maven" from registry "DefaultDevfileRegistry" [949ms]
- ✓  Downloading starter project "springbootproject" [430ms]
+import EmptyDirOutput from './docs-mdx/init/interactive_mode_empty_directory_output.mdx';
 
-Your new component "my-java-maven-app" is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<EmptyDirOutput />
+
 </details>
 
 #### Directory with sources
@@ -67,40 +57,9 @@ odo init
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init                                                                                                                                                                                                          
-  __                                                                                                                                                                                                                
- /  \__     Initializing a new component                                                                                                                                                                            
- \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection                                                                                                          
- /  \__/    odo version: v3.3.0                                                                                                                                                                                     
- \__/                                                                                                                                                                                                               
-                                                                                                                                                                                                                    
-Interactive mode enabled, please answer the following questions:                                                                                                                                                    
-Based on the files in the current directory odo detected                                                                                                                                                            
-Language: JavaScript                                                                                                                                                                                                
-Project type: Node.js                                                                                                                                                                                               
-Application ports: 3000                                                                                                                                                                                             
-The devfile "nodejs" from the registry "DefaultDevfileRegistry" will be downloaded.                                                                                                                                 
-? Is this correct? Yes                                                                                                                                                                                              
- ✓  Downloading devfile "nodejs" from registry "DefaultDevfileRegistry" [1s]                                                                                                                                        
-                                                                                                                                                                                                                    
-↪ Container Configuration "runtime":                                                                                                                                                                                
-  OPEN PORTS:                                                                                                                                                                                                       
-    - 5858                                                                                                                                                                                                          
-    - 3000                                                                                                                                                                                                          
-  ENVIRONMENT VARIABLES:                                                                                                                                                                                            
-    - DEBUG_PORT = 5858                                                                                                                                                                                             
-                                                                                                                                                                                                                    
-? Select container for which you want to change configuration? NONE - configuration is correct                                                                                                                      
-? Enter component name: nodejs                                                                                                                                                                                      
-                                                                                                                                                                                                                    
-You can automate this command by executing:
-   odo init --name nodejs --devfile nodejs --devfile-registry DefaultDevfileRegistry
+import NonEmptyDirectoryOutput from './docs-mdx/init/interactive_mode_directory_with_sources_output.mdx'
 
-Your new component 'nodejs' is ready in the current directory.
-To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-```
+<NonEmptyDirectoryOutput />
 </details>
 
 ### Non-interactive mode
@@ -119,41 +78,23 @@ The required `--name` flag indicates how the component initialized by this comma
 
 #### Fetch Devfile from any registry of the list
 
-In this example, the devfile will be downloaded from the **Staging** registry, which is the first one in the list containing the `nodejs-react` devfile.
+In this example, the devfile will be downloaded from the **StagingRegistry** registry, which is the first one in the list containing the `nodejs-react` devfile.
 ```shell
 odo init --name <component-name> --devfile <devfile> [--starter STARTER]
 ```
 <details>
 <summary>Example</summary>
 
-```console
-$ odo preference view
-[...]
+<RegistryOutput />
 
-Devfile registries:
- NAME                       URL                                   SECURE
- Staging                    https://registry.stage.devfile.io     No
- DefaultDevfileRegistry     https://registry.devfile.io           No
+import RegistryListOutput from './docs-mdx/init/registry_list_output.mdx'
 
-$  odo registry --devfile nodejs-react
- NAME          REGISTRY                DESCRIPTION                                  VERSIONS 
- nodejs-react  StagingRegistry         React is a free and open-source front-en...  2.0.2    
- nodejs-react  DefaultDevfileRegistry  React is a free and open-source front-en...  2.0.2   
+<RegistryListOutput />
 
-$ odo init --devfile nodejs-react --name my-nr-app 
-  __
- /  \__     Initializing a new component
- \__/  \    
- /  \__/    odo version: v3.4.0
- \__/
+import DevfileFromAnyRegistryOutput from './docs-mdx/init/devfile_from_any_registry_output.mdx'
 
- ✓  Downloading devfile "nodejs-react" [3s]
+<DevfileFromAnyRegistryOutput />
 
-Your new component 'my-nr-app' is ready in the current directory.
-To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-
-```
 </details>
 
 
@@ -163,24 +104,14 @@ In this example, the devfile will be downloaded from the **DefaultDevfileRegistr
 <details>
 <summary>Example</summary>
 
-```console
-$ odo preference view
-[...]
+import RegistryOutput from './docs-mdx/init/registry_output.mdx'
 
-Devfile registries:
- NAME                       URL                                   SECURE
- Staging                    https://registry.stage.devfile.io     No
- DefaultDevfileRegistry     https://registry.devfile.io           No
+<RegistryOutput />
 
-$ odo init --name my-spring-app --devfile java-springboot --devfile-registry DefaultDevfileRegistry --starter springbootproject
- ✓  Downloading devfile "java-springboot" from registry "DefaultDevfileRegistry" [980ms]
- ✓  Downloading starter project "springbootproject" [399ms]
+import DevfileFromSpecificRegistryOutput from './docs-mdx/init/devfile_from_specific_registry_output.mdx';
 
-Your new component "my-spring-app" is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<DevfileFromSpecificRegistryOutput />
+
 </details>
 
 
@@ -192,16 +123,10 @@ odo init --devfile-path <URL> --name <component-name> [--starter STARTER]
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
- ✓  Downloading devfile from "https://registry.devfile.io/devfiles/nodejs-angular" [415ms]
- ✓  Downloading starter project "nodejs-angular-starter" [484ms]
+import DevfileFromURLOutput from './docs-mdx/init/devfile_from_url_output.mdx';
 
-Your new component "my-nodejs-app" is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<DevfileFromURLOutput />
+
 </details>
 
 #### Fetch Devfile of a specific version
@@ -213,23 +138,13 @@ odo init --devfile <devfile-name> --devfile-version <devfile-version> --name <co
 <details>
 <summary>Examples</summary>
 
-```console
-$ odo init --devfile go --name my-go-app  --devfile-version 2.0.0
-  __
- /  \__     Initializing a new component
- \__/  \    
- /  \__/    odo version: v3.4.0
- \__/
+import VersionedOutput from './docs-mdx/init/versioned_devfile_output.mdx';
 
- ✓  Downloading devfile "go:2.0.0" [4s]
-
-Your new component 'my-go-app' is ready in the current directory.
-To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
+<VersionedOutput />
 
 </details>
+
+import LatestVersionedOutput from './docs-mdx/init/latest_versioned_devfile_output.mdx';
 
 :::note
 Use "latest" as the version name to fetch the latest version of a given Devfile.
@@ -237,20 +152,7 @@ Use "latest" as the version name to fetch the latest version of a given Devfile.
 <details>
 <summary>Example</summary>
 
-```console
-$ odo init --devfile go --name my-go-app  --devfile-version latest
-  __
- /  \__     Initializing a new component
- \__/  \    
- /  \__/    odo version: v3.4.0
- \__/
+<LatestVersionedOutput />
 
- ✓  Downloading devfile "go:latest" [4s]
-
-Your new component 'my-go-app' is ready in the current directory.
-To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-```
 </details>
 :::

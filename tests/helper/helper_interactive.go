@@ -16,7 +16,7 @@ import (
 // InteractiveContext represents the context of an interactive command to be run.
 type InteractiveContext struct {
 
-	//Command represents the original command ran
+	// Command represents the original command ran
 	Command []string
 
 	// cp is the internal interface used by the interactive command

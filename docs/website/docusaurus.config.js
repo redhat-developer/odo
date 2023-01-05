@@ -134,6 +134,13 @@ module.exports = {
           breadcrumbs: true,
           sidebarCollapsible: true,
           lastVersion: 'current',
+          exclude: [
+              '**/docs-mdx/**',
+              '**/_*.{js,jsx,ts,tsx,md,mdx}',
+              '**/_*/**',
+              '**/*.test.{js,jsx,ts,tsx}',
+              '**/__tests__/**'
+          ],
           versions: {
             current: {
               label: 'v3',
