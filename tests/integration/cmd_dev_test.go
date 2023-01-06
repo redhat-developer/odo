@@ -646,7 +646,7 @@ ComponentSettings:
 						})
 
 						It("should have no endpoint forwarded", func() {
-							Expect(len(ports)).To(BeZero())
+							Expect(ports).To(BeEmpty())
 						})
 					})
 				})
