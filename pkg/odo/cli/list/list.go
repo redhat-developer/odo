@@ -102,7 +102,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 	fmt.Printf("\nComponents:\n")
 	clicomponent.HumanReadableOutput(ctx, list)
 	fmt.Printf("\nBindings:\n")
-	binding.HumanReadableOutput(lo.namespaceFilter, list)
+	binding.HumanReadableOutput(list)
 	return nil
 }
 

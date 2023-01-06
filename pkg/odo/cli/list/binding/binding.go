@@ -68,7 +68,7 @@ func (o *BindingListOptions) Validate(ctx context.Context) (err error) {
 
 // Run contains the logic for the odo list binding command
 func (o *BindingListOptions) Run(ctx context.Context) error {
-	listSpinner := log.Spinnerf("Listing ServiceBindings from the namespace %q", o.clientset.KubernetesClient.GetCurrentNamespace())
+	listSpinner := log.Spinnerf("Listing ServiceBindings")
 	defer listSpinner.End(false)
 
 	list, err := o.run(ctx)
@@ -78,7 +78,7 @@ func (o *BindingListOptions) Run(ctx context.Context) error {
 
 	listSpinner.End(true)
 
-	HumanReadableOutput(o.clientset.KubernetesClient.GetCurrentNamespace(), list)
+	HumanReadableOutput(list)
 	return nil
 }
 
@@ -123,10 +123,10 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 }
 
 // HumanReadableOutput outputs the list of bindings in a human readable format
-func HumanReadableOutput(namespace string, list api.ResourcesList) {
+func HumanReadableOutput(list api.ResourcesList) {
 	bindings := list.Bindings
 	if len(bindings) == 0 {
-		log.Errorf("There are no service bindings in the %q namespace.", namespace)
+		log.Errorf("There are no service bindings.")
 		return
 
 	}
