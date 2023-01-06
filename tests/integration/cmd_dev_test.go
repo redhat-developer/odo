@@ -2715,22 +2715,37 @@ CMD ["npm", "start"]
 			})
 		}))
 	}
-	When("using devfile that contains K8s resource", func() {
-		const (
-			k8sCompName = "deploy-k8s-resource" // hard coded from devfile-with-k8s-resource.yaml
-		)
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-k8s-resource.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
-		It("should show warning about unable to create the resource when running odo dev on podman", Label(helper.LabelPodman), func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-				Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("Skipping Kubernetes component %q. Kubernetes components are not supported on Podman.", k8sCompName)))
+	for _, ctx := range []struct {
+		devfile, title string
+	}{
+		{
+			devfile: "devfile-with-k8s-resource.yaml",
+			title:   "without apply command",
+		},
+		{
+			devfile: "devfile-composite-apply-commands.yaml",
+			title:   "with apply command",
+		},
+	} {
+		ctx := ctx
+		When("using devfile that contains K8s resource to run it on podman", Label(helper.LabelPodman), func() {
+			const (
+				k8sCompName = "deploy-k8s-resource" // hard coded from both the Devfiles
+			)
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
-			Expect(err).ToNot(HaveOccurred())
+			It(fmt.Sprintf("should show warning about unable to create the resource %s when running odo dev on podman", ctx.title), func() {
+				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+					Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("Kubernetes components are not supported on Podman. Skipping: %v.", k8sCompName)))
+				})
+				Expect(err).ToNot(HaveOccurred())
 
+			})
 		})
-	})
+
+	}
 
 	When("a hotReload capable project is used with odo dev", func() {
 		var devSession helper.DevSession

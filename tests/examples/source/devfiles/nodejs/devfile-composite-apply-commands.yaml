@@ -23,7 +23,7 @@ components:
       dockerfile:
         uri: ./Dockerfile
 
-  - name: my-k8s-resource
+  - name: deploy-k8s-resource
     kubernetes:
       inlined: |
         kind: Deployment
@@ -54,7 +54,7 @@ commands:
 
   - id: create-k8s-resource
     apply:
-      component: my-k8s-resource
+      component: deploy-k8s-resource
 
   - id: install
     exec:

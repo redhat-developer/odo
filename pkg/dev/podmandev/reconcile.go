@@ -125,16 +125,16 @@ func (o *DevClient) reconcile(
 
 // warnAboutK8sResources prints a warning if the Devfile contains a K8s resource that it needs to create on Podman.
 func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj) {
-	k8sComponents, err := devfile.GetKubernetesComponentsToPush(devfileObj, false)
-	if err != nil {
+	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, true)
+	if len(k8sComponents) == 0 {
 		return
 	}
 	var compNames []string
 	for _, comp := range k8sComponents {
 		compNames = append(compNames, comp.Name)
 	}
-	log.Warningf("Skipping Kubernetes component %q. Kubernetes components are not supported on Podman.", strings.Join(compNames, ", "))
 
+	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(compNames, ", "))
 }
 
 // deployPod deploys the component as a Pod in podman
