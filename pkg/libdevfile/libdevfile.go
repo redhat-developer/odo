@@ -284,12 +284,16 @@ func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]i
 			// this is not a container component; continue prevents panic when accessing Endpoints field
 			continue
 		}
+		endpoints := container.Container.Endpoints
+		if len(endpoints) == 0 {
+			continue
+		}
+
 		k := container.Name
 		if _, ok := ceMapping[k]; !ok {
 			ceMapping[k] = []int{}
 		}
 
-		endpoints := container.Container.Endpoints
 		for _, e := range endpoints {
 			ceMapping[k] = append(ceMapping[k], e.TargetPort)
 		}

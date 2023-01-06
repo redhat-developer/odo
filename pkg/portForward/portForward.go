@@ -67,6 +67,11 @@ func (o *PFClient) StartPortForwarding(
 
 	o.StopPortForwarding()
 
+	if len(ceMapping) == 0 {
+		klog.V(4).Infof("no endpoint declared in the component, no ports are forwarded")
+		return nil
+	}
+
 	o.stopChan = make(chan struct{}, 1)
 
 	var portPairs map[string][]string

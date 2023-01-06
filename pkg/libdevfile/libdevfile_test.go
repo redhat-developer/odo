@@ -654,7 +654,7 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 			args: args{
 				containers: []v1alpha2.Component{containerWithNoEndpoints},
 			},
-			want: map[string][]int{containerWithNoEndpoints.Name: {}},
+			want: map[string][]int{},
 		},
 		{
 			name: "multiple containers with varying types of endpoints",
@@ -667,7 +667,6 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 				},
 			},
 			want: map[string][]int{
-				containerWithNoEndpoints.Name:             {},
 				containerWithOnePublicEndpoint.Name:       {8080},
 				containerWithOneInternalEndpoint.Name:     {9090},
 				containerWithOneNoneInternalEndpoint.Name: {9099},
@@ -685,7 +684,6 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 				},
 			},
 			want: map[string][]int{
-				containerWithNoEndpoints.Name:             {},
 				containerWithOnePublicEndpoint.Name:       {8080},
 				containerWithOneInternalEndpoint.Name:     {9090},
 				containerWithOneNoneInternalEndpoint.Name: {9099},
