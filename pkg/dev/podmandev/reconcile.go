@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -42,6 +45,8 @@ func (o *DevClient) reconcile(
 		return err
 	}
 	o.deployedPod = pod
+
+	o.warnAboutK8sResources(*devfileObj)
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
@@ -116,6 +121,24 @@ func (o *DevClient) reconcile(
 
 	componentStatus.State = watch.StateReady
 	return nil
+}
+
+// warnAboutK8sResources prints a warning if the Devfile contains a K8s resource that it needs to create on Podman.
+func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj) {
+	k8sComponents, err := devfile.GetKubernetesComponentsToPush(devfileObj, false)
+	if err != nil {
+		return
+	}
+	for _, comp := range k8sComponents {
+		uList, err := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, comp.Name, "", devfilefs.DefaultFs{})
+		if err != nil {
+			continue
+		}
+		for _, u := range uList {
+			log.Warningf("Skipping Kubernetes component \"%v/%v\". Kubernetes components are not supported on Podman.", u.GetKind(), u.GetName())
+		}
+	}
+
 }
 
 // deployPod deploys the component as a Pod in podman
