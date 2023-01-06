@@ -79,11 +79,13 @@ func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *[]string, cons
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if show || log.IsDebug() {
+			if show {
 				_, err := fmt.Fprintln(os.Stdout, line)
 				if err != nil {
 					log.Errorf("Unable to print to stdout: %s", err.Error())
 				}
+			} else {
+				klog.V(2).Infof(line)
 			}
 
 			if cmdOutput != nil {
