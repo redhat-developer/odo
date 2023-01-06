@@ -27,6 +27,12 @@ var _ = Describe("User guides: Quickstart test", func() {
 	})
 
 	Context("Create namespace/project", func() {
+		BeforeEach(func() {
+			// 	ensure "odo-dev" namespace does not exist before beginning
+			if commonVar.CliRunner.HasNamespaceProject(namespace) {
+				commonVar.CliRunner.DeleteNamespaceProject(namespace, true)
+			}
+		})
 		AfterEach(func() {
 			helper.DeleteProject(namespace)
 		})
@@ -200,7 +206,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 		})
-		It("should test the complete go quickstart output in order", func() {
+		It("should test the complete java springboot quickstart output in order", func() {
 			By("running odo init", func() {
 				args := []string{"odo", "init"}
 				out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
