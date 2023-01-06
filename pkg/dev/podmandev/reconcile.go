@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -129,15 +129,11 @@ func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj) {
 	if err != nil {
 		return
 	}
+	var compNames []string
 	for _, comp := range k8sComponents {
-		uList, err := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, comp.Name, "", devfilefs.DefaultFs{})
-		if err != nil {
-			continue
-		}
-		for _, u := range uList {
-			log.Warningf("Skipping Kubernetes component \"%v/%v\". Kubernetes components are not supported on Podman.", u.GetKind(), u.GetName())
-		}
+		compNames = append(compNames, comp.Name)
 	}
+	log.Warningf("Skipping Kubernetes component %q. Kubernetes components are not supported on Podman.", strings.Join(compNames, ", "))
 
 }
 
