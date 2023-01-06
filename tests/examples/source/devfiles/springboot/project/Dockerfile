@@ -1,0 +1,9 @@
+FROM registry.access.redhat.com/ubi8/openjdk-11 as builder
+
+USER jboss
+WORKDIR /tmp/src
+COPY --chown=jboss . /tmp/src
+RUN mvn package
+
+FROM registry.access.redhat.com/ubi8/openjdk-11
+COPY --from=builder /tmp/src/target/*.jar /deployments/app.jar

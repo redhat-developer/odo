@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -45,7 +46,10 @@ func StripSpinner(docString string) (returnString string) {
 		if strings.ContainsAny(line, unicodeSpinnerFrames) {
 			line = "✓" + strings.SplitAfter(line, "✓")[1]
 		}
-
+		// this is specific to `odo dev` when it fails to pull images
+		if strings.Contains(line, "Failed to pull image") || strings.Contains(line, "Error:") {
+			continue
+		}
 		returnString += line + "\n"
 	}
 	// replace all instances of time to [1s], this is also done for mdx out
@@ -99,10 +103,19 @@ func StripAnsi(docString string) (returnString string) {
 // e.g. "? Is this correct? (Y/n) No? Is this correct? No"
 func StripInteractiveQuestion(docString string) (returnString string) {
 	returnString = docString
-	for _, question := range []string{"? Select language:", "? Select project type:", "? Select container for which you want to change configuration?", "? Is this correct?", "? Enter component name:", "? Which starter project do you want to use?"} {
+	for _, question := range []string{"? Select language:", "? Select project type:", "? Select container for which you want to change configuration?", "? Is this correct?", "? Enter component name:", "? Which starter project do you want to use?", "? Select version:"} {
 		if strings.Count(returnString, question) > 1 {
 			returnString = returnString[:strings.Index(returnString, question)] + returnString[strings.LastIndex(returnString, question):]
 		}
+	}
+	return
+}
+
+// ReplaceAllForwardedPorts replaces the actual endpoints in cmd out with the ones in mdx out
+func ReplaceAllForwardedPorts(docString string, cmdEndpointsMap map[string]string, mdxEndpointsMap map[string]string) (returnString string) {
+	returnString = docString
+	for port, forward := range cmdEndpointsMap {
+		returnString = strings.ReplaceAll(returnString, fmt.Sprintf("Forwarding from %s -> %s", forward, port), fmt.Sprintf("Forwarding from %s -> %s", mdxEndpointsMap[port], port))
 	}
 	return
 }
