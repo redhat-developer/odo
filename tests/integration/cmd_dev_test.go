@@ -615,6 +615,42 @@ ComponentSettings:
 			manual := manual
 			podman := podman
 			Context("port-forwarding for the component", helper.LabelPodmanIf(podman, func() {
+				When("devfile has no endpoint", func() {
+					BeforeEach(func() {
+						if !podman {
+							helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+						}
+						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-no-endpoint.yaml")).ShouldPass()
+					})
+
+					When("running odo dev", func() {
+						var devSession helper.DevSession
+						var ports map[string]string
+						BeforeEach(func() {
+							var err error
+							opts := []string{}
+							if manual {
+								opts = append(opts, "--no-watch")
+							}
+							devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+								CmdlineArgs: opts,
+								RunOnPodman: podman,
+							})
+							Expect(err).ToNot(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							devSession.Stop()
+							devSession.WaitEnd()
+						})
+
+						It("should have no endpoint forwarded", func() {
+							Expect(len(ports)).To(BeZero())
+						})
+					})
+				})
+
 				When("devfile has single endpoint", func() {
 					BeforeEach(func() {
 						if !podman {

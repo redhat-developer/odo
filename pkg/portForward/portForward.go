@@ -67,6 +67,10 @@ func (o *PFClient) StartPortForwarding(
 
 	o.StopPortForwarding()
 
+	if len(ceMapping) == 0 {
+		return nil
+	}
+
 	o.stopChan = make(chan struct{}, 1)
 
 	var portPairs map[string][]string
