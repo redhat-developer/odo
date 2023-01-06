@@ -2715,6 +2715,22 @@ CMD ["npm", "start"]
 			})
 		}))
 	}
+	When("using devfile that contains K8s resource", func() {
+		const (
+			k8sCompName = "deploy-k8s-resource" // hard coded from devfile-with-k8s-resource.yaml
+		)
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-k8s-resource.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+		It("should show warning about unable to create the resource when running odo dev on podman", Label(helper.LabelPodman), func() {
+			err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("Skipping Kubernetes component %q. Kubernetes components are not supported on Podman.", k8sCompName)))
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+		})
+	})
 
 	When("a hotReload capable project is used with odo dev", func() {
 		var devSession helper.DevSession
