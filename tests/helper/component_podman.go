@@ -72,9 +72,10 @@ func getPodDef(podname string) *corev1.Pod {
 		},
 	)
 
-	cmd := exec.Command("podman", "kube", "generate", podname)
+	cmd := exec.Command("podman", "generate", "kube", podname)
 	resultBytes, err := cmd.Output()
 	Expect(err).ToNot(HaveOccurred())
+	fmt.Printf("\n\n%s\n\n", string(resultBytes))
 	var pod corev1.Pod
 	_, _, err = serializer.Decode(resultBytes, nil, &pod)
 	Expect(err).ToNot(HaveOccurred())

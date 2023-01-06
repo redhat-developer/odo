@@ -99,7 +99,7 @@ func (o *PodmanCli) KubeGenerate(name string) (*corev1.Pod, error) {
 		},
 	)
 
-	cmd := exec.Command(o.podmanCmd, "kube", "generate", name)
+	cmd := exec.Command(o.podmanCmd, "generate", "kube", name)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	resultBytes, err := cmd.Output()
 	if err != nil {
