@@ -55,7 +55,7 @@ func (o *BindingListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes BindingListOptions after they've been created
 func (o *BindingListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	if o.namespaceFlag != "" {
+	if o.clientset.KubernetesClient != nil && o.namespaceFlag != "" {
 		o.clientset.KubernetesClient.SetNamespace(o.namespaceFlag)
 	}
 	return nil
