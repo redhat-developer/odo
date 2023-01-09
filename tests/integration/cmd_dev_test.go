@@ -716,7 +716,7 @@ ComponentSettings:
 								if podman {
 									By("warning users that odo dev needs to be restarted", func() {
 										Expect(stdout).To(ContainSubstring(
-											"Changes to the Devfile not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."))
+											"Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."))
 									})
 								} else {
 									By("updating the pod", func() {
