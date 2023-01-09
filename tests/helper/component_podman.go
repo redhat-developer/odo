@@ -1,10 +1,10 @@
 package helper
 
 import (
+	"bufio"
 	"fmt"
 	"os/exec"
 	"strings"
-	"text/scanner"
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -70,18 +70,15 @@ func (o *PodmanComponent) GetEnvVars() map[string]string {
 
 func splitLines(str string) map[string]string {
 	result := map[string]string{}
-	var s scanner.Scanner
-	s.Filename = "empty"
-	s.Init(strings.NewReader(str))
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		line := s.TokenText()
+	sc := bufio.NewScanner(strings.NewReader(str))
+	for sc.Scan() {
+		line := sc.Text()
 		parts := strings.Split(line, "=")
 		if len(parts) < 2 {
 			continue
 		}
 		result[parts[0]] = parts[1]
 	}
-	fmt.Printf("\n\n%v\n\n", result)
 	return result
 }
 
