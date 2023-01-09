@@ -3020,4 +3020,26 @@ CMD ["npm", "start"]
 			}))
 		}
 	}
+	Context("Devfile contains pod-overrides and container-overrides attributes", func() {
+		const (
+			// hard coded from Devfile
+			compName              = "my-node-app"
+			podServiceAccountName = "new-service-account"
+		)
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+		It("should override the content in the pod it creates for the component on the cluster", func() {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, "--selector=component", compName, "-ojson").Out.Contents())
+				Expect(helper.IsJSON(podOut)).To(BeTrue())
+				helper.JsonPathContentIs(podOut, "spec.serviceAccountName", podServiceAccountName)
+				helper.JsonPathContentIs(podOut, "spec.securityContext.runAsUser", "1000")
+				helper.JsonPathContentIs(podOut, "spec.securityContext.runAsGroup", "1000")
+				helper.JsonPathContentIs(podOut, "spec.containers.0.securityContext.runAsUser", "1001")
+			})
+			Expect(err).To(BeNil())
+		})
+	})
 })
