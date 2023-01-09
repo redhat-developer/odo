@@ -107,7 +107,7 @@ $ odo dev
  /  \__/    odo version: v3.0.0-rc1
  \__/
 
-↪ Deploying to the cluster in developer mode
+↪ Running on the cluster in Dev mode
 •  Waiting for Kubernetes resources  ...
 ⚠  Pod is Pending
 ✓  Pod is Running
@@ -191,7 +191,7 @@ $ odo dev
  /  \__/    odo version: v3.0.0-rc1
  \__/
 
-↪ Deploying to the cluster in developer mode
+↪ Running on the cluster in Dev mode
 •  Waiting for Kubernetes resources  ...
 ⚠  Pod is Pending
 ✓  Pod is Running

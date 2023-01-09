@@ -26,7 +26,7 @@ $ odo dev
  /  \__/    odo version: v3.0.0-alpha1
  \__/
 
-↪ Deploying to the cluster in developer mode
+↪ Running on the cluster in Dev mode
  ✓  Waiting for Kubernetes resources [3s]
  ✓  Syncing files into the container [335ms]
  ✓  Building your application in container on cluster [2s]
@@ -113,7 +113,7 @@ $ odo dev --build-command my-build-with-version
  /  \__/    odo version: v3.0.0-alpha3
  \__/
 
-↪ Deploying to the cluster in developer mode
+↪ Running on the cluster in Dev mode
  ✓  Waiting for Kubernetes resources [39s]
  ✓  Syncing files into the container [84ms]
  ✓  Building your application in container on cluster (command: my-build-with-version) [456ms]
@@ -175,7 +175,7 @@ $ odo dev --run-command my-run-with-postgres
  /  \__/    odo version: v3.0.0-alpha3
  \__/
 
-↪ Deploying to the cluster in developer mode
+↪ Running on the cluster in Dev mode
  ✓  Added storage m2 to my-java-springboot-app
  ✓  Creating kind ServiceBinding [8ms]
  ✓  Waiting for Kubernetes resources [39s]
