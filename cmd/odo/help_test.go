@@ -29,7 +29,7 @@ Examples:
 
 	mainCommands = `Main Commands:
   build-images Build images
-  deploy       Run components in Deploy mode
+  deploy       Run your application on the cluster in the Deploy mode
   dev          Run your application on the cluster in the Dev mode
   init         Init bootstraps a new project
   logs         Show logs of all containers of the component

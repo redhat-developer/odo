@@ -96,7 +96,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	o := NewDeployOptions()
 	deployCmd := &cobra.Command{
 		Use:     name,
-		Short:   "Run components in Deploy mode",
+		Short:   "Run your application on the cluster in the Deploy mode",
 		Long:    "Run the components defined in the Devfile on the cluster in the Deploy mode",
 		Example: fmt.Sprintf(deployExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
