@@ -7,6 +7,7 @@ import (
 
 	// api resource types
 
+	"github.com/redhat-developer/odo/pkg/platform"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -82,14 +83,14 @@ func (c *Client) GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
 	}
 	numPods := len(pods.Items)
 	if numPods == 0 {
-		return nil, &PodNotFoundError{Selector: selector}
+		return nil, &platform.PodNotFoundError{Selector: selector}
 	} else if numPods > 1 {
 		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
 	}
 
 	// check if the pod is in the terminating state
 	if pods.Items[0].DeletionTimestamp != nil {
-		return nil, &PodNotFoundError{Selector: selector}
+		return nil, &platform.PodNotFoundError{Selector: selector}
 	}
 
 	return &pods.Items[0], nil
