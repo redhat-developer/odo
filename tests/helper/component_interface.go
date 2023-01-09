@@ -16,10 +16,10 @@ type Component interface {
 	GetEnvVars() map[string]string
 }
 
-func NewComponent(name string, app string, namespace string, cli CliRunner) Component {
+func NewComponent(componentName string, app string, containerName string, namespace string, cli CliRunner) Component {
 	if NeedsCluster(CurrentSpecReport().Labels()) {
-		return NewClusterComponent(name, app, namespace, cli)
+		return NewClusterComponent(componentName, app, namespace, cli)
 	} else {
-		return NewPodmanComponent(name, app)
+		return NewPodmanComponent(componentName, app, containerName)
 	}
 }
