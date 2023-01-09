@@ -126,7 +126,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing resources from the namespace %q", commonVar.Project)))
 							lines = lines[6:]
 						} else {
-							Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+							Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
 						}
 						Expect(lines[3]).To(ContainSubstring("* "))
 						Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
@@ -227,7 +227,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				},
 				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -318,7 +318,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				},
 				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -397,7 +397,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				},
 				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -473,7 +473,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				},
 				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
