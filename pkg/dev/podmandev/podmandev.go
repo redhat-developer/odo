@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
@@ -167,5 +168,8 @@ func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushPa
 		WatchFiles:   watchParams.WatchFiles,
 		Variables:    watchParams.Variables,
 	}
+
+	fmt.Fprintln(watchParams.Out)
+	log.Fwarning(watchParams.Out, "Changes to the Devfile not supported yet on Podman. Please restart 'odo dev' for such changes to be applied.\n")
 	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
 }
