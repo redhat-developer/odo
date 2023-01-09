@@ -1,6 +1,6 @@
 package api
 
-import "github.com/devfile/library/pkg/devfile/parser/data"
+import "github.com/devfile/library/v2/pkg/devfile/parser/data"
 
 // DevfileData describes a devfile content
 type DevfileData struct {

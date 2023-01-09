@@ -12,8 +12,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/project"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/binding/asker"

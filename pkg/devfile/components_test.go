@@ -9,9 +9,9 @@ import (
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	devfileFileSystem "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 )
 
 func TestGetKubernetesComponentsToPush(t *testing.T) {

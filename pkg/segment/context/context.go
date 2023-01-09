@@ -11,7 +11,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	"k8s.io/klog"
 )

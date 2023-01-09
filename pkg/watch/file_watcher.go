@@ -5,11 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/fsnotify/fsnotify"
-	"github.com/redhat-developer/odo/pkg/util"
 	gitignore "github.com/sabhiram/go-gitignore"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {

@@ -14,7 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	gitignore "github.com/sabhiram/go-gitignore"
 
 	"k8s.io/klog"

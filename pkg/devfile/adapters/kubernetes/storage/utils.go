@@ -5,10 +5,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/devfile/library/pkg/devfile/generator"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/v2/pkg/devfile/generator"
+	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"

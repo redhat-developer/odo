@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	backendpkg "github.com/redhat-developer/odo/pkg/binding/backend"

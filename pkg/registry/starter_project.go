@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"

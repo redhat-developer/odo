@@ -24,7 +24,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
