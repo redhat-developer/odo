@@ -1,15 +1,22 @@
 package podmandev
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -159,6 +166,8 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 }
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+	printWarningsOnDevfileChanges(ctx, watchParams)
+
 	startOptions := dev.StartOptions{
 		IgnorePaths:  watchParams.FileIgnores,
 		Debug:        watchParams.Debug,
@@ -168,8 +177,37 @@ func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushPa
 		WatchFiles:   watchParams.WatchFiles,
 		Variables:    watchParams.Variables,
 	}
-
-	fmt.Fprintln(watchParams.Out)
-	log.Fwarning(watchParams.Out, "Changes to the Devfile not supported yet on Podman. Please restart 'odo dev' for such changes to be applied.\n")
 	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
+}
+
+func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchParameters) {
+	var warning string
+	currentDevfile := odocontext.GetDevfileObj(ctx)
+	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
+	if err != nil {
+		warning = fmt.Sprintf("error while reading the Devfile. Please restart 'odo dev' if you made any changes to the Devfile. Error message is: %v", err)
+	} else {
+		devfileEquals := func(d1, d2 parser.DevfileObj) (bool, error) {
+			// Compare two Devfile objects by comparing the result of their JSON encoding,
+			// because reflect.DeepEqual does not work properly with the parser.DevfileObj structure.
+			d1Json, jsonErr := json.Marshal(d1.Data)
+			if jsonErr != nil {
+				return false, jsonErr
+			}
+			d2Json, jsonErr := json.Marshal(d2.Data)
+			if jsonErr != nil {
+				return false, jsonErr
+			}
+			return bytes.Equal(d1Json, d2Json), nil
+		}
+		equal, eqErr := devfileEquals(*currentDevfile, newDevfile)
+		if eqErr != nil {
+			klog.V(5).Infof("error while checking if Devfile has changed: %v", eqErr)
+		} else if !equal {
+			warning = "Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."
+		}
+	}
+	if warning != "" {
+		log.Fwarning(parameters.Out, warning+"\n")
+	}
 }
