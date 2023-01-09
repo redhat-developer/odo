@@ -63,9 +63,7 @@ func (o *PodmanComponent) Exec(container string, args ...string) string {
 
 func (o *PodmanComponent) GetEnvVars() map[string]string {
 	envs := o.Exec(o.containerName, "env")
-	fmt.Printf("\n\n%s\n\n", envs)
-	result := splitLines(envs)
-	return result
+	return splitLines(envs)
 }
 
 func splitLines(str string) map[string]string {
@@ -73,7 +71,7 @@ func splitLines(str string) map[string]string {
 	sc := bufio.NewScanner(strings.NewReader(str))
 	for sc.Scan() {
 		line := sc.Text()
-		parts := strings.Split(line, "=")
+		parts := strings.SplitN(line, "=", 2)
 		if len(parts) < 2 {
 			continue
 		}
