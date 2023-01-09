@@ -22,6 +22,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -184,7 +185,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 			return nil
 		}
 
-		if e, ok := err.(*kclient.PodNotFoundError); ok {
+		if e, ok := err.(*platform.PodNotFoundError); ok {
 			klog.V(3).Infof("Resource for %q not found; cause: %v", componentName, e)
 			log.Warningf("Resources not found on the cluster. Run `odo delete component -v <DEBUG_LEVEL_0-9>` to know more.")
 			return nil

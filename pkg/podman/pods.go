@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/platform"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
@@ -19,22 +20,8 @@ func (o *PodmanCli) GetPodsMatchingSelector(selector string) (*corev1.PodList, e
 
 // GetAllResourcesFromSelector returns all resources of any kind matching the given label selector.
 func (o *PodmanCli) GetAllResourcesFromSelector(selector string, _ string) ([]unstructured.Unstructured, error) {
-	args := []string{"pod", "ps", "--format", "json"}
-	selectorAsList := strings.Split(selector, ",")
-	for _, s := range selectorAsList {
-		args = append(args, "--filter=label="+s)
-	}
-	cmd := exec.Command(o.podmanCmd, args...)
-	klog.V(3).Infof("executing %v", cmd.Args)
-	out, err := cmd.Output()
+	list, err := o.getPodsFromSelector(selector)
 	if err != nil {
-		if exiterr, ok := err.(*exec.ExitError); ok {
-			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
-		}
-		return nil, err
-	}
-	var list []ListPodsReport
-	if err = json.Unmarshal(out, &list); err != nil {
 		return nil, err
 	}
 	for _, pod := range list {
@@ -65,6 +52,50 @@ func (o *PodmanCli) GetAllPodsInNamespaceMatchingSelector(selector string, ns st
 // GetRunningPodFromSelector returns any pod matching the given label selector.
 // If multiple pods are found, implementations might have different behavior, by either returning an error or returning any element.
 func (o *PodmanCli) GetRunningPodFromSelector(selector string) (*corev1.Pod, error) {
-	// TODO(feloy) when pod is created with labels
-	return nil, nil
+	list, err := o.getPodsFromSelector(selector)
+	if err != nil {
+		return nil, err
+	}
+	numPods := len(list)
+	if numPods == 0 {
+		return nil, &platform.PodNotFoundError{Selector: selector}
+	} else if numPods > 1 {
+		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
+	}
+
+	podReport := list[0]
+	var pod corev1.Pod
+	pod.SetName(podReport.Name)
+	pod.SetLabels(podReport.Labels)
+
+	inspect, err := o.PodInspect(podReport.Name)
+	if err != nil {
+		return nil, err
+	}
+	if inspect.State == "Running" {
+		pod.Status.Phase = corev1.PodRunning
+	}
+	return &pod, nil
+}
+
+func (o *PodmanCli) getPodsFromSelector(selector string) ([]ListPodsReport, error) {
+	args := []string{"pod", "ps", "--format", "json"}
+	selectorAsList := strings.Split(selector, ",")
+	for _, s := range selectorAsList {
+		args = append(args, "--filter=label="+s)
+	}
+	cmd := exec.Command(o.podmanCmd, args...)
+	klog.V(3).Infof("executing %v", cmd.Args)
+	out, err := cmd.Output()
+	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		return nil, err
+	}
+	var list []ListPodsReport
+	if err = json.Unmarshal(out, &list); err != nil {
+		return nil, err
+	}
+	return list, nil
 }

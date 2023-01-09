@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog"
 )
 
+// ListPodsReport contains the result of the `podman pod ps --format json` command
 type ListPodsReport struct {
 	Name   string
 	Labels map[string]string
