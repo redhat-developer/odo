@@ -33,7 +33,7 @@ type DeployOptions struct {
 var _ genericclioptions.Runnable = (*DeployOptions)(nil)
 
 var deployExample = templates.Examples(`
-  # Deploy components defined in the devfile
+  # Run the components defined in the Devfile on the cluster in the Deploy mode
   %[1]s
 `)
 
@@ -77,7 +77,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devfileName)
 	// Output what the command is doing / information
-	log.Title("Deploying the application using "+devfileName+" Devfile",
+	log.Title("Running the application in Deploy mode using "+devfileName+" Devfile",
 		"Namespace: "+namespace,
 		"odo version: "+version.VERSION)
 
@@ -96,8 +96,8 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	o := NewDeployOptions()
 	deployCmd := &cobra.Command{
 		Use:     name,
-		Short:   "Deploy components",
-		Long:    "Deploy the components defined in the devfile",
+		Short:   "Run your application on the cluster in the Deploy mode",
+		Long:    "Run the components defined in the Devfile on the cluster in the Deploy mode",
 		Example: fmt.Sprintf(deployExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {

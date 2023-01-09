@@ -67,13 +67,13 @@ func NewDevOptions() *DevOptions {
 }
 
 var devExample = ktemplates.Examples(`
-	# Deploy component to the development cluster, using the default run command
+	# Run your application on the cluster in the Dev mode, using the default run command
 	%[1]s
 
-	# Deploy component to the development cluster, using the specified run command
+	# Run your application on the cluster in the Dev mode, using the specified run command
 	%[1]s --run-command <my-command>
 
-	# Deploy component to the development cluster without automatically syncing the code upon any file changes
+	# Run your application on the cluster in the Dev mode, without automatically syncing the code upon any file changes
 	%[1]s --no-watch
 `)
 
@@ -170,7 +170,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, componentName)
 
-	log.Sectionf("Deploying to %s in developer mode", deployingTo)
+	log.Sectionf("Running on %s in Dev mode", deployingTo)
 
 	return o.clientset.DevClient.Start(
 		o.ctx,
@@ -207,7 +207,7 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 	o := NewDevOptions()
 	devCmd := &cobra.Command{
 		Use:   name,
-		Short: "Deploy component to development cluster",
+		Short: "Run your application on the cluster in the Dev mode",
 		Long: `odo dev is a long running command that will automatically sync your source to the cluster.
 It forwards endpoints with any exposure values ('public', 'internal' or 'none') to a port on localhost.`,
 		Example: fmt.Sprintf(devExample, fullName),

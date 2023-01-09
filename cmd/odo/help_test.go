@@ -29,8 +29,8 @@ Examples:
 
 	mainCommands = `Main Commands:
   build-images Build images
-  deploy       Deploy components
-  dev          Deploy component to development cluster
+  deploy       Run your application on the cluster in the Deploy mode
+  dev          Run your application on the cluster in the Dev mode
   init         Init bootstraps a new project
   logs         Show logs of all containers of the component
   registry     List all components from the Devfile registry
