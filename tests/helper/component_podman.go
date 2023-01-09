@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"bufio"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -12,19 +14,21 @@ import (
 
 // PodmanComponent is an abstraction for a Devfile Component deployed on podman
 type PodmanComponent struct {
-	name string
-	app  string
+	componentName string
+	app           string
+	containerName string
 }
 
-func NewPodmanComponent(name string, app string) *PodmanComponent {
+func NewPodmanComponent(componentName string, app string, containerName string) *PodmanComponent {
 	return &PodmanComponent{
-		name: name,
-		app:  app,
+		componentName: componentName,
+		app:           app,
+		containerName: containerName,
 	}
 }
 
 func (o *PodmanComponent) ExpectIsDeployed() {
-	podName := fmt.Sprintf("%s-%s", o.name, o.app)
+	podName := fmt.Sprintf("%s-%s", o.componentName, o.app)
 	cmd := exec.Command("podman", "pod", "list", "--format", "{{.Name}}", "--noheading")
 	stdout, err := cmd.Output()
 	Expect(err).ToNot(HaveOccurred())
@@ -32,7 +36,7 @@ func (o *PodmanComponent) ExpectIsDeployed() {
 }
 
 func (o *PodmanComponent) ExpectIsNotDeployed() {
-	podName := fmt.Sprintf("%s-%s", o.name, o.app)
+	podName := fmt.Sprintf("%s-%s", o.componentName, o.app)
 	cmd := exec.Command("podman", "pod", "list", "--format", "{{.Name}}", "--noheading")
 	stdout, err := cmd.Output()
 	Expect(err).ToNot(HaveOccurred())
@@ -40,7 +44,7 @@ func (o *PodmanComponent) ExpectIsNotDeployed() {
 }
 
 func (o *PodmanComponent) Exec(container string, args ...string) string {
-	containerName := fmt.Sprintf("%s-%s-%s", o.name, o.app, container)
+	containerName := fmt.Sprintf("%s-%s-%s", o.componentName, o.app, container)
 	cmdargs := []string{"exec", "--interactive"}
 	cmdargs = append(cmdargs, "--tty")
 	cmdargs = append(cmdargs, containerName)
@@ -48,21 +52,35 @@ func (o *PodmanComponent) Exec(container string, args ...string) string {
 
 	command := exec.Command("podman", cmdargs...)
 	out, err := command.Output()
+	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+	}
 	Expect(err).ToNot(HaveOccurred())
 	return string(out)
 }
 
 func (o *PodmanComponent) GetEnvVars() map[string]string {
-	podName := fmt.Sprintf("%s-%s", o.name, o.app)
-	podDef := getPodDef(podName)
-	res := map[string]string{}
-	for _, env := range podDef.Spec.Containers[0].Env {
-		res[env.Name] = env.Value
-	}
-	return res
+	envs := o.Exec(o.containerName, "env")
+	return splitLines(envs)
 }
 
-func getPodDef(podname string) *corev1.Pod {
+func splitLines(str string) map[string]string {
+	result := map[string]string{}
+	sc := bufio.NewScanner(strings.NewReader(str))
+	for sc.Scan() {
+		line := sc.Text()
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result
+}
+
+func GetPodDef(podname string) *corev1.Pod {
 	serializer := jsonserializer.NewSerializerWithOptions(
 		jsonserializer.SimpleMetaFactory{},
 		scheme.Scheme,
@@ -72,7 +90,7 @@ func getPodDef(podname string) *corev1.Pod {
 		},
 	)
 
-	cmd := exec.Command("podman", "kube", "generate", podname)
+	cmd := exec.Command("podman", "generate", "kube", podname)
 	resultBytes, err := cmd.Output()
 	Expect(err).ToNot(HaveOccurred())
 	var pod corev1.Pod
