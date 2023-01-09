@@ -157,22 +157,6 @@ func (mr *MockAskerMockRecorder) AskStarterProject(projects interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskStarterProject", reflect.TypeOf((*MockAsker)(nil).AskStarterProject), projects)
 }
 
-// AskVersion mocks base method
-func (m *MockAsker) AskVersion(versions []api.DevfileStackVersion) (bool, string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AskVersion", versions)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// AskVersion indicates an expected call of AskVersion
-func (mr *MockAskerMockRecorder) AskVersion(versions interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskVersion", reflect.TypeOf((*MockAsker)(nil).AskVersion), versions)
-}
-
 // AskType mocks base method.
 func (m *MockAsker) AskType(types registry.TypesWithDetails) (bool, api.DevfileStack, error) {
 	m.ctrl.T.Helper()
@@ -187,4 +171,20 @@ func (m *MockAsker) AskType(types registry.TypesWithDetails) (bool, api.DevfileS
 func (mr *MockAskerMockRecorder) AskType(types interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskType", reflect.TypeOf((*MockAsker)(nil).AskType), types)
+}
+
+// AskVersion mocks base method.
+func (m *MockAsker) AskVersion(versions []api.DevfileStackVersion) (bool, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AskVersion", versions)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// AskVersion indicates an expected call of AskVersion.
+func (mr *MockAskerMockRecorder) AskVersion(versions interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskVersion", reflect.TypeOf((*MockAsker)(nil).AskVersion), versions)
 }

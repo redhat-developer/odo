@@ -14,7 +14,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/openshift/api/project/v1"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	api "github.com/redhat-developer/odo/pkg/api"
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
@@ -53,35 +52,6 @@ func NewMockClientInterface(ctrl *gomock.Controller) *MockClientInterface {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 	return m.recorder
-}
-
-// APIServiceBindingFromBinding mocks base method.
-func (m *MockClientInterface) APIServiceBindingFromBinding(binding v1alpha10.ServiceBinding) (api.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServiceBindingFromBinding", binding)
-	ret0, _ := ret[0].(api.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// APIServiceBindingFromBinding indicates an expected call of APIServiceBindingFromBinding.
-func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromBinding(binding interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromBinding", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromBinding), binding)
-}
-
-// APIServiceBindingFromSpec mocks base method.
-func (m *MockClientInterface) APIServiceBindingFromSpec(spec v1alpha3.ServiceBinding) api.ServiceBinding {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServiceBindingFromSpec", spec)
-	ret0, _ := ret[0].(api.ServiceBinding)
-	return ret0
-}
-
-// APIServiceBindingFromSpec indicates an expected call of APIServiceBindingFromSpec.
-func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromSpec(spec interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromSpec", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromSpec), spec)
 }
 
 // ApplyDeployment mocks base method.

@@ -238,11 +238,13 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 
 // APIServiceBindingFromBinding returns a common api.ServiceBinding structure
 // from a ServiceBinding.binding.operators.coreos.com/v1alpha1
-func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) (api.ServiceBinding, error) {
+func APIServiceBindingFromBinding(
+	binding bindingApi.ServiceBinding,
+) (api.ServiceBinding, error) {
 
-	var dstSvcs []corev1.ObjectReference
+	var dstSvcs []api.ServiceBindingReference
 	for _, srcSvc := range binding.Spec.Services {
-		dstSvc := corev1.ObjectReference{
+		dstSvc := api.ServiceBindingReference{
 			Name: srcSvc.Name,
 		}
 		dstSvc.APIVersion, dstSvc.Kind = schema.GroupVersion{
@@ -256,21 +258,11 @@ func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) 
 	}
 
 	application := binding.Spec.Application
-	refToApplication := corev1.ObjectReference{
-		Name: application.Name,
+	refToApplication := api.ServiceBindingReference{
+		Name:     application.Name,
+		Resource: application.Resource,
 	}
 
-	if application.Kind == "" {
-		gvk, err := c.GetGVKFromGVR(schema.GroupVersionResource{
-			Group:    application.Group,
-			Version:  application.Version,
-			Resource: application.Resource,
-		})
-		if err != nil {
-			return api.ServiceBinding{}, err
-		}
-		application.Kind = gvk.Kind
-	}
 	refToApplication.APIVersion, refToApplication.Kind = schema.GroupVersion{
 		Group:   application.Group,
 		Version: application.Version,
@@ -290,17 +282,17 @@ func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) 
 
 // APIServiceBindingFromSpec returns a common api.ServiceBinding structure
 // from a ServiceBinding.servicebinding.io/v1alpha3
-func (c Client) APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding {
+func APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding {
 
 	service := spec.Spec.Service
-	refToService := corev1.ObjectReference{
+	refToService := api.ServiceBindingReference{
 		APIVersion: service.APIVersion,
 		Kind:       service.Kind,
 		Name:       service.Name,
 	}
 
 	application := spec.Spec.Workload
-	refToApplication := corev1.ObjectReference{
+	refToApplication := api.ServiceBindingReference{
 		APIVersion: application.APIVersion,
 		Kind:       application.Kind,
 		Name:       application.Name,
@@ -310,7 +302,7 @@ func (c Client) APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.Servi
 		Name: spec.Name,
 		Spec: api.ServiceBindingSpec{
 			Application:            refToApplication,
-			Services:               []corev1.ObjectReference{refToService},
+			Services:               []api.ServiceBindingReference{refToService},
 			DetectBindingResources: false,
 			BindAsFiles:            true,
 		},
