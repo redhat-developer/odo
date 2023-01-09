@@ -21,10 +21,5 @@ jobs:
       run: make install
 
     - name: Run Integration tests
-      # TODO Make the job fail when this step fails once we check the compatibility with podman v3.
-      # See https://github.com/redhat-developer/odo/issues/6446
-      continue-on-error: true
       run: |
         make test-integration-podman
-
-    
