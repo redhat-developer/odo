@@ -16,14 +16,12 @@ import (
 type PodmanComponent struct {
 	componentName string
 	app           string
-	containerName string
 }
 
-func NewPodmanComponent(componentName string, app string, containerName string) *PodmanComponent {
+func NewPodmanComponent(componentName string, app string) *PodmanComponent {
 	return &PodmanComponent{
 		componentName: componentName,
 		app:           app,
-		containerName: containerName,
 	}
 }
 
@@ -61,8 +59,8 @@ func (o *PodmanComponent) Exec(container string, args ...string) string {
 	return string(out)
 }
 
-func (o *PodmanComponent) GetEnvVars() map[string]string {
-	envs := o.Exec(o.containerName, "env")
+func (o *PodmanComponent) GetEnvVars(container string) map[string]string {
+	envs := o.Exec(container, "env")
 	return splitLines(envs)
 }
 

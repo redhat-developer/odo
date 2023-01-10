@@ -95,7 +95,7 @@ var _ = Describe("odo dev command tests", func() {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
 					// File should exist, and its content should match what we initially set it to
-					component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+					component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 					execResult := component.Exec("runtime", "cat", "/projects/"+filepath.Base(fileAPath))
 					Expect(execResult).To(ContainSubstring(fileAText))
 				})
@@ -255,7 +255,7 @@ var _ = Describe("odo dev command tests", func() {
 					})
 
 					It("should delete component from the cluster", func() {
-						component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 						component.ExpectIsNotDeployed()
 					})
 				})
@@ -438,7 +438,7 @@ ComponentSettings:
 					})
 
 					It("should not trigger a push", func() {
-						component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 						execResult := component.Exec("runtime", "cat", "/projects/server.js")
 						Expect(execResult).To(ContainSubstring("App started"))
 						Expect(execResult).ToNot(ContainSubstring("App is super started"))
@@ -458,7 +458,7 @@ ComponentSettings:
 						It("should trigger a push", func() {
 							_, _, _, err := devSession.WaitSync()
 							Expect(err).ToNot(HaveOccurred())
-							component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+							component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 							execResult := component.Exec("runtime", "cat", "/projects/server.js")
 							Expect(execResult).To(ContainSubstring("App is super started"))
 						})
@@ -886,8 +886,8 @@ ComponentSettings:
 					})
 
 					It("3. should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("bar"))
 					})
@@ -909,8 +909,8 @@ ComponentSettings:
 					})
 
 					It("should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("baz"))
 					})
@@ -936,8 +936,8 @@ ComponentSettings:
 					})
 
 					It("should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("baz"))
 					})
@@ -965,8 +965,8 @@ ComponentSettings:
 					})
 
 					It("should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("baz"))
 					})
@@ -988,7 +988,7 @@ ComponentSettings:
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
 						output := component.Exec("runtime", "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
 					})
@@ -1011,7 +1011,7 @@ ComponentSettings:
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
 						output := component.Exec("runtime", "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
 					})
@@ -1034,7 +1034,7 @@ ComponentSettings:
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
 						output := component.Exec("runtime", "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
 					})
@@ -1807,7 +1807,7 @@ CMD ["npm", "start"]
 				It("should execute all commands in composite commmand", func() {
 					// Verify the command executed successfully
 
-					component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+					component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
 					dir := "/projects/testfolder"
 					out := component.Exec("runtime", "stat", dir)
 					Expect(out).To(ContainSubstring(dir))
@@ -1864,7 +1864,7 @@ CMD ["npm", "start"]
 					})
 
 					By("verifying that the command did run successfully", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
 						dir := "/projects/testfolder"
 						out := component.Exec("runtime", "stat", dir)
 						Expect(out).To(ContainSubstring(dir))
@@ -1930,7 +1930,7 @@ CMD ["npm", "start"]
 					})
 
 					By("verifying that the command did run successfully", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", commonVar.Project, commonVar.CliRunner)
 						dir := "/projects/testfolder"
 						out := component.Exec("runtime", "stat", dir)
 						Expect(out).To(ContainSubstring(dir))

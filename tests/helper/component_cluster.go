@@ -40,6 +40,6 @@ func (o *ClusterComponent) Exec(container string, args ...string) string {
 	return o.cli.Exec(podName, o.namespace, append([]string{"-c", container, "--"}, args...)...)
 }
 
-func (o *ClusterComponent) GetEnvVars() map[string]string {
+func (o *ClusterComponent) GetEnvVars(string) map[string]string {
 	return o.cli.GetEnvsDevFileDeployment(o.name, o.app, o.namespace)
 }

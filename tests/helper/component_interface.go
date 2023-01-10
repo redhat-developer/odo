@@ -13,13 +13,13 @@ type Component interface {
 	// Exec executes the command in specific container of the component
 	Exec(container string, args ...string) string
 	// GetEnvVars returns the environment variables defined for the component
-	GetEnvVars() map[string]string
+	GetEnvVars(container string) map[string]string
 }
 
-func NewComponent(componentName string, app string, containerName string, namespace string, cli CliRunner) Component {
+func NewComponent(componentName string, app string, namespace string, cli CliRunner) Component {
 	if NeedsCluster(CurrentSpecReport().Labels()) {
 		return NewClusterComponent(componentName, app, namespace, cli)
 	} else {
-		return NewPodmanComponent(componentName, app, containerName)
+		return NewPodmanComponent(componentName, app)
 	}
 }
