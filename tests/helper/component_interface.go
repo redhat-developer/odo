@@ -12,8 +12,10 @@ type Component interface {
 	ExpectIsNotDeployed()
 	// Exec executes the command in specific container of the component
 	Exec(container string, args ...string) string
-	// GetEnvVars returns the environment variables defined for the component
+	// GetEnvVars returns the environment variables defined for the container
 	GetEnvVars(container string) map[string]string
+	// GetLabels returns the labels defined for the component
+	GetLabels() map[string]string
 }
 
 func NewComponent(componentName string, app string, namespace string, cli CliRunner) Component {

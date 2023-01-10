@@ -43,3 +43,8 @@ func (o *ClusterComponent) Exec(container string, args ...string) string {
 func (o *ClusterComponent) GetEnvVars(string) map[string]string {
 	return o.cli.GetEnvsDevFileDeployment(o.name, o.app, o.namespace)
 }
+
+func (o *ClusterComponent) GetLabels() map[string]string {
+	//TODO implement me
+	panic("implement me")
+}
