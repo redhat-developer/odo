@@ -18,9 +18,9 @@ type Component interface {
 	GetLabels() map[string]string
 }
 
-func NewComponent(componentName string, app string, namespace string, cli CliRunner) Component {
+func NewComponent(componentName string, app string, mode string, namespace string, cli CliRunner) Component {
 	if NeedsCluster(CurrentSpecReport().Labels()) {
-		return NewClusterComponent(componentName, app, namespace, cli)
+		return NewClusterComponent(componentName, app, mode, namespace, cli)
 	} else {
 		return NewPodmanComponent(componentName, app)
 	}
