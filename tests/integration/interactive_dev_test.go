@@ -171,7 +171,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
 
-					helper.ExpectString(ctx, "Building your application in container on cluster")
+					helper.ExpectString(ctx, "Building your application in container")
 					ctx.StopCommand()
 				})
 

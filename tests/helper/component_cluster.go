@@ -37,7 +37,7 @@ func (o *ClusterComponent) ExpectIsNotDeployed() {
 
 func (o *ClusterComponent) Exec(container string, args ...string) string {
 	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
-	return o.cli.Exec(podName, o.namespace, append([]string{"--"}, args...)...)
+	return o.cli.Exec(podName, o.namespace, append([]string{"-c", container, "--"}, args...)...)
 }
 
 func (o *ClusterComponent) GetEnvVars() map[string]string {
