@@ -2,14 +2,18 @@ package helper
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/kubectl/pkg/scheme"
+
+	"github.com/redhat-developer/odo/pkg/podman"
 )
 
 // PodmanComponent is an abstraction for a Devfile Component deployed on podman
@@ -95,4 +99,23 @@ func GetPodDef(podname string) *corev1.Pod {
 	_, _, err = serializer.Decode(resultBytes, nil, &pod)
 	Expect(err).ToNot(HaveOccurred())
 	return &pod
+}
+
+func (o *PodmanComponent) GetLabels() map[string]string {
+	podName := fmt.Sprintf("%s-%s", o.componentName, o.app)
+	cmd := exec.Command("podman", "pod", "inspect", podName, "--format", "json")
+	stdout, err := cmd.Output()
+	Expect(err).ToNot(HaveOccurred(), func() {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		fmt.Fprintln(ginkgo.GinkgoWriter, err)
+	})
+
+	var result podman.PodInspectData
+
+	err = json.Unmarshal(stdout, &result)
+	Expect(err).ToNot(HaveOccurred())
+
+	return result.Labels
 }
