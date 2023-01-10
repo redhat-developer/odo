@@ -712,7 +712,7 @@ ComponentSettings:
 								stdout = string(stdoutBytes)
 							})
 
-							It("should expose the endpoint on localhost", func() {
+							It("should react on the Devfile modification", func() {
 								if podman {
 									By("warning users that odo dev needs to be restarted", func() {
 										Expect(stdout).To(ContainSubstring(
