@@ -692,45 +692,61 @@ ComponentSettings:
 							Expect(err).ToNot(HaveOccurred())
 						})
 
-						if !podman {
-							When("modifying memoryLimit for container in Devfile", func() {
-								BeforeEach(func() {
-									src := "memoryLimit: 1024Mi"
-									dst := "memoryLimit: 1023Mi"
-									helper.ReplaceString("devfile.yaml", src, dst)
-									if manual {
-										if os.Getenv("SKIP_KEY_PRESS") == "true" {
-											Skip("This is a unix-terminal specific scenario, skipping")
-										}
-
-										devSession.PressKey('p')
+						When("modifying memoryLimit for container in Devfile", func() {
+							var stdout string
+							var stderr string
+							BeforeEach(func() {
+								src := "memoryLimit: 1024Mi"
+								dst := "memoryLimit: 1023Mi"
+								helper.ReplaceString("devfile.yaml", src, dst)
+								if manual {
+									if os.Getenv("SKIP_KEY_PRESS") == "true" {
+										Skip("This is a unix-terminal specific scenario, skipping")
 									}
-									var err error
-									_, _, ports, err = devSession.WaitSync()
-									Expect(err).Should(Succeed())
-								})
 
-								It("should expose the endpoint on localhost", func() {
+									devSession.PressKey('p')
+								}
+								var err error
+								var stdoutBytes []byte
+								var stderrBytes []byte
+								stdoutBytes, stderrBytes, ports, err = devSession.WaitSync()
+								Expect(err).Should(Succeed())
+								stdout = string(stdoutBytes)
+								stderr = string(stderrBytes)
+							})
+
+							It("should react on the Devfile modification", func() {
+								if podman {
+									By("warning users that odo dev needs to be restarted", func() {
+										Expect(stdout).To(ContainSubstring(
+											"Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."))
+									})
+								} else {
+									By("not warning users that odo dev needs to be restarted", func() {
+										warning := "Please restart 'odo dev'"
+										Expect(stdout).ShouldNot(ContainSubstring(warning))
+										Expect(stderr).ShouldNot(ContainSubstring(warning))
+									})
 									By("updating the pod", func() {
 										podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 										bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
 										output := string(bufferOutput)
 										Expect(output).To(ContainSubstring("1023Mi"))
 									})
+								}
 
-									By("exposing the endpoint", func() {
-										url := fmt.Sprintf("http://%s", ports["3000"])
-										resp, err := http.Get(url)
-										Expect(err).ToNot(HaveOccurred())
-										defer resp.Body.Close()
+								By("exposing the endpoint", func() {
+									url := fmt.Sprintf("http://%s", ports["3000"])
+									resp, err := http.Get(url)
+									Expect(err).ToNot(HaveOccurred())
+									defer resp.Body.Close()
 
-										body, _ := io.ReadAll(resp.Body)
-										helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-										Expect(err).ToNot(HaveOccurred())
-									})
+									body, _ := io.ReadAll(resp.Body)
+									helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+									Expect(err).ToNot(HaveOccurred())
 								})
 							})
-						}
+						})
 					})
 				})
 
@@ -792,8 +808,19 @@ ComponentSettings:
 								devSession.PressKey('p')
 							}
 
-							_, _, _, err := devSession.WaitSync()
+							var stdout, stderr []byte
+							var err error
+							stdout, stderr, _, err = devSession.WaitSync()
 							Expect(err).Should(Succeed())
+
+							By("not warning users that odo dev needs to be restarted because the Devfile has not changed", func() {
+								warning := "Please restart 'odo dev'"
+								if podman {
+									warning = "Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."
+								}
+								Expect(stdout).ShouldNot(ContainSubstring(warning))
+								Expect(stderr).ShouldNot(ContainSubstring(warning))
+							})
 
 							for _, p := range containerPorts {
 								By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
