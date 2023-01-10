@@ -1703,119 +1703,117 @@ CMD ["npm", "start"]
 		},
 	} {
 		devfileHandlerCtx := devfileHandlerCtx
-		When("running odo dev and devfile with composite command - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			var session helper.DevSession
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should execute all commands in composite command", func() {
-				// Verify the command executed successfully
-				var statErr error
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						statErr = err
-						return err == nil
-					},
-				)
-				Expect(statErr).ToNot(HaveOccurred())
-			})
-		})
-
-		When("running odo dev and composite command is marked as parallel:true - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			var session helper.DevSession
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should execute all commands in composite command", func() {
-				// Verify the command executed successfully
-				var statErr error
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						statErr = err
-						return err == nil
-					},
-				)
-				Expect(statErr).ToNot(HaveOccurred())
-			})
-		})
-
-		When("running odo dev and composite command are nested - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			var session helper.DevSession
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should execute all commands in composite commmand", func() {
-				// Verify the command executed successfully
-				var statErr error
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						statErr = err
-						return err == nil
-					},
-				)
-				Expect(statErr).ToNot(HaveOccurred())
-			})
-		})
 
 		for _, podman := range []bool{true, false} {
 			podman := podman
+
+			When("running odo dev and devfile with composite command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var session helper.DevSession
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should execute all commands in composite command", func() {
+					// Verify the command executed successfully
+					var statErr error
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+						podName,
+						"runtime",
+						commonVar.Project,
+						[]string{"stat", "/projects/testfolder"},
+						func(cmdOp string, err error) bool {
+							statErr = err
+							return err == nil
+						},
+					)
+					Expect(statErr).ToNot(HaveOccurred())
+				})
+			}))
+
+			When("running odo dev and composite command is marked as parallel:true - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var session helper.DevSession
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should execute all commands in composite command", func() {
+					// Verify the command executed successfully
+					var statErr error
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+						podName,
+						"runtime",
+						commonVar.Project,
+						[]string{"stat", "/projects/testfolder"},
+						func(cmdOp string, err error) bool {
+							statErr = err
+							return err == nil
+						},
+					)
+					Expect(statErr).ToNot(HaveOccurred())
+				})
+			}))
+
+			When("running odo dev and composite command are nested - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var session helper.DevSession
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should execute all commands in composite commmand", func() {
+					// Verify the command executed successfully
+
+					component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+					dir := "/projects/testfolder"
+					out := component.Exec("runtime", "stat", dir)
+					Expect(out).To(ContainSubstring(dir))
+				})
+			}))
+
 			When("running odo dev and composite command is used as a run command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var session helper.DevSession
 				var stdout []byte
