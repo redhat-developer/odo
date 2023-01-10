@@ -1,8 +1,12 @@
 ---
 title: odo delete component
+toc_min_heading_level: 2
+toc_max_heading_level: 4
 ---
 
-`odo delete component` command is useful for deleting resources that are managed by `odo`. It deletes the component and its related innerloop, and outerloop resources from the cluster.
+`odo delete component` command is useful for deleting resources that are managed by `odo`.
+By default, it deletes the component and its related inner-loop, and outer-loop resources from the cluster.
+But the `running-in` flag allows to be more specific about which resources (either inner-loop or outer-loop) to delete.
 
 ## Running the command
 There are 2 ways to delete a component:
@@ -31,11 +35,23 @@ If some resources attached to the component are present on the cluster, but not 
 You can delete these resources by running the command in the [next section](#delete-without-access-to-devfile).
 :::
 
-By default, `odo` does not delete the Devfile, the `odo` configuration files, or the source code.
+#### Filtering resources to delete
+You can specify the type of resources candidate for deletion via the `--running-in` flag.
+Acceptable values are `dev` (for inner-loop resources) or `deploy` (for outer-loop resources).
+
+<details>
+<summary>Example</summary>
+
+import DeleteRunningInWithAccessToDevfileOutput from './docs-mdx/delete-component/delete_running-in_with_access_to_devfile.mdx'
+
+<DeleteRunningInWithAccessToDevfileOutput />
+
+</details>
 
 #### Deleting local files with `--files`
 
-When `--files` is passed, `odo` attempts to delete files or directories it initially created locally.
+By default, `odo` does not delete the Devfile, the `odo` configuration files, or the source code.
+But when `--files` is passed, `odo` attempts to delete files or directories it initially created locally.
 
 This will delete the following files or directories:
 - the `.odo` directory in the current directory
@@ -80,3 +96,16 @@ If `odo` finds the resources, it will delete them after user confirmation.
 Otherwise, `odo` will exit with a message stating that it could not find the resources on the cluster.
 
 `--namespace` is optional, if not provided, `odo` will use the current active namespace.
+
+#### Filtering resources to delete
+You can specify the type of resources candidate for deletion via the `--running-in` flag.
+Acceptable values are `dev` (for inner-loop resources) or `deploy` (for outer-loop resources).
+
+<details>
+<summary>Example</summary>
+
+import DeleteNamedComponentRunningInOutput from './docs-mdx/delete-component/delete_named_component_running-in.mdx'
+
+<DeleteNamedComponentRunningInOutput />
+
+</details>
