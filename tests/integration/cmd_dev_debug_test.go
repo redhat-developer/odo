@@ -113,7 +113,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			It("should run successfully", func() {
 				By("verifying from the output that all commands have been executed", func() {
 					helper.MatchAllInOutput(string(stdout), []string{
-						"Building your application in container on cluster",
+						"Building your application in container",
 						"Executing the application (command: mkdir)",
 						"Executing the application (command: echo)",
 						"Executing the application (command: install)",
@@ -129,9 +129,9 @@ var _ = Describe("odo dev debug command tests", func() {
 				})
 
 				By("building the application only once", func() {
-					// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+					// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
 					// The bracket allows to match the last occurrence with the command execution timing information.
-					Expect(strings.Count(string(stdout), "Building your application in container on cluster (command: install) [")).
+					Expect(strings.Count(string(stdout), "Building your application in container (command: install) [")).
 						To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
 				})
 
@@ -275,9 +275,9 @@ var _ = Describe("odo dev debug command tests", func() {
 			It("should run successfully", func() {
 				By("verifying from the output that all commands have been executed", func() {
 					helper.MatchAllInOutput(string(stdout), []string{
-						"Building your application in container on cluster (command: mkdir)",
-						"Building your application in container on cluster (command: sleep-cmd-build)",
-						"Building your application in container on cluster (command: build-cmd)",
+						"Building your application in container (command: mkdir)",
+						"Building your application in container (command: sleep-cmd-build)",
+						"Building your application in container (command: build-cmd)",
 						"Executing the application (command: sleep-cmd-run)",
 						"Executing the application (command: echo-with-error)",
 						"Executing the application (command: check-build-result)",
@@ -293,11 +293,11 @@ var _ = Describe("odo dev debug command tests", func() {
 				})
 
 				By("building the application only once per exec command in the build command", func() {
-					// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+					// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
 					// The bracket allows to match the last occurrence with the command execution timing information.
 					out := string(stdout)
 					for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
-						Expect(strings.Count(out, fmt.Sprintf("Building your application in container on cluster (command: %s) [", cmd))).
+						Expect(strings.Count(out, fmt.Sprintf("Building your application in container (command: %s) [", cmd))).
 							To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
 					}
 				})

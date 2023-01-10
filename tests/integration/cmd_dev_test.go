@@ -1787,138 +1787,131 @@ CMD ["npm", "start"]
 			})
 		})
 
-		When("running odo dev and composite command is used as a run command - "+devfileHandlerCtx.name, func() {
-			var session helper.DevSession
-			var stdout []byte
-			var stderr []byte
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should run successfully", func() {
-				By("verifying from the output that all commands have been executed", func() {
-					helper.MatchAllInOutput(string(stdout), []string{
-						"Building your application in container on cluster",
-						"Executing the application (command: mkdir)",
-						"Executing the application (command: echo)",
-						"Executing the application (command: install)",
-						"Executing the application (command: start)",
-					})
-				})
-
-				By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-					helper.MatchAllInOutput(string(stderr), []string{
-						"Devfile command \"echo\" exited with an error status",
-						"intentional-error-message",
-					})
-				})
-
-				By("building the application only once", func() {
-					// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
-					// The bracket allows to match the last occurrence with the command execution timing information.
-					Expect(strings.Count(string(stdout), "Building your application in container on cluster (command: install) [")).
-						To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
-				})
-
-				By("verifying that the command did run successfully", func() {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-						podName,
-						"runtime",
-						commonVar.Project,
-						[]string{"stat", "/projects/testfolder"},
-						func(cmdOp string, err error) bool {
-							return err == nil
-						},
-					)
-					Expect(res).To(BeTrue())
-				})
-			})
-		})
-
-		When("running build and run commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, func() {
-			var session helper.DevSession
-			var stdout []byte
-			var stderr []byte
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
-					filepath.Join(commonVar.Context, "devfile.yaml"))
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should run successfully", func() {
-				By("verifying from the output that all commands have been executed", func() {
-					helper.MatchAllInOutput(string(stdout), []string{
-						"Building your application in container on cluster (command: mkdir)",
-						"Building your application in container on cluster (command: sleep-cmd-build)",
-						"Building your application in container on cluster (command: build-cmd)",
-						"Executing the application (command: sleep-cmd-run)",
-						"Executing the application (command: echo-with-error)",
-						"Executing the application (command: check-build-result)",
-						"Executing the application (command: start)",
-					})
-				})
-
-				By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-					helper.MatchAllInOutput(string(stderr), []string{
-						"Devfile command \"echo-with-error\" exited with an error status",
-						"intentional-error-message",
-					})
-				})
-
-				By("building the application only once per exec command in the build command", func() {
-					// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
-					// The bracket allows to match the last occurrence with the command execution timing information.
-					out := string(stdout)
-					for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
-						Expect(strings.Count(out, fmt.Sprintf("Building your application in container on cluster (command: %s) [", cmd))).
-							To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When("running odo dev and composite command is used as a run command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var session helper.DevSession
+				var stdout []byte
+				var stderr []byte
+				var devfileCmpName string
+				BeforeEach(func() {
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 					}
+					var err error
+					session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
 				})
 
-				By("verifying that the command did run successfully", func() {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-						podName,
-						"runtime",
-						commonVar.Project,
-						[]string{"stat", "/projects/testfolder"},
-						func(cmdOp string, err error) bool {
-							return err == nil
-						},
-					)
-					Expect(res).To(BeTrue())
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
 				})
-			})
-		})
+
+				It("should run successfully", func() {
+					By("verifying from the output that all commands have been executed", func() {
+						helper.MatchAllInOutput(string(stdout), []string{
+							"Building your application in container",
+							"Executing the application (command: mkdir)",
+							"Executing the application (command: echo)",
+							"Executing the application (command: install)",
+							"Executing the application (command: start)",
+						})
+					})
+
+					By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+						helper.MatchAllInOutput(string(stderr), []string{
+							"Devfile command \"echo\" exited with an error status",
+							"intentional-error-message",
+						})
+					})
+
+					By("building the application only once", func() {
+						// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
+						// The bracket allows to match the last occurrence with the command execution timing information.
+						Expect(strings.Count(string(stdout), "Building your application in container (command: install) [")).
+							To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+					})
+
+					By("verifying that the command did run successfully", func() {
+						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						dir := "/projects/testfolder"
+						out := component.Exec("runtime", "stat", dir)
+						Expect(out).To(ContainSubstring(dir))
+					})
+				})
+			}))
+
+			When("running build and run commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var session helper.DevSession
+				var stdout []byte
+				var stderr []byte
+				var devfileCmpName string
+				BeforeEach(func() {
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"))
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should run successfully", func() {
+					By("verifying from the output that all commands have been executed", func() {
+						helper.MatchAllInOutput(string(stdout), []string{
+							"Building your application in container (command: mkdir)",
+							"Building your application in container (command: sleep-cmd-build)",
+							"Building your application in container (command: build-cmd)",
+							"Executing the application (command: sleep-cmd-run)",
+							"Executing the application (command: echo-with-error)",
+							"Executing the application (command: check-build-result)",
+							"Executing the application (command: start)",
+						})
+					})
+
+					By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+						helper.MatchAllInOutput(string(stderr), []string{
+							"Devfile command \"echo-with-error\" exited with an error status",
+							"intentional-error-message",
+						})
+					})
+
+					By("building the application only once per exec command in the build command", func() {
+						// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
+						// The bracket allows to match the last occurrence with the command execution timing information.
+						out := string(stdout)
+						for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
+							Expect(strings.Count(out, fmt.Sprintf("Building your application in container (command: %s) [", cmd))).
+								To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+						}
+					})
+
+					By("verifying that the command did run successfully", func() {
+						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						dir := "/projects/testfolder"
+						out := component.Exec("runtime", "stat", dir)
+						Expect(out).To(ContainSubstring(dir))
+					})
+				})
+			}))
+		}
 	}
 
 	When("running odo dev and prestart events are defined", func() {
@@ -2076,7 +2069,7 @@ CMD ["npm", "start"]
 
 					By("checking the output of the command", func() {
 						helper.MatchAllInOutput(stdout, []string{
-							fmt.Sprintf("Building your application in container on cluster (command: %s)", tt.buildCmd),
+							fmt.Sprintf("Building your application in container (command: %s)", tt.buildCmd),
 							fmt.Sprintf("Executing the application (command: %s)", tt.runCmd),
 						})
 					})
@@ -2148,7 +2141,7 @@ CMD ["npm", "start"]
 					buildCmdTestFunc("my-custom-build", func(stdout, stderr string) {
 						By("checking that it did not execute the default build command", func() {
 							helper.DontMatchAllInOutput(stdout, []string{
-								"Building your application in container on cluster (command: devbuild)",
+								"Building your application in container (command: devbuild)",
 							})
 						})
 
@@ -2163,7 +2156,7 @@ CMD ["npm", "start"]
 					buildCmdTestFunc("devbuild", func(stdout, stderr string) {
 						By("checking that it did not execute the custom build command", func() {
 							helper.DontMatchAllInOutput(stdout, []string{
-								"Building your application in container on cluster (command: my-custom-build)",
+								"Building your application in container (command: my-custom-build)",
 							})
 						})
 					})
@@ -2231,7 +2224,7 @@ CMD ["npm", "start"]
 						checkFunc: func(stdout, stderr string) {
 							By("checking that it did not execute the default build and run commands", func() {
 								helper.DontMatchAllInOutput(stdout, []string{
-									"Building your application in container on cluster (command: devbuild)",
+									"Building your application in container (command: devbuild)",
 									"Executing the application (command: devrun)",
 								})
 							})
