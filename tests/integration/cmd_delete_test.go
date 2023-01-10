@@ -197,7 +197,7 @@ var _ = Describe("odo delete command tests", func() {
 						devSession.Kill()
 						devSession.WaitEnd()
 
-						component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 						component.ExpectIsDeployed()
 					})
 
@@ -229,7 +229,7 @@ var _ = Describe("odo delete command tests", func() {
 								}
 							})
 							By("deleting the deployment", func() {
-								component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+								component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 								component.ExpectIsNotDeployed()
 							})
 						})
@@ -264,7 +264,7 @@ var _ = Describe("odo delete command tests", func() {
 									Expect(stdOut).To(ContainSubstring(cmpName))
 								})
 								By("deleting the deployment", func() {
-									component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+									component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 									component.ExpectIsNotDeployed()
 								})
 								By("ensuring that devfile.yaml and .odo still exists", func() {
@@ -301,7 +301,7 @@ var _ = Describe("odo delete command tests", func() {
 									Expect(stdOut).To(ContainSubstring(cmpName))
 								})
 								By("deleting the deployment", func() {
-									component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+									component := helper.NewComponent(cmpName, "app", commonVar.Project, commonVar.CliRunner)
 									component.ExpectIsNotDeployed()
 								})
 
