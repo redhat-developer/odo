@@ -318,7 +318,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name,
-				"Building your application in container on cluster", parameters.Show)
+				"Building your application in container", parameters.Show)
 			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}
 		if running {
