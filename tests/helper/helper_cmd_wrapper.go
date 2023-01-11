@@ -125,6 +125,11 @@ func (cw *CmdWrapper) WithTimeout(timeoutAfter time.Duration) *CmdWrapper {
 	return cw
 }
 
+func (cw *CmdWrapper) WithWorkingDir(dir string) *CmdWrapper {
+	cw.Cmd.Dir = dir
+	return cw
+}
+
 func (cw *CmdWrapper) WithEnv(args ...string) *CmdWrapper {
 	cw.Cmd.Env = args
 	return cw
