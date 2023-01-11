@@ -3,6 +3,7 @@ package delete
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,12 +38,21 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 	res1 := getUnstructured("dep1", "deployment", "v1", "")
 	res2 := getUnstructured("svc1", "service", "v1", "")
 
+	selectorForMode := func(mode string) string {
+		selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
+		if mode != "" {
+			selector += fmt.Sprintf(",odo.dev/mode=%s", mode)
+		}
+		return selector
+	}
+
 	type fields struct {
 		kubeClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
 	type args struct {
 		componentName string
 		namespace     string
+		mode          string
 	}
 	tests := []struct {
 		name    string
@@ -55,8 +66,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
-					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(nil, nil)
+					client.EXPECT().GetAllResourcesFromSelector(selectorForMode(odolabels.ComponentAnyMode), "my-ns").Return(nil, nil)
 					return client
 				},
 			},
@@ -74,8 +84,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 					var resources []unstructured.Unstructured
 					resources = append(resources, res1, res2)
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
-					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					client.EXPECT().GetAllResourcesFromSelector(selectorForMode(odolabels.ComponentAnyMode), "my-ns").Return(resources, nil)
 					return client
 				},
 			},
@@ -100,8 +109,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 					})
 					resources = append(resources, res1, res2)
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
-					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					client.EXPECT().GetAllResourcesFromSelector(selectorForMode(odolabels.ComponentAnyMode), "my-ns").Return(resources, nil)
 					return client
 				},
 			},
@@ -112,7 +120,40 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			wantErr: false,
 			want:    []unstructured.Unstructured{res2},
 		},
-		// TODO: Add test cases.
+		{
+			name: "returning Dev resources only",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().GetAllResourcesFromSelector(selectorForMode(odolabels.ComponentDevMode), "my-ns").Return([]unstructured.Unstructured{res1}, nil)
+					return client
+				},
+			},
+			args: args{
+				componentName: "my-component",
+				namespace:     "my-ns",
+				mode:          odolabels.ComponentDevMode,
+			},
+			wantErr: false,
+			want:    []unstructured.Unstructured{res1},
+		},
+		{
+			name: "returning Deploy resources only",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().GetAllResourcesFromSelector(selectorForMode(odolabels.ComponentDeployMode), "my-ns").Return([]unstructured.Unstructured{res2}, nil)
+					return client
+				},
+			},
+			args: args{
+				componentName: "my-component",
+				namespace:     "my-ns",
+				mode:          odolabels.ComponentDeployMode,
+			},
+			wantErr: false,
+			want:    []unstructured.Unstructured{res2},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -121,7 +162,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			execClient := exec.NewExecClient(kubeClient)
 			do := NewDeleteComponentClient(kubeClient, nil, execClient)
 			ctx := odocontext.WithApplication(context.TODO(), "app")
-			got, err := do.ListClusterResourcesToDelete(ctx, tt.args.componentName, tt.args.namespace)
+			got, err := do.ListClusterResourcesToDelete(ctx, tt.args.componentName, tt.args.namespace, tt.args.mode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponentClient.ListResourcesToDelete() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -741,6 +782,7 @@ func TestDeleteComponentClient_ListPodmanResourcesToDeleteFromDevfile(t *testing
 	type args struct {
 		appName       string
 		componentName string
+		mode          string
 	}
 
 	podName := "a-component-an-app"
@@ -833,6 +875,46 @@ func TestDeleteComponentClient_ListPodmanResourcesToDeleteFromDevfile(t *testing
 			wantPods:                []*corev1.Pod{&podDef},
 		},
 		{
+			name: "component's pod running on podman - dev mode requested",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(map[string]bool{podName: true}, nil)
+
+					podmanCli.EXPECT().KubeGenerate(podName).Return(&podDef, nil)
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+				mode:          odolabels.ComponentDevMode,
+			},
+			wantErr:                 false,
+			wantIsInnerLoopDeployed: true,
+			wantPods:                []*corev1.Pod{&podDef},
+		},
+		{
+			name: "component's pod running on podman - deploy mode requested",
+			fields: fields{
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					podmanCli := podman.NewMockClient(ctrl)
+					podmanCli.EXPECT().PodLs().Return(map[string]bool{podName: true}, nil).Times(0)
+
+					podmanCli.EXPECT().KubeGenerate(podName).Return(&podDef, nil).Times(0)
+					return podmanCli
+				},
+			},
+			args: args{
+				appName:       "an-app",
+				componentName: "a-component",
+				mode:          odolabels.ComponentDeployMode,
+			},
+			wantErr:                 false,
+			wantIsInnerLoopDeployed: false,
+			wantPods:                nil,
+		},
+		{
 			name: "kube generate fails",
 			fields: fields{
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
@@ -856,7 +938,7 @@ func TestDeleteComponentClient_ListPodmanResourcesToDeleteFromDevfile(t *testing
 			do := &DeleteComponentClient{
 				podmanClient: tt.fields.podmanClient(ctrl),
 			}
-			gotIsInnerLoopDeployed, gotPods, err := do.ListPodmanResourcesToDelete(tt.args.appName, tt.args.componentName)
+			gotIsInnerLoopDeployed, gotPods, err := do.ListPodmanResourcesToDelete(tt.args.appName, tt.args.componentName, tt.args.mode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponentClient.ListPodmanResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return

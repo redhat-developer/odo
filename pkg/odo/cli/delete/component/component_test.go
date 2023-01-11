@@ -12,6 +12,11 @@ import (
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
+
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
@@ -19,10 +24,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/testingutil"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
 )
 
 func TestComponentOptions_deleteNamedComponent(t *testing.T) {
@@ -34,6 +35,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 		name                  string
 		namespace             string
 		forceFlag             bool
+		runningIn             string
 		kubernetesClient      func(ctrl *gomock.Controller) kclient.ClientInterface
 		deleteComponentClient func(ctrl *gomock.Controller) _delete.Client
 		podmanClient          func(ctrl *gomock.Controller) podman.Client
@@ -58,7 +60,53 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(nil, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", "").Return(nil, nil)
+					client.EXPECT().DeleteResources(gomock.Any(), false).Times(0)
+					return client
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "No cluster resource found in Dev",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: false,
+				runningIn: labels.ComponentDevMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return nil
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDevMode).Return(nil, nil)
+					client.EXPECT().DeleteResources(gomock.Any(), false).Times(0)
+					return client
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "No cluster resource found in Deploy",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: false,
+				runningIn: labels.ComponentDeployMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return nil
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDeployMode).Return(nil, nil)
 					client.EXPECT().DeleteResources(gomock.Any(), false).Times(0)
 					return client
 				},
@@ -84,8 +132,71 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					res2 := getUnstructured("svc1", "service", "v1")
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(resources, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", "").
+						Return(resources, nil)
 					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "2 cluster resources running, but only 1 in Dev to delete",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: true,
+				runningIn: labels.ComponentDevMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return nil
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					res1 := getUnstructured("dep1", "deployment", "v1")
+					res2 := getUnstructured("svc1", "service", "v1")
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDevMode).
+						Return([]unstructured.Unstructured{res1}, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDeployMode).
+						Return([]unstructured.Unstructured{res2}, nil).Times(0)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentAnyMode).
+						Return([]unstructured.Unstructured{res1, res2}, nil).Times(0)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1}, false).Times(1)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(0)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res2}, false).Times(0)
+					return client
+				},
+			},
+		},
+		{
+			name: "2 cluster resources running, but only 1 in Deploy to delete",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: true,
+				runningIn: labels.ComponentDeployMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					return nil
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					res1 := getUnstructured("dep1", "deployment", "v1")
+					res2 := getUnstructured("svc1", "service", "v1")
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDeployMode).
+						Return([]unstructured.Unstructured{res1}, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDevMode).
+						Return([]unstructured.Unstructured{res2}, nil).Times(0)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentAnyMode).
+						Return([]unstructured.Unstructured{res1, res2}, nil).Times(0)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1}, false).Times(1)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(0)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res2}, false).Times(0)
 					return client
 				},
 			},
@@ -105,7 +216,52 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component").Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", "").
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "1 podman resource to delete in Dev",
+			fields: fields{
+				name:      "my-component",
+				forceFlag: true,
+				runningIn: labels.ComponentDevMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					return nil
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					client := podman.NewMockClient(ctrl)
+					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					return client
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentDevMode).
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "1 podman resource to delete in Deploy",
+			fields: fields{
+				name:      "my-component",
+				forceFlag: true,
+				runningIn: labels.ComponentDeployMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					return nil
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					client := podman.NewMockClient(ctrl)
+					client.EXPECT().CleanupPodResources(&pod1).Times(0)
+					return client
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentDeployMode).
+						Return(false, nil, nil).Times(1)
 					return client
 				},
 			},
@@ -131,9 +287,81 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					res2 := getUnstructured("svc1", "service", "v1")
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace").Return(resources, nil)
-					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component").Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", "").
+						Return(resources, nil)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", "").
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
 					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "2 cluster resources (Dev, Deploy) and 1 podman resource: dev resources deletion request",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: true,
+				runningIn: labels.ComponentDevMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					client := podman.NewMockClient(ctrl)
+					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					return client
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					res1 := getUnstructured("dep1", "deployment", "v1")
+					res2 := getUnstructured("svc1", "service", "v1")
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDevMode).
+						Return([]unstructured.Unstructured{res1}, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDeployMode).
+						Return([]unstructured.Unstructured{res2}, nil).Times(0)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentDevMode).
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(1)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentDeployMode).
+						Return(false, nil, nil).Times(0)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentAnyMode).
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(0)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1}, false).Times(1)
+					return client
+				},
+			},
+		},
+		{
+			name: "2 cluster resources (Dev, Deploy) and 1 podman resource: deploy resources deletion request",
+			fields: fields{
+				name:      "my-component",
+				namespace: "my-namespace",
+				forceFlag: true,
+				runningIn: labels.ComponentDeployMode,
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					return client
+				},
+				podmanClient: func(ctrl *gomock.Controller) podman.Client {
+					client := podman.NewMockClient(ctrl)
+					client.EXPECT().CleanupPodResources(&pod1).Times(0)
+					return client
+				},
+				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
+					res1 := getUnstructured("dep1", "deployment", "v1")
+					res2 := getUnstructured("svc1", "service", "v1")
+					client := _delete.NewMockClient(ctrl)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDeployMode).
+						Return([]unstructured.Unstructured{res1}, nil)
+					client.EXPECT().ListClusterResourcesToDelete(gomock.Any(), "my-component", "my-namespace", labels.ComponentDevMode).
+						Return([]unstructured.Unstructured{res2}, nil).Times(0)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentDeployMode).
+						Return(false, nil, nil)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentDevMode).
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(0)
+					client.EXPECT().ListPodmanResourcesToDelete("app", "my-component", labels.ComponentAnyMode).
+						Return(true, []*corev1.Pod{&pod1}, nil).Times(0)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1}, false).Times(1)
 					return client
 				},
 			},
@@ -147,6 +375,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				name:      tt.fields.name,
 				namespace: tt.fields.namespace,
 				forceFlag: tt.fields.forceFlag,
+				runningIn: tt.fields.runningIn,
 				clientset: &clientset.Clientset{
 					KubernetesClient: tt.fields.kubernetesClient(ctrl),
 					DeleteClient:     tt.fields.deleteComponentClient(ctrl),
@@ -181,6 +410,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 	type fields struct {
 		name      string
 		forceFlag bool
+		runningIn string
 	}
 	tests := []struct {
 		name         string
@@ -192,8 +422,10 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component with access to devfile",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
-				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName).Return(resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).
+					Return(true, resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentAnyMode).
+					Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
@@ -204,11 +436,47 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "deleting a component running in Dev with access to devfile",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDevMode).
+					Return(true, resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentDevMode).
+					Return(resources, nil)
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: true,
+				runningIn: labels.ComponentDevMode,
+			},
+			wantErr: false,
+		},
+		{
+			name: "deleting a component running in Deploy with access to devfile",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDeployMode).
+					Return(true, resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentDeployMode).
+					Return(resources, nil)
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: true,
+				runningIn: labels.ComponentDeployMode,
+			},
+			wantErr: false,
+		},
+		{
 			name: "deleting a component should not fail even if ExecutePreStopEvents fails",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
-				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName).Return(resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentAnyMode).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName, gomock.Any()).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
@@ -231,6 +499,32 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "deleting a component running in Dev should fail if ListResourcesToDeleteFromDevfile fails",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDevMode).Return(false, nil, errors.New("some error"))
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: true,
+				runningIn: labels.ComponentDevMode,
+			},
+			wantErr: true,
+		},
+		{
+			name: "deleting a component running in Deploy should fail if ListResourcesToDeleteFromDevfile fails",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDeployMode).Return(false, nil, errors.New("some error"))
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: true,
+				runningIn: labels.ComponentDeployMode,
+			},
+			wantErr: true,
+		},
+		{
 			name: "deleting a component should be aborted if forceFlag is not passed",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
@@ -243,14 +537,69 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "deleting a component running in Dev should be aborted if forceFlag is not passed",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDevMode).Return(true, resources, nil)
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: false,
+				runningIn: labels.ComponentDevMode,
+			},
+			wantErr: false,
+		},
+		{
+			name: "deleting a component running in Deploy should be aborted if forceFlag is not passed",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDeployMode).Return(true, resources, nil)
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: false,
+				runningIn: labels.ComponentDeployMode,
+			},
+			wantErr: false,
+		},
+		{
 			name: "nothing to delete",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(false, nil, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).
+					Return(false, nil, nil)
 				return deleteClient
 			},
 			fields: fields{
 				forceFlag: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "nothing to delete in Dev",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDevMode).
+					Return(false, nil, nil)
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: true,
+				runningIn: labels.ComponentDevMode,
+			},
+			wantErr: false,
+		},
+		{
+			name: "nothing to delete in Deploy",
+			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
+				deleteClient := _delete.NewMockClient(ctrl)
+				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDeployMode).
+					Return(false, nil, nil)
+				return deleteClient
+			},
+			fields: fields{
+				forceFlag: true,
+				runningIn: labels.ComponentDeployMode,
 			},
 			wantErr: false,
 		},
@@ -268,6 +617,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			o := &ComponentOptions{
 				name:      tt.fields.name,
 				forceFlag: tt.fields.forceFlag,
+				runningIn: tt.fields.runningIn,
 				clientset: &clientset.Clientset{
 					KubernetesClient: kubeClient,
 					DeleteClient:     deleteClient,
