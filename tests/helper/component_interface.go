@@ -2,6 +2,7 @@ package helper
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Component is an abstraction for a Devfile Component deployed on a specific platform
@@ -16,6 +17,8 @@ type Component interface {
 	GetEnvVars(container string) map[string]string
 	// GetLabels returns the labels defined for the component
 	GetLabels() map[string]string
+	// GetPodDef returns the definition of the pod
+	GetPodDef() *corev1.Pod
 }
 
 func NewComponent(componentName string, app string, mode string, namespace string, cli CliRunner) Component {

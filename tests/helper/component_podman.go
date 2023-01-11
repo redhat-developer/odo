@@ -82,7 +82,8 @@ func splitLines(str string) map[string]string {
 	return result
 }
 
-func GetPodDef(podname string) *corev1.Pod {
+func (o *PodmanComponent) GetPodDef() *corev1.Pod {
+	podname := fmt.Sprintf("%s-%s", o.componentName, o.app)
 	serializer := jsonserializer.NewSerializerWithOptions(
 		jsonserializer.SimpleMetaFactory{},
 		scheme.Scheme,

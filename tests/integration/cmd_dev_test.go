@@ -2327,62 +2327,75 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("node-js application is created and deployed with devfile schema 2.2.0", func() {
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("node-js application is created and deployed with devfile schema 2.2.0", helper.LabelPodmanIf(podman, func() {
 
-		ensureResource := func(cpulimit, cpurequest, memoryrequest string) {
-			By("check for cpuLimit", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").Out.Contents()
-				output := string(bufferOutput)
-				Expect(output).To(ContainSubstring(cpulimit))
-			})
+			ensureResource := func(cpulimit, memorylimit, cpurequest, memoryrequest string) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				podDef := component.GetPodDef()
 
-			By("check for cpuRequests", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").Out.Contents()
-				output := string(bufferOutput)
-				Expect(output).To(ContainSubstring(cpurequest))
-			})
+				By("check for cpuLimit", func() {
+					cpuVal := podDef.Spec.Containers[0].Resources.Limits.Cpu().String()
+					Expect(cpuVal).To(Equal(cpulimit))
+				})
 
-			By("check for memoryRequests", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
-				output := string(bufferOutput)
-				Expect(output).To(ContainSubstring(memoryrequest))
-			})
-		}
+				By("check for memoryLimit", func() {
+					memVal := podDef.Spec.Containers[0].Resources.Limits.Memory().String()
+					Expect(memVal).To(Equal(memorylimit))
+				})
 
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			var err error
-			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
+				if !podman {
+					// Resource Requests are not returned by podman generate kube (as of podman v4.3.1)
+					// TODO(feloy) are they taken into account?
+					By("check for cpuRequests", func() {
+						cpuVal := podDef.Spec.Containers[0].Resources.Requests.Cpu().String()
+						Expect(cpuVal).To(Equal(cpurequest))
+					})
 
-		It("should check cpuLimit, cpuRequests, memoryRequests", func() {
-			ensureResource("1", "200m", "512Mi")
-		})
+					By("check for memoryRequests", func() {
+						memVal := podDef.Spec.Containers[0].Resources.Requests.Memory().String()
+						Expect(memVal).To(Equal(memoryrequest))
+					})
+				}
+			}
 
-		When("Update the devfile.yaml, and waiting synchronization", func() {
-
+			var session helper.DevSession
 			BeforeEach(func() {
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				var err error
-				_, _, _, err = session.WaitSync()
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
-
-			It("should check cpuLimit, cpuRequests, memoryRequests after restart", func() {
-				ensureResource("700m", "250m", "550Mi")
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
 			})
-		})
-	})
+
+			It("should check cpuLimit, cpuRequests, memoryRequests", func() {
+				ensureResource("1", "1Gi", "200m", "512Mi")
+			})
+
+			if !podman {
+				When("Update the devfile.yaml, and waiting synchronization", func() {
+
+					BeforeEach(func() {
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+						var err error
+						_, _, _, err = session.WaitSync()
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("should check cpuLimit, cpuRequests, memoryRequests after restart", func() {
+						ensureResource("700m", "1028Mi", "250m", "550Mi")
+					})
+				})
+			}
+		}))
+	}
 
 	for _, podman := range []bool{false} {
 		podman := podman

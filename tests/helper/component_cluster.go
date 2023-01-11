@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/labels"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // ClusterComponent is an abstraction for a Devfile Component deployed on a cluster (either Kubernetes or OpenShift)
@@ -57,4 +58,9 @@ func (o *ClusterComponent) GetLabels() map[string]string {
 	Expect(err).ToNot(HaveOccurred())
 
 	return result
+}
+
+func (o *ClusterComponent) GetPodDef() *corev1.Pod {
+
+	return nil
 }
