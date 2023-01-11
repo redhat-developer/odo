@@ -49,9 +49,14 @@ func NewDeleteComponentClient(
 
 // ListClusterResourcesToDelete lists Kubernetes resources from cluster in namespace for a given odo component
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
-func (do *DeleteComponentClient) ListClusterResourcesToDelete(ctx context.Context, componentName string, namespace string) ([]unstructured.Unstructured, error) {
+func (do *DeleteComponentClient) ListClusterResourcesToDelete(
+	ctx context.Context,
+	componentName string,
+	namespace string,
+	mode string,
+) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
-	selector := odolabels.GetSelector(componentName, odocontext.GetApplication(ctx), odolabels.ComponentAnyMode, false)
+	selector := odolabels.GetSelector(componentName, odocontext.GetApplication(ctx), mode, false)
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -210,7 +215,11 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 	return nil
 }
 
-func (do *DeleteComponentClient) ListPodmanResourcesToDelete(appName string, componentName string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error) {
+func (do *DeleteComponentClient) ListPodmanResourcesToDelete(appName string, componentName string, mode string) (isInnerLoopDeployed bool, pods []*corev1.Pod, err error) {
+	if mode == odolabels.ComponentDeployMode {
+		return false, nil, nil
+	}
+
 	// Inner Loop
 	var podName string
 	podName, err = util.NamespaceKubernetesObject(componentName, appName)

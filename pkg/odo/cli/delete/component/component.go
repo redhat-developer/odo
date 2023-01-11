@@ -153,14 +153,14 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	)
 	log.Info("Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
-		clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
+		clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace, o.runningIn)
 		if err != nil {
 			return err
 		}
 	}
 
 	if o.clientset.PodmanClient != nil {
-		_, podmanResources, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, o.name)
+		_, podmanResources, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, o.name, o.runningIn)
 		if err != nil {
 			return err
 		}
@@ -240,7 +240,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 	log.Info("Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
-		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
+		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(
+			*devfileObj, appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
@@ -254,7 +255,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 
 	if o.clientset.PodmanClient != nil {
-		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName)
+		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
@@ -294,7 +295,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		if hasClusterResources {
 			spinner := log.Spinnerf("Deleting resources from cluster")
 			// Get a list of component's resources present on the cluster
-			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
+			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace, o.runningIn)
 			// Get a list of component's resources absent from the devfile, but present on the cluster
 			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
 
