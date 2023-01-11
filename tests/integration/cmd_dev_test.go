@@ -2384,36 +2384,44 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", func() {
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+	for _, podman := range []bool{false} {
+		podman := podman
+		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
+			//TODO Not implemented yet on Podman
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
+					helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
-			// create a folder and file which shouldn't be pushed
-			helper.MakeDir(filepath.Join(commonVar.Context, "views"))
-			_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
+				// create a folder and file which shouldn't be pushed
+				helper.MakeDir(filepath.Join(commonVar.Context, "views"))
+				_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
 
-			helper.ReplaceString("package.json", "node server.js", "node server/server.js")
-			var err error
-			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
+				helper.ReplaceString("package.json", "node server.js", "node server/server.js")
+				var err error
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
 
-		It("should sync only the mentioned files at the appropriate remote destination", func() {
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-			stdOut := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-			helper.MatchAllInOutput(stdOut, []string{"package.json", "server"})
-			helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
+			It("should sync only the mentioned files at the appropriate remote destination", func() {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				stdOut := component.Exec("runtime", "ls", "-lai", "/projects")
 
-			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/server")
-			helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
-		})
-	})
+				helper.MatchAllInOutput(stdOut, []string{"package.json", "server"})
+				helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
+
+				stdOut = component.Exec("runtime", "ls", "-lai", "/projects/server")
+				helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
+			})
+		}))
+	}
 
 	Context("using Kubernetes cluster", func() {
 		BeforeEach(func() {
