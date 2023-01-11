@@ -61,6 +61,10 @@ func (o *ClusterComponent) GetLabels() map[string]string {
 }
 
 func (o *ClusterComponent) GetPodDef() *corev1.Pod {
-
-	return nil
+	var podDef corev1.Pod
+	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
+	bufferOutput := o.cli.Run("get", "pods", podName, "-o", "json").Out.Contents()
+	err := json.Unmarshal(bufferOutput, &podDef)
+	Expect(err).ToNot(HaveOccurred())
+	return &podDef
 }
