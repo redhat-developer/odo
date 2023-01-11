@@ -185,7 +185,11 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
 			spinner.End(true)
-			log.Infof("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
+			successMsg := fmt.Sprintf("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
+			if o.runningIn != "" {
+				successMsg = fmt.Sprintf("The component %q running in the %s mode is successfully deleted from namespace %q", o.name, o.runningIn, o.namespace)
+			}
+			log.Info(successMsg)
 		}
 
 		if len(podmanResources) > 0 {
@@ -197,7 +201,11 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 				}
 			}
 			spinner.End(true)
-			log.Infof("The component %q is successfully deleted from podman", o.name)
+			successMsg := fmt.Sprintf("The component %q is successfully deleted from podman", o.name)
+			if o.runningIn != "" {
+				successMsg = fmt.Sprintf("The component %q running in the %s mode is successfully deleted podman", o.name, o.runningIn)
+			}
+			log.Info(successMsg)
 		}
 
 		return nil
@@ -290,7 +298,11 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		return nil
 	}
 
-	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
+	msg := fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)
+	if o.runningIn != "" {
+		msg = fmt.Sprintf("Are you sure you want to delete %q and all its resources running in the %s mode?", componentName, o.runningIn)
+	}
+	if o.forceFlag || ui.Proceed(msg) {
 
 		if hasClusterResources {
 			spinner := log.Spinnerf("Deleting resources from cluster")
