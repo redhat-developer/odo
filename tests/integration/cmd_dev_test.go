@@ -2529,44 +2529,46 @@ CMD ["npm", "start"]
 		},
 	} {
 		devfileHandlerCtx := devfileHandlerCtx
-		When("a container component defines a Command or Args - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
-					filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-			})
 
-			It("should run odo dev successfully (#5620)", func() {
-				devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ShouldNot(HaveOccurred())
-				defer devSession.Stop()
-				const errorMessage = "Failed to create the component:"
-				helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
-				helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When("a container component defines a Command or Args - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var stdoutBytes, stderrBytes []byte
+				var devSession helper.DevSession
+				var err error
 
-				// the command has been started directly in the background. Check the PID stored in a specific file.
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
-					"runtime",
-					commonVar.Project,
-					[]string{
-						remotecmd.ShellExecutable, "-c",
-						fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
-							strings.TrimSuffix(storage.SharedDataMountPath, "/")),
-					},
-					func(stdout string, err error) bool {
-						Expect(err).ShouldNot(HaveOccurred())
-						Expect(stdout).To(Equal("0"))
-						return err == nil
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					devSession, stdoutBytes, stderrBytes, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
 					})
-			})
-		})
+					Expect(err).ShouldNot(HaveOccurred())
+
+				})
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should run odo dev successfully (#5620)", func() {
+					const errorMessage = "Failed to create the component:"
+					helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
+					helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
+
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", remotecmd.ShellExecutable, "-c", fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
+						strings.TrimSuffix(storage.SharedDataMountPath, "/")))
+				})
+			}))
+		}
 	}
 
 	for _, podman := range []bool{true, false} {
