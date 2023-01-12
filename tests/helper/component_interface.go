@@ -19,6 +19,8 @@ type Component interface {
 	GetLabels() map[string]string
 	// GetPodDef returns the definition of the pod
 	GetPodDef() *corev1.Pod
+	// GetPodLogs returns logs for the pod
+	GetPodLogs() string
 }
 
 func NewComponent(componentName string, app string, mode string, namespace string, cli CliRunner) Component {
