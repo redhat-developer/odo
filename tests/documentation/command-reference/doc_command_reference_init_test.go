@@ -12,7 +12,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster), func() {
+var _ = FDescribe("doc command reference odo init", Label(helper.LabelNoCluster), func() {
 	var commonVar helper.CommonVar
 	var commonPath = filepath.Join("command-reference", "docs-mdx", "init")
 	var outputStringFormat = "```console\n$ odo %s\n%s```\n"

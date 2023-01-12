@@ -39,14 +39,14 @@ func (o *DevClient) reconcile(
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 	)
+	// pass the command name and not just debug option
+	o.warnAboutK8sResources(*devfileObj, options.Debug)
 
 	pod, fwPorts, err := o.deployPod(ctx, options)
 	if err != nil {
 		return err
 	}
 	o.deployedPod = pod
-
-	o.warnAboutK8sResources(*devfileObj)
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
@@ -124,17 +124,25 @@ func (o *DevClient) reconcile(
 }
 
 // warnAboutK8sResources prints a warning if the Devfile contains a K8s resource that it needs to create on Podman.
-func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj) {
-	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, true)
-	if len(k8sComponents) == 0 {
-		return
-	}
-	var compNames []string
-	for _, comp := range k8sComponents {
-		compNames = append(compNames, comp.Name)
+func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj, isDebug bool) {
+	var commandGroupKind devfilev1.CommandGroupKind
+	if isDebug {
+		commandGroupKind = devfilev1.DebugCommandGroupKind
+	} else {
+		commandGroupKind = devfilev1.RunCommandGroupKind
 	}
 
-	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(compNames, ", "))
+	applyComponents, _ := devfile.GetApplyKubernetesComponentsToPush(devfileObj, commandGroupKind)
+	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, false)
+
+	if len(k8sComponents) == 0 && len(applyComponents) == 0 {
+		return
+	}
+
+	for _, comp := range k8sComponents {
+		applyComponents = append(applyComponents, comp.Name)
+	}
+	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(applyComponents, ", "))
 }
 
 // deployPod deploys the component as a Pod in podman
