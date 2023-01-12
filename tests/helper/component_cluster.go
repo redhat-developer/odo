@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	. "github.com/onsi/gomega"
-	"github.com/redhat-developer/odo/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/redhat-developer/odo/pkg/labels"
 )
 
 // ClusterComponent is an abstraction for a Devfile Component deployed on a cluster (either Kubernetes or OpenShift)
@@ -67,4 +68,9 @@ func (o *ClusterComponent) GetPodDef() *corev1.Pod {
 	err := json.Unmarshal(bufferOutput, &podDef)
 	Expect(err).ToNot(HaveOccurred())
 	return &podDef
+}
+
+func (o *ClusterComponent) GetPodLogs() string {
+	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
+	return string(o.cli.Run("-n", o.name, "logs", podName).Out.Contents())
 }

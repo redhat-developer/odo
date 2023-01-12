@@ -120,3 +120,16 @@ func (o *PodmanComponent) GetLabels() map[string]string {
 
 	return result.Labels
 }
+
+func (o *PodmanComponent) GetPodLogs() string {
+	podName := fmt.Sprintf("%s-%s", o.componentName, o.app)
+	cmd := exec.Command("podman", "pod", "logs", podName)
+	stdout, err := cmd.Output()
+	Expect(err).ToNot(HaveOccurred(), func() {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		fmt.Fprintln(ginkgo.GinkgoWriter, err)
+	})
+	return string(stdout)
+}
