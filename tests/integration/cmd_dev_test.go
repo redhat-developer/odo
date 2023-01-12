@@ -2716,15 +2716,17 @@ CMD ["npm", "start"]
 		}))
 	}
 	for _, ctx := range []struct {
-		devfile, title string
+		title           string
+		resources, args []string
 	}{
 		{
-			devfile: "devfile-with-k8s-resource.yaml",
-			title:   "without apply command",
+			title:     "with run command",
+			resources: []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource"},
 		},
 		{
-			devfile: "devfile-composite-apply-commands.yaml",
-			title:   "with apply command",
+			title:     "with debug command",
+			resources: []string{"deploy-another-k8s-resource", "deploy-a-third-k8s-resource"},
+			args:      []string{"--debug"},
 		},
 	} {
 		ctx := ctx
@@ -2734,11 +2736,12 @@ CMD ["npm", "start"]
 			)
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
-			It(fmt.Sprintf("should show warning about unable to create the resource %s when running odo dev on podman", ctx.title), func() {
-				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-					Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("Kubernetes components are not supported on Podman. Skipping: %v.", k8sCompName)))
+			It(fmt.Sprintf("should show warning about being unable to create the resource when running odo dev %s on podman", ctx.title), func() {
+				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true, CmdlineArgs: ctx.args, EnvVars: []string{"PODMAN_CMD=echo"}}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+					Expect(string(errContents)).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
+					Expect(string(errContents)).To(ContainElements(ctx.resources))
 				})
 				Expect(err).ToNot(HaveOccurred())
 

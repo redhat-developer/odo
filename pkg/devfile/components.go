@@ -51,6 +51,8 @@ func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj, allowApply bool
 	return k8sComponents, err
 }
 
+// GetApplyKubernetesComponentsToPush returns devfile K8s components associated with the given commandName and commandGroupKind;
+// these resources will always be referenced with an apply command, hence the function name
 func GetApplyKubernetesComponentsToPush(devfileObj parser.DevfileObj, commandGroupKind devfilev1.CommandGroupKind, commandName string) ([]string, error) {
 	commands, err := devfileObj.Data.GetCommands(parsercommon.DevfileOptions{
 		CommandOptions: parsercommon.CommandOptions{
