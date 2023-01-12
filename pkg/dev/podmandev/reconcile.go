@@ -39,8 +39,14 @@ func (o *DevClient) reconcile(
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 	)
+	cmdKind := devfilev1.RunCommandGroupKind
+	cmdName := options.RunCommand
+	if options.Debug {
+		cmdKind = devfilev1.DebugCommandGroupKind
+		cmdName = options.DebugCommand
+	}
 	// pass the command name and not just debug option
-	o.warnAboutK8sResources(*devfileObj, options.Debug)
+	o.warnAboutK8sResources(*devfileObj, cmdKind, cmdName)
 
 	pod, fwPorts, err := o.deployPod(ctx, options)
 	if err != nil {
@@ -90,12 +96,6 @@ func (o *DevClient) reconcile(
 			return err
 		}
 
-		cmdKind := devfilev1.RunCommandGroupKind
-		cmdName := options.RunCommand
-		if options.Debug {
-			cmdKind = devfilev1.DebugCommandGroupKind
-			cmdName = options.DebugCommand
-		}
 		cmdHandler := commandHandler{
 			execClient:      o.execClient,
 			platformClient:  o.podmanClient,
@@ -123,16 +123,9 @@ func (o *DevClient) reconcile(
 	return nil
 }
 
-// warnAboutK8sResources prints a warning if the Devfile contains a K8s resource that it needs to create on Podman.
-func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj, isDebug bool) {
-	var commandGroupKind devfilev1.CommandGroupKind
-	if isDebug {
-		commandGroupKind = devfilev1.DebugCommandGroupKind
-	} else {
-		commandGroupKind = devfilev1.RunCommandGroupKind
-	}
-
-	applyComponents, _ := devfile.GetApplyKubernetesComponentsToPush(devfileObj, commandGroupKind)
+// warnAboutK8sResources prints a warning if the Devfile contains a K8s resource that it needs to create on Podman for a given command name and groupKind.
+func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj, commandGroupKind devfilev1.CommandGroupKind, commandName string) {
+	applyComponents, _ := devfile.GetApplyKubernetesComponentsToPush(devfileObj, commandGroupKind, commandName)
 	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, false)
 
 	if len(k8sComponents) == 0 && len(applyComponents) == 0 {

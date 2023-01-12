@@ -51,45 +51,49 @@ func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj, allowApply bool
 	return k8sComponents, err
 }
 
-func GetApplyKubernetesComponentsToPush(devfileObj parser.DevfileObj, commandGroupKind devfilev1.CommandGroupKind) ([]string, error) {
+func GetApplyKubernetesComponentsToPush(devfileObj parser.DevfileObj, commandGroupKind devfilev1.CommandGroupKind, commandName string) ([]string, error) {
 	commands, err := devfileObj.Data.GetCommands(parsercommon.DevfileOptions{
 		CommandOptions: parsercommon.CommandOptions{
 			CommandGroupKind: commandGroupKind,
 			CommandType:      devfilev1.CompositeCommandType,
 		},
+		FilterByName: commandName,
 	})
 	if err != nil {
 		return nil, err
 	}
+	if len(commands) == 0 {
+		return nil, nil
+	}
+	// we assume there will be only one command that matches the scommand ID
+	command := commands[0]
 	var components []string
-	for _, command := range commands {
-		for _, scommand := range command.Composite.Commands {
-			cmd, err := devfileObj.Data.GetCommands(parsercommon.DevfileOptions{
-				FilterByName:   scommand,
-				CommandOptions: parsercommon.CommandOptions{CommandType: devfilev1.ApplyCommandType},
+	for _, scommand := range command.Composite.Commands {
+		cmd, err := devfileObj.Data.GetCommands(parsercommon.DevfileOptions{
+			FilterByName:   scommand,
+			CommandOptions: parsercommon.CommandOptions{CommandType: devfilev1.ApplyCommandType},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(cmd) == 0 {
+			continue
+		}
+		// we assume there will be only one command that matches the scommand ID
+		if applyCmd := cmd[0]; applyCmd.Apply != nil {
+			cmp, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
+				FilterByName:     applyCmd.Apply.Component,
+				ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
 			})
 			if err != nil {
 				return nil, err
 			}
-			if len(cmd) == 0 {
+			if len(cmp) == 0 {
 				continue
 			}
-			// we assume there will be only one command that matches the scommand ID
-			if applyCmd := cmd[0]; applyCmd.Apply != nil {
-				cmp, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
-					FilterByName:     applyCmd.Apply.Component,
-					ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
-				})
-				if err != nil {
-					return nil, err
-				}
-				if len(cmp) == 0 {
-					continue
-				}
-				// we assume there will be only one component that matches the ID
-				if k8sCmp := cmp[0]; k8sCmp.Kubernetes != nil {
-					components = append(components, k8sCmp.Name)
-				}
+			// we assume there will be only one component that matches the ID
+			if k8sCmp := cmp[0]; k8sCmp.Kubernetes != nil {
+				components = append(components, k8sCmp.Name)
 			}
 		}
 	}
