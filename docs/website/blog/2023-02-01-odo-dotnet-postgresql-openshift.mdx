@@ -1,0 +1,523 @@
+---
+title: odo with .NET and PostgreSQL on OpenShift
+author: Tomas Kral
+author_url: https://github.com/kadel
+author_image_url: https://github.com/kadel.png
+tags: ["tutorial", ".NET", "PostgreSQL", "OpenShift"]
+slug: odo-dotnet-postgresql-openshift
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+In this tutorial, I will show you how you can leverage `odo` to develop a .NET application communicating with the PostgreSQL database on OpenShift.
+<!--truncate-->
+
+
+## Prerequisites
+
+- [odo](https://odo.dev/docs/overview/installation) [3.6.0](https://github.com/redhat-developer/odo/releases/tag/v3.6.0) or later
+- [`oc` (OpenShift Client)](https://docs.openshift.com/container-platform/4.11/cli_reference/openshift_cli/getting-started-cli.html) (Optional, but recommended. Alternatively, you can use OpenShift Web Console to create PostgreSQL instance)
+- Access to OpenShift cluster
+
+:::tip
+If you don't have access to the OpenShift cluster, you can use [OpenShift Sandbox](https://developers.redhat.com/developer-sandbox) to get access to the OpenShift cluster for FREE.
+
+This is what I used for this tutorial.
+:::
+
+- Log in to the cluster using `odo`
+  - Log in to the OpenShift Web Console, click on your username in the top right corner and select "Copy login command" ![Copy login command](/img/blog/odo-dotnet-postgresql-openshift/odc_copy_login_command.png)
+  - You might get prompted to log in again. After that, you should be able to display the token.
+  - Copy `oc login --token=.....` command that you see to your terminal, replace `oc` with `odo`, and execute the command. (If you have `oc` installed, you can leave the command as it is. `odo` and `oc` store the login information at the same place)
+
+
+## Getting the application source code
+
+We will use [.NET Core Sample App for OpenShift](https://github.com/redhat-developer/s2i-dotnetcore-persistent-ex)
+
+1. Clone the repository
+
+  ```shell
+  git clone https://github.com/redhat-developer/s2i-dotnetcore-persistent-ex
+  ```
+
+  <details>
+    <summary>example output</summary>
+    <div>
+
+    ```
+    ▶ git clone https://github.com/redhat-developer/s2i-dotnetcore-persistent-ex
+    Cloning into 's2i-dotnetcore-persistent-ex'...
+    remote: Enumerating objects: 87, done.
+    remote: Counting objects: 100% (28/28), done.
+    remote: Compressing objects: 100% (16/16), done.
+    remote: Total 87 (delta 20), reused 12 (delta 12), pack-reused 59
+    Receiving objects: 100% (87/87), 27.93 KiB | 6.98 MiB/s, done.
+    Resolving deltas: 100% (44/44), done.
+    ```
+    </div>
+  </details>
+
+1. Change the directory with the application source code
+
+  ```shell
+  cd s2i-dotnetcore-persistent-ex/app
+  ```
+
+  <details>
+    <summary>example output</summary>
+    <div>
+
+    ```
+    ▶ cd s2i-dotnetcore-persistent-ex/app
+
+    ▶ ls
+    Data  Migrations  Pages  Program.cs  RazorPagesContacts.csproj  Startup.cs
+    ```
+
+    </div>
+  </details>
+
+
+1. Switch to the dotnet-6.0 branch
+
+  ```shell
+  git checkout dotnet-6.0
+  ```
+
+  <details>
+    <summary>example output</summary>
+    <div>
+
+    ```
+    ▶ git checkout dotnet-6.0
+    branch 'dotnet-6.0' set up to track 'origin/dotnet-6.0'.
+    Switched to a new branch 'dotnet-6.0'
+    ```
+
+    </div>
+  </details>
+
+  :::caution
+  For now, we have to use .NET 6.0 as there is no Devfile stack .NET 7.0 in the official [Devfile registry](https://registry.devfile.io/viewer) yet.
+  :::
+
+## Use odo to develop a .NET application on the OpenShift cluster
+
+In this part, we will start our .NET application inside the container on the OpenShift cluster.
+Because the app will be built and run inside the container, we don't need to install any .NET tools on our local system. All we need is the `odo` CLI and an OpenShift cluster.
+
+### Get the Devfile stack for .NET 6.0
+
+:::info
+The **Devfile stack** is a definition of the containerized development environment.
+It defines the container image, the environment variables, and the commands that need to be executed to build, run, and optionally also test, debug and deploy the application.
+
+You can learn more about Devfiles at [devfile.io](https://devfile.io/).
+:::
+
+#### Run `odo init` command
+```sh
+odo init
+```
+
+<details>
+  <summary>example output</summary>
+  <div>
+
+  ```
+    ▶ odo init
+      __
+    /  \__     Initializing a new component
+    \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
+    /  \__/    odo version: v3.5.0
+    \__/
+
+    Interactive mode enabled, please answer the following questions:
+    Based on the files in the current directory odo detected
+    Language: .NET
+    Project type: dotnet
+    The devfile "dotnet50:1.0.3" from the registry "DefaultDevfileRegistry" will be downloaded.
+    ? Is this correct? No
+    ? Select language: .NET
+    ? Select project type: .NET 6.0
+    ✓  Downloading devfile "dotnet60" from registry "DefaultDevfileRegistry" [1s]
+
+    ↪ Container Configuration "dotnet":
+      OPEN PORTS:
+        - 8080
+      ENVIRONMENT VARIABLES:
+        - CONFIGURATION = Debug
+        - STARTUP_PROJECT = app.csproj
+        - ASPNETCORE_ENVIRONMENT = Development
+        - ASPNETCORE_URLS = http://*:8080
+
+    ? Select container for which you want to change configuration? NONE - configuration is correct
+    ? Enter component name: myapp
+
+    You can automate this command by executing:
+      odo init --name myapp --devfile dotnet60 --devfile-registry DefaultDevfileRegistry
+
+    Your new component 'myapp' is ready in the current directory.
+    To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+    Changes will be directly reflected on the cluster.
+  ```
+
+  </div>
+</details>
+
+
+
+`odo init` command will guide you through selecting the correct Devfile stack and some basic configuration. For purposes of this tutorial, you can just accept the default values.
+
+
+:::caution
+Please pay attention to the version o the `dotnet` Devfile that odo suggests.
+`odo` might not be able to detect the .NET version that our application is using correctly.
+If that happens, you need to tell odo that it is not correct and select the correct version manually.
+:::
+
+#### Edit devfile
+
+We need to modify `devfile.yaml` that got downloaded by `odo init` command to ensure that our application starts correctly.
+The default .NET Devfile in the registry assumes that we have `app.csproj`, but our application uses `RazorPagesContacts.csproj`.
+
+Open `devfile.yaml` that is in your project directory in your text editor or IDE.
+Find lines that define the `STARTUP_PROJECT` environment variable.
+
+  ```yaml
+  - name: STARTUP_PROJECT
+    value: app.csproj
+  ```
+
+Replace the `app.csproj` value with `RazorPagesContacts.csproj`
+
+  ```yaml
+  - name: STARTUP_PROJECT
+    value: RazorPagesContacts.csproj
+  ```
+
+<details>
+  <summary>Complete devfile.yaml after the changes.</summary>
+  <div>
+
+  ```yaml
+  commands:
+  - exec:
+      commandLine: kill $(pidof dotnet); dotnet build -c $CONFIGURATION $STARTUP_PROJECT
+        /p:UseSharedCompilation=false
+      component: dotnet
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+  - exec:
+      commandLine: dotnet run -c $CONFIGURATION --no-build --project $STARTUP_PROJECT
+        --no-launch-profile
+      component: dotnet
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: run
+  components:
+  - container:
+      args:
+      - tail
+      - -f
+      - /dev/null
+      endpoints:
+      - name: http-dotnet60
+        targetPort: 8080
+      env:
+      - name: CONFIGURATION
+        value: Debug
+      # highlight-start
+      - name: STARTUP_PROJECT
+        value: RazorPagesContacts.csproj
+      # highlight-end
+      - name: ASPNETCORE_ENVIRONMENT
+        value: Development
+      - name: ASPNETCORE_URLS
+        value: http://*:8080
+      image: registry.access.redhat.com/ubi8/dotnet-60:6.0
+      mountSources: true
+    name: dotnet
+  metadata:
+    description: Stack with .NET 6.0
+    displayName: .NET 6.0
+    icon: https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png
+    language: .NET
+    name: myapp
+    projectType: dotnet
+    tags:
+    - .NET
+    version: 1.0.2
+  schemaVersion: 2.1.0
+  starterProjects:
+  - git:
+      checkoutFrom:
+        remote: origin
+        revision: dotnet-6.0
+      remotes:
+        origin: https://github.com/redhat-developer/s2i-dotnetcore-ex
+    name: dotnet60-example
+    subDir: app
+  ```
+
+  </div>
+</details>
+
+### Start the application on the cluster
+
+We have our application source code and the `devfile.yaml` that describes the environment in which the application should be executed. We can now start the application on the cluster. Just run `odo dev` in the project directory.
+
+
+```sh
+odo dev
+```
+
+<details>
+  <summary>example output</summary>
+  <div>
+
+  ```
+  ▶ odo dev
+    __
+  /  \__     Developing using the "myapp" Devfile
+  \__/  \    Namespace: tkral-dev
+  /  \__/    odo version: v3.6.0
+  \__/
+
+  ↪ Deploying to the cluster in developer mode
+  •  Waiting for Kubernetes resources  ...
+  ✓  Pod is Running
+  ✓  Syncing files into the container [2s]
+  ✓  Building your application in container on cluster (command: build) [11s]
+  •  Executing the application (command: run)  ...
+  -  Forwarding from 127.0.0.1:40001 -> 8080
+  
+  
+  ↪ Dev mode
+  Status:
+  Watching for changes in the current directory /Users/tkral/Code/s2i-dotnetcore-persistent-ex/app
+
+  Keyboard Commands:
+  [Ctrl+c] - Exit and delete resources from the cluster
+      [p] - Manually apply local changes to the application on the cluster
+  ```
+
+  </div>
+</details>
+
+`odo dev` uses information from `devfile.yaml` to start the containers on the cluster. Than it copies all the source code from our local machine to the container and executes the `build` and `run` commands as defined in the `devfile.yaml`.
+
+When the application is successfully running in the container `odo` also sets the port forwarding between your local machine and the container to ensure we can easily access our application on the local port.
+In this case, it is `40001`. You can access the application on [http://localhost:40001](http://localhost:40001).
+
+![App running with In Memory DB](/img/blog/odo-dotnet-postgresql-openshift/app_running_inmemory_db.png)
+
+You can see that our application is now using the in-memory database. We will start the PostgreSQL database and connect our application in the following steps.
+
+You can leave `odo dev` running in the terminal and open a new terminal window to continue with the next steps. Make sure that you run all `odo` commands in the the root folder  of our .NET application (where you have `devfile.yaml` and `RazorPagesContacts` files).
+
+## Use the PostgreSQL database
+
+### Start a new PostgreSQL instance on the OpenShift cluster
+
+To start a new PostgreSQL instance on the OpenShift cluster, we can use the `postgresql-ephemeral` template that is available in the OpenShift cluster.
+
+If you have `oc` CLI installed, you can use the following command to start a new PostgreSQL instance:
+
+```sh
+oc new-app postgresql-ephemeral
+````
+<details>
+  <summary>example output</summary>
+  <div>
+
+  ```
+  ▶ oc new-app postgresql-ephemeral
+  --> Deploying template "openshift/postgresql-ephemeral" to project tkral-dev
+
+      PostgreSQL (Ephemeral)
+      ---------
+      PostgreSQL database service, without persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/.
+
+      WARNING: Any data stored will be lost upon pod destruction. Only use this template for testing
+
+      The following service(s) have been created in your project: postgresql.
+
+              Username: user2GR
+              Password: 6UrRpvC8ups70ffr
+        Database Name: sampledb
+        Connection URL: postgresql://postgresql:5432/
+
+      For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/.
+
+      * With parameters:
+          * Memory Limit=512Mi
+          * Namespace=openshift
+          * Database Service Name=postgresql
+          * PostgreSQL Connection Username=user2GR # generated
+          * PostgreSQL Connection Password=6UrRpvC8ups70ffr # generated
+          * PostgreSQL Database Name=sampledb
+          * Version of PostgreSQL Image=10-el8
+
+  --> Creating resources ...
+      secret "postgresql" created
+      service "postgresql" created
+      deploymentconfig.apps.openshift.io "postgresql" created
+  --> Success
+      Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+      'oc expose service/postgresql'
+      Run 'oc status' to view your app.
+  ```
+
+  </div>
+</details>
+
+If you don't have `oc` CLI installed, you can use the OpenShift web console to start a new PostgreSQL instance.
+
+<details>
+  <summary>Starting new PostgreSQL instance using OpenShift Web Console</summary>
+  <div>
+  <ol>
+    <li>
+      Log in to  OpenShift Web Console.
+    </li>
+    <li>
+      Switch to the **Developer** view and make sure that you are using correct project.
+      <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_1.png" alt="ODC step 1" />
+    </li>
+    <li>
+      Click on the **+Add** button in the main menu and select **Database** option from the **Developer Catalog** section.
+      <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_2.png" alt="ODC step 2" />
+    </li>
+    <li>
+      In the **Database** section select **PostgreSQL** option. Make sure to select the one using **Templates**.
+      <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_3.png" alt="ODC step 3" />
+    </li>
+    <li>
+      Click on the **Instantiate Template** button.
+      <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_4.png" alt="ODC step 4" />
+    </li>
+    <li>
+      For our use we can use the default values. Just click on the **Create** button.
+      <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_5.png" alt="ODC step 5" />
+    </li>
+  </ol>
+  </div>
+</details>
+Now you have a new PostgreSQL instance running on the OpenShift cluster and we can connect our application to it.
+
+### Connect the application to the PostgreSQL
+
+We must ensure that our .NET application can connect to the PostgreSQL instance.
+The application already expects the connection information to be available as environment variables.
+We will use the `postgresql` Secret that was created by the `postgresql-ephemeral` template.
+
+We will use one of the newest `odo` and Devfile features - `container-overrides`.
+Using this feature, we can modify the container that the Devfile creates.
+
+Open `devfile.yaml` in the application directory and add the following section to the `dotnet` container:
+
+```yaml
+attributes:
+  container-overrides: {secretRef: {name: "postgresql"} }
+```
+
+While you have `devfile.yaml` open, you also need to add a new environment variable called `database-service`. This variable will tell our application to use the PostgreSQL database instead of the in-memory database.
+Add the following lines in to the `env` section of the `dotnet` container:
+
+```yaml
+- name: database-service
+  value: postgresql
+```
+
+<details>
+  <summary>This is how the devfile.yaml should look like.</summary>
+  <div>
+
+  ```yaml
+  commands:
+  - exec:
+      commandLine: kill $(pidof dotnet); dotnet build -c $CONFIGURATION $STARTUP_PROJECT
+        /p:UseSharedCompilation=false
+      component: dotnet
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+  - exec:
+      commandLine: dotnet run -c $CONFIGURATION --no-build --project $STARTUP_PROJECT
+        --no-launch-profile
+      component: dotnet
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: run
+  components:
+  - container:
+      args:
+      - tail
+      - -f
+      - /dev/null
+      endpoints:
+      - name: http-dotnet60
+        targetPort: 8080
+      env:
+      - name: CONFIGURATION
+        value: Debug
+      - name: STARTUP_PROJECT
+        value: RazorPagesContacts.csproj
+      - name: ASPNETCORE_ENVIRONMENT
+        value: Development
+      - name: ASPNETCORE_URLS
+        value: http://*:8080
+      # highlight-start
+      - name: database-service
+        value: postgresql
+      # highlight-end
+      image: registry.access.redhat.com/ubi8/dotnet-60:6.0
+      mountSources: true
+    name: dotnet
+    # highlight-start
+    attributes:
+      container-overrides: {envFrom: [secretRef: {name: "postgresql"}]}
+    # highlight-end
+  metadata:
+    description: Stack with .NET 6.0
+    displayName: .NET 6.0
+    icon: https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png
+    language: .NET
+    name: myapp
+    projectType: dotnet
+    tags:
+    - .NET
+    version: 1.0.2
+  schemaVersion: 2.1.0
+  starterProjects:
+  - git:
+      checkoutFrom:
+        remote: origin
+        revision: dotnet-6.0
+      remotes:
+        origin: https://github.com/redhat-developer/s2i-dotnetcore-ex
+    name: dotnet60-example
+    subDir: app
+
+  ```
+  </div>
+</details>
+
+As you modify the `devfile.yaml``, you can check the terminal window where you have `odo dev` running. You should see that `odo` is automatically handling the changes and reloading the application.
+
+
+
+Now, refresh the local URL [http://localhost:40001](http://localhost:40001). You should see that our application is using the PostgreSQL database.
+![App running with PostgreSQL DB](/img/blog/odo-dotnet-postgresql-openshift/app_running_postgresql_db.png)
