@@ -140,12 +140,11 @@ var _ = Describe("odo delete command tests", func() {
 				deploymentName = "my-component"
 				serviceName = "my-cs"
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
-					helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfileName)).ShouldPass()
-				// Note:	component will be automatically bootstrapped when `odo dev` or `odo deploy` is run
 				if ctx.setupFunc != nil {
 					ctx.setupFunc()
 				}
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
+					helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfileName)).ShouldPass()
 			})
 			When("the components are not deployed", func() {
 				It("should output that there are no resources to be deleted", func() {
