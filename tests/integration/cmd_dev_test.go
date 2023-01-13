@@ -2721,30 +2721,27 @@ CMD ["npm", "start"]
 	}{
 		{
 			title:     "with run command",
-			resources: []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource"},
+			resources: []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource", "image-build-component"},
 		},
 		{
 			title:     "with debug command",
-			resources: []string{"deploy-another-k8s-resource", "deploy-a-third-k8s-resource"},
+			resources: []string{"deploy-another-k8s-resource", "deploy-a-third-k8s-resource", "image-build-component"},
 			args:      []string{"--debug"},
 		},
 	} {
 		ctx := ctx
 		When("using devfile that contains K8s resource to run it on podman", Label(helper.LabelPodman), func() {
-			const (
-				k8sCompName = "deploy-k8s-resource" // hard coded from both the Devfiles
-			)
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 			It(fmt.Sprintf("should show warning about being unable to create the resource when running odo dev %s on podman", ctx.title), func() {
-				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true, CmdlineArgs: ctx.args, EnvVars: []string{"PODMAN_CMD=echo"}}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true, CmdlineArgs: ctx.args}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 					Expect(string(errContents)).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
-					Expect(string(errContents)).To(ContainElements(ctx.resources))
+					Expect(string(errContents)).To(ContainSubstring("odo currently does not support building images on Podman. Skipping: "))
+					helper.MatchAllInOutput(string(errContents), ctx.resources)
 				})
 				Expect(err).ToNot(HaveOccurred())
-
 			})
 		})
 

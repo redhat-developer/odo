@@ -45,8 +45,8 @@ func (o *DevClient) reconcile(
 		cmdKind = devfilev1.DebugCommandGroupKind
 		cmdName = options.DebugCommand
 	}
-	// pass the command name and not just debug option
-	o.warnAboutK8sResources(*devfileObj, cmdKind, cmdName)
+
+	o.warnAboutApplyComponents(*devfileObj, cmdKind, cmdName, true, true)
 
 	pod, fwPorts, err := o.deployPod(ctx, options)
 	if err != nil {
@@ -123,19 +123,29 @@ func (o *DevClient) reconcile(
 	return nil
 }
 
-// warnAboutK8sResources prints a warning if the Devfile contains a K8s resource that it needs to create on Podman for a given command name and groupKind.
-func (o *DevClient) warnAboutK8sResources(devfileObj parser.DevfileObj, commandGroupKind devfilev1.CommandGroupKind, commandName string) {
-	applyComponents, _ := devfile.GetApplyKubernetesComponentsToPush(devfileObj, commandGroupKind, commandName)
+// warnAboutApplyComponents prints a warning if the Devfile contains a K8s resource that it needs to create or build an image referenced by an apply command on Podman for a given command name and groupKind.
+func (o *DevClient) warnAboutApplyComponents(devfileObj parser.DevfileObj, commandGroupKind devfilev1.CommandGroupKind, commandName string, wantK8sComp, wantImageComp bool) {
+	var warnK8sComponents, warnImageComponents []string
+
+	// get all k8s and image components referenced by an apply command for a given commandGK
+	warnK8sComponents, warnImageComponents, _ = devfile.GetApplyComponentsToPush(devfileObj, commandGroupKind, commandName, wantK8sComp, wantImageComp)
+
+	// get all standalone k8s components for a given commandGK
 	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, false)
 
-	if len(k8sComponents) == 0 && len(applyComponents) == 0 {
+	if len(k8sComponents) == 0 && len(warnK8sComponents) == 0 && len(warnImageComponents) == 0 {
 		return
 	}
 
 	for _, comp := range k8sComponents {
-		applyComponents = append(applyComponents, comp.Name)
+		warnK8sComponents = append(warnK8sComponents, comp.Name)
 	}
-	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(applyComponents, ", "))
+
+	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(warnK8sComponents, ", "))
+	// TODO: modify this message, it is confusing
+	if wantImageComp && len(warnImageComponents) != 0 {
+		log.Warningf("odo currently does not support building images on Podman. Skipping: %v", strings.Join(warnImageComponents, ", "))
+	}
 }
 
 // deployPod deploys the component as a Pod in podman
