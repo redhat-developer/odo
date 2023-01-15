@@ -16,15 +16,10 @@ odo delete component [--force] [--wait]
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo delete component
-Searching resources to delete, please wait...
-This will delete "my-nodejs" from the namespace "my-project".
- •  The component contains the following resources that will get deleted:
-        - Deployment: my-component
-? Are you sure you want to delete "my-nodejs" and all its resources? Yes
-The component "my-nodejs" is successfully deleted from namespace "my-project"
-```
+import DeleteWithAccessToDevfileOutput from './docs-mdx/delete-component/delete_with_access_to_devfile.mdx'
+
+<DeleteWithAccessToDevfileOutput />
+
 </details>
 
 `odo` looks into the Devfile _present in the current directory_ for the component resources for the innerloop, and outerloop.
@@ -60,20 +55,10 @@ odo delete component --files [--force] [--wait]
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo delete component --files
+import DeleteWithFilesAndAccessToDevfileOutput from './docs-mdx/delete-component/delete_with_files_and_access_to_devfile.mdx'
 
-Searching resources to delete, please wait...
-This will delete "my-nodejs" from the namespace "my-project".
- •  The component contains the following resources that will get deleted:
-        - Deployment: my-component
+<DeleteWithFilesAndAccessToDevfileOutput />
 
-This will also delete the following files and directories:
-        - /home/user/my-project/my-nodejs/.odo
-        - /home/user/my-project/my-nodejs/devfile.yaml
-? Are you sure you want to delete "my-nodejs" and all its resources? Yes
-The component "my-nodejs" is successfully deleted from namespace "my-project"
-```
 </details>
 
 ### Delete without access to Devfile
@@ -83,15 +68,10 @@ odo delete component --name <component_name> [--namespace <namespace>] [--force]
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo delete component --name my-nodejs
-Searching resources to delete, please wait...
-This will delete "my-nodejs" from the namespace "my-project".
- •  The component contains the following resources that will get deleted:
-        - Deployment: my-component
-? Are you sure you want to delete these resources? Yes
-The component "my-nodejs" is successfully deleted from namespace "my-project"
-```
+import DeleteNamedComponentOutput from './docs-mdx/delete-component/delete_named_component.mdx'
+
+<DeleteNamedComponentOutput />
+
 </details>
 
 
