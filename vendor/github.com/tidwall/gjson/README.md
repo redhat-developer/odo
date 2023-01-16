@@ -18,6 +18,8 @@ Also check out [SJSON](https://github.com/tidwall/sjson) for modifying json, and
 
 This README is a quick overview of how to use GJSON, for more information check out [GJSON Syntax](SYNTAX.md).
 
+GJSON is also available for [Python](https://github.com/volans-/gjson-py) and [Rust](https://github.com/tidwall/gjson.rs)
+
 Getting Started
 ===============
 
@@ -174,7 +176,7 @@ The `result.Int()` and `result.Uint()` calls are capable of reading all 64 bits,
 
 ```go
 result.Int() int64    // -9223372036854775808 to 9223372036854775807
-result.Uint() int64   // 0 to 18446744073709551615
+result.Uint() uint64   // 0 to 18446744073709551615
 ```
 
 ## Modifiers and path chaining 
