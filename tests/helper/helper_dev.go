@@ -260,10 +260,14 @@ func RunDevMode(options DevSessionOpts, inside func(session *gexec.Session, outC
 // `odo dev` runs in an infinite reconciliation loop, and hence running it with Cmd will not work for a lot of failing cases,
 // this function is helpful in such cases.
 // TODO(pvala): Modify StartDevMode to take substring arg into account, and replace this method with it.
-func DevModeShouldFail(envvars []string, substring string, opts ...string) (DevSession, []byte, []byte, error) {
+func DevModeShouldFail(options DevSessionOpts, substring string) (DevSession, []byte, []byte, error) {
 	args := []string{"dev", "--random-ports"}
-	args = append(args, opts...)
-	session := Cmd("odo", args...).AddEnv(envvars...).Runner().session
+	args = append(args, options.CmdlineArgs...)
+	if options.RunOnPodman {
+		args = append(args, "--platform", "podman")
+		options.EnvVars = append(options.EnvVars, "ODO_EXPERIMENTAL_MODE=true")
+	}
+	session := Cmd("odo", args...).AddEnv(options.EnvVars...).Runner().session
 	WaitForOutputToContain(substring, 360, 10, session)
 	result := DevSession{
 		session: session,
