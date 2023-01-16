@@ -1952,22 +1952,33 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("running odo dev --no-watch and build command throws an error", func() {
-		var stderr string
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
-			stderr = helper.Cmd("odo", "dev", "--no-watch", "--random-ports").ShouldFail().Err()
-		})
-
-		It("should error out with some log", func() {
-			helper.MatchAllInOutput(stderr, []string{
-				"unable to exec command",
-				"Usage: npm <command>",
-				"Did you mean one of these?",
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("running odo dev --no-watch and build command throws an error", helper.LabelPodmanIf(podman, func() {
+			var stderr string
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
+				args := []string{"dev", "--no-watch", "--random-ports"}
+				if podman {
+					args = append(args, "--platform", "podman")
+				}
+				cmd := helper.Cmd("odo", args...)
+				if podman {
+					cmd = cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
+				}
+				stderr = cmd.ShouldFail().Err()
 			})
-		})
-	})
+
+			It("should error out with some log", func() {
+				helper.MatchAllInOutput(stderr, []string{
+					"unable to exec command",
+					"Usage: npm <command>",
+					"Did you mean one of these?",
+				})
+			})
+		}))
+	}
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
