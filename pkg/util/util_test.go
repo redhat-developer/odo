@@ -18,15 +18,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/google/go-cmp/cmp"
-
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	dfutil "github.com/devfile/library/pkg/util"
-
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -2696,6 +2693,62 @@ func TestDisplayLog(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.want, lines); diff != "" {
 				t.Errorf("DisplayLog() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_addFileToIgnoreFile(t *testing.T) {
+	type args struct {
+		data   string
+		ignore string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		want    string
+	}{
+		{
+			name: ".odo already present as .odo",
+			args: args{
+				data:   ".odo",
+				ignore: ".odo",
+			},
+			want: ".odo",
+		},
+		{
+			name: ".odo not present",
+			args: args{
+				data: `foo
+bar`,
+				ignore: ".odo",
+			},
+			want: `foo
+bar
+.odo`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := filesystem.NewFakeFs()
+			var data = []byte(tt.args.data)
+			path := "/.gitignore"
+			err := fs.WriteFile(path, data, 0644)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if err = addFileToIgnoreFile(path, tt.args.ignore, fs); (err != nil) != tt.wantErr {
+				t.Errorf("addFileToIgnoreFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			var content []byte
+			content, err = fs.ReadFile(path)
+			if err != nil {
+				t.Error(err)
+			}
+			if string(content) != tt.want {
+				t.Errorf("expected \n%s\ngot \n%s", tt.want, string(content))
 			}
 		})
 	}
