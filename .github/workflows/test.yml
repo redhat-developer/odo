@@ -1,0 +1,28 @@
+name: test
+on:
+  pull_request:
+    branches:    
+      - main
+
+jobs:
+  ODO-PODMAN-TEST:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        ref: main
+
+    - name: git log for main
+      run: |
+        git log -n 1
+
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: git log for PR
+      run: |
+        git log -n 1
+
+    
