@@ -2025,7 +2025,7 @@ CMD ["npm", "start"]
 		}))
 	}
 
-	for _, podman := range []bool{false} {
+	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("setting git config and running odo dev", helper.LabelPodmanIf(podman, func() {
 			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
@@ -2040,6 +2040,10 @@ CMD ["npm", "start"]
 
 			It("should create vcs-uri annotation for the deployment when running odo dev", func() {
 				// TODO Support this on Podman: https://github.com/redhat-developer/odo/issues/6493
+				if podman {
+					Skip("Not supported yet on Podman - see https://github.com/redhat-developer/odo/issues/6493")
+				}
+
 				err := helper.RunDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
@@ -2464,12 +2468,16 @@ CMD ["npm", "start"]
 		}))
 	}
 
-	for _, podman := range []bool{false} {
+	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
 			//TODO Not implemented yet on Podman
 			var session helper.DevSession
+			var devStarted bool
 			BeforeEach(func() {
+				if podman {
+					Skip("Not supported yet on Podman - see https://github.com/redhat-developer/odo/issues/6492")
+				}
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
 					helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -2483,11 +2491,14 @@ CMD ["npm", "start"]
 				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
+				devStarted = true
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				if devStarted {
+					session.Stop()
+					session.WaitEnd()
+				}
 			})
 
 			It("should sync only the mentioned files at the appropriate remote destination", func() {
