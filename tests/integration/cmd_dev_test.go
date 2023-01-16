@@ -1730,19 +1730,10 @@ CMD ["npm", "start"]
 
 				It("should execute all commands in composite command", func() {
 					// Verify the command executed successfully
-					var statErr error
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-						podName,
-						"runtime",
-						commonVar.Project,
-						[]string{"stat", "/projects/testfolder"},
-						func(cmdOp string, err error) bool {
-							statErr = err
-							return err == nil
-						},
-					)
-					Expect(statErr).ToNot(HaveOccurred())
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					dir := "/projects/testfolder"
+					out := component.Exec("runtime", "stat", dir)
+					Expect(out).To(ContainSubstring(dir))
 				})
 			}))
 
@@ -1768,19 +1759,10 @@ CMD ["npm", "start"]
 
 				It("should execute all commands in composite command", func() {
 					// Verify the command executed successfully
-					var statErr error
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-					commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-						podName,
-						"runtime",
-						commonVar.Project,
-						[]string{"stat", "/projects/testfolder"},
-						func(cmdOp string, err error) bool {
-							statErr = err
-							return err == nil
-						},
-					)
-					Expect(statErr).ToNot(HaveOccurred())
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					dir := "/projects/testfolder"
+					out := component.Exec("runtime", "stat", dir)
+					Expect(out).To(ContainSubstring(dir))
 				})
 			}))
 
