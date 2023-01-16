@@ -2225,8 +2225,8 @@ CMD ["npm", "start"]
 						)
 					}
 
-					It("should error out", func() {
-						By("calling with an invalid command", func() {
+					It("should error out on an invalid command", func() {
+						By("calling with an invalid build command", func() {
 							args := []string{"dev", "--random-ports", "--build-command", "build-command-does-not-exist"}
 							if podman {
 								args = append(args, "--platform", "podman")
@@ -2239,7 +2239,7 @@ CMD ["npm", "start"]
 							Expect(output).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
 						})
 
-						By("calling with a command of another kind", func() {
+						By("calling with a command of another kind (not build)", func() {
 							// devrun is a valid run command, not a build command
 							args := []string{"dev", "--random-ports", "--build-command", "devrun"}
 							if podman {
@@ -2292,15 +2292,33 @@ CMD ["npm", "start"]
 						)
 					}
 
-					It("should error out if called with an invalid command", func() {
-						output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "run-command-does-not-exist").ShouldFail().Err()
-						Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
-					})
+					It("should error out on an invalid command", func() {
+						By("calling with an invalid run command", func() {
+							args := []string{"dev", "--random-ports", "--run-command", "run-command-does-not-exist"}
+							if podman {
+								args = append(args, "--platform", "podman")
+							}
+							cmd := helper.Cmd("odo", args...)
+							if podman {
+								cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
+							}
+							output := cmd.ShouldFail().Err()
+							Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
+						})
 
-					It("should error out if called with a command of another kind", func() {
-						// devbuild is a valid build command, not a run command
-						output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
-						Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
+						By("calling with a command of another kind (not run)", func() {
+							// devbuild is a valid build command, not a run command
+							args := []string{"dev", "--random-ports", "--run-command", "devbuild"}
+							if podman {
+								args = append(args, "--platform", "podman")
+							}
+							cmd := helper.Cmd("odo", args...)
+							if podman {
+								cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
+							}
+							output := cmd.ShouldFail().Err()
+							Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
+						})
 					})
 
 					It("should execute the custom non-default run command successfully", func() {
