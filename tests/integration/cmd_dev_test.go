@@ -1646,7 +1646,11 @@ CMD ["npm", "start"]
 					})
 
 					It("should not build images when odo dev is run", func() {
-						_, sessionOut, _, err := helper.DevModeShouldFail(env, "failed to retrieve "+url)
+						_, sessionOut, _, err := helper.DevModeShouldFail(
+							helper.DevSessionOpts{
+								EnvVars: env,
+							},
+							"failed to retrieve "+url)
 						Expect(err).To(BeNil())
 						Expect(sessionOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
 						Expect(sessionOut).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
