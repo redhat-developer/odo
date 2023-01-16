@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
@@ -201,6 +202,7 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 		// Display RunningOn field only if the feature is enabled
 		cmp.RunningOn = nil
 	}
+
 	return cmp, &devfile, nil
 }
 
@@ -306,7 +308,25 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		// Display RunningOn field only if the feature is enabled
 		cmp.RunningOn = nil
 	}
+	updateWithRemoteSourceLocation(&cmp)
 	return cmp, devfileObj, err
+}
+
+func updateWithRemoteSourceLocation(cmp *api.Component) {
+	components, err := cmp.DevfileData.Devfile.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return
+	}
+	for _, comp := range components {
+		if *comp.Container.MountSources {
+			if comp.Container.SourceMapping == "" {
+				comp.Container.SourceMapping = generator.DevfileSourceVolumeMount
+				_ = cmp.DevfileData.Devfile.UpdateComponent(comp)
+			}
+		}
+	}
 }
 
 func getRunningOn(ctx context.Context, n string, kubeClient kclient.ClientInterface, podmanClient podman.Client) (map[string]api.RunningModes, error) {
@@ -443,7 +463,7 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 	}
 	log.Info(title)
 	for _, container := range containers {
-		log.Printf("%s", container.Name)
+		log.Printf("%s\n    ProjectSource: %s", container.Name, container.Container.SourceMapping)
 	}
 	fmt.Println()
 	return nil
