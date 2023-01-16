@@ -1969,43 +1969,34 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("Create and dev java-springboot component", func() {
-		devfileCmpName := "java-spring-boot"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			var err error
-			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("Create and dev java-springboot component", helper.LabelPodmanIf(podman, func() {
+			devfileCmpName := "java-spring-boot"
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+				var err error
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
 
-		It("should execute default build and run commands correctly", func() {
-
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-
-			var statErr error
-			var cmdOutput string
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				// [s] to not match the current command: https://unix.stackexchange.com/questions/74185/how-can-i-prevent-grep-from-showing-up-in-ps-results
-				[]string{"bash", "-c", "grep [s]pring-boot:run /proc/*/cmdline"},
-				func(cmdOp string, err error) bool {
-					cmdOutput = cmdOp
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-			Expect(cmdOutput).To(MatchRegexp("Binary file .* matches"))
-		})
-	})
+			It("should execute default build and run commands correctly", func() {
+				cmp := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				cmdOutput := cmp.Exec("runtime",
+					// [s] to not match the current command: https://unix.stackexchange.com/questions/74185/how-can-i-prevent-grep-from-showing-up-in-ps-results
+					"bash", "-c", "grep [s]pring-boot:run /proc/*/cmdline")
+				Expect(cmdOutput).To(MatchRegexp("Binary file .* matches"))
+			})
+		}))
+	}
 
 	for _, podman := range []bool{false} {
 		podman := podman
