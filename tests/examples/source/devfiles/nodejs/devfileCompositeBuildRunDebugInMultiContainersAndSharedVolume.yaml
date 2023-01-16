@@ -30,7 +30,7 @@ components:
     container:
       image: quay.io/quay/busybox:latest
       memoryLimit: 64Mi
-      mountSources: true
+      mountSources: false
   - name: runtime
     container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36

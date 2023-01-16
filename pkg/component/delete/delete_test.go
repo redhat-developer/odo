@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/podman"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -609,7 +610,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
-					client.EXPECT().GetRunningPodFromSelector(selector).Return(&corev1.Pod{}, &kclient.PodNotFoundError{Selector: selector})
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(&corev1.Pod{}, &platform.PodNotFoundError{Selector: selector})
 					return client
 				},
 			},
