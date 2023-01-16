@@ -72,5 +72,5 @@ func (o *ClusterComponent) GetPodDef() *corev1.Pod {
 
 func (o *ClusterComponent) GetPodLogs() string {
 	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
-	return string(o.cli.Run("-n", o.name, "logs", podName).Out.Contents())
+	return string(o.cli.Run("-n", o.namespace, "logs", podName).Out.Contents())
 }
