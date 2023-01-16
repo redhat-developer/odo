@@ -1,8 +1,6 @@
 package podman
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"os/exec"
 
@@ -21,15 +19,12 @@ func (o *PodmanCli) GetPodLogs(podName, containerName string, followLog bool) (i
 
 	cmd := exec.Command(o.podmanCmd, args...)
 	klog.V(3).Infof("executing %v", cmd.Args)
+
+	out, _ := cmd.StdoutPipe()
 	// We get the commbined output as podman logs outputs logs in stdout && stderr (when kubectl outputs all logs on stdout)
-	resultBytes, err := cmd.CombinedOutput()
-	if err != nil {
-		if exiterr, ok := err.(*exec.ExitError); ok {
-			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
-		}
+	cmd.Stderr = cmd.Stdout
+	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
-
-	rd := io.NopCloser(bytes.NewReader(resultBytes))
-	return rd, nil
+	return out, nil
 }
