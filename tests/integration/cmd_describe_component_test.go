@@ -599,4 +599,63 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 		}
 	})
+	Context("checking for remote source code location", func() {
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			for _, ctx := range []struct {
+				devfile, title string
+				location       string
+			}{
+				{
+					title:    "devfile with sourceMapping",
+					devfile:  "devfileSourceMapping.yaml",
+					location: "/test",
+				},
+				{
+					devfile:  "devfile.yaml",
+					title:    "devfile with no sourceMapping, defaults to /projects",
+					location: "/projects",
+				},
+			} {
+				ctx := ctx
+				When(fmt.Sprintf("using %s and starting an odo dev session", ctx.title), helper.LabelPodmanIf(podman, func() {
+					var devSession helper.DevSession
+					BeforeEach(func() {
+						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+						helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfile)).ShouldPass()
+						var err error
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{RunOnPodman: podman})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+					It("should show remote source code location in odo describe component output", func() {
+						By("checking human readable output", func() {
+							args := []string{"describe", "component"}
+							cmd := helper.Cmd("odo", args...)
+							if podman {
+								args = append(args, "--platform=podman")
+								cmd = helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true")
+							}
+							output := cmd.ShouldPass().Out()
+							Expect(output).To(ContainSubstring(ctx.location))
+						})
+						By("checking JSON output", func() {
+							args := []string{"describe", "component", "-ojson"}
+							cmd := helper.Cmd("odo", args...)
+							if podman {
+								args = append(args, "--platform=podman")
+								cmd = helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true")
+							}
+							output := cmd.ShouldPass().Out()
+							helper.JsonPathContentIs(output, "devfileData.devfile.components.0.name", "runtime")
+							helper.JsonPathContentIs(output, "devfileData.devfile.components.0.container.sourceMapping", ctx.location)
+						})
+					})
+				}))
+			}
+		}
+	})
 })
