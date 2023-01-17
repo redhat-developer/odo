@@ -2738,7 +2738,8 @@ CMD ["npm", "start"]
 			It(fmt.Sprintf("should show warning about being unable to create the resource when running odo dev %s on podman", ctx.title), func() {
 				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true, CmdlineArgs: ctx.args}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 					Expect(string(errContents)).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
-					Expect(string(errContents)).To(ContainSubstring("odo currently does not support building images on Podman. Skipping: "))
+					Expect(string(errContents)).To(ContainSubstring("Apply Kubernetes components are not supported on Podman. Skipping: "))
+					Expect(string(errContents)).To(ContainSubstring("Apply Image commands are not implemented on Podman. Skipping: "))
 					helper.MatchAllInOutput(string(errContents), ctx.resources)
 				})
 				Expect(err).ToNot(HaveOccurred())
