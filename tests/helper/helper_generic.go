@@ -195,9 +195,10 @@ func CommonBeforeEach() CommonVar {
 	commonVar.ConfigDir = CreateNewContext()
 	commonVar.CliRunner = GetCliRunner()
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
-	if NeedsCluster(CurrentSpecReport().Labels()) {
+	specLabels := CurrentSpecReport().Labels()
+	if NeedsCluster(specLabels) {
 		LocalKubeconfigSet(commonVar.ConfigDir)
-		if IsAuth(CurrentSpecReport().Labels()) {
+		if IsAuth(specLabels) {
 			commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 		} else {
 			commonVar.CliRunner.AssertNonAuthenticated()
@@ -211,6 +212,11 @@ func CommonBeforeEach() CommonVar {
 		err = kubeconfig.Close()
 		Expect(err).To(BeNil())
 		os.Setenv("KUBECONFIG", kubeconfig.Name())
+
+		if NeedsPodman(specLabels) {
+			// Generate a dedicated containers.conf with a specific namespace
+			GenerateAndSetContainersConf(commonVar.ConfigDir)
+		}
 	}
 	commonVar.OriginalWorkingDirectory = Getwd()
 
