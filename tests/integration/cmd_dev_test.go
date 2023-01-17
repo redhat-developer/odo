@@ -2570,8 +2570,8 @@ CMD ["npm", "start"]
 
 				It("should run odo dev successfully (#5620)", func() {
 					const errorMessage = "Failed to create the component:"
-					helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
-					helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
+					Expect(string(stdoutBytes)).ToNot(ContainSubstring(errorMessage))
+					Expect(string(stderrBytes)).ToNot(ContainSubstring(errorMessage))
 
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					component.Exec("runtime", remotecmd.ShellExecutable, "-c", fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
