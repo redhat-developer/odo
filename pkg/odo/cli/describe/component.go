@@ -463,7 +463,11 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 	}
 	log.Info(title)
 	for _, container := range containers {
-		log.Printf("%s\n    ProjectSource: %s", container.Name, container.Container.SourceMapping)
+		printmsg := container.Name
+		if container.Container != nil {
+			printmsg += fmt.Sprintf("\n    ProjectSource: %s", container.Container.SourceMapping)
+		}
+		log.Printf(printmsg)
 	}
 	fmt.Println()
 	return nil
