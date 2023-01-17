@@ -2,7 +2,7 @@ package podmandev
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand" //#nosec
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -135,9 +135,9 @@ func addHostPorts(containers []corev1.Container, debug bool, randomPorts bool, u
 					freePort = usedPortsCopy[0]
 					usedPortsCopy = usedPortsCopy[1:]
 				} else {
-					rand.Seed(time.Now().UnixNano())
+					rand.Seed(time.Now().UnixNano()) //#nosec
 					for {
-						freePort = rand.Intn(endPort-startPort+1) + startPort
+						freePort = rand.Intn(endPort-startPort+1) + startPort //#nosec
 						if util.IsPortFree(freePort) {
 							break
 						}
