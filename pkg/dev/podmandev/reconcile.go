@@ -160,6 +160,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.BuildCommand,
 		options.RunCommand,
 		"",
+		options.RandomPorts,
 		o.usedPorts,
 	)
 	if err != nil {
