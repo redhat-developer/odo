@@ -22,12 +22,12 @@ import (
 	"syscall"
 	"time"
 
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/fatih/color"
-
 	"github.com/go-git/go-git/v5"
+	gitignore "github.com/sabhiram/go-gitignore"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -458,19 +458,28 @@ func sliceContainsString(str string, slice []string) bool {
 }
 
 func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesystem) error {
-	var data []byte
 	filename = filepath.ToSlash(filename)
-	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, dfutil.ModeReadWriteFile)
-	if err != nil {
-		return fmt.Errorf("failed to open .gitignore file: %w", err)
-	}
-	defer file.Close()
 
-	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
-		return fmt.Errorf("failed reading data from %v file: %w", gitIgnoreFile, err)
+	readFile, err := fs.Open(gitIgnoreFile)
+	if err != nil {
+		return err
 	}
-	// check whether .odo/odo-file-index.json is already in the .gitignore file
-	if !strings.Contains(string(data), filename) {
+	defer readFile.Close()
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	var fileLines []string
+	for fileScanner.Scan() {
+		fileLines = append(fileLines, fileScanner.Text())
+	}
+
+	// check whether filename is already in the .gitignore file
+	ignoreMatcher := gitignore.CompileIgnoreLines(fileLines...)
+	if !ignoreMatcher.MatchesPath(filename) {
+		file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, dfutil.ModeReadWriteFile)
+		if err != nil {
+			return fmt.Errorf("failed to open .gitignore file: %w", err)
+		}
+		defer file.Close()
 		if _, err := file.WriteString("\n" + filename); err != nil {
 			return fmt.Errorf("failed to add %v to %v file: %w", filepath.Base(filename), gitIgnoreFile, err)
 		}
