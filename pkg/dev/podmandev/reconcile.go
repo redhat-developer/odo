@@ -123,7 +123,7 @@ func (o *DevClient) reconcile(
 	return nil
 }
 
-// warnAboutApplyComponents prints a warning if the Devfile contains a K8s resource that it needs to create or build an image referenced by an apply command on Podman for a given command name and groupKind.
+// warnAboutApplyComponents prints a warning if the Devfile contains standalone K8s components (not referenced by any Apply commands). These resources are currently applied when running in the cluster mode, but not on Podman.
 func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
 	var components []string
 	// get all standalone k8s components for a given commandGK
