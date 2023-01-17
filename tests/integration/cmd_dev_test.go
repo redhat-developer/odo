@@ -742,14 +742,18 @@ ComponentSettings:
 								}
 
 								By("exposing the endpoint", func() {
-									url := fmt.Sprintf("http://%s", ports["3000"])
-									resp, err := http.Get(url)
-									Expect(err).ToNot(HaveOccurred())
-									defer resp.Body.Close()
+									Eventually(func(g Gomega) {
+										url := fmt.Sprintf("http://%s", ports["3000"])
+										resp, err := http.Get(url)
+										g.Expect(err).ToNot(HaveOccurred())
+										defer resp.Body.Close()
 
-									body, _ := io.ReadAll(resp.Body)
-									helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-									Expect(err).ToNot(HaveOccurred())
+										body, _ := io.ReadAll(resp.Body)
+										for _, i := range []string{"Hello from Node.js Starter Application!"} {
+											g.Expect(string(body)).To(ContainSubstring(i))
+										}
+										g.Expect(err).ToNot(HaveOccurred())
+									}).WithPolling(1 * time.Second).WithTimeout(20 * time.Second).Should(Succeed())
 								})
 							})
 						})
@@ -787,19 +791,22 @@ ComponentSettings:
 						})
 
 						It("should expose all endpoints on localhost regardless of exposure", func() {
-							getServerResponse := func(p int) string {
+							getServerResponse := func(p int) (string, error) {
 								resp, err := http.Get(fmt.Sprintf("http://%s", ports[strconv.Itoa(p)]))
-								Expect(err).ToNot(HaveOccurred())
+								if err != nil {
+									return "", err
+								}
 								defer resp.Body.Close()
 
 								body, _ := io.ReadAll(resp.Body)
-								return string(body)
+								return string(body), nil
 							}
 							containerPorts := []int{3000, 4567, 7890}
 
 							for _, p := range containerPorts {
 								By(fmt.Sprintf("exposing a port targeting container port %d", p), func() {
-									r := getServerResponse(p)
+									r, err := getServerResponse(p)
+									Expect(err).ShouldNot(HaveOccurred())
 									helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
 								})
 							}
@@ -831,8 +838,10 @@ ComponentSettings:
 							for _, p := range containerPorts {
 								By(fmt.Sprintf("returning the right response when querying port forwarded for container port %d", p),
 									func() {
-										Eventually(func() string {
-											return getServerResponse(p)
+										Eventually(func(g Gomega) string {
+											r, err := getServerResponse(p)
+											g.Expect(err).ShouldNot(HaveOccurred())
+											return r
 										}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
 									})
 							}
