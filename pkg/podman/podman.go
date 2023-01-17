@@ -63,6 +63,12 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		return err
 	}
 
+	if klog.V(4) {
+		var sb strings.Builder
+		_ = serializer.Encode(pod, &sb)
+		klog.Infof("Pod spec to play: \n---\n%s\n---\n", sb.String())
+	}
+
 	err = serializer.Encode(pod, stdin)
 	if err != nil {
 		return err
