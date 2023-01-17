@@ -12,14 +12,16 @@ type Component interface {
 	ExpectIsNotDeployed()
 	// Exec executes the command in specific container of the component
 	Exec(container string, args ...string) string
-	// GetEnvVars returns the environment variables defined for the component
-	GetEnvVars() map[string]string
+	// GetEnvVars returns the environment variables defined for the container
+	GetEnvVars(container string) map[string]string
+	// GetLabels returns the labels defined for the component
+	GetLabels() map[string]string
 }
 
-func NewComponent(componentName string, app string, containerName string, namespace string, cli CliRunner) Component {
+func NewComponent(componentName string, app string, mode string, namespace string, cli CliRunner) Component {
 	if NeedsCluster(CurrentSpecReport().Labels()) {
-		return NewClusterComponent(componentName, app, namespace, cli)
+		return NewClusterComponent(componentName, app, mode, namespace, cli)
 	} else {
-		return NewPodmanComponent(componentName, app, containerName)
+		return NewPodmanComponent(componentName, app)
 	}
 }

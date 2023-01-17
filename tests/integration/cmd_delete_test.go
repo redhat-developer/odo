@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -197,7 +198,7 @@ var _ = Describe("odo delete command tests", func() {
 						devSession.Kill()
 						devSession.WaitEnd()
 
-						component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						component.ExpectIsDeployed()
 					})
 
@@ -229,7 +230,7 @@ var _ = Describe("odo delete command tests", func() {
 								}
 							})
 							By("deleting the deployment", func() {
-								component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+								component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 								component.ExpectIsNotDeployed()
 							})
 						})
@@ -264,7 +265,7 @@ var _ = Describe("odo delete command tests", func() {
 									Expect(stdOut).To(ContainSubstring(cmpName))
 								})
 								By("deleting the deployment", func() {
-									component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+									component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 									component.ExpectIsNotDeployed()
 								})
 								By("ensuring that devfile.yaml and .odo still exists", func() {
@@ -301,7 +302,7 @@ var _ = Describe("odo delete command tests", func() {
 									Expect(stdOut).To(ContainSubstring(cmpName))
 								})
 								By("deleting the deployment", func() {
-									component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+									component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 									component.ExpectIsNotDeployed()
 								})
 

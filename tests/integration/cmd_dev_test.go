@@ -95,7 +95,7 @@ var _ = Describe("odo dev command tests", func() {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
 					// File should exist, and its content should match what we initially set it to
-					component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					execResult := component.Exec("runtime", "cat", "/projects/"+filepath.Base(fileAPath))
 					Expect(execResult).To(ContainSubstring(fileAText))
 				})
@@ -255,7 +255,7 @@ var _ = Describe("odo dev command tests", func() {
 					})
 
 					It("should delete component from the cluster", func() {
-						component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						component.ExpectIsNotDeployed()
 					})
 				})
@@ -438,7 +438,7 @@ ComponentSettings:
 					})
 
 					It("should not trigger a push", func() {
-						component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						execResult := component.Exec("runtime", "cat", "/projects/server.js")
 						Expect(execResult).To(ContainSubstring("App started"))
 						Expect(execResult).ToNot(ContainSubstring("App is super started"))
@@ -458,7 +458,7 @@ ComponentSettings:
 						It("should trigger a push", func() {
 							_, _, _, err := devSession.WaitSync()
 							Expect(err).ToNot(HaveOccurred())
-							component := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 							execResult := component.Exec("runtime", "cat", "/projects/server.js")
 							Expect(execResult).To(ContainSubstring("App is super started"))
 						})
@@ -886,8 +886,8 @@ ComponentSettings:
 					})
 
 					It("3. should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("bar"))
 					})
@@ -909,8 +909,8 @@ ComponentSettings:
 					})
 
 					It("should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("baz"))
 					})
@@ -936,8 +936,8 @@ ComponentSettings:
 					})
 
 					It("should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("baz"))
 					})
@@ -965,8 +965,8 @@ ComponentSettings:
 					})
 
 					It("should check if the env variable has a correct value", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-						envVars := component.GetEnvVars()
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						envVars := component.GetEnvVars("runtime")
 						// check if the env variable has a correct value. This value was substituted from in devfile from variable
 						Expect(envVars["FOO"]).To(Equal("baz"))
 					})
@@ -988,7 +988,7 @@ ComponentSettings:
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						output := component.Exec("runtime", "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
 					})
@@ -1011,7 +1011,7 @@ ComponentSettings:
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						output := component.Exec("runtime", "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
 					})
@@ -1034,7 +1034,7 @@ ComponentSettings:
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						output := component.Exec("runtime", "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
 					})
@@ -1703,119 +1703,99 @@ CMD ["npm", "start"]
 		},
 	} {
 		devfileHandlerCtx := devfileHandlerCtx
-		When("running odo dev and devfile with composite command - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			var session helper.DevSession
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should execute all commands in composite command", func() {
-				// Verify the command executed successfully
-				var statErr error
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						statErr = err
-						return err == nil
-					},
-				)
-				Expect(statErr).ToNot(HaveOccurred())
-			})
-		})
-
-		When("running odo dev and composite command is marked as parallel:true - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			var session helper.DevSession
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should execute all commands in composite command", func() {
-				// Verify the command executed successfully
-				var statErr error
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						statErr = err
-						return err == nil
-					},
-				)
-				Expect(statErr).ToNot(HaveOccurred())
-			})
-		})
-
-		When("running odo dev and composite command are nested - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			var session helper.DevSession
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-			})
-
-			It("should execute all commands in composite commmand", func() {
-				// Verify the command executed successfully
-				var statErr error
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						statErr = err
-						return err == nil
-					},
-				)
-				Expect(statErr).ToNot(HaveOccurred())
-			})
-		})
 
 		for _, podman := range []bool{true, false} {
 			podman := podman
+
+			When("running odo dev and devfile with composite command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var session helper.DevSession
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should execute all commands in composite command", func() {
+					// Verify the command executed successfully
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					dir := "/projects/testfolder"
+					out := component.Exec("runtime", "stat", dir)
+					Expect(out).To(ContainSubstring(dir))
+				})
+			}))
+
+			When("running odo dev and composite command is marked as parallel:true - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var session helper.DevSession
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should execute all commands in composite command", func() {
+					// Verify the command executed successfully
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					dir := "/projects/testfolder"
+					out := component.Exec("runtime", "stat", dir)
+					Expect(out).To(ContainSubstring(dir))
+				})
+			}))
+
+			When("running odo dev and composite command are nested - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var session helper.DevSession
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					var err error
+					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should execute all commands in composite commmand", func() {
+					// Verify the command executed successfully
+
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					dir := "/projects/testfolder"
+					out := component.Exec("runtime", "stat", dir)
+					Expect(out).To(ContainSubstring(dir))
+				})
+			}))
+
 			When("running odo dev and composite command is used as a run command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var session helper.DevSession
 				var stdout []byte
@@ -1866,7 +1846,7 @@ CMD ["npm", "start"]
 					})
 
 					By("verifying that the command did run successfully", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						dir := "/projects/testfolder"
 						out := component.Exec("runtime", "stat", dir)
 						Expect(out).To(ContainSubstring(dir))
@@ -1932,7 +1912,7 @@ CMD ["npm", "start"]
 					})
 
 					By("verifying that the command did run successfully", func() {
-						component := helper.NewComponent(devfileCmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						dir := "/projects/testfolder"
 						out := component.Exec("runtime", "stat", dir)
 						Expect(out).To(ContainSubstring(dir))
@@ -2559,44 +2539,46 @@ CMD ["npm", "start"]
 		},
 	} {
 		devfileHandlerCtx := devfileHandlerCtx
-		When("a container component defines a Command or Args - "+devfileHandlerCtx.name, func() {
-			var devfileCmpName string
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
-					filepath.Join(commonVar.Context, "devfile.yaml"))
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
-				}
-			})
 
-			It("should run odo dev successfully (#5620)", func() {
-				devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ShouldNot(HaveOccurred())
-				defer devSession.Stop()
-				const errorMessage = "Failed to create the component:"
-				helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
-				helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			When("a container component defines a Command or Args - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+				var devfileCmpName string
+				var stdoutBytes, stderrBytes []byte
+				var devSession helper.DevSession
+				var err error
 
-				// the command has been started directly in the background. Check the PID stored in a specific file.
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
-					"runtime",
-					commonVar.Project,
-					[]string{
-						remotecmd.ShellExecutable, "-c",
-						fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
-							strings.TrimSuffix(storage.SharedDataMountPath, "/")),
-					},
-					func(stdout string, err error) bool {
-						Expect(err).ShouldNot(HaveOccurred())
-						Expect(stdout).To(Equal("0"))
-						return err == nil
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					devSession, stdoutBytes, stderrBytes, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
 					})
-			})
-		})
+					Expect(err).ShouldNot(HaveOccurred())
+
+				})
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should run odo dev successfully (#5620)", func() {
+					const errorMessage = "Failed to create the component:"
+					Expect(string(stdoutBytes)).ToNot(ContainSubstring(errorMessage))
+					Expect(string(stderrBytes)).ToNot(ContainSubstring(errorMessage))
+
+					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", remotecmd.ShellExecutable, "-c", fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
+						strings.TrimSuffix(storage.SharedDataMountPath, "/")))
+				})
+			}))
+		}
 	}
 
 	for _, podman := range []bool{true, false} {
@@ -2671,6 +2653,10 @@ CMD ["npm", "start"]
 			})
 		}))
 
+		// TODO: anandrkskd
+		// not test as expected,
+		// 1. git ignore should be modified before odo dev
+		// 2. should not pass on podman
 		When("a devfile with a local parent is used for odo dev and the parent is not synced", helper.LabelPodmanIf(podman, func() {
 			var devSession helper.DevSession
 			BeforeEach(func() {
@@ -2745,74 +2731,68 @@ CMD ["npm", "start"]
 		})
 	})
 
-	Describe("Devfile with no metadata.name", func() {
+	for _, podman := range []bool{true, false} {
+		podman := podman
+		Describe("Devfile with no metadata.name", helper.LabelPodmanIf(podman, func() {
 
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-metadata-name.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
-
-		When("running odo dev against a component with no source code", func() {
-			var devSession helper.DevSession
 			BeforeEach(func() {
-				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-metadata-name.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 
-			AfterEach(func() {
-				devSession.Stop()
-			})
-
-			It("should use the directory as component name", func() {
-				// when no further source code is available, directory name is returned by alizer.DetectName as component name;
-				// and since it is all-numeric in our tests, an "x" prefix is added by util.GetDNS1123Name (called by alizer.DetectName)
-				cmpName := "x" + filepath.Base(commonVar.Context)
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project),
-					"runtime",
-					commonVar.Project,
-					[]string{
-						remotecmd.ShellExecutable, "-c",
-						fmt.Sprintf("cat %s/.odo_cmd_devrun.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/")),
-					},
-					func(stdout string, err error) bool {
-						Expect(err).ShouldNot(HaveOccurred())
-						Expect(stdout).NotTo(BeEmpty())
-						return err == nil
+			When("running odo dev against a component with no source code", func() {
+				var devSession helper.DevSession
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
 					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should use the directory as component name", func() {
+					// when no further source code is available, directory name is returned by alizer.DetectName as component name;
+					// and since it is all-numeric in our tests, an "x" prefix is added by util.GetDNS1123Name (called by alizer.DetectName)
+					cmpName := "x" + filepath.Base(commonVar.Context)
+
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", remotecmd.ShellExecutable, "-c",
+						fmt.Sprintf("cat %s/.odo_cmd_devrun.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/")))
+				})
 			})
-		})
-	})
+		}))
+	}
 
 	for _, t := range []struct {
 		whenTitle   string
 		devfile     string
-		checkDev    func(cmpName string)
+		checkDev    func(cmpName string, podman bool)
 		checkDeploy func(cmpName string)
 	}{
 		{
 			whenTitle: "Devfile contains metadata.language",
 			devfile:   "devfile-with-metadata-language.yaml",
-			checkDev: func(cmpName string) {
-				commonVar.CliRunner.AssertContainsLabel(
-					"deployment",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"javascript",
-				)
-				commonVar.CliRunner.AssertContainsLabel(
-					"service",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"javascript",
-				)
+			checkDev: func(cmpName string, podman bool) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				componentLabels := component.GetLabels()
+				Expect(componentLabels["app.openshift.io/runtime"]).Should(Equal("javascript"))
+
+				if !podman {
+					commonVar.CliRunner.AssertContainsLabel(
+						"service",
+						commonVar.Project,
+						cmpName,
+						"app",
+						labels.ComponentDevMode,
+						"app.openshift.io/runtime",
+						"javascript",
+					)
+				}
 			},
 			checkDeploy: func(cmpName string) {
 				commonVar.CliRunner.AssertContainsLabel(
@@ -2830,25 +2810,21 @@ CMD ["npm", "start"]
 		{
 			whenTitle: "Devfile contains metadata.language invalid as a label value",
 			devfile:   "devfile-with-metadata-language-as-invalid-label.yaml",
-			checkDev: func(cmpName string) {
-				commonVar.CliRunner.AssertContainsLabel(
-					"deployment",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"a-custom-language",
-				)
-				commonVar.CliRunner.AssertContainsLabel(
-					"service",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"a-custom-language",
-				)
+			checkDev: func(cmpName string, podman bool) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				componentLabels := component.GetLabels()
+				Expect(componentLabels["app.openshift.io/runtime"]).Should(Equal("a-custom-language"))
+				if !podman {
+					commonVar.CliRunner.AssertContainsLabel(
+						"service",
+						commonVar.Project,
+						cmpName,
+						"app",
+						labels.ComponentDevMode,
+						"app.openshift.io/runtime",
+						"a-custom-language",
+					)
+				}
 			},
 			checkDeploy: func(cmpName string) {
 				commonVar.CliRunner.AssertContainsLabel(
@@ -2866,25 +2842,21 @@ CMD ["npm", "start"]
 		{
 			whenTitle: "Devfile contains metadata.projectType",
 			devfile:   "devfile-with-metadata-project-type.yaml",
-			checkDev: func(cmpName string) {
-				commonVar.CliRunner.AssertContainsLabel(
-					"deployment",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"nodejs",
-				)
-				commonVar.CliRunner.AssertContainsLabel(
-					"service",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"nodejs",
-				)
+			checkDev: func(cmpName string, podman bool) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				componentLabels := component.GetLabels()
+				Expect(componentLabels["app.openshift.io/runtime"]).Should(Equal("nodejs"))
+				if !podman {
+					commonVar.CliRunner.AssertContainsLabel(
+						"service",
+						commonVar.Project,
+						cmpName,
+						"app",
+						labels.ComponentDevMode,
+						"app.openshift.io/runtime",
+						"nodejs",
+					)
+				}
 			},
 			checkDeploy: func(cmpName string) {
 				commonVar.CliRunner.AssertContainsLabel(
@@ -2902,25 +2874,21 @@ CMD ["npm", "start"]
 		{
 			whenTitle: "Devfile contains metadata.projectType invalid as a label value",
 			devfile:   "devfile-with-metadata-project-type-as-invalid-label.yaml",
-			checkDev: func(cmpName string) {
-				commonVar.CliRunner.AssertContainsLabel(
-					"deployment",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"dotnode",
-				)
-				commonVar.CliRunner.AssertContainsLabel(
-					"service",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-					"dotnode",
-				)
+			checkDev: func(cmpName string, podman bool) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				componentLabels := component.GetLabels()
+				Expect(componentLabels["app.openshift.io/runtime"]).Should(Equal("dotnode"))
+				if !podman {
+					commonVar.CliRunner.AssertContainsLabel(
+						"service",
+						commonVar.Project,
+						cmpName,
+						"app",
+						labels.ComponentDevMode,
+						"app.openshift.io/runtime",
+						"dotnode",
+					)
+				}
 			},
 			checkDeploy: func(cmpName string) {
 				commonVar.CliRunner.AssertContainsLabel(
@@ -2938,23 +2906,22 @@ CMD ["npm", "start"]
 		{
 			whenTitle: "Devfile contains neither metadata.language nor metadata.projectType",
 			devfile:   "devfile-with-metadata-no-language-project-type.yaml",
-			checkDev: func(cmpName string) {
-				commonVar.CliRunner.AssertNoContainsLabel(
-					"deployment",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-				)
-				commonVar.CliRunner.AssertNoContainsLabel(
-					"service",
-					commonVar.Project,
-					cmpName,
-					"app",
-					labels.ComponentDevMode,
-					"app.openshift.io/runtime",
-				)
+			checkDev: func(cmpName string, podman bool) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				componentLabels := component.GetLabels()
+				_, found := componentLabels["app.openshift.io/runtime"]
+				Expect(found).Should(BeFalse(), "app.openshift.io/runtime label exists")
+
+				if !podman {
+					commonVar.CliRunner.AssertNoContainsLabel(
+						"service",
+						commonVar.Project,
+						cmpName,
+						"app",
+						labels.ComponentDevMode,
+						"app.openshift.io/runtime",
+					)
+				}
 			},
 			checkDeploy: func(cmpName string) {
 				commonVar.CliRunner.AssertNoContainsLabel(
@@ -2968,46 +2935,57 @@ CMD ["npm", "start"]
 			},
 		},
 	} {
+
 		t := t
-		When(t.whenTitle, func() {
+		for _, podman := range []bool{true, false} {
+			podman := podman
 
-			var cmpName = "nodejs-prj" // from devfile
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", t.devfile),
-					filepath.Join(commonVar.Context, "devfile.yaml"))
-			})
+			When(t.whenTitle, helper.LabelPodmanIf(podman, func() {
 
-			When("running odo dev", func() {
-				var devSession helper.DevSession
+				var cmpName = "nodejs-prj" // from devfile
 				BeforeEach(func() {
-					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-					Expect(err).ToNot(HaveOccurred())
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", t.devfile),
+						filepath.Join(commonVar.Context, "devfile.yaml"))
 				})
 
-				AfterEach(func() {
-					devSession.Stop()
+				When("running odo dev", func() {
+					var devSession helper.DevSession
+					BeforeEach(func() {
+						var err error
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should set the correct value in labels of resources", func() {
+						t.checkDev(cmpName, podman)
+					})
 				})
 
-				It("should set the correct value in labels of resources", func() {
-					t.checkDev(cmpName)
-				})
-			})
+				if !podman { // not implement for podman
+					When("odo deploy is executed", func() {
+						BeforeEach(func() {
 
-			When("odo deploy is executed", func() {
-				BeforeEach(func() {
-					helper.Cmd("odo", "deploy").ShouldPass()
-				})
+							helper.Cmd("odo", "deploy").ShouldPass()
+						})
 
-				AfterEach(func() {
-					helper.Cmd("odo", "delete", "component", "--force")
-				})
+						AfterEach(func() {
+							helper.Cmd("odo", "delete", "component", "--force")
+						})
 
-				It("should set the correct value in labels of deployed resources", func() {
-					t.checkDeploy(cmpName)
-				})
-			})
-		})
+						It("should set the correct value in labels of deployed resources", func() {
+							t.checkDeploy(cmpName)
+						})
+					})
+				}
+			}))
+		}
 	}
 })
