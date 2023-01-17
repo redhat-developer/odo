@@ -319,8 +319,8 @@ func JsonPathContentIsValidUserPort(json string, path string) {
 	))
 }
 
-// SetProjectName sets projectNames based on the name of the test file name (without path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
-func SetProjectName() string {
+// GetProjectName sets projectNames based on the name of the test file name (without path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
+func GetProjectName() string {
 	//Get current test filename and remove file path, file extension and replace undescores with hyphens
 	currGinkgoTestFileName := strings.Replace(strings.Split(strings.Split(CurrentSpecReport().
 		ContainerHierarchyLocations[0].FileName, "/")[len(strings.Split(CurrentSpecReport().ContainerHierarchyLocations[0].FileName, "/"))-1], ".")[0], "_", "-", -1)
