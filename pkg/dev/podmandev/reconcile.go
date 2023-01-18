@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -36,6 +39,8 @@ func (o *DevClient) reconcile(
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 	)
+
+	o.warnAboutK8sComponents(*devfileObj)
 
 	pod, fwPorts, err := o.deployPod(ctx, options)
 	if err != nil {
@@ -116,6 +121,23 @@ func (o *DevClient) reconcile(
 
 	componentStatus.State = watch.StateReady
 	return nil
+}
+
+// warnAboutApplyComponents prints a warning if the Devfile contains standalone K8s components (not referenced by any Apply commands). These resources are currently applied when running in the cluster mode, but not on Podman.
+func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
+	var components []string
+	// get all standalone k8s components for a given commandGK
+	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, false)
+
+	if len(k8sComponents) == 0 {
+		return
+	}
+
+	for _, comp := range k8sComponents {
+		components = append(components, comp.Name)
+	}
+
+	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(components, ", "))
 }
 
 // deployPod deploys the component as a Pod in podman

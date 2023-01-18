@@ -47,6 +47,55 @@ components:
                     limits:
                       memory: "128Mi"
                       cpu: "500m"
+  - name: deploy-another-k8s-resource
+    kubernetes:
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: my-component-2
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: node-app
+          template:
+            metadata:
+              labels:
+                app: node-app
+            spec:
+              containers:
+                - name: main
+                  image: "{{CONTAINER_IMAGE}}"
+                  resources:
+                    limits:
+                      memory: "128Mi"
+                      cpu: "500m"
+  - name: deploy-a-third-k8s-resource
+    kubernetes:
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: my-component-3
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: node-app
+          template:
+            metadata:
+              labels:
+                app: node-app
+            spec:
+              containers:
+                - name: main
+                  image: "{{CONTAINER_IMAGE}}"
+                  resources:
+                    limits:
+                      memory: "128Mi"
+                      cpu: "500m"
+
 commands:
   - id: build-image
     apply:
@@ -55,6 +104,10 @@ commands:
   - id: create-k8s-resource
     apply:
       component: deploy-k8s-resource
+
+  - id: create-another-k8s-resource
+    apply:
+      component: deploy-another-k8s-resource
 
   - id: install
     exec:
@@ -97,9 +150,20 @@ commands:
     composite:
       commands:
         - build-image
-        - create-k8s-resource
+        - create-another-k8s-resource
         - install
         - start-debug
       group:
         isDefault: true
         kind: debug
+
+  - id: deploy
+    composite:
+      commands:
+        - build-image
+        - create-k8s-resource
+        - install
+        - start-debug
+      group:
+        isDefault: true
+        kind: deploy

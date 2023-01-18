@@ -30,7 +30,9 @@ func ReplaceAllTimeInString(docString string, timeString string) string {
 
 // StripSpinner strips the cmd out string of spaces, spinner statements and spinner frames
 func StripSpinner(docString string) (returnString string) {
-	for _, line := range strings.Split(docString, "\n") {
+	sc := bufio.NewScanner(strings.NewReader(docString))
+	for sc.Scan() {
+		line := sc.Text()
 		// trim any special character present in the line
 		line = strings.TrimFunc(line, unicode.IsSpace)
 		// This check is to avoid spinner statements in the cmd output
