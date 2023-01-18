@@ -2087,32 +2087,41 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("setting git config and running odo dev", func() {
-		remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.Cmd("git", "init").ShouldPass()
-			remote := "origin"
-			helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-		})
-
-		It("should create vcs-uri annotation for the deployment when running odo dev", func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-				annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
-				var valueFound bool
-				for key, value := range annotations {
-					if key == "app.openshift.io/vcs-uri" && value == remoteURL {
-						valueFound = true
-						break
-					}
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("setting git config and running odo dev", func() {
+			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
+			devfileCmpName := "nodejs"
+			BeforeEach(func() {
+				if podman {
+					Skip("Not implemented yet on Podman - see https://github.com/redhat-developer/odo/issues/6493")
 				}
-				Expect(valueFound).To(BeTrue())
+				helper.Cmd("git", "init").ShouldPass()
+				remote := "origin"
+				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			})
-			Expect(err).ToNot(HaveOccurred())
+
+			It("should create vcs-uri annotation for the deployment when running odo dev",
+				helper.LabelPodmanIf(podman, func() {
+					err := helper.RunDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+						annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
+						var valueFound bool
+						for key, value := range annotations {
+							if key == "app.openshift.io/vcs-uri" && value == remoteURL {
+								valueFound = true
+								break
+							}
+						}
+						Expect(valueFound).To(BeTrue())
+					})
+					Expect(err).ToNot(HaveOccurred())
+				}))
 		})
-	})
+	}
 
 	for _, devfileHandlerCtx := range []struct {
 		name          string
