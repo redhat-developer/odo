@@ -604,17 +604,48 @@ var _ = Describe("odo describe component command tests", func() {
 			podman := podman
 			for _, ctx := range []struct {
 				devfile, title string
-				location       string
+				checker        func(output string, isJSON bool)
+				beforeEach     func()
 			}{
 				{
-					title:    "devfile with sourceMapping",
-					devfile:  "devfileSourceMapping.yaml",
-					location: "/test",
+					title:   "devfile with sourceMapping",
+					devfile: "devfileSourceMapping.yaml",
+					checker: func(output string, isJSON bool) {
+						const location = "/test"
+						if isJSON {
+							helper.JsonPathContentIs(output, "devfileData.devfile.components.#(name==runtime).container.sourceMapping", location)
+							return
+						}
+						Expect(output).To(ContainSubstring(location))
+					},
 				},
 				{
-					devfile:  "devfile.yaml",
-					title:    "devfile with no sourceMapping, defaults to /projects",
-					location: "/projects",
+					devfile: "devfile.yaml",
+					title:   "devfile with no sourceMapping, defaults to /projects",
+					checker: func(output string, isJSON bool) {
+						const location = "/projects"
+						if isJSON {
+							helper.JsonPathContentIs(output, "devfileData.devfile.components.#(name==runtime).container.sourceMapping", location)
+							return
+						}
+						Expect(output).To(ContainSubstring(location))
+					},
+				},
+				{
+					devfile: "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml",
+					title:   "devfile with containers that has mountSource set to false",
+					checker: func(output string, isJSON bool) {
+						if isJSON {
+							helper.JsonPathContentIs(output, "devfileData.devfile.components.#(name==runtime).container.sourceMapping", "/projects")
+							helper.JsonPathDoesNotExist(output, "devfileData.devfile.components.#(name==sleeper-run).container.sourceMapping")
+							helper.JsonPathDoesNotExist(output, "devfileData.devfile.components.#(name==sleeper-build).container.sourceMapping")
+							helper.JsonPathDoesNotExist(output, "devfileData.devfile.components.#(name==echo-er).container.sourceMapping")
+							helper.JsonPathDoesNotExist(output, "devfileData.devfile.components.#(name==build-checker).container.sourceMapping")
+							return
+						}
+						Expect(output).To(ContainSubstring("runtime\n    Source Mapping: /projects"))
+						helper.DontMatchAllInOutput(output, []string{"sleeper-run\n    Source Mapping: /projects", "sleeper-build\n    Source Mapping:", "echo-er\n    Source Mapping:", "build-checker\n    Source Mapping:"})
+					},
 				},
 			} {
 				ctx := ctx
@@ -640,7 +671,7 @@ var _ = Describe("odo describe component command tests", func() {
 								cmd = helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true")
 							}
 							output := cmd.ShouldPass().Out()
-							Expect(output).To(ContainSubstring(ctx.location))
+							ctx.checker(output, false)
 						})
 						By("checking JSON output", func() {
 							args := []string{"describe", "component", "-ojson"}
@@ -650,8 +681,7 @@ var _ = Describe("odo describe component command tests", func() {
 								cmd = helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true")
 							}
 							output := cmd.ShouldPass().Out()
-							helper.JsonPathContentIs(output, "devfileData.devfile.components.0.name", "runtime")
-							helper.JsonPathContentIs(output, "devfileData.devfile.components.0.container.sourceMapping", ctx.location)
+							ctx.checker(output, true)
 						})
 					})
 				}))

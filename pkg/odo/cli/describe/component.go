@@ -11,6 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -323,7 +324,10 @@ func updateWithRemoteSourceLocation(cmp *api.Component) {
 		if *comp.Container.MountSources {
 			if comp.Container.SourceMapping == "" {
 				comp.Container.SourceMapping = generator.DevfileSourceVolumeMount
-				_ = cmp.DevfileData.Devfile.UpdateComponent(comp)
+				err = cmp.DevfileData.Devfile.UpdateComponent(comp)
+				if err != nil {
+					klog.V(2).Infof("error occurred while updating the component %s; cause: %s", comp.Name, err)
+				}
 			}
 		}
 	}
@@ -464,8 +468,8 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 	log.Info(title)
 	for _, container := range containers {
 		printmsg := container.Name
-		if container.Container != nil {
-			printmsg += fmt.Sprintf("\n    ProjectSource: %s", container.Container.SourceMapping)
+		if container.Container != nil && *container.Container.MountSources {
+			printmsg += fmt.Sprintf("\n    Source Mapping: %s", container.Container.SourceMapping)
 		}
 		log.Printf(printmsg)
 	}
