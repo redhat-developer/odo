@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -2377,7 +2378,13 @@ CMD ["npm", "start"]
 					BeforeEach(func() {
 						// commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, podName)
 						output := component.Exec("tools", "find", "/projects")
-						outputArr := strings.Split(output, "\n")
+
+						outputArr := []string{}
+						sc := bufio.NewScanner(strings.NewReader(output))
+						for sc.Scan() {
+							outputArr = append(outputArr, sc.Text())
+						}
+
 						for _, line := range outputArr {
 
 							if !strings.HasPrefix(line, "/projects"+"/") || strings.Contains(line, "lost+found") {
