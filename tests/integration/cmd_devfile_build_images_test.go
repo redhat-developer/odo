@@ -22,8 +22,10 @@ var _ = Describe("odo devfile build-images command tests", func() {
 		var _ = Context("label "+label, Label(label), func() {
 
 			var commonVar helper.CommonVar
+			var cmpName string
 
 			var _ = BeforeEach(func() {
+				cmpName = helper.RandString(6)
 				commonVar = helper.CommonBeforeEach()
 				helper.Chdir(commonVar.Context)
 			})
@@ -133,9 +135,9 @@ var _ = Describe("odo devfile build-images command tests", func() {
 				BeforeEach(func() {
 					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 					helper.CopyExampleDevFile(
-						filepath.Join("source", "devfiles", "nodejs",
-							"issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),
-						filepath.Join(commonVar.Context, "devfile.yaml"))
+						filepath.Join("source", "devfiles", "nodejs", "issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						helper.DevfileMetadataNameSetter(cmpName))
 					helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
 				})
 
@@ -184,8 +186,10 @@ var _ = Describe("odo devfile build-images command tests", func() {
 
 					BeforeEach(func() {
 						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-outerloop.yaml"),
-							path.Join(commonVar.Context, "devfile.yaml"))
+						helper.CopyExampleDevFile(
+							filepath.Join("source", "devfiles", "nodejs", "devfile-outerloop.yaml"),
+							path.Join(commonVar.Context, "devfile.yaml"),
+							helper.DevfileMetadataNameSetter(cmpName))
 					})
 
 					When("remote server returns an error", func() {

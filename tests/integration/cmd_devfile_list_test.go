@@ -96,11 +96,15 @@ var _ = Describe("odo list with devfile", func() {
 	When("a component created in 'app' application", func() {
 
 		var devSession helper.DevSession
-		var componentName = "nodejs-prj1-api-abhz" // from devfile-deploy.yaml
+		var componentName string
 
 		BeforeEach(func() {
+			componentName = helper.RandString(6)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(componentName))
 			helper.Chdir(commonVar.Context)
 		})
 

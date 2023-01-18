@@ -18,8 +18,10 @@ import (
 
 var _ = Describe("E2E Test", func() {
 	var commonVar helper.CommonVar
+	var componentName string
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
+		componentName = helper.RandString(6)
 	})
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
@@ -40,7 +42,6 @@ var _ = Describe("E2E Test", func() {
 	}
 
 	Context("starting with empty Directory", func() {
-		componentName := helper.RandString(6)
 		var _ = BeforeEach(func() {
 			helper.Chdir(commonVar.Context)
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(BeEmpty())
@@ -113,8 +114,10 @@ var _ = Describe("E2E Test", func() {
 			Expect(pods).To(BeEmpty())
 
 			// "run odo deploy"
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "nodejs-prj1-api-abhz", componentName)
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(componentName))
 
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
@@ -159,7 +162,6 @@ var _ = Describe("E2E Test", func() {
 	})
 
 	Context("starting with non-empty Directory", func() {
-		componentName := helper.RandString(6)
 		var _ = BeforeEach(func() {
 			helper.Chdir(commonVar.Context)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -234,7 +236,10 @@ var _ = Describe("E2E Test", func() {
 			Expect(pods).To(BeEmpty())
 
 			// "run odo deploy"
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(componentName))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "nodejs-prj1-api-abhz", componentName)
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
@@ -277,8 +282,6 @@ var _ = Describe("E2E Test", func() {
 	})
 
 	Context("starting with non-empty Directory add Binding", func() {
-		componentName := helper.RandString(6)
-
 		sendDataEntry := func(url string) map[string]interface{} {
 			values := map[string]interface{}{"name": "joe",
 				"location": "tokyo",

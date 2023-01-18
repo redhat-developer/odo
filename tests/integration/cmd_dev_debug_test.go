@@ -66,21 +66,17 @@ var _ = Describe("odo dev debug command tests", func() {
 	})
 
 	for _, devfileHandlerCtx := range []struct {
-		name           string
-		cmpName        string
-		devfileHandler func(path string)
+		name          string
+		sourceHandler func(path string, originalCmpName string)
 	}{
 		{
 			name: "with metadata.name",
-			// cmpName from Devfile
-			cmpName: "nodejs",
 		},
 		{
 			name: "without metadata.name",
-			// cmpName is returned by alizer.DetectName
-			cmpName: "nodejs-starter",
-			devfileHandler: func(path string) {
-				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+			sourceHandler: func(path string, originalCmpName string) {
+				helper.UpdateDevfileContent(filepath.Join(path, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+				helper.ReplaceString(filepath.Join(path, "package.json"), "nodejs-starter", originalCmpName)
 			},
 		},
 	} {
@@ -92,11 +88,14 @@ var _ = Describe("odo dev debug command tests", func() {
 			var stderr []byte
 			var ports map[string]string
 			BeforeEach(func() {
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = helper.RandString(6)
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(devfileCmpName))
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				if devfileHandlerCtx.sourceHandler != nil {
+					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 				var err error
 				session, stdout, stderr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
@@ -171,7 +170,10 @@ var _ = Describe("odo dev debug command tests", func() {
 
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
 			session, sessionOut, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
 				EnvVars:     []string{"PODMAN_CMD=echo"},
 				CmdlineArgs: []string{"--debug"},
@@ -226,21 +228,17 @@ var _ = Describe("odo dev debug command tests", func() {
 	})
 
 	for _, devfileHandlerCtx := range []struct {
-		name           string
-		cmpName        string
-		devfileHandler func(path string)
+		name          string
+		sourceHandler func(path string, originalCmpName string)
 	}{
 		{
 			name: "with metadata.name",
-			// cmpName from Devfile
-			cmpName: "nodejs",
 		},
 		{
 			name: "without metadata.name",
-			// cmpName is returned by alizer.DetectName
-			cmpName: "nodejs-starter",
-			devfileHandler: func(path string) {
-				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+			sourceHandler: func(path string, originalCmpName string) {
+				helper.UpdateDevfileContent(filepath.Join(path, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+				helper.ReplaceString(filepath.Join(path, "package.json"), "nodejs-starter", originalCmpName)
 			},
 		},
 	} {
@@ -252,13 +250,14 @@ var _ = Describe("odo dev debug command tests", func() {
 			var stderr []byte
 			var ports map[string]string
 			BeforeEach(func() {
+				devfileCmpName = helper.RandString(6)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
-					filepath.Join(commonVar.Context, "devfile.yaml"))
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(devfileCmpName))
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				devfileCmpName = devfileHandlerCtx.cmpName
-				if devfileHandlerCtx.devfileHandler != nil {
-					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				if devfileHandlerCtx.sourceHandler != nil {
+					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 				var err error
 				session, stdout, stderr, ports, err = helper.StartDevMode(helper.DevSessionOpts{

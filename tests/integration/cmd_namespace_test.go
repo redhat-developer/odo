@@ -143,10 +143,13 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 			When("running inside a component directory", func() {
 				activeNs := "my-current-ns"
 
+				var cmpName string
 				BeforeEach(func() {
+					cmpName = helper.RandString(6)
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
-						filepath.Join(commonVar.Context, "devfile.yaml"))
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						helper.DevfileMetadataNameSetter(cmpName))
 					helper.Chdir(commonVar.Context)
 
 					// Bootstrap the component with a .odo/env/env.yaml file
