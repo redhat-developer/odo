@@ -2894,7 +2894,10 @@ CMD ["npm", "start"]
 		When("using devfile that contains K8s resource to run it on podman", Label(helper.LabelPodman), func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
 			})
 			It(fmt.Sprintf("should show warning about being unable to create the resource when running odo dev %s on podman", ctx.title), func() {
 				err := helper.RunDevMode(helper.DevSessionOpts{RunOnPodman: true, CmdlineArgs: ctx.args}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
