@@ -5,7 +5,7 @@
   "license": "EPL-2.0",
   "scripts": {
     "start": "node server.js",
-    "debug": "node --inspect-brk=${DEBUG_PORT} server.js",
+    "debug": "node --inspect=${DEBUG_PORT} server.js",
     "test": "node test/test.js"
   },
   "dependencies": {
