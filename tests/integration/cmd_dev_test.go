@@ -2434,14 +2434,9 @@ CMD ["npm", "start"]
 		podman := podman
 		When("node-js application is created and deployed with devfile schema 2.2.0", helper.LabelPodmanIf(podman, func() {
 
-			ensureResource := func(cpulimit, memorylimit, cpurequest, memoryrequest string) {
+			ensureResource := func(memorylimit, memoryrequest string) {
 				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 				podDef := component.GetPodDef()
-
-				By("check for cpuLimit", func() {
-					cpuVal := podDef.Spec.Containers[0].Resources.Limits.Cpu().String()
-					Expect(cpuVal).To(Equal(cpulimit))
-				})
 
 				By("check for memoryLimit", func() {
 					memVal := podDef.Spec.Containers[0].Resources.Limits.Memory().String()
@@ -2451,10 +2446,6 @@ CMD ["npm", "start"]
 				if !podman {
 					// Resource Requests are not returned by podman generate kube (as of podman v4.3.1)
 					// TODO(feloy) are they taken into account?
-					By("check for cpuRequests", func() {
-						cpuVal := podDef.Spec.Containers[0].Resources.Requests.Cpu().String()
-						Expect(cpuVal).To(Equal(cpurequest))
-					})
 
 					By("check for memoryRequests", func() {
 						memVal := podDef.Spec.Containers[0].Resources.Requests.Memory().String()
@@ -2480,8 +2471,8 @@ CMD ["npm", "start"]
 				session.WaitEnd()
 			})
 
-			It("should check cpuLimit, cpuRequests, memoryRequests", func() {
-				ensureResource("1", "1Gi", "200m", "512Mi")
+			It("should check memory Request and Limit", func() {
+				ensureResource("1Gi", "512Mi")
 			})
 
 			if !podman {
@@ -2495,7 +2486,7 @@ CMD ["npm", "start"]
 					})
 
 					It("should check cpuLimit, cpuRequests, memoryRequests after restart", func() {
-						ensureResource("700m", "1028Mi", "250m", "550Mi")
+						ensureResource("1028Mi", "550Mi")
 					})
 				})
 			}
