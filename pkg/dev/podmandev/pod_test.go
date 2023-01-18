@@ -119,6 +119,7 @@ func Test_createPodFromComponent(t *testing.T) {
 		devfileObj    func() parser.DevfileObj
 		componentName string
 		appName       string
+		debug         bool
 		buildCommand  string
 		runCommand    string
 		debugCommand  string
@@ -237,7 +238,7 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + application endpoint + debug endpoint",
+			name: "basic component + application endpoint + debug endpoint - without debug",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -258,6 +259,50 @@ func Test_createPodFromComponent(t *testing.T) {
 				},
 				componentName: devfileName,
 				appName:       appName,
+			},
+			wantPod: func() *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					Protocol:      "TCP",
+					HostPort:      40001,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     40001,
+					ContainerPort: 8080,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint - with debug",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+				debug:         true,
 			},
 			wantPod: func() *corev1.Pod {
 				pod := basePod.DeepCopy()
@@ -335,7 +380,16 @@ func Test_createPodFromComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotFwPorts, err := createPodFromComponent(tt.args.devfileObj(), tt.args.componentName, tt.args.appName, tt.args.buildCommand, tt.args.runCommand, tt.args.debugCommand, []int{40001, 40002})
+			got, gotFwPorts, err := createPodFromComponent(
+				tt.args.devfileObj(),
+				tt.args.componentName,
+				tt.args.appName,
+				tt.args.debug,
+				tt.args.buildCommand,
+				tt.args.runCommand,
+				tt.args.debugCommand,
+				[]int{40001, 40002},
+			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
 				return
