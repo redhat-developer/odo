@@ -791,6 +791,13 @@ ComponentSettings:
 						})
 
 						It("should expose all endpoints on localhost regardless of exposure", func() {
+							By("not exposing debug endpoints", func() {
+								for _, p := range []int{5005, 5006} {
+									_, found := ports[strconv.Itoa(p)]
+									Expect(found).To(BeFalse(), fmt.Sprintf("debug port %d should not be forwarded", p))
+								}
+							})
+
 							getServerResponse := func(p int) (string, error) {
 								resp, err := http.Get(fmt.Sprintf("http://%s", ports[strconv.Itoa(p)]))
 								if err != nil {
@@ -802,7 +809,6 @@ ComponentSettings:
 								return string(body), nil
 							}
 							containerPorts := []int{3000, 4567, 7890}
-
 							for _, p := range containerPorts {
 								By(fmt.Sprintf("exposing a port targeting container port %d", p), func() {
 									r, err := getServerResponse(p)
