@@ -278,7 +278,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 			return IndexerRet{}, err
 		}
 		if len(matches) == 0 {
-			return IndexerRet{}, fmt.Errorf("path %q doens't exist", remoteAttribute)
+			return IndexerRet{}, fmt.Errorf("path %q doesn't exist", remoteAttribute)
 		}
 		for _, fileName := range matches {
 			if checkFileExist(fileName) {
@@ -333,7 +333,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 					filesDeleted[remote] = true
 				}
 			} else {
-				return IndexerRet{}, fmt.Errorf("path %q doens't exist", fileName)
+				return IndexerRet{}, fmt.Errorf("path %q doesn't exist", fileName)
 			}
 		}
 	}
@@ -412,7 +412,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	}
 
 	if len(matchedPathsDir) == 0 {
-		return IndexerRet{}, fmt.Errorf("path %q doens't exist", joinedPath)
+		return IndexerRet{}, fmt.Errorf("path %q doesn't exist", joinedPath)
 	}
 
 	joinedRelPath, err := filepath.Rel(pathOptions.directory, joinedPath)
