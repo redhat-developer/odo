@@ -192,7 +192,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Check if endpoints changed in Devfile
-	portsToForward, err := a.portForwardClient.GetPortsToForward(a.Devfile)
+	portsToForward, err := a.portForwardClient.GetPortsToForward(a.Devfile, parameters.Debug)
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		a.portForwardClient.StopPortForwarding()
 	}
 
-	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.RandomPorts, parameters.ErrOut)
+	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, parameters.ErrOut)
 	if err != nil {
 		return adapters.NewErrPortForward(err)
 	}
