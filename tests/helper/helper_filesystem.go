@@ -144,9 +144,10 @@ func GetExamplePath(args ...string) string {
 	return filepath.Join(path...)
 }
 
-// CopyExampleDevFile copies an example devfile from tests/examples/source/devfiles/<componentName>/devfile.yaml
-// into targetDst
-func CopyExampleDevFile(devfilePath, targetDst string) {
+// CopyExampleDevFile copies an example devfile from tests/examples/source/devfiles/<componentName>/devfile.yaml into targetDst.
+// The Devfile updaters allow to perform operations against the target Devfile, like updating the component name (via DevfileMetadataNameSetter) or
+// removing the component name (via DevfileMetadataNameRemover).
+func CopyExampleDevFile(devfilePath, targetDst string, devfileUpdaters ...DevfileUpdater) {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
 	// path to the examples directory
@@ -158,6 +159,9 @@ func CopyExampleDevFile(devfilePath, targetDst string) {
 
 	err = dfutil.CopyFile(src, targetDst, info)
 	Expect(err).NotTo(HaveOccurred())
+	if len(devfileUpdaters) != 0 {
+		UpdateDevfileContent(targetDst, devfileUpdaters)
+	}
 }
 
 // FileShouldContainSubstring check if file contains subString
@@ -292,10 +296,15 @@ func AppendToFile(filepath string, s string) error {
 // It is intended to be used in conjunction with the UpdateDevfileContent function.
 type DevfileUpdater func(*parser.DevfileObj) error
 
-// DevfileMetadataNameRemover removes the 'metadata.name' field from the given Devfile
-var DevfileMetadataNameRemover = func(d *parser.DevfileObj) error {
-	return d.SetMetadataName("")
+// DevfileMetadataNameSetter sets the 'metadata.name' field into the given Devfile
+var DevfileMetadataNameSetter = func(name string) DevfileUpdater {
+	return func(d *parser.DevfileObj) error {
+		return d.SetMetadataName(name)
+	}
 }
+
+// DevfileMetadataNameRemover removes the 'metadata.name' field from the given Devfile
+var DevfileMetadataNameRemover = DevfileMetadataNameSetter("")
 
 // UpdateDevfileContent parses the Devfile at the given path, then updates its content using the given handlers, and writes the updated Devfile to the given path.
 //

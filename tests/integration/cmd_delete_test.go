@@ -90,7 +90,8 @@ var _ = Describe("odo delete command tests", func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
-					path.Join(commonVar.Context, "devfile.yaml"))
+					path.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
 				if withDotOdoDir {
 					helper.MakeDir(filepath.Join(commonVar.Context, util.DotOdoDirectory))
 				}

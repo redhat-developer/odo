@@ -565,11 +565,13 @@ var _ = Describe("odo describe component command tests", func() {
 		} {
 			ctx := ctx
 			When("running odo deploy to create ingress/routes", func() {
-				const (
-					componentName = "nodejs-prj1-api-abhz" // hard-coded from the Devfiles
-				)
+				var componentName string
 				BeforeEach(func() {
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), path.Join(commonVar.Context, "devfile.yaml"))
+					componentName = helper.RandString(6)
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
+						path.Join(commonVar.Context, "devfile.yaml"),
+						helper.DevfileMetadataNameSetter(componentName))
 					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 				})
 				It(fmt.Sprintf("should show the %s in odo describe component output", ctx.title), func() {

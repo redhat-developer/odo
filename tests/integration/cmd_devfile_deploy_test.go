@@ -19,8 +19,10 @@ import (
 var _ = Describe("odo devfile deploy command tests", func() {
 
 	var commonVar helper.CommonVar
+	var cmpName string
 
 	var _ = BeforeEach(func() {
+		cmpName = helper.RandString(6)
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
@@ -71,8 +73,10 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			deploymentName := "my-component"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfileName),
-					path.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", ctx.devfileName),
+					path.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
 				if ctx.setupFunc != nil {
 					ctx.setupFunc()
 				}
@@ -173,7 +177,10 @@ ComponentSettings:
 	When("using a devfile.yaml containing two deploy commands", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-two-deploy-commands.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-with-two-deploy-commands.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
 		})
 		It("should run odo deploy", func() {
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
@@ -191,7 +198,10 @@ ComponentSettings:
 	When("recording telemetry data", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
 			helper.EnableTelemetryDebug()
 			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 		})
@@ -264,7 +274,10 @@ ComponentSettings:
 		var resources []string
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-multiple-k8s-resources-in-single-component.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-multiple-k8s-resources-in-single-component.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
 			out = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			resources = []string{"Deployment/my-component", "Service/my-component-svc"}
 		})
@@ -295,7 +308,10 @@ ComponentSettings:
 		When("odo deploy is run", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-with-SB.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-with-SB.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 			})
 			It("should successfully deploy the ServiceBinding resource", func() {
@@ -312,9 +328,9 @@ ComponentSettings:
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs",
-					"issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"))
+				filepath.Join("source", "devfiles", "nodejs", "issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
 		})
 
 		for _, scope := range []struct {
@@ -366,8 +382,10 @@ ComponentSettings:
 
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
-					path.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+					path.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
 			})
 
 			When("remote server returns an error", func() {
