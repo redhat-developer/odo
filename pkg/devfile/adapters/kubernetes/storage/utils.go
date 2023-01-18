@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/devfile/library/pkg/devfile/generator"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	dfutil "github.com/devfile/library/pkg/util"
-
+	
+	"github.com/devfile/library/v2/pkg/devfile/generator"
+	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/v2/pkg/util"
+	
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/storage"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
-
+	
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"

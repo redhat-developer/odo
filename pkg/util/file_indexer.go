@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 

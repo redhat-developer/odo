@@ -21,17 +21,17 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
+	
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
 	gitignore "github.com/sabhiram/go-gitignore"
-
+	
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	dfutil "github.com/devfile/library/pkg/util"
-
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/v2/pkg/util"
+	
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
+	
 	"k8s.io/klog"
 )
 

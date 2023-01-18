@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/util"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

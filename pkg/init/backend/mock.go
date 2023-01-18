@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	parser "github.com/devfile/library/pkg/devfile/parser"
+	parser "github.com/devfile/library/v2/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/redhat-developer/odo/pkg/api"
 	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"

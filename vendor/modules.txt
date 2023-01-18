@@ -153,20 +153,22 @@ github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
 # github.com/devfile/library v1.2.1-0.20220602130922-85a4805bd59c
 ## explicit; go 1.15
-github.com/devfile/library/pkg/devfile
-github.com/devfile/library/pkg/devfile/generator
-github.com/devfile/library/pkg/devfile/parser
-github.com/devfile/library/pkg/devfile/parser/context
-github.com/devfile/library/pkg/devfile/parser/data
-github.com/devfile/library/pkg/devfile/parser/data/v2
-github.com/devfile/library/pkg/devfile/parser/data/v2/2.0.0
-github.com/devfile/library/pkg/devfile/parser/data/v2/2.1.0
-github.com/devfile/library/pkg/devfile/parser/data/v2/2.2.0
-github.com/devfile/library/pkg/devfile/parser/data/v2/common
-github.com/devfile/library/pkg/devfile/validate
-github.com/devfile/library/pkg/testingutil
-github.com/devfile/library/pkg/testingutil/filesystem
-github.com/devfile/library/pkg/util
+# github.com/devfile/library/v2 v2.2.1-0.20230118161058-0d04f791d801
+## explicit; go 1.15
+github.com/devfile/library/v2/pkg/devfile
+github.com/devfile/library/v2/pkg/devfile/generator
+github.com/devfile/library/v2/pkg/devfile/parser
+github.com/devfile/library/v2/pkg/devfile/parser/context
+github.com/devfile/library/v2/pkg/devfile/parser/data
+github.com/devfile/library/v2/pkg/devfile/parser/data/v2
+github.com/devfile/library/v2/pkg/devfile/parser/data/v2/2.0.0
+github.com/devfile/library/v2/pkg/devfile/parser/data/v2/2.1.0
+github.com/devfile/library/v2/pkg/devfile/parser/data/v2/2.2.0
+github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common
+github.com/devfile/library/v2/pkg/devfile/validate
+github.com/devfile/library/v2/pkg/testingutil
+github.com/devfile/library/v2/pkg/testingutil/filesystem
+github.com/devfile/library/v2/pkg/util
 # github.com/devfile/registry-support/index/generator v0.0.0-20221018203505-df96d34d4273
 ## explicit; go 1.14
 github.com/devfile/registry-support/index/generator/schema

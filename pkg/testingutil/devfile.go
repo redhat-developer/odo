@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
+	
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 )
 
 // GetFakeContainerComponent returns a fake container component for testing

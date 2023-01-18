@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-
-	"github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog"
-
+	
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 

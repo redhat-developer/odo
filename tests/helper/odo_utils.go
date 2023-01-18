@@ -7,7 +7,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 

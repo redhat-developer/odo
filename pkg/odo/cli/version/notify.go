@@ -6,7 +6,7 @@ import (
 
 	"github.com/blang/semver"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 )
 
 const (

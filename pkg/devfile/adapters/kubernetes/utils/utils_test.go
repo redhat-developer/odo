@@ -3,14 +3,14 @@ package utils
 import (
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
-
+	
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 	corev1 "k8s.io/api/core/v1"
 )
 

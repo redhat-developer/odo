@@ -5,7 +5,7 @@ import (
 	"context"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/devfile/registry-support/registry-library/library"
 	"github.com/redhat-developer/odo/pkg/api"
 )

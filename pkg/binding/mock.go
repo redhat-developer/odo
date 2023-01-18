@@ -7,7 +7,7 @@ package binding
 import (
 	reflect "reflect"
 
-	parser "github.com/devfile/library/pkg/devfile/parser"
+	parser "github.com/devfile/library/v2/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/redhat-developer/odo/pkg/api"
 	asker "github.com/redhat-developer/odo/pkg/binding/asker"

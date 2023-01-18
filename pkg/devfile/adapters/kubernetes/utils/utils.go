@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"

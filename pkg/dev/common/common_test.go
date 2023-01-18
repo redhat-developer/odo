@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/devfile/library/v2/pkg/devfile/generator"
 
 	corev1 "k8s.io/api/core/v1"
 )

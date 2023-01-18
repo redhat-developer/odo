@@ -3,10 +3,10 @@ package libdevfile
 import (
 	"fmt"
 	"testing"
-
+	
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 	"k8s.io/utils/pointer"
 )

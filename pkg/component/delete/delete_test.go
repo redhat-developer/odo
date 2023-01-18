@@ -5,9 +5,9 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/testingutil/filesystem"
+	
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/redhat-developer/odo/pkg/exec"

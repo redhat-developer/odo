@@ -3,7 +3,7 @@ package portForward
 import (
 	"io"
 
-	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 )
 
 type Client interface {

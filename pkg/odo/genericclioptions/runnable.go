@@ -13,7 +13,7 @@ import (
 
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
-	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 

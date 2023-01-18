@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	parser "github.com/devfile/library/pkg/devfile/parser"
+	parser "github.com/devfile/library/v2/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

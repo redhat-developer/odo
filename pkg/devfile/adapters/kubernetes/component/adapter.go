@@ -9,7 +9,7 @@ import (
 	"strings"
 	sync2 "sync"
 
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,13 +36,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
-
+	
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	dfutil "github.com/devfile/library/pkg/util"
-
+	"github.com/devfile/library/v2/pkg/devfile/generator"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/v2/pkg/util"
+	
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

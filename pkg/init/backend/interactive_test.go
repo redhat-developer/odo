@@ -3,21 +3,21 @@ package backend
 import (
 	"context"
 	"testing"
-
+	
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
-
+	
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil"
-
+	
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	parsercontext "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	parsercontext "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 )
 
 func TestInteractiveBackend_SelectDevfile(t *testing.T) {

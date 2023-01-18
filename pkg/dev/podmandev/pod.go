@@ -2,11 +2,11 @@ package podmandev
 
 import (
 	"fmt"
-
-	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-
+	
+	"github.com/devfile/library/v2/pkg/devfile/generator"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
-
+	
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )

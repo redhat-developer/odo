@@ -7,14 +7,14 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
-
+	
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/devfile/library/pkg/testingutil/filesystem"
-	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/v2/pkg/devfile"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	v12 "github.com/openshift/api/route/v1"
@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
+	
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"

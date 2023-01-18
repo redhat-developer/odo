@@ -7,13 +7,13 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
-
+	
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/v2/pkg/devfile"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"k8s.io/utils/pointer"
-
+	
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile/location"

@@ -8,7 +8,7 @@ import (
 	"net"
 	"time"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
 )

@@ -2,11 +2,11 @@ package binding
 
 import (
 	"testing"
-
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
 	"github.com/google/go-cmp/cmp"
-
+	
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 )
 

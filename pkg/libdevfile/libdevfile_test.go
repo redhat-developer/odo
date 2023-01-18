@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 	"testing"
-
+	
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
-	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+	devfileFileSystem "github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/pointer"
-
+	
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
