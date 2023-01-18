@@ -273,7 +273,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 	}
 
 	for remoteAttribute := range remoteDirectories {
-		matches, err := filepath.Glob(filepath.Join(directory, remoteAttribute))
+		path := globEscape(filepath.Join(directory, remoteAttribute))
+		matches, err := filepath.Glob(path)
 		if err != nil {
 			return IndexerRet{}, err
 		}
@@ -406,7 +407,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	klog.V(4).Infof("Corrected destinations: base: %s file: %s", pathOptions.destBase, pathOptions.destFile)
 
 	joinedPath := filepath.Join(pathOptions.srcBase, pathOptions.srcFile)
-	matchedPathsDir, err := filepath.Glob(joinedPath)
+	matchedPathsDir, err := filepath.Glob(globEscape(joinedPath))
 	if err != nil {
 		return IndexerRet{}, err
 	}
@@ -686,4 +687,19 @@ func findRemoteFolderForDeletion(currentRemote string, remoteDirectories map[str
 		currentRemote = filepath.ToSlash(filepath.Clean(filepath.Dir(currentRemote)))
 	}
 	return remoteDelete
+}
+
+// globEscape escapes characters *?[ so that they are
+// not included in any match expressions during a Glob.
+func globEscape(path string) string {
+	var sects []string
+	for _, ch := range path {
+		strCh := string(ch)
+		switch strCh {
+		case "*", "?", "[":
+			strCh = "[" + strCh + "]"
+		}
+		sects = append(sects, strCh)
+	}
+	return strings.Join(sects, "")
 }
