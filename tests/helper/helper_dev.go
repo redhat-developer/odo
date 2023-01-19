@@ -291,7 +291,7 @@ func DevModeShouldFail(options DevSessionOpts, substring string) (DevSession, []
 
 // getPorts returns a map of ports redirected depending on the information in s
 //
-//	`- Forwarding from 127.0.0.1:40001 -> 3000` will return { "3000": "127.0.0.1:40001" }
+//	`- Forwarding from 127.0.0.1:20001 -> 3000` will return { "3000": "127.0.0.1:20001" }
 func getPorts(s string) map[string]string {
 	result := map[string]string{}
 	re := regexp.MustCompile("(127.0.0.1:[0-9]+) -> ([0-9]+)")

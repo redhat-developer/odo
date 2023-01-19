@@ -95,7 +95,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.WaitEnd()
 				args := []string{"dev"}
 				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
-				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"3000": "127.0.0.1:40001", "5858": "127.0.0.1:40002"})
+				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"3000": "127.0.0.1:20001", "5858": "127.0.0.1:20002"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				file := "nodejs_odo_dev_output.mdx"
@@ -143,7 +143,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.WaitEnd()
 				args := []string{"dev"}
 				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
-				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001"})
+				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:20001"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				file := "go_odo_dev_output.mdx"
@@ -199,7 +199,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.WaitEnd()
 				args := []string{"dev"}
 				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
-				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001"})
+				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:20001"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				file := "dotnet_odo_dev_output.mdx"
@@ -247,7 +247,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.WaitEnd()
 				args := []string{"dev"}
 				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
-				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001", "5858": "127.0.0.1:40002"})
+				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:20001", "5858": "127.0.0.1:20002"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				file := "java_odo_dev_output.mdx"

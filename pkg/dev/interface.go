@@ -16,7 +16,7 @@ type StartOptions struct {
 	RunCommand string
 	// If DebugCommand is set, this will look up the specified debug command in the Devfile and execute it. Otherwise, it uses the default one.
 	DebugCommand string
-	// if RandomPorts is set, will port forward on random local ports, else uses ports starting at 40001
+	// if RandomPorts is set, will port forward on random local ports, else uses ports starting at 20001
 	RandomPorts bool
 	// if WatchFiles is set, files changes will trigger a new sync to the container
 	WatchFiles bool

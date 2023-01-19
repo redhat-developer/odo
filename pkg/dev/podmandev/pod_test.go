@@ -223,7 +223,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      40001,
+					HostPort:      20001,
 				})
 				return pod
 			},
@@ -232,7 +232,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     40001,
+					LocalPort:     20001,
 					ContainerPort: 8080,
 				},
 			},
@@ -266,7 +266,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      40001,
+					HostPort:      20001,
 				})
 				return pod
 			},
@@ -275,7 +275,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     40001,
+					LocalPort:     20001,
 					ContainerPort: 8080,
 				},
 			},
@@ -310,13 +310,13 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 8080,
 					Protocol:      "TCP",
-					HostPort:      40001,
+					HostPort:      20001,
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 5858,
 					Protocol:      "TCP",
-					HostPort:      40002,
+					HostPort:      20002,
 				})
 				return pod
 			},
@@ -325,14 +325,14 @@ func Test_createPodFromComponent(t *testing.T) {
 					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     40001,
+					LocalPort:     20001,
 					ContainerPort: 8080,
 				},
 				{
 					Platform:      "podman",
 					ContainerName: "mycomponent",
 					LocalAddress:  "127.0.0.1",
-					LocalPort:     40002,
+					LocalPort:     20002,
 					ContainerPort: 5858,
 				},
 			},
@@ -389,7 +389,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				tt.args.runCommand,
 				tt.args.debugCommand,
 				false,
-				[]int{40001, 40002},
+				[]int{20001, 20002},
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
