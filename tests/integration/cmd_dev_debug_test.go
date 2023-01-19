@@ -58,6 +58,10 @@ var _ = Describe("odo dev debug command tests", func() {
 					By("connecting to the application port", func() {
 						helper.HttpWaitForWithStatus("http://"+ports["3000"], "Hello from Node.js Starter Application!", 12, 5, 200)
 					})
+					if podman {
+						//TODO(rm3l): Remove this once https://github.com/redhat-developer/odo/issues/6510 is fixed
+						Skip("temporarily skipped on Podman because of https://github.com/redhat-developer/odo/issues/6510")
+					}
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 						// We are just using this to validate if nodejs agent is listening on the other side
