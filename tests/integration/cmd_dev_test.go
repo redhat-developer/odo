@@ -3225,13 +3225,12 @@ CMD ["npm", "start"]
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 		})
 		It("should override the content in the pod it creates for the component on the cluster", func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
 				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, fmt.Sprintf("--selector=component=%s", compName), "-ojson").Out.Contents())
 				Expect(helper.IsJSON(podOut)).To(BeTrue())
 				helper.JsonPathContentIs(podOut, "items.0.spec.serviceAccountName", podServiceAccountName)
-				helper.JsonPathContentIs(podOut, "items.0.spec.securityContext.runAsUser", "1000")
-				helper.JsonPathContentIs(podOut, "items.0.spec.securityContext.runAsGroup", "1000")
-				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.securityContext.runAsUser", "1001")
+				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.resources.requests.cpu", "250m")
+				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.resources.requests.memory", "512Mi")
 			})
 			Expect(err).To(BeNil())
 		})

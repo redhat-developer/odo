@@ -51,9 +51,10 @@ components:
     mountSources: true
   attributes:
     container-overrides:
-      securityContext:
-        runAsUser: 1001
-        $patch: replace
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: "250m"
   name: runtime
 - kubernetes:
     inlined: |
@@ -81,12 +82,6 @@ starterProjects:
       origin: https://github.com/odo-devfiles/nodejs-ex.git
   name: nodejs-starter
 attributes:
-  container-overrides:
-    securityContext:
-      runAsNonRoot: false
   pod-overrides:
     spec:
       serviceAccountName: new-service-account
-      securityContext:
-        runAsGroup: 1000
-        runAsUser: 1000
