@@ -3217,16 +3217,15 @@ CMD ["npm", "start"]
 	Context("Devfile contains pod-overrides and container-overrides attributes", func() {
 		const (
 			// hard coded from Devfile
-			compName              = "my-node-app"
 			podServiceAccountName = "new-service-account"
 		)
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
 		})
 		It("should override the content in the pod it creates for the component on the cluster", func() {
 			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
-				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, fmt.Sprintf("--selector=component=%s", compName), "-ojson").Out.Contents())
+				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, fmt.Sprintf("--selector=component=%s", cmpName), "-ojson").Out.Contents())
 				Expect(helper.IsJSON(podOut)).To(BeTrue())
 				helper.JsonPathContentIs(podOut, "items.0.spec.serviceAccountName", podServiceAccountName)
 				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.resources.requests.cpu", "250m")
