@@ -6,18 +6,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/utils/pointer"
-	
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/util"
-	
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	
+
 	odolog "github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/tests/helper"

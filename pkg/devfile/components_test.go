@@ -2,12 +2,12 @@ package devfile
 
 import (
 	"testing"
-	
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	
+
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
-	
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"

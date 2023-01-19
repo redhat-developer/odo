@@ -2,7 +2,7 @@ package libdevfile
 
 import (
 	"testing"
-	
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/attributes"
 	"github.com/devfile/api/v2/pkg/validation"
@@ -12,9 +12,9 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/google/go-cmp/cmp"
-	
+
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
-	
+
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/pointer"
 )

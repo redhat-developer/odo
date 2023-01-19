@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	
+
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
-	
+
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
@@ -17,12 +17,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
-	
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	
+
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	
+
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 )
 

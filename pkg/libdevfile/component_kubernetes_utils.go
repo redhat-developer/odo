@@ -3,7 +3,7 @@ package libdevfile
 import (
 	"bytes"
 	"io"
-	
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"

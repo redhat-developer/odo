@@ -3,15 +3,15 @@ package binding
 import (
 	"fmt"
 	"path/filepath"
-	
+
 	"k8s.io/klog"
-	
+
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
-	
+
 	"github.com/redhat-developer/odo/pkg/project"
-	
+
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	
+
 	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 

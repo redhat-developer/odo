@@ -6,13 +6,13 @@ import (
 	"io"
 	"reflect"
 	"time"
-	
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog"
-	
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"

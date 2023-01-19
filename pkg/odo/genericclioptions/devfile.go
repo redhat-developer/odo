@@ -2,7 +2,7 @@ package genericclioptions
 
 import (
 	"fmt"
-	
+
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/redhat-developer/odo/pkg/component"

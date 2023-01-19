@@ -3,10 +3,10 @@ package kclient
 import (
 	"fmt"
 	"testing"
-	
+
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/google/go-cmp/cmp"
-	
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
@@ -15,10 +15,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	
+
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
-	
+
 	ktesting "k8s.io/client-go/testing"
 )
 

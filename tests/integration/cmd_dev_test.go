@@ -3226,12 +3226,12 @@ CMD ["npm", "start"]
 		})
 		It("should override the content in the pod it creates for the component on the cluster", func() {
 			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, "--selector=component", compName, "-ojson").Out.Contents())
+				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, fmt.Sprintf("--selector=component=%s", compName), "-ojson").Out.Contents())
 				Expect(helper.IsJSON(podOut)).To(BeTrue())
-				helper.JsonPathContentIs(podOut, "spec.serviceAccountName", podServiceAccountName)
-				helper.JsonPathContentIs(podOut, "spec.securityContext.runAsUser", "1000")
-				helper.JsonPathContentIs(podOut, "spec.securityContext.runAsGroup", "1000")
-				helper.JsonPathContentIs(podOut, "spec.containers.0.securityContext.runAsUser", "1001")
+				helper.JsonPathContentIs(podOut, "items.0.spec.serviceAccountName", podServiceAccountName)
+				helper.JsonPathContentIs(podOut, "items.0.spec.securityContext.runAsUser", "1000")
+				helper.JsonPathContentIs(podOut, "items.0.spec.securityContext.runAsGroup", "1000")
+				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.securityContext.runAsUser", "1001")
 			})
 			Expect(err).To(BeNil())
 		})

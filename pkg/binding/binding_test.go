@@ -3,7 +3,7 @@ package binding
 import (
 	"fmt"
 	"testing"
-	
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	
+
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	"github.com/redhat-developer/odo/pkg/kclient"

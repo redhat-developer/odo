@@ -2,7 +2,7 @@ package storage
 
 import (
 	"testing"
-	
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/attributes"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
@@ -13,7 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	
+
 	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 

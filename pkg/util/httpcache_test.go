@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	
+
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	dfutil "github.com/devfile/library/v2/pkg/util"
 )

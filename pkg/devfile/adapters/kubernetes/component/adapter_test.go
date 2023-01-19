@@ -2,24 +2,24 @@ package component
 
 import (
 	"testing"
-	
+
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
-	
+
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
-	
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/testingutil"
-	
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
-	
+
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

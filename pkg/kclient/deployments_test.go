@@ -3,16 +3,16 @@ package kclient
 import (
 	"errors"
 	"testing"
-	
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/v2/pkg/testingutil"
-	
+
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
-	
+
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
