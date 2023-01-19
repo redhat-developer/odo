@@ -1997,21 +1997,32 @@ CMD ["npm", "start"]
 		}
 	}
 
-	When("running odo dev and prestart events are defined", func() {
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
-		})
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("running odo dev and prestart events are defined", helper.LabelPodmanIf(podman, func() {
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
+			})
 
-		It("should not correctly execute PreStart commands", func() {
-			output := helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
-			// This is expected to fail for now.
-			// see https://github.com/redhat-developer/odo/issues/4187 for more info
-			helper.MatchAllInOutput(output, []string{"myprestart should either map to an apply command or a composite command with apply commands\n"})
-		})
-	})
+			It("should not correctly execute PreStart commands", func() {
+				args := []string{"dev", "--random-ports"}
+				if podman {
+					args = append(args, "--platform", "podman")
+				}
+				cmd := helper.Cmd("odo", args...)
+				if podman {
+					cmd = cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
+				}
+				output := cmd.ShouldFail().Err()
+				// This is expected to fail for now.
+				// see https://github.com/redhat-developer/odo/issues/4187 for more info
+				helper.MatchAllInOutput(output, []string{"myprestart should either map to an apply command or a composite command with apply commands\n"})
+			})
+		}))
+	}
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
@@ -2551,6 +2562,7 @@ CMD ["npm", "start"]
 		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
 			//TODO Not implemented yet on Podman
 			var session helper.DevSession
+			var devStarted bool
 			BeforeEach(func() {
 				if podman {
 					Skip("not implemented yet on Podman - see #6492")
@@ -2569,10 +2581,13 @@ CMD ["npm", "start"]
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
+				devStarted = true
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				if devStarted {
+					session.Stop()
+					session.WaitEnd()
+				}
 			})
 
 			It("should sync only the mentioned files at the appropriate remote destination", func() {
