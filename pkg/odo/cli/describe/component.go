@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -201,6 +203,7 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 		// Display RunningOn field only if the feature is enabled
 		cmp.RunningOn = nil
 	}
+
 	return cmp, &devfile, nil
 }
 
@@ -306,7 +309,28 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		// Display RunningOn field only if the feature is enabled
 		cmp.RunningOn = nil
 	}
+	updateWithRemoteSourceLocation(&cmp)
 	return cmp, devfileObj, err
+}
+
+func updateWithRemoteSourceLocation(cmp *api.Component) {
+	components, err := cmp.DevfileData.Devfile.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return
+	}
+	for _, comp := range components {
+		if comp.Container.GetMountSources() {
+			if comp.Container.SourceMapping == "" {
+				comp.Container.SourceMapping = generator.DevfileSourceVolumeMount
+				err = cmp.DevfileData.Devfile.UpdateComponent(comp)
+				if err != nil {
+					klog.V(2).Infof("error occurred while updating the component %s; cause: %s", comp.Name, err)
+				}
+			}
+		}
+	}
 }
 
 func getRunningOn(ctx context.Context, n string, kubeClient kclient.ClientInterface, podmanClient podman.Client) (map[string]api.RunningModes, error) {
@@ -443,7 +467,11 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 	}
 	log.Info(title)
 	for _, container := range containers {
-		log.Printf("%s", container.Name)
+		printmsg := container.Name
+		if container.Container != nil && container.Container.GetMountSources() {
+			printmsg += fmt.Sprintf("\n    Source Mapping: %s", container.Container.SourceMapping)
+		}
+		log.Printf(printmsg)
 	}
 	fmt.Println()
 	return nil
