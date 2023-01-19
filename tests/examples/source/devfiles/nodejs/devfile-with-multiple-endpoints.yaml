@@ -43,6 +43,12 @@ components:
     - name: http-7890
       targetPort: 7890
       exposure: none
+    - name: debug
+      targetPort: 5005
+      exposure: none
+    - name: debug-1
+      targetPort: 5006
+      exposure: none
     image: registry.access.redhat.com/ubi8/nodejs-14:latest
     memoryLimit: 1024Mi
     mountSources: true

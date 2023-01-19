@@ -589,7 +589,8 @@ func TestBuild(t *testing.T) {
 
 func TestGetContainerEndpointMapping(t *testing.T) {
 	type args struct {
-		containers []v1alpha2.Component
+		containers   []v1alpha2.Component
+		includeDebug bool
 	}
 
 	imageComponent := generator.GetImageComponent(generator.ImageComponentParams{
@@ -626,13 +627,71 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 		},
 	})
 
-	containerWithOneNoneInternalEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
+	containerWithOneNoneDebugEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
 		Name: "container-none-endpoint",
 		Endpoints: []v1alpha2.Endpoint{
 			{
 				Name:       "debug",
 				TargetPort: 9099,
 				Exposure:   v1alpha2.NoneEndpointExposure,
+			},
+		},
+	})
+	multiportContainer1 := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name: "container-multiple-endpoints-1",
+		Endpoints: []v1alpha2.Endpoint{
+			{
+				Name:       "http-3000",
+				TargetPort: 3000,
+				Exposure:   v1alpha2.PublicEndpointExposure,
+			},
+			{
+				Name:       "http-8888",
+				TargetPort: 8888,
+				Exposure:   v1alpha2.InternalEndpointExposure,
+			},
+			{
+				Name:       "debug",
+				TargetPort: 5005,
+				Exposure:   v1alpha2.NoneEndpointExposure,
+			},
+			{
+				Name:       "debug-udp",
+				TargetPort: 15005,
+				Exposure:   v1alpha2.NoneEndpointExposure,
+				Protocol:   v1alpha2.UDPEndpointProtocol,
+			},
+			{
+				Name:       "debug-ws",
+				TargetPort: 25005,
+				Exposure:   v1alpha2.NoneEndpointExposure,
+				Protocol:   v1alpha2.WSEndpointProtocol,
+			},
+		},
+	})
+	multiportContainer2 := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name: "container-multiple-endpoints-2",
+		Endpoints: []v1alpha2.Endpoint{
+			{
+				Name:       "http-8080",
+				TargetPort: 8080,
+				Exposure:   v1alpha2.PublicEndpointExposure,
+			},
+			{
+				Name:       "http-9100",
+				TargetPort: 9100,
+				Exposure:   v1alpha2.InternalEndpointExposure,
+			},
+			{
+				Name:       "debug",
+				TargetPort: 18080,
+				Exposure:   v1alpha2.NoneEndpointExposure,
+			},
+			{
+				Name:       "debug-udp",
+				TargetPort: 19100,
+				Exposure:   v1alpha2.NoneEndpointExposure,
+				Protocol:   v1alpha2.UDPEndpointProtocol,
 			},
 		},
 	})
@@ -657,42 +716,83 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 			want: map[string][]int{},
 		},
 		{
-			name: "multiple containers with varying types of endpoints",
+			name: "multiple containers with varying types of endpoints - without debug",
 			args: args{
 				containers: []v1alpha2.Component{
 					containerWithNoEndpoints,
 					containerWithOnePublicEndpoint,
 					containerWithOneInternalEndpoint,
-					containerWithOneNoneInternalEndpoint,
+					containerWithOneNoneDebugEndpoint,
+					multiportContainer1,
+					multiportContainer2,
 				},
 			},
 			want: map[string][]int{
-				containerWithOnePublicEndpoint.Name:       {8080},
-				containerWithOneInternalEndpoint.Name:     {9090},
-				containerWithOneNoneInternalEndpoint.Name: {9099},
+				containerWithOnePublicEndpoint.Name:   {8080},
+				containerWithOneInternalEndpoint.Name: {9090},
+				multiportContainer1.Name:              {3000, 8888},
+				multiportContainer2.Name:              {8080, 9100},
 			},
 		},
 		{
-			name: "invalid input - one image component with rest being containers",
+			name: "multiple containers with varying types of endpoints - with debug",
 			args: args{
 				containers: []v1alpha2.Component{
 					containerWithNoEndpoints,
 					containerWithOnePublicEndpoint,
 					containerWithOneInternalEndpoint,
-					containerWithOneNoneInternalEndpoint,
+					containerWithOneNoneDebugEndpoint,
+					multiportContainer1,
+					multiportContainer2,
+				},
+				includeDebug: true,
+			},
+			want: map[string][]int{
+				containerWithOnePublicEndpoint.Name:    {8080},
+				containerWithOneInternalEndpoint.Name:  {9090},
+				containerWithOneNoneDebugEndpoint.Name: {9099},
+				multiportContainer1.Name:               {3000, 8888, 5005, 15005, 25005},
+				multiportContainer2.Name:               {8080, 9100, 18080, 19100},
+			},
+		},
+		{
+			name: "invalid input - one image component with rest being containers - without debug",
+			args: args{
+				containers: []v1alpha2.Component{
+					containerWithNoEndpoints,
+					containerWithOnePublicEndpoint,
+					containerWithOneInternalEndpoint,
+					containerWithOneNoneDebugEndpoint,
 					imageComponent,
 				},
 			},
 			want: map[string][]int{
-				containerWithOnePublicEndpoint.Name:       {8080},
-				containerWithOneInternalEndpoint.Name:     {9090},
-				containerWithOneNoneInternalEndpoint.Name: {9099},
+				containerWithOnePublicEndpoint.Name:   {8080},
+				containerWithOneInternalEndpoint.Name: {9090},
+			},
+		},
+		{
+			name: "invalid input - one image component with rest being containers - with debug",
+			args: args{
+				containers: []v1alpha2.Component{
+					containerWithNoEndpoints,
+					containerWithOnePublicEndpoint,
+					containerWithOneInternalEndpoint,
+					containerWithOneNoneDebugEndpoint,
+					imageComponent,
+				},
+				includeDebug: true,
+			},
+			want: map[string][]int{
+				containerWithOnePublicEndpoint.Name:    {8080},
+				containerWithOneInternalEndpoint.Name:  {9090},
+				containerWithOneNoneDebugEndpoint.Name: {9099},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GetContainerEndpointMapping(tt.args.containers)
+			got := GetContainerEndpointMapping(tt.args.containers, tt.args.includeDebug)
 
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("GetContainerEndpointMapping() mismatch (-want +got):\n%s", diff)

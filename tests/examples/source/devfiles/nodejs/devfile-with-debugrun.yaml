@@ -14,8 +14,9 @@ components:
       endpoints:
         - name: "3000-tcp"
           targetPort: 3000
-        - name: "5858-tcp"
+        - name: "debug"
           targetPort: 5858
+          exposure: none
       env:
       - name: DEBUG_PORT_PROJECT
         value: "5858"

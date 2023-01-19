@@ -14,6 +14,7 @@ type Client interface {
 	StartPortForwarding(
 		devFileObj parser.DevfileObj,
 		componenentName string,
+		debug bool,
 		randomPorts bool,
 		errOut io.Writer,
 	) error
@@ -24,6 +25,7 @@ type Client interface {
 	// GetForwardedPorts returns the list of ports for each containers currently forwarded
 	GetForwardedPorts() map[string][]int
 
-	// GetPortsToForward returns the endpoints to forward from the Devfile
-	GetPortsToForward(devFileObj parser.DevfileObj) (map[string][]int, error)
+	// GetPortsToForward returns the endpoints to forward from the Devfile.
+	// Debug ports will be included only if includeDebug is true.
+	GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]int, error)
 }

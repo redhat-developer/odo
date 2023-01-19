@@ -155,6 +155,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		*devfileObj,
 		componentName,
 		appName,
+		options.Debug,
 		options.BuildCommand,
 		options.RunCommand,
 		"",

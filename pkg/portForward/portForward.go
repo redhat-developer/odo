@@ -50,11 +50,12 @@ func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Cli
 func (o *PFClient) StartPortForwarding(
 	devFileObj parser.DevfileObj,
 	componentName string,
+	debug bool,
 	randomPorts bool,
 	errOut io.Writer,
 ) error {
 
-	ceMapping, err := o.GetPortsToForward(devFileObj)
+	ceMapping, err := o.GetPortsToForward(devFileObj, debug)
 	if err != nil {
 		return err
 	}
@@ -168,7 +169,7 @@ func (o *PFClient) GetForwardedPorts() map[string][]int {
 	return o.appliedEndpoints
 }
 
-func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj) (map[string][]int, error) {
+func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]int, error) {
 
 	// get the endpoint/port information for containers in devfile
 	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
@@ -177,7 +178,7 @@ func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj) (map[string][
 	if err != nil {
 		return nil, err
 	}
-	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
+	ceMapping := libdevfile.GetContainerEndpointMapping(containers, includeDebug)
 	return ceMapping, nil
 }
 

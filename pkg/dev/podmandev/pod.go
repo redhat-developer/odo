@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -23,6 +24,7 @@ func createPodFromComponent(
 	devfileObj parser.DevfileObj,
 	componentName string,
 	appName string,
+	debug bool,
 	buildCommand string,
 	runCommand string,
 	debugCommand string,
@@ -43,7 +45,7 @@ func createPodFromComponent(
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	fwPorts := addHostPorts(containers, usedPorts)
+	fwPorts := addHostPorts(containers, debug, usedPorts)
 
 	volumes := []corev1.Volume{
 		{
@@ -109,12 +111,19 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func addHostPorts(containers []corev1.Container, usedPorts []int) []api.ForwardedPort {
+func addHostPorts(containers []corev1.Container, debug bool, usedPorts []int) []api.ForwardedPort {
 	var result []api.ForwardedPort
 	startPort := 40001
 	endPort := startPort + 10000
 	for i := range containers {
-		for j := range containers[i].Ports {
+		var ports []corev1.ContainerPort
+		for _, port := range containers[i].Ports {
+			portName := port.Name
+			if !debug && libdevfile.IsDebugPort(portName) {
+				klog.V(4).Infof("not running in Debug mode, so skipping container Debug port: %v:%v:%v",
+					containers[i].Name, portName, port.ContainerPort)
+				continue
+			}
 			freePort, err := util.NextFreePort(startPort, endPort, usedPorts)
 			if err != nil {
 				klog.Infof("%s", err)
@@ -125,11 +134,13 @@ func addHostPorts(containers []corev1.Container, usedPorts []int) []api.Forwarde
 				ContainerName: containers[i].Name,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,
-				ContainerPort: int(containers[i].Ports[j].ContainerPort),
+				ContainerPort: int(port.ContainerPort),
 			})
-			containers[i].Ports[j].HostPort = int32(freePort)
+			port.HostPort = int32(freePort)
+			ports = append(ports, port)
 			startPort = freePort + 1
 		}
+		containers[i].Ports = ports
 	}
 	return result
 }

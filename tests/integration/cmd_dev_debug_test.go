@@ -28,42 +28,56 @@ var _ = Describe("odo dev debug command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("a component is bootstrapped", func() {
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
-			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
-		})
-
-		When("running odo dev with debug flag", func() {
-			var devSession helper.DevSession
-			var ports map[string]string
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("a component is bootstrapped", func() {
 			BeforeEach(func() {
-				var err error
-				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
-					CmdlineArgs: []string{"--debug"},
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
+				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+			})
+
+			When("running odo dev with debug flag", helper.LabelPodmanIf(podman, func() {
+				var devSession helper.DevSession
+				var ports map[string]string
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs: []string{"--debug"},
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
 				})
-				Expect(err).ToNot(HaveOccurred())
-			})
 
-			AfterEach(func() {
-				devSession.Kill()
-				devSession.WaitEnd()
-			})
-			It("should expect a ws connection when tried to connect on default debug port locally", func() {
-				// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
-				// We are just using this to validate if nodejs agent is listening on the other side
-				helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
-			})
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
 
-			// #6056
-			It("should not add a DEBUG_PORT variable to the container", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				stdout := commonVar.CliRunner.Exec(podName, commonVar.Project, "--", "sh", "-c", "echo -n ${DEBUG_PORT}")
-				Expect(stdout).To(BeEmpty())
-			})
+				It("should connect to relevant ports forwarded", func() {
+					By("connecting to the application port", func() {
+						helper.HttpWaitForWithStatus("http://"+ports["3000"], "Hello from Node.js Starter Application!", 12, 5, 200)
+					})
+					if podman {
+						//TODO(rm3l): Remove this once https://github.com/redhat-developer/odo/issues/6510 is fixed
+						Skip("temporarily skipped on Podman because of https://github.com/redhat-developer/odo/issues/6510")
+					}
+					By("expecting a ws connection when tried to connect on default debug port locally", func() {
+						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+						// We are just using this to validate if nodejs agent is listening on the other side
+						helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
+					})
+				})
+
+				// #6056
+				It("should not add a DEBUG_PORT variable to the container", func() {
+					cmp := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
+					stdout := cmp.Exec("runtime", "sh", "-c", "echo -n ${DEBUG_PORT}")
+					Expect(stdout).To(BeEmpty())
+				})
+			}))
 		})
-	})
+	}
 
 	for _, devfileHandlerCtx := range []struct {
 		name          string
