@@ -41,16 +41,18 @@ var _ = Describe("User guides: Quickstart test", func() {
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
 			By("checking the output for namespace", func() {
-				want := helper.GetMDXContent(filepath.Join(commonPath, "create_namespace_output.mdx"))
+				file := "create_namespace_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 			By("checking the output for project", func() {
 				got = strings.ReplaceAll(got, "namespace", "project")
 				got = strings.ReplaceAll(got, "Namespace", "Project")
-				want := helper.GetMDXContent(filepath.Join(commonPath, "create_project_output.mdx"))
+				file := "create_project_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 		})
 	})
@@ -81,9 +83,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got := helper.StripAnsi(out)
 				got = helper.StripInteractiveQuestion(got)
 				got = fmt.Sprintf(outputStringFormat, "init", helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonNodeJSPath, "nodejs_odo_init_output.mdx"))
+				file := "nodejs_odo_init_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonNodeJSPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 			By("running odo dev", func() {
 				session, out, _, cmdEndpointsMap, err := helper.StartDevMode(helper.DevSessionOpts{})
@@ -95,9 +98,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"3000": "127.0.0.1:40001", "5858": "127.0.0.1:40002"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonNodeJSPath, "nodejs_odo_dev_output.mdx"))
+				file := "nodejs_odo_dev_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonNodeJSPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 		})
 	})
@@ -127,9 +131,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got := helper.StripAnsi(out)
 				got = helper.StripInteractiveQuestion(got)
 				got = fmt.Sprintf(outputStringFormat, "init", helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonGoPath, "go_odo_init_output.mdx"))
+				file := "go_odo_init_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonGoPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 			By("running odo dev", func() {
 				session, out, _, cmdEndpointsMap, err := helper.StartDevMode(helper.DevSessionOpts{})
@@ -141,9 +146,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonGoPath, "go_odo_dev_output.mdx"))
+				file := "go_odo_dev_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonGoPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 		})
 	})
@@ -181,9 +187,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got = helper.StripInteractiveQuestion(got)
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, "init", helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commondotnetPath, "dotnet_odo_init_output.mdx"))
+				file := "dotnet_odo_init_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commondotnetPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 			By("running odo dev", func() {
 				session, out, _, cmdEndpointsMap, err := helper.StartDevMode(helper.DevSessionOpts{})
@@ -195,9 +202,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commondotnetPath, "dotnet_odo_dev_output.mdx"))
+				file := "dotnet_odo_dev_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commondotnetPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 		})
 	})
@@ -211,16 +219,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				args := []string{"odo", "init"}
 				out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Is this correct?")
-					helper.SendLine(ctx, "No")
-
-					helper.ExpectString(ctx, "Select language")
-					helper.SendLine(ctx, "Java")
-
-					helper.ExpectString(ctx, "Select project type")
-					helper.SendLine(ctx, "Spring")
-
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
+					helper.SendLine(ctx, "Yes")
 
 					helper.ExpectString(ctx, "✓  Downloading devfile \"java-springboot:1.2.0\" from registry \"DefaultDevfileRegistry\"")
 
@@ -236,9 +235,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got := helper.StripAnsi(out)
 				got = helper.StripInteractiveQuestion(got)
 				got = fmt.Sprintf(outputStringFormat, "init", helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonGoPath, "java_odo_init_output.mdx"))
+				file := "java_odo_init_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonGoPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 			By("running odo dev", func() {
 				session, out, _, cmdEndpointsMap, err := helper.StartDevMode(helper.DevSessionOpts{TimeoutInSeconds: 420})
@@ -250,9 +250,10 @@ var _ = Describe("User guides: Quickstart test", func() {
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001", "5858": "127.0.0.1:40002"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonGoPath, "java_odo_dev_output.mdx"))
+				file := "java_odo_dev_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonGoPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 		})
 	})
