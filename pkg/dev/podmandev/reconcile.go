@@ -99,7 +99,7 @@ func (o *DevClient) reconcile(
 		cmdHandler := commandHandler{
 			execClient:      o.execClient,
 			platformClient:  o.podmanClient,
-			componentExists: true, // TODO
+			componentExists: componentStatus.RunExecuted,
 			podName:         pod.Name,
 			appName:         appName,
 			componentName:   componentName,
@@ -108,6 +108,7 @@ func (o *DevClient) reconcile(
 		if err != nil {
 			return err
 		}
+		componentStatus.RunExecuted = true
 	}
 
 	for _, fwPort := range fwPorts {

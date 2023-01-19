@@ -16,7 +16,10 @@ const (
 type ComponentStatus struct {
 	State               State
 	PostStartEventsDone bool
-	EndpointsForwarded  map[string][]int
+	// RunExecuted is set to true when the run command has been executed
+	// Used for HotReload capability
+	RunExecuted        bool
+	EndpointsForwarded map[string][]int
 }
 
 func componentCanSyncFile(state State) bool {
