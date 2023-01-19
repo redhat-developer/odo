@@ -204,7 +204,7 @@ test-integration-no-cluster:
 
 .PHONY: test-integration-podman
 test-integration-podman:
-	$(RUN_GINKGO) $(GINKGO_FLAGS_AUTO)  --junit-report="test-integration-podman.xml" --label-filter=podman tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS_ONE)  --junit-report="test-integration-podman.xml" --label-filter=podman tests/integration
 
 .PHONY: test-integration
 test-integration: test-integration-no-cluster test-integration-cluster
