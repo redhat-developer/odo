@@ -2457,7 +2457,7 @@ CMD ["npm", "start"]
 			var session helper.DevSession
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"),
+					filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
 					helper.DevfileMetadataNameSetter(cmpName))
 				var err error
