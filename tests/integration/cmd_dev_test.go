@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -2093,32 +2094,41 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("setting git config and running odo dev", func() {
-		remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.Cmd("git", "init").ShouldPass()
-			remote := "origin"
-			helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-		})
-
-		It("should create vcs-uri annotation for the deployment when running odo dev", func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-				annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
-				var valueFound bool
-				for key, value := range annotations {
-					if key == "app.openshift.io/vcs-uri" && value == remoteURL {
-						valueFound = true
-						break
-					}
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("setting git config and running odo dev", func() {
+			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
+			devfileCmpName := "nodejs"
+			BeforeEach(func() {
+				if podman {
+					Skip("Not implemented yet on Podman - see https://github.com/redhat-developer/odo/issues/6493")
 				}
-				Expect(valueFound).To(BeTrue())
+				helper.Cmd("git", "init").ShouldPass()
+				remote := "origin"
+				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			})
-			Expect(err).ToNot(HaveOccurred())
+
+			It("should create vcs-uri annotation for the deployment when running odo dev",
+				helper.LabelPodmanIf(podman, func() {
+					err := helper.RunDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+						annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
+						var valueFound bool
+						for key, value := range annotations {
+							if key == "app.openshift.io/vcs-uri" && value == remoteURL {
+								valueFound = true
+								break
+							}
+						}
+						Expect(valueFound).To(BeTrue())
+					})
+					Expect(err).ToNot(HaveOccurred())
+				}))
 		})
-	})
+	}
 
 	for _, devfileHandlerCtx := range []struct {
 		name          string
@@ -2331,181 +2341,205 @@ CMD ["npm", "start"]
 	}
 
 	// Tests https://github.com/redhat-developer/odo/issues/3838
-	When("java-springboot application is created and running odo dev", func() {
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			var err error
-			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-				CmdlineArgs: []string{"-v", "4"},
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		When("Update the devfile.yaml", func() {
-
+	for _, podman := range []bool{true, false} {
+		podman := podman
+		When("java-springboot application is created and running odo dev", helper.LabelPodmanIf(podman, func() {
+			var session helper.DevSession
+			var component helper.Component
 			BeforeEach(func() {
-				helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 767Mi")
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+				component = helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 				var err error
-				_, _, _, err = session.WaitSync()
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					CmdlineArgs: []string{"-v", "4"},
+					RunOnPodman: podman,
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
-
-			It("Should build the application successfully", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				podLogs := commonVar.CliRunner.Run("-n", commonVar.Project, "logs", podName).Out.Contents()
-				Expect(string(podLogs)).To(ContainSubstring("BUILD SUCCESS"))
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
 			})
 
-			When("compare the local and remote files", func() {
-
-				remoteFiles := []string{}
-				localFiles := []string{}
+			When("Update the devfile.yaml", func() {
 
 				BeforeEach(func() {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, podName)
-					output := commonVar.CliRunner.Exec(podName, commonVar.Project, "find", "/projects")
-					outputArr := strings.Split(output, "\n")
-					for _, line := range outputArr {
-
-						if !strings.HasPrefix(line, "/projects"+"/") || strings.Contains(line, "lost+found") {
-							continue
-						}
-
-						newLine, err := filepath.Rel("/projects", line)
-						Expect(err).ToNot(HaveOccurred())
-
-						newLine = filepath.ToSlash(newLine)
-						if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
-							continue
-						}
-
-						remoteFiles = append(remoteFiles, newLine)
-					}
-
-					// 5) Acquire file from local context, filtering out .*
-					err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-						if err != nil {
-							return err
-						}
-
-						newPath := filepath.ToSlash(path)
-
-						if strings.HasPrefix(newPath, ".") {
-							return nil
-						}
-
-						localFiles = append(localFiles, newPath)
-						return nil
-					})
+					helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 767Mi")
+					var err error
+					_, _, _, err = session.WaitSync()
 					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("localFiles and remoteFiles should match", func() {
-					sort.Strings(localFiles)
-					sort.Strings(remoteFiles)
-					Expect(localFiles).To(Equal(remoteFiles))
+				It("Should build the application successfully", func() {
+					podLogs := component.GetPodLogs()
+					Expect(podLogs).To(ContainSubstring("BUILD SUCCESS"))
+				})
+
+				When("compare the local and remote files", func() {
+
+					remoteFiles := []string{}
+					localFiles := []string{}
+
+					BeforeEach(func() {
+						// commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, podName)
+						output := component.Exec("tools", "find", "/projects")
+
+						outputArr := []string{}
+						sc := bufio.NewScanner(strings.NewReader(output))
+						for sc.Scan() {
+							outputArr = append(outputArr, sc.Text())
+						}
+
+						for _, line := range outputArr {
+
+							if !strings.HasPrefix(line, "/projects"+"/") || strings.Contains(line, "lost+found") {
+								continue
+							}
+
+							newLine, err := filepath.Rel("/projects", line)
+							Expect(err).ToNot(HaveOccurred())
+
+							newLine = filepath.ToSlash(newLine)
+							if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
+								continue
+							}
+
+							remoteFiles = append(remoteFiles, newLine)
+						}
+
+						// 5) Acquire file from local context, filtering out .*
+						err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+							if err != nil {
+								return err
+							}
+
+							newPath := filepath.ToSlash(path)
+
+							if strings.HasPrefix(newPath, ".") {
+								return nil
+							}
+
+							localFiles = append(localFiles, newPath)
+							return nil
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("localFiles and remoteFiles should match", func() {
+						sort.Strings(localFiles)
+						sort.Strings(remoteFiles)
+						Expect(localFiles).To(Equal(remoteFiles))
+					})
 				})
 			})
-		})
-	})
+		}))
+	}
 
-	When("node-js application is created and deployed with devfile schema 2.2.0", func() {
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("node-js application is created and deployed with devfile schema 2.2.0", helper.LabelPodmanIf(podman, func() {
 
-		ensureResource := func(cpulimit, cpurequest, memoryrequest string) {
-			By("check for cpuLimit", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").Out.Contents()
-				output := string(bufferOutput)
-				Expect(output).To(ContainSubstring(cpulimit))
-			})
+			ensureResource := func(memorylimit, memoryrequest string) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				podDef := component.GetPodDef()
 
-			By("check for cpuRequests", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").Out.Contents()
-				output := string(bufferOutput)
-				Expect(output).To(ContainSubstring(cpurequest))
-			})
+				By("check for memoryLimit", func() {
+					memVal := podDef.Spec.Containers[0].Resources.Limits.Memory().String()
+					Expect(memVal).To(Equal(memorylimit))
+				})
 
-			By("check for memoryRequests", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
-				output := string(bufferOutput)
-				Expect(output).To(ContainSubstring(memoryrequest))
-			})
-		}
+				if !podman {
+					// Resource Requests are not returned by podman generate kube (as of podman v4.3.1)
+					// TODO(feloy) are they taken into account?
 
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			var err error
-			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
+					By("check for memoryRequests", func() {
+						memVal := podDef.Spec.Containers[0].Resources.Requests.Memory().String()
+						Expect(memVal).To(Equal(memoryrequest))
+					})
+				}
+			}
 
-		It("should check cpuLimit, cpuRequests, memoryRequests", func() {
-			ensureResource("1", "200m", "512Mi")
-		})
-
-		When("Update the devfile.yaml, and waiting synchronization", func() {
-
+			var session helper.DevSession
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"),
+					filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
 					helper.DevfileMetadataNameSetter(cmpName))
 				var err error
-				_, _, _, err = session.WaitSync()
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
-
-			It("should check cpuLimit, cpuRequests, memoryRequests after restart", func() {
-				ensureResource("700m", "250m", "550Mi")
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
 			})
-		})
-	})
 
-	When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", func() {
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			It("should check memory Request and Limit", func() {
+				ensureResource("1Gi", "512Mi")
+			})
 
-			// create a folder and file which shouldn't be pushed
-			helper.MakeDir(filepath.Join(commonVar.Context, "views"))
-			_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
+			if !podman {
+				When("Update the devfile.yaml, and waiting synchronization", func() {
 
-			helper.ReplaceString("package.json", "node server.js", "node server/server.js")
-			var err error
-			session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
+					BeforeEach(func() {
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+						var err error
+						_, _, _, err = session.WaitSync()
+						Expect(err).ToNot(HaveOccurred())
+					})
 
-		It("should sync only the mentioned files at the appropriate remote destination", func() {
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-			stdOut := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-			helper.MatchAllInOutput(stdOut, []string{"package.json", "server"})
-			helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
+					It("should check cpuLimit, cpuRequests, memoryRequests after restart", func() {
+						ensureResource("1028Mi", "550Mi")
+					})
+				})
+			}
+		}))
+	}
 
-			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/server")
-			helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
-		})
-	})
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
+			//TODO Not implemented yet on Podman
+			var session helper.DevSession
+			BeforeEach(func() {
+				if podman {
+					Skip("not implemented yet on Podman - see #6492")
+				}
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
+					helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+
+				// create a folder and file which shouldn't be pushed
+				helper.MakeDir(filepath.Join(commonVar.Context, "views"))
+				_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
+
+				helper.ReplaceString("package.json", "node server.js", "node server/server.js")
+				var err error
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should sync only the mentioned files at the appropriate remote destination", func() {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				stdOut := component.Exec("runtime", "ls", "-lai", "/projects")
+
+				helper.MatchAllInOutput(stdOut, []string{"package.json", "server"})
+				helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
+
+				stdOut = component.Exec("runtime", "ls", "-lai", "/projects/server")
+				helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
+			})
+		}))
+	}
 
 	Context("using Kubernetes cluster", func() {
 		BeforeEach(func() {

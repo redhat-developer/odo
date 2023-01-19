@@ -14,8 +14,6 @@ components:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       memoryRequest: 512Mi
-      cpuLimit: '1'
-      cpuRequest: 200m
       endpoints:
         - name: "3000-tcp"
           targetPort: 3000

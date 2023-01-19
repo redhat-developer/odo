@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/redhat-developer/odo/pkg/labels"
 )
 
@@ -57,4 +59,18 @@ func (o *ClusterComponent) GetLabels() map[string]string {
 	Expect(err).ToNot(HaveOccurred())
 
 	return result
+}
+
+func (o *ClusterComponent) GetPodDef() *corev1.Pod {
+	var podDef corev1.Pod
+	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
+	bufferOutput := o.cli.Run("get", "pods", podName, "-o", "json").Out.Contents()
+	err := json.Unmarshal(bufferOutput, &podDef)
+	Expect(err).ToNot(HaveOccurred())
+	return &podDef
+}
+
+func (o *ClusterComponent) GetPodLogs() string {
+	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
+	return string(o.cli.Run("-n", o.namespace, "logs", podName).Out.Contents())
 }

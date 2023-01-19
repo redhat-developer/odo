@@ -82,7 +82,8 @@ func splitLines(str string) map[string]string {
 	return result
 }
 
-func GetPodDef(podname string) *corev1.Pod {
+func (o *PodmanComponent) GetPodDef() *corev1.Pod {
+	podname := fmt.Sprintf("%s-%s", o.componentName, o.app)
 	serializer := jsonserializer.NewSerializerWithOptions(
 		jsonserializer.SimpleMetaFactory{},
 		scheme.Scheme,
@@ -118,4 +119,17 @@ func (o *PodmanComponent) GetLabels() map[string]string {
 	Expect(err).ToNot(HaveOccurred())
 
 	return result.Labels
+}
+
+func (o *PodmanComponent) GetPodLogs() string {
+	podName := fmt.Sprintf("%s-%s", o.componentName, o.app)
+	cmd := exec.Command("podman", "pod", "logs", podName)
+	stdout, err := cmd.Output()
+	Expect(err).ToNot(HaveOccurred(), func() {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		fmt.Fprintln(ginkgo.GinkgoWriter, err)
+	})
+	return string(stdout)
 }
