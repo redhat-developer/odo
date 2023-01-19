@@ -653,7 +653,7 @@ var _ = Describe("odo describe component command tests", func() {
 					var devSession helper.DevSession
 					BeforeEach(func() {
 						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-						helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfile)).ShouldPass()
+						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfile)).ShouldPass()
 						var err error
 						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{RunOnPodman: podman})
 						Expect(err).ToNot(HaveOccurred())
