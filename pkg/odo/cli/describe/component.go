@@ -321,7 +321,7 @@ func updateWithRemoteSourceLocation(cmp *api.Component) {
 		return
 	}
 	for _, comp := range components {
-		if *comp.Container.MountSources {
+		if comp.Container.GetMountSources() {
 			if comp.Container.SourceMapping == "" {
 				comp.Container.SourceMapping = generator.DevfileSourceVolumeMount
 				err = cmp.DevfileData.Devfile.UpdateComponent(comp)
@@ -468,7 +468,7 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 	log.Info(title)
 	for _, container := range containers {
 		printmsg := container.Name
-		if container.Container != nil && *container.Container.MountSources {
+		if container.Container != nil && container.Container.GetMountSources() {
 			printmsg += fmt.Sprintf("\n    Source Mapping: %s", container.Container.SourceMapping)
 		}
 		log.Printf(printmsg)
