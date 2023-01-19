@@ -2013,31 +2013,36 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("running odo dev and run command throws an error", func() {
-		var session helper.DevSession
-		var initErr []byte
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
-			var err error
-			session, _, initErr, _, err = helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should error out with some log", func() {
-			helper.MatchAllInOutput(string(initErr), []string{
-				"exited with an error status in",
-				"Did you mean one of these?",
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("running odo dev and run command throws an error", helper.LabelPodmanIf(podman, func() {
+			var session helper.DevSession
+			var initErr []byte
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
+				var err error
+				session, _, initErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
 			})
-		})
-	})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should error out with some log", func() {
+				helper.MatchAllInOutput(string(initErr), []string{
+					"exited with an error status in",
+					"Did you mean one of these?",
+				})
+			})
+		}))
+	}
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
