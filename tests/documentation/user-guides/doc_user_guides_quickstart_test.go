@@ -94,7 +94,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.Stop()
 				session.WaitEnd()
 				args := []string{"dev"}
-				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo/nodejs-demo")
+				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"3000": "127.0.0.1:40001", "5858": "127.0.0.1:40002"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
@@ -142,7 +142,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.Stop()
 				session.WaitEnd()
 				args := []string{"dev"}
-				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo/go-demo")
+				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
@@ -198,7 +198,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.Stop()
 				session.WaitEnd()
 				args := []string{"dev"}
-				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo/dotnet-demo")
+				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
@@ -246,7 +246,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				session.Stop()
 				session.WaitEnd()
 				args := []string{"dev"}
-				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo/java-demo")
+				got := strings.ReplaceAll(string(out), commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, cmdEndpointsMap, map[string]string{"8080": "127.0.0.1:40001", "5858": "127.0.0.1:40002"})
 				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
