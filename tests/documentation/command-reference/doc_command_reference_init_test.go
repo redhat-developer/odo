@@ -53,9 +53,10 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			got := helper.StripAnsi(out)
 			got = helper.StripInteractiveQuestion(got)
 			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
-			want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_empty_directory_output.mdx"))
+			file := "interactive_mode_empty_directory_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
-			Expect(diff).To(BeEmpty())
+			Expect(diff).To(BeEmpty(), file)
 		})
 
 		When("the directory is not empty", func() {
@@ -83,9 +84,10 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				got := helper.StripAnsi(out)
 				got = helper.StripInteractiveQuestion(got)
 				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
-				want := helper.GetMDXContent(filepath.Join(commonPath, "interactive_mode_directory_with_sources_output.mdx"))
+				file := "interactive_mode_directory_with_sources_output.mdx"
+				want := helper.GetMDXContent(filepath.Join(commonPath, file))
 				diff := cmp.Diff(want, got)
-				Expect(diff).To(BeEmpty())
+				Expect(diff).To(BeEmpty(), file)
 			})
 		})
 	})
@@ -95,27 +97,30 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "2.0.0"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			want := helper.GetMDXContent(filepath.Join(commonPath, "versioned_devfile_output.mdx"))
+			file := "versioned_devfile_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
-			Expect(diff).To(BeEmpty())
+			Expect(diff).To(BeEmpty(), file)
 		})
 
 		It("Fetch Devfile of the latest version", func() {
 			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "latest"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			want := helper.GetMDXContent(filepath.Join(commonPath, "latest_versioned_devfile_output.mdx"))
+			file := "latest_versioned_devfile_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
-			Expect(diff).To(BeEmpty())
+			Expect(diff).To(BeEmpty(), file)
 		})
 
 		It("Fetch Devfile from a URL", func() {
 			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_url_output.mdx"))
+			file := "devfile_from_url_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
-			Expect(diff).To(BeEmpty())
+			Expect(diff).To(BeEmpty(), file)
 		})
 
 		Context("fetching devfile from a registry", func() {
@@ -147,9 +152,10 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 					got := helper.StripAnsi(out)
 					got = removePreferenceKeys(got)
 					got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
-					want := helper.GetMDXContent(filepath.Join(commonPath, "registry_output.mdx"))
+					file := "registry_output.mdx"
+					want := helper.GetMDXContent(filepath.Join(commonPath, file))
 					diff := cmp.Diff(want, got)
-					Expect(diff).To(BeEmpty())
+					Expect(diff).To(BeEmpty(), file)
 				}
 
 				It("Fetch Devfile from a specific registry of the list", func() {
@@ -161,9 +167,10 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 						args := []string{"init", "--name", "my-spring-app", "--devfile", "java-springboot", "--devfile-registry", "DefaultDevfileRegistry", "--starter", "springbootproject"}
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-						want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_specific_registry_output.mdx"))
+						file := "devfile_from_specific_registry_output.mdx"
+						want := helper.GetMDXContent(filepath.Join(commonPath, file))
 						diff := cmp.Diff(want, got)
-						Expect(diff).To(BeEmpty())
+						Expect(diff).To(BeEmpty(), file)
 					})
 				})
 				It("Fetch Devfile from any registry of the list", func() {
@@ -176,18 +183,20 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := helper.StripAnsi(out)
 						got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
-						want := helper.GetMDXContent(filepath.Join(commonPath, "registry_list_output.mdx"))
+						file := "registry_list_output.mdx"
+						want := helper.GetMDXContent(filepath.Join(commonPath, file))
 						diff := cmp.Diff(want, got)
-						Expect(diff).To(BeEmpty())
+						Expect(diff).To(BeEmpty(), file)
 					})
 
 					By("checking for the init output", func() {
 						args := []string{"init", "--devfile", "nodejs-react", "--name", "my-nr-app"}
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-						want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_any_registry_output.mdx"))
+						file := "devfile_from_any_registry_output.mdx"
+						want := helper.GetMDXContent(filepath.Join(commonPath, file))
 						diff := cmp.Diff(want, got)
-						Expect(diff).To(BeEmpty())
+						Expect(diff).To(BeEmpty(), file)
 					})
 				})
 
@@ -198,9 +207,10 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
-			want := helper.GetMDXContent(filepath.Join(commonPath, "devfile_from_url_output.mdx"))
+			file := "devfile_from_url_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
-			Expect(diff).To(BeEmpty())
+			Expect(diff).To(BeEmpty(), file)
 		})
 	})
 
