@@ -303,8 +303,13 @@ func PrintConfiguration(config asker.DevfileConfiguration) {
 
 		fmt.Fprintf(stdout, "  ENVIRONMENT VARIABLES:\n")
 
-		for key, value := range container.Envs {
-			fmt.Fprintf(stdout, "    - %s = %s\n", key, value)
+		keys := make([]string, 0, len(container.Envs))
+		for key := range container.Envs {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			fmt.Fprintf(stdout, "    - %s = %s\n", key, container.Envs[key])
 		}
 
 	}
