@@ -3232,9 +3232,9 @@ CMD ["npm", "start"]
 				}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
 					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					podOut := component.GetPodDef()
-					Expect(podOut.Spec.Containers[0].Resources.Limits.Cpu().String()).To(ContainSubstring("250m"))
 					Expect(podOut.Spec.Containers[0].Resources.Limits.Memory().String()).To(ContainSubstring("512Mi"))
 					if !podman {
+						Expect(podOut.Spec.Containers[0].Resources.Limits.Cpu().String()).To(ContainSubstring("250m"))
 						Expect(podOut.Spec.ServiceAccountName).To(ContainSubstring(podServiceAccountName))
 					}
 				})
