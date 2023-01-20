@@ -289,26 +289,28 @@ func Test_recursiveChecker(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
+	err = createGitFolderAndFiles(tempDirectoryName, fs)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
 	jsFileName := "red.js"
 	jsFile, jsFileStat, err := createAndStat(jsFileName, tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	jsFileAbsPath := jsFile.Name()
 
 	readmeFileName := "README.txt"
 	readmeFile, readmeFileStat, err := createAndStat(readmeFileName, tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	readmeFileAbsPath := readmeFile.Name()
 
 	viewsFolderName := "views"
 	viewsFolderPath := filepath.Join(tempDirectoryName, viewsFolderName)
 	err = fs.MkdirAll(viewsFolderPath, 0755)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	err = createGitFolderAndFiles(tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -318,6 +320,7 @@ func Test_recursiveChecker(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	htmlFileAbsPath := htmlFile.Name()
 
 	targetFolderName := "target"
 	targetFolderRelPath := filepath.Join(viewsFolderName, targetFolderName)
@@ -341,6 +344,24 @@ func Test_recursiveChecker(t *testing.T) {
 	}
 
 	viewsFolderStat, err := fs.Stat(filepath.Join(tempDirectoryName, viewsFolderName))
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	specialCharFolderName := "[devfile-registry]"
+	specialCharFolderPath := filepath.Join(tempDirectoryName, specialCharFolderName)
+	err = fs.MkdirAll(specialCharFolderPath, 0755)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	fileInsideSpecialCharFolderRelPath := filepath.Join(specialCharFolderName, "index.tsx")
+	fileInsideSpecialCharFolderFile, fileInsideSpecialCharFolderStat, err := createAndStat(fileInsideSpecialCharFolderRelPath, tempDirectoryName, fs)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	fileInsideSpecialCharFolderAbsPath := fileInsideSpecialCharFolderFile.Name()
+	specialCharFolderStat, err := fs.Stat(specialCharFolderPath)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -372,6 +393,14 @@ func Test_recursiveChecker(t *testing.T) {
 			Size:             targetFileStat.Size(),
 			LastModifiedDate: targetFileStat.ModTime(),
 		},
+		specialCharFolderName: {
+			Size:             specialCharFolderStat.Size(),
+			LastModifiedDate: specialCharFolderStat.ModTime(),
+		},
+		fileInsideSpecialCharFolderRelPath: {
+			Size:             fileInsideSpecialCharFolderStat.Size(),
+			LastModifiedDate: fileInsideSpecialCharFolderStat.ModTime(),
+		},
 	}
 
 	type args struct {
@@ -398,12 +427,10 @@ func Test_recursiveChecker(t *testing.T) {
 				srcBase:           tempDirectoryName,
 				ignoreRules:       []string{},
 				remoteDirectories: map[string]string{},
-				existingFileIndex: FileIndex{
-					Files: map[string]FileData{},
-				},
+				existingFileIndex: FileIndex{},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), jsFile.Name(), viewsFolderPath, targetFolderPath, targetFilePath, htmlFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath, jsFileAbsPath, viewsFolderPath, targetFolderPath, targetFilePath, htmlFileAbsPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -437,16 +464,18 @@ func Test_recursiveChecker(t *testing.T) {
 							Size:             readmeFileStat.Size() + 100,
 							LastModifiedDate: readmeFileStat.ModTime(),
 						},
-						jsFileName:          normalFileMap[jsFileName],
-						viewsFolderName:     normalFileMap[viewsFolderName],
-						htmlRelFilePath:     normalFileMap[htmlRelFilePath],
-						targetFolderRelPath: normalFileMap[targetFolderRelPath],
-						targetFileRelPath:   normalFileMap[targetFileRelPath],
+						jsFileName:                         normalFileMap[jsFileName],
+						viewsFolderName:                    normalFileMap[viewsFolderName],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+						targetFileRelPath:                  normalFileMap[targetFileRelPath],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -469,11 +498,16 @@ func Test_recursiveChecker(t *testing.T) {
 						htmlRelFilePath:     normalFileMap[htmlRelFilePath],
 						targetFolderRelPath: normalFileMap[targetFolderRelPath],
 						targetFileRelPath:   normalFileMap[targetFileRelPath],
+						specialCharFolderName: {
+							Size:             specialCharFolderStat.Size() + 100,
+							LastModifiedDate: specialCharFolderStat.ModTime(),
+						},
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{viewsFolderPath},
+				FilesChanged: []string{viewsFolderPath, specialCharFolderPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -491,16 +525,18 @@ func Test_recursiveChecker(t *testing.T) {
 							Size:             readmeFileStat.Size(),
 							LastModifiedDate: readmeFileStat.ModTime().Add(100),
 						},
-						jsFileName:          normalFileMap[jsFileName],
-						viewsFolderName:     normalFileMap[viewsFolderName],
-						htmlRelFilePath:     normalFileMap[htmlRelFilePath],
-						targetFolderRelPath: normalFileMap[targetFolderRelPath],
-						targetFileRelPath:   normalFileMap[targetFileRelPath],
+						jsFileName:                         normalFileMap[jsFileName],
+						viewsFolderName:                    normalFileMap[viewsFolderName],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+						targetFileRelPath:                  normalFileMap[targetFileRelPath],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -520,9 +556,11 @@ func Test_recursiveChecker(t *testing.T) {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime().Add(100),
 						},
-						htmlRelFilePath:     normalFileMap[htmlRelFilePath],
-						targetFolderRelPath: normalFileMap[targetFolderRelPath],
-						targetFileRelPath:   normalFileMap[targetFileRelPath],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+						targetFileRelPath:                  normalFileMap[targetFileRelPath],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
@@ -550,14 +588,16 @@ func Test_recursiveChecker(t *testing.T) {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime().Add(100),
 						},
-						htmlRelFilePath:     normalFileMap[htmlRelFilePath],
-						targetFolderRelPath: normalFileMap[targetFolderRelPath],
-						targetFileRelPath:   normalFileMap[targetFileRelPath],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+						targetFileRelPath:                  normalFileMap[targetFileRelPath],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), viewsFolderPath},
+				FilesChanged: []string{readmeFileAbsPath, viewsFolderPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -570,7 +610,7 @@ func Test_recursiveChecker(t *testing.T) {
 				srcBase:     tempDirectoryName,
 				ignoreRules: []string{},
 				remoteDirectories: map[string]string{
-					htmlRelFilePath: "new/Folder/view.html",
+					htmlRelFilePath: filepath.Join("new", "Folder", "views.html"),
 				},
 				existingFileIndex: FileIndex{
 					Files: normalFileMap,
@@ -583,12 +623,12 @@ func Test_recursiveChecker(t *testing.T) {
 						LastModifiedDate: readmeFileStat.ModTime(),
 						RemoteAttribute:  "README.txt",
 					},
-					jsFileStat.Name(): {
+					jsFileName: {
 						Size:             jsFileStat.Size(),
 						LastModifiedDate: jsFileStat.ModTime(),
 						RemoteAttribute:  "red.js",
 					},
-					viewsFolderStat.Name(): {
+					viewsFolderName: {
 						Size:             viewsFolderStat.Size(),
 						LastModifiedDate: viewsFolderStat.ModTime(),
 						RemoteAttribute:  "views",
@@ -602,6 +642,16 @@ func Test_recursiveChecker(t *testing.T) {
 						Size:             targetFileStat.Size(),
 						LastModifiedDate: targetFileStat.ModTime(),
 						RemoteAttribute:  targetFileRelPath,
+					},
+					specialCharFolderName: {
+						Size:             specialCharFolderStat.Size(),
+						LastModifiedDate: specialCharFolderStat.ModTime(),
+						RemoteAttribute:  specialCharFolderName,
+					},
+					fileInsideSpecialCharFolderRelPath: {
+						Size:             fileInsideSpecialCharFolderStat.Size(),
+						LastModifiedDate: fileInsideSpecialCharFolderStat.ModTime(),
+						RemoteAttribute:  fileInsideSpecialCharFolderRelPath,
 					},
 				},
 			},
@@ -622,16 +672,18 @@ func Test_recursiveChecker(t *testing.T) {
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder", "views.html"),
 						},
-						targetFolderRelPath: normalFileMap[targetFolderRelPath],
-						targetFileRelPath:   normalFileMap[targetFileRelPath],
+						targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+						targetFileRelPath:                  normalFileMap[targetFileRelPath],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged:  []string{htmlFile.Name()},
-				RemoteDeleted: []string{"new", "new/Folder", "new/Folder/view.html"},
+				FilesChanged:  []string{htmlFileAbsPath},
+				RemoteDeleted: []string{"new", filepath.Join("new", "Folder"), filepath.Join("new", "Folder", "views.html")},
 				NewFileMap:    normalFileMap,
 			},
 			wantErr: false,
@@ -655,7 +707,7 @@ func Test_recursiveChecker(t *testing.T) {
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder", "views.html"),
 						},
 						targetFolderRelPath: {
 							Size:             htmlFileStat.Size(),
@@ -667,12 +719,14 @@ func Test_recursiveChecker(t *testing.T) {
 							LastModifiedDate: htmlFileStat.ModTime(),
 							RemoteAttribute:  "new/Folder/target/someFile.txt",
 						},
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged:  []string{viewsFolderPath, targetFolderPath, targetFilePath, htmlFile.Name()},
-				RemoteDeleted: []string{"new", "new/Folder", "new/Folder/target", "new/Folder/target/someFile.txt", "new/Folder/view.html", "new/Folder/views"},
+				FilesChanged:  []string{viewsFolderPath, targetFolderPath, targetFilePath, htmlFileAbsPath},
+				RemoteDeleted: []string{"new", filepath.Join("new", "Folder"), "new/Folder/target", "new/Folder/target/someFile.txt", filepath.Join("new", "Folder", "views.html"), "new/Folder/views"},
 				NewFileMap:    normalFileMap,
 			},
 			wantErr: false,
@@ -686,11 +740,11 @@ func Test_recursiveChecker(t *testing.T) {
 				destFile:    viewsFolderName,
 				ignoreRules: []string{},
 				remoteDirectories: map[string]string{
-					viewsFolderStat.Name(): viewsFolderStat.Name(),
+					viewsFolderName: viewsFolderName,
 				},
 				existingFileIndex: FileIndex{
 					Files: map[string]FileData{
-						viewsFolderStat.Name(): {
+						viewsFolderName: {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime(),
 							RemoteAttribute:  "new/Folder/views",
@@ -704,13 +758,13 @@ func Test_recursiveChecker(t *testing.T) {
 				},
 			},
 			want: IndexerRet{
-				FilesChanged:  []string{viewsFolderPath, targetFolderPath, targetFilePath, htmlFile.Name()},
-				RemoteDeleted: []string{"new", "new/Folder", "new/Folder/views", "new/Folder/views/view.html"},
+				FilesChanged:  []string{viewsFolderPath, targetFolderPath, targetFilePath, htmlFileAbsPath},
+				RemoteDeleted: []string{"new", filepath.Join("new", "Folder"), "new/Folder/views", "new/Folder/views/view.html"},
 				NewFileMap: map[string]FileData{
-					viewsFolderStat.Name(): {
+					viewsFolderName: {
 						Size:             viewsFolderStat.Size(),
 						LastModifiedDate: viewsFolderStat.ModTime(),
-						RemoteAttribute:  filepath.ToSlash(viewsFolderStat.Name()),
+						RemoteAttribute:  filepath.ToSlash(viewsFolderName),
 					},
 					targetFolderRelPath: {
 						Size:             targetFolderStat.Size(),
@@ -750,13 +804,13 @@ func Test_recursiveChecker(t *testing.T) {
 							Size:             readmeFileStat.Size() + 100,
 							LastModifiedDate: readmeFileStat.ModTime(),
 						},
-						jsFileStat.Name():      normalFileMap["red.js"],
-						viewsFolderStat.Name(): normalFileMap["views"],
+						jsFileName:      normalFileMap["red.js"],
+						viewsFolderName: normalFileMap["views"],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{htmlFile.Name()},
+				FilesChanged: []string{htmlFileAbsPath},
 				NewFileMap: map[string]FileData{
 					htmlRelFilePath: {
 						Size:             htmlFileStat.Size(),
@@ -781,7 +835,7 @@ func Test_recursiveChecker(t *testing.T) {
 				},
 			},
 			want: IndexerRet{
-				FilesChanged:  []string{readmeFile.Name()},
+				FilesChanged:  []string{readmeFileAbsPath},
 				RemoteDeleted: []string{filepath.ToSlash(readmeFileStat.Name())},
 				NewFileMap: map[string]FileData{
 					readmeFileStat.Name(): {
@@ -810,16 +864,16 @@ func Test_recursiveChecker(t *testing.T) {
 							LastModifiedDate: readmeFileStat.ModTime(),
 							RemoteAttribute:  "new/Folder/text/README.txt",
 						},
-						jsFileStat.Name():      normalFileMap["red.js"],
-						viewsFolderStat.Name(): normalFileMap["views"],
+						jsFileName:      normalFileMap[jsFileName],
+						viewsFolderName: normalFileMap[viewsFolderName],
 					},
 				},
 			},
 			want: IndexerRet{
-				FilesChanged:  []string{readmeFile.Name()},
-				RemoteDeleted: []string{"new", "new/Folder", "new/Folder/text", "new/Folder/text/README.txt"},
+				FilesChanged:  []string{readmeFileAbsPath},
+				RemoteDeleted: []string{"new", filepath.Join("new", "Folder"), filepath.Join("new", "Folder", "text"), filepath.Join("new", "Folder", "text", readmeFileName)},
 				NewFileMap: map[string]FileData{
-					readmeFileStat.Name(): normalFileMap["README.txt"],
+					readmeFileName: normalFileMap[readmeFileName],
 				},
 			},
 			wantErr: false,
@@ -842,8 +896,8 @@ func Test_recursiveChecker(t *testing.T) {
 							LastModifiedDate: readmeFileStat.ModTime(),
 							RemoteAttribute:  "README.txt",
 						},
-						jsFileStat.Name():      normalFileMap["red.js"],
-						viewsFolderStat.Name(): normalFileMap["views"],
+						jsFileName:      normalFileMap["red.js"],
+						viewsFolderName: normalFileMap["views"],
 					},
 				},
 			},
@@ -893,11 +947,11 @@ func Test_recursiveChecker(t *testing.T) {
 				srcFile:     "README.txt",
 				ignoreRules: []string{},
 				remoteDirectories: map[string]string{
-					readmeFileStat.Name(): "README.txt",
+					readmeFileName: readmeFileName,
 				},
 				existingFileIndex: FileIndex{
 					Files: map[string]FileData{
-						readmeFileStat.Name(): {
+						readmeFileName: {
 							Size:             readmeFileStat.Size(),
 							LastModifiedDate: readmeFileStat.ModTime(),
 							RemoteAttribute:  "new/Folder/README.txt",
@@ -906,10 +960,10 @@ func Test_recursiveChecker(t *testing.T) {
 				},
 			},
 			want: IndexerRet{
-				FilesChanged:  []string{readmeFile.Name()},
-				RemoteDeleted: []string{"new", "new/Folder", "new/Folder/README.txt"},
+				FilesChanged:  []string{readmeFileAbsPath},
+				RemoteDeleted: []string{"new", filepath.Join("new", "Folder"), filepath.Join("new", "Folder", "README.txt")},
 				NewFileMap: map[string]FileData{
-					readmeFileStat.Name(): {
+					readmeFileName: {
 						Size:             readmeFileStat.Size(),
 						LastModifiedDate: readmeFileStat.ModTime(),
 						RemoteAttribute:  readmeFileStat.Name(),
@@ -962,13 +1016,15 @@ func Test_recursiveChecker(t *testing.T) {
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), jsFile.Name(), viewsFolderPath, targetFolderPath, targetFilePath},
+				FilesChanged: []string{readmeFileAbsPath, jsFileAbsPath, viewsFolderPath, targetFolderPath, targetFilePath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap: map[string]FileData{
-					jsFileStat.Name():      normalFileMap["red.js"],
-					viewsFolderStat.Name(): normalFileMap["views"],
-					readmeFileStat.Name():  normalFileMap["README.txt"],
-					targetFolderRelPath:    normalFileMap[targetFolderRelPath],
-					targetFileRelPath:      normalFileMap[targetFileRelPath],
+					jsFileName:                         normalFileMap["red.js"],
+					viewsFolderName:                    normalFileMap["views"],
+					readmeFileStat.Name():              normalFileMap["README.txt"],
+					targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+					targetFileRelPath:                  normalFileMap[targetFileRelPath],
+					specialCharFolderName:              normalFileMap[specialCharFolderName],
+					fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 				},
 			},
 			wantErr: false,
@@ -985,10 +1041,12 @@ func Test_recursiveChecker(t *testing.T) {
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), jsFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath, jsFileAbsPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap: map[string]FileData{
-					jsFileStat.Name():     normalFileMap["red.js"],
-					readmeFileStat.Name(): normalFileMap["README.txt"],
+					jsFileName:                         normalFileMap["red.js"],
+					readmeFileStat.Name():              normalFileMap["README.txt"],
+					specialCharFolderName:              normalFileMap[specialCharFolderName],
+					fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 				},
 			},
 			wantErr: false,
@@ -1030,7 +1088,7 @@ func Test_recursiveChecker(t *testing.T) {
 			},
 			emptyDir: true,
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), filepath.Join(tempDirectoryName, "emptyDir"), jsFile.Name(), viewsFolderPath, targetFolderPath, targetFilePath, htmlFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath, filepath.Join(tempDirectoryName, "emptyDir"), jsFileAbsPath, viewsFolderPath, targetFolderPath, targetFilePath, htmlFileAbsPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -1047,13 +1105,15 @@ func Test_recursiveChecker(t *testing.T) {
 				},
 			},
 			want: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), jsFile.Name(), viewsFolderPath, targetFolderPath, htmlFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath, jsFileAbsPath, viewsFolderPath, targetFolderPath, htmlFileAbsPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap: map[string]FileData{
-					readmeFileName:      normalFileMap[readmeFileName],
-					jsFileName:          normalFileMap[jsFileName],
-					viewsFolderName:     normalFileMap[viewsFolderName],
-					htmlRelFilePath:     normalFileMap[htmlRelFilePath],
-					targetFolderRelPath: normalFileMap[targetFolderRelPath],
+					readmeFileName:                     normalFileMap[readmeFileName],
+					jsFileName:                         normalFileMap[jsFileName],
+					viewsFolderName:                    normalFileMap[viewsFolderName],
+					htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+					targetFolderRelPath:                normalFileMap[targetFolderRelPath],
+					specialCharFolderName:              normalFileMap[specialCharFolderName],
+					fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 				},
 			},
 		},
@@ -1126,26 +1186,28 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 
+	err = createGitFolderAndFiles(tempDirectoryName, fs)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
 	jsFileName := "red.js"
 	jsFile, jsFileStat, err := createAndStat(jsFileName, tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	jsFileAbsPath := jsFile.Name()
 
 	readmeFileName := "README.txt"
 	readmeFile, readmeFileStat, err := createAndStat(readmeFileName, tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	readmeFileAbsPath := readmeFile.Name()
 
 	viewsFolderName := "views"
 	viewsFolderPath := filepath.Join(tempDirectoryName, viewsFolderName)
 	err = fs.MkdirAll(viewsFolderPath, 0755)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	err = createGitFolderAndFiles(tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -1155,8 +1217,28 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+	htmlFileAbsPath := htmlFile.Name()
 
 	viewsFolderStat, err := fs.Stat(filepath.Join(tempDirectoryName, viewsFolderName))
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	specialCharFolderName := "[devfile-registry]"
+	specialCharFolderPath := filepath.Join(tempDirectoryName, specialCharFolderName)
+	err = fs.MkdirAll(specialCharFolderPath, 0755)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	fileInsideSpecialCharFolderRelPath := filepath.Join(specialCharFolderName, "index.tsx")
+	fileInsideSpecialCharFolderFile, fileInsideSpecialCharFolderFileStat, err := createAndStat(fileInsideSpecialCharFolderRelPath, tempDirectoryName, fs)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	fileInsideSpecialCharFolderAbsPath := fileInsideSpecialCharFolderFile.Name()
+
+	specialCharFolderStat, err := fs.Stat(specialCharFolderPath)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -1179,6 +1261,14 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 		htmlRelFilePath: {
 			Size:             htmlFileStat.Size(),
 			LastModifiedDate: htmlFileStat.ModTime(),
+		},
+		specialCharFolderName: {
+			Size:             specialCharFolderStat.Size(),
+			LastModifiedDate: specialCharFolderStat.ModTime(),
+		},
+		fileInsideSpecialCharFolderRelPath: {
+			Size:             fileInsideSpecialCharFolderFileStat.Size(),
+			LastModifiedDate: fileInsideSpecialCharFolderFileStat.ModTime(),
 		},
 	}
 
@@ -1203,7 +1293,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				existingFileIndex: &FileIndex{},
 			},
 			wantRet: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), jsFile.Name(), viewsFolderPath, htmlFile.Name()},
+				FilesChanged: []string{readmeFileAbsPath, jsFileAbsPath, viewsFolderPath, htmlFileAbsPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -1236,7 +1326,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				},
 			},
 			wantRet: IndexerRet{
-				FilesChanged: []string{readmeFile.Name(), jsFile.Name(), viewsFolderPath},
+				FilesChanged: []string{readmeFileAbsPath, jsFileAbsPath, viewsFolderPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
 				NewFileMap:   normalFileMap,
 			},
 			wantErr: false,
@@ -1249,11 +1339,13 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
-						htmlRelFilePath:        normalFileMap[htmlRelFilePath],
-						jsFileStat.Name():      normalFileMap[jsFileStat.Name()],
-						viewsFolderStat.Name(): normalFileMap[viewsFolderStat.Name()],
-						readmeFileStat.Name():  normalFileMap[readmeFileStat.Name()],
-						"blah":                 {},
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						jsFileName:                         normalFileMap[jsFileName],
+						viewsFolderName:                    normalFileMap[viewsFolderName],
+						readmeFileName:                     normalFileMap[readmeFileName],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
+						"blah":                             {},
 					},
 				},
 			},
@@ -1269,21 +1361,21 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			args: args{
 				directory:         tempDirectoryName,
 				ignoreRules:       []string{},
-				remoteDirectories: map[string]string{viewsFolderStat.Name(): "new/Folder", htmlRelFilePath: "new/Folder0/view.html"},
+				remoteDirectories: map[string]string{viewsFolderName: filepath.Join("new", "Folder"), htmlRelFilePath: filepath.Join("new", "Folder0", "views.html")},
 				existingFileIndex: &FileIndex{},
 			},
 			wantRet: IndexerRet{
-				FilesChanged: []string{viewsFolderPath, htmlFile.Name()},
+				FilesChanged: []string{viewsFolderPath, htmlFileAbsPath},
 				NewFileMap: map[string]FileData{
 					htmlRelFilePath: {
 						Size:             htmlFileStat.Size(),
 						LastModifiedDate: htmlFileStat.ModTime(),
-						RemoteAttribute:  "new/Folder0/view.html",
+						RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 					},
-					viewsFolderStat.Name(): {
+					viewsFolderName: {
 						Size:             viewsFolderStat.Size(),
 						LastModifiedDate: viewsFolderStat.ModTime(),
-						RemoteAttribute:  "new/Folder",
+						RemoteAttribute:  filepath.Join("new", "Folder"),
 					},
 				},
 			},
@@ -1294,18 +1386,18 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			args: args{
 				directory:         tempDirectoryName,
 				ignoreRules:       []string{},
-				remoteDirectories: map[string]string{htmlRelFilePath: "new/Folder0/view.html", viewsFolderStat.Name(): "new/Folder"},
+				remoteDirectories: map[string]string{htmlRelFilePath: filepath.Join("new", "Folder0", "views.html"), viewsFolderName: filepath.Join("new", "Folder")},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder0/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 						},
-						viewsFolderStat.Name(): {
+						viewsFolderName: {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime(),
-							RemoteAttribute:  "new/Folder",
+							RemoteAttribute:  filepath.Join("new", "Folder"),
 						},
 					},
 				},
@@ -1315,12 +1407,12 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 					htmlRelFilePath: {
 						Size:             htmlFileStat.Size(),
 						LastModifiedDate: htmlFileStat.ModTime(),
-						RemoteAttribute:  "new/Folder0/view.html",
+						RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 					},
-					viewsFolderStat.Name(): {
+					viewsFolderName: {
 						Size:             viewsFolderStat.Size(),
 						LastModifiedDate: viewsFolderStat.ModTime(),
-						RemoteAttribute:  "new/Folder",
+						RemoteAttribute:  filepath.Join("new", "Folder"),
 					},
 				},
 			},
@@ -1329,20 +1421,23 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 		{
 			name: "case 7: with remote directories and files deleted",
 			args: args{
-				directory:         tempDirectoryName,
-				ignoreRules:       []string{},
-				remoteDirectories: map[string]string{htmlRelFilePath: "new/Folder0/view.html", viewsFolderStat.Name(): "new/Folder"},
+				directory:   tempDirectoryName,
+				ignoreRules: []string{},
+				remoteDirectories: map[string]string{
+					htmlRelFilePath: filepath.Join("new", "Folder0", "views.html"),
+					viewsFolderName: filepath.Join("new", "Folder"),
+				},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder0/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 						},
-						viewsFolderStat.Name(): {
+						viewsFolderName: {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime(),
-							RemoteAttribute:  "new/Folder",
+							RemoteAttribute:  filepath.Join("new", "Folder"),
 						},
 						"blah": {},
 					},
@@ -1354,12 +1449,12 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 					htmlRelFilePath: {
 						Size:             htmlFileStat.Size(),
 						LastModifiedDate: htmlFileStat.ModTime(),
-						RemoteAttribute:  "new/Folder0/view.html",
+						RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 					},
-					viewsFolderStat.Name(): {
+					viewsFolderName: {
 						Size:             viewsFolderStat.Size(),
 						LastModifiedDate: viewsFolderStat.ModTime(),
-						RemoteAttribute:  "new/Folder",
+						RemoteAttribute:  filepath.Join("new", "Folder"),
 					},
 				},
 			},
@@ -1368,37 +1463,40 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 		{
 			name: "case 8: remote changed",
 			args: args{
-				directory:         tempDirectoryName,
-				ignoreRules:       []string{},
-				remoteDirectories: map[string]string{htmlRelFilePath: "new/Folder0/view.html", viewsFolderStat.Name(): "new/blah/Folder"},
+				directory:   tempDirectoryName,
+				ignoreRules: []string{},
+				remoteDirectories: map[string]string{
+					htmlRelFilePath: filepath.Join("new", "Folder0", "views.html"),
+					viewsFolderName: filepath.Join("new", "blah", "Folder"),
+				},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder0/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 						},
-						viewsFolderStat.Name(): {
+						viewsFolderName: {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime(),
-							RemoteAttribute:  "new/Folder",
+							RemoteAttribute:  filepath.Join("new", "Folder"),
 						},
 					},
 				},
 			},
 			wantRet: IndexerRet{
 				FilesChanged:  []string{viewsFolderPath},
-				RemoteDeleted: []string{"new/Folder"},
+				RemoteDeleted: []string{filepath.Join("new", "Folder")},
 				NewFileMap: map[string]FileData{
 					htmlRelFilePath: {
 						Size:             htmlFileStat.Size(),
 						LastModifiedDate: htmlFileStat.ModTime(),
-						RemoteAttribute:  "new/Folder0/view.html",
+						RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 					},
-					viewsFolderStat.Name(): {
+					viewsFolderName: {
 						Size:             viewsFolderStat.Size(),
 						LastModifiedDate: viewsFolderStat.ModTime(),
-						RemoteAttribute:  "new/blah/Folder",
+						RemoteAttribute:  filepath.Join("new", "blah", "Folder"),
 					},
 				},
 			},
@@ -1409,29 +1507,29 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			args: args{
 				directory:         tempDirectoryName,
 				ignoreRules:       []string{},
-				remoteDirectories: map[string]string{htmlRelFilePath: "new/Folder0/view.html"},
+				remoteDirectories: map[string]string{htmlRelFilePath: filepath.Join("new", "Folder0", "views.html")},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder0/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 						},
-						viewsFolderStat.Name(): {
+						viewsFolderName: {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime(),
-							RemoteAttribute:  "new/Folder",
+							RemoteAttribute:  filepath.Join("new", "Folder"),
 						},
 					},
 				},
 			},
 			wantRet: IndexerRet{
-				RemoteDeleted: []string{"new/Folder"},
+				RemoteDeleted: []string{filepath.Join("new", "Folder")},
 				NewFileMap: map[string]FileData{
 					htmlRelFilePath: {
 						Size:             htmlFileStat.Size(),
 						LastModifiedDate: htmlFileStat.ModTime(),
-						RemoteAttribute:  "new/Folder0/view.html",
+						RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 					},
 				},
 			},
@@ -1445,7 +1543,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
-						readmeFileStat.Name(): {
+						readmeFileName: {
 							Size:             readmeFileStat.Size(),
 							LastModifiedDate: readmeFileStat.ModTime(),
 							RemoteAttribute:  readmeFileStat.Name(),
@@ -1453,19 +1551,19 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 						htmlRelFilePath: {
 							Size:             htmlFileStat.Size(),
 							LastModifiedDate: htmlFileStat.ModTime(),
-							RemoteAttribute:  "new/Folder0/view.html",
+							RemoteAttribute:  filepath.Join("new", "Folder0", "views.html"),
 						},
-						viewsFolderStat.Name(): {
+						viewsFolderName: {
 							Size:             viewsFolderStat.Size(),
 							LastModifiedDate: viewsFolderStat.ModTime(),
-							RemoteAttribute:  "new/Folder",
+							RemoteAttribute:  filepath.Join("new", "Folder"),
 						},
 					},
 				},
 			},
 			wantRet: IndexerRet{
-				FilesChanged:  []string{jsFile.Name(), viewsFolderPath, htmlFile.Name()},
-				RemoteDeleted: []string{"new", "new/Folder", "new/Folder0", "new/Folder0/view.html"},
+				FilesChanged:  []string{jsFileAbsPath, viewsFolderPath, htmlFileAbsPath, specialCharFolderPath, fileInsideSpecialCharFolderAbsPath},
+				RemoteDeleted: []string{"new", filepath.Join("new", "Folder"), filepath.Join("new", "Folder0"), filepath.Join("new", "Folder0", "views.html")},
 				NewFileMap:    normalFileMap,
 			},
 			wantErr: false,
@@ -1501,21 +1599,25 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			name: "case 12: ignore a modified file due to ignore rules",
 			args: args{
 				directory:         tempDirectoryName,
-				ignoreRules:       []string{readmeFileStat.Name()},
+				ignoreRules:       []string{readmeFileName},
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
-						htmlRelFilePath:        normalFileMap[htmlRelFilePath],
-						viewsFolderStat.Name(): normalFileMap[viewsFolderStat.Name()],
-						jsFileStat.Name():      normalFileMap[jsFileStat.Name()],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						viewsFolderName:                    normalFileMap[viewsFolderName],
+						jsFileName:                         normalFileMap[jsFileName],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			wantRet: IndexerRet{
 				NewFileMap: map[string]FileData{
-					htmlRelFilePath:        normalFileMap[htmlRelFilePath],
-					viewsFolderStat.Name(): normalFileMap[viewsFolderStat.Name()],
-					jsFileStat.Name():      normalFileMap[jsFileStat.Name()],
+					htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+					viewsFolderName:                    normalFileMap[viewsFolderName],
+					jsFileName:                         normalFileMap[jsFileName],
+					specialCharFolderName:              normalFileMap[specialCharFolderName],
+					fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 				},
 			},
 			wantErr: false,
@@ -1528,11 +1630,13 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
-						readmeFileStat.Name():  normalFileMap[readmeFileStat.Name()],
-						htmlRelFilePath:        normalFileMap[htmlRelFilePath],
-						viewsFolderStat.Name(): normalFileMap[viewsFolderStat.Name()],
-						jsFileStat.Name():      normalFileMap[jsFileStat.Name()],
-						"blah":                 {},
+						readmeFileName:                     normalFileMap[readmeFileName],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						viewsFolderName:                    normalFileMap[viewsFolderName],
+						jsFileName:                         normalFileMap[jsFileName],
+						"blah":                             {},
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
@@ -1545,21 +1649,25 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			name: "case 14: ignore a added file due to ignore rules",
 			args: args{
 				directory:         tempDirectoryName,
-				ignoreRules:       []string{readmeFileStat.Name()},
+				ignoreRules:       []string{readmeFileName},
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
-						htmlRelFilePath:        normalFileMap[htmlRelFilePath],
-						viewsFolderStat.Name(): normalFileMap[viewsFolderStat.Name()],
-						jsFileStat.Name():      normalFileMap[jsFileStat.Name()],
+						htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+						viewsFolderName:                    normalFileMap[viewsFolderName],
+						jsFileName:                         normalFileMap[jsFileName],
+						specialCharFolderName:              normalFileMap[specialCharFolderName],
+						fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 					},
 				},
 			},
 			wantRet: IndexerRet{
 				NewFileMap: map[string]FileData{
-					htmlRelFilePath:        normalFileMap[htmlRelFilePath],
-					viewsFolderStat.Name(): normalFileMap[viewsFolderStat.Name()],
-					jsFileStat.Name():      normalFileMap[jsFileStat.Name()],
+					htmlRelFilePath:                    normalFileMap[htmlRelFilePath],
+					viewsFolderName:                    normalFileMap[viewsFolderName],
+					jsFileName:                         normalFileMap[jsFileName],
+					specialCharFolderName:              normalFileMap[specialCharFolderName],
+					fileInsideSpecialCharFolderRelPath: normalFileMap[fileInsideSpecialCharFolderRelPath],
 				},
 			},
 			wantErr: false,
@@ -1621,5 +1729,43 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				t.Errorf("runIndexerWithExistingFileIndex() RemoteDeleted mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+// Copied from: https://go-review.googlesource.com/c/go/+/18034/2/src/path/filepath/match_test.go
+func Test_globEscape(t *testing.T) {
+	cases := []struct {
+		value string
+		want  string
+	}{
+		{"abc           d", "abc           d"},
+		{"*abc           d", "[*]abc           d"},
+		{"*****", "[*][*][*][*][*]"},
+		{"[]*abDEFG?", "[[]][*]abDEFG[?]"},
+		{"a*", "a[*]"},
+		{"a*b*c*d*e*/f", "a[*]b[*]c[*]d[*]e[*]/f"},
+		{"a*b?c*x", "a[*]b[?]c[*]x"},
+		{"ab[c]", "ab[[]c]"},
+		{"ab[b-d]", "ab[[]b-d]"},
+		{"ab[^c]", "ab[[]^c]"},
+		{"ab[^b-d]", "ab[[]^b-d]"},
+		{"a???b", "a[?][?][?]b"},
+		{"a\\\\???b", "a\\\\[?][?][?]b"},
+		{"foo\\[bar]xyzzy", "foo\\[[]bar]xyzzy"},
+		{"(\\*\\?\\[\\])", "(\\[*]\\[?]\\[[]\\])"},
+		{"a\\?\\?\\?b", "a\\[?]\\[?]\\[?]b"},
+		{"a\\\\?\\?\\?b", "a\\\\[?]\\[?]\\[?]b"},
+		{"a[^a][^a][^a]b☺", "a[[]^a][[]^a][[]^a]b☺"},
+		{"[a-ζ]*", "[[]a-ζ][*]"},
+		{"*[a-ζ]*", "[*][[]a-ζ][*]"},
+		{"[\\]a]", "[[]\\]a]"},
+		{"lmnopqrstuva]", "lmnopqrstuva]"},
+		{"こんにちは", "こんにちは"},
+		{"こ[んに]ちは", "こ[[]んに]ちは"},
+	}
+	for _, tc := range cases {
+		if got := globEscape(tc.value); got != tc.want {
+			t.Errorf("GlobEscape: %q expected %q got %q", tc.value, tc.want, got)
+		}
 	}
 }
