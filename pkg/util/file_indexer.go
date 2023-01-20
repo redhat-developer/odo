@@ -691,6 +691,7 @@ func findRemoteFolderForDeletion(currentRemote string, remoteDirectories map[str
 
 // globEscape escapes characters *?[ so that they are
 // not included in any match expressions during a Glob.
+// Copied from: https://go-review.googlesource.com/c/go/+/18034/2/src/path/filepath/match.go
 func globEscape(path string) string {
 	var sects []string
 	for _, ch := range path {
