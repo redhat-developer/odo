@@ -73,13 +73,13 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			deploymentName := "my-component"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				if ctx.setupFunc != nil {
+					ctx.setupFunc()
+				}
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", ctx.devfileName),
 					path.Join(commonVar.Context, "devfile.yaml"),
 					helper.DevfileMetadataNameSetter(cmpName))
-				if ctx.setupFunc != nil {
-					ctx.setupFunc()
-				}
 			})
 
 			When("running odo deploy", func() {
