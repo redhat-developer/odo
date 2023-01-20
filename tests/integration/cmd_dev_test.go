@@ -2567,7 +2567,7 @@ CMD ["npm", "start"]
 	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
-			//TODO Not implemented yet on Podman
+			// TODO Not implemented yet on Podman
 			var session helper.DevSession
 			var devStarted bool
 			BeforeEach(func() {
@@ -3263,4 +3263,22 @@ CMD ["npm", "start"]
 		}))
 
 	}
+
+	Context("odo dev on podman with a devfile bound to fail", Label(helper.LabelPodman), func() {
+		// var devSession helper.DevSession
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "registry.access.redhat.com/ubi8/nodejs", "registry.access.redhat.com/ubi8/nose")
+			// devSession, out, errOut, _, err := helper.()
+		})
+		It("should fail with an error and cleanup resources", func() {
+			errContents := helper.Cmd("odo", "dev", "--platform=podman").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+			helper.MatchAllInOutput(errContents, []string{"registry.access.redhat.com/ubi8/nose", "Repo not found"})
+			component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+			component.ExpectIsNotDeployed()
+		})
+	})
 })

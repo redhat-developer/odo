@@ -74,11 +74,12 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		return err
 	}
 	stdin.Close()
-
+	var podmanOut string
 	go func() {
 		for {
 			tmp := make([]byte, 1024)
 			_, err = stdout.Read(tmp)
+			podmanOut += string(tmp)
 			klog.V(4).Info(string(tmp))
 			if err != nil {
 				break
@@ -87,7 +88,10 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 	}()
 	if err = cmd.Wait(); err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
-			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+			out := strings.Split(podmanOut, "\n")
+			// the last line is an empty new line; so we revert to the second last line for error
+			errLine := out[len(out)-2]
+			err = fmt.Errorf("%s: %s\n%s", err, string(exiterr.Stderr), errLine)
 		}
 		return err
 	}
