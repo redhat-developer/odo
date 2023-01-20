@@ -16,13 +16,13 @@ ASP.NET MVC is a web application framework that implements the model-view-contro
 1. Generate an example project:
 
 ```console
-dotnet new mvc --name app
+dotnet new mvc --name app --output .
 ```
 <details>
 <summary>Example</summary>
 
 ```shell
-$ dotnet new mvc --name app
+$ dotnet new mvc --name app --output .
 Welcome to .NET 6.0!
 ---------------------
 SDK Version: 6.0.104
@@ -33,10 +33,11 @@ The template "ASP.NET Core Web App (Model-View-Controller)" was created successf
 This template contains technologies from parties other than Microsoft, see https://aka.ms/aspnetcore/6.0-third-party-notices for details.
 
 Processing post-creation actions...
-Running 'dotnet restore' on /Users/user/app/app.csproj...
+Running 'dotnet restore' on /home/user/quickstart-demo/app.csproj...
   Determining projects to restore...
-  Restored /Users/user/app/app.csproj (in 84 ms).
+  Restored /home/user/quickstart-demo/app.csproj (in 96 ms).
 Restore succeeded.
+
 ```
 </details>
 
