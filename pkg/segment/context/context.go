@@ -17,16 +17,17 @@ import (
 )
 
 const (
-	Caller          = "caller"
-	ComponentType   = "componentType"
-	ClusterType     = "clusterType"
-	TelemetryStatus = "isTelemetryEnabled"
-	DevfileName     = "devfileName"
-	Language        = "language"
-	ProjectType     = "projectType"
-	NOTFOUND        = "not-found"
-	InteractiveMode = "interactive"
-	Flags           = "flags"
+	Caller           = "caller"
+	ComponentType    = "componentType"
+	ClusterType      = "clusterType"
+	TelemetryStatus  = "isTelemetryEnabled"
+	DevfileName      = "devfileName"
+	Language         = "language"
+	ProjectType      = "projectType"
+	NOTFOUND         = "not-found"
+	InteractiveMode  = "interactive"
+	ExperimentalMode = "experimental"
+	Flags            = "flags"
 )
 
 const (
@@ -120,6 +121,10 @@ func SetProjectType(ctx context.Context, projectType string) {
 
 func SetInteractive(ctx context.Context, interactive bool) {
 	setContextProperty(ctx, InteractiveMode, interactive)
+}
+
+func SetExperimentalMode(ctx context.Context, value bool) {
+	setContextProperty(ctx, ExperimentalMode, value)
 }
 
 // SetFlags sets flags property for telemetry to record what flags were used
