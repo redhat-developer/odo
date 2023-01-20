@@ -3214,24 +3214,32 @@ CMD ["npm", "start"]
 			}))
 		}
 	}
-	Context("Devfile contains pod-overrides and container-overrides attributes", func() {
-		const (
-			// hard coded from Devfile
-			podServiceAccountName = "new-service-account"
-		)
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
-		})
-		It("should override the content in the pod it creates for the component on the cluster", func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
-				podOut := string(commonVar.CliRunner.Run("get", helper.ResourceTypePod, "--namespace", commonVar.Project, fmt.Sprintf("--selector=component=%s", cmpName), "-ojson").Out.Contents())
-				Expect(helper.IsJSON(podOut)).To(BeTrue())
-				helper.JsonPathContentIs(podOut, "items.0.spec.serviceAccountName", podServiceAccountName)
-				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.resources.requests.cpu", "250m")
-				helper.JsonPathContentIs(podOut, "items.0.spec.containers.0.resources.requests.memory", "512Mi")
+
+	for _, podman := range []bool{true, false} {
+		podman := podman
+		Context("Devfile contains pod-overrides and container-overrides attributes", helper.LabelPodmanIf(podman, func() {
+			const (
+				// hard coded from Devfile
+				podServiceAccountName = "new-service-account"
+			)
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
 			})
-			Expect(err).To(BeNil())
-		})
-	})
+			It("should override the content in the pod it creates for the component on the cluster", func() {
+				err := helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					podOut := component.GetPodDef()
+					Expect(podOut.Spec.Containers[0].Resources.Limits.Cpu().String()).To(ContainSubstring("250m"))
+					Expect(podOut.Spec.Containers[0].Resources.Limits.Memory().String()).To(ContainSubstring("512Mi"))
+					if !podman {
+						Expect(podOut.Spec.ServiceAccountName).To(ContainSubstring(podServiceAccountName))
+					}
+				})
+				Expect(err).To(BeNil())
+			})
+		}))
+	}
 })

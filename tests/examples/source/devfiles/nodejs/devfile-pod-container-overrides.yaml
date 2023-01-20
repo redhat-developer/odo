@@ -52,7 +52,7 @@ components:
   attributes:
     container-overrides:
       resources:
-        requests:
+        limits:
           memory: 512Mi
           cpu: "250m"
   name: runtime
