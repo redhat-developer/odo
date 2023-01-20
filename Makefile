@@ -47,12 +47,20 @@ UNIT_TEST_ARGS ?=
 
 export ARTIFACT_DIR ?= .
 
+ifdef PODMAN_EXEC_NODES
+   PODMAN_EXEC_NODES := $(PODMAN_EXEC_NODES)
+else
+   PODMAN_EXEC_NODES := 1
+endif
+
 GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --slow-spec-threshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT) --no-color
 
 # Flags to run one test per core.
 GINKGO_FLAGS_AUTO = $(GINKGO_FLAGS_ALL) -p
 # Flags for tests that may be run in parallel
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
+# Flags for Podman tests that may be run in parallel
+GINKGO_FLAGS_PODMAN=$(GINKGO_FLAGS_ALL) -nodes=$(PODMAN_EXEC_NODES)
 # Flags for tests that must not be run in parallel
 GINKGO_FLAGS_ONE=$(GINKGO_FLAGS_ALL) -nodes=1
 # GolangCi version for unit-validate test
@@ -202,9 +210,12 @@ test-integration-openshift-unauth:
 test-integration-no-cluster:
 	$(RUN_GINKGO) $(GINKGO_FLAGS_AUTO)  --junit-report="test-integration-nc.xml" --label-filter=nocluster tests/integration
 
+# Running by default on 1 node because of issues when running too many Podman containers locally,
+# but you can override this behavior by setting the PODMAN_EXEC_NODES env var if needed.
+# For example: "PODMAN_EXEC_NODES=5".
 .PHONY: test-integration-podman
 test-integration-podman:
-	$(RUN_GINKGO) $(GINKGO_FLAGS_ONE)  --junit-report="test-integration-podman.xml" --label-filter=podman tests/integration
+	$(RUN_GINKGO) $(GINKGO_FLAGS_PODMAN) --junit-report="test-integration-podman.xml" --label-filter=podman tests/integration
 
 .PHONY: test-integration
 test-integration: test-integration-no-cluster test-integration-cluster
