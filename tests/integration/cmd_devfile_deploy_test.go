@@ -220,6 +220,7 @@ ComponentSettings:
 			Expect(td.Properties.CmdProperties[segment.Flags]).To(BeEmpty())
 			Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
 			Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
+			Expect(td.Properties.CmdProperties[segment.ExperimentalMode]).To(Equal(false))
 		})
 	})
 
