@@ -308,24 +308,6 @@ func Test_recursiveChecker(t *testing.T) {
 	}
 	readmeFileAbsPath := readmeFile.Name()
 
-	specialCharFolderName := "[devfile-registry]"
-	specialCharFolderPath := filepath.Join(tempDirectoryName, specialCharFolderName)
-	err = fs.MkdirAll(specialCharFolderPath, 0755)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	fileInsideSpecialCharFolderRelPath := filepath.Join(specialCharFolderName, "index.tsx")
-	fileInsideSpecialCharFolderFile, fileInsideSpecialCharFolderStat, err := createAndStat(fileInsideSpecialCharFolderRelPath, tempDirectoryName, fs)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	fileInsideSpecialCharFolderAbsPath := fileInsideSpecialCharFolderFile.Name()
-	specialCharFolderStat, err := fs.Stat(specialCharFolderPath)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
 	viewsFolderName := "views"
 	viewsFolderPath := filepath.Join(tempDirectoryName, viewsFolderName)
 	err = fs.MkdirAll(viewsFolderPath, 0755)
@@ -362,6 +344,24 @@ func Test_recursiveChecker(t *testing.T) {
 	}
 
 	viewsFolderStat, err := fs.Stat(filepath.Join(tempDirectoryName, viewsFolderName))
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	specialCharFolderName := "[devfile-registry]"
+	specialCharFolderPath := filepath.Join(tempDirectoryName, specialCharFolderName)
+	err = fs.MkdirAll(specialCharFolderPath, 0755)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	fileInsideSpecialCharFolderRelPath := filepath.Join(specialCharFolderName, "index.tsx")
+	fileInsideSpecialCharFolderFile, fileInsideSpecialCharFolderStat, err := createAndStat(fileInsideSpecialCharFolderRelPath, tempDirectoryName, fs)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	fileInsideSpecialCharFolderAbsPath := fileInsideSpecialCharFolderFile.Name()
+	specialCharFolderStat, err := fs.Stat(specialCharFolderPath)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -1205,25 +1205,6 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 	}
 	readmeFileAbsPath := readmeFile.Name()
 
-	specialCharFolderName := "[devfile-registry]"
-	specialCharFolderPath := filepath.Join(tempDirectoryName, specialCharFolderName)
-	err = fs.MkdirAll(specialCharFolderPath, 0755)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	fileInsideSpecialCharFolderRelPath := filepath.Join(specialCharFolderName, "index.tsx")
-	fileInsideSpecialCharFolderFile, fileInsideSpecialCharFolderFileStat, err := createAndStat(fileInsideSpecialCharFolderRelPath, tempDirectoryName, fs)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	fileInsideSpecialCharFolderAbsPath := fileInsideSpecialCharFolderFile.Name()
-
-	specialCharFolderStat, err := fs.Stat(specialCharFolderPath)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
 	viewsFolderName := "views"
 	viewsFolderPath := filepath.Join(tempDirectoryName, viewsFolderName)
 	err = fs.MkdirAll(viewsFolderPath, 0755)
@@ -1239,6 +1220,25 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 	htmlFileAbsPath := htmlFile.Name()
 
 	viewsFolderStat, err := fs.Stat(filepath.Join(tempDirectoryName, viewsFolderName))
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	specialCharFolderName := "[devfile-registry]"
+	specialCharFolderPath := filepath.Join(tempDirectoryName, specialCharFolderName)
+	err = fs.MkdirAll(specialCharFolderPath, 0755)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	fileInsideSpecialCharFolderRelPath := filepath.Join(specialCharFolderName, "index.tsx")
+	fileInsideSpecialCharFolderFile, fileInsideSpecialCharFolderFileStat, err := createAndStat(fileInsideSpecialCharFolderRelPath, tempDirectoryName, fs)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	fileInsideSpecialCharFolderAbsPath := fileInsideSpecialCharFolderFile.Name()
+
+	specialCharFolderStat, err := fs.Stat(specialCharFolderPath)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -1729,5 +1729,43 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 				t.Errorf("runIndexerWithExistingFileIndex() RemoteDeleted mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+// Copied from: https://go-review.googlesource.com/c/go/+/18034/2/src/path/filepath/match_test.go
+func Test_globEscape(t *testing.T) {
+	cases := []struct {
+		value string
+		want  string
+	}{
+		{"abc           d", "abc           d"},
+		{"*abc           d", "[*]abc           d"},
+		{"*****", "[*][*][*][*][*]"},
+		{"[]*abDEFG?", "[[]][*]abDEFG[?]"},
+		{"a*", "a[*]"},
+		{"a*b*c*d*e*/f", "a[*]b[*]c[*]d[*]e[*]/f"},
+		{"a*b?c*x", "a[*]b[?]c[*]x"},
+		{"ab[c]", "ab[[]c]"},
+		{"ab[b-d]", "ab[[]b-d]"},
+		{"ab[^c]", "ab[[]^c]"},
+		{"ab[^b-d]", "ab[[]^b-d]"},
+		{"a???b", "a[?][?][?]b"},
+		{"a\\\\???b", "a\\\\[?][?][?]b"},
+		{"foo\\[bar]xyzzy", "foo\\[[]bar]xyzzy"},
+		{"(\\*\\?\\[\\])", "(\\[*]\\[?]\\[[]\\])"},
+		{"a\\?\\?\\?b", "a\\[?]\\[?]\\[?]b"},
+		{"a\\\\?\\?\\?b", "a\\\\[?]\\[?]\\[?]b"},
+		{"a[^a][^a][^a]b☺", "a[[]^a][[]^a][[]^a]b☺"},
+		{"[a-ζ]*", "[[]a-ζ][*]"},
+		{"*[a-ζ]*", "[*][[]a-ζ][*]"},
+		{"[\\]a]", "[[]\\]a]"},
+		{"lmnopqrstuva]", "lmnopqrstuva]"},
+		{"こんにちは", "こんにちは"},
+		{"こ[んに]ちは", "こ[[]んに]ちは"},
+	}
+	for _, tc := range cases {
+		if got := globEscape(tc.value); got != tc.want {
+			t.Errorf("GlobEscape: %q expected %q got %q", tc.value, tc.want, got)
+		}
 	}
 }
