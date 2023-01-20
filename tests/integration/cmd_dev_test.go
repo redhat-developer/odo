@@ -2920,6 +2920,7 @@ CMD ["npm", "start"]
 			var executeRunCommand = "Executing the application (command: dev-run)"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "java-quarkus"), commonVar.Context)
+				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(cmpName)})
 				var err error
 				devSession, stdout, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
