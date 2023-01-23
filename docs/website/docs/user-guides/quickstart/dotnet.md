@@ -57,6 +57,10 @@ import InitDescription from './docs-mdx/odo_init_description.mdx';
 
 <InitDescription framework=".NET" initout=<InitSampleOutput/> />
 
+:::note
+When you first run `odo init`, it will detect the required devfile to be 'dotnet50', if this happens to you, please select <b>No</b> when asked <b>Is this correct?</b> and then select <b>.NET 6.0</b> when asked for <b>Select project type:</b>. Take a look at the sample output for a reference.
+:::
+
 ## Step 3. Developing your application continuously (`odo dev`)
 
 import DevSampleOutput from './docs-mdx/dotnet/dotnet_odo_dev_output.mdx';
