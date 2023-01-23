@@ -2,6 +2,8 @@ package podmandev
 
 import (
 	"fmt"
+	"math/rand" //#nosec
+	"time"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -28,6 +30,7 @@ func createPodFromComponent(
 	buildCommand string,
 	runCommand string,
 	debugCommand string,
+	randomPorts bool,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	containers, err := generator.GetContainers(devfileObj, common.DevfileOptions{})
@@ -45,7 +48,7 @@ func createPodFromComponent(
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	fwPorts := addHostPorts(containers, debug, usedPorts)
+	fwPorts := addHostPorts(containers, debug, randomPorts, usedPorts)
 
 	volumes := []corev1.Volume{
 		{
@@ -111,10 +114,12 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func addHostPorts(containers []corev1.Container, debug bool, usedPorts []int) []api.ForwardedPort {
+func addHostPorts(containers []corev1.Container, debug bool, randomPorts bool, usedPorts []int) []api.ForwardedPort {
 	var result []api.ForwardedPort
 	startPort := 40001
 	endPort := startPort + 10000
+	usedPortsCopy := make([]int, len(usedPorts))
+	copy(usedPortsCopy, usedPorts)
 	for i := range containers {
 		var ports []corev1.ContainerPort
 		for _, port := range containers[i].Ports {
@@ -124,10 +129,29 @@ func addHostPorts(containers []corev1.Container, debug bool, usedPorts []int) []
 					containers[i].Name, portName, port.ContainerPort)
 				continue
 			}
-			freePort, err := util.NextFreePort(startPort, endPort, usedPorts)
-			if err != nil {
-				klog.Infof("%s", err)
-				continue
+			var freePort int
+			if randomPorts {
+				if len(usedPortsCopy) != 0 {
+					freePort = usedPortsCopy[0]
+					usedPortsCopy = usedPortsCopy[1:]
+				} else {
+					rand.Seed(time.Now().UnixNano()) //#nosec
+					for {
+						freePort = rand.Intn(endPort-startPort+1) + startPort //#nosec
+						if util.IsPortFree(freePort) {
+							break
+						}
+						time.Sleep(100 * time.Millisecond)
+					}
+				}
+			} else {
+				var err error
+				freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+				if err != nil {
+					klog.Infof("%s", err)
+					continue
+				}
+				startPort = freePort + 1
 			}
 			result = append(result, api.ForwardedPort{
 				Platform:      commonflags.PlatformPodman,
@@ -138,7 +162,6 @@ func addHostPorts(containers []corev1.Container, debug bool, usedPorts []int) []
 			})
 			port.HostPort = int32(freePort)
 			ports = append(ports, port)
-			startPort = freePort + 1
 		}
 		containers[i].Ports = ports
 	}

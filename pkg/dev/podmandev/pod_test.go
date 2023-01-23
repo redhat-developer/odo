@@ -388,6 +388,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				tt.args.buildCommand,
 				tt.args.runCommand,
 				tt.args.debugCommand,
+				false,
 				[]int{40001, 40002},
 			)
 			if (err != nil) != tt.wantErr {

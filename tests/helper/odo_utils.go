@@ -34,7 +34,7 @@ func GetPreferenceValue(key string) string {
 // CreateRandProject create new project with random name (10 letters)
 // without writing to the config file (without switching project)
 func CreateRandProject() string {
-	projectName := SetProjectName()
+	projectName := GetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := Cmd("odo", "create", "project", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("New project created"))

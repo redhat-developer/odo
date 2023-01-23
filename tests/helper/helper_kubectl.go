@@ -151,7 +151,7 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 
 // CreateAndSetRandNamespaceProject create and set new project
 func (kubectl KubectlRunner) CreateAndSetRandNamespaceProject() string {
-	projectName := SetProjectName()
+	projectName := GetProjectName()
 	kubectl.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }

@@ -22,6 +22,15 @@ func NeedsCluster(labels []string) bool {
 	return true
 }
 
+func NeedsPodman(labels []string) bool {
+	for _, label := range labels {
+		if label == LabelPodman {
+			return true
+		}
+	}
+	return false
+}
+
 func IsAuth(labels []string) bool {
 	for _, label := range labels {
 		if label == LabelUnauth {
