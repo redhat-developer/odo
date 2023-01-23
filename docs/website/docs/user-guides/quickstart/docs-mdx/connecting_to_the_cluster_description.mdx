@@ -3,19 +3,30 @@ import TabItem from '@theme/TabItem';
 import CreateNamespaceOutput from './create_namespace_output.mdx';
 import CreateProjectOutput from './create_project_output.mdx';
 
-Before starting you should make sure that odo is connected to your cluster and that you have created a new namespace (or project if you are using OpenShift).
 
 <Tabs groupId="quickstart">
   <TabItem value="kubernetes" label="Kubernetes">
+
+Before starting you should make sure that odo is connected to your cluster and that you have created a new namespace.
 
 ### Creating a new namespace
 
 If you are using Kubernetes, you can create a new namespace with the `odo create namespace` command.
 
+```console
+odo create namespace odo-dev
+```
+<details>
+    <summary>Sample Output</summary>
+
 <CreateNamespaceOutput />
+
+</details>
 
   </TabItem>
   <TabItem value="openshift" label="OpenShift">
+
+Before starting you should make sure that odo is connected to your cluster and that you have created a new project.
 
 ### Login to OpenShift Cluster
 
@@ -31,7 +42,14 @@ The easiest way to connect `odo` to an OpenShift cluster is use copy "Copy login
 
 If you are using OpenShift, you can create a new namespace with the `odo create project` command.
 
+```console
+odo create project odo-dev
+```
+<details>
+  <summary>Sample Output</summary>
+
 <CreateProjectOutput />
+</details>
 
   </TabItem>
 </Tabs>
