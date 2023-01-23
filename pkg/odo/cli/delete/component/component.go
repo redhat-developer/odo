@@ -15,6 +15,7 @@ import (
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -60,6 +61,14 @@ type ComponentOptions struct {
 	// waitFlag waits for deletion of all resources
 	waitFlag bool
 
+	// runningInFlag limits the scope of deletion to resources created for the specified running mode.
+	runningInFlag string
+
+	// runningIn translates runningInFlag into a usable label that indicates which running mode we should consider
+	// when listing resources candidate for deletion.
+	// It can be either Dev, Deploy or Any (using constant labels.Component*Mode).
+	runningIn string
+
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -76,6 +85,18 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
+	switch api.RunningMode(o.runningInFlag) {
+	case api.RunningModeDev:
+		o.runningIn = labels.ComponentDevMode
+	case api.RunningModeDeploy:
+		o.runningIn = labels.ComponentDeployMode
+	case "":
+		o.runningIn = labels.ComponentAnyMode
+	default:
+		return fmt.Errorf("invalid value for --running-in: %q. Acceptable values are: %s, %s",
+			o.runningInFlag, api.RunningModeDev, api.RunningModeDeploy)
+	}
+
 	// Limit access to platforms if necessary
 	if !feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		o.clientset.PodmanClient = nil
@@ -132,14 +153,14 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	)
 	log.Info("Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
-		clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace)
+		clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace, o.runningIn)
 		if err != nil {
 			return err
 		}
 	}
 
 	if o.clientset.PodmanClient != nil {
-		_, podmanResources, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, o.name)
+		_, podmanResources, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, o.name, o.runningIn)
 		if err != nil {
 			return err
 		}
@@ -164,7 +185,11 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
 			spinner.End(true)
-			log.Infof("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
+			successMsg := fmt.Sprintf("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
+			if o.runningIn != "" {
+				successMsg = fmt.Sprintf("The component %q running in the %s mode is successfully deleted from namespace %q", o.name, o.runningIn, o.namespace)
+			}
+			log.Info(successMsg)
 		}
 
 		if len(podmanResources) > 0 {
@@ -176,7 +201,11 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 				}
 			}
 			spinner.End(true)
-			log.Infof("The component %q is successfully deleted from podman", o.name)
+			successMsg := fmt.Sprintf("The component %q is successfully deleted from podman", o.name)
+			if o.runningIn != "" {
+				successMsg = fmt.Sprintf("The component %q running in the %s mode is successfully deleted podman", o.name, o.runningIn)
+			}
+			log.Info(successMsg)
 		}
 
 		return nil
@@ -219,7 +248,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 	log.Info("Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
-		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(*devfileObj, appName, componentName, labels.ComponentAnyMode)
+		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(
+			*devfileObj, appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
@@ -233,7 +263,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	}
 
 	if o.clientset.PodmanClient != nil {
-		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName)
+		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
@@ -268,12 +298,16 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		return nil
 	}
 
-	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
+	msg := fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)
+	if o.runningIn != "" {
+		msg = fmt.Sprintf("Are you sure you want to delete %q and all its resources running in the %s mode?", componentName, o.runningIn)
+	}
+	if o.forceFlag || ui.Proceed(msg) {
 
 		if hasClusterResources {
 			spinner := log.Spinnerf("Deleting resources from cluster")
 			// Get a list of component's resources present on the cluster
-			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace)
+			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace, o.runningIn)
 			// Get a list of component's resources absent from the devfile, but present on the cluster
 			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
 
@@ -473,6 +507,8 @@ func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command 
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
 	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kubeconfig is used")
+	componentCmd.Flags().StringVar(&o.runningInFlag, "running-in", "",
+		"Delete resources running in the specified mode, optional. By default, all resources created by odo for the component are deleted.")
 	componentCmd.Flags().BoolVarP(&o.withFilesFlag, "files", "", false, "Delete all files and directories generated by odo. Use with caution.")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait for deletion of all dependent resources")
