@@ -199,10 +199,10 @@ func randomPortPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]
 
 // portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
 // it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
-// "container1": {"40001:3000", "40002:3001"}
+// "container1": {"20001:3000", "20002:3001"}
 func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
 	portPairs := make(map[string][]string)
-	startPort := 40001
+	startPort := 20001
 	endPort := startPort + 10000
 	for name, ports := range ceMap {
 		for _, p := range ports {

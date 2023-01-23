@@ -116,7 +116,7 @@ func getVolumeName(volume string, componentName string, appName string) string {
 
 func addHostPorts(containers []corev1.Container, debug bool, randomPorts bool, usedPorts []int) []api.ForwardedPort {
 	var result []api.ForwardedPort
-	startPort := 40001
+	startPort := 20001
 	endPort := startPort + 10000
 	usedPortsCopy := make([]int, len(usedPorts))
 	copy(usedPortsCopy, usedPorts)

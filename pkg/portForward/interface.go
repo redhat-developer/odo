@@ -9,7 +9,7 @@ import (
 type Client interface {
 	// StartPortForwarding starts port forwarding for the endpoints defined in the containers of the devfile
 	// componentName indicates the name of component in the Devfile
-	// randomPorts indicates to affect random ports, instead of stable ports starting at 40001
+	// randomPorts indicates to affect random ports, instead of stable ports starting at 20001
 	// output will be written to errOut writer
 	StartPortForwarding(
 		devFileObj parser.DevfileObj,

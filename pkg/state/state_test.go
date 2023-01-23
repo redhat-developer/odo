@@ -16,7 +16,7 @@ func TestState_SetForwardedPorts(t *testing.T) {
 	forwardedPort1 := api.ForwardedPort{
 		ContainerName: "acontainer",
 		LocalAddress:  "localhost",
-		LocalPort:     40001,
+		LocalPort:     20001,
 		ContainerPort: 3000,
 	}
 
@@ -152,7 +152,7 @@ func TestState_GetForwardedPorts(t *testing.T) {
 			{
 				ContainerName: "acontainer",
 				LocalAddress:  "localhost",
-				LocalPort:     40001,
+				LocalPort:     20001,
 				ContainerPort: 3000,
 			},
 		},
