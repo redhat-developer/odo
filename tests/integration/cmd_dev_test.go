@@ -3225,6 +3225,10 @@ CMD ["npm", "start"]
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-pod-container-overrides.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
+				if podman {
+					// podman running on CI does not contain cpu cgroup controller and hence fails to start the container
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "cpu: \"250m\"", "")
+				}
 			})
 			It("should override the content in the pod it creates for the component on the cluster", func() {
 				err := helper.RunDevMode(helper.DevSessionOpts{
