@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 

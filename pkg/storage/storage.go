@@ -5,7 +5,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 )

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/kclient"

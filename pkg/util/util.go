@@ -27,8 +27,8 @@ import (
 	gitignore "github.com/sabhiram/go-gitignore"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	dfutil "github.com/devfile/library/pkg/util"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 

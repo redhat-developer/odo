@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/devfile/library/v2/pkg/devfile/generator"
 
 	"github.com/redhat-developer/odo/pkg/util"
 )

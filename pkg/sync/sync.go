@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/devfile/library/pkg/devfile/generator"
-	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/v2/pkg/devfile/generator"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/platform"

@@ -3,7 +3,7 @@ package binding
 import (
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 

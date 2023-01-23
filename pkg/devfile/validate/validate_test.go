@@ -3,12 +3,12 @@ package validate
 import (
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/devfile/library/pkg/testingutil"
+	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	"github.com/devfile/library/v2/pkg/testingutil"
 
 	"github.com/redhat-developer/odo/pkg/util"
 )

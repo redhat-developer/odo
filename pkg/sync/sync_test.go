@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 

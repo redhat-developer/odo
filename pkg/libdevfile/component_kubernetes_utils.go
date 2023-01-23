@@ -5,9 +5,9 @@ import (
 	"io"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
 	yaml3 "gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

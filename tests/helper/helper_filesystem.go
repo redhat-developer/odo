@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"

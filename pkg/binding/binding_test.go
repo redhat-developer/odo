@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"

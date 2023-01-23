@@ -21,7 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

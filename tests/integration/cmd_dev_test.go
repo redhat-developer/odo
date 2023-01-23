@@ -17,6 +17,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
@@ -3217,5 +3219,48 @@ CMD ["npm", "start"]
 				}
 			}))
 		}
+	}
+
+	for _, ctx := range []struct {
+		devfile   string
+		checkFunc func(podOut *corev1.Pod)
+		podman    bool
+	}{
+		{
+			devfile: "devfile-pod-container-overrides.yaml",
+			checkFunc: func(podOut *corev1.Pod) {
+				Expect(podOut.Spec.Containers[0].Resources.Limits.Memory().String()).To(ContainSubstring("512Mi"))
+				Expect(podOut.Spec.Containers[0].Resources.Limits.Cpu().String()).To(ContainSubstring("250m"))
+				Expect(podOut.Spec.ServiceAccountName).To(ContainSubstring("new-service-account"))
+			},
+			podman: false,
+		},
+		{
+			devfile: "devfile-container-override-on-podman.yaml",
+			checkFunc: func(podOut *corev1.Pod) {
+				Expect(podOut.Spec.Containers[0].SecurityContext.RunAsUser).To(Equal(pointer.Int64(1001)))
+				Expect(podOut.Spec.Containers[0].SecurityContext.RunAsGroup).To(Equal(pointer.Int64(1001)))
+			},
+			podman: true,
+		},
+	} {
+		ctx := ctx
+		Context("Devfile contains pod-overrides and container-overrides attributes", helper.LabelPodmanIf(ctx.podman, func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
+			})
+			It("should override the content in the pod it creates for the component on the cluster", func() {
+				err := helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: ctx.podman,
+				}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					podOut := component.GetPodDef()
+					ctx.checkFunc(podOut)
+				})
+				Expect(err).To(BeNil())
+			})
+		}))
+
 	}
 })

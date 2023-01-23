@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	// Third-party packages
-	dfutil "github.com/devfile/library/pkg/util"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"

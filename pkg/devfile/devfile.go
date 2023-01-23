@@ -5,8 +5,8 @@ import (
 
 	"strings"
 
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/v2/pkg/devfile"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/log"

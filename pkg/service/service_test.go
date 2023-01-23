@@ -10,9 +10,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	devfileFileSystem "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 )
 
 func TestListDevfileLinks(t *testing.T) {
