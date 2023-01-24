@@ -151,8 +151,6 @@ github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
-# github.com/devfile/library v1.2.1-0.20220602130922-85a4805bd59c
-## explicit; go 1.15
 # github.com/devfile/library/v2 v2.2.1-0.20230118161058-0d04f791d801
 ## explicit; go 1.15
 github.com/devfile/library/v2/pkg/devfile
@@ -894,7 +892,7 @@ golang.org/x/sys/windows/registry
 # golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.3.8
+# golang.org/x/text v0.6.0
 ## explicit; go 1.17
 golang.org/x/text/cases
 golang.org/x/text/encoding
