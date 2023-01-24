@@ -74,11 +74,12 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		return err
 	}
 	stdin.Close()
-
+	var podmanOut string
 	go func() {
 		for {
 			tmp := make([]byte, 1024)
 			_, err = stdout.Read(tmp)
+			podmanOut += string(tmp)
 			klog.V(4).Info(string(tmp))
 			if err != nil {
 				break
@@ -87,7 +88,7 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 	}()
 	if err = cmd.Wait(); err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
-			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+			err = fmt.Errorf("%s: %s\nComplete Podman output:\n%s", err, string(exiterr.Stderr), podmanOut)
 		}
 		return err
 	}
