@@ -181,6 +181,11 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 
 	err = o.podmanClient.PlayKube(pod)
 	if err != nil {
+		// there are cases when pod is created even if there is an error with the pod def; for e.g. incorrect image
+		if podMap, _ := o.podmanClient.PodLs(); podMap[pod.Name] {
+			o.deployedPod = &corev1.Pod{}
+			o.deployedPod.SetName(pod.Name)
+		}
 		return nil, nil, err
 	}
 
