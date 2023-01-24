@@ -88,10 +88,7 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 	}()
 	if err = cmd.Wait(); err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
-			out := strings.Split(podmanOut, "\n")
-			// the last line is an empty new line; so we revert to the second last line for error
-			errLine := out[len(out)-2]
-			err = fmt.Errorf("%s: %s\n%s", err, string(exiterr.Stderr), errLine)
+			err = fmt.Errorf("%s: %s\nComplete Podman output:\n%s", err, string(exiterr.Stderr), podmanOut)
 		}
 		return err
 	}
