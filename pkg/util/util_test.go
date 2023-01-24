@@ -518,11 +518,7 @@ func RemoveContentsFromDir(dir string) error {
 }
 
 func TestGetIgnoreRulesFromDirectory(t *testing.T) {
-	testDir, err := ioutil.TempDir(os.TempDir(), "odo-tests")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(testDir)
+	testDir := t.TempDir()
 	tests := []struct {
 		name             string
 		directoryName    string
@@ -1326,14 +1322,10 @@ func TestUnzip(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", "unzip")
-			if err != nil {
-				t.Errorf("Error creating temp dir: %s", err)
-			}
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 			t.Logf(dir)
 
-			_, err = Unzip(filepath.FromSlash(tt.src), dir, tt.pathToUnzip)
+			_, err := Unzip(filepath.FromSlash(tt.src), dir, tt.pathToUnzip)
 			if err != nil {
 				tt.expectedError = strings.ReplaceAll(tt.expectedError, "/", string(filepath.Separator))
 				if !strings.HasPrefix(err.Error(), tt.expectedError) {
@@ -1397,11 +1389,7 @@ func TestIsValidProjectDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, err := ioutil.TempDir("", "valid-project")
-			if err != nil {
-				t.Errorf("Error creating temp dir: %s", err)
-			}
-			defer os.RemoveAll(tmpDir)
+			tmpDir := t.TempDir()
 
 			for _, f := range tt.filesToCreate {
 				file := filepath.Join(tmpDir, f)
@@ -1417,7 +1405,7 @@ func TestIsValidProjectDir(t *testing.T) {
 				}
 			}
 
-			err = IsValidProjectDir(tmpDir, tt.devfilePath)
+			err := IsValidProjectDir(tmpDir, tt.devfilePath)
 			expectedError := tt.expectedError
 			if expectedError != "" {
 				expectedError = fmt.Sprintf(expectedError, tmpDir)
@@ -1573,10 +1561,7 @@ func TestValidateURL(t *testing.T) {
 
 func TestValidateFile(t *testing.T) {
 	// Create temp dir and temp file
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("Failed to create temp dir: %s, error: %v", tempDir, err)
-	}
+	tempDir := t.TempDir()
 	tempFile, err := ioutil.TempFile(tempDir, "")
 	if err != nil {
 		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
@@ -1616,10 +1601,7 @@ func TestValidateFile(t *testing.T) {
 
 func TestCopyFile(t *testing.T) {
 	// Create temp dir
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("Failed to create temp dir: %s, error: %v", tempDir, err)
-	}
+	tempDir := t.TempDir()
 
 	// Create temp file under temp dir as source file
 	tempFile, err := ioutil.TempFile(tempDir, "")
@@ -2410,12 +2392,7 @@ func TestGetCommandStringFromEnvs(t *testing.T) {
 }
 
 func TestGetGitOriginPath(t *testing.T) {
-	tempGitDirWithOrigin, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
-
-	defer os.RemoveAll(tempGitDirWithOrigin)
+	tempGitDirWithOrigin := t.TempDir()
 
 	repoWithOrigin, err := git.PlainInit(tempGitDirWithOrigin, true)
 	if err != nil {
@@ -2430,12 +2407,7 @@ func TestGetGitOriginPath(t *testing.T) {
 		t.Errorf("unexpected error %v", err)
 	}
 
-	tempGitDirWithoutOrigin, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("unexpected error %v", err)
-	}
-
-	defer os.RemoveAll(tempGitDirWithoutOrigin)
+	tempGitDirWithoutOrigin := t.TempDir()
 
 	repoWithoutOrigin, err := git.PlainInit(tempGitDirWithoutOrigin, true)
 	if err != nil {
