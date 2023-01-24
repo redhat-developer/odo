@@ -23,5 +23,5 @@ jobs:
 
     - name: Run Integration tests
       env:
-        PODMAN_EXEC_NODES: ${{ vars.PODMAN_TEST_EXEC_NODES }}
+        PODMAN_EXEC_NODES: ${{ secrets.PODMAN_TEST_EXEC_NODES }}
       run: make test-integration-podman
