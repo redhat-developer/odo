@@ -59,8 +59,8 @@ GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --slow-spec-threshold=$(S
 GINKGO_FLAGS_AUTO = $(GINKGO_FLAGS_ALL) -p
 # Flags for tests that may be run in parallel
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
-# Flags for Podman tests that may be run in parallel
-GINKGO_FLAGS_PODMAN=$(GINKGO_FLAGS_ALL) -nodes=$(PODMAN_EXEC_NODES)
+# Flags for Podman tests that may be run in parallel, and not waiting for terminating containers
+GINKGO_FLAGS_PODMAN=$(GINKGO_FLAGS_ALL) -nodes=$(PODMAN_EXEC_NODES) --output-interceptor-mode=none 
 # Flags for tests that must not be run in parallel
 GINKGO_FLAGS_ONE=$(GINKGO_FLAGS_ALL) -nodes=1
 # GolangCi version for unit-validate test
