@@ -41,6 +41,10 @@ func StripSpinner(docString string) (returnString string) {
 		if (strings.HasPrefix(line, "•  Downloading") || strings.HasPrefix(line, "•  Syncing") || strings.HasPrefix(line, "•  Building")) && strings.HasSuffix(line, "...") {
 			continue
 		}
+		// Remove warnings, execpt "Pod is Pending"
+		if strings.HasPrefix(line, "⚠") && !strings.Contains(line, "Pod is Pending") {
+			continue
+		}
 
 		// for some reason, splitting the docString by \n does not split the spinner frames,
 		// so we perform a side operation to remove the extra spinner frames that are not present in the final output
