@@ -85,10 +85,7 @@ func TestSyncFiles(t *testing.T) {
 	testComponentName := "test"
 
 	// create a temp dir for the file indexer
-	directory, e := ioutil.TempDir("", "")
-	if e != nil {
-		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", e)
-	}
+	directory := t.TempDir()
 
 	jsFile, e := os.Create(filepath.Join(directory, "red.js"))
 	if e != nil {
@@ -188,11 +185,6 @@ func TestSyncFiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
 	}
-	// Remove the temp dir created for the file indexer
-	err = os.RemoveAll(directory)
-	if err != nil {
-		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
-	}
 }
 
 func TestPushLocal(t *testing.T) {
@@ -200,10 +192,7 @@ func TestPushLocal(t *testing.T) {
 	testComponentName := "test"
 
 	// create a temp dir for the file indexer
-	directory, e := ioutil.TempDir("", "")
-	if e != nil {
-		t.Errorf("TestPushLocal error: error creating temporary directory for the indexer: %v", e)
-	}
+	directory := t.TempDir()
 
 	newFilePath := filepath.Join(directory, "foobar.txt")
 	if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
@@ -322,12 +311,6 @@ func TestPushLocal(t *testing.T) {
 
 		})
 	}
-
-	// Remove the temp dir created for the file indexer
-	err := os.RemoveAll(directory)
-	if err != nil {
-		t.Errorf("TestPushLocal error: error deleting the temp dir %s", directory)
-	}
 }
 
 func TestUpdateIndexWithWatchChanges(t *testing.T) {
@@ -360,10 +343,7 @@ func TestUpdateIndexWithWatchChanges(t *testing.T) {
 	for _, tt := range tests {
 
 		// create a temp dir for the fake component
-		directory, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: error creating temporary directory for the indexer: %v", err)
-		}
+		directory := t.TempDir()
 
 		fileIndexPath, err := util.ResolveIndexFilePath(directory)
 		if err != nil {

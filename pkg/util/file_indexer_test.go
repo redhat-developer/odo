@@ -140,10 +140,7 @@ func mockDirectoryInfo(create bool, contextDir string, fs filesystem.Filesystem)
 func TestCalculateFileDataKeyFromPath(t *testing.T) {
 
 	// create a temp dir for the fake component
-	directory, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: error creating temporary directory for the indexer: %v", err)
-	}
+	directory := t.TempDir()
 
 	tests := []struct {
 		absolutePath   string
@@ -186,10 +183,7 @@ func TestCalculateFileDataKeyFromPath(t *testing.T) {
 func TestGenerateNewFileDataEntry(t *testing.T) {
 
 	// create a temp dir for the fake component
-	directory, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: error creating temporary directory for the indexer: %v", err)
-	}
+	directory := t.TempDir()
 
 	tests := []struct {
 		testName      string
