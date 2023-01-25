@@ -26,4 +26,5 @@ jobs:
         PODMAN_EXEC_NODES: ${{ secrets.PODMAN_TEST_EXEC_NODES }}
       run: |
         make test-integration-podman
+        podman pod ls --format '{{.Name}}' | xargs -I '{}' podman pod inspect '{}'
         podman pod ls --format '{{.Name}}' | xargs podman pod stop
