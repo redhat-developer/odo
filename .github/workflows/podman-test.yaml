@@ -23,5 +23,11 @@ jobs:
 
     - name: Run Integration tests
       env:
-        PODMAN_EXEC_NODES: ${{ vars.PODMAN_TEST_EXEC_NODES }}
+        PODMAN_EXEC_NODES: ${{ secrets.PODMAN_TEST_EXEC_NODES }}
       run: make test-integration-podman
+
+    - name: List and stop remaining containers
+      if: ${{ always() }}
+      run: |
+        podman pod ls --format '{{.Name}}' | xargs -I '{}' podman pod inspect '{}'
+        podman pod ls --format '{{.Name}}' | xargs podman pod stop
