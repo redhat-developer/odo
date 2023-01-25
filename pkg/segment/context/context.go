@@ -6,10 +6,13 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/pflag"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/platform"
+	"github.com/redhat-developer/odo/pkg/podman"
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 
@@ -28,6 +31,8 @@ const (
 	InteractiveMode  = "interactive"
 	ExperimentalMode = "experimental"
 	Flags            = "flags"
+	Platform         = "platform"
+	PlatformVersion  = "platformVersion"
 )
 
 const (
@@ -96,6 +101,60 @@ func SetClusterType(ctx context.Context, client kclient.ClientInterface) {
 		}
 	}
 	setContextProperty(ctx, ClusterType, value)
+}
+
+// SetPlatform sets platform and platform_version properties for telemetry data
+func SetPlatform(ctx context.Context, client platform.Client) {
+	switch client := client.(type) {
+	case kclient.ClientInterface:
+		setPlatformCluster(ctx, client)
+	case podman.Client:
+		setPlatformPodman(ctx, client)
+	}
+}
+
+func setPlatformCluster(ctx context.Context, client kclient.ClientInterface) {
+	var value string
+	if client == nil {
+		value = NOTFOUND
+	} else {
+		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
+		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
+		serverInfo, err := client.GetServerVersion(time.Second)
+		if err != nil {
+			klog.V(3).Info(fmt.Errorf("unable to detect cluster version: %w", err))
+			serverInfo = nil
+		}
+
+		isOC, err := client.IsProjectSupported()
+		if err != nil {
+			klog.V(3).Info(fmt.Errorf("unable to detect project support: %w", err))
+			value = NOTFOUND
+		} else {
+			if isOC {
+				value = "openshift"
+				if serverInfo != nil {
+					setContextProperty(ctx, PlatformVersion, serverInfo.KubernetesVersion) //TODO use OpenshiftVersion
+				}
+			} else {
+				value = "kubernetes"
+				if serverInfo != nil {
+					setContextProperty(ctx, PlatformVersion, serverInfo.KubernetesVersion)
+				}
+			}
+		}
+	}
+	setContextProperty(ctx, Platform, value)
+}
+
+func setPlatformPodman(ctx context.Context, client podman.Client) {
+	setContextProperty(ctx, Platform, "podman")
+	version, err := client.Version()
+	if err != nil {
+		klog.V(3).Info(fmt.Errorf("unable to get podman version: %w", err))
+		return
+	}
+	setContextProperty(ctx, PlatformVersion, version.Client.Version)
 }
 
 // SetTelemetryStatus sets telemetry status before a command is run

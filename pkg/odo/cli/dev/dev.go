@@ -107,10 +107,12 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		if o.clientset.KubernetesClient == nil {
 			return errors.New("no connection to cluster defined")
 		}
+		scontext.SetPlatform(ctx, o.clientset.KubernetesClient)
 	case commonflags.PlatformPodman:
 		if o.clientset.PodmanClient == nil {
 			return errors.New("unable to access podman. Do you have podman client installed?")
 		}
+		scontext.SetPlatform(ctx, o.clientset.PodmanClient)
 	}
 	return nil
 }
