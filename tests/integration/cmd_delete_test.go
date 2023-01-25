@@ -237,6 +237,13 @@ var _ = Describe("odo delete command tests", func() {
 					})
 
 					AfterEach(func() {
+						args := []string{"delete", "component", "--name", cmpName}
+						if !podman {
+							args = append(args, "--namespace", commonVar.Project)
+						}
+						args = append(args, "-f", "--wait")
+						helper.Cmd("odo", args...).ShouldPass()
+
 						if podman {
 							helper.ResetExperimentalMode()
 						}
