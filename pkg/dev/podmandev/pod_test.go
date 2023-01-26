@@ -231,6 +231,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				{
 					Platform:      "podman",
 					ContainerName: "mycomponent",
+					PortName:      "http",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     20001,
 					ContainerPort: 8080,
@@ -274,6 +275,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				{
 					Platform:      "podman",
 					ContainerName: "mycomponent",
+					PortName:      "http",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     20001,
 					ContainerPort: 8080,
@@ -324,6 +326,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				{
 					Platform:      "podman",
 					ContainerName: "mycomponent",
+					PortName:      "http",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     20001,
 					ContainerPort: 8080,
@@ -331,6 +334,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				{
 					Platform:      "podman",
 					ContainerName: "mycomponent",
+					PortName:      "debug",
 					LocalAddress:  "127.0.0.1",
 					LocalPort:     20002,
 					ContainerPort: 5858,

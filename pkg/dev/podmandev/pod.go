@@ -49,7 +49,15 @@ func createPodFromComponent(
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	fwPorts := addHostPorts(containers, debug, randomPorts, usedPorts)
+	// get the endpoint/port information for containers in devfile
+	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	ceMapping := libdevfile.GetContainerEndpointMapping(containerComponents, debug)
+	fwPorts := addHostPorts(containers, ceMapping, debug, randomPorts, usedPorts)
 
 	volumes := []corev1.Volume{
 		{
@@ -115,7 +123,7 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func addHostPorts(containers []corev1.Container, debug bool, randomPorts bool, usedPorts []int) []api.ForwardedPort {
+func addHostPorts(containers []corev1.Container, ceMapping map[string][]v1alpha2.Endpoint, debug bool, randomPorts bool, usedPorts []int) []api.ForwardedPort {
 	var result []api.ForwardedPort
 	startPort := 20001
 	endPort := startPort + 10000
@@ -124,10 +132,12 @@ func addHostPorts(containers []corev1.Container, debug bool, randomPorts bool, u
 	for i := range containers {
 		var ports []corev1.ContainerPort
 		for _, port := range containers[i].Ports {
+			containerName := containers[i].Name
 			portName := port.Name
-			if !debug && libdevfile.IsDebugPort(portName) {
+			isDebugPort := libdevfile.IsDebugPort(portName)
+			if !debug && isDebugPort {
 				klog.V(4).Infof("not running in Debug mode, so skipping container Debug port: %v:%v:%v",
-					containers[i].Name, portName, port.ContainerPort)
+					containerName, portName, port.ContainerPort)
 				continue
 			}
 			var freePort int
@@ -156,7 +166,8 @@ func addHostPorts(containers []corev1.Container, debug bool, randomPorts bool, u
 			}
 			result = append(result, api.ForwardedPort{
 				Platform:      commonflags.PlatformPodman,
-				ContainerName: containers[i].Name,
+				PortName:      portName,
+				ContainerName: containerName,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,
 				ContainerPort: int(port.ContainerPort),

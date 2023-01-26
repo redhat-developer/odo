@@ -37,6 +37,7 @@ func Test_getForwardedPort(t *testing.T) {
 			},
 			want: api.ForwardedPort{
 				ContainerName: "container1",
+				PortName:      "port-11",
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     40407,
 				ContainerPort: 3000,

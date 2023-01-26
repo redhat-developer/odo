@@ -91,6 +91,7 @@ containerLoop:
 		for _, ep := range endpoints {
 			if ep.TargetPort == remotePort {
 				fp.ContainerName = container
+				fp.PortName = ep.Name
 				break containerLoop
 			}
 		}
