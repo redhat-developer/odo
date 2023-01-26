@@ -164,14 +164,24 @@ func addHostPorts(containers []corev1.Container, ceMapping map[string][]v1alpha2
 				}
 				startPort = freePort + 1
 			}
-			result = append(result, api.ForwardedPort{
+			// Find the endpoint in the container-endpoint mapping
+			containerPort := int(port.ContainerPort)
+			fp := api.ForwardedPort{
 				Platform:      commonflags.PlatformPodman,
 				PortName:      portName,
 				ContainerName: containerName,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,
-				ContainerPort: int(port.ContainerPort),
-			})
+				ContainerPort: containerPort,
+			}
+
+			for _, ep := range ceMapping[containerName] {
+				if ep.TargetPort == containerPort {
+					fp.Exposure = string(ep.Exposure)
+					break
+				}
+			}
+			result = append(result, fp)
 			port.HostPort = int32(freePort)
 			ports = append(ports, port)
 		}

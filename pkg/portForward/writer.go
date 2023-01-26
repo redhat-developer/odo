@@ -92,6 +92,7 @@ containerLoop:
 			if ep.TargetPort == remotePort {
 				fp.ContainerName = container
 				fp.PortName = ep.Name
+				fp.Exposure = string(ep.Exposure)
 				break containerLoop
 			}
 		}

@@ -394,6 +394,9 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 			if port.PortName != "" {
 				details += "\n    Name: " + port.PortName
 			}
+			if port.Exposure != "" {
+				details += "\n    Exposure: " + port.Exposure
+			}
 			log.Printf(details)
 		}
 		fmt.Println()
