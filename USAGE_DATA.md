@@ -11,6 +11,7 @@ If the user has consented to `odo` collecting usage data, the following data wil
 * Command Success
 * Pseudonymized error message and error type (in case of failure)
 * Whether the command was run from a terminal
+* Whether the command was run in experimental mode
 * `odo` version in use
 
 In addition to this, the following data about user's identity is also noted - 
@@ -22,12 +23,12 @@ The following tables describe the additional information collected by `odo` comm
 
 **odo v3**
 
-| Command                           | Data                                                                          |
-|-----------------------------------|-------------------------------------------------------------------------------|
-| odo init                          | Component Type, Devfile Name, Language, Project Type, Interactive Mode (bool) |
-| odo dev                           | Component Type, Devfile Name, Language, Project Type                          |
-| odo deploy                        | Component Type, Devfile Name, Language, Project Type                          |
-| odo <create/set/delete> namespace | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes)          |
+| Command                           | Data                                                                                                            |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| odo init                          | Component Type, Devfile Name, Language, Project Type, Interactive Mode (bool)                                   |
+| odo dev                           | Component Type, Devfile Name, Language, Project Type, Platform (podman, kubernetes, openshift), Platform version|
+| odo deploy                        | Component Type, Devfile Name, Language, Project Type, Platform (kubernetes, openshift), Platform version        |
+| odo <create/set/delete> namespace | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes)                                            |
 
 **odo v2**
 
