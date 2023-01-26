@@ -276,24 +276,24 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 	return nil
 }
 
-// GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int)
-// Debug ports will be included only if includeDebug is true.
-func GetContainerEndpointMapping(containers []v1alpha2.Component, includeDebug bool) map[string][]int {
-	ceMapping := make(map[string][]int)
+// GetContainerEndpointMapping returns a map of container names and slice of its endpoints.
+// Debug endpoints will be included only if includeDebug is true.
+func GetContainerEndpointMapping(containers []v1alpha2.Component, includeDebug bool) map[string][]v1alpha2.Endpoint {
+	ceMapping := make(map[string][]v1alpha2.Endpoint)
 	for _, container := range containers {
 		if container.ComponentUnion.Container == nil {
 			// this is not a container component; continue prevents panic when accessing Endpoints field
 			continue
 		}
 
-		var ports []int
+		var ports []v1alpha2.Endpoint
 		for _, e := range container.Container.Endpoints {
 			if !includeDebug && IsDebugEndpoint(e) {
 				klog.V(4).Infof("not running in Debug mode, so ignored Debug port for container %v:%v:%v",
 					container.Name, e.Name, e.TargetPort)
 				continue
 			}
-			ports = append(ports, e.TargetPort)
+			ports = append(ports, e)
 		}
 		if len(ports) != 0 {
 			ceMapping[container.Name] = ports

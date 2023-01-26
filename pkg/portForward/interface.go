@@ -3,6 +3,7 @@ package portForward
 import (
 	"io"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 )
 
@@ -22,10 +23,10 @@ type Client interface {
 	// StopPortForwarding stops the port forwarding
 	StopPortForwarding()
 
-	// GetForwardedPorts returns the list of ports for each containers currently forwarded
-	GetForwardedPorts() map[string][]int
+	// GetForwardedPorts returns the list of ports for each container currently forwarded.
+	GetForwardedPorts() map[string][]v1alpha2.Endpoint
 
-	// GetPortsToForward returns the endpoints to forward from the Devfile.
+	// GetPortsToForward returns the endpoints to forward from the Devfile, by container name.
 	// Debug ports will be included only if includeDebug is true.
-	GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]int, error)
+	GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]v1alpha2.Endpoint, error)
 }

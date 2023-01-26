@@ -699,21 +699,21 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[string][]int
+		want map[string][]v1alpha2.Endpoint
 	}{
 		{
 			name: "invalid input - image components instead of container components",
 			args: args{
 				containers: []v1alpha2.Component{imageComponent},
 			},
-			want: map[string][]int{},
+			want: map[string][]v1alpha2.Endpoint{},
 		},
 		{
 			name: "one container with no endpoints exposed",
 			args: args{
 				containers: []v1alpha2.Component{containerWithNoEndpoints},
 			},
-			want: map[string][]int{},
+			want: map[string][]v1alpha2.Endpoint{},
 		},
 		{
 			name: "multiple containers with varying types of endpoints - without debug",
@@ -727,11 +727,21 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 					multiportContainer2,
 				},
 			},
-			want: map[string][]int{
-				containerWithOnePublicEndpoint.Name:   {8080},
-				containerWithOneInternalEndpoint.Name: {9090},
-				multiportContainer1.Name:              {3000, 8888},
-				multiportContainer2.Name:              {8080, 9100},
+			want: map[string][]v1alpha2.Endpoint{
+				containerWithOnePublicEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep1", TargetPort: 8080, Exposure: "public"},
+				},
+				containerWithOneInternalEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep2", TargetPort: 9090, Exposure: "internal"},
+				},
+				multiportContainer1.Name: {
+					v1alpha2.Endpoint{Name: "http-3000", TargetPort: 3000, Exposure: "public"},
+					v1alpha2.Endpoint{Name: "http-8888", TargetPort: 8888, Exposure: "internal"},
+				},
+				multiportContainer2.Name: {
+					v1alpha2.Endpoint{Name: "http-8080", TargetPort: 8080, Exposure: "public"},
+					v1alpha2.Endpoint{Name: "http-9100", TargetPort: 9100, Exposure: "internal"},
+				},
 			},
 		},
 		{
@@ -747,12 +757,29 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 				},
 				includeDebug: true,
 			},
-			want: map[string][]int{
-				containerWithOnePublicEndpoint.Name:    {8080},
-				containerWithOneInternalEndpoint.Name:  {9090},
-				containerWithOneNoneDebugEndpoint.Name: {9099},
-				multiportContainer1.Name:               {3000, 8888, 5005, 15005, 25005},
-				multiportContainer2.Name:               {8080, 9100, 18080, 19100},
+			want: map[string][]v1alpha2.Endpoint{
+				containerWithOnePublicEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep1", TargetPort: 8080, Exposure: "public"},
+				},
+				containerWithOneInternalEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep2", TargetPort: 9090, Exposure: "internal"},
+				},
+				containerWithOneNoneDebugEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "debug", TargetPort: 9099, Exposure: "none"},
+				},
+				multiportContainer1.Name: {
+					v1alpha2.Endpoint{Name: "http-3000", TargetPort: 3000, Exposure: "public"},
+					v1alpha2.Endpoint{Name: "http-8888", TargetPort: 8888, Exposure: "internal"},
+					v1alpha2.Endpoint{Name: "debug", TargetPort: 5005, Exposure: "none"},
+					v1alpha2.Endpoint{Name: "debug-udp", TargetPort: 15005, Exposure: "none", Protocol: "udp"},
+					v1alpha2.Endpoint{Name: "debug-ws", TargetPort: 25005, Exposure: "none", Protocol: "ws"},
+				},
+				multiportContainer2.Name: {
+					v1alpha2.Endpoint{Name: "http-8080", TargetPort: 8080, Exposure: "public"},
+					v1alpha2.Endpoint{Name: "http-9100", TargetPort: 9100, Exposure: "internal"},
+					v1alpha2.Endpoint{Name: "debug", TargetPort: 18080, Exposure: "none"},
+					v1alpha2.Endpoint{Name: "debug-udp", TargetPort: 19100, Exposure: "none", Protocol: "udp"},
+				},
 			},
 		},
 		{
@@ -766,9 +793,13 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 					imageComponent,
 				},
 			},
-			want: map[string][]int{
-				containerWithOnePublicEndpoint.Name:   {8080},
-				containerWithOneInternalEndpoint.Name: {9090},
+			want: map[string][]v1alpha2.Endpoint{
+				containerWithOnePublicEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep1", TargetPort: 8080, Exposure: "public"},
+				},
+				containerWithOneInternalEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep2", TargetPort: 9090, Exposure: "internal"},
+				},
 			},
 		},
 		{
@@ -783,10 +814,16 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 				},
 				includeDebug: true,
 			},
-			want: map[string][]int{
-				containerWithOnePublicEndpoint.Name:    {8080},
-				containerWithOneInternalEndpoint.Name:  {9090},
-				containerWithOneNoneDebugEndpoint.Name: {9099},
+			want: map[string][]v1alpha2.Endpoint{
+				containerWithOnePublicEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep1", TargetPort: 8080, Exposure: "public"},
+				},
+				containerWithOneInternalEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "ep2", TargetPort: 9090, Exposure: "internal"},
+				},
+				containerWithOneNoneDebugEndpoint.Name: {
+					v1alpha2.Endpoint{Name: "debug", TargetPort: 9099, Exposure: "none"},
+				},
 			},
 		},
 	}

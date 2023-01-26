@@ -1,5 +1,7 @@
 package watch
 
+import "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+
 type State string
 
 const (
@@ -19,7 +21,7 @@ type ComponentStatus struct {
 	// RunExecuted is set to true when the run command has been executed
 	// Used for HotReload capability
 	RunExecuted        bool
-	EndpointsForwarded map[string][]int
+	EndpointsForwarded map[string][]v1alpha2.Endpoint
 }
 
 func componentCanSyncFile(state State) bool {

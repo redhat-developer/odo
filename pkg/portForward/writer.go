@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 
@@ -19,14 +21,14 @@ type PortWriter struct {
 	buffer io.Writer
 	end    chan bool
 	len    int
-	// mapping indicates the list of ports open by containers (ex: mapping["runtime"] = {3000, 3030})
-	mapping map[string][]int
+	// mapping indicates the list of endpoints open by containers
+	mapping map[string][]v1alpha2.Endpoint
 	fwPorts []api.ForwardedPort
 }
 
 // NewPortWriter creates a writer that will write the content in buffer,
 // and Wait will return after strings "Forwarding from 127.0.0.1:" has been written "len" times
-func NewPortWriter(buffer io.Writer, len int, mapping map[string][]int) *PortWriter {
+func NewPortWriter(buffer io.Writer, len int, mapping map[string][]v1alpha2.Endpoint) *PortWriter {
 	return &PortWriter{
 		buffer:  buffer,
 		len:     len,
@@ -65,7 +67,7 @@ func (o *PortWriter) GetForwardedPorts() []api.ForwardedPort {
 	return o.fwPorts
 }
 
-func getForwardedPort(mapping map[string][]int, s string) (api.ForwardedPort, error) {
+func getForwardedPort(mapping map[string][]v1alpha2.Endpoint, s string) (api.ForwardedPort, error) {
 	regex := regexp.MustCompile(`Forwarding from 127.0.0.1:([0-9]+) -> ([0-9]+)`)
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) < 3 {
@@ -79,19 +81,19 @@ func getForwardedPort(mapping map[string][]int, s string) (api.ForwardedPort, er
 	if err != nil {
 		return api.ForwardedPort{}, err
 	}
-	containerName := ""
-	for container, ports := range mapping {
-		for _, port := range ports {
-			if port == remotePort {
-				containerName = container
-				break
-			}
-		}
-	}
-	return api.ForwardedPort{
-		ContainerName: containerName,
+	fp := api.ForwardedPort{
 		LocalAddress:  "127.0.0.1",
 		LocalPort:     localPort,
 		ContainerPort: remotePort,
-	}, nil
+	}
+containerLoop:
+	for container, endpoints := range mapping {
+		for _, ep := range endpoints {
+			if ep.TargetPort == remotePort {
+				fp.ContainerName = container
+				break containerLoop
+			}
+		}
+	}
+	return fp, nil
 }
