@@ -400,18 +400,15 @@ var _ = Describe("E2E Test", func() {
 			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "Go", "Dev", bindingName})
 
-			// "exit dev mode"
-			devSession.Stop()
-			devSession.WaitEnd()
-
 			// remove bindings and check devfile to not contain binding info
-			// TODO: move `remove binding` inside devsession after https://github.com/redhat-developer/odo/issues/6101 is fixed
 			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 
-			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+			_, _, _, err = devSession.WaitSync()
 			Expect(err).To(BeNil())
-			stdout = helper.Cmd("odo", "describe", "binding").ShouldPass().Out()
-			Expect(stdout).To(ContainSubstring("No ServiceBinding used by the current component"))
+			Eventually(func() string { return helper.Cmd("odo", "describe", "binding").ShouldRun().Out() }).
+				WithTimeout(120 * time.Second).
+				WithPolling(5 * time.Second).
+				Should(ContainSubstring("No ServiceBinding used by the current component"))
 
 			devSession.Stop()
 			devSession.WaitEnd()
