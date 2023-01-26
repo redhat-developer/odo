@@ -241,6 +241,14 @@ var _ = Describe("odo dev command tests", func() {
 						experimentalValue = true
 					}
 					Expect(td.Properties.CmdProperties[segment.ExperimentalMode]).To(Equal(experimentalValue))
+					if podman {
+						Expect(td.Properties.CmdProperties[segment.Platform]).To(ContainSubstring("podman"))
+					} else if os.Getenv("KUBERNETES") == "true" {
+						Expect(td.Properties.CmdProperties[segment.Platform]).To(ContainSubstring("kubernetes"))
+					} else {
+						Expect(td.Properties.CmdProperties[segment.Platform]).To(ContainSubstring("openshift"))
+					}
+					Expect(td.Properties.CmdProperties[segment.PlatformVersion]).ToNot(BeEmpty())
 				})
 			}))
 
