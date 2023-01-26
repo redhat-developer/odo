@@ -27,6 +27,14 @@ var _ = Describe("E2E Test", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
+	waitRemoteApp := func(urlInContainer, assertString string) {
+		cmp := helper.NewComponent(componentName, "app", "Dev", commonVar.Project, commonVar.CliRunner)
+		Eventually(func() string {
+			stdout, _ := cmp.Exec("runtime", nil, "curl", urlInContainer)
+			return stdout
+		}, 120*time.Second, 15*time.Second).Should(Equal(assertString))
+	}
+
 	checkIfDevEnvIsUp := func(url, assertString string) {
 		Eventually(func() string {
 			resp, err := http.Get(fmt.Sprintf("http://%s", url))
@@ -83,11 +91,15 @@ var _ = Describe("E2E Test", func() {
 			var ports map[string]string
 
 			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js Starter Application!")
+			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js Starter Application!")
+
+			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from updated Node.js Starter Application!")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
 
 			// "changes are made to the applications"
@@ -95,6 +107,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v2 Starter Application!")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
 
 			// "running odo list"
@@ -135,6 +148,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v3 Starter Application!")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
 
 			// should list both dev,deploy
@@ -201,22 +215,23 @@ var _ = Describe("E2E Test", func() {
 			var ports map[string]string
 
 			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js Starter Application!")
+			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js Starter Application!")
 
+			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
-
 			// "should update the changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from updated Node.js Starter Application!")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
 
-			// "changes are made made to the applications"
-
+			// "changes are made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
-
 			// "should deploy new changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v2 Starter Application!")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
 
 			// "running odo list"
@@ -256,6 +271,7 @@ var _ = Describe("E2E Test", func() {
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
 
 			// "should update the changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v3 Starter Application!")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
 
 			// should list both dev,deploy
