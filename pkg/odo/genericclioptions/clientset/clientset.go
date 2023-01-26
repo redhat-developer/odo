@@ -12,13 +12,13 @@
 package clientset
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/podman"
@@ -171,11 +171,9 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	if isDefined(command, PODMAN) || isDefined(command, PODMAN_NULLABLE) {
 		dep.PodmanClient, err = podman.NewPodmanCli(ctx)
 		if err != nil {
-			if !log.IsJSON() {
-				klog.V(2).Infof("Failed to initate the podman client: %s", err)
-			}
-			if isDefined(command, PODMAN) {
-				return nil, err
+			// send error in case the command is to run on podman platform or if PODMAN clientset is required.
+			if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
+				return nil, fmt.Errorf("failed to initialize podman client: %s", err)
 			}
 			dep.PodmanClient = nil
 		}
