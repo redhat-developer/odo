@@ -169,6 +169,7 @@ func addHostPorts(containers []corev1.Container, ceMapping map[string][]v1alpha2
 			fp := api.ForwardedPort{
 				Platform:      commonflags.PlatformPodman,
 				PortName:      portName,
+				IsDebug:       isDebugPort,
 				ContainerName: containerName,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,

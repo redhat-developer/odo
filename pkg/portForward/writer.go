@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 
 	"k8s.io/klog"
@@ -93,6 +94,7 @@ containerLoop:
 				fp.ContainerName = container
 				fp.PortName = ep.Name
 				fp.Exposure = string(ep.Exposure)
+				fp.IsDebug = libdevfile.IsDebugPort(ep.Name)
 				break containerLoop
 			}
 		}

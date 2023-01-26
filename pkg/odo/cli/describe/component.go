@@ -397,6 +397,9 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 			if port.Exposure != "" {
 				details += "\n    Exposure: " + port.Exposure
 			}
+			if port.IsDebug {
+				details += "\n    Debug: true"
+			}
 			log.Printf(details)
 		}
 		fmt.Println()
