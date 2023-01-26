@@ -379,13 +379,11 @@ var _ = Describe("E2E Test", func() {
 			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
 
 			// Get new random port after restart
-			Eventually(func() map[string]string {
-				_, _, ports, err = devSession.GetInfo()
-				Expect(err).ToNot(HaveOccurred())
-				return ports
-			}, 180, 10).ShouldNot(BeEmpty())
+			_, _, ports, err = devSession.WaitRestartPortforward()
+			Expect(err).ToNot(HaveOccurred())
 
 			// "send data"
+			waitRemoteApp("http://127.0.0.1:8080/ping", "pong")
 			data := sendDataEntry(ports["8080"])
 			Expect(data["message"]).To(Equal("User created successfully"))
 
