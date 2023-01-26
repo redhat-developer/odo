@@ -30,4 +30,4 @@ jobs:
       if: ${{ always() }}
       run: |
         podman pod ls --format '{{.Name}}' | xargs -I '{}' podman pod inspect '{}'
-        podman pod ls --format '{{.Name}}' | xargs podman pod stop
+        podman pod ls --format '{{.Name}}' | xargs podman pod stop || true
