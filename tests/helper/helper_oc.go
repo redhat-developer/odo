@@ -98,14 +98,19 @@ func (oc OcRunner) ExecListDir(podName string, projectName string, dir string) s
 }
 
 // Exec allows generic execution of commands, returning the contents of stdout
-func (oc OcRunner) Exec(podName string, projectName string, args ...string) string {
-
+func (oc OcRunner) Exec(podName string, projectName string, success *bool, args ...string) (string, string) {
 	cmd := []string{"exec", podName, "--namespace", projectName}
-
 	cmd = append(cmd, args...)
 
-	stdOut := Cmd(oc.path, cmd...).ShouldPass().Out()
-	return stdOut
+	cmdWrapper := Cmd(oc.path, cmd...)
+	if success == nil {
+		cmdWrapper = cmdWrapper.ShouldRun()
+	} else if *success {
+		cmdWrapper = cmdWrapper.ShouldPass()
+	} else {
+		cmdWrapper = cmdWrapper.ShouldFail()
+	}
+	return cmdWrapper.OutAndErr()
 }
 
 // CheckCmdOpInRemoteCmpPod runs the provided command on remote component pod and returns the return value of command output handler function passed to it

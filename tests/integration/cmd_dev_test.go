@@ -99,7 +99,7 @@ var _ = Describe("odo dev command tests", func() {
 
 					// File should exist, and its content should match what we initially set it to
 					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-					execResult := component.Exec("runtime", "cat", "/projects/"+filepath.Base(fileAPath))
+					execResult, _ := component.Exec("runtime", helper.ToBoolPtr(true), "cat", "/projects/"+filepath.Base(fileAPath))
 					Expect(execResult).To(ContainSubstring(fileAText))
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -447,7 +447,7 @@ ComponentSettings:
 
 					It("should not trigger a push", func() {
 						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						execResult := component.Exec("runtime", "cat", "/projects/server.js")
+						execResult, _ := component.Exec("runtime", helper.ToBoolPtr(true), "cat", "/projects/server.js")
 						Expect(execResult).To(ContainSubstring("App started"))
 						Expect(execResult).ToNot(ContainSubstring("App is super started"))
 
@@ -467,7 +467,7 @@ ComponentSettings:
 							_, _, _, err := devSession.WaitSync()
 							Expect(err).ToNot(HaveOccurred())
 							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-							execResult := component.Exec("runtime", "cat", "/projects/server.js")
+							execResult, _ := component.Exec("runtime", helper.ToBoolPtr(true), "cat", "/projects/server.js")
 							Expect(execResult).To(ContainSubstring("App is super started"))
 						})
 					})
@@ -1020,7 +1020,7 @@ ComponentSettings:
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						output := component.Exec("runtime", "ls", "-lai", "/projects")
+						output, _ := component.Exec("runtime", helper.ToBoolPtr(true), "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
 					})
 					Expect(err).ToNot(HaveOccurred())
@@ -1046,7 +1046,7 @@ ComponentSettings:
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						output := component.Exec("runtime", "ls", "-lai", "/projects")
+						output, _ := component.Exec("runtime", helper.ToBoolPtr(true), "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
 					})
 					Expect(err).ToNot(HaveOccurred())
@@ -1072,7 +1072,7 @@ ComponentSettings:
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						output := component.Exec("runtime", "ls", "-lai", "/projects")
+						output, _ := component.Exec("runtime", helper.ToBoolPtr(true), "ls", "-lai", "/projects")
 						helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
 					})
 					Expect(err).ToNot(HaveOccurred())
@@ -1804,7 +1804,7 @@ CMD ["npm", "start"]
 					// Verify the command executed successfully
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					dir := "/projects/testfolder"
-					out := component.Exec("runtime", "stat", dir)
+					out, _ := component.Exec("runtime", helper.ToBoolPtr(true), "stat", dir)
 					Expect(out).To(ContainSubstring(dir))
 				})
 			}))
@@ -1836,7 +1836,7 @@ CMD ["npm", "start"]
 					// Verify the command executed successfully
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					dir := "/projects/testfolder"
-					out := component.Exec("runtime", "stat", dir)
+					out, _ := component.Exec("runtime", helper.ToBoolPtr(true), "stat", dir)
 					Expect(out).To(ContainSubstring(dir))
 				})
 			}))
@@ -1869,7 +1869,7 @@ CMD ["npm", "start"]
 
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					dir := "/projects/testfolder"
-					out := component.Exec("runtime", "stat", dir)
+					out, _ := component.Exec("runtime", helper.ToBoolPtr(true), "stat", dir)
 					Expect(out).To(ContainSubstring(dir))
 				})
 			}))
@@ -1929,7 +1929,7 @@ CMD ["npm", "start"]
 					By("verifying that the command did run successfully", func() {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						dir := "/projects/testfolder"
-						out := component.Exec("runtime", "stat", dir)
+						out, _ := component.Exec("runtime", helper.ToBoolPtr(true), "stat", dir)
 						Expect(out).To(ContainSubstring(dir))
 					})
 				})
@@ -1996,7 +1996,7 @@ CMD ["npm", "start"]
 					By("verifying that the command did run successfully", func() {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						dir := "/projects/testfolder"
-						out := component.Exec("runtime", "stat", dir)
+						out, _ := component.Exec("runtime", helper.ToBoolPtr(true), "stat", dir)
 						Expect(out).To(ContainSubstring(dir))
 					})
 				})
@@ -2116,7 +2116,8 @@ CMD ["npm", "start"]
 			It("should execute default build and run commands correctly", func() {
 
 				cmp := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-				cmdOutput := cmp.Exec("runtime",
+				cmdOutput, _ := cmp.Exec("runtime",
+					helper.ToBoolPtr(true),
 					// [s] to not match the current command: https://unix.stackexchange.com/questions/74185/how-can-i-prevent-grep-from-showing-up-in-ps-results
 					"bash", "-c", "grep [s]pring-boot:run /proc/*/cmdline")
 				Expect(cmdOutput).To(MatchRegexp("Binary file .* matches"))
@@ -2223,7 +2224,7 @@ CMD ["npm", "start"]
 
 				remoteFileChecker := func(path string) {
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-					out := component.Exec("runtime", "stat", path)
+					out, _ := component.Exec("runtime", helper.ToBoolPtr(true), "stat", path)
 					Expect(out).To(ContainSubstring(path))
 				}
 
@@ -2448,7 +2449,7 @@ CMD ["npm", "start"]
 
 					BeforeEach(func() {
 						// commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, podName)
-						output := component.Exec("tools", "find", "/projects")
+						output, _ := component.Exec("tools", helper.ToBoolPtr(true), "find", "/projects")
 
 						outputArr := []string{}
 						sc := bufio.NewScanner(strings.NewReader(output))
@@ -2599,12 +2600,12 @@ CMD ["npm", "start"]
 
 			It("should sync only the mentioned files at the appropriate remote destination", func() {
 				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-				stdOut := component.Exec("runtime", "ls", "-lai", "/projects")
+				stdOut, _ := component.Exec("runtime", helper.ToBoolPtr(true), "ls", "-lai", "/projects")
 
 				helper.MatchAllInOutput(stdOut, []string{"package.json", "server"})
 				helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
 
-				stdOut = component.Exec("runtime", "ls", "-lai", "/projects/server")
+				stdOut, _ = component.Exec("runtime", helper.ToBoolPtr(true), "ls", "-lai", "/projects/server")
 				helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
 			})
 		}))
@@ -2756,7 +2757,7 @@ CMD ["npm", "start"]
 					Expect(string(stderrBytes)).ToNot(ContainSubstring(errorMessage))
 
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-					component.Exec("runtime", remotecmd.ShellExecutable, "-c", fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
+					component.Exec("runtime", helper.ToBoolPtr(true), remotecmd.ShellExecutable, "-c", fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
 						strings.TrimSuffix(storage.SharedDataMountPath, "/")))
 				})
 			}))
@@ -2992,7 +2993,7 @@ CMD ["npm", "start"]
 					componentName := "x" + filepath.Base(commonVar.Context)
 
 					component := helper.NewComponent(componentName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-					component.Exec("runtime", remotecmd.ShellExecutable, "-c",
+					component.Exec("runtime", helper.ToBoolPtr(true), remotecmd.ShellExecutable, "-c",
 						fmt.Sprintf("cat %s/.odo_cmd_devrun.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/")))
 				})
 			})

@@ -45,7 +45,7 @@ func (o *PodmanComponent) ExpectIsNotDeployed() {
 	Expect(string(stdout)).ToNot(ContainSubstring(podName))
 }
 
-func (o *PodmanComponent) Exec(container string, args ...string) string {
+func (o *PodmanComponent) Exec(container string, success *bool, args ...string) (string, string) {
 	containerName := fmt.Sprintf("%s-%s-%s", o.componentName, o.app, container)
 	cmdargs := []string{"exec", "--interactive"}
 	cmdargs = append(cmdargs, "--tty")
@@ -53,18 +53,24 @@ func (o *PodmanComponent) Exec(container string, args ...string) string {
 	cmdargs = append(cmdargs, args...)
 
 	command := exec.Command("podman", cmdargs...)
-	out, err := command.Output()
+	out, err := command.CombinedOutput()
 	if err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
 		}
 	}
-	Expect(err).ToNot(HaveOccurred())
-	return string(out)
+	if success != nil {
+		if *success {
+			Expect(err).ToNot(HaveOccurred())
+		} else {
+			Expect(err).Should(HaveOccurred())
+		}
+	}
+	return string(out), ""
 }
 
 func (o *PodmanComponent) GetEnvVars(container string) map[string]string {
-	envs := o.Exec(container, "env")
+	envs, _ := o.Exec(container, ToBoolPtr(true), "env")
 	return splitLines(envs)
 }
 

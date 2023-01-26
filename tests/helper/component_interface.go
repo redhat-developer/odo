@@ -11,8 +11,11 @@ type Component interface {
 	ExpectIsDeployed()
 	// ExpectIsNotDeployed checks that the component is not deployed
 	ExpectIsNotDeployed()
-	// Exec executes the command in specific container of the component
-	Exec(container string, args ...string) string
+	// Exec executes the command in specific container of the component.
+	// If success is true, the command exit code is expected to be 0.
+	// If success is false, the command exit code is expected to be non-zero.
+	// If success is nil, the command is just supposed to run, with no assertion on its exit code.
+	Exec(container string, success *bool, args ...string) (string, string)
 	// GetEnvVars returns the environment variables defined for the container
 	GetEnvVars(container string) map[string]string
 	// GetLabels returns the labels defined for the component

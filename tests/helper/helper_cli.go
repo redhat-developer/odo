@@ -7,7 +7,7 @@ import "github.com/onsi/gomega/gexec"
 type CliRunner interface {
 	Run(args ...string) *gexec.Session
 	ExecListDir(podName string, projectName string, dir string) string
-	Exec(podName string, projectName string, args ...string) string
+	Exec(podName string, projectName string, success *bool, args ...string) (string, string)
 	CheckCmdOpInRemoteDevfilePod(podName string, containerName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool
 	GetRunningPodNameByComponent(compName string, namespace string) string
 	GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string

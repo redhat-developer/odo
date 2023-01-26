@@ -72,7 +72,7 @@ var _ = Describe("odo dev debug command tests", func() {
 				// #6056
 				It("should not add a DEBUG_PORT variable to the container", func() {
 					cmp := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-					stdout := cmp.Exec("runtime", "sh", "-c", "echo -n ${DEBUG_PORT}")
+					stdout, _ := cmp.Exec("runtime", helper.ToBoolPtr(true), "sh", "-c", "echo -n ${DEBUG_PORT}")
 					Expect(stdout).To(BeEmpty())
 				})
 			}))
