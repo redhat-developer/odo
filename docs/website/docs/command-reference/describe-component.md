@@ -57,6 +57,7 @@ This command returns information extracted from the Devfile:
 - supported odo features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
 - the list of container components,
 - the list of Kubernetes components.
+- the list of forwarded ports if the component is running in Dev mode.
 
 The command also displays if the component is currently running in the cluster on Dev and/or Deploy mode.
 
