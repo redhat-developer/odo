@@ -636,6 +636,21 @@ func (mr *MockClientInterfaceMockRecorder) GetNamespaces() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaces", reflect.TypeOf((*MockClientInterface)(nil).GetNamespaces))
 }
 
+// GetOCVersion mocks base method.
+func (m *MockClientInterface) GetOCVersion() (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOCVersion")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOCVersion indicates an expected call of GetOCVersion.
+func (mr *MockClientInterfaceMockRecorder) GetOCVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOCVersion", reflect.TypeOf((*MockClientInterface)(nil).GetOCVersion))
+}
+
 // GetOneDeployment mocks base method.
 func (m *MockClientInterface) GetOneDeployment(componentName, appName string, isPartOfComponent bool) (*v10.Deployment, error) {
 	m.ctrl.T.Helper()

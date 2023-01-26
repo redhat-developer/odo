@@ -120,11 +120,6 @@ func setPlatformCluster(ctx context.Context, client kclient.ClientInterface) {
 	} else {
 		// We are not checking ServerVersion to decide the cluster type because it does not always return the version,
 		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
-		serverInfo, err := client.GetServerVersion(time.Second)
-		if err != nil {
-			klog.V(3).Info(fmt.Errorf("unable to detect cluster version: %w", err))
-			serverInfo = nil
-		}
 
 		isOC, err := client.IsProjectSupported()
 		if err != nil {
@@ -133,13 +128,19 @@ func setPlatformCluster(ctx context.Context, client kclient.ClientInterface) {
 		} else {
 			if isOC {
 				value = "openshift"
-				if serverInfo != nil {
-					setContextProperty(ctx, PlatformVersion, serverInfo.KubernetesVersion) //TODO use OpenshiftVersion
+				ocVersion, err := client.GetOCVersion()
+				if err == nil {
+					setContextProperty(ctx, PlatformVersion, ocVersion)
+				} else {
+					klog.V(3).Info(fmt.Errorf("unable to detect platform version: %w", err))
 				}
 			} else {
 				value = "kubernetes"
-				if serverInfo != nil {
+				serverInfo, err := client.GetServerVersion(time.Second)
+				if err == nil {
 					setContextProperty(ctx, PlatformVersion, serverInfo.KubernetesVersion)
+				} else {
+					klog.V(3).Info(fmt.Errorf("unable to detect platform version: %w", err))
 				}
 			}
 		}
