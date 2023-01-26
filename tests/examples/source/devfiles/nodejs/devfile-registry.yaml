@@ -36,6 +36,12 @@ components:
     endpoints:
     - name: http-3000
       targetPort: 3000
+    - name: debug
+      exposure: none
+      targetPort: 5858
+    env:
+    - name: DEBUG_PORT_PROJECT
+      value: "5858"
     image: registry.access.redhat.com/ubi8/nodejs-14:latest
     memoryLimit: 1024Mi
     mountSources: true
