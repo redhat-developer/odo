@@ -14,7 +14,7 @@ type Client interface {
 	// output will be written to errOut writer
 	StartPortForwarding(
 		devFileObj parser.DevfileObj,
-		componenentName string,
+		componentName string,
 		debug bool,
 		randomPorts bool,
 		errOut io.Writer,
