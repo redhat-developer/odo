@@ -567,6 +567,8 @@ var _ = Describe("odo devfile init command tests", func() {
 							Expect(td.Properties.CmdProperties[segmentContext.Language]).To(ContainSubstring("Go"))
 							Expect(td.Properties.CmdProperties[segmentContext.ProjectType]).To(ContainSubstring("Go"))
 							Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(ContainSubstring("devfile name"))
+							Expect(td.Properties.CmdProperties[segmentContext.Platform]).To(BeNil())
+							Expect(td.Properties.CmdProperties[segmentContext.PlatformVersion]).To(BeNil())
 							tt.callerChecker(stdout, stderr, td)
 						})
 
