@@ -217,6 +217,7 @@ func (o *WatchClient) eventWatcher(
 	retryTimer := time.NewTimer(time.Millisecond)
 	<-retryTimer.C
 
+	podReady := false
 	podsPhases := NewPodPhases()
 
 	for {
@@ -231,6 +232,11 @@ func (o *WatchClient) eventWatcher(
 			if !componentCanSyncFile(componentStatus.State) {
 				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.State)
 				continue
+			}
+
+			// If the pod is not displayed as ready, wait a little longer
+			if !podReady {
+				sourcesTimer.Reset(100 * time.Millisecond)
 			}
 
 			var changedFiles, deletedPaths []string
@@ -335,7 +341,10 @@ func (o *WatchClient) eventWatcher(
 				if !ok {
 					return errors.New("unable to decode watch event")
 				}
-				podsPhases.Add(out, pod.GetCreationTimestamp(), pod)
+				ready := podsPhases.Add(out, pod.GetCreationTimestamp(), pod)
+				if ready != nil {
+					podReady = *ready
+				}
 			}
 
 		case ev := <-o.warningsWatcher.ResultChan():

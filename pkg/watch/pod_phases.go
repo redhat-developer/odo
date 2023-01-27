@@ -16,7 +16,7 @@ func NewPodPhases() PodPhases {
 	return map[metav1.Time]corev1.PodPhase{}
 }
 
-func (o *PodPhases) Add(out io.Writer, k metav1.Time, pod *corev1.Pod) {
+func (o *PodPhases) Add(out io.Writer, k metav1.Time, pod *corev1.Pod) (ready *bool) {
 	v := pod.Status.Phase
 	if pod.GetDeletionTimestamp() != nil {
 		v = "Terminating"
@@ -27,8 +27,10 @@ func (o *PodPhases) Add(out io.Writer, k metav1.Time, pod *corev1.Pod) {
 	}
 	(*o)[k] = v
 	if display {
-		o.Display(out)
+		result := o.Display(out)
+		return &result
 	}
+	return nil
 }
 
 func (o *PodPhases) Delete(out io.Writer, pod *corev1.Pod) {
@@ -39,11 +41,11 @@ func (o *PodPhases) Delete(out io.Writer, pod *corev1.Pod) {
 	}
 }
 
-func (o PodPhases) Display(out io.Writer) {
+func (o PodPhases) Display(out io.Writer) bool {
 
 	if len(o) == 0 {
 		log.Fwarning(out, "No pod exists")
-		return
+		return false
 	}
 
 	keys := make([]metav1.Time, 0, len(o))
@@ -55,10 +57,10 @@ func (o PodPhases) Display(out io.Writer) {
 		phase := o[keys[0]]
 		if phase == corev1.PodRunning {
 			log.Fsuccess(out, "Pod is "+phase)
-			return
+			return true
 		}
 		log.Fwarning(out, "Pod is "+phase)
-		return
+		return false
 	}
 
 	sort.Slice(keys, func(i, j int) bool {
@@ -70,4 +72,5 @@ func (o PodPhases) Display(out io.Writer) {
 		values = append(values, string(o[k]))
 	}
 	log.Fwarning(out, "Pods are "+strings.Join(values, ", "))
+	return false
 }
