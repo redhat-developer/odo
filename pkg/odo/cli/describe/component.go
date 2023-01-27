@@ -383,15 +383,24 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 	if len(cmp.DevForwardedPorts) > 0 {
 		log.Info("Forwarded ports:")
 		for _, port := range cmp.DevForwardedPorts {
+			details := fmt.Sprintf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
 			if withPlatformFeature {
 				p := port.Platform
 				if p == "" {
 					p = commonflags.PlatformCluster
 				}
-				log.Printf("[%s] %s:%d -> %s:%d", p, port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
-			} else {
-				log.Printf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+				details = fmt.Sprintf("[%s] ", p) + details
 			}
+			if port.PortName != "" {
+				details += "\n    Name: " + port.PortName
+			}
+			if port.Exposure != "" {
+				details += "\n    Exposure: " + port.Exposure
+			}
+			if port.IsDebug {
+				details += "\n    Debug: true"
+			}
+			log.Printf(details)
 		}
 		fmt.Println()
 	}

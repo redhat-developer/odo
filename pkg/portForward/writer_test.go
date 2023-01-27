@@ -3,6 +3,7 @@ package portForward
 import (
 	"testing"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -10,7 +11,7 @@ import (
 
 func Test_getForwardedPort(t *testing.T) {
 	type args struct {
-		mapping map[string][]int
+		mapping map[string][]v1alpha2.Endpoint
 		s       string
 	}
 	tests := []struct {
@@ -22,15 +23,23 @@ func Test_getForwardedPort(t *testing.T) {
 		{
 			name: "find port in container",
 			args: args{
-				mapping: map[string][]int{
-					"container1": {3000, 4200},
-					"container2": {80, 8080},
+				mapping: map[string][]v1alpha2.Endpoint{
+					"container1": {
+						v1alpha2.Endpoint{Name: "port-11", TargetPort: 3000},
+						v1alpha2.Endpoint{Name: "debug-11", TargetPort: 4200},
+					},
+					"container2": {
+						v1alpha2.Endpoint{Name: "port-21", TargetPort: 80},
+						v1alpha2.Endpoint{Name: "port-22", TargetPort: 8080},
+					},
 				},
 				s: "Forwarding from 127.0.0.1:40407 -> 3000",
 			},
 			want: api.ForwardedPort{
 				ContainerName: "container1",
+				PortName:      "port-11",
 				LocalAddress:  "127.0.0.1",
+				IsDebug:       false,
 				LocalPort:     40407,
 				ContainerPort: 3000,
 			},
@@ -39,14 +48,45 @@ func Test_getForwardedPort(t *testing.T) {
 		{
 			name: "string error",
 			args: args{
-				mapping: map[string][]int{
-					"container1": {3000, 4200},
-					"container2": {80, 8080},
+				mapping: map[string][]v1alpha2.Endpoint{
+					"container1": {
+						v1alpha2.Endpoint{Name: "port-11", TargetPort: 3000},
+						v1alpha2.Endpoint{Name: "debug-11", TargetPort: 4200},
+					},
+					"container2": {
+						v1alpha2.Endpoint{Name: "port-21", TargetPort: 80},
+						v1alpha2.Endpoint{Name: "port-22", TargetPort: 8080},
+					},
 				},
 				s: "Forwarding from 127.0.0.1:40407 => 3000",
 			},
 			want:    api.ForwardedPort{},
 			wantErr: true,
+		},
+		{
+			name: "find debug port in container",
+			args: args{
+				mapping: map[string][]v1alpha2.Endpoint{
+					"container1": {
+						v1alpha2.Endpoint{Name: "port-11", TargetPort: 3000},
+						v1alpha2.Endpoint{Name: "debug-11", TargetPort: 4200},
+					},
+					"container2": {
+						v1alpha2.Endpoint{Name: "port-21", TargetPort: 80},
+						v1alpha2.Endpoint{Name: "port-22", TargetPort: 8080},
+					},
+				},
+				s: "Forwarding from 127.0.0.1:40407 -> 4200",
+			},
+			want: api.ForwardedPort{
+				ContainerName: "container1",
+				PortName:      "debug-11",
+				IsDebug:       true,
+				LocalAddress:  "127.0.0.1",
+				LocalPort:     40407,
+				ContainerPort: 4200,
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

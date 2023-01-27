@@ -162,9 +162,20 @@ odo describe component -o json
 	"devForwardedPorts": [
 		{
 			"containerName": "runtime",
+			"portName": "http",
 			"localAddress": "127.0.0.1",
 			"localPort": 40001,
-			"containerPort": 3000
+			"containerPort": 3000,
+			"isDebug": false
+		},
+		{
+			"containerName": "runtime",
+			"portName": "debug",
+			"localAddress": "127.0.0.1",
+			"localPort": 40002,
+			"containerPort": 5858,
+			"isDebug": true,
+			"exposure": "none"
 		}
 	],
 	"runningIn": {

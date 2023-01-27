@@ -27,7 +27,7 @@ type PFClient struct {
 	kubernetesClient kclient.ClientInterface
 	stateClient      state.Client
 
-	appliedEndpoints map[string][]int
+	appliedEndpoints map[string][]v1alpha2.Endpoint
 
 	// stopChan on which to write to stop the port forwarding
 	stopChan chan struct{}
@@ -165,11 +165,11 @@ func (o *PFClient) StopPortForwarding() {
 	runtime.ErrorHandlers = o.originalErrorHandlers
 }
 
-func (o *PFClient) GetForwardedPorts() map[string][]int {
+func (o *PFClient) GetForwardedPorts() map[string][]v1alpha2.Endpoint {
 	return o.appliedEndpoints
 }
 
-func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]int, error) {
+func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]v1alpha2.Endpoint, error) {
 
 	// get the endpoint/port information for containers in devfile
 	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
@@ -185,12 +185,12 @@ func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj, includeDebug 
 // randomPortPairsFromContainerEndpoints assigns a random (empty) port on localhost to each port in the provided containerEndpoints map
 // it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
 // "container1": {":3000", ":3001"}
-func randomPortPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
+func randomPortPairsFromContainerEndpoints(ceMap map[string][]v1alpha2.Endpoint) map[string][]string {
 	portPairs := make(map[string][]string)
 
 	for name, ports := range ceMap {
 		for _, p := range ports {
-			pair := fmt.Sprintf(":%d", p)
+			pair := fmt.Sprintf(":%d", p.TargetPort)
 			portPairs[name] = append(portPairs[name], pair)
 		}
 	}
@@ -200,7 +200,7 @@ func randomPortPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]
 // portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
 // it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
 // "container1": {"20001:3000", "20002:3001"}
-func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
+func portPairsFromContainerEndpoints(ceMap map[string][]v1alpha2.Endpoint) map[string][]string {
 	portPairs := make(map[string][]string)
 	startPort := 20001
 	endPort := startPort + 10000
@@ -211,7 +211,7 @@ func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string
 				klog.Infof("%s", err)
 				continue
 			}
-			pair := fmt.Sprintf("%d:%d", freePort, p)
+			pair := fmt.Sprintf("%d:%d", freePort, p.TargetPort)
 			portPairs[name] = append(portPairs[name], pair)
 			startPort = freePort + 1
 		}
