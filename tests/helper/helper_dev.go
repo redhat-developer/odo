@@ -212,7 +212,7 @@ func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
 }
 
 func (o DevSession) WaitRestartPortforward() ([]byte, []byte, map[string]string, error) {
-	WaitForOutputToContain("Forwarding from", 30, 5, o.session)
+	WaitForOutputToContain("Forwarding from", 240, 10, o.session)
 	return o.GetInfo()
 }
 

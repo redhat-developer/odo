@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/http"
+
 	"go-postgres/middleware"
 
 	"github.com/gorilla/mux"
@@ -10,6 +12,11 @@ import (
 func Router() *mux.Router {
 
 	router := mux.NewRouter()
+
+	router.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("pong"))
+	})
 
 	router.HandleFunc("/api/user/{id}", middleware.GetUser).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/user", middleware.GetAllUser).Methods("GET", "OPTIONS")

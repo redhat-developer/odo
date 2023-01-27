@@ -41,9 +41,9 @@ func (o *ClusterComponent) ExpectIsNotDeployed() {
 	Expect(string(stdout)).To(Not(ContainSubstring(deploymentName)))
 }
 
-func (o *ClusterComponent) Exec(container string, args ...string) string {
+func (o *ClusterComponent) Exec(container string, args []string, expectedSuccess *bool) (string, string) {
 	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
-	return o.cli.Exec(podName, o.namespace, append([]string{"-c", container, "--"}, args...)...)
+	return o.cli.Exec(podName, o.namespace, append([]string{"-c", container, "--"}, args...), expectedSuccess)
 }
 
 func (o *ClusterComponent) GetEnvVars(string) map[string]string {

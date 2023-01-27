@@ -7,7 +7,11 @@ import "github.com/onsi/gomega/gexec"
 type CliRunner interface {
 	Run(args ...string) *gexec.Session
 	ExecListDir(podName string, projectName string, dir string) string
-	Exec(podName string, projectName string, args ...string) string
+	// Exec executes the command in the specified pod and project/namespace.
+	// If expectedSuccess is nil, the command is just supposed to run, with no assertion on its exit code.
+	// If *expectedSuccess is true, the command exit code is expected to be 0.
+	// If *expectedSuccess is false, the command exit code is expected to be non-zero.
+	Exec(podName string, projectName string, args []string, expectedSuccess *bool) (string, string)
 	CheckCmdOpInRemoteDevfilePod(podName string, containerName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool
 	GetRunningPodNameByComponent(compName string, namespace string) string
 	GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string

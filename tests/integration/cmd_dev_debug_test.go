@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -72,7 +74,7 @@ var _ = Describe("odo dev debug command tests", func() {
 				// #6056
 				It("should not add a DEBUG_PORT variable to the container", func() {
 					cmp := helper.NewComponent(cmpName, "app", "runtime", commonVar.Project, commonVar.CliRunner)
-					stdout := cmp.Exec("runtime", "sh", "-c", "echo -n ${DEBUG_PORT}")
+					stdout, _ := cmp.Exec("runtime", []string{"sh", "-c", "echo -n ${DEBUG_PORT}"}, pointer.Bool(true))
 					Expect(stdout).To(BeEmpty())
 				})
 			}))
