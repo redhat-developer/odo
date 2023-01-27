@@ -96,6 +96,9 @@ func (c *Client) GetOCVersion() (string, error) {
 		return "", err
 	}
 	if clusterVersion != nil {
+		if len(clusterVersion.Status.History) == 1 {
+			return clusterVersion.Status.History[0].Version, nil
+		}
 		for _, update := range clusterVersion.Status.History {
 			if update.State == configv1.CompletedUpdate {
 				// obtain the version from the last completed update
