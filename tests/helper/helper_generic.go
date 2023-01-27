@@ -362,7 +362,3 @@ func SetDefaultDevfileRegistryAsStaging() {
 	Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
 	Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldPass()
 }
-
-func ToBoolPtr(b bool) *bool {
-	return &b
-}

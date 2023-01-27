@@ -98,14 +98,14 @@ func (oc OcRunner) ExecListDir(podName string, projectName string, dir string) s
 }
 
 // Exec allows generic execution of commands, returning the contents of stdout
-func (oc OcRunner) Exec(podName string, projectName string, success *bool, args ...string) (string, string) {
+func (oc OcRunner) Exec(podName string, projectName string, args []string, expectedSuccess *bool) (string, string) {
 	cmd := []string{"exec", podName, "--namespace", projectName}
 	cmd = append(cmd, args...)
 
 	cmdWrapper := Cmd(oc.path, cmd...)
-	if success == nil {
+	if expectedSuccess == nil {
 		cmdWrapper = cmdWrapper.ShouldRun()
-	} else if *success {
+	} else if *expectedSuccess {
 		cmdWrapper = cmdWrapper.ShouldPass()
 	} else {
 		cmdWrapper = cmdWrapper.ShouldFail()

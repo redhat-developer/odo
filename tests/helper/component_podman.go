@@ -7,11 +7,12 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/kubectl/pkg/scheme"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/podman"
 )
@@ -45,7 +46,7 @@ func (o *PodmanComponent) ExpectIsNotDeployed() {
 	Expect(string(stdout)).ToNot(ContainSubstring(podName))
 }
 
-func (o *PodmanComponent) Exec(container string, success *bool, args ...string) (string, string) {
+func (o *PodmanComponent) Exec(container string, args []string, expectedSuccess *bool) (string, string) {
 	containerName := fmt.Sprintf("%s-%s-%s", o.componentName, o.app, container)
 	cmdargs := []string{"exec", "--interactive"}
 	cmdargs = append(cmdargs, "--tty")
@@ -58,9 +59,10 @@ func (o *PodmanComponent) Exec(container string, success *bool, args ...string) 
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
 		}
+		fmt.Fprintln(GinkgoWriter, err)
 	}
-	if success != nil {
-		if *success {
+	if expectedSuccess != nil {
+		if *expectedSuccess {
 			Expect(err).ToNot(HaveOccurred())
 		} else {
 			Expect(err).Should(HaveOccurred())
@@ -70,7 +72,7 @@ func (o *PodmanComponent) Exec(container string, success *bool, args ...string) 
 }
 
 func (o *PodmanComponent) GetEnvVars(container string) map[string]string {
-	envs, _ := o.Exec(container, ToBoolPtr(true), "env")
+	envs, _ := o.Exec(container, []string{"env"}, pointer.Bool(true))
 	return splitLines(envs)
 }
 
@@ -116,7 +118,7 @@ func (o *PodmanComponent) GetLabels() map[string]string {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
 		}
-		fmt.Fprintln(ginkgo.GinkgoWriter, err)
+		fmt.Fprintln(GinkgoWriter, err)
 	})
 
 	var result podman.PodInspectData
@@ -135,7 +137,7 @@ func (o *PodmanComponent) GetPodLogs() string {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
 		}
-		fmt.Fprintln(ginkgo.GinkgoWriter, err)
+		fmt.Fprintln(GinkgoWriter, err)
 	})
 	return string(stdout)
 }

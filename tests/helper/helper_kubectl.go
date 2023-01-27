@@ -41,16 +41,16 @@ func (kubectl KubectlRunner) Run(args ...string) *gexec.Session {
 }
 
 // Exec allows generic execution of commands, returning the contents of stdout
-func (kubectl KubectlRunner) Exec(podName string, projectName string, success *bool, args ...string) (string, string) {
+func (kubectl KubectlRunner) Exec(podName string, projectName string, args []string, expectedSuccess *bool) (string, string) {
 
 	cmd := []string{"exec", podName, "--namespace", projectName}
 
 	cmd = append(cmd, args...)
 
 	cmdWrapper := Cmd(kubectl.path, cmd...)
-	if success == nil {
+	if expectedSuccess == nil {
 		cmdWrapper = cmdWrapper.ShouldRun()
-	} else if *success {
+	} else if *expectedSuccess {
 		cmdWrapper = cmdWrapper.ShouldPass()
 	} else {
 		cmdWrapper = cmdWrapper.ShouldFail()
