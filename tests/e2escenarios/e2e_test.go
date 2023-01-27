@@ -29,10 +29,7 @@ var _ = Describe("E2E Test", func() {
 
 	waitRemoteApp := func(urlInContainer, assertString string) {
 		cmp := helper.NewComponent(componentName, "app", "Dev", commonVar.Project, commonVar.CliRunner)
-		Eventually(func() string {
-			stdout, _ := cmp.Exec("runtime", []string{"curl", urlInContainer}, nil)
-			return stdout
-		}, 120*time.Second, 15*time.Second).Should(Equal(assertString))
+		helper.WaitAppReadyInContainer(cmp, "runtime", []string{"curl", urlInContainer}, 5*time.Second, 120*time.Second, ContainSubstring(assertString), nil)
 	}
 
 	checkIfDevEnvIsUp := func(url, assertString string) {
