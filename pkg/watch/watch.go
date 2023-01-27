@@ -237,6 +237,7 @@ func (o *WatchClient) eventWatcher(
 			// If the pod is not displayed as ready, wait a little longer
 			if !podReady {
 				sourcesTimer.Reset(100 * time.Millisecond)
+				continue
 			}
 
 			var changedFiles, deletedPaths []string
@@ -289,6 +290,10 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-deployTimer.C:
+			if !podReady {
+				deployTimer.Reset(300 * time.Millisecond)
+				continue
+			}
 			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
@@ -304,6 +309,12 @@ func (o *WatchClient) eventWatcher(
 			devfileTimer.Reset(100 * time.Millisecond)
 
 		case <-devfileTimer.C:
+			// If the pod is not displayed as ready, wait a little longer
+			if !podReady {
+				devfileTimer.Reset(100 * time.Millisecond)
+				continue
+			}
+
 			fmt.Fprintf(out, "Updating Component...\n\n")
 			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
