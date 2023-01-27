@@ -223,9 +223,9 @@ ComponentSettings:
 			Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 			Expect(td.Properties.CmdProperties[segment.ExperimentalMode]).To(Equal(false))
 			if os.Getenv("KUBERNETES") == "true" {
-				Expect(td.Properties.CmdProperties[segment.Platform]).To(ContainSubstring("kubernetes"))
+				Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("kubernetes"))
 			} else {
-				Expect(td.Properties.CmdProperties[segment.Platform]).To(ContainSubstring("openshift"))
+				Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("openshift"))
 			}
 			Expect(td.Properties.CmdProperties[segment.PlatformVersion]).ToNot(BeEmpty())
 		})
