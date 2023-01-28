@@ -9,6 +9,9 @@ import (
 	"time"
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
+	configv1 "github.com/openshift/api/config/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
 )
@@ -81,4 +84,27 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	info.KubernetesVersion = kubernetesVersion.GitVersion
 
 	return &info, nil
+}
+
+func (c *Client) GetOCVersion() (string, error) {
+	clusterVersion, err := c.configClient.ClusterVersions().Get(context.TODO(), "version", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case kerrors.IsForbidden(err), kerrors.IsNotFound(err):
+		return "", err
+	}
+	if clusterVersion != nil {
+		if len(clusterVersion.Status.History) == 1 {
+			return clusterVersion.Status.History[0].Version, nil
+		}
+		for _, update := range clusterVersion.Status.History {
+			if update.State == configv1.CompletedUpdate {
+				// obtain the version from the last completed update
+				return update.Version, nil
+			}
+		}
+	}
+	return "", errors.New("unable to get OC version")
 }

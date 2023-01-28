@@ -52,6 +52,7 @@ func (o *DeployOptions) PreInit() string {
 
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
+	scontext.SetPlatform(ctx, o.clientset.KubernetesClient)
 	return nil
 }
 
@@ -104,7 +105,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY, clientset.FILESYSTEM)
+	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY, clientset.FILESYSTEM, clientset.KUBERNETES)
 
 	// Add a defined annotation in order to appear in the help menu
 	util.SetCommandGroup(deployCmd, util.MainGroup)

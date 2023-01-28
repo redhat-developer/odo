@@ -89,6 +89,7 @@ type ClientInterface interface {
 
 	// oc_server.go
 	GetServerVersion(timeout time.Duration) (*ServerInfo, error)
+	GetOCVersion() (string, error)
 
 	// operators.go
 	IsCSVSupported() (bool, error)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -221,6 +222,12 @@ ComponentSettings:
 			Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
 			Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 			Expect(td.Properties.CmdProperties[segment.ExperimentalMode]).To(Equal(false))
+			if os.Getenv("KUBERNETES") == "true" {
+				Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("kubernetes"))
+			} else {
+				Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("openshift"))
+			}
+			Expect(td.Properties.CmdProperties[segment.PlatformVersion]).ToNot(BeEmpty())
 		})
 	})
 

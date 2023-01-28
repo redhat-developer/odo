@@ -22,6 +22,7 @@ import (
 
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	configclientset "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
@@ -73,6 +74,7 @@ type Client struct {
 	userClient    userclientset.UserV1Interface
 	projectClient projectclientset.ProjectV1Interface
 	routeClient   routeclientset.RouteV1Interface
+	configClient  *configclientset.ConfigV1Client
 }
 
 var _ ClientInterface = (*Client)(nil)
@@ -187,7 +189,10 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	if err != nil {
 		return nil, err
 	}
-
+	client.configClient, err = configclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
 	return client, nil
 }
 

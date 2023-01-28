@@ -53,4 +53,6 @@ type Client interface {
 	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
 
 	ListAllComponents() ([]api.ComponentAbstract, error)
+
+	Version() (SystemVersionReport, error)
 }

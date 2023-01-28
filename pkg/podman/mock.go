@@ -227,6 +227,21 @@ func (mr *MockClientMockRecorder) PodStop(podname interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodStop", reflect.TypeOf((*MockClient)(nil).PodStop), podname)
 }
 
+// Version mocks base method.
+func (m *MockClient) Version() (SystemVersionReport, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Version")
+	ret0, _ := ret[0].(SystemVersionReport)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Version indicates an expected call of Version.
+func (mr *MockClientMockRecorder) Version() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockClient)(nil).Version))
+}
+
 // VolumeLs mocks base method.
 func (m *MockClient) VolumeLs() (map[string]bool, error) {
 	m.ctrl.T.Helper()
