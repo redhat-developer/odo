@@ -77,6 +77,11 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	return component.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.componentName, o.devfileObj, kubernetes, o.kubeClient, o.path)
 }
 
+// ApplyOpenShift applies inline OpenShift YAML from the devfile.yaml file
+func (o *deployHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
+	return component.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.componentName, o.devfileObj, openshift, o.kubeClient, o.path)
+}
+
 // Execute will deploy the listed information in the `exec` section of devfile.yaml
 // We currently do NOT support this in `odo deploy`.
 func (o *deployHandler) Execute(command v1alpha2.Command) error {

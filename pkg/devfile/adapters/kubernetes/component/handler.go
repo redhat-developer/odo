@@ -39,6 +39,10 @@ func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
 	return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, kubernetes, a.kubeClient, a.path)
 }
 
+func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component) error {
+	return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, openshift, a.kubeClient, a.path)
+}
+
 func (a *runHandler) Execute(devfileCmd devfilev1.Command) error {
 	return component.ExecuteRunCommand(a.execClient, a.kubeClient, devfileCmd, a.componentExists, a.podName, a.appName, a.componentName)
 

@@ -25,5 +25,5 @@ func (e *openshiftComponent) CheckValidity() error {
 }
 
 func (e *openshiftComponent) Apply(handler Handler) error {
-	return nil
+	return handler.ApplyOpenShift(e.component)
 }

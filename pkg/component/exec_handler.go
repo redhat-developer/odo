@@ -48,6 +48,10 @@ func (o *execHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	return nil
 }
 
+func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
+	return nil
+}
+
 func (o *execHandler) Execute(command v1alpha2.Command) error {
 	msg := o.msg
 	if msg == "" {
