@@ -17,7 +17,7 @@
     "@algolia/client-search": "^4.14.3",
     "@docusaurus/core": "^2.2.0",
     "@docusaurus/preset-classic": "^2.2.0",
-    "@docusaurus/theme-search-algolia": "^2.2.0",
+    "@docusaurus/theme-search-algolia": "^2.3.0",
     "@mdx-js/react": "^1.6.21",
     "@segment/snippet": "^4.15.3",
     "@svgr/webpack": "^6.5.1",
