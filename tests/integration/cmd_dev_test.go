@@ -1616,10 +1616,11 @@ ComponentSettings:
 		})
 	}
 
-	Describe("devfile contains composite apply command", func() {
+	Describe("1. devfile contains composite apply command", func() {
 		const (
-			deploymentName = "my-component"
-			DEVFILEPORT    = "3000"
+			k8sDeploymentName       = "my-k8s-component"
+			openshiftDeploymentName = "my-openshift-component"
+			DEVFILEPORT             = "3000"
 		)
 		var session helper.DevSession
 		var sessionOut, sessionErr []byte
@@ -1640,9 +1641,11 @@ ComponentSettings:
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should execute the composite apply commands successfully", func() {
-				checkDeploymentExists := func() {
-					out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
-					Expect(out).To(ContainSubstring(deploymentName))
+				checkDeploymentsExist := func() {
+					out := commonVar.CliRunner.Run("get", "deployments", k8sDeploymentName).Out.Contents()
+					Expect(out).To(ContainSubstring(k8sDeploymentName))
+					out = commonVar.CliRunner.Run("get", "deployments", openshiftDeploymentName).Out.Contents()
+					Expect(out).To(ContainSubstring(openshiftDeploymentName))
 				}
 				checkImageBuilt := func() {
 					Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
@@ -1666,7 +1669,7 @@ ComponentSettings:
 				})
 
 				By("checking the deployment was created successfully", func() {
-					checkDeploymentExists()
+					checkDeploymentsExist()
 				})
 				By("ensuring multiple deployments exist for selector error is not occurred", func() {
 					Expect(string(sessionErr)).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
@@ -1676,7 +1679,7 @@ ComponentSettings:
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
 					_, _, _, err = session.WaitSync()
 					Expect(err).ToNot(HaveOccurred())
-					checkDeploymentExists()
+					checkDeploymentsExist()
 					checkImageBuilt()
 					checkEndpointAccessible([]string{"Hello from the new Node.js Starter Application!"})
 				})
@@ -1685,7 +1688,8 @@ ComponentSettings:
 					session.Stop()
 					session.WaitEnd()
 					out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
-					Expect(out).ToNot(ContainSubstring(deploymentName))
+					Expect(out).ToNot(ContainSubstring(k8sDeploymentName))
+					Expect(out).ToNot(ContainSubstring(openshiftDeploymentName))
 				})
 			})
 		})
