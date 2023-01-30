@@ -12,6 +12,9 @@ import (
 func (o *PodmanCli) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 	// TODO(feloy) implement followLog = true
 	args := []string{"pod", "logs"}
+	if followLog {
+		args = append(args, "--follow")
+	}
 	if containerName != "" {
 		args = append(args, "--container", podName+"-"+containerName)
 	}

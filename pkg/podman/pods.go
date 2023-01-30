@@ -14,8 +14,27 @@ import (
 
 // GetPodsMatchingSelector returns all pods matching the given label selector.
 func (o *PodmanCli) GetPodsMatchingSelector(selector string) (*corev1.PodList, error) {
-	// TODO(feloy) when pod is created with labels
-	return nil, nil
+	podsReport, err := o.getPodsFromSelector(selector)
+	if err != nil {
+		return nil, err
+	}
+
+	var result corev1.PodList
+	for _, podReport := range podsReport {
+		pod, err := o.KubeGenerate(podReport.Name)
+		if err != nil {
+			return nil, err
+		}
+		// We remove the podname- prefix from the container names as Podman adds this prefix
+		// (to avoid colliding container names?)
+		for c := range pod.Spec.Containers {
+			container := &pod.Spec.Containers[c]
+			prefix := pod.GetName() + "-"
+			container.Name = strings.TrimPrefix(container.Name, prefix)
+		}
+		result.Items = append(result.Items, *pod)
+	}
+	return &result, nil
 }
 
 // GetAllResourcesFromSelector returns all resources of any kind matching the given label selector.
@@ -45,8 +64,8 @@ func (o *PodmanCli) GetAllResourcesFromSelector(selector string, _ string) ([]un
 
 // GetAllPodsInNamespaceMatchingSelector returns all pods matching the given label selector and in the specified namespace.
 func (o *PodmanCli) GetAllPodsInNamespaceMatchingSelector(selector string, ns string) (*corev1.PodList, error) {
-	// TODO(feloy) when pod is created with labels
-	return nil, nil
+	// In podman, we return the pods, as there is no resource containing PodSpec
+	return o.GetPodsMatchingSelector(selector)
 }
 
 // GetRunningPodFromSelector returns any pod matching the given label selector.
