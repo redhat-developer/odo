@@ -6,11 +6,11 @@ import (
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 )
 
-// GetKubernetesComponentsToPush returns the list of Kubernetes components to push,
-// by getting the list of Kubernetes components and removing the ones
+// GetK8sAndOcComponentsToPush returns the list of Kubernetes and OpenShift components to push,
+// by getting the list of Kubernetes and OpenShift components and removing the ones
 // referenced from a command in the devfile
 // It takes an additional allowApply boolean, which set to true, will append the components from apply command to the list
-func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) ([]devfilev1.Component, error) {
+func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) ([]devfilev1.Component, error) {
 	k8sComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
 	})
@@ -18,8 +18,19 @@ func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj, allowApply bool
 		return nil, err
 	}
 
+	ocComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.OpenshiftComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	allComponents := []devfilev1.Component{}
+	allComponents = append(allComponents, k8sComponents...)
+	allComponents = append(allComponents, ocComponents...)
+
 	componentsMap := map[string]devfilev1.Component{}
-	for _, component := range k8sComponents {
+	for _, component := range allComponents {
 		componentsMap[component.Name] = component
 	}
 
@@ -41,12 +52,12 @@ func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj, allowApply bool
 		delete(componentsMap, componentName)
 	}
 
-	k8sComponents = make([]devfilev1.Component, len(componentsMap))
+	allComponentsToPush := make([]devfilev1.Component, len(componentsMap))
 	i := 0
 	for _, v := range componentsMap {
-		k8sComponents[i] = v
+		allComponentsToPush[i] = v
 		i++
 	}
 
-	return k8sComponents, err
+	return allComponentsToPush, err
 }
