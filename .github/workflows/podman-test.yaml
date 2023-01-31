@@ -23,7 +23,7 @@ jobs:
 
     - name: Run Integration tests
       env:
-        PODMAN_EXEC_NODES: ${{ secrets.PODMAN_TEST_EXEC_NODES }}
+        PODMAN_EXEC_NODES: 10
       run: make test-integration-podman
 
     - name: List and stop remaining containers
