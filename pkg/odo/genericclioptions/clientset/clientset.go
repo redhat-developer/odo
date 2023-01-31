@@ -12,8 +12,6 @@
 package clientset
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
@@ -173,7 +171,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		if err != nil {
 			// send error in case the command is to run on podman platform or if PODMAN clientset is required.
 			if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
-				return nil, fmt.Errorf("failed to initialize podman client: %s", err)
+				return nil, podman.NewPodmanNotFoundError(err)
 			}
 			dep.PodmanClient = nil
 		}

@@ -93,7 +93,7 @@ func (o *ComponentOptions) Validate(ctx context.Context) (err error) {
 	switch fcontext.GetPlatform(ctx, commonflags.PlatformCluster) {
 	case commonflags.PlatformCluster:
 		if o.clientset.KubernetesClient == nil {
-			log.Warning("No connection to cluster defined")
+			log.Warning(kclient.NewNoConnectionError())
 		}
 	case commonflags.PlatformPodman:
 		if o.namespaceFlag != "" {
@@ -147,25 +147,25 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 		if isPlatformFeatureEnabled {
 			//Get info from all platforms
 			if kubeClient == nil {
-				log.Warning("cluster is non accessible")
+				log.Warning(kclient.NewNoConnectionError())
 			}
 			if podmanClient == nil {
-				log.Warning("unable to access podman. Do you have podman client installed?")
+				log.Warning(podman.NewPodmanNotFoundError(nil))
 			}
 		} else {
 			if kubeClient == nil {
-				return api.Component{}, nil, errors.New("cluster is non accessible")
+				return api.Component{}, nil, kclient.NewNoConnectionError()
 			}
 			podmanClient = nil
 		}
 	case commonflags.PlatformCluster:
 		if kubeClient == nil {
-			return api.Component{}, nil, errors.New("cluster is non accessible")
+			return api.Component{}, nil, kclient.NewNoConnectionError()
 		}
 		podmanClient = nil
 	case commonflags.PlatformPodman:
 		if podmanClient == nil {
-			return api.Component{}, nil, errors.New("unable to access podman. Do you have podman client installed?")
+			return api.Component{}, nil, podman.NewPodmanNotFoundError(nil)
 		}
 		kubeClient = nil
 	}
@@ -224,19 +224,19 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 	switch platform {
 	case "":
 		if kubeClient == nil {
-			log.Warning("cluster is non accessible")
+			log.Warning(kclient.NewNoConnectionError())
 		}
 		if isPlatformFeatureEnabled && podmanClient == nil {
-			log.Warning("unable to access podman. Do you have podman client installed?")
+			log.Warning(podman.NewPodmanNotFoundError(nil))
 		}
 	case commonflags.PlatformCluster:
 		if kubeClient == nil {
-			return api.Component{}, nil, errors.New("cluster is non accessible")
+			return api.Component{}, nil, kclient.NewNoConnectionError()
 		}
 		podmanClient = nil
 	case commonflags.PlatformPodman:
 		if podmanClient == nil {
-			return api.Component{}, nil, errors.New("unable to access podman. Do you have podman client installed?")
+			return api.Component{}, nil, podman.NewPodmanNotFoundError(nil)
 		}
 		kubeClient = nil
 	}

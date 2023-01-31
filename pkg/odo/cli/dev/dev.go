@@ -2,7 +2,6 @@ package dev
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -23,6 +23,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/podman"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -105,12 +106,12 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 	switch platform {
 	case commonflags.PlatformCluster:
 		if o.clientset.KubernetesClient == nil {
-			return errors.New("no connection to cluster defined")
+			return kclient.NewNoConnectionError()
 		}
 		scontext.SetPlatform(ctx, o.clientset.KubernetesClient)
 	case commonflags.PlatformPodman:
 		if o.clientset.PodmanClient == nil {
-			return errors.New("unable to access podman. Do you have podman client installed?")
+			return podman.NewPodmanNotFoundError(nil)
 		}
 		scontext.SetPlatform(ctx, o.clientset.PodmanClient)
 	}

@@ -3290,6 +3290,13 @@ CMD ["npm", "start"]
 
 	}
 
+	Context("odo dev on podman bound to fail", Label(helper.LabelPodman), func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+	})
 	Context("odo dev on podman with a devfile bound to fail", Label(helper.LabelPodman), func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
