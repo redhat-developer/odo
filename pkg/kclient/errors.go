@@ -28,5 +28,5 @@ func NewNoConnectionError() NoConnectionError {
 
 func (e NoConnectionError) Error() string {
 	// could also be "cluster is non accessible"
-	return fmt.Sprintf("unable to access the cluster")
+	return "unable to access the cluster"
 }
