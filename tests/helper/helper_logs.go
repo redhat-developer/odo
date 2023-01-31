@@ -10,10 +10,16 @@ type LogsSession struct {
 
 // StartLogsFollow starts a session with `odo logs --follow`
 // It returns a session structure, the contents of the standard and error outputs
-func StartLogsFollow(opts ...string) (LogsSession, []byte, []byte, error) {
+func StartLogsFollow(podman bool, opts ...string) (LogsSession, []byte, []byte, error) {
 	args := []string{"logs", "--follow"}
 	args = append(args, opts...)
+	if podman {
+		args = append(args, "--platform", "podman")
+	}
 	session := CmdRunner("odo", args...)
+	if podman {
+		session.Command.Env = append(session.Command.Env, "ODO_EXPERIMENTAL_MODE=true")
+	}
 	result := LogsSession{
 		session: session,
 	}

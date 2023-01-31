@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -116,11 +117,15 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		mode = odolabels.ComponentAnyMode
 	}
 
+	ns := ""
+	if o.clientset.KubernetesClient != nil {
+		ns = odocontext.GetNamespace(ctx)
+	}
 	events, err := o.clientset.LogsClient.GetLogsForMode(
 		ctx,
 		mode,
 		componentName,
-		odocontext.GetNamespace(ctx),
+		ns,
 		o.follow,
 	)
 	if err != nil {
@@ -246,5 +251,6 @@ By default it shows logs of all containers running in both Dev and Deploy mode. 
 	clientset.Add(logsCmd, clientset.LOGS, clientset.FILESYSTEM)
 	util.SetCommandGroup(logsCmd, util.MainGroup)
 	logsCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	commonflags.UsePlatformFlag(logsCmd)
 	return logsCmd
 }
