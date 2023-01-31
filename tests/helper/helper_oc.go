@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -630,4 +631,16 @@ func (oc OcRunner) EnsurePodIsUp(namespace, podName string) {
 
 func (oc OcRunner) AssertNonAuthenticated() {
 	Cmd(oc.path, "whoami").ShouldFail()
+}
+
+func (oc OcRunner) GetVersion() string {
+	res := Cmd(oc.path, "version", "--output=json").ShouldPass().Out()
+	var js map[string]interface{}
+	err := json.Unmarshal([]byte(res), &js)
+	Expect(err).ShouldNot(HaveOccurred())
+	val, ok := js["openshiftVersion"].(string)
+	if !ok {
+		return ""
+	}
+	return val
 }

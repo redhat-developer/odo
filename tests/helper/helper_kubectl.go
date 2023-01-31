@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -441,4 +442,15 @@ func (kubectl KubectlRunner) AssertNoContainsLabel(kind, namespace, componentNam
 
 func (kubectl KubectlRunner) AssertNonAuthenticated() {
 	// Nothing to do
+}
+
+func (kubectl KubectlRunner) GetVersion() string {
+	res := Cmd(kubectl.path, "version", "--output=json").ShouldPass().Out()
+	var js map[string]interface{}
+	err := json.Unmarshal([]byte(res), &js)
+	Expect(err).ShouldNot(HaveOccurred())
+	sv := js["serverVersion"].(map[string]interface{})
+	minor := sv["minor"].(string)
+	major := sv["major"].(string)
+	return major + "." + minor
 }
