@@ -166,7 +166,7 @@ Installing `odo` using [Homebrew](https://brew.sh/):
 1. Install odo:
 
 ```shell
-brew install --HEAD odo-dev
+brew install odo-dev
 ```
 
 2. Verify the version you installed is up-to-date:
