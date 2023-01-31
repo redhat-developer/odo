@@ -638,5 +638,9 @@ func (oc OcRunner) GetVersion() string {
 	var js map[string]interface{}
 	err := json.Unmarshal([]byte(res), &js)
 	Expect(err).ShouldNot(HaveOccurred())
-	return js["openshiftVersion"].(string)
+	val, ok := js["openshiftVersion"].(string)
+	if !ok {
+		return ""
+	}
+	return val
 }
