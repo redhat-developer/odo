@@ -290,6 +290,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-deployTimer.C:
+			// If the pod is not displayed as ready, wait a little longer
 			if !podReady {
 				deployTimer.Reset(300 * time.Millisecond)
 				continue

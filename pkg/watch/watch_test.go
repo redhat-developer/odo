@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/fsnotify/fsnotify"
@@ -54,6 +55,34 @@ func (o fakeWatcher) ResultChan() <-chan watch.Event {
 	return make(chan watch.Event, 1)
 }
 
+type fakePodWatcher struct {
+	ch chan watch.Event
+}
+
+func newFakePodWatcher() fakePodWatcher {
+	return fakePodWatcher{
+		ch: make(chan watch.Event, 1),
+	}
+}
+
+func (o fakePodWatcher) Stop() {
+}
+
+func (o fakePodWatcher) ResultChan() <-chan watch.Event {
+	return o.ch
+}
+
+func (o fakePodWatcher) sendPodReady() {
+	o.ch <- watch.Event{
+		Type: watch.Added,
+		Object: &corev1.Pod{
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+			},
+		},
+	}
+}
+
 func Test_eventWatcher(t *testing.T) {
 	type args struct {
 		parameters WatchParameters
@@ -71,7 +100,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{},
 			},
-			wantOut:       "Pushing files...\n\nchangedFiles [file1 file2] deletedPaths []\n",
+			wantOut:       " ✓  Pod is Running\nPushing files...\n\nchangedFiles [file1 file2] deletedPaths []\n",
 			wantErr:       true,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Create}, {Name: "file2", Op: fsnotify.Write}},
 			watcherError:  nil,
@@ -81,7 +110,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{},
 			},
-			wantOut:       "",
+			wantOut:       " ✓  Pod is Running\n",
 			wantErr:       true,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Create}, {Name: "file2", Op: fsnotify.Write}},
 			watcherError:  fmt.Errorf("error"),
@@ -91,7 +120,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{FileIgnores: []string{"file1"}},
 			},
-			wantOut:       "Pushing files...\n\nchangedFiles [] deletedPaths [file1 file2]\n",
+			wantOut:       " ✓  Pod is Running\nPushing files...\n\nchangedFiles [] deletedPaths [file1 file2]\n",
 			wantErr:       true,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Remove}, {Name: "file2", Op: fsnotify.Rename}},
 			watcherError:  nil,
@@ -111,11 +140,13 @@ func Test_eventWatcher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			watcher, _ := fsnotify.NewWatcher()
 			fileWatcher, _ := fsnotify.NewWatcher()
+			podWatcher := newFakePodWatcher()
 			var cancel context.CancelFunc
 			ctx, cancel := context.WithCancel(context.Background())
 			out := &bytes.Buffer{}
 
 			go func() {
+				podWatcher.sendPodReady()
 				for _, event := range tt.watcherEvents {
 					watcher.Events <- event
 				}
@@ -134,7 +165,7 @@ func Test_eventWatcher(t *testing.T) {
 			o := WatchClient{
 				sourcesWatcher:    watcher,
 				deploymentWatcher: fakeWatcher{},
-				podWatcher:        fakeWatcher{},
+				podWatcher:        podWatcher,
 				warningsWatcher:   fakeWatcher{},
 				devfileWatcher:    fileWatcher,
 				keyWatcher:        make(chan byte),
