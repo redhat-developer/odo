@@ -534,12 +534,26 @@ ComponentSettings:
 	})
 	Context("checking if odo dev matches local Devfile K8s resources and remote resources", func() {
 		for _, devfile := range []struct {
-			title       string
-			devfileName string
-			envvars     []string
+			title             string
+			devfileName       string
+			envvars           []string
+			deploymentName    []string
+			newDeploymentName []string
 		}{
-			{title: "without apply command", devfileName: "devfile-with-k8s-resource.yaml", envvars: nil},
-			{title: "with apply command", devfileName: "devfile-composite-apply-commands.yaml", envvars: []string{"PODMAN_CMD=echo"}},
+			{
+				title:             "without apply command",
+				devfileName:       "devfile-with-k8s-resource.yaml",
+				envvars:           nil,
+				deploymentName:    []string{"my-component"},
+				newDeploymentName: []string{"my-new-component"},
+			},
+			{
+				title:             "with apply command",
+				devfileName:       "devfile-composite-apply-commands.yaml",
+				envvars:           []string{"PODMAN_CMD=echo"},
+				deploymentName:    []string{"my-k8s-component", "my-openshift-component"},
+				newDeploymentName: []string{"my-new-k8s-component", "my-new-openshift-component"},
+			},
 		} {
 			devfile := devfile
 			When(fmt.Sprintf("odo dev is executed to run a devfile containing a k8s resource %s", devfile.title), func() {
@@ -547,11 +561,6 @@ ComponentSettings:
 					devSession    helper.DevSession
 					err           error
 					getDeployArgs = []string{"get", "deployments", "-n", commonVar.Project}
-				)
-
-				const (
-					deploymentName    = "my-component" // hard-coded from the Devfiles
-					newDeploymentName = "changed-component"
 				)
 
 				BeforeEach(
@@ -567,10 +576,11 @@ ComponentSettings:
 						Expect(err).To(BeNil())
 
 						// ensure the deployment is created by `odo dev`
-						Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(deploymentName))
-
+						out := string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())
+						helper.MatchAllInOutput(out, devfile.deploymentName)
 						// we fake the new deployment creation by changing the old deployment's name
-						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), deploymentName, newDeploymentName)
+
+						helper.ReplaceStrings(filepath.Join(commonVar.Context, "devfile.yaml"), devfile.deploymentName, devfile.newDeploymentName)
 
 						_, _, _, err := devSession.WaitSync()
 						Expect(err).To(BeNil())
@@ -581,9 +591,11 @@ ComponentSettings:
 				})
 
 				It("should have deleted the old resource and created the new resource", func() {
-					getDeployments := commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()
-					Expect(getDeployments).ToNot(ContainSubstring(deploymentName))
-					Expect(getDeployments).To(ContainSubstring(newDeploymentName))
+					getDeployments := string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())
+					for i := range devfile.deploymentName {
+						Expect(getDeployments).ToNot(ContainSubstring(devfile.deploymentName[i]))
+						Expect(getDeployments).To(ContainSubstring(devfile.newDeploymentName[i]))
+					}
 				})
 			})
 		}
@@ -1643,9 +1655,9 @@ ComponentSettings:
 			It("should execute the composite apply commands successfully", func() {
 				checkDeploymentsExist := func() {
 					out := commonVar.CliRunner.Run("get", "deployments", k8sDeploymentName).Out.Contents()
-					Expect(out).To(ContainSubstring(k8sDeploymentName))
+					Expect(string(out)).To(ContainSubstring(k8sDeploymentName))
 					out = commonVar.CliRunner.Run("get", "deployments", openshiftDeploymentName).Out.Contents()
-					Expect(out).To(ContainSubstring(openshiftDeploymentName))
+					Expect(string(out)).To(ContainSubstring(openshiftDeploymentName))
 				}
 				checkImageBuilt := func() {
 					Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
@@ -1688,8 +1700,8 @@ ComponentSettings:
 					session.Stop()
 					session.WaitEnd()
 					out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
-					Expect(out).ToNot(ContainSubstring(k8sDeploymentName))
-					Expect(out).ToNot(ContainSubstring(openshiftDeploymentName))
+					Expect(string(out)).ToNot(ContainSubstring(k8sDeploymentName))
+					Expect(string(out)).ToNot(ContainSubstring(openshiftDeploymentName))
 				})
 			})
 		})
