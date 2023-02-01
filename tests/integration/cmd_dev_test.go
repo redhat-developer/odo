@@ -3297,7 +3297,7 @@ CMD ["npm", "start"]
 				helper.DevfileMetadataNameSetter(cmpName))
 		})
 		It("should fail to run odo dev", func() {
-			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo").ShouldFail().Err()
+			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo", "ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
 			Expect(errOut).To(ContainSubstring("unable to access podman. Do you have podman client installed? Cause:  executable \"echo\" not found"))
 		})
 	})

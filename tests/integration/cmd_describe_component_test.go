@@ -350,7 +350,7 @@ var _ = Describe("odo describe component command tests", func() {
 										// Podman mode assumes the test does not require a cluster.
 										// But running "odo describe component --name" in non-experimental mode attempts to get information from a cluster first.
 										// TODO We need to think about how to test both Cluster and Podman modes.
-										Expect(stderr).To(ContainSubstring("no connection to cluster defined"))
+										Expect(stderr).To(ContainSubstring("unable to access the cluster"))
 										Expect(stdout).NotTo(ContainSubstring("Forwarded ports"))
 										Expect(stdout).NotTo(ContainSubstring("Running on"))
 										Expect(stdout).NotTo(ContainSubstring("podman:"))
@@ -522,7 +522,7 @@ var _ = Describe("odo describe component command tests", func() {
 										Expect(stdout).To(BeEmpty())
 										helper.JsonPathDoesNotExist(stderr, "runningOn") // Deprecated
 										helper.JsonPathDoesNotExist(stderr, "platform")
-										helper.JsonPathContentIs(stderr, "message", "no connection to cluster defined")
+										helper.JsonPathContentIs(stderr, "message", "unable to access the cluster")
 										helper.JsonPathDoesNotExist(stderr, "devfilePath")
 										helper.JsonPathDoesNotExist(stderr, "devForwardedPorts")
 										helper.JsonPathDoesNotExist(stderr, "devfileData")
