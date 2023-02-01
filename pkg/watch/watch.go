@@ -218,6 +218,10 @@ func (o *WatchClient) eventWatcher(
 	<-retryTimer.C
 
 	podReady := false
+	if !parameters.WatchCluster {
+		// If we don't watch cluster (on podman), we consider pod is ready
+		podReady = true
+	}
 	podsPhases := NewPodPhases()
 
 	for {
