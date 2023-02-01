@@ -27,7 +27,7 @@ func NewPodmanCli(ctx context.Context) (*PodmanCli, error) {
 	}
 	version, err := cli.Version()
 	if err != nil {
-		return nil, fmt.Errorf("executable %q not found", cli.podmanCmd)
+		return nil, fmt.Errorf("executable %q not found; cause: %w", cli.podmanCmd, err)
 	}
 	if version.Client == nil {
 		return nil, fmt.Errorf("executable %q not recognized as podman client", cli.podmanCmd)

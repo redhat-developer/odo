@@ -17,5 +17,5 @@ func (o PodmanNotFoundError) Error() string {
 	if o.err == nil {
 		return msg
 	}
-	return fmt.Errorf("%s Cause: %w", msg, o.err).Error()
+	return fmt.Errorf("%s cause: %w", msg, o.err).Error()
 }
