@@ -75,6 +75,27 @@ func ListKubernetesComponents(devfileObj parser.DevfileObj, path string) (list [
 	return
 }
 
+// ListOpenShiftComponents lists all the openshift components from the devfile
+func ListOpenShiftComponents(devfileObj parser.DevfileObj, path string) (list []unstructured.Unstructured, err error) {
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.OpenshiftComponentType},
+	})
+	if err != nil {
+		return
+	}
+	var u []unstructured.Unstructured
+	for _, ocComponent := range components {
+		if ocComponent.Openshift != nil {
+			u, err = GetK8sComponentAsUnstructuredList(devfileObj, ocComponent.Name, path, devfilefs.DefaultFs{})
+			if err != nil {
+				return
+			}
+			list = append(list, u...)
+		}
+	}
+	return
+}
+
 // AddKubernetesComponentToDevfile adds a resource definition to devfile object as an inlined Kubernetes component
 func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) (parser.DevfileObj, error) {
 	err := devfileObj.Data.AddComponents([]v1alpha2.Component{{
