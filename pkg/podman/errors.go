@@ -13,5 +13,9 @@ func NewPodmanNotFoundError(err error) PodmanNotFoundError {
 }
 
 func (o PodmanNotFoundError) Error() string {
-	return fmt.Errorf("unable to access podman. Do you have podman client installed? Cause: %w", o.err).Error()
+	msg := "unable to access podman. Do you have podman client installed?"
+	if o.err == nil {
+		return msg
+	}
+	return fmt.Errorf("%s Cause: %w", msg, o.err).Error()
 }
