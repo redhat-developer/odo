@@ -15,8 +15,10 @@ export SKIP_USER_LOGIN_TESTS=true
     export DEVFILE_PROXY="$(kubectl get svc -n devfile-proxy nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' || true)"
     echo Using Devfile proxy: ${DEVFILE_PROXY}
     make install
-    make test-integration-cluster
-    make test-doc-automation
+    RES=0
+    make test-integration-cluster || RES=1
+    make test-doc-automation || RES=1
+    exit $RES
 ) |& tee "/tmp/${LOGFILE}"
 
 RESULT=${PIPESTATUS[0]}
