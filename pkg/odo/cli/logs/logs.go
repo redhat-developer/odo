@@ -19,6 +19,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -89,6 +90,18 @@ func (o *LogsOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ [
 }
 
 func (o *LogsOptions) Validate(ctx context.Context) error {
+
+	switch fcontext.GetPlatform(ctx, commonflags.PlatformCluster) {
+	case commonflags.PlatformCluster:
+		if o.clientset.KubernetesClient == nil {
+			return errors.New("you need access to a cluster to run this command")
+		}
+	case commonflags.PlatformPodman:
+		if o.clientset.PodmanClient == nil {
+			return errors.New("you need access to podman to run this command")
+		}
+	}
+
 	if o.devMode && o.deployMode {
 		return errors.New("pass only one of --dev or --deploy flags; pass no flag to see logs for both modes")
 	}
