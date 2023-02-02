@@ -23,7 +23,7 @@ var _ = Describe("odo remove binding command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 	When("the component with binding is bootstrapped", func() {
-		var bindingName = "my-nodejs-app-cluster-sample" // Hard coded from the devfile-with-service-binding-files.yaml
+		var bindingName = "my-nodejs-app-cluster-sample-k8s" // Hard coded from the devfile-with-service-binding-files.yaml
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "init", "--name", "mynode", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml")).ShouldPass()

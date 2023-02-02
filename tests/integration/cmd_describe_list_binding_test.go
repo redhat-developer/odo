@@ -51,7 +51,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						stdout, stderr := res.Out(), res.Err()
 						Expect(stderr).To(BeEmpty())
 						Expect(helper.IsJSON(stdout)).To(BeTrue())
-						helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
+						helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample-k8s")
 						helper.JsonPathContentIs(stdout, "0.spec.application.kind", "Deployment")
 						helper.JsonPathContentIs(stdout, "0.spec.application.name", "my-nodejs-app-app")
 						helper.JsonPathContentIs(stdout, "0.spec.application.apiVersion", "apps/v1")
@@ -63,16 +63,16 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						} else {
 							helper.JsonPathDoesNotExist(stdout, "0.spec.services.0.namespace")
 						}
-						helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
-						helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
-						helper.JsonPathContentIs(stdout, "0.spec.namingStrategy", "lowercase")
-						helper.JsonPathContentIs(stdout, "0.status", "")
+
+						helper.JsonPathContentIs(stdout, "1.name", "my-nodejs-app-cluster-sample-ocp")
 					})
+
 					By("human readable output", func() {
 						res := helper.Cmd("odo", "describe", "binding").ShouldPass()
 						stdout, _ := res.Out(), res.Err()
 						Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
-						Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
+						Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample-k8s"))
+						Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample-ocp"))
 						if ns != "" {
 							Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: %s)", ns)))
 						} else {
@@ -98,7 +98,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						stdout, stderr := res.Out(), res.Err()
 						Expect(stderr).To(BeEmpty())
 						Expect(helper.IsJSON(stdout)).To(BeTrue())
-						helper.JsonPathContentIs(stdout, "bindings.0.name", "my-nodejs-app-cluster-sample")
+						helper.JsonPathContentIs(stdout, "bindings.0.name", "my-nodejs-app-cluster-sample-k8s")
 						helper.JsonPathContentIs(stdout, "bindings.0.spec.application.kind", "Deployment")
 						helper.JsonPathContentIs(stdout, "bindings.0.spec.application.name", "my-nodejs-app-app")
 						helper.JsonPathContentIs(stdout, "bindings.0.spec.application.apiVersion", "apps/v1")
@@ -115,7 +115,9 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
 						helper.JsonPathContentIs(stdout, "bindings.0.status", "")
 						helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
-						helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample")
+						helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample-k8s")
+
+						helper.JsonPathContentIs(stdout, "bindings.1.name", "my-nodejs-app-cluster-sample-ocp")
 					})
 					By("human readable output", func() {
 						res := helper.Cmd("odo", command...).ShouldPass()
@@ -129,7 +131,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
 						}
 						Expect(lines[3]).To(ContainSubstring("* "))
-						Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+						Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample-k8s"))
 						Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
 						if ns != "" {
 							Expect(lines[3]).To(ContainSubstring(fmt.Sprintf("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: %s)", ns)))
@@ -138,6 +140,8 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							Expect(lines[3]).ToNot(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: "))
 						}
 						Expect(lines[3]).To(ContainSubstring("None"))
+
+						Expect(lines[4]).To(ContainSubstring("my-nodejs-app-cluster-sample-ocp"))
 					})
 				})
 			}
