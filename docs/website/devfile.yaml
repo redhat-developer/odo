@@ -1,0 +1,59 @@
+schemaVersion: 2.2.0
+metadata:
+  name: odo.dev
+  description: Website for odo, the developer-focused CLI for container development
+  displayName: odo.dev
+  icon: https://odo.dev/img/logo.png
+  version: 3.6.0
+  tags:
+  - NodeJS
+  - React
+  - Docusaurus
+  - odo
+
+components:
+- name: doc-runtime
+  container:
+    image: registry.access.redhat.com/ubi8/nodejs-16:latest
+    memoryLimit: 512Mi
+    command: ['tail']
+    args: ['-f', '/dev/null']
+    endpoints:
+      - name: http-doc
+        targetPort: 3000
+
+commands:
+
+- id: 0-install-yarn
+  exec:
+    commandLine: npm install --global yarn
+    component: doc-runtime
+
+#
+# Build
+#
+- id: doc-install-deps
+  exec:
+    commandLine: yarn
+    component: doc-runtime
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      kind: build
+      isDefault: true
+
+#
+# Run
+#
+- id: doc-start
+  exec:
+    commandLine: yarn start
+    component: doc-runtime
+    hotReloadCapable: true
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      kind: run
+      isDefault: true
+
+events:
+  postStart:
+    - 0-install-yarn
