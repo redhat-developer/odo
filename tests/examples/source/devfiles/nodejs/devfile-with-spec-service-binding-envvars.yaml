@@ -51,7 +51,7 @@ components:
       apiVersion: servicebinding.io/v1alpha3
       kind: ServiceBinding
       metadata:
-        name: my-nodejs-app-cluster-sample
+        name: my-nodejs-app-cluster-sample-k8s
       spec:
         service:
           apiVersion: postgresql.k8s.enterprisedb.io/v1
@@ -64,7 +64,26 @@ components:
         env:
         - name: PASSWD
           key: password
-  name: my-nodejs-app-cluster-sample
+  name: my-nodejs-app-cluster-sample-k8s
+- openshift:
+    inlined: |
+      apiVersion: servicebinding.io/v1alpha3
+      kind: ServiceBinding
+      metadata:
+        name: my-nodejs-app-cluster-sample-ocp
+      spec:
+        service:
+          apiVersion: postgresql.k8s.enterprisedb.io/v1
+          kind: Cluster
+          name: cluster-sample
+        workload:
+          apiVersion: apps/v1
+          kind: Deployment
+          name: my-nodejs-app-app
+        env:
+        - name: PASSWD
+          key: password
+  name: my-nodejs-app-cluster-sample-ocp
 metadata:
   description: Stack with Node.js 14
   displayName: Node.js Runtime

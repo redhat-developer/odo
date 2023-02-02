@@ -51,7 +51,7 @@ components:
       apiVersion: binding.operators.coreos.com/v1alpha1
       kind: ServiceBinding
       metadata:
-        name: my-nodejs-app-cluster-sample
+        name: my-nodejs-app-cluster-sample-k8s
       spec:
         application:
           group: apps
@@ -67,7 +67,29 @@ components:
           name: cluster-sample
           resource: clusters
           version: v1
-  name: my-nodejs-app-cluster-sample
+  name: my-nodejs-app-cluster-sample-k8s
+- openshift:
+    inlined: |
+      apiVersion: binding.operators.coreos.com/v1alpha1
+      kind: ServiceBinding
+      metadata:
+        name: my-nodejs-app-cluster-sample-ocp
+      spec:
+        application:
+          group: apps
+          name: my-nodejs-app-app
+          kind: Deployment
+          version: v1
+        bindAsFiles: false
+        detectBindingResources: true
+        services:
+        - group: postgresql.k8s.enterprisedb.io
+          id: my-nodejs-app-cluster-sample
+          kind: Cluster
+          name: cluster-sample
+          resource: clusters
+          version: v1
+  name: my-nodejs-app-cluster-sample-ocp
 metadata:
   description: Stack with Node.js 14
   displayName: Node.js Runtime
