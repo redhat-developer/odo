@@ -152,6 +152,9 @@ Find more details about the experimental mode on this [dedicated page](../../doc
 [Enabling the experimental mode](../../docs/user-guides/advanced/experimental-mode#enabling-the-experimental-mode) can be done by setting the `ODO_EXPERIMENTAL_MODE` environment variable to `true`
 in your terminal session, like so:
 
+```console
+export ODO_EXPERIMENTAL_MODE=true
+```
 
 ### Step 3. Iterating on your application locally on containers (`odo dev`)
 
