@@ -126,9 +126,21 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 	if err != nil {
 		return nil, err
 	}
+	ocpComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{
+			ComponentType: devfilev1alpha2.OpenshiftComponentType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	allComponents := make([]devfilev1alpha2.Component, 0, len(kubeComponents)+len(ocpComponents))
+	allComponents = append(allComponents, kubeComponents...)
+	allComponents = append(allComponents, ocpComponents...)
 
 	var warning error
-	for _, component := range kubeComponents {
+	for _, component := range allComponents {
 		strCRD, err := libdevfile.GetK8sManifestsWithVariablesSubstituted(devfileObj, component.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return nil, err
