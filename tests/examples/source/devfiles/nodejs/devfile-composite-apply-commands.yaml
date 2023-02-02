@@ -127,6 +127,7 @@ commands:
       commands:
         - build-image
         - create-k8s-resource
+        - create-openshift-resource
         - install
         - start-debug
       group:
