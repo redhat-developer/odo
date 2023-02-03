@@ -169,8 +169,9 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 	if isDefined(command, PODMAN) || isDefined(command, PODMAN_NULLABLE) {
 		dep.PodmanClient, err = podman.NewPodmanCli(ctx)
 		if err != nil {
-			if isDefined(command, PODMAN) {
-				return nil, err
+			// send error in case the command is to run on podman platform or if PODMAN clientset is required.
+			if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
+				return nil, podman.NewPodmanNotFoundError(err)
 			}
 			dep.PodmanClient = nil
 		}

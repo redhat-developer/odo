@@ -3298,6 +3298,17 @@ CMD ["npm", "start"]
 
 	}
 
+	Context("odo dev on podman when podman in unavailable", Label(helper.LabelPodman), func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+		It("should fail to run odo dev", func() {
+			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo", "ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+			Expect(errOut).To(ContainSubstring("unable to access podman. Do you have podman client installed and configured correctly? cause: exec: \"echo\": executable file not found in $PATH"))
+		})
+	})
 	Context("odo dev on podman with a devfile bound to fail", Label(helper.LabelPodman), func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)

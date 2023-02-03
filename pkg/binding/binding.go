@@ -154,7 +154,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 			}
 			sb.Status, err = o.getStatusFromBinding(sb.Name)
 			if err != nil {
-				warning = clierrors.NewWarning("unable to access the cluster", err)
+				warning = clierrors.NewWarning(kclient.NewNoConnectionError().Error(), err)
 			}
 
 			result = append(result, sb)
@@ -170,7 +170,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 			sb := kclient.APIServiceBindingFromSpec(sbc)
 			sb.Status, err = o.getStatusFromSpec(sb.Name)
 			if err != nil {
-				warning = clierrors.NewWarning("unable to access the cluster", err)
+				warning = clierrors.NewWarning(kclient.NewNoConnectionError().Error(), err)
 			}
 
 			result = append(result, sb)

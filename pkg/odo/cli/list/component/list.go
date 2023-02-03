@@ -2,7 +2,6 @@ package component
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -10,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -64,7 +64,7 @@ func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, ar
 	// if it hasn't, we will search from the default project / namespace.
 	if lo.namespaceFlag != "" {
 		if lo.clientset.KubernetesClient == nil {
-			return errors.New("cluster is non accessible")
+			return kclient.NewNoConnectionError()
 		}
 		lo.namespaceFilter = lo.namespaceFlag
 	} else if lo.clientset.KubernetesClient != nil {
@@ -77,7 +77,7 @@ func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, ar
 // Validate ...
 func (lo *ListOptions) Validate(ctx context.Context) (err error) {
 	if lo.clientset.KubernetesClient == nil {
-		log.Warning("No connection to cluster defined")
+		log.Warning(kclient.NewNoConnectionError())
 	}
 	return nil
 }
