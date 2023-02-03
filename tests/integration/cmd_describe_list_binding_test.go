@@ -92,7 +92,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				{"list"},
 			} {
 				command := command
-				It("should list the binding without running odo dev", func() {
+				It(fmt.Sprintf("should list the binding without running odo dev (%v)", command), func() {
 					By("JSON output", func() {
 						res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
 						stdout, stderr := res.Out(), res.Err()
@@ -114,7 +114,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
 						helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
 						helper.JsonPathContentIs(stdout, "bindings.0.status", "")
-						helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
+						helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "2")
 						helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample-k8s")
 
 						helper.JsonPathContentIs(stdout, "bindings.1.name", "my-nodejs-app-cluster-sample-ocp")
