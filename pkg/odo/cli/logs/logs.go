@@ -13,7 +13,9 @@ import (
 
 	"github.com/fatih/color"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/podman"
 
 	"github.com/redhat-developer/odo/pkg/log"
 
@@ -94,11 +96,11 @@ func (o *LogsOptions) Validate(ctx context.Context) error {
 	switch fcontext.GetPlatform(ctx, commonflags.PlatformCluster) {
 	case commonflags.PlatformCluster:
 		if o.clientset.KubernetesClient == nil {
-			return errors.New("you need access to a cluster to run this command")
+			return kclient.NewNoConnectionError()
 		}
 	case commonflags.PlatformPodman:
 		if o.clientset.PodmanClient == nil {
-			return errors.New("you need access to podman to run this command")
+			return podman.NewPodmanNotFoundError(nil)
 		}
 	}
 

@@ -64,7 +64,7 @@ var _ = Describe("odo logs command tests", func() {
 			It("odo logs should fail with an error message", func() {
 				cmd := helper.Cmd("odo", "logs")
 				stderr := cmd.ShouldFail().Err()
-				Expect(stderr).To(ContainSubstring("you need access to a cluster"))
+				Expect(stderr).To(ContainSubstring("unable to access the cluster"))
 			})
 
 			It("odo logs --platform podman should fail with an error message", func() {
@@ -72,7 +72,7 @@ var _ = Describe("odo logs command tests", func() {
 				defer os.Unsetenv("PODMAN_CMD")
 				cmd := getLogCommand(true)
 				stderr := cmd.ShouldFail().Err()
-				Expect(stderr).To(ContainSubstring("you need access to podman"))
+				Expect(stderr).To(ContainSubstring("unable to access podman"))
 			})
 		})
 
