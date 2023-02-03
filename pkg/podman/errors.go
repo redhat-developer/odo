@@ -13,7 +13,7 @@ func NewPodmanNotFoundError(err error) PodmanNotFoundError {
 }
 
 func (o PodmanNotFoundError) Error() string {
-	msg := "unable to access podman. Do you have podman client installed?"
+	msg := "unable to access podman. Do you have podman client installed and configured correctly?"
 	if o.err == nil {
 		return msg
 	}
