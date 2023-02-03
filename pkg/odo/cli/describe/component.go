@@ -427,6 +427,11 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 		return err
 	}
 
+	err = listComponentsNames("OpenShift components:", devfileObj, v1alpha2.OpenshiftComponentType)
+	if err != nil {
+		return err
+	}
+
 	if len(cmp.Ingresses) != 0 {
 		log.Info("Kubernetes Ingresses:")
 		for _, ing := range cmp.Ingresses {
@@ -465,20 +470,20 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 		log.Describef(title, " Unknown")
 		return nil
 	}
-	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: typ},
 	})
 	if err != nil {
 		return err
 	}
-	if len(containers) == 0 {
+	if len(components) == 0 {
 		return nil
 	}
 	log.Info(title)
-	for _, container := range containers {
-		printmsg := container.Name
-		if container.Container != nil && container.Container.GetMountSources() {
-			printmsg += fmt.Sprintf("\n    Source Mapping: %s", container.Container.SourceMapping)
+	for _, component := range components {
+		printmsg := component.Name
+		if component.Container != nil && component.Container.GetMountSources() {
+			printmsg += fmt.Sprintf("\n    Source Mapping: %s", component.Container.SourceMapping)
 		}
 		log.Printf(printmsg)
 	}
