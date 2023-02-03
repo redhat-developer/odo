@@ -11,9 +11,12 @@ Once you run `odo dev`, you can freely edit code in your favourite IDE and watch
 odo dev
 ```
 
+Then wait a few seconds until `odo dev` displays `Forwarding from 127.0.0.1:...` in its output,
+meaning that `odo` has successfully set up the port forwarding to reach the application running in the container.
+
 <details>
     <summary>Sample Output</summary>
     {props.devout}
 </details>
 
-You can now access the application at [127.0.0.1:20001](http://127.0.0.1:20001) in your local browser and start your development loop. `odo` will watch for changes and push the code for real-time updates.
+You can now access the application via the local port displayed by `odo dev` ([127.0.0.1:20001](http://127.0.0.1:20001) in the sample output above) and start your development loop. `odo` will watch for changes and push the code for real-time updates.
