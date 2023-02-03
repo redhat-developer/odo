@@ -15,11 +15,10 @@ style={{width: '50%', height: '50%', display: 'block', marginLeft: 'auto', margi
 />
 </div>
 
-So far, `odo` has been mainly focusing on container development on [Kubernetes](https://kubernetes.io/) or [OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift) clusters.
+So far, `odo` has been mainly focusing on container development on [Kubernetes](https://kubernetes.io/) and [OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift) clusters.
 
 In this post, we will showcase the experimental support we have recently added for [Podman](https://podman.io/).
-We will see how `odo` can leverage Podman for local development in containers with no requirement whatsoever on any cluster — making it easier
-to iterate on the application locally and transition to Kubernetes later on.
+We will see how `odo` can leverage Podman for local development in containers with no requirement whatsoever on any cluster — making it easier to iterate on the application locally and transition to Kubernetes or OpenShift later on.
 
 <!--truncate-->
 
@@ -28,7 +27,7 @@ to iterate on the application locally and transition to Kubernetes later on.
 - [`odo`](https://odo.dev/docs/overview/installation) 3.3.0 or later. Support for Podman was added as an experimental feature in 3.3.0; 
 so we recommend you [install the latest version](https://odo.dev/docs/overview/installation) of `odo`.
 - [Podman](https://podman.io/getting-started/installation).
-- [Podman Desktop](https://podman-desktop.io/), optionally.
+- [Podman Desktop](https://podman-desktop.io/), optional.
 
 ## Working locally with Podman
 
@@ -91,9 +90,9 @@ Your source code has now been generated and created in the directory.
 
 ### Step 1. Initializing your application (`odo init`)
 
-Now we'll initialize your application by creating a `devfile.yaml` to be deployed.
+Now we'll initialize the application by creating a `devfile.yaml` to be deployed.
 
-`odo` handles this automatically with the `odo init` command by auto-detecting your source code and downloading the appropriate Devfile.
+`odo` handles this automatically with the `odo init` command by auto-detecting the source code and downloading the appropriate Devfile.
 
 **Note:** If you skipped *Step 0*, select a "starter project" when running `odo init`.
 
@@ -149,8 +148,7 @@ If you skipped Step 0 and selected "starter project", your output will be slight
 Because the support for Podman is still experimental at the time of writing, we first need to explicitly opt-in.
 Find more details about the experimental mode on this [dedicated page](../../docs/user-guides/advanced/experimental-mode).
 
-[Enabling the experimental mode](../../docs/user-guides/advanced/experimental-mode#enabling-the-experimental-mode) can be done by setting the `ODO_EXPERIMENTAL_MODE` environment variable to `true`
-in your terminal session, like so:
+[Enabling the experimental mode](../../docs/user-guides/advanced/experimental-mode#enabling-the-experimental-mode) can be done by setting the `ODO_EXPERIMENTAL_MODE` environment variable to `true` in the terminal session, like so:
 
 ```console
 export ODO_EXPERIMENTAL_MODE=true
