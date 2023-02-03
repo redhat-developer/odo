@@ -66,6 +66,19 @@ func TestBindingClient_RemoveBinding(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "removed the ocp binding successfully when bound as files",
+			args: args{
+				servicebindingName: "my-nodejs-app-cluster-sample-ocp", // name is hard coded from the devfile-with-service-binding-files.yaml
+				obj:                odoTestingUtil.GetTestDevfileObjFromFile("devfile-with-service-binding-files.yaml"),
+			},
+			want: func() parser.DevfileObj {
+				obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-with-service-binding-files.yaml")
+				_ = obj.Data.DeleteComponent("my-nodejs-app-cluster-sample-ocp")
+				return obj
+			}(),
+			wantErr: false,
+		},
+		{
 			name: "removed the k8s binding successfully when not bound as files",
 			args: args{
 				servicebindingName: "my-nodejs-app-cluster-sample-k8s",
@@ -74,6 +87,19 @@ func TestBindingClient_RemoveBinding(t *testing.T) {
 			want: func() parser.DevfileObj {
 				obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-with-service-binding-envvars.yaml")
 				_ = obj.Data.DeleteComponent("my-nodejs-app-cluster-sample-k8s")
+				return obj
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "removed the ocp binding successfully when not bound as files",
+			args: args{
+				servicebindingName: "my-nodejs-app-cluster-sample-ocp",
+				obj:                odoTestingUtil.GetTestDevfileObjFromFile("devfile-with-service-binding-envvars.yaml"),
+			},
+			want: func() parser.DevfileObj {
+				obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-with-service-binding-envvars.yaml")
+				_ = obj.Data.DeleteComponent("my-nodejs-app-cluster-sample-ocp")
 				return obj
 			}(),
 			wantErr: false,
