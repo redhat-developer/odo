@@ -142,11 +142,20 @@ func (do DeleteComponentClient) ListClusterResourcesToDeleteFromDevfile(devfileO
 	}
 
 	// Parse the devfile for K8s resources; these may belong to either innerloop or outerloop
-	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+	localK8sResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
 	if err != nil {
 		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
 	}
-	for _, lr := range localResources {
+	localOCResources, err := libdevfile.ListOpenShiftComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+	if err != nil {
+		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
+	}
+
+	localAllResources := []unstructured.Unstructured{}
+	localAllResources = append(localAllResources, localOCResources...)
+	localAllResources = append(localAllResources, localK8sResources...)
+
+	for _, lr := range localAllResources {
 		var gvr *meta.RESTMapping
 		gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
 		if err != nil {

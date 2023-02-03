@@ -191,6 +191,23 @@ func ReplaceString(filename string, oldString string, newString string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// ReplaceStrings replaces oldStrings with newStrings in text file
+// two arrays must be of same length, else will fail
+func ReplaceStrings(filename string, oldStrings []string, newStrings []string) {
+	fmt.Fprintf(GinkgoWriter, "Replacing \"%v\" with \"%v\" in %s\n", oldStrings, newStrings, filename)
+
+	contentByte, err := ioutil.ReadFile(filename)
+	Expect(err).NotTo(HaveOccurred())
+
+	newContent := string(contentByte)
+	for i := range oldStrings {
+		newContent = strings.ReplaceAll(newContent, oldStrings[i], newStrings[i])
+	}
+
+	err = ioutil.WriteFile(filename, []byte(newContent), 0600)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // copyDir copy one directory to the other
 // this function is called recursively info should start as os.Stat(src)
 func copyDir(src string, dst string, info os.FileInfo) error {

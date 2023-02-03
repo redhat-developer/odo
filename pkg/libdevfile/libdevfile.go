@@ -22,6 +22,7 @@ const DebugEndpointNamePrefix = "debug"
 type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
 	ApplyKubernetes(kubernetes v1alpha2.Component) error
+	ApplyOpenShift(openshift v1alpha2.Component) error
 	Execute(command v1alpha2.Command) error
 }
 

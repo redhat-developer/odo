@@ -62,6 +62,20 @@ func (mr *MockHandlerMockRecorder) ApplyKubernetes(kubernetes interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyKubernetes", reflect.TypeOf((*MockHandler)(nil).ApplyKubernetes), kubernetes)
 }
 
+// ApplyOpenShift mocks base method.
+func (m *MockHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyOpenShift", openshift)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyOpenShift indicates an expected call of ApplyOpenShift.
+func (mr *MockHandlerMockRecorder) ApplyOpenShift(openshift interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyOpenShift", reflect.TypeOf((*MockHandler)(nil).ApplyOpenShift), openshift)
+}
+
 // Execute mocks base method.
 func (m *MockHandler) Execute(command v1alpha2.Command) error {
 	m.ctrl.T.Helper()

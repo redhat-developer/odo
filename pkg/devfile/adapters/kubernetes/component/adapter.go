@@ -628,7 +628,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	}
 
 	var devfileK8sResources []devfilev1.Component
-	devfileK8sResources, err = devfile.GetKubernetesComponentsToPush(a.Devfile, true)
+	devfileK8sResources, err = devfile.GetK8sAndOcComponentsToPush(a.Devfile, true)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to obtain resources from the Devfile: %w", err)
 	}

@@ -43,7 +43,7 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 ) ([]devfilev1.Component, error) {
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of ServiceBinding
-	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile, false)
+	k8sComponents, err := devfile.GetK8sAndOcComponentsToPush(a.Devfile, false)
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
 	}

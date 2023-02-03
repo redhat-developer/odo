@@ -435,7 +435,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDeleteFromDevfile(t *testin
 			},
 			args: args{
 				devfileObj: func() parser.DevfileObj {
-					obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-composite-apply-commands.yaml")
+					obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-composite-apply-commands-unit-test.yaml")
 					// change the metadata name to the desired one since devfile.yaml has a different name
 					metadata := obj.Data.GetMetadata()
 					metadata.Name = compName
@@ -573,7 +573,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDeleteFromDevfile(t *testin
 			},
 			args: args{
 				devfileObj: func() parser.DevfileObj {
-					obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-composite-apply-commands.yaml")
+					obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-composite-apply-commands-unit-test.yaml")
 					// change the metadata name to the desired one since devfile.yaml has a different name
 					metadata := obj.Data.GetMetadata()
 					metadata.Name = compName

@@ -34,6 +34,12 @@ func (a commandHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
 	return nil
 }
 
+func (a commandHandler) ApplyOpenShift(openshift devfilev1.Component) error {
+	klog.V(4).Info("apply OpenShift commands are not implemented on podman")
+	log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)
+	return nil
+}
+
 func (a commandHandler) Execute(devfileCmd devfilev1.Command) error {
 	return component.ExecuteRunCommand(
 		a.execClient,

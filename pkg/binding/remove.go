@@ -26,16 +26,28 @@ func (o *BindingClient) ValidateRemoveBinding(flags map[string]string) error {
 
 // RemoveBinding removes the binding from devfile
 func (o *BindingClient) RemoveBinding(servicebindingName string, obj parser.DevfileObj) (parser.DevfileObj, error) {
-	var componentName string
-	var options []string
 	// Get all the K8s type devfile components
-	components, err := obj.Data.GetComponents(common.DevfileOptions{
+	k8sComponents, err := obj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.KubernetesComponentType},
 	})
 	if err != nil {
 		return obj, err
 	}
-	for _, component := range components {
+	// Get all the OpenShift type devfile components
+	ocpComponents, err := obj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.OpenshiftComponentType},
+	})
+	if err != nil {
+		return obj, err
+	}
+
+	allComponents := make([]v1alpha2.Component, 0, len(k8sComponents)+len(ocpComponents))
+	allComponents = append(allComponents, k8sComponents...)
+	allComponents = append(allComponents, ocpComponents...)
+
+	var componentName string
+	var options []string
+	for _, component := range allComponents {
 		var unstructuredObjs []unstructured.Unstructured
 		// Parse the K8s manifest
 		unstructuredObjs, err = libdevfile.GetK8sComponentAsUnstructuredList(obj, component.Name, filepath.Dir(obj.Ctx.GetAbsPath()), devfilefs.DefaultFs{})

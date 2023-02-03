@@ -128,7 +128,7 @@ func (o *DevClient) reconcile(
 func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
 	var components []string
 	// get all standalone k8s components for a given commandGK
-	k8sComponents, _ := devfile.GetKubernetesComponentsToPush(devfileObj, false)
+	k8sComponents, _ := devfile.GetK8sAndOcComponentsToPush(devfileObj, false)
 
 	if len(k8sComponents) == 0 {
 		return

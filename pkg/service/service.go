@@ -1,8 +1,6 @@
 package service
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -11,8 +9,6 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
-	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
-	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -22,8 +18,6 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 )
 
 // LinkLabel is the name of the name of the link in the devfile
@@ -149,49 +143,6 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	name := sn[1]
 
 	return kind, name, nil
-}
-
-func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs.Filesystem) ([]string, error) {
-	if devfileObj.Data == nil {
-		return nil, nil
-	}
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfile.KubernetesComponentType},
-	})
-	if err != nil {
-		return nil, err
-	}
-	var services []string
-	for _, c := range components {
-		uList, err := libdevfile.GetK8sComponentAsUnstructuredList(devfileObj, c.Name, context, fs)
-		if err != nil {
-			return nil, err
-		}
-		u := uList[0]
-		if !isLinkResource(u.GetKind()) {
-			continue
-		}
-		var sbr servicebinding.ServiceBinding
-		js, err := u.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(js, &sbr)
-		if err != nil {
-			return nil, err
-		}
-		sbrServices := sbr.Spec.Services
-		if len(sbrServices) != 1 {
-			return nil, errors.New("ServiceBinding should have only one service")
-		}
-		service := sbrServices[0]
-		if service.Kind == "Service" {
-			services = append(services, service.Name)
-		} else {
-			services = append(services, service.Kind+"/"+service.Name)
-		}
-	}
-	return services, nil
 }
 
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones

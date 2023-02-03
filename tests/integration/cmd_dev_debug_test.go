@@ -175,7 +175,7 @@ var _ = Describe("odo dev debug command tests", func() {
 	}
 
 	When("a composite apply command is used as debug command", func() {
-		deploymentName := "my-component"
+		deploymentNames := []string{"my-openshift-component", "my-k8s-component"}
 		var session helper.DevSession
 		var sessionOut []byte
 		var err error
@@ -198,8 +198,8 @@ var _ = Describe("odo dev debug command tests", func() {
 		})
 		It("should execute the composite apply commands successfully", func() {
 			checkDeploymentExists := func() {
-				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
-				Expect(out).To(ContainSubstring(deploymentName))
+				out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
+				helper.MatchAllInOutput(string(out), deploymentNames)
 			}
 			checkImageBuilt := func() {
 				Expect(string(sessionOut)).To(ContainSubstring("Building & Pushing Container"))
@@ -238,7 +238,7 @@ var _ = Describe("odo dev debug command tests", func() {
 				session.Stop()
 				session.WaitEnd()
 				out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
-				Expect(out).ToNot(ContainSubstring(deploymentName))
+				helper.DontMatchAllInOutput(string(out), deploymentNames)
 			})
 		})
 	})

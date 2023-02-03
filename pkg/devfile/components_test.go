@@ -168,7 +168,7 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetKubernetesComponentsToPush(tt.devfileObj, tt.allowApply)
+			got, err := GetK8sAndOcComponentsToPush(tt.devfileObj, tt.allowApply)
 			gotErr := err != nil
 			if gotErr != tt.wantErr {
 				t.Errorf("Got error %v, expected %v\n", err, tt.wantErr)
@@ -179,7 +179,7 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tt.want, got, cmpopts.SortSlices(lessFunc)); diff != "" {
-				t.Errorf("GetKubernetesComponentsToPush() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GetK8sAndOcComponentsToPush() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
