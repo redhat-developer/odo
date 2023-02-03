@@ -76,8 +76,6 @@ var _ = Describe("odo logs command tests", func() {
 			})
 		})
 
-		When("podman is not installed", func() {
-		})
 	})
 
 	for _, podman := range []bool{false, true} {
