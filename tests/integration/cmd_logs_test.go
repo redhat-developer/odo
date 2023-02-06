@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -52,6 +53,29 @@ var _ = Describe("odo logs command tests", func() {
 
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
+	})
+
+	When("in a devfile directory", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+		})
+		When("not connected to any cluster or podman", Label(helper.LabelNoCluster), func() {
+			It("odo logs should fail with an error message", func() {
+				cmd := helper.Cmd("odo", "logs")
+				stderr := cmd.ShouldFail().Err()
+				Expect(stderr).To(ContainSubstring("unable to access the cluster"))
+			})
+
+			It("odo logs --platform podman should fail with an error message", func() {
+				os.Setenv("PODMAN_CMD", "false")
+				defer os.Unsetenv("PODMAN_CMD")
+				cmd := getLogCommand(true)
+				stderr := cmd.ShouldFail().Err()
+				Expect(stderr).To(ContainSubstring("unable to access podman"))
+			})
+		})
+
 	})
 
 	for _, podman := range []bool{false, true} {
