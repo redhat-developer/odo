@@ -713,7 +713,7 @@ var _ = Describe("odo delete command tests", func() {
 			It("should delete the component", func() {
 				By("listing preStop events", func() {
 					for _, cmdName := range []string{"myprestop", "secondprestop", "thirdprestop"} {
-						Expect(out).To(ContainSubstring(fmt.Sprintf("Executing pre-stop command in container (command: %s)", cmdName)))
+						Expect(out).To(ContainSubstring("Executing pre-stop command in container (command: %s)", cmdName))
 					}
 				})
 				files := helper.ListFilesInDir(commonVar.Context)
