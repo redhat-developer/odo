@@ -55,7 +55,7 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 func (o *execHandler) Execute(command v1alpha2.Command) error {
 	msg := o.msg
 	if msg == "" {
-		msg = fmt.Sprintf("Executing %s command %q on container %q", command.Id, command.Exec.CommandLine, command.Exec.Component)
+		msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)
 	} else {
 		msg += " (command: " + command.Id + ")"
 	}
