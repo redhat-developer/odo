@@ -62,7 +62,7 @@ func (o *DevClient) reconcile(
 			appName,
 			componentName,
 			pod.Name,
-			"",
+			"Executing post-start command in container",
 			false, /* TODO */
 		)
 		err = libdevfile.ExecPostStartEvents(*devfileObj, execHandler)

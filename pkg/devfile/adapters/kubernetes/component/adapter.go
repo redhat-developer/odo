@@ -257,7 +257,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.Devfile) {
 		err = libdevfile.ExecPostStartEvents(a.Devfile,
-			component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name, "", parameters.Show))
+			component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name, "Executing post-start command in container", parameters.Show))
 		if err != nil {
 			return err
 		}
