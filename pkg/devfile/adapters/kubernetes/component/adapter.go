@@ -243,7 +243,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 
 		CompInfo:  compInfo,
 		ForcePush: !deploymentExists || podChanged,
-		Files:     getSyncFilesFromAttributes(pushDevfileCommands),
+		Files:     getSyncFilesFromAttributes(parameters.Debug, pushDevfileCommands),
 	}
 
 	execRequired, err := a.syncClient.SyncFiles(syncParams)
@@ -761,9 +761,13 @@ type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
 
 // getSyncFilesFromAttributes gets the target files and folders along with their respective remote destination from the devfile
 // it uses the "dev.odo.push.path" attribute in the run command
-func getSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {
+func getSyncFilesFromAttributes(debug bool, commandsMap PushCommandsMap) map[string]string {
 	syncMap := make(map[string]string)
-	if value, ok := commandsMap[devfilev1.RunCommandGroupKind]; ok {
+	cmdKind := devfilev1.RunCommandGroupKind
+	if debug {
+		cmdKind = devfilev1.DebugCommandGroupKind
+	}
+	if value, ok := commandsMap[cmdKind]; ok {
 		for key, value := range value.Attributes.Strings(nil) {
 			if strings.HasPrefix(key, "dev.odo.push.path:") {
 				localValue := strings.ReplaceAll(key, "dev.odo.push.path:", "")
