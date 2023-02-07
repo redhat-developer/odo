@@ -14,6 +14,8 @@ components:
       endpoints:
         - name: "3000-tcp"
           targetPort: 3000
+        - name: debug
+          targetPort: 5858
       mountSources: true
 commands:
   - id: devbuild
@@ -50,3 +52,18 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
+  - id: devdebug
+    attributes:
+      "dev.odo.push.path:server.js": "server-debug/server.js"
+      "dev.odo.push.path:test": "server-debug/test"
+      "dev.odo.push.path:package.json": "package.json"
+    exec:
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECTS_ROOT}
+      env:
+        - name: DEBUG_PORT_PROJECT
+          value: "5858"
+      group:
+        kind: debug
+        isDefault: true

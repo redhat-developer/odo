@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -79,6 +80,53 @@ var _ = Describe("odo dev debug command tests", func() {
 				})
 			}))
 		})
+	}
+
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
+			// TODO Not implemented yet on Podman
+			var session helper.DevSession
+			var devStarted bool
+			BeforeEach(func() {
+				if podman {
+					Skip("not implemented yet on Podman - see #6492")
+				}
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
+					helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+
+				// create a folder and file which shouldn't be pushed
+				helper.MakeDir(filepath.Join(commonVar.Context, "views"))
+				_, _ = helper.CreateSimpleFile(filepath.Join(commonVar.Context, "views"), "view", ".html")
+
+				helper.ReplaceString("package.json", "node server.js", "node server-debug/server.js")
+				var err error
+				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+					CmdlineArgs: []string{"--debug"},
+				})
+				Expect(err).ToNot(HaveOccurred())
+				devStarted = true
+			})
+			AfterEach(func() {
+				if devStarted {
+					session.Stop()
+					session.WaitEnd()
+				}
+			})
+
+			It("should sync only the mentioned files at the appropriate remote destination", func() {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				stdOut, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
+
+				helper.MatchAllInOutput(stdOut, []string{"package.json", "server-debug"})
+				helper.DontMatchAllInOutput(stdOut, []string{"test", "views", "devfile.yaml"})
+
+				stdOut, _ = component.Exec("runtime", []string{"ls", "-lai", "/projects/server-debug"}, pointer.Bool(true))
+				helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
+			})
+		}))
 	}
 
 	for _, devfileHandlerCtx := range []struct {
