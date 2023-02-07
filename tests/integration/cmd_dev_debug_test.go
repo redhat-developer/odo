@@ -85,13 +85,9 @@ var _ = Describe("odo dev debug command tests", func() {
 	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
-			// TODO Not implemented yet on Podman
 			var session helper.DevSession
 			var devStarted bool
 			BeforeEach(func() {
-				if podman {
-					Skip("not implemented yet on Podman - see #6492")
-				}
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
 					helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
