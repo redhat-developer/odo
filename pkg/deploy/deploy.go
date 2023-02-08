@@ -144,7 +144,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	odolabels.SetProjectType(job.Annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
 
 	log.Sectionf("Executing command in container (command: %s)", command.Id)
-	spinner := log.Spinnerf("Executing %s", command.Exec.CommandLine)
+	spinner := log.Spinnerf("Executing %q", command.Exec.CommandLine)
 	defer spinner.End(false)
 
 	var createdJob *v1.Job
@@ -155,6 +155,9 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
 	spinner.End(err == nil)
+	if err != nil {
+		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
+	}
 
 	jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
 	if logErr != nil {
