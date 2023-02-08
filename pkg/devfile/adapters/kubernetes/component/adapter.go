@@ -234,10 +234,11 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	cmdKind := devfilev1.RunCommandGroupKind
+	cmdName := parameters.DevfileRunCmd
 	if parameters.Debug {
 		cmdKind = devfilev1.DebugCommandGroupKind
+		cmdName = parameters.DevfileDebugCmd
 	}
-	devfileCmd := pushDevfileCommands[cmdKind]
 
 	syncParams := sync.SyncParameters{
 		Path:                     parameters.Path,
@@ -248,7 +249,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 
 		CompInfo:  compInfo,
 		ForcePush: !deploymentExists || podChanged,
-		Files:     adapters.GetSyncFilesFromAttributes(devfileCmd),
+		Files:     adapters.GetSyncFilesFromAttributes(pushDevfileCommands[cmdKind]),
 	}
 
 	execRequired, err := a.syncClient.SyncFiles(syncParams)
@@ -268,11 +269,6 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		}
 	}
 	componentStatus.PostStartEventsDone = true
-
-	cmdName := parameters.DevfileRunCmd
-	if parameters.Debug {
-		cmdName = parameters.DevfileDebugCmd
-	}
 
 	cmd, err := libdevfile.ValidateAndGetCommand(a.Devfile, cmdName, cmdKind)
 	if err != nil {
