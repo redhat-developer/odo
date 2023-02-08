@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"k8s.io/klog"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
@@ -113,6 +115,7 @@ func (o *DevClient) Start(
 // syncFiles syncs the local source files in path into the pod's source volume
 func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod *corev1.Pod, path string) (bool, error) {
 	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 	)
 
@@ -128,6 +131,17 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 		SyncFolder:    syncFolder,
 	}
 
+	cmdKind := devfilev1.RunCommandGroupKind
+	cmdName := options.RunCommand
+	if options.Debug {
+		cmdKind = devfilev1.DebugCommandGroupKind
+		cmdName = options.DebugCommand
+	}
+	devfileCmd, err := libdevfile.ValidateAndGetCommand(*devfileObj, cmdName, cmdKind)
+	if err != nil {
+		return false, err
+	}
+
 	syncParams := sync.SyncParameters{
 		Path:                     path,
 		WatchFiles:               nil,
@@ -137,7 +151,7 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 
 		CompInfo:  compInfo,
 		ForcePush: true,
-		Files:     map[string]string{}, // ??? TODO
+		Files:     adapters.GetSyncFilesFromAttributes(devfileCmd),
 	}
 	execRequired, err := o.syncClient.SyncFiles(syncParams)
 	if err != nil {

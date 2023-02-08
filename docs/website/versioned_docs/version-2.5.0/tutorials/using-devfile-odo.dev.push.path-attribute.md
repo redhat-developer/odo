@@ -1,17 +1,19 @@
 ---
-title: Using the odo.dev.push.path related attribute
+title: Using the dev.odo.push.path related attribute
 sidebar_position: 4
 ---
-`odo` uses the `odo.dev.push.path` related attribute from the devfile's run commands to push only the specified files and folders to the component.
+`odo` uses the `dev.odo.push.path` related attribute from the devfile's run commands to push only the specified files and folders to the component.
 
-The format of the attribute is `"odo.dev.push.path:<local_relative_path>": "<remote_relative_path>"`. We can mention multiple such attributes in the run command's `attributes` section.
+The format of the attribute is `"dev.odo.push.path:<local_relative_path>": "<remote_relative_path>"`. We can mention multiple such attributes in the run command's `attributes` section.
 
 ```yaml
 commands:
   - id: dev-run
+    # highlight-start
     attributes:
       "dev.odo.push.path:target/quarkus-app": "remote-target/quarkus-app"
       "dev.odo.push.path:README.txt": "docs/README.txt"
+    # highlight-end
     exec:
       component: tools
       commandLine: "java -jar remote-target/quarkus-app/quarkus-run.jar -Dquarkus.http.host=0.0.0.0"

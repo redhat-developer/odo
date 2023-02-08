@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"strings"
 	sync2 "sync"
@@ -234,6 +233,13 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		SyncFolder:    syncFolder,
 	}
 
+	cmdKind := devfilev1.RunCommandGroupKind
+	cmdName := parameters.DevfileRunCmd
+	if parameters.Debug {
+		cmdKind = devfilev1.DebugCommandGroupKind
+		cmdName = parameters.DevfileDebugCmd
+	}
+
 	syncParams := sync.SyncParameters{
 		Path:                     parameters.Path,
 		WatchFiles:               parameters.WatchFiles,
@@ -243,7 +249,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 
 		CompInfo:  compInfo,
 		ForcePush: !deploymentExists || podChanged,
-		Files:     getSyncFilesFromAttributes(pushDevfileCommands),
+		Files:     adapters.GetSyncFilesFromAttributes(pushDevfileCommands[cmdKind]),
 	}
 
 	execRequired, err := a.syncClient.SyncFiles(syncParams)
@@ -263,13 +269,6 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		}
 	}
 	componentStatus.PostStartEventsDone = true
-
-	cmdKind := devfilev1.RunCommandGroupKind
-	cmdName := parameters.DevfileRunCmd
-	if parameters.Debug {
-		cmdKind = devfilev1.DebugCommandGroupKind
-		cmdName = parameters.DevfileDebugCmd
-	}
 
 	cmd, err := libdevfile.ValidateAndGetCommand(a.Devfile, cmdName, cmdKind)
 	if err != nil {
@@ -758,18 +757,3 @@ func (a Adapter) deleteServiceBindingSecrets(serviceBindingSecretsToRemove []uns
 
 // PushCommandsMap stores the commands to be executed as per their types.
 type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
-
-// getSyncFilesFromAttributes gets the target files and folders along with their respective remote destination from the devfile
-// it uses the "dev.odo.push.path" attribute in the run command
-func getSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {
-	syncMap := make(map[string]string)
-	if value, ok := commandsMap[devfilev1.RunCommandGroupKind]; ok {
-		for key, value := range value.Attributes.Strings(nil) {
-			if strings.HasPrefix(key, "dev.odo.push.path:") {
-				localValue := strings.ReplaceAll(key, "dev.odo.push.path:", "")
-				syncMap[filepath.Clean(localValue)] = filepath.ToSlash(filepath.Clean(value))
-			}
-		}
-	}
-	return syncMap
-}
