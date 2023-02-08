@@ -17,6 +17,7 @@ import (
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
+	v14 "k8s.io/api/batch/v1"
 	v11 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
@@ -1437,4 +1438,57 @@ func (m *MockClientInterface) WaitForServiceAccountInNamespace(namespace, servic
 func (mr *MockClientInterfaceMockRecorder) WaitForServiceAccountInNamespace(namespace, serviceAccountName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForServiceAccountInNamespace", reflect.TypeOf((*MockClientInterface)(nil).WaitForServiceAccountInNamespace), namespace, serviceAccountName)
+}
+
+// CreateJobs mocks base method
+func (m *MockClientInterface) CreateJobs(job v14.Job, namespace string) (*v14.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateJobs", job, namespace)
+	ret0, _ := ret[0].(*v14.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateJobs indicates an expected call of CreateJobs
+func (mr *MockClientInterfaceMockRecorder) CreateJobs(job, namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateJobs", reflect.TypeOf((*MockClientInterface)(nil).CreateJobs), job, namespace)
+}
+
+// WaitForJobToComplete mocks base method
+func (m *MockClientInterface) WaitForJobToComplete(job *v14.Job) (*v14.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitForJobToComplete", job)
+	ret0, _ := ret[0].(*v14.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WaitForJobToComplete indicates an expected call of WaitForJobToComplete
+func (mr *MockClientInterfaceMockRecorder) WaitForJobToComplete(job interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForJobToComplete", reflect.TypeOf((*MockClientInterface)(nil).WaitForJobToComplete), job)
+}
+
+// DeleteJob mocks base method
+func (m *MockClientInterface) DeleteJob(jobName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteJob", jobName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GetJobLogs mocks base method
+func (m *MockClientInterface) GetJobLogs(job *v14.Job, containerName string) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetJobLogs", job, containerName)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetJobLogs indicates an expected call of GetJobLogs
+func (mr *MockClientInterfaceMockRecorder) GetJobLogs(job, containerName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobLogs", reflect.TypeOf((*MockClientInterface)(nil).GetJobLogs), job, containerName)
 }
