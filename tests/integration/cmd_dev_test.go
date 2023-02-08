@@ -2925,6 +2925,9 @@ CMD ["npm", "start"]
 	}
 
 	When("using devfile that contains K8s resource to run it on podman", Label(helper.LabelPodman), func() {
+		const (
+			imgName = "quay.io/unknown-account/myimage" // hard coded from the devfile-composite-apply-different-commandgk.yaml
+		)
 		var session helper.DevSession
 		var outContents, errContents []byte
 		BeforeEach(func() {
@@ -2934,6 +2937,7 @@ CMD ["npm", "start"]
 				filepath.Join(commonVar.Context, "devfile.yaml"),
 				helper.DevfileMetadataNameSetter(cmpName),
 			)
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), imgName, fmt.Sprintf("%s:%s", imgName, cmpName))
 			var err error
 			session, outContents, errContents, _, err = helper.StartDevMode(
 				helper.DevSessionOpts{RunOnPodman: true, EnvVars: []string{"ODO_PUSH_IMAGES=false"}},
@@ -2954,6 +2958,8 @@ CMD ["npm", "start"]
 			// we do not test push because then it becomes complex to setup image registry credentials to pull the image
 			// all pods created by odo have a `PullAlways` image policy.
 			Expect(outContents).To(ContainSubstring("Building & Pushing Container:"))
+			component := helper.NewPodmanComponent(cmpName, "app")
+			Expect(component.ListImages()).To(ContainSubstring(fmt.Sprintf("%s:%s", imgName, cmpName)))
 		})
 	})
 
