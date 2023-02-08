@@ -242,6 +242,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		switch platform {
 		case commonflags.PlatformPodman:
 			dep.DevClient = podmandev.NewDevClient(
+				dep.FS,
 				dep.PodmanClient,
 				dep.SyncClient,
 				dep.ExecClient,

@@ -1,17 +1,24 @@
 package podmandev
 
 import (
+	"context"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
+	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/platform"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type commandHandler struct {
+	ctx             context.Context
+	fs              filesystem.Filesystem
 	execClient      exec.Client
 	platformClient  platform.Client
 	componentExists bool
@@ -24,8 +31,7 @@ var _ libdevfile.Handler = (*commandHandler)(nil)
 
 func (a commandHandler) ApplyImage(img devfilev1.Component) error {
 	klog.V(4).Info("apply image commands are not implemented on podman")
-	log.Warningf("Apply Image commands are not implemented on Podman. Skipping: %v", img.Name)
-	return nil
+	return image.BuildPushSpecificImage(a.ctx, a.fs, img, envcontext.GetEnvConfig(a.ctx).PushImages)
 }
 
 func (a commandHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
