@@ -130,7 +130,6 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 					RestartPolicy: "Never",
 				},
 			},
-			// TODO: change this to 4.
 			BackoffLimit:            pointer.Int32(2),
 			CompletionMode:          &completionMode,
 			TTLSecondsAfterFinished: pointer.Int32(60),
@@ -145,8 +144,8 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	odolabels.SetProjectType(job.Annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
 
 	log.Sectionf("Executing command in container (command: %s)", command.Id)
-	spinner := log.Spinnerf("Executing %s\n", command.Exec.CommandLine)
-	defer spinner.End(err == nil)
+	spinner := log.Spinnerf("Executing %s", command.Exec.CommandLine)
+	defer spinner.End(false)
 
 	var createdJob *v1.Job
 	createdJob, err = o.kubeClient.CreateJobs(job, "")
@@ -154,19 +153,19 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		return err
 	}
 
-	_, err = o.kubeClient.WaitForJobToComplete(job.Name)
-	if err != nil {
-		// If the job fails, then we fetch pod logs and print them
-		jobLogs, err := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
-		if err != nil {
-			return fmt.Errorf("failed to fetch the logs required to identify the reason for execution failure; cause: %w", err)
+	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
+	spinner.End(err == nil)
+
+	jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
+	if logErr != nil {
+		log.Warningf("failed to fetch the logs required to identify the reason for execution failure; cause: %s", logErr)
+	} else {
+		fmt.Println("Execution output:")
+		logErr = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, -1)
+		if logErr != nil {
+			log.Warningf("unable to log error; cause: %s", logErr)
 		}
-		err = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, -1)
-		if err != nil {
-			return fmt.Errorf("unable to log error; cause: %w", err)
-		}
-		return fmt.Errorf("failed to execute the command")
 	}
-	// Figure out why pods are not deleted along with the job: Because they do not have the same labels as the job and there's no owner reference set on them.
+
 	return err
 }
