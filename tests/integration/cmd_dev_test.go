@@ -2951,13 +2951,13 @@ CMD ["npm", "start"]
 			session.Stop()
 			session.WaitEnd()
 		})
-		It(fmt.Sprintf("should show warning about being unable to create the resource when running odo dev on podman"), func() {
+		It("should show warning about being unable to create the resource when running odo dev on podman", func() {
 			Expect(string(errContents)).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
 			Expect(string(errContents)).To(ContainSubstring("Apply Kubernetes components are not supported on Podman. Skipping: "))
 			helper.MatchAllInOutput(string(errContents), []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource"})
 		})
 
-		It(fmt.Sprintf("should build the images when running odo dev on podman"), func() {
+		It("should build the images when running odo dev on podman", func() {
 			// we do not test push because then it becomes complex to setup image registry credentials to pull the image
 			// all pods created by odo have a `PullAlways` image policy.
 			Expect(string(outContents)).To(ContainSubstring("Building Image: %s", customImgName))
