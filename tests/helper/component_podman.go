@@ -141,3 +141,15 @@ func (o *PodmanComponent) GetPodLogs() string {
 	})
 	return string(stdout)
 }
+
+func (o *PodmanComponent) ListImages() string {
+	cmd := exec.Command("podman", "images", "--format", "{{.Repository}}:{{.Tag}}", "--noheading")
+	stdout, err := cmd.Output()
+	Expect(err).ToNot(HaveOccurred(), func() {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		fmt.Fprintln(GinkgoWriter, err)
+	})
+	return string(stdout)
+}

@@ -17,6 +17,7 @@ type Configuration struct {
 	PodmanCmd             string  `env:"PODMAN_CMD,default=podman"`
 	TelemetryCaller       string  `env:"TELEMETRY_CALLER,default="`
 	OdoExperimentalMode   bool    `env:"ODO_EXPERIMENTAL_MODE,default=false"`
+	PushImages            bool    `env:"ODO_PUSH_IMAGES,default=true"`
 }
 
 // GetConfiguration initializes a Configuration for odo by using the system environment.

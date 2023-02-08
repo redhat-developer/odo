@@ -25,6 +25,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/sync"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +39,8 @@ const (
 )
 
 type DevClient struct {
+	fs filesystem.Filesystem
+
 	podmanClient podman.Client
 	syncClient   sync.Client
 	execClient   exec.Client
@@ -51,6 +54,7 @@ type DevClient struct {
 var _ dev.Client = (*DevClient)(nil)
 
 func NewDevClient(
+	fs filesystem.Filesystem,
 	podmanClient podman.Client,
 	syncClient sync.Client,
 	execClient exec.Client,
@@ -58,6 +62,7 @@ func NewDevClient(
 	watchClient watch.Client,
 ) *DevClient {
 	return &DevClient{
+		fs:           fs,
 		podmanClient: podmanClient,
 		syncClient:   syncClient,
 		execClient:   execClient,

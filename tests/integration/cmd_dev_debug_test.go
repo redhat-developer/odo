@@ -246,7 +246,7 @@ var _ = Describe("odo dev debug command tests", func() {
 				helper.MatchAllInOutput(string(out), deploymentNames)
 			}
 			checkImageBuilt := func() {
-				Expect(string(sessionOut)).To(ContainSubstring("Building & Pushing Container"))
+				Expect(string(sessionOut)).To(ContainSubstring("Building & Pushing Image"))
 				Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
 				Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 			}

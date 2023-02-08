@@ -97,6 +97,8 @@ func (o *DevClient) reconcile(
 			cmdName = options.DebugCommand
 		}
 		cmdHandler := commandHandler{
+			ctx:             ctx,
+			fs:              o.fs,
 			execClient:      o.execClient,
 			platformClient:  o.podmanClient,
 			componentExists: componentStatus.RunExecuted,
