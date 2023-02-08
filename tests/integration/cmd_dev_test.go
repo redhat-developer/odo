@@ -2928,16 +2928,19 @@ CMD ["npm", "start"]
 		const (
 			imgName = "quay.io/unknown-account/myimage" // hard coded from the devfile-composite-apply-different-commandgk.yaml
 		)
+		var customImgName string
+
 		var session helper.DevSession
 		var outContents, errContents []byte
 		BeforeEach(func() {
+			customImgName = fmt.Sprintf("%s:%s", imgName, cmpName)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
 				helper.DevfileMetadataNameSetter(cmpName),
 			)
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), imgName, fmt.Sprintf("%s:%s", imgName, cmpName))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), imgName, customImgName)
 			var err error
 			session, outContents, errContents, _, err = helper.StartDevMode(
 				helper.DevSessionOpts{RunOnPodman: true, EnvVars: []string{"ODO_PUSH_IMAGES=false"}},
@@ -2957,9 +2960,9 @@ CMD ["npm", "start"]
 		It(fmt.Sprintf("should build the images when running odo dev on podman"), func() {
 			// we do not test push because then it becomes complex to setup image registry credentials to pull the image
 			// all pods created by odo have a `PullAlways` image policy.
-			Expect(outContents).To(ContainSubstring("Building & Pushing Container:"))
+			Expect(string(outContents)).To(ContainSubstring("Building Image: %s", customImgName))
 			component := helper.NewPodmanComponent(cmpName, "app")
-			Expect(component.ListImages()).To(ContainSubstring(fmt.Sprintf("%s:%s", imgName, cmpName)))
+			Expect(component.ListImages()).To(ContainSubstring(customImgName))
 		})
 	})
 

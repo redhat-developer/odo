@@ -83,7 +83,13 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 	if image == nil {
 		return errors.New("image should not be nil")
 	}
-	log.Sectionf("Building & Pushing Container: %s", image.ImageName)
+	var msg string
+	if push {
+		msg = "Building & Pushing Image: %s"
+	} else {
+		msg = "Building Image: %s"
+	}
+	log.Sectionf(msg, image.ImageName)
 	err := backend.Build(fs, image, devfilePath)
 	if err != nil {
 		return err
