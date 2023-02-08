@@ -30,7 +30,6 @@ type commandHandler struct {
 var _ libdevfile.Handler = (*commandHandler)(nil)
 
 func (a commandHandler) ApplyImage(img devfilev1.Component) error {
-	klog.V(4).Info("apply image commands are not implemented on podman")
 	return image.BuildPushSpecificImage(a.ctx, a.fs, img, envcontext.GetEnvConfig(a.ctx).PushImages)
 }
 
