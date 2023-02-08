@@ -9,6 +9,7 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -162,4 +163,9 @@ type ClientInterface interface {
 
 	// ingress_routes.go
 	ListIngresses(namespace, selector string) (*v1.IngressList, error)
+
+	CreateJobs(job batchv1.Job, namespace string) (*batchv1.Job, error)
+	WaitForJobToComplete(jobName string) (*batchv1.Job, error)
+	DeleteJob(jobName string) error
+	GetJobLogs(job *batchv1.Job, containerName string) (io.ReadCloser, error)
 }

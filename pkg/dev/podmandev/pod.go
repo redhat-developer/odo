@@ -114,6 +114,7 @@ func createPodFromComponent(
 
 	runtime := component.GetComponentRuntimeFromDevfileMetadata(devfileObj.Data.GetMetadata())
 	pod.SetLabels(labels.GetLabels(componentName, appName, runtime, labels.ComponentDevMode, true))
+	// TODO: SetProjectType is used to set annotations, why are we passing the labels then?
 	labels.SetProjectType(pod.GetLabels(), component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	return &pod, fwPorts, nil
