@@ -121,8 +121,8 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 							Image: containerComp.Image,
 							// TODO: Should we use the command and args already defined inside the container component?
 							// TODO: What if the 'sh' binary is not always available?
-							Command:         []string{"sh"},
-							Args:            []string{"-c", command.Exec.CommandLine},
+							Command:         []string{"/bin/sh"},
+							Args:            getCmdline(command),
 							ImagePullPolicy: "IfNotPresent",
 						},
 					},
@@ -168,4 +168,24 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	}
 
 	return err
+}
+
+func getCmdline(command v1alpha2.Command) []string {
+	// deal with environment variables
+	var cmdLine string
+	setEnvVariable := util.GetCommandStringFromEnvs(command.Exec.Env)
+
+	if setEnvVariable == "" {
+		cmdLine = command.Exec.CommandLine
+	} else {
+		cmdLine = setEnvVariable + " && " + command.Exec.CommandLine
+	}
+	var args []string
+	if command.Exec.WorkingDir != "" {
+		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
+		args = []string{"-c", "cd " + command.Exec.WorkingDir + " && " + cmdLine}
+	} else {
+		args = []string{"-c", cmdLine}
+	}
+	return args
 }
