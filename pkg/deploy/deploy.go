@@ -9,7 +9,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
-	v1 "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -105,14 +105,14 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component
-	completionMode := v1.CompletionMode("Indexed")
-	job := v1.Job{
+	completionMode := batchv1.CompletionMode("Indexed")
+	job := batchv1.Job{
 		TypeMeta: generator.GetTypeMeta(kclient.JobsKind, kclient.JobsAPIVersion),
 		ObjectMeta: metav1.ObjectMeta{
 			// TODO: Check if the name is K8s valid.
 			Name: o.componentName + "-" + o.appName + "-" + command.Id, // TODO: Is there a function to return the standard odo names?
 		},
-		Spec: v1.JobSpec{
+		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -134,7 +134,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 			CompletionMode:          &completionMode,
 			TTLSecondsAfterFinished: pointer.Int32(60),
 		},
-		Status: v1.JobStatus{},
+		Status: batchv1.JobStatus{},
 	}
 
 	// Set labels and annotations
@@ -147,7 +147,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	spinner := log.Spinnerf("Executing %q", command.Exec.CommandLine)
 	defer spinner.End(false)
 
-	var createdJob *v1.Job
+	var createdJob *batchv1.Job
 	createdJob, err = o.kubeClient.CreateJobs(job, "")
 	if err != nil {
 		return err
