@@ -1,7 +1,6 @@
 package util
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -216,7 +215,7 @@ func TestGenerateNewFileDataEntry(t *testing.T) {
 				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to create directories for %s: %v", tt.absolutePath, err)
 			}
 
-			if err := ioutil.WriteFile(tt.absolutePath, []byte("non-empty-string"), 0644); err != nil {
+			if err := os.WriteFile(tt.absolutePath, []byte("non-empty-string"), 0644); err != nil {
 				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
 			}
 

@@ -3,7 +3,6 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,7 +54,7 @@ func ReadFileIndex(filePath string) (*FileIndex, error) {
 		return NewFileIndex(), nil
 	}
 
-	byteValue, err := ioutil.ReadFile(filePath)
+	byteValue, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +196,7 @@ func write(filePath string, fi *FileIndex) error {
 	}
 	// While 0666 is the mask used when a file is created using os.Create,
 	// gosec objects, so use 0600 instead
-	return ioutil.WriteFile(filePath, jsonData, 0600)
+	return os.WriteFile(filePath, jsonData, 0600)
 }
 
 // WriteFile writes a file map to a file, the file map is given by
@@ -483,14 +482,18 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 			}
 
 			// read the current folder and read inner files and folders
-			files, err := ioutil.ReadDir(matchedPath)
+			entries, err := os.ReadDir(matchedPath)
 			if err != nil {
 				return IndexerRet{}, err
 			}
-			if len(files) == 0 {
+			if len(entries) == 0 {
 				continue
 			}
-			for _, f := range files {
+			for _, entry := range entries {
+				f, err := entry.Info()
+				if err != nil {
+					return IndexerRet{}, err
+				}
 				if _, ok := remoteDirectories[filepath.Join(joinedRelPath, f.Name())]; ok {
 					continue
 				}

@@ -3,7 +3,6 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -143,7 +142,7 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 	originalPath := ""
 	if starterProject.SubDir != "" {
 		originalPath = path
-		path, err = ioutil.TempDir("", "")
+		path, err = os.MkdirTemp("", "")
 		if err != nil {
 			return err
 		}

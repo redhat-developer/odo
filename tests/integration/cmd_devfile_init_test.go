@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -384,7 +383,7 @@ var _ = Describe("odo devfile init command tests", func() {
 				BeforeEach(func() {
 					var err error
 					srcDevfile = helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-parent.yaml")
-					originalDevfileContent, err := ioutil.ReadFile(srcDevfile)
+					originalDevfileContent, err := os.ReadFile(srcDevfile)
 					Expect(err).To(BeNil())
 					var content map[string]interface{}
 					Expect(yaml.Unmarshal(originalDevfileContent, &content)).To(BeNil())
@@ -395,7 +394,7 @@ var _ = Describe("odo devfile init command tests", func() {
 
 				It("should not replace the original devfile", func() {
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", srcDevfile).ShouldPass()
-					devfileContent, err := ioutil.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileContent, err := os.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
 					Expect(err).To(BeNil())
 					var content map[string]interface{}
 					Expect(yaml.Unmarshal(devfileContent, &content)).To(BeNil())

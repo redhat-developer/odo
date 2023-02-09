@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -53,7 +53,7 @@ func mockServer() (chan []byte, *httptest.Server) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-		bin, err := ioutil.ReadAll(r.Body)
+		bin, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Error(err)
 			return

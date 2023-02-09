@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -2830,7 +2829,7 @@ CMD ["npm", "start"]
 
 				It("should remove forwarded ports from state file", func() {
 					Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
-					contentJSON, err := ioutil.ReadFile(stateFile)
+					contentJSON, err := os.ReadFile(stateFile)
 					Expect(err).ToNot(HaveOccurred())
 					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
 				})
@@ -2862,7 +2861,7 @@ CMD ["npm", "start"]
 
 			It("should create a state file containing forwarded ports", func() {
 				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
-				contentJSON, err := ioutil.ReadFile(stateFile)
+				contentJSON, err := os.ReadFile(stateFile)
 				Expect(err).ToNot(HaveOccurred())
 				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerName", "runtime")
 				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerName", "runtime")

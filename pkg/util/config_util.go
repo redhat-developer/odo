@@ -2,14 +2,14 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // CreateIfNotExists creates the directory and the file if it doesn't exist
@@ -59,7 +59,7 @@ func WriteToYAMLFile(c interface{}, filename string) error {
 	if err = CreateIfNotExists(filename); err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(filename, data, 0600)
+	err = os.WriteFile(filename, data, 0600)
 	if err != nil {
 		return fmt.Errorf("unable to write config to file %v: %w", c, err)
 	}

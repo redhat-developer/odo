@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -23,8 +22,9 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // TODO(feloy) Move tests to devfile library
@@ -405,7 +405,7 @@ func TestGetAbsPath(t *testing.T) {
 }
 
 func TestCheckPathExists(t *testing.T) {
-	dir, err := ioutil.TempFile("", "")
+	dir, err := os.CreateTemp("", "")
 	defer os.RemoveAll(dir.Name())
 	if err != nil {
 		return
@@ -1197,7 +1197,7 @@ func TestDownloadFile(t *testing.T) {
 					t.Errorf("Failed to download file with error %s", err)
 				}
 
-				got, err := ioutil.ReadFile(tt.filepath)
+				got, err := os.ReadFile(tt.filepath)
 				if err != nil {
 					t.Errorf("Failed to read file with error %s", err)
 				}
@@ -1562,7 +1562,7 @@ func TestValidateURL(t *testing.T) {
 func TestValidateFile(t *testing.T) {
 	// Create temp dir and temp file
 	tempDir := t.TempDir()
-	tempFile, err := ioutil.TempFile(tempDir, "")
+	tempFile, err := os.CreateTemp(tempDir, "")
 	if err != nil {
 		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
 	}
@@ -1604,7 +1604,7 @@ func TestCopyFile(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create temp file under temp dir as source file
-	tempFile, err := ioutil.TempFile(tempDir, "")
+	tempFile, err := os.CreateTemp(tempDir, "")
 	if err != nil {
 		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
 	}

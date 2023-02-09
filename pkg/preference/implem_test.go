@@ -3,7 +3,6 @@ package preference
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
@@ -19,7 +18,7 @@ import (
 
 func TestNew(t *testing.T) {
 
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	tempConfigFile, err := os.CreateTemp("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}

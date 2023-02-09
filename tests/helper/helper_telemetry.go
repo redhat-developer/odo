@@ -3,7 +3,6 @@ package helper
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	_ "github.com/onsi/ginkgo/v2"
@@ -36,7 +35,7 @@ func EnableTelemetryDebug() {
 	cfg, _ := preference.NewClient(ctx)
 	err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
 	Expect(err).To(BeNil())
-	tempFile, err := ioutil.TempFile("", "telemetry")
+	tempFile, err := os.CreateTemp("", "telemetry")
 	Expect(err).NotTo(HaveOccurred())
 	Expect(setDebugTelemetryFile(tempFile.Name())).NotTo(HaveOccurred())
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
@@ -52,11 +51,11 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	var td segment.TelemetryData
 	telemetryFile := GetDebugTelemetryFile()
 	Eventually(func() string {
-		d, err := ioutil.ReadFile(telemetryFile)
+		d, err := os.ReadFile(telemetryFile)
 		Expect(err).To(BeNil())
 		return string(d)
 	}, 10, 1).Should(ContainSubstring("event"))
-	data, err := ioutil.ReadFile(telemetryFile)
+	data, err := os.ReadFile(telemetryFile)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(json.Unmarshal(data, &td)).NotTo(HaveOccurred())
 	return td

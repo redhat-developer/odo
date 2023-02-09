@@ -2,7 +2,6 @@ package registry
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"sort"
@@ -262,7 +261,7 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, registryName string, devfileName string) (api.DevfileData, error) {
 
 	// Create random temporary file
-	tmpFile, err := ioutil.TempDir("", "odo")
+	tmpFile, err := os.MkdirTemp("", "odo")
 	if err != nil {
 		return api.DevfileData{}, err
 	}

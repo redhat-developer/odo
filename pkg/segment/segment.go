@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/user"
@@ -205,7 +204,7 @@ func getUserIdentity(telemetryFilePath string) (string, error) {
 
 	// Get-or-Create the anonymousID file that contains a UUID
 	if _, err := os.Stat(telemetryFilePath); !os.IsNotExist(err) {
-		id, err = ioutil.ReadFile(telemetryFilePath)
+		id, err = os.ReadFile(telemetryFilePath)
 		if err != nil {
 			return "", err
 		}
@@ -214,7 +213,7 @@ func getUserIdentity(telemetryFilePath string) (string, error) {
 	// check if the id is a valid uuid, if not, nil is returned
 	if uuid.Parse(strings.TrimSpace(string(id))) == nil {
 		id = []byte(uuid.NewRandom().String())
-		if err := ioutil.WriteFile(telemetryFilePath, id, 0600); err != nil {
+		if err := os.WriteFile(telemetryFilePath, id, 0600); err != nil {
 			return "", err
 		}
 	}

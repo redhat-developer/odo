@@ -2,7 +2,7 @@ package registry
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestIsSecure(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	tempConfigFile, err := os.CreateTemp("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}

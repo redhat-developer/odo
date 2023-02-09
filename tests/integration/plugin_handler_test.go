@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,12 +24,12 @@ var _ = Describe("odo plugin functionality", func() {
 	var handler plugins.PluginHandler
 	var _ = BeforeEach(func() {
 		var err error
-		tempDir, err = ioutil.TempDir(os.TempDir(), "odo")
+		tempDir, err = os.MkdirTemp(os.TempDir(), "odo")
 		Expect(err).NotTo(HaveOccurred())
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", origPath, tempDir))
 		var baseScriptName = "tst-script"
 		scriptName := path.Join(tempDir, baseScriptName)
-		err = ioutil.WriteFile(scriptName, sampleScript, 0755)
+		err = os.WriteFile(scriptName, sampleScript, 0755)
 		Expect(err).NotTo(HaveOccurred())
 		handler = plugins.NewExecHandler("tst")
 	})

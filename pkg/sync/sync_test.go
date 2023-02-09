@@ -2,8 +2,7 @@ package sync
 
 import (
 	"errors"
-	io "io"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -362,7 +361,7 @@ func TestUpdateIndexWithWatchChanges(t *testing.T) {
 			for _, fileToCreate := range tt.initialFilesToCreate {
 				filePath := filepath.Join(directory, fileToCreate)
 
-				if err := ioutil.WriteFile(filePath, []byte("non-empty-string"), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte("non-empty-string"), 0644); err != nil {
 					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
 				}
 
@@ -397,7 +396,7 @@ func TestUpdateIndexWithWatchChanges(t *testing.T) {
 				addedFilePath := filepath.Join(directory, addedFile)
 				syncParams.WatchFiles = append(syncParams.WatchFiles, addedFilePath)
 
-				if err := ioutil.WriteFile(addedFilePath, []byte("non-empty-string"), 0644); err != nil {
+				if err := os.WriteFile(addedFilePath, []byte("non-empty-string"), 0644); err != nil {
 					t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write to index file path: %v", err)
 				}
 			}
