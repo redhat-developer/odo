@@ -26,7 +26,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: ibmcloudtest-image
-        tags: v1.18-1
+        tags: v1.19-1
         context: ./.ibm/images
         containerfiles: |
           ./.ibm/images/Dockerfile
