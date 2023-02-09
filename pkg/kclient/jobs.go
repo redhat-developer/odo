@@ -74,21 +74,16 @@ func (c *Client) WaitForJobToComplete(job *batchv1.Job) (*batchv1.Job, error) {
 				buf := new(bytes.Buffer)
 				_, err = io.Copy(buf, rd)
 				if err != nil {
-					klog.V(4).Infof("unable to copy followLog to buffer: %w", err)
+					klog.V(4).Infof("unable to copy followLog to buffer: %s", err.Error())
 				}
 				if _, err = io.Copy(os.Stderr, buf); err != nil {
-					klog.V(4).Infof("error copying logs to stdout: %w", err)
+					klog.V(4).Infof("error copying logs to stdout: %s", err.Error())
 				}
 
 			}
 		}
 	}
 	return nil, nil
-}
-
-// DeleteJob deletes the job
-func (c *Client) DeleteJob(jobName string) error {
-	return c.KubeClient.BatchV1().Jobs(c.Namespace).Delete(context.TODO(), jobName, metav1.DeleteOptions{})
 }
 
 // GetJobLogs retrieves pod logs of a job

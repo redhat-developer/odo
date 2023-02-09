@@ -1470,14 +1470,6 @@ func (mr *MockClientInterfaceMockRecorder) WaitForJobToComplete(job interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForJobToComplete", reflect.TypeOf((*MockClientInterface)(nil).WaitForJobToComplete), job)
 }
 
-// DeleteJob mocks base method
-func (m *MockClientInterface) DeleteJob(jobName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteJob", jobName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
 // GetJobLogs mocks base method
 func (m *MockClientInterface) GetJobLogs(job *v14.Job, containerName string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
