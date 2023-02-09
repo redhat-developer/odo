@@ -93,7 +93,6 @@ func (o *deployHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 // Execute will deploy the listed information in the `exec` section of devfile.yaml
 // We currently do NOT support this in `odo deploy`.
 func (o *deployHandler) Execute(command v1alpha2.Command) error {
-	// TODO: Handle cases where `odo deploy` is run again and the job still exists: ✗  unable to create Jobs: jobs.batch "demo-app" already exists
 	containerComps, err := generator.GetContainers(o.devfileObj, common.DevfileOptions{FilterByName: command.Exec.Component})
 	if err != nil {
 		return err
@@ -161,7 +160,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
 	if logErr != nil {
-		log.Warningf("failed to fetch the logs required to identify the reason for execution failure; cause: %s", logErr)
+		log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
 	} else {
 		fmt.Println("Execution output:")
 		logErr = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, -1)
