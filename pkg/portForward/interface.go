@@ -25,8 +25,4 @@ type Client interface {
 
 	// GetForwardedPorts returns the list of ports for each container currently forwarded.
 	GetForwardedPorts() map[string][]v1alpha2.Endpoint
-
-	// GetPortsToForward returns the endpoints to forward from the Devfile, by container name.
-	// Debug ports will be included only if includeDebug is true.
-	GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]v1alpha2.Endpoint, error)
 }

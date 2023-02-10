@@ -191,7 +191,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Check if endpoints changed in Devfile
-	portsToForward, err := a.portForwardClient.GetPortsToForward(a.Devfile, parameters.Debug)
+	portsToForward, err := libdevfile.GetDevfileContainerEndpointMapping(a.Devfile, parameters.Debug)
 	if err != nil {
 		return err
 	}
