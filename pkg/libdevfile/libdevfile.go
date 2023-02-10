@@ -277,6 +277,20 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 	return nil
 }
 
+// GetDevfileContainerEndpointMapping returns a map of container components names and slice of its endpoints,
+// given a Devfile object in parameter.
+// Debug endpoints will be included only if includeDebug is true.
+func GetDevfileContainerEndpointMapping(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]v1alpha2.Endpoint, error) {
+	// get the endpoint/port information for containers in devfile
+	containers, err := devFileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return GetContainerEndpointMapping(containers, includeDebug), nil
+}
+
 // GetContainerEndpointMapping returns a map of container names and slice of its endpoints.
 // Debug endpoints will be included only if includeDebug is true.
 func GetContainerEndpointMapping(containers []v1alpha2.Component, includeDebug bool) map[string][]v1alpha2.Endpoint {
