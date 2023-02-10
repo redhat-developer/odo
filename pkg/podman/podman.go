@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
+	"github.com/redhat-developer/odo/pkg/platform"
 
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -18,6 +19,9 @@ import (
 type PodmanCli struct {
 	podmanCmd string
 }
+
+var _ Client = (*PodmanCli)(nil)
+var _ platform.Client = (*PodmanCli)(nil)
 
 // NewPodmanCli returns a new podman client, or nil if the podman command is not accessible in the system
 func NewPodmanCli(ctx context.Context) (*PodmanCli, error) {
