@@ -22,16 +22,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/redhat-developer/odo/pkg/platform"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 )
 
 type ClientInterface interface {
-
-	// all.go
-
-	// GetAllResourcesFromSelector returns all resources of any kind (including CRs) matching the given label selector
-	GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error)
+	platform.Client
 
 	// binding.go
 	IsServiceBindingSupported() (bool, error)
@@ -107,12 +104,7 @@ type ClientInterface interface {
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
 
 	// pods.go
-	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
-	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
-	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
-	GetAllPodsInNamespaceMatchingSelector(selector string, ns string) (*corev1.PodList, error)
-	GetPodsMatchingSelector(selector string) (*corev1.PodList, error)
 	PodWatcher(ctx context.Context, selector string) (watch.Interface, error)
 	IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error)
 
