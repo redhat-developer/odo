@@ -21,6 +21,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/portForward"
+	"github.com/redhat-developer/odo/pkg/portForward/kubeportforward"
+	"github.com/redhat-developer/odo/pkg/portForward/podmanportforward"
 	"github.com/redhat-developer/odo/pkg/sync"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
@@ -236,7 +238,12 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)
 	}
 	if isDefined(command, PORT_FORWARD) {
-		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
+		switch platform {
+		case commonflags.PlatformPodman:
+			dep.PortForwardClient = podmanportforward.NewPFClient(dep.ExecClient)
+		default:
+			dep.PortForwardClient = kubeportforward.NewPFClient(dep.KubernetesClient, dep.StateClient)
+		}
 	}
 	if isDefined(command, DEV) {
 		switch platform {
@@ -244,6 +251,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			dep.DevClient = podmandev.NewDevClient(
 				dep.FS,
 				dep.PodmanClient,
+				dep.PortForwardClient,
 				dep.SyncClient,
 				dep.ExecClient,
 				dep.StateClient,
