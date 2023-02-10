@@ -161,7 +161,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.Debug,
 		options.BuildCommand,
 		options.RunCommand,
-		"",
+		options.DebugCommand,
 		options.RandomPorts,
 		o.usedPorts,
 	)
