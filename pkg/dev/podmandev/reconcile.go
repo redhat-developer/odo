@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -113,10 +114,16 @@ func (o *DevClient) reconcile(
 		componentStatus.RunExecuted = true
 	}
 
+	err = o.portForwardClient.StartPortForwarding(*devfileObj, componentName, options.Debug, options.RandomPorts, out, errOut, fwPorts)
+	if err != nil {
+		return adapters.NewErrPortForward(err)
+	}
+
 	for _, fwPort := range fwPorts {
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
 		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
 	}
+
 	err = o.stateClient.SetForwardedPorts(fwPorts)
 	if err != nil {
 		return err
