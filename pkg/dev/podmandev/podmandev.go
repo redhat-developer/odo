@@ -23,6 +23,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -41,11 +42,12 @@ const (
 type DevClient struct {
 	fs filesystem.Filesystem
 
-	podmanClient podman.Client
-	syncClient   sync.Client
-	execClient   exec.Client
-	stateClient  state.Client
-	watchClient  watch.Client
+	podmanClient      podman.Client
+	portForwardClient portForward.Client
+	syncClient        sync.Client
+	execClient        exec.Client
+	stateClient       state.Client
+	watchClient       watch.Client
 
 	deployedPod *corev1.Pod
 	usedPorts   []int
@@ -56,18 +58,20 @@ var _ dev.Client = (*DevClient)(nil)
 func NewDevClient(
 	fs filesystem.Filesystem,
 	podmanClient podman.Client,
+	portForwardClient portForward.Client,
 	syncClient sync.Client,
 	execClient exec.Client,
 	stateClient state.Client,
 	watchClient watch.Client,
 ) *DevClient {
 	return &DevClient{
-		fs:           fs,
-		podmanClient: podmanClient,
-		syncClient:   syncClient,
-		execClient:   execClient,
-		stateClient:  stateClient,
-		watchClient:  watchClient,
+		fs:                fs,
+		podmanClient:      podmanClient,
+		portForwardClient: portForwardClient,
+		syncClient:        syncClient,
+		execClient:        execClient,
+		stateClient:       stateClient,
+		watchClient:       watchClient,
 	}
 }
 
