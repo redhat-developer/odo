@@ -39,6 +39,10 @@ type CommandDefinition struct {
 	// Id is any unique (and short) identifier that helps manage the process associated to this command.
 	Id string
 
+	// PidDirectory is the directory where the PID file for this process will be stored.
+	// The directory needs to be present in the remote container and be writable by the user (in the container) executing the command.
+	PidDirectory string
+
 	// WorkingDir is the working directory from which the command should get executed.
 	WorkingDir string
 

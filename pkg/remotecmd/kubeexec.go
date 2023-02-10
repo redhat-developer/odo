@@ -358,5 +358,9 @@ func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, con
 // The parent folder is supposed to be existing, because it should be mounted in the container using the mandatory
 // shared volume (more info in the AddOdoMandatoryVolume function from the utils package).
 func getPidFileForCommand(def CommandDefinition) string {
-	return fmt.Sprintf("%s/.odo_cmd_%s.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/"), def.Id)
+	parentDir := def.PidDirectory
+	if parentDir == "" {
+		parentDir = storage.SharedDataMountPath
+	}
+	return fmt.Sprintf("%s/.odo_cmd_%s.pid", strings.TrimSuffix(parentDir, "/"), def.Id)
 }
