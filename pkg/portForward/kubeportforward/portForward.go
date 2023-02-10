@@ -1,4 +1,4 @@
-package portForward
+package kubeportforward
 
 import (
 	"errors"
@@ -9,19 +9,20 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
-var _ Client = (*PFClient)(nil)
+var _ portForward.Client = (*PFClient)(nil)
 
 type PFClient struct {
 	kubernetesClient kclient.ClientInterface
@@ -47,15 +48,9 @@ func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Cli
 	}
 }
 
-func (o *PFClient) StartPortForwarding(
-	devFileObj parser.DevfileObj,
-	componentName string,
-	debug bool,
-	randomPorts bool,
-	errOut io.Writer,
-) error {
+func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentName string, debug bool, randomPorts bool, out io.Writer, errOut io.Writer, definedPorts []api.ForwardedPort) error {
 
-	ceMapping, err := o.GetPortsToForward(devFileObj, debug)
+	ceMapping, err := libdevfile.GetDevfileContainerEndpointMapping(devFileObj, debug)
 	if err != nil {
 		return err
 	}
@@ -66,7 +61,7 @@ func (o *PFClient) StartPortForwarding(
 
 	o.appliedEndpoints = ceMapping
 
-	o.StopPortForwarding()
+	o.StopPortForwarding(componentName)
 
 	if len(ceMapping) == 0 {
 		klog.V(4).Infof("no endpoint declared in the component, no ports are forwarded")
@@ -76,10 +71,22 @@ func (o *PFClient) StartPortForwarding(
 	o.stopChan = make(chan struct{}, 1)
 
 	var portPairs map[string][]string
-	if randomPorts {
-		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
+	if len(definedPorts) != 0 {
+		portPairs = make(map[string][]string)
+		for _, port := range definedPorts {
+			s := fmt.Sprintf("%d:%d", port.LocalPort, port.ContainerPort)
+			if port.LocalPort == 0 {
+				// random port
+				s = fmt.Sprintf(":%d", port.ContainerPort)
+			}
+			portPairs[port.ContainerName] = append(portPairs[port.ContainerName], s)
+		}
 	} else {
-		portPairs = portPairsFromContainerEndpoints(ceMapping)
+		if randomPorts {
+			portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
+		} else {
+			portPairs = portPairsFromContainerEndpoints(ceMapping)
+		}
 	}
 	var portPairsSlice []string
 	for _, v1 := range portPairs {
@@ -147,7 +154,7 @@ func (o *PFClient) StartPortForwarding(
 	}
 }
 
-func (o *PFClient) StopPortForwarding() {
+func (o *PFClient) StopPortForwarding(componentName string) {
 	if o.stopChan == nil {
 		return
 	}
@@ -167,19 +174,6 @@ func (o *PFClient) StopPortForwarding() {
 
 func (o *PFClient) GetForwardedPorts() map[string][]v1alpha2.Endpoint {
 	return o.appliedEndpoints
-}
-
-func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj, includeDebug bool) (map[string][]v1alpha2.Endpoint, error) {
-
-	// get the endpoint/port information for containers in devfile
-	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
-	if err != nil {
-		return nil, err
-	}
-	ceMapping := libdevfile.GetContainerEndpointMapping(containers, includeDebug)
-	return ceMapping, nil
 }
 
 // randomPortPairsFromContainerEndpoints assigns a random (empty) port on localhost to each port in the provided containerEndpoints map

@@ -1,4 +1,4 @@
-package portForward
+package kubeportforward
 
 import (
 	"errors"
