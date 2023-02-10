@@ -338,10 +338,10 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	if podChanged || portsChanged {
-		a.portForwardClient.StopPortForwarding()
+		a.portForwardClient.StopPortForwarding(a.ComponentName)
 	}
 
-	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, parameters.ErrOut)
+	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, nil)
 	if err != nil {
 		return adapters.NewErrPortForward(err)
 	}
