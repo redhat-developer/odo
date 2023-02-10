@@ -223,7 +223,7 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 					})
 			},
 			isCmdExpectedToRun: true,
-			expectedStatuses:   []RemoteProcessStatus{Starting, Stopped},
+			expectedStatuses:   []RemoteProcessStatus{Starting, Running, Stopped},
 		},
 		{
 			name:   "command with all fields returned an error",
@@ -250,7 +250,7 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 					})
 			},
 			isCmdExpectedToRun: true,
-			expectedStatuses:   []RemoteProcessStatus{Starting, Errored},
+			expectedStatuses:   []RemoteProcessStatus{Starting, Running, Errored},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -264,7 +264,7 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 			k := NewKubeExecProcessHandler(execClient)
 
 			var wg sync.WaitGroup
-			wg.Add(2) //number of invocations of outputHandler
+			wg.Add(len(tt.expectedStatuses)) //number of invocations of outputHandler
 			var statusesReported []RemoteProcessStatus
 			err := k.StartProcessForCommand(tt.cmdDef, _podName, _containerName,
 				func(status RemoteProcessStatus, stdout []string, stderr []string, err error) {

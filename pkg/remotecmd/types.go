@@ -1,23 +1,23 @@
 package remotecmd
 
 // RemoteProcessStatus is an enum type for representing process statuses.
-type RemoteProcessStatus int
+type RemoteProcessStatus string
 
 const (
 	// Unknown represents a process for which the status cannot be determined reliably or is not handled yet by us.
-	Unknown RemoteProcessStatus = iota + 1
+	Unknown RemoteProcessStatus = "unknown"
 
 	// Starting represents a process that is just about to start.
-	Starting
+	Starting = "starting"
 
 	// Stopped represents a process stopped.
-	Stopped
+	Stopped = "stopped"
 
 	// Errored represents a process that errored out, i.e. exited with a non-zero status code.
-	Errored
+	Errored = "errored"
 
 	// Running represents a running process.
-	Running
+	Running = "running"
 )
 
 const (
