@@ -95,24 +95,53 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 		fmt.Sprintf("echo $$ > %[1]s && %s %s (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2; echo $? >> %[1]s", pidFile, cdCmd, setEnvCmd, cmdLine),
 	}
 
+	//Monitoring go-routine
+	type event struct {
+		status RemoteProcessStatus
+		stdout []string
+		stderr []string
+		err    error
+	}
+	eventsChan := make(chan event)
+	eventsReceived := make(map[RemoteProcessStatus]struct{})
 	go func() {
-		if outputHandler != nil {
-			outputHandler(Starting, nil, nil, nil)
+		for e := range eventsChan {
+			klog.V(5).Infof("event received for %q: %v, %v", def.Id, e.status, e.err)
+			if _, ok := eventsReceived[e.status]; ok {
+				continue
+			}
+			if outputHandler != nil {
+				outputHandler(e.status, e.stdout, e.stderr, e.err)
+			}
+			eventsReceived[e.status] = struct{}{}
 		}
+	}()
 
+	eventsChan <- event{status: Starting}
+
+	go func() {
+		eventsChan <- event{status: Running}
 		stdout, stderr, err := k.execClient.ExecuteCommand(cmd, podName, containerName, false, nil, nil)
 		if err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
 		}
 
-		if outputHandler != nil {
-			processInfo, infoErr := k.GetProcessInfoForCommand(def, podName, containerName)
-			if infoErr != nil {
-				outputHandler(Errored, stdout, stderr, err)
-				return
-			}
-			outputHandler(processInfo.Status, stdout, stderr, err)
+		processInfo, infoErr := k.GetProcessInfoForCommand(def, podName, containerName)
+		var status RemoteProcessStatus
+		if infoErr != nil {
+			status = Errored
+		} else {
+			status = processInfo.Status
 		}
+
+		eventsChan <- event{
+			status: status,
+			stdout: stdout,
+			stderr: stderr,
+			err:    err,
+		}
+
+		close(eventsChan)
 	}()
 
 	return nil
