@@ -131,7 +131,7 @@ odo init
       __
     /  \__     Initializing a new component
     \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
-    /  \__/    odo version: v3.5.0
+    /  \__/    odo version: v3.6.0
     \__/
 
     Interactive mode enabled, please answer the following questions:
@@ -297,7 +297,7 @@ odo dev
   ✓  Syncing files into the container [2s]
   ✓  Building your application in container on cluster (command: build) [11s]
   •  Executing the application (command: run)  ...
-  -  Forwarding from 127.0.0.1:40001 -> 8080
+  -  Forwarding from 127.0.0.1:20001 -> 8080
   
   
   ↪ Dev mode
@@ -312,16 +312,19 @@ odo dev
   </div>
 </details>
 
-`odo dev` uses information from `devfile.yaml` to start the containers on the cluster. Than it copies all the source code from our local machine to the container and executes the `build` and `run` commands as defined in the `devfile.yaml`.
+`odo dev` performs the following actions:
+1. Starts the containers on the cluster based on the information from the `devfile.yaml`.
+1. Copies all the source code from your local machine to the container.
+1. Executes `build` and `run` commands as defined in the `devfile.yaml`.
+1. When the application is successfully running in the container, `odo` sets the port forwarding between your local machine and the container to ensure we can easily access our application on the local port. In this case, it is port `20001`.
 
-When the application is successfully running in the container `odo` also sets the port forwarding between your local machine and the container to ensure we can easily access our application on the local port.
-In this case, it is `40001`. You can access the application on [http://localhost:40001](http://localhost:40001).
+Now you can access the application on [http://localhost:20001](http://localhost:20001).
 
 ![App running with In Memory DB](/img/blog/odo-dotnet-postgresql-openshift/app_running_inmemory_db.png)
 
 You can see that our application is now using the in-memory database. We will start the PostgreSQL database and connect our application in the following steps.
 
-You can leave `odo dev` running in the terminal and open a new terminal window to continue with the next steps. Make sure that you run all `odo` commands in the the root folder  of our .NET application (where you have `devfile.yaml` and `RazorPagesContacts` files).
+You can leave `odo dev` running in the terminal and open a new terminal window to continue with the next steps. Make sure that you run all `odo` commands in the root folder of our .NET application (where you have `devfile.yaml` and `RazorPagesContacts` files).
 
 ## Use the PostgreSQL database
 
@@ -389,23 +392,23 @@ If you don't have `oc` CLI installed, you can use the OpenShift web console to s
       Log in to  OpenShift Web Console.
     </li>
     <li>
-      Switch to the **Developer** view and make sure that you are using correct project.
+      Switch to the <b>Developer</b> view and make sure that you are using correct project.
       <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_1.png" alt="ODC step 1" />
     </li>
     <li>
-      Click on the **+Add** button in the main menu and select **Database** option from the **Developer Catalog** section.
+      Click on the <b>+Add</b> button in the main menu and select <b>Database</b> option from the <b>Developer Catalog</b> section.
       <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_2.png" alt="ODC step 2" />
     </li>
     <li>
-      In the **Database** section select **PostgreSQL** option. Make sure to select the one using **Templates**.
+      In the <b>Database</b> section select <b>PostgreSQL</b> option. Make sure to select the one using <b>Templates</b>.
       <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_3.png" alt="ODC step 3" />
     </li>
     <li>
-      Click on the **Instantiate Template** button.
+      Click on the <b>Instantiate Template</b> button.
       <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_4.png" alt="ODC step 4" />
     </li>
     <li>
-      For our use we can use the default values. Just click on the **Create** button.
+      For our use we can use the default values. Just click on the <b>Create</b> button.
       <img src="/img/blog/odo-dotnet-postgresql-openshift/odc_db_step_5.png" alt="ODC step 5" />
     </li>
   </ol>
@@ -426,7 +429,7 @@ Open `devfile.yaml` in the application directory and add the following section t
 
 ```yaml
 attributes:
-  container-overrides: {secretRef: {name: "postgresql"} }
+  container-overrides: {envFrom: [secretRef: {name: "postgresql"}]}
 ```
 
 While you have `devfile.yaml` open, you also need to add a new environment variable called `database-service`. This variable will tell our application to use the PostgreSQL database instead of the in-memory database.
@@ -519,5 +522,5 @@ As you modify the `devfile.yaml``, you can check the terminal window where you h
 
 
 
-Now, refresh the local URL [http://localhost:40001](http://localhost:40001). You should see that our application is using the PostgreSQL database.
+Now, refresh the local URL [http://localhost:20001](http://localhost:20001). You should see that our application is using the PostgreSQL database.
 ![App running with PostgreSQL DB](/img/blog/odo-dotnet-postgresql-openshift/app_running_postgresql_db.png)
