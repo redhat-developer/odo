@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -121,6 +122,11 @@ func (o *DevClient) reconcile(
 	err = o.handleLoopbackPorts(options, pod, fwPorts)
 	if err != nil {
 		return err
+	}
+
+	err = o.portForwardClient.StartPortForwarding(*devfileObj, componentName, options.Debug, options.RandomPorts, out, errOut, fwPorts)
+	if err != nil {
+		return adapters.NewErrPortForward(err)
 	}
 
 	for _, fwPort := range fwPorts {
