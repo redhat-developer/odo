@@ -164,6 +164,7 @@ type ClientInterface interface {
 	// ingress_routes.go
 	ListIngresses(namespace, selector string) (*v1.IngressList, error)
 
+	ListJobs(selector string) (*batchv1.JobList, error)
 	// CreateJob creates a K8s job to execute task
 	CreateJob(job batchv1.Job, namespace string) (*batchv1.Job, error)
 	// WaitForJobToComplete to wait until a job completes or fails; it starts printing log or error if the job does not complete execution after 1 minute

@@ -23,6 +23,10 @@ const (
 	executeJobTimeout = 1 * time.Minute
 )
 
+func (c *Client) ListJobs(selector string) (*batchv1.JobList, error) {
+	return c.KubeClient.BatchV1().Jobs(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+}
+
 // CreateJobs creates a K8s job to execute task
 func (c *Client) CreateJob(job batchv1.Job, namespace string) (*batchv1.Job, error) {
 	if namespace == "" {
@@ -101,5 +105,6 @@ func (c *Client) GetJobLogs(job *batchv1.Job, containerName string) (io.ReadClos
 }
 
 func (c *Client) DeleteJob(jobName string) error {
-	return c.KubeClient.BatchV1().Jobs(c.Namespace).Delete(context.Background(), jobName, metav1.DeleteOptions{})
+	propagationPolicy := metav1.DeletePropagationBackground
+	return c.KubeClient.BatchV1().Jobs(c.Namespace).Delete(context.Background(), jobName, metav1.DeleteOptions{PropagationPolicy: &propagationPolicy})
 }

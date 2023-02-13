@@ -3,8 +3,10 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
@@ -14,7 +16,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -132,18 +134,37 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 					RestartPolicy: "Never",
 				},
 			},
-			BackoffLimit:            pointer.Int32(2),
-			CompletionMode:          &completionMode,
+			BackoffLimit:   pointer.Int32(2),
+			CompletionMode: &completionMode,
+			// Setting this as a backup in case DeleteJob fails
 			TTLSecondsAfterFinished: pointer.Int32(60),
 		},
-		Status: batchv1.JobStatus{},
 	}
 
 	// Set labels and annotations
+
 	job.SetLabels(odolabels.GetLabels(o.componentName, o.appName, component.GetComponentRuntimeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()), odolabels.ComponentDeployMode, false))
 	job.Annotations = map[string]string{}
 	odolabels.AddCommonAnnotations(job.Annotations)
 	odolabels.SetProjectType(job.Annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
+
+	checkAndDeleteExistingJob := func() {
+		items, err := o.kubeClient.ListJobs(odolabels.GetSelector(o.componentName, o.appName, odolabels.ComponentDeployMode, false))
+		if err != nil {
+			klog.V(4).Infof("failed to list jobs; cause: %s", err.Error())
+			return
+		}
+		partialJobName := o.componentName + "-" + o.appName + "-" + command.Id
+		for _, item := range items.Items {
+			if strings.Contains(item.Name, partialJobName) {
+				err = o.kubeClient.DeleteJob(item.Name)
+				if err != nil {
+					klog.V(4).Infof("failed to delete job %q; cause: %s", item.Name, err.Error())
+				}
+			}
+		}
+	}
+	checkAndDeleteExistingJob()
 
 	log.Sectionf("Executing command in container (command: %s)", command.Id)
 	spinner := log.Spinnerf("Executing %q", command.Exec.CommandLine)
@@ -154,32 +175,33 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	if err != nil {
 		return err
 	}
-
-	go util.StartSignalWatcher([]os.Signal{os.Interrupt}, func(receivedSignal os.Signal) {
-		klog.V(4).Infof("deleting the job: %q", createdJob.Name)
-		// allows to print the error on a new line
-		fmt.Println()
-		log.Errorf("user interrupt")
-		deleteErr := o.kubeClient.DeleteJob(createdJob.Name)
-		if deleteErr != nil {
-			klog.V(4).Infof("error while deleting the job %q; cause: %s", createdJob.Name, deleteErr.Error())
+	defer func() {
+		err = o.kubeClient.DeleteJob(createdJob.Name)
+		if err != nil {
+			klog.V(4).Infof("failed to delete job %q; cause: %s", createdJob.Name, err)
 		}
-	})
+	}()
 
-	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
-	spinner.End(err == nil)
-	if err != nil {
+	_, jobErr := o.kubeClient.WaitForJobToComplete(createdJob)
+	if jobErr != nil {
 		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
 	}
+	spinner.End(err == nil)
 
 	jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
 	if logErr != nil {
 		log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
 	} else {
-		fmt.Println("Execution output:")
-		logErr = util.DisplayLog(false, jobLogs, log.GetStdout(), o.componentName, -1)
+		var logOut []byte
+		logOut, logErr := io.ReadAll(jobLogs)
 		if logErr != nil {
-			log.Warningf("unable to log error; cause: %s", logErr)
+			klog.V(4).Infof("failed to read logs; cause: %s", logErr.Error())
+		}
+		if jobErr != nil {
+			fmt.Println("Execution output:")
+			fmt.Fprintf(os.Stderr, string(logOut))
+		} else {
+			klog.V(1).Infof("Execution output:\n%s", string(logOut))
 		}
 	}
 
