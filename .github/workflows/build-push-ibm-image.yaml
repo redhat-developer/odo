@@ -1,4 +1,4 @@
-name: Build and Push Image
+name: Build and Push IBM Cloud Image
 on:
   push:
     branches:
@@ -6,10 +6,17 @@ on:
     paths:
       - '.ibm/images/Dockerfile'
       - '.github/workflows/build-push-ibm-image.yaml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.ibm/images/Dockerfile'
+      - '.github/workflows/build-push-ibm-image.yaml'
+
 jobs:
   build:
-    name: Build and push image
-    runs-on: ubuntu-20.04
+    name: Build and push IBM Cloud image
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -28,6 +35,7 @@ jobs:
     # in which case 'username' and 'password' can be omitted.
     - name: Push To quay.io
       id: push-to-quay
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: redhat-actions/push-to-registry@v2
       with:
         image: ${{ steps.build-image.outputs.image }}
@@ -37,4 +45,5 @@ jobs:
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Print image url
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
