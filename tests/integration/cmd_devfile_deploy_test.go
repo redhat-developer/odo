@@ -483,6 +483,33 @@ CMD ["npm", "start"]
 					})
 				})
 			})
+
 		})
 	}
+	When("deploying devfile with exec", func() {
+		When("using devfile that works", func() {
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec.yaml"),
+					path.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
+			})
+			It("should print the output of exec when odo deploy is run", func() {
+				out := helper.Cmd("odo", "deploy").ShouldPass().Out()
+				helper.MatchAllInOutput(string(out), []string{"Executing command in container (command: deploy-exec)", "Executing \"echo Hello world\"", "Execution output:"})
+			})
+		})
+		When("using devfile with invalid data", func() {
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec-fail.yaml"),
+					path.Join(commonVar.Context, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName))
+			})
+			It("should start printing log after 1 minute of execution", func() {
+				cmd := helper.Cmd("odo", "deploy").WithTerminate(70, nil)
+				Eventually(cmd.ShouldRun().Out(), 65, 1).Should(ContainSubstring("Waiting to complete execution:"))
+			})
+		})
+	})
 })

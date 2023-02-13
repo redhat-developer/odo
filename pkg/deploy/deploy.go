@@ -3,15 +3,18 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -109,7 +112,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		TypeMeta: generator.GetTypeMeta(kclient.JobsKind, kclient.JobsAPIVersion),
 		ObjectMeta: metav1.ObjectMeta{
 			// TODO: Check if the name is K8s valid.
-			Name: o.componentName + "-" + o.appName + "-" + command.Id, // TODO: Is there a function to return the standard odo names?
+			Name: o.componentName + "-" + o.appName + "-" + command.Id + "-" + dfutil.GenerateRandomString(3), // TODO: Is there a function to return the standard odo names?
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
@@ -147,10 +150,21 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	defer spinner.End(false)
 
 	var createdJob *batchv1.Job
-	createdJob, err = o.kubeClient.CreateJobs(job, "")
+	createdJob, err = o.kubeClient.CreateJob(job, "")
 	if err != nil {
 		return err
 	}
+
+	go util.StartSignalWatcher([]os.Signal{os.Interrupt}, func(receivedSignal os.Signal) {
+		klog.V(4).Infof("deleting the job: %q", createdJob.Name)
+		// allows to print the error on a new line
+		fmt.Println()
+		log.Errorf("user interrupt")
+		deleteErr := o.kubeClient.DeleteJob(createdJob.Name)
+		if deleteErr != nil {
+			klog.V(4).Infof("error while deleting the job %q; cause: %s", createdJob.Name, deleteErr.Error())
+		}
+	})
 
 	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
 	spinner.End(err == nil)
@@ -163,7 +177,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
 	} else {
 		fmt.Println("Execution output:")
-		logErr = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, -1)
+		logErr = util.DisplayLog(false, jobLogs, log.GetStdout(), o.componentName, -1)
 		if logErr != nil {
 			log.Warningf("unable to log error; cause: %s", logErr)
 		}

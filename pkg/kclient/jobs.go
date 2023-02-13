@@ -24,7 +24,7 @@ const (
 )
 
 // CreateJobs creates a K8s job to execute task
-func (c *Client) CreateJobs(job batchv1.Job, namespace string) (*batchv1.Job, error) {
+func (c *Client) CreateJob(job batchv1.Job, namespace string) (*batchv1.Job, error) {
 	if namespace == "" {
 		namespace = c.Namespace
 	}
@@ -76,14 +76,12 @@ func (c *Client) WaitForJobToComplete(job *batchv1.Job) (*batchv1.Job, error) {
 				if err != nil {
 					klog.V(4).Infof("unable to copy followLog to buffer: %s", err.Error())
 				}
-				if _, err = io.Copy(os.Stderr, buf); err != nil {
+				if _, err = io.Copy(os.Stdout, buf); err != nil {
 					klog.V(4).Infof("error copying logs to stdout: %s", err.Error())
 				}
-
 			}
 		}
 	}
-	return nil, nil
 }
 
 // GetJobLogs retrieves pod logs of a job
@@ -100,4 +98,8 @@ func (c *Client) GetJobLogs(job *batchv1.Job, containerName string) (io.ReadClos
 	}
 	pod := pods.Items[0]
 	return c.GetPodLogs(pod.Name, containerName, false)
+}
+
+func (c *Client) DeleteJob(jobName string) error {
+	return c.KubeClient.BatchV1().Jobs(c.Namespace).Delete(context.Background(), jobName, metav1.DeleteOptions{})
 }
