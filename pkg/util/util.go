@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -206,13 +205,16 @@ func CheckPathExists(path string) bool {
 // either empty or contains the devfile used.
 // TODO(feloy) sync with devfile library?
 func IsValidProjectDir(path string, devfilePath string) error {
-	files, err := ioutil.ReadDir(path)
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
-
-	if len(files) >= 1 {
-		for _, file := range files {
+	if len(entries) >= 1 {
+		for _, entry := range entries {
+			file, err := entry.Info()
+			if err != nil {
+				return err
+			}
 			fileName := file.Name()
 			devfilePath = strings.TrimPrefix(devfilePath, "./")
 			if !file.IsDir() && fileName == devfilePath {
@@ -824,7 +826,7 @@ func WriteToJSONFile(c interface{}, filename string) error {
 	if err = CreateIfNotExists(filename); err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(filename, data, 0600)
+	err = os.WriteFile(filename, data, 0600)
 	if err != nil {
 		return fmt.Errorf("unable to write data to file %v: %w", c, err)
 	}

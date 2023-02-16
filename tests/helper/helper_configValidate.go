@@ -2,7 +2,7 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
@@ -19,5 +19,5 @@ ComponentSettings:
 `, compName, projectName)
 	dir := filepath.Join(context, ".odo", "env")
 	MakeDir(dir)
-	Expect(ioutil.WriteFile(filepath.Join(dir, "env.yaml"), []byte(config), 0600)).To(BeNil())
+	Expect(os.WriteFile(filepath.Join(dir, "env.yaml"), []byte(config), 0600)).To(BeNil())
 }

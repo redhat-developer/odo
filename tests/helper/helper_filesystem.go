@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,7 +18,7 @@ import (
 
 // CreateNewContext create new empty temporary directory
 func CreateNewContext() string {
-	directory, err := ioutil.TempDir("", "")
+	directory, err := os.MkdirTemp("", "")
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Fprintf(GinkgoWriter, "Created dir: %s\n", directory)
 	return directory
@@ -166,14 +165,14 @@ func CopyExampleDevFile(devfilePath, targetDst string, devfileUpdaters ...Devfil
 
 // FileShouldContainSubstring check if file contains subString
 func FileShouldContainSubstring(file string, subString string) {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(string(data)).To(ContainSubstring(subString))
 }
 
 // FileShouldNotContainSubstring check if file does not contain subString
 func FileShouldNotContainSubstring(file string, subString string) {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(string(data)).NotTo(ContainSubstring(subString))
 }
@@ -182,12 +181,12 @@ func FileShouldNotContainSubstring(file string, subString string) {
 func ReplaceString(filename string, oldString string, newString string) {
 	fmt.Fprintf(GinkgoWriter, "Replacing \"%s\" with \"%s\" in %s\n", oldString, newString, filename)
 
-	f, err := ioutil.ReadFile(filename)
+	f, err := os.ReadFile(filename)
 	Expect(err).NotTo(HaveOccurred())
 
 	newContent := strings.ReplaceAll(string(f), oldString, newString)
 
-	err = ioutil.WriteFile(filename, []byte(newContent), 0600)
+	err = os.WriteFile(filename, []byte(newContent), 0600)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -196,7 +195,7 @@ func ReplaceString(filename string, oldString string, newString string) {
 func ReplaceStrings(filename string, oldStrings []string, newStrings []string) {
 	fmt.Fprintf(GinkgoWriter, "Replacing \"%v\" with \"%v\" in %s\n", oldStrings, newStrings, filename)
 
-	contentByte, err := ioutil.ReadFile(filename)
+	contentByte, err := os.ReadFile(filename)
 	Expect(err).NotTo(HaveOccurred())
 
 	newContent := string(contentByte)
@@ -204,7 +203,7 @@ func ReplaceStrings(filename string, oldStrings []string, newStrings []string) {
 		newContent = strings.ReplaceAll(newContent, oldStrings[i], newStrings[i])
 	}
 
-	err = ioutil.WriteFile(filename, []byte(newContent), 0600)
+	err = os.WriteFile(filename, []byte(newContent), 0600)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -213,12 +212,15 @@ func ReplaceStrings(filename string, oldStrings []string, newStrings []string) {
 func copyDir(src string, dst string, info os.FileInfo) error {
 
 	if info.IsDir() {
-		files, err := ioutil.ReadDir(src)
+		entries, err := os.ReadDir(src)
 		if err != nil {
 			return err
 		}
-
-		for _, file := range files {
+		for _, entry := range entries {
+			file, err := entry.Info()
+			if err != nil {
+				return err
+			}
 			dsrt := filepath.Join(src, file.Name())
 			ddst := filepath.Join(dst, file.Name())
 			if err := copyDir(dsrt, ddst, file); err != nil {
@@ -257,10 +259,11 @@ func CreateFileWithContent(path string, fileContent string) error {
 // directoryName is the name of the directory
 func ListFilesInDir(directoryName string) []string {
 	var filesInDirectory []string
-	files, err := ioutil.ReadDir(directoryName)
+	entries, err := os.ReadDir(directoryName)
 	Expect(err).ShouldNot(HaveOccurred())
-
-	for _, file := range files {
+	for _, entry := range entries {
+		file, err := entry.Info()
+		Expect(err).ShouldNot(HaveOccurred())
 		filesInDirectory = append(filesInDirectory, file.Name())
 	}
 	return filesInDirectory
@@ -278,7 +281,7 @@ func VerifyFileExists(filename string) bool {
 
 // ReadFile reads the file from the filePath
 func ReadFile(filePath string) (string, error) {
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	}
@@ -291,7 +294,7 @@ func CreateSimpleFile(context, filePrefix, fileExtension string) (string, string
 
 	FilePath := filepath.Join(context, filePrefix+RandString(10)+fileExtension)
 	content := []byte(RandString(10))
-	err := ioutil.WriteFile(FilePath, content, 0600)
+	err := os.WriteFile(FilePath, content, 0600)
 	Expect(err).NotTo(HaveOccurred())
 
 	return FilePath, string(content)

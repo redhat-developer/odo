@@ -2,7 +2,6 @@ package segment
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -15,7 +14,7 @@ import (
 )
 
 func TestGetRegistryOptions(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	tempConfigFile, err := os.CreateTemp("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
 	}

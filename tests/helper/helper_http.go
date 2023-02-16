@@ -3,7 +3,7 @@ package helper
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -36,7 +36,7 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == expectedCode {
-			body, _ = ioutil.ReadAll(resp.Body)
+			body, _ = io.ReadAll(resp.Body)
 			if strings.Contains(string(body), match) {
 				return
 			}

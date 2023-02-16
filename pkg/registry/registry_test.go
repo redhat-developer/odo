@@ -2,7 +2,6 @@ package registry
 
 import (
 	"context"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,7 +19,7 @@ import (
 )
 
 func TestGetDevfileRegistries(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	tempConfigFile, err := os.CreateTemp("", "odoconfig")
 	if err != nil {
 		t.Fatal("Fail to create temporary config file")
 	}

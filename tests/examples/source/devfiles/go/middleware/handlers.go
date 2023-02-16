@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"go-postgres/models"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"go-postgres/models"
 
 	"github.com/gorilla/mux"
 
@@ -177,7 +178,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//------------------------- handler functions ----------------
+// ------------------------- handler functions ----------------
 // insert one user in the DB
 func insertUser(user models.User) int64 {
 
