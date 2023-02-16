@@ -250,7 +250,7 @@ func getPodTemplateSpec(globalAttributes attributes.Attributes, components []v1.
 			Volumes:        podTemplateSpecParams.Volumes,
 		},
 	}
-	if len(globalAttributes) != 0 && needsPodOverrides(globalAttributes, components) {
+	if needsPodOverrides(globalAttributes, components) {
 		patchedPodTemplateSpec, err := applyPodOverrides(globalAttributes, components, podTemplateSpec)
 		if err != nil {
 			return nil, err
