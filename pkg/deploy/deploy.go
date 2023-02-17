@@ -148,17 +148,17 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	//	Make sure there are no existing jobs
 	checkAndDeleteExistingJob := func() {
-		items, err := o.kubeClient.ListJobs(odolabels.GetSelector(o.componentName, o.appName, odolabels.ComponentDeployMode, false))
-		if err != nil {
-			klog.V(4).Infof("failed to list jobs; cause: %s", err.Error())
+		items, dErr := o.kubeClient.ListJobs(odolabels.GetSelector(o.componentName, o.appName, odolabels.ComponentDeployMode, false))
+		if dErr != nil {
+			klog.V(4).Infof("failed to list jobs; cause: %s", dErr.Error())
 			return
 		}
 		partialJobName := o.componentName + "-" + o.appName + "-" + command.Id
 		for _, item := range items.Items {
 			if strings.Contains(item.Name, partialJobName) {
-				err = o.kubeClient.DeleteJob(item.Name)
-				if err != nil {
-					klog.V(4).Infof("failed to delete job %q; cause: %s", item.Name, err.Error())
+				dErr = o.kubeClient.DeleteJob(item.Name)
+				if dErr != nil {
+					klog.V(4).Infof("failed to delete job %q; cause: %s", item.Name, dErr.Error())
 				}
 			}
 		}
@@ -183,10 +183,8 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	// Print the tip to use `odo logs` if the command is still running after 1 minute
 	go func() {
-		select {
-		case <-time.After(1 * time.Minute):
-			log.Info("\nTip: Run `odo logs --deploy --follow` to get the logs of the command output.")
-		}
+		time.Sleep(1 * time.Minute)
+		log.Info("\nTip: Run `odo logs --deploy --follow` to get the logs of the command output.")
 	}()
 
 	// Wait for the command to complete execution
@@ -203,7 +201,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 			log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
 		}
 		fmt.Println("Execution output:")
-		util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, 100)
+		_ = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, 100)
 
 	}
 

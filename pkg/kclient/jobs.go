@@ -50,24 +50,23 @@ func (c *Client) WaitForJobToComplete(job *batchv1.Job) (*batchv1.Job, error) {
 	defer w.Stop()
 
 	for {
-		select {
-		case val, ok := <-w.ResultChan():
-			if !ok {
-				break
+		val, ok := <-w.ResultChan()
+		if !ok {
+			break
+		}
+		wJob := val.Object.(*batchv1.Job)
+		for _, condition := range wJob.Status.Conditions {
+			if condition.Type == batchv1.JobFailed {
+				klog.V(4).Infof("Failed to execute the job, reason: %s", condition.String())
+				// we return the job as it is in case the caller requires it for further investigation.
+				return wJob, fmt.Errorf("failed to execute the job")
 			}
-			wJob := val.Object.(*batchv1.Job)
-			for _, condition := range wJob.Status.Conditions {
-				if condition.Type == batchv1.JobFailed {
-					klog.V(4).Infof("Failed to execute the job, reason: %s", condition.String())
-					// we return the job as it is in case the caller requires it for further investigation.
-					return wJob, fmt.Errorf("failed to execute the job")
-				}
-				if condition.Type == batchv1.JobComplete {
-					return wJob, nil
-				}
+			if condition.Type == batchv1.JobComplete {
+				return wJob, nil
 			}
 		}
 	}
+	return nil, nil
 }
 
 // GetJobLogs retrieves pod logs of a job
