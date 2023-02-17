@@ -51,6 +51,9 @@ export default function Home(): JSX.Element {
           </div>
         </div>
         <div className={clsx(styles.overview, styles.overviewAlt)}>
+          <div className="container text--center margin-top--md" style={{marginBottom:'50px'}}>
+            <video className={styles.loopVideo} autoPlay loop muted style={{width:'85%'}}><source src="/video/odo-preview.hd.webm" type="video/webm"/></video>
+          </div>
           <div className="container text--center margin-top--md">
             <div className="row">
               <div className="col col--5 col--offset-1">
