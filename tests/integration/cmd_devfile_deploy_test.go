@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -487,28 +488,65 @@ CMD ["npm", "start"]
 		})
 	}
 	When("deploying devfile with exec", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
 		When("using devfile that works", func() {
-			BeforeEach(func() {
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec.yaml"),
-					path.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
-			})
-			It("should print the output of exec when odo deploy is run", func() {
+			It("should complete the command execution successfully", func() {
 				out := helper.Cmd("odo", "deploy").ShouldPass().Out()
-				helper.MatchAllInOutput(string(out), []string{"Executing command in container (command: deploy-exec)", "Executing \"echo Hello world\"", "Execution output:"})
+				helper.MatchAllInOutput(string(out), []string{"Executing command in container (command: deploy-exec)", "Executing \"echo Hello world\""})
 			})
 		})
-		When("using devfile with invalid data", func() {
+		When("using devfile with a long running command in exec", func() {
 			BeforeEach(func() {
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec-fail.yaml"),
-					path.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: sleep 62; echo hello world`)
 			})
-			It("should start printing log after 1 minute of execution", func() {
-				cmd := helper.Cmd("odo", "deploy").WithTerminate(70, nil)
-				Eventually(cmd.ShouldRun().Out(), 65, 1).Should(ContainSubstring("Waiting to complete execution:"))
+			It("should execute the command execution successfully and print the tip to run odo logs after 1 minute of execution", func() {
+				out := helper.Cmd("odo", "deploy").ShouldPass().Out()
+				Expect(out).To(ContainSubstring("Tip: Run `odo logs --deploy --follow` to get the logs of the command output."))
+			})
+		})
+		When("using devfile where the exec command fails to run", func() {
+			BeforeEach(func() {
+				// the following new commandLine ensures "hei" is printed on 99 lines of the output and the last line is a failure of running a non-existent binary
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: for _ in {1..100}; do echo hei; done; run-non-existent-binary`)
+			})
+
+			It("should print the last 100 lines of the log to the output", func() {
+				out, errOut := helper.Cmd("odo", "deploy").ShouldFail().OutAndErr()
+				Expect(out).To(ContainSubstring("Execution output:"))
+				// ensuring only last 100 lines are printed
+				Expect(strings.Count(errOut, "hei")).To(Equal(99))
+				Expect(errOut).To(ContainSubstring("/bin/sh: run-non-existent-binary: command not found"))
+			})
+		})
+		When("the deploy command abruptly terminates", func() {
+			var (
+				getJobCmd = []string{"get", "job", "-ojsonpath='{.items[*].metadata.name}'"}
+			)
+			var oldJob string
+			BeforeEach(func() {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `image: registry.access.redhat.com/ubi8/nodejs-14:latest`, `image: registry.access.redhat.com/ubi8/nodejs-does-not-exist-14:latest`)
+				helper.Cmd("odo", "deploy").WithTerminate(2, nil).ShouldRun()
+				// we assume that at this point a single job would be running in a given namespace
+				oldJob = string(commonVar.CliRunner.Run(getJobCmd...).Out.Contents())
+
+			})
+			When("odo deploy command is run again", func() {
+				BeforeEach(func() {
+					// Restore the Devfile; this is not a required step to test, but we do it to not terminate the command again
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `image: registry.access.redhat.com/ubi8/nodejs-does-not-exist-14:latest`, `image: registry.access.redhat.com/ubi8/nodejs-14:latest`)
+					helper.Cmd("odo", "deploy").ShouldPass()
+				})
+				It("should ensure old jobs are deleted before creating a new job", func() {
+					// we assume that at this point a single job would be running in a given namespace
+					currentJob := string(commonVar.CliRunner.Run(getJobCmd...).Out.Contents())
+					Expect(currentJob).ToNot(ContainSubstring(oldJob))
+				})
+
 			})
 		})
 	})

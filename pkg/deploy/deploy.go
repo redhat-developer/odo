@@ -135,18 +135,18 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 			},
 			BackoffLimit:   pointer.Int32(2),
 			CompletionMode: &completionMode,
-			// Setting this as a backup in case DeleteJob fails
+			// we delete jobs before exiting this function but setting this as a backup in case DeleteJob fails
 			TTLSecondsAfterFinished: pointer.Int32(60),
 		},
 	}
 
 	// Set labels and annotations
-
 	job.SetLabels(odolabels.GetLabels(o.componentName, o.appName, component.GetComponentRuntimeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()), odolabels.ComponentDeployMode, false))
 	job.Annotations = map[string]string{}
 	odolabels.AddCommonAnnotations(job.Annotations)
 	odolabels.SetProjectType(job.Annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
 
+	//	Make sure there are no existing jobs
 	checkAndDeleteExistingJob := func() {
 		items, err := o.kubeClient.ListJobs(odolabels.GetSelector(o.componentName, o.appName, odolabels.ComponentDeployMode, false))
 		if err != nil {
@@ -181,12 +181,15 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		}
 	}()
 
+	// Print the tip to use `odo logs` if the command is still running after 1 minute
 	go func() {
 		select {
 		case <-time.After(1 * time.Minute):
 			log.Info("\nTip: Run `odo logs --deploy --follow` to get the logs of the command output.")
 		}
 	}()
+
+	// Wait for the command to complete execution
 	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
 	if err != nil {
 		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
@@ -194,6 +197,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	spinner.End(err == nil)
 
 	if err != nil {
+		// Print the job logs if the job failed
 		jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
 		if logErr != nil {
 			log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
