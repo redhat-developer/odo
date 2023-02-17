@@ -2,15 +2,13 @@ package integration
 
 import (
 	"fmt"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
-
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -512,14 +510,14 @@ CMD ["npm", "start"]
 		When("using devfile where the exec command fails to run", func() {
 			BeforeEach(func() {
 				// the following new commandLine ensures "hei" is printed on 99 lines of the output and the last line is a failure of running a non-existent binary
-				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: for _ in {1..100}; do echo hei; done; run-non-existent-binary`)
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: for i in {1..100}; do echo counter $i counter; done; run-non-existent-binary`)
 			})
 
 			It("should print the last 100 lines of the log to the output", func() {
 				out, errOut := helper.Cmd("odo", "deploy").ShouldFail().OutAndErr()
 				Expect(out).To(ContainSubstring("Execution output:"))
-				// ensuring only last 100 lines are printed
-				Expect(strings.Count(errOut, "hei")).To(Equal(99))
+				// checking 'counter 1 counter' does not exist in the log output ensures that only the last 100 lines are printed
+				Expect(errOut).ToNot(ContainSubstring("counter 1 counter"))
 				Expect(errOut).To(ContainSubstring("/bin/sh: run-non-existent-binary: command not found"))
 			})
 		})
