@@ -23,7 +23,7 @@ export default function Home(): JSX.Element {
   className={styles.logo}
   src={useBaseUrl('/img/logo.png')}
   />
-              <span className={styles.bannerTitleTextHtml}>Fast <b>iterative</b> application <b>development</b> deployed immediately to your <b>kubernetes</b> cluster</span>
+                <span className={styles.bannerTitleTextHtml}>Simplified <b>container</b>-based application <b>development</b></span>
             </h1>
             <div className={styles.indexCtas}>
               <Link className="button button--primary" to="/docs/introduction">
