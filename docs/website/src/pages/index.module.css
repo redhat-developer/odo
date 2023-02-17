@@ -46,7 +46,7 @@
 
 /* CSS for features */
 .overview {
-  padding: 80px 0px;
+  padding: 10px 0px;
 }
 
 .overviewAlt {
@@ -75,7 +75,7 @@
   font-weight: 600;
   text-align: center;
   font-size: var(--ifm-h3-font-size);
-  padding: 30px;
+  padding: 20px;
   margin: 0px auto;
 }
 
@@ -91,7 +91,7 @@
 
 .banner {
   background-color: #2b3137;
-  padding: 48px;
+  padding: 38px;
 }
 
 .bannerInner {
@@ -113,7 +113,7 @@
 
 .logo {
   float: right;
-  max-width: 250px;
+  max-width: 200px;
 }
 
 
@@ -123,7 +123,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .indexCtas a {
