@@ -112,7 +112,6 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	job := batchv1.Job{
 		TypeMeta: generator.GetTypeMeta(kclient.JobsKind, kclient.JobsAPIVersion),
 		ObjectMeta: metav1.ObjectMeta{
-			// TODO: Check if the name is K8s valid.
 			Name: o.componentName + "-" + o.appName + "-" + command.Id + "-" + dfutil.GenerateRandomString(3), // TODO: Is there a function to return the standard odo names?
 		},
 		Spec: batchv1.JobSpec{
