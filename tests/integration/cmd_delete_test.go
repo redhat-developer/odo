@@ -132,11 +132,16 @@ var _ = Describe("odo delete command tests", func() {
 		title       string
 		devfileName string
 		setupFunc   func()
+		// TODO(pvala): Find a better solution to renaming a resource when the data is in a different location
+		renameServiceFunc func(newName string)
 	}{
-		//{
-		//	title:       "a component is bootstrapped",
-		//	devfileName: "devfile-deploy-with-multiple-resources.yaml",
-		//},
+		{
+			title:       "a component is bootstrapped",
+			devfileName: "devfile-deploy-with-multiple-resources.yaml",
+			renameServiceFunc: func(newName string) {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), fmt.Sprintf("name: %s", serviceName), fmt.Sprintf("name: %s", newName))
+			},
+		},
 		{
 			title:       "a component is bootstrapped using a devfile.yaml with URI-referenced Kubernetes components",
 			devfileName: "devfile-deploy-with-multiple-resources-and-k8s-uri.yaml",
@@ -144,6 +149,9 @@ var _ = Describe("odo delete command tests", func() {
 				helper.CopyExample(
 					filepath.Join("source", "devfiles", "nodejs", "kubernetes", "devfile-deploy-with-multiple-resources-and-k8s-uri"),
 					filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy-with-multiple-resources-and-k8s-uri"))
+			},
+			renameServiceFunc: func(newName string) {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy-with-multiple-resources-and-k8s-uri", "outerloop-deploy-2.yaml"), fmt.Sprintf("name: %s", serviceName), fmt.Sprintf("name: %s", newName))
 			},
 		},
 	} {
@@ -456,7 +464,7 @@ var _ = Describe("odo delete command tests", func() {
 							var changedServiceName, stdout string
 							BeforeEach(func() {
 								changedServiceName = "my-changed-cs"
-								helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), fmt.Sprintf("name: %s", serviceName), fmt.Sprintf("name: %s", changedServiceName))
+								ctx.renameServiceFunc(changedServiceName)
 
 								args := []string{"delete", "component"}
 								if withFiles {
@@ -467,7 +475,7 @@ var _ = Describe("odo delete command tests", func() {
 								}
 								stdout = helper.Cmd("odo", append(args, "-f")...).ShouldPass().Out()
 							})
-							FIt("should delete the component", func() {
+							It("should delete the component", func() {
 								if runningIn == "dev" {
 									By("outputting that there are no resources to be deleted", func() {
 										Expect(stdout).To(ContainSubstring("No resource found for component %q", cmpName))
@@ -477,7 +485,7 @@ var _ = Describe("odo delete command tests", func() {
 										Expect(stdout).To(SatisfyAll(
 											ContainSubstring("There are still resources left in the cluster that might be belonging to the deleted component"),
 											Not(ContainSubstring(changedServiceName)),
-											ContainSubstring(serviceName),
+											ContainSubstring(fmt.Sprintf("Service: %s", serviceName)),
 											ContainSubstring("odo delete component --name %s --namespace %s", cmpName, commonVar.Project),
 										))
 									})
