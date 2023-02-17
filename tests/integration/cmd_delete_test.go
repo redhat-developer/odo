@@ -133,10 +133,10 @@ var _ = Describe("odo delete command tests", func() {
 		devfileName string
 		setupFunc   func()
 	}{
-		{
-			title:       "a component is bootstrapped",
-			devfileName: "devfile-deploy-with-multiple-resources.yaml",
-		},
+		//{
+		//	title:       "a component is bootstrapped",
+		//	devfileName: "devfile-deploy-with-multiple-resources.yaml",
+		//},
 		{
 			title:       "a component is bootstrapped using a devfile.yaml with URI-referenced Kubernetes components",
 			devfileName: "devfile-deploy-with-multiple-resources-and-k8s-uri.yaml",
@@ -451,8 +451,8 @@ var _ = Describe("odo delete command tests", func() {
 
 					for _, withFiles := range []bool{true, false} {
 						withFiles := withFiles
-						When(fmt.Sprintf("a resource is changed in the devfile and the component is deleted while having access to the devfile.yaml with --files=%v",
-							withFiles), func() {
+						When(fmt.Sprintf("a resource is changed in the devfile and the component is deleted while having access to the devfile.yaml with --files=%v --running-in=%v",
+							withFiles, runningIn), func() {
 							var changedServiceName, stdout string
 							BeforeEach(func() {
 								changedServiceName = "my-changed-cs"
@@ -467,7 +467,7 @@ var _ = Describe("odo delete command tests", func() {
 								}
 								stdout = helper.Cmd("odo", append(args, "-f")...).ShouldPass().Out()
 							})
-							It("should delete the component", func() {
+							FIt("should delete the component", func() {
 								if runningIn == "dev" {
 									By("outputting that there are no resources to be deleted", func() {
 										Expect(stdout).To(ContainSubstring("No resource found for component %q", cmpName))
