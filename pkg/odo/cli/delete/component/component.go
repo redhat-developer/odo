@@ -247,6 +247,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	)
 
 	log.Info("Searching resources to delete, please wait...")
+
 	if o.clientset.KubernetesClient != nil {
 		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(
 			*devfileObj, appName, componentName, o.runningIn)
@@ -261,7 +262,23 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		namespace = odocontext.GetNamespace(ctx)
 		hasClusterResources = len(clusterResources) != 0
 	}
-
+	defer func() {
+		//	This defer func ensures we list the remaining cluster resources even if no resources are found in the devfile.
+		if o.clientset.KubernetesClient == nil {
+			return
+		}
+		// Get a list of component's resources present on the cluster
+		deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace, o.runningIn)
+		// Get a list of component's resources absent from the devfile, but present on the cluster
+		remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
+		if len(remainingResources) != 0 {
+			log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
+			for _, resource := range remainingResources {
+				fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+			}
+			log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
+		}
+	}()
 	if o.clientset.PodmanClient != nil {
 		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName, o.runningIn)
 		if err != nil {
@@ -306,10 +323,6 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 		if hasClusterResources {
 			spinner := log.Spinnerf("Deleting resources from cluster")
-			// Get a list of component's resources present on the cluster
-			deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace, o.runningIn)
-			// Get a list of component's resources absent from the devfile, but present on the cluster
-			remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
 
 			// if innerloop deployment resource is present, then execute preStop events
 			if isClusterInnerLoopDeployed {
@@ -328,13 +341,6 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			spinner.End(true)
 			log.Infof("The component %q is successfully deleted from namespace %q\n", componentName, namespace)
 
-			if len(remainingResources) != 0 {
-				log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
-				for _, resource := range remainingResources {
-					fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
-				}
-				log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
-			}
 		}
 
 		if hasPodmanResources {

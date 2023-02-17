@@ -729,4 +729,19 @@ var _ = Describe("odo delete command tests", func() {
 			})
 		})
 	}
+	When("running odo deploy for an exec command bound to fail", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec-fail.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+			helper.Cmd("odo", "deploy").WithTerminate(10, nil).ShouldRun()
+		})
+		It("should print the job in the list of resources to be deleted with named delete command", func() {
+			out := helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
+			Expect(out).To(SatisfyAll(
+				ContainSubstring("There are still resources left in the cluster that might be belonging to the deleted component."),
+				ContainSubstring(fmt.Sprintf("Job: %s-app-deploy-exec", cmpName))))
+		})
+	})
 })
