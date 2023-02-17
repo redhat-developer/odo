@@ -1,11 +1,9 @@
 package kclient
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -50,7 +48,7 @@ func (c *Client) WaitForJobToComplete(job *batchv1.Job) (*batchv1.Job, error) {
 		return nil, fmt.Errorf("unable to watch job: %w", err)
 	}
 	defer w.Stop()
-	timeout := time.After(executeJobTimeout)
+
 	for {
 		select {
 		case val, ok := <-w.ResultChan():
@@ -66,22 +64,6 @@ func (c *Client) WaitForJobToComplete(job *batchv1.Job) (*batchv1.Job, error) {
 				}
 				if condition.Type == batchv1.JobComplete {
 					return wJob, nil
-				}
-			}
-		case <-timeout:
-			// Start printing log if the job does not reach completion even after a certain time has passed
-			timeout = time.After(executeJobTimeout)
-			rd, err := c.GetJobLogs(job, "")
-			if err != nil {
-				fmt.Println("\nWaiting to complete execution:", err.Error())
-			} else {
-				buf := new(bytes.Buffer)
-				_, err = io.Copy(buf, rd)
-				if err != nil {
-					klog.V(4).Infof("unable to copy followLog to buffer: %s", err.Error())
-				}
-				if _, err = io.Copy(os.Stdout, buf); err != nil {
-					klog.V(4).Infof("error copying logs to stdout: %s", err.Error())
 				}
 			}
 		}

@@ -3,10 +3,9 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
@@ -182,27 +181,26 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		}
 	}()
 
-	_, jobErr := o.kubeClient.WaitForJobToComplete(createdJob)
-	if jobErr != nil {
+	go func() {
+		select {
+		case <-time.After(1 * time.Minute):
+			log.Info("\nTip: Run `odo logs --deploy --follow` to get the logs of the command output.")
+		}
+	}()
+	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
+	if err != nil {
 		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
 	}
 	spinner.End(err == nil)
 
-	jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
-	if logErr != nil {
-		log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
-	} else {
-		var logOut []byte
-		logOut, logErr := io.ReadAll(jobLogs)
+	if err != nil {
+		jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
 		if logErr != nil {
-			klog.V(4).Infof("failed to read logs; cause: %s", logErr.Error())
+			log.Warningf("failed to fetch the logs of execution; cause: %s", logErr)
 		}
-		if jobErr != nil {
-			fmt.Println("Execution output:")
-			fmt.Fprintf(os.Stderr, string(logOut))
-		} else {
-			klog.V(1).Infof("Execution output:\n%s", string(logOut))
-		}
+		fmt.Println("Execution output:")
+		util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, 100)
+
 	}
 
 	return err
