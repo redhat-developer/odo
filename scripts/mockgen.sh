@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 
-# Use this script to regererate generated mock files
+# Use this script to regenerate generated mock files
 # after changing signatures of interfaces in these packages
+
+# check if mockgen is installed
+mockgen --version
+if [ $? -eq 0 ]; then
+  echo "✓ mockgen is installed"
+else
+  echo "mockgen not found; installing it..."
+  go install github.com/golang/mock/mockgen@v1.6.0
+  echo "✓ mockgen is installed"
+fi
+
 
 mockgen -source=pkg/kclient/interface.go \
     -package kclient \
