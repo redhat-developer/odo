@@ -23,7 +23,7 @@ export default function Home(): JSX.Element {
   className={styles.logo}
   src={useBaseUrl('/img/logo.png')}
   />
-              <span className={styles.bannerTitleTextHtml}>Fast <b>iterative</b> application <b>development</b> deployed immediately to your <b>kubernetes</b> cluster</span>
+                <span className={styles.bannerTitleTextHtml}>Simplified <b>container</b>-based application <b>development</b></span>
             </h1>
             <div className={styles.indexCtas}>
               <Link className="button button--primary" to="/docs/introduction">
@@ -47,10 +47,13 @@ export default function Home(): JSX.Element {
         </div>
         <div className={clsx(styles.title, styles.titleDark)}>
           <div className={styles.titleInner}>
-            Version 3 of odo has just landed 🚀<br></br> <Link to="/docs/overview/installation">Install</Link> and <Link to="/docs/user-guides/quickstart/">try out</Link> our new features ⭐️
+            <Link to="/docs/overview/installation">Install</Link> and <Link to="/docs/user-guides/quickstart/">try out</Link> our features ⭐️
           </div>
         </div>
         <div className={clsx(styles.overview, styles.overviewAlt)}>
+          <div className="container text--center margin-top--md" style={{marginBottom:'50px'}}>
+            <video className={styles.loopVideo} autoPlay loop muted style={{width:'85%'}}><source src="/video/odo-preview.hd.webm" type="video/webm"/></video>
+          </div>
           <div className="container text--center margin-top--md">
             <div className="row">
               <div className="col col--5 col--offset-1">
