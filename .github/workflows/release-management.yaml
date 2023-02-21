@@ -100,8 +100,8 @@ jobs:
       - name: Create and push branch
         id: push_branch
         run: |
-          git switch -c blog_post_${TAG_NAME}
-          git push -u origin blog_post_${TAG_NAME} 
+          git switch -c release_pr_${TAG_NAME}
+          git push -u origin release_pr_${TAG_NAME}
           if git status --porcelain | grep build/VERSION; then
             git add build/VERSION
             git commit -m "Set version in build/VERSION file"
