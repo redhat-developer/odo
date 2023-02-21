@@ -105,6 +105,8 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		return fmt.Errorf("could not find the component")
 	}
 	containerComp := containerComps[0]
+	containerComp.Command = []string{"/bin/sh"}
+	containerComp.Args = getCmdline(command)
 
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component
@@ -118,21 +120,13 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
-						{
-							Name:  containerComp.Name,
-							Image: containerComp.Image,
-							// TODO: Should we use the command and args already defined inside the container component?
-							// TODO: What if the 'sh' binary is not always available?
-							Command:         []string{"/bin/sh"},
-							Args:            getCmdline(command),
-							ImagePullPolicy: "IfNotPresent",
-						},
+						containerComp,
 					},
-					// Set the policy to `Never` so that it keeps the pod around and they can be used to debug.
+					// Set the policy to `Never` so that it keeps the pod around, and they can be used to debug.
 					RestartPolicy: "Never",
 				},
 			},
-			BackoffLimit:   pointer.Int32(2),
+			BackoffLimit:   pointer.Int32(1),
 			CompletionMode: &completionMode,
 			// we delete jobs before exiting this function but setting this as a backup in case DeleteJob fails
 			TTLSecondsAfterFinished: pointer.Int32(60),
