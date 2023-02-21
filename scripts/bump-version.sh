@@ -34,6 +34,15 @@ echo "* Bumping version in Dockerfile.rhel"
 sed -i "s/\(version=\).*/\1${NEW_VERSION}/g" Dockerfile.rhel
 check_version Dockerfile.rhel
 
+echo "* Bumping version in documentation sample outputs"
+# globstar: allows the '**' to recursively try to find file and directories
+# nullglob: filename patterns that don't match any filenames are expanded to nothing rather than remaining unexpanded.
+shopt -s globstar nullglob
+for file in ./docs/website/docs/**/docs-mdx/**/*.mdx; do
+  sed -i 's/\(odo version: v\).*/\1'"${NEW_VERSION}"'/g' "$file"
+done
+
+echo
 echo "****************************************************************************************"
 echo "* Don't forget to update homebrew package at https://github.com/kadel/homebrew-odo ! *"
 echo "****************************************************************************************"
