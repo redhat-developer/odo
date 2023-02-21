@@ -63,6 +63,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 						helper.ExpectString(ctx, "Enter component name")
 						helper.SendLine(ctx, "my-app")
 
+						helper.ExpectString(ctx, "Pod is Pending")
+						commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "my-app")
+
 						helper.ExpectString(ctx, "[Ctrl+c] - Exit")
 						ctx.StopCommand()
 					})
@@ -95,6 +98,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 						helper.ExpectString(ctx, "Enter component name")
 						helper.SendLine(ctx, "my-app")
+
+						helper.ExpectString(ctx, "Pod is Pending")
+						commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "my-app")
 
 						helper.ExpectString(ctx, "[Ctrl+c] - Exit")
 						ctx.StopCommand()
@@ -136,6 +142,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 						helper.ExpectString(ctx, "Enter component name")
 						helper.SendLine(ctx, "my-app")
 
+						helper.ExpectString(ctx, "Pod is Pending")
+						commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "my-app")
+
 						helper.ExpectString(ctx, "[Ctrl+c] - Exit")
 						ctx.StopCommand()
 					})
@@ -170,6 +179,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
+
+					helper.ExpectString(ctx, "Pod is Pending")
+					commonVar.CliRunner.EnsurePodIsUp(commonVar.Project, "my-app")
 
 					helper.ExpectString(ctx, "Building your application in container")
 					ctx.StopCommand()
