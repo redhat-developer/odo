@@ -6,18 +6,20 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	
+	dfutil "github.com/devfile/library/v2/pkg/util"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
+	
+	odogenerator "github.com/redhat-developer/odo/pkg/libdevfile/generator"
+	
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
-	dfutil "github.com/devfile/library/v2/pkg/util"
 	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
-
+	
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -104,41 +106,36 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	if len(containerComps) != 1 {
 		return fmt.Errorf("could not find the component")
 	}
+	
 	containerComp := containerComps[0]
 	containerComp.Command = []string{"/bin/sh"}
 	containerComp.Args = getCmdline(command)
-
+	
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component
+	jobName := o.componentName + "-" + o.appName + "-" + command.Id + "-" + dfutil.GenerateRandomString(3) // TODO: Is there a function to return the standard odo names?
 	completionMode := batchv1.CompletionMode("Indexed")
-	job := batchv1.Job{
-		TypeMeta: generator.GetTypeMeta(kclient.JobsKind, kclient.JobsAPIVersion),
-		ObjectMeta: metav1.ObjectMeta{
-			Name: o.componentName + "-" + o.appName + "-" + command.Id + "-" + dfutil.GenerateRandomString(3), // TODO: Is there a function to return the standard odo names?
-		},
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						containerComp,
-					},
-					// Set the policy to `Never` so that it keeps the pod around, and they can be used to debug.
-					RestartPolicy: "Never",
-				},
+	jobParams := odogenerator.JobParams{
+		PodTemplateSpec: corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{containerComp},
+				// Setting the restart policy to "never" so that pods are kept around after the job finishes execution; this is helpful in obtaining logs to debug.
+				RestartPolicy: "Never",
 			},
-			BackoffLimit:   pointer.Int32(1),
-			CompletionMode: &completionMode,
-			// we delete jobs before exiting this function but setting this as a backup in case DeleteJob fails
+		},
+		SpecParams: odogenerator.JobSpecParams{
+			CompletionMode:          &completionMode,
 			TTLSecondsAfterFinished: pointer.Int32(60),
+			BackOffLimit:            pointer.Int32(1),
 		},
 	}
-
+	job := odogenerator.GetJob(jobName, jobParams)
 	// Set labels and annotations
 	job.SetLabels(odolabels.GetLabels(o.componentName, o.appName, component.GetComponentRuntimeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()), odolabels.ComponentDeployMode, false))
 	job.Annotations = map[string]string{}
 	odolabels.AddCommonAnnotations(job.Annotations)
 	odolabels.SetProjectType(job.Annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
-
+	
 	//	Make sure there are no existing jobs
 	checkAndDeleteExistingJob := func() {
 		items, dErr := o.kubeClient.ListJobs(odolabels.GetSelector(o.componentName, o.appName, odolabels.ComponentDeployMode, false))
@@ -157,11 +154,11 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		}
 	}
 	checkAndDeleteExistingJob()
-
-	log.Sectionf("Executing command in container (command: %s)", command.Id)
-	spinner := log.Spinnerf("Executing %q", command.Exec.CommandLine)
+	
+	log.Sectionf("Executing command:")
+	spinner := log.Spinnerf("Executing command in container (command: %s)", command.Id)
 	defer spinner.End(false)
-
+	
 	var createdJob *batchv1.Job
 	createdJob, err = o.kubeClient.CreateJob(job, "")
 	if err != nil {
@@ -190,10 +187,6 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	done <- struct{}{}
 	if err != nil {
 		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
-	}
-	spinner.End(err == nil)
-
-	if err != nil {
 		// Print the job logs if the job failed
 		jobLogs, logErr := o.kubeClient.GetJobLogs(createdJob, command.Exec.Component)
 		if logErr != nil {
@@ -201,8 +194,9 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		}
 		fmt.Println("Execution output:")
 		_ = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, 100)
-
 	}
+	
+	spinner.End(err == nil)
 
 	return err
 }
