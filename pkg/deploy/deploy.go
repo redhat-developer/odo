@@ -180,14 +180,20 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		}
 	}()
 
+	var done = make(chan struct{}, 1)
 	// Print the tip to use `odo logs` if the command is still running after 1 minute
 	go func() {
-		time.Sleep(1 * time.Minute)
-		log.Info("\nTip: Run `odo logs --deploy --follow` to get the logs of the command output.")
+		select {
+		case <-time.After(1 * time.Minute):
+			log.Info("\nTip: Run `odo logs --deploy --follow` to get the logs of the command output.")
+		case <-done:
+			return
+		}
 	}()
 
 	// Wait for the command to complete execution
 	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
+	done <- struct{}{}
 	if err != nil {
 		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
 	}
