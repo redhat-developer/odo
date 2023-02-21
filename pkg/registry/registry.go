@@ -2,8 +2,11 @@ package registry
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -56,7 +59,87 @@ func (o RegistryClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([
 // DownloadStarterProject downloads a starter project referenced in devfile
 // This will first remove the content of the contextDir
 func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
-	return DownloadStarterProject(starterProject, decryptedToken, contextDir, verbose)
+	// Let the project be downloaded in a temp directory
+	// Fetch the contents of the temp directory
+	// Fetch the contents of the contextDir
+	// Compare the 2 contents
+	// Case 1: If there is devfile in the temp directory, remove everything from contextDir and copy the content of temp directory in contextDir; klog about it.
+	// Case 2: If there is no devfile, but contents of the temp directory match some contents of the contextDir, copy contents of the temp dir into a dir named CONFLICT_STARTER_PROJECT; warn about this
+	// Case 3: If there is no devfile, and no contents of the temp dir matching contents of the contextDir, copy contents of the temp dir into contextDir.
+	starterProjectTmpDir, err := os.MkdirTemp("", "odostarterproject")
+	if err != nil {
+		return err
+	}
+	downloadStarterProjectErr := DownloadStarterProject(starterProject, decryptedToken, starterProjectTmpDir, verbose)
+	if downloadStarterProjectErr != nil {
+		return err
+	}
+
+	// Case 1
+	if containsDevfile, _ := location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); containsDevfile {
+		_ = os.RemoveAll(contextDir)
+		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
+		if copyErr != nil {
+			// TODO: probably need to cleanup here.
+			return copyErr
+		}
+		return nil
+	}
+	conflictingFiles, cerr := isConflicting(starterProjectTmpDir, contextDir)
+	if cerr != nil {
+		return cerr
+	}
+	// Case 3
+	if len(conflictingFiles) == 0 {
+		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
+		if copyErr != nil {
+			// TODO: probably need to cleanup here.
+			return copyErr
+		}
+	} else {
+		// Case 2
+		conflictDirName := "CONFLICT_STARTER_PROJECT"
+		err = os.Mkdir(conflictDirName, 0750)
+		if err != nil {
+			return err
+		}
+		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, conflictDirName)
+		if copyErr != nil {
+			// TODO: probably need to cleanup here.
+			return copyErr
+		}
+		log.Warningf("\nThere are conflicting files (%s) between starter project and the context directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictDirName)
+	}
+	return nil
+}
+
+func isConflicting(spDir, contextDir string) (conflictingFiles []string, err error) {
+	var (
+		contextDirMap = map[string]struct{}{}
+	)
+	err = filepath.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
+		path = strings.ReplaceAll(path, contextDir, "")
+		if path != "" {
+			contextDirMap[path] = struct{}{}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk %s dir; cause: %w", contextDir, err)
+	}
+
+	err = filepath.Walk(spDir, func(path string, info fs.FileInfo, err error) error {
+		path = strings.ReplaceAll(path, spDir, "")
+		if _, ok := contextDirMap[path]; ok {
+			conflictingFiles = append(conflictingFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk %s dir; cause: %w", spDir, err)
+	}
+
+	return conflictingFiles, nil
 }
 
 // GetDevfileRegistries gets devfile registries from preference file,
