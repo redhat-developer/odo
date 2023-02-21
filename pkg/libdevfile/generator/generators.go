@@ -1,15 +1,14 @@
 package generator
 
 import (
-	"github.com/devfile/library/v2/pkg/devfile/generator"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	
-	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
 type JobParams struct {
+	TypeMeta        metav1.TypeMeta
+	ObjectMeta      metav1.ObjectMeta
 	PodTemplateSpec corev1.PodTemplateSpec
 	SpecParams      JobSpecParams
 }
@@ -22,12 +21,10 @@ type JobSpecParams struct {
 	ActiveDeadlineSeconds   *int64
 }
 
-func GetJob(jobName string, jobParams JobParams) batchv1.Job {
+func GetJob(jobParams JobParams) batchv1.Job {
 	return batchv1.Job{
-		TypeMeta: generator.GetTypeMeta(kclient.JobsKind, kclient.JobsAPIVersion),
-		ObjectMeta: metav1.ObjectMeta{
-			Name: jobName,
-		},
+		TypeMeta:   jobParams.TypeMeta,
+		ObjectMeta: jobParams.ObjectMeta,
 		Spec: batchv1.JobSpec{
 			Template:              jobParams.PodTemplateSpec,
 			Parallelism:           jobParams.SpecParams.Parallelism,

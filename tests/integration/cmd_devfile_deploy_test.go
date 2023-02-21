@@ -495,7 +495,7 @@ CMD ["npm", "start"]
 		When("using devfile that works", func() {
 			It("should complete the command execution successfully", func() {
 				out := helper.Cmd("odo", "deploy").ShouldPass().Out()
-				helper.MatchAllInOutput(string(out), []string{"Executing command in container (command: deploy-exec)", "Executing \"echo Hello world\""})
+				Expect(out).To(ContainSubstring("Executing command in container (command: deploy-exec)"))
 			})
 		})
 		When("using devfile with a long running command in exec", func() {

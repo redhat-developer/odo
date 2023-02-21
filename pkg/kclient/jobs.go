@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
-
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -15,10 +13,8 @@ import (
 
 // constants for volumes
 const (
-	JobsKind          = "Job"
-	JobsResource      = "jobs"
-	JobsAPIVersion    = "batch/v1"
-	executeJobTimeout = 1 * time.Minute
+	JobsKind       = "Job"
+	JobsAPIVersion = "batch/v1"
 )
 
 func (c *Client) ListJobs(selector string) (*batchv1.JobList, error) {
