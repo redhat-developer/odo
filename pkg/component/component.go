@@ -20,7 +20,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -256,7 +255,7 @@ func getResourcesForComponent(
 	name string,
 	namespace string,
 ) ([]unstructured.Unstructured, error) {
-	selector := odolabels.GetSelector(name, odocontext.GetApplication(ctx), odolabels.ComponentAnyMode, false)
+	selector := odolabels.GetNameSelector(name)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err

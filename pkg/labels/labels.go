@@ -215,6 +215,13 @@ func GetSelector(componentName string, applicationName string, mode string, isPa
 	return labels.String()
 }
 
+func GetNameSelector(componentName string) string {
+	labels := k8slabels.Set{
+		kubernetesInstanceLabel: componentName,
+	}
+	return labels.String()
+}
+
 // IsCoreComponent determines if a resource is core component (created in Dev mode and includes deployment, svc, pv, pvc, etc.)
 // by checking for 'component' label key.
 func IsCoreComponent(labels map[string]string) bool {

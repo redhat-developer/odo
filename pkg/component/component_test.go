@@ -898,7 +898,7 @@ func TestGetDevfileInfo(t *testing.T) {
 						Labels())
 					c := kclient.NewMockClientInterface(ctrl)
 					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
 						Return([]unstructured.Unstructured{u1, packageManifestResource, u2}, nil)
 					return c
@@ -911,7 +911,7 @@ func TestGetDevfileInfo(t *testing.T) {
 						WithProjectType("quarkus").
 						Labels())
 					c := podman.NewMockClient(ctrl)
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).
 						Return([]unstructured.Unstructured{u1}, nil)
 					return c
@@ -935,14 +935,14 @@ func TestGetDevfileInfo(t *testing.T) {
 						Labels())
 					c := kclient.NewMockClientInterface(ctrl)
 					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
 						Return([]unstructured.Unstructured{u1}, nil)
 					return c
 				},
 				podmanClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) podman.Client {
 					c := podman.NewMockClient(ctrl)
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).Return(nil, nil)
 					return c
 				},
@@ -973,7 +973,7 @@ func TestGetDevfileInfo(t *testing.T) {
 				kubeClient: func(ctx context.Context, ctrl *gomock.Controller, componentName string) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
 					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
 						Return(nil, nil)
 					return c
@@ -986,7 +986,7 @@ func TestGetDevfileInfo(t *testing.T) {
 						WithProjectType("quarkus").
 						Labels())
 					c := podman.NewMockClient(ctrl)
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).Return(
 						[]unstructured.Unstructured{u1}, nil)
 					return c
@@ -1024,7 +1024,7 @@ func TestGetDevfileInfo(t *testing.T) {
 						Labels())
 					c := kclient.NewMockClientInterface(ctrl)
 					c.EXPECT().GetCurrentNamespace().Return(kubeNs).AnyTimes()
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq(kubeNs)).
 						Return([]unstructured.Unstructured{u1}, nil)
 					return c
@@ -1037,7 +1037,7 @@ func TestGetDevfileInfo(t *testing.T) {
 						WithProjectType("nodejs").
 						Labels())
 					c := podman.NewMockClient(ctrl)
-					selector := labels.GetSelector(componentName, odocontext.GetApplication(ctx), labels.ComponentAnyMode, false)
+					selector := labels.GetNameSelector(componentName)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Eq(selector), gomock.Eq("")).Return(
 						[]unstructured.Unstructured{u1}, nil)
 					return c
