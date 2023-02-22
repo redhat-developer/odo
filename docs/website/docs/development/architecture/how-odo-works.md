@@ -251,7 +251,7 @@ Additionally, the following environment variables are reserved and injected into
 
 | Key              | Description                                                                                                                                                                                                                 | Example Value  |
 |------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| `PROJECTS_ROOT`  | A path where the project sources are mounted as defined by container component's [`sourceMapping`](https://devfile.io/docs/2.2.0-alpha/devfile-schema#components-container-source-mapping). Default value is `/projects`.   | `/projects`    |
+| `PROJECTS_ROOT`  | A path where the project sources are mounted as defined by container component's [`sourceMapping`](https://devfile.io/docs/2.2.0/devfile-schema#components-container-source-mapping). Default value is `/projects`.   | `/projects`    |
 | `PROJECT_SOURCE` | A path to a project source (`$PROJECTS_ROOT/`). If there are multiple projects, this will point to the directory of the first one. Default value is `/projects`.                                                            | `/projects`    |
 
 
@@ -625,7 +625,7 @@ spec:
 
 ##### Devfile Volume Components
 
-The [Devfile specification](https://devfile.io/docs/2.2.0-alpha/adding-a-volume-component) allows to define `volume` components to share files among container components.
+The [Devfile specification](https://devfile.io/docs/2.2.0/adding-a-volume-component) allows to define `volume` components to share files among container components.
 Such `volume` components can be marked as `ephemeral` or not.
 - If `ephemeral` is set to `false`, which is the default value, `odo` creates a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) (with the default storage class).
 - If `ephemeral` is set to `true`, `odo` translates it into an [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume, tied to the lifetime of the Pod.
