@@ -498,6 +498,15 @@ CMD ["npm", "start"]
 				Expect(out).To(ContainSubstring("Executing command in container (command: deploy-exec)"))
 			})
 		})
+		When("using a very long devfile name", func() {
+			BeforeEach(func() {
+				veryLongName := "document-how-odo-translates-container-component-to-deployment"
+				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(veryLongName)})
+			})
+			It("should complete the command execution successfully without any error about the long name", func() {
+				helper.Cmd("odo", "deploy").ShouldPass()
+			})
+		})
 		When("using devfile with a long running command in exec", func() {
 			BeforeEach(func() {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: sleep 62; echo hello world`)

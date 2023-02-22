@@ -3,29 +3,26 @@ package deploy
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 	"strings"
 	"time"
-
-	dfutil "github.com/devfile/library/v2/pkg/util"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
-
-	odogenerator "github.com/redhat-developer/odo/pkg/libdevfile/generator"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	odogenerator "github.com/redhat-developer/odo/pkg/libdevfile/generator"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -113,11 +110,19 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component
+	getJobName := func() string {
+		lengthOfHyphens := 1
+		maxLen := kclient.JobNameMaxLength - len(command.Id) - lengthOfHyphens
+		// We ignore the error here because our component name or app name will never be empty; which are the only cases when an error might be raised.
+		name, _ := util.NamespaceKubernetesObjectWithTrim(o.componentName, o.appName, maxLen)
+		name += "-" + command.Id
+		return name
+	}
 	completionMode := batchv1.CompletionMode("Indexed")
 	jobParams := odogenerator.JobParams{
 		TypeMeta: generator.GetTypeMeta(kclient.JobsKind, kclient.JobsAPIVersion),
 		ObjectMeta: metav1.ObjectMeta{
-			Name: o.componentName + "-" + o.appName + "-" + command.Id + "-" + dfutil.GenerateRandomString(3), // TODO: Is there a function to return the standard odo names?,
+			Name: getJobName(),
 		},
 		PodTemplateSpec: corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{

@@ -413,10 +413,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 		runningIn string
 	}
 	tests := []struct {
-		name         string
-		fields       fields
-		wantErr      bool
-		deleteClient func(ctrl *gomock.Controller) _delete.Client
+		name               string
+		fields             fields
+		remainingResources []unstructured.Unstructured
+		wantErr            bool
+		deleteClient       func(ctrl *gomock.Controller) _delete.Client
 	}{
 		{
 			name: "deleting a component with access to devfile",
@@ -485,7 +486,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				forceFlag: true,
 				runningIn: labels.ComponentDeployMode,
 			},
-			wantErr: false,
+			wantErr:            false,
+			remainingResources: resources,
 		},
 		{
 			name: "deleting a component should not fail even if ExecutePreStopEvents fails",
@@ -650,8 +652,12 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			ctx = odocontext.WithWorkingDirectory(ctx, workingDir)
 			ctx = odocontext.WithComponentName(ctx, compName)
 			ctx = odocontext.WithDevfileObj(ctx, &info)
-			if err = o.deleteDevfileComponent(ctx); (err != nil) != tt.wantErr {
+			remainingResources, err := o.deleteDevfileComponent(ctx)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if diff := cmp.Diff(remainingResources, tt.remainingResources); diff != "" {
+				t.Errorf("deleteDevfileComponent() did not return expected resources: %s", diff)
 			}
 		})
 	}

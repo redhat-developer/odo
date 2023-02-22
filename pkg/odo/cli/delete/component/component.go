@@ -232,15 +232,16 @@ func messageWithPlatforms(cluster, podman bool, name, namespace string) string {
 
 // printRemainingResources lists the remaining cluster resources that are not found in the devfile.
 func printRemainingResources(ctx context.Context, remainingResources []unstructured.Unstructured) {
+	if len(remainingResources) == 0 {
+		return
+	}
 	componentName := odocontext.GetComponentName(ctx)
 	namespace := odocontext.GetNamespace(ctx)
-	if len(remainingResources) != 0 {
-		log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
-		for _, resource := range remainingResources {
-			fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
-		}
-		log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
+	log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
+	for _, resource := range remainingResources {
+		fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
 	}
+	log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
 }
 
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
