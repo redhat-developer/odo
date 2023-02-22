@@ -744,4 +744,48 @@ var _ = Describe("odo describe component command tests", func() {
 			}
 		}
 	})
+
+	When("a non-odo application is present on the cluster", func() {
+		var (
+			// From manifests
+			componentName = "example-deployment"
+			ingressDomain = "example-deployment.example.com/"
+		)
+
+		BeforeEach(func() {
+			commonVar.CliRunner.Run("create", "-f", helper.GetExamplePath("manifests", "deployment-app-label.yaml"))
+			if helper.IsKubernetesCluster() {
+				commonVar.CliRunner.Run("create", "-f", helper.GetExamplePath("manifests", "ingress-app-label.yaml"))
+			} else {
+				commonVar.CliRunner.Run("create", "-f", helper.GetExamplePath("manifests", "route-app-label.yaml"))
+			}
+
+		})
+		AfterEach(func() {
+			if helper.IsKubernetesCluster() {
+				commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "ingress-app-label.yaml"))
+			} else {
+				commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "route-app-label.yaml"))
+			}
+			commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "deployment-app-label.yaml"))
+		})
+
+		It("should describe the component", func() {
+			output := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
+
+			Expect(output).To(ContainSubstring("Name: " + componentName))
+
+			if helper.IsKubernetesCluster() {
+				helper.MatchAllInOutput(output, []string{
+					"Kubernetes Ingresses",
+					componentName + ": " + ingressDomain,
+				})
+			} else {
+				helper.MatchAllInOutput(output, []string{
+					"OpenShift Routes",
+					componentName + ": ",
+				})
+			}
+		})
+	})
 })
