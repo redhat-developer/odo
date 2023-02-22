@@ -608,7 +608,7 @@ func TestListRoutesAndIngresses(t *testing.T) {
 
 	label := labels.GetLabels(componentName, "app", "", labels.ComponentDeployMode, false)
 	// cannot use default label to selector converter; it does not return expected result
-	selector := labels.GetSelector(componentName, "app", labels.ComponentDeployMode, false)
+	selector := labels.GetNameSelector(componentName)
 
 	// create ingress object
 	devfileObjWithIngress := testingutil.GetTestDevfileObjFromFile("devfile-deploy-ingress.yaml")
