@@ -469,7 +469,7 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName, appNa
 		return nil, nil, nil
 	}
 
-	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDeployMode, false)
+	selector := odolabels.GetNameSelector(componentName)
 
 	k8sIngresses, err := client.ListIngresses(client.GetCurrentNamespace(), selector)
 	if err != nil {
