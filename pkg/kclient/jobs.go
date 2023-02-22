@@ -50,7 +50,12 @@ func (c *Client) WaitForJobToComplete(job *batchv1.Job) (*batchv1.Job, error) {
 		if !ok {
 			break
 		}
-		wJob := val.Object.(*batchv1.Job)
+
+		wJob, ok := val.Object.(*batchv1.Job)
+		if !ok {
+			klog.V(4).Infof("did not receive job object, received: %v", val)
+			continue
+		}
 		for _, condition := range wJob.Status.Conditions {
 			if condition.Type == batchv1.JobFailed {
 				klog.V(4).Infof("Failed to execute the job, reason: %s", condition.String())

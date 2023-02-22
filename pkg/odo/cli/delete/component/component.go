@@ -139,7 +139,11 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 	if o.name != "" {
 		return o.deleteNamedComponent(ctx)
 	}
-	return o.deleteDevfileComponent(ctx)
+	remainingResources, err := o.deleteDevfileComponent(ctx)
+	if err == nil {
+		printRemainingResources(ctx, remainingResources)
+	}
+	return err
 }
 
 // deleteNamedComponent deletes a component given its name
@@ -226,9 +230,22 @@ func messageWithPlatforms(cluster, podman bool, name, namespace string) string {
 	return fmt.Sprintf("No resource found for component %q%s\n", name, strings.Join(details, " or"))
 }
 
+// printRemainingResources lists the remaining cluster resources that are not found in the devfile.
+func printRemainingResources(ctx context.Context, remainingResources []unstructured.Unstructured) {
+	componentName := odocontext.GetComponentName(ctx)
+	namespace := odocontext.GetNamespace(ctx)
+	if len(remainingResources) != 0 {
+		log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
+		for _, resource := range remainingResources {
+			fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+		}
+		log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
+	}
+}
+
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
 // devfileObj in context must not be nil when this method is called
-func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
+func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstructured.Unstructured, error) {
 	var (
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
@@ -238,6 +255,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		isClusterInnerLoopDeployed bool
 		hasClusterResources        bool
 		clusterResources           []unstructured.Unstructured
+		remainingResources         []unstructured.Unstructured
 
 		isPodmanInnerLoopDeployed bool
 		hasPodmanResources        bool
@@ -255,37 +273,26 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
 			} else {
-				return err
+				return nil, err
 			}
 		}
 
 		namespace = odocontext.GetNamespace(ctx)
 		hasClusterResources = len(clusterResources) != 0
-	}
-	defer func() {
-		//	This defer func ensures we list the remaining cluster resources even if no resources are found in the devfile.
-		if o.clientset.KubernetesClient == nil {
-			return
-		}
 		// Get a list of component's resources present on the cluster
 		deployedResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, componentName, namespace, o.runningIn)
 		// Get a list of component's resources absent from the devfile, but present on the cluster
-		remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
-		if len(remainingResources) != 0 {
-			log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
-			for _, resource := range remainingResources {
-				fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
-			}
-			log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
-		}
-	}()
+		remainingResources = listResourcesMissingFromDevfilePresentOnCluster(componentName, clusterResources, deployedResources)
+	}
+
+	// 2. get podman resources
 	if o.clientset.PodmanClient != nil {
 		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
 				log.Warning(err.Error())
 			} else {
-				return err
+				return nil, err
 			}
 		}
 		hasPodmanResources = len(podmanPods) != 0
@@ -294,7 +301,8 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	if !(hasClusterResources || hasPodmanResources) {
 		log.Infof(messageWithPlatforms(o.clientset.KubernetesClient != nil, o.clientset.PodmanClient != nil, componentName, namespace))
 		if !o.withFilesFlag {
-			return nil
+			// check for resources here
+			return remainingResources, nil
 		}
 	}
 
@@ -304,7 +312,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 	if o.withFilesFlag {
 		filesToDelete, err = getFilesCreatedByOdo(o.clientset.FS, ctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		printFileCreatedByOdo(filesToDelete, hasClusterResources)
 	}
@@ -312,7 +320,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 
 	if !(hasClusterResources || hasPodmanResources || hasFilesToDelete) {
 		klog.V(2).Info("no cluster resources and no files to delete")
-		return nil
+		return remainingResources, nil
 	}
 
 	msg := fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)
@@ -360,7 +368,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 		}
 
 		if o.withFilesFlag {
-			//Delete files
+			// Delete files
 			remainingFiles := o.deleteFilesCreatedByOdo(o.clientset.FS, filesToDelete)
 			var listOfFiles []string
 			for f, e := range remainingFiles {
@@ -373,12 +381,11 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) error {
 				log.Info("You need to manually delete those.")
 			}
 		}
-		return nil
+		return remainingResources, nil
 	}
 
 	log.Error("Aborting deletion of component")
-
-	return nil
+	return remainingResources, nil
 }
 
 // listResourcesMissingFromDevfilePresentOnCluster returns a list of resources belonging to a component name that are present on cluster, but missing from devfile

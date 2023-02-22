@@ -98,7 +98,6 @@ func (o *deployHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 }
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml
-// We currently do NOT support this in `odo deploy`.
 func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	containerComps, err := generator.GetContainers(o.devfileObj, common.DevfileOptions{FilterByName: command.Exec.Component})
 	if err != nil {
