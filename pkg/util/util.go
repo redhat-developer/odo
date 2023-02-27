@@ -416,7 +416,7 @@ func ValidateURL(sourceURL string) error {
 	}
 	host := url.Host
 
-	re := regexp.MustCompile(`[:\/\?#\[\]@]`)
+	re := regexp.MustCompile(`[\/\?#\[\]@]`)
 	if host == "" || re.MatchString(host) {
 		return errors.New("URL is invalid")
 	}
