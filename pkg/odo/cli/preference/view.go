@@ -55,14 +55,20 @@ func (o *ViewOptions) Validate(ctx context.Context) (err error) {
 // Run contains the logic for the command
 func (o *ViewOptions) Run(ctx context.Context) (err error) {
 	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
-	registryList := o.clientset.PreferenceClient.RegistryList()
+	registryList, err := o.clientset.RegistryClient.GetDevfileRegistries("")
+	if err != nil {
+		return err
+	}
 	HumanReadableOutput(preferenceList, registryList)
 	return
 }
 
 func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{}, err error) {
 	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
-	registryList := o.clientset.PreferenceClient.RegistryList()
+	registryList, err := o.clientset.RegistryClient.GetDevfileRegistries("")
+	if err != nil {
+		return nil, err
+	}
 
 	return api.PreferenceView{
 		Preferences: preferenceList.Items,
@@ -70,7 +76,7 @@ func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{},
 	}, nil
 }
 
-func HumanReadableOutput(preferenceList preference.PreferenceList, registryList []preference.Registry) {
+func HumanReadableOutput(preferenceList preference.PreferenceList, registryList []api.Registry) {
 	preferenceT := ui.NewTable()
 	preferenceT.AppendHeader(table.Row{"PARAMETER", "VALUE"})
 	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
@@ -132,7 +138,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(preferenceViewCmd, clientset.PREFERENCE)
+	clientset.Add(preferenceViewCmd, clientset.PREFERENCE, clientset.REGISTRY)
 	commonflags.UseOutputFlag(preferenceViewCmd)
 	return preferenceViewCmd
 }

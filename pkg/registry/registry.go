@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -28,14 +29,16 @@ import (
 type RegistryClient struct {
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
+	kubeClient       kclient.ClientInterface
 }
 
 var _ Client = (*RegistryClient)(nil)
 
-func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.Client) RegistryClient {
+func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.Client, kubeClient kclient.ClientInterface) RegistryClient {
 	return RegistryClient{
 		fsys:             fsys,
 		preferenceClient: preferenceClient,
+		kubeClient:       kubeClient,
 	}
 }
 

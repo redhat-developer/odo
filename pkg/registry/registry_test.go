@@ -81,7 +81,7 @@ OdoSettings:
 				Globalodoconfig: &tempConfigFileName,
 			})
 			prefClient, _ := preference.NewClient(ctx)
-			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
+			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, nil)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
 				t.Errorf("Error message is %v", err)
@@ -259,7 +259,7 @@ func TestListDevfileStacks(t *testing.T) {
 					URL:  server.URL,
 				},
 			}).AnyTimes()
-			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
+			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, nil)
 			ctx := context.Background()
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
 			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false)
