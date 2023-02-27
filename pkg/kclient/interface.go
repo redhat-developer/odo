@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/platform"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
@@ -164,4 +165,10 @@ type ClientInterface interface {
 	// GetJobLogs retrieves pod logs of a job
 	GetJobLogs(job *batchv1.Job, containerName string) (io.ReadCloser, error)
 	DeleteJob(jobName string) error
+
+	// registry.go
+	// GetRegistryList returns all Devfile registries from both ClusterDevfileRegistriesList (cluster-scoped)
+	// and DevfileRegistriesList (namespace-scoped) resources.
+	// Registries from DevfileRegistriesList resources are returned first in the list.
+	GetRegistryList() ([]api.Registry, error)
 }

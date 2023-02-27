@@ -81,6 +81,7 @@ OdoSettings:
 				Globalodoconfig: &tempConfigFileName,
 			})
 			prefClient, _ := preference.NewClient(ctx)
+			// TODO(rm3l) Test with both nil and non-nil kubeclient
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, nil)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
@@ -253,12 +254,13 @@ func TestListDevfileStacks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().RegistryList().Return([]preference.Registry{
+			prefClient.EXPECT().RegistryList().Return([]api.Registry{
 				{
 					Name: "TestRegistry",
 					URL:  server.URL,
 				},
 			}).AnyTimes()
+			// TODO(rm3l) Test with both nil and non-nil kubeclient
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, nil)
 			ctx := context.Background()
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})

@@ -14,6 +14,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/openshift/api/project/v1"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	api "github.com/redhat-developer/odo/pkg/api"
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
@@ -844,6 +845,21 @@ func (m *MockClientInterface) GetProject(projectName string) (*v1.Project, error
 func (mr *MockClientInterfaceMockRecorder) GetProject(projectName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockClientInterface)(nil).GetProject), projectName)
+}
+
+// GetRegistryList mocks base method.
+func (m *MockClientInterface) GetRegistryList() ([]api.Registry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRegistryList")
+	ret0, _ := ret[0].([]api.Registry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRegistryList indicates an expected call of GetRegistryList.
+func (mr *MockClientInterfaceMockRecorder) GetRegistryList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryList", reflect.TypeOf((*MockClientInterface)(nil).GetRegistryList))
 }
 
 // GetResourceSpecDefinition mocks base method.

@@ -16,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 const viewCommandName = "view"
@@ -76,7 +75,7 @@ func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{},
 	}, nil
 }
 
-func HumanReadableOutput(preferenceList preference.PreferenceList, registryList []api.Registry) {
+func HumanReadableOutput(preferenceList api.PreferenceList, registryList []api.Registry) {
 	preferenceT := ui.NewTable()
 	preferenceT.AppendHeader(table.Row{"PARAMETER", "VALUE"})
 	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})

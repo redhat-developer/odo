@@ -6,17 +6,24 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/registry"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestView(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	prefClient := preference.NewMockClient(ctrl)
+	kubeClient := kclient.NewMockClientInterface(ctrl)
+	registryClient := registry.NewRegistryClient(filesystem.NewFakeFs(), prefClient, kubeClient)
 	opts := NewViewOptions()
 	opts.SetClientset(&clientset.Clientset{
 		PreferenceClient: prefClient,
+		RegistryClient:   registryClient,
 	})
 
 	cmdline := cmdline.NewMockCmdline(ctrl)
@@ -38,8 +45,8 @@ func TestView(t *testing.T) {
 	var intNilValue *int = nil
 	var boolNilValue *bool = nil
 
-	preferenceList := preference.PreferenceList{
-		Items: []preference.PreferenceItem{
+	preferenceList := api.PreferenceList{
+		Items: []api.PreferenceItem{
 			{
 				Name:    preference.UpdateNotificationSetting,
 				Value:   boolNilValue,
@@ -72,7 +79,7 @@ func TestView(t *testing.T) {
 			},
 		},
 	}
-	registryList := []preference.Registry{
+	registryList := []api.Registry{
 		{
 			Name:   preference.DefaultDevfileRegistryName,
 			URL:    preference.DefaultDevfileRegistryURL,
@@ -86,6 +93,8 @@ func TestView(t *testing.T) {
 	}
 	prefClient.EXPECT().NewPreferenceList().Return(preferenceList)
 	prefClient.EXPECT().RegistryList().Return(registryList)
+	// TODO(rm3l): test with different data returned by GetDevfileRegistries
+	kubeClient.EXPECT().GetRegistryList().Return(nil, nil)
 
 	err = opts.Run(context.Background())
 	if err != nil {

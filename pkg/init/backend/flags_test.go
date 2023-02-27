@@ -74,7 +74,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 		fields             fields
 		args               args
 		registryNameExists bool
-		registryList       []preference.Registry
+		registryList       []api.Registry
 		wantErr            bool
 	}{
 		{
@@ -121,7 +121,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 				},
 				dir: "/tmp",
 			},
-			registryList: []preference.Registry{
+			registryList: []api.Registry{
 				{
 					Name: "aregistry",
 				},

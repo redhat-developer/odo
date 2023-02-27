@@ -37,7 +37,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
-					registryList := []preference.Registry{
+					registryList := []api.Registry{
 						{
 							Name: "Registry0",
 							URL:  "http://registry0",
@@ -68,7 +68,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
-					registryList := []preference.Registry{
+					registryList := []api.Registry{
 						{
 							Name: "Registry0",
 							URL:  "http://registry0",
@@ -99,7 +99,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
-					registryList := []preference.Registry{
+					registryList := []api.Registry{
 						{
 							Name: "Registry0",
 							URL:  "http://registry0",
@@ -131,7 +131,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
-					registryList := []preference.Registry{
+					registryList := []api.Registry{
 						{
 							Name: "Registry0",
 							URL:  "http://registry0",

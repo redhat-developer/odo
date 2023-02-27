@@ -2,29 +2,19 @@ package preference
 
 import (
 	"reflect"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
-type PreferenceList struct {
-	Items []PreferenceItem `json:"items,omitempty"`
-}
-
-type PreferenceItem struct {
-	Name        string      `json:"name"`
-	Value       interface{} `json:"value"`       // The value set by the user, this will be nil if the user hasn't set it
-	Default     interface{} `json:"default"`     // default value of the preference if the user hasn't set the value
-	Type        string      `json:"type"`        // the type of the preference, possible values int, string, bool
-	Description string      `json:"description"` // The description of the preference
-}
-
-func (o *preferenceInfo) NewPreferenceList() PreferenceList {
-	return PreferenceList{
+func (o *preferenceInfo) NewPreferenceList() api.PreferenceList {
+	return api.PreferenceList{
 		Items: toPreferenceItems(*o),
 	}
 }
 
-func toPreferenceItems(prefInfo preferenceInfo) []PreferenceItem {
+func toPreferenceItems(prefInfo preferenceInfo) []api.PreferenceItem {
 	settings := prefInfo.OdoSettings
-	return []PreferenceItem{
+	return []api.PreferenceItem{
 		{
 			Name:        UpdateNotificationSetting,
 			Value:       settings.UpdateNotification,
