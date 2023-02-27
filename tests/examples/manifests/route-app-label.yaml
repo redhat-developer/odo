@@ -1,0 +1,21 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    isFromDevfile: "true"
+  labels:
+    app: app
+    app.kubernetes.io/component: example-deployment
+    app.kubernetes.io/instance: example-deployment
+    app.kubernetes.io/name: example-deployment
+    app.kubernetes.io/part-of: app
+    app.openshift.io/runtime: example-deployment
+  name: example-deployment
+spec:
+  port:
+    targetPort: "3001"
+  to:
+    kind: Service
+    name: example-deployment
+    weight: 100
+  wildcardPolicy: None

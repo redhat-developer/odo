@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-deployment
+  labels:
+    app: app
+    app.kubernetes.io/component: example-deployment
+    app.kubernetes.io/instance: example-deployment
+    app.kubernetes.io/name: example-deployment
+    app.kubernetes.io/part-of: app
+    app.openshift.io/runtime: example-deployment
+spec:
+  rules:
+    - host: example-deployment.example.com
+      http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: example-deployment
+                port:
+                  number: 8080
+          - path: "/foo"
+            pathType: Prefix
+            backend:
+              service:
+                name: example-deployment
+                port:
+                  number: 8080
