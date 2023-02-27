@@ -1,7 +1,7 @@
 # cloud.google.com/go v0.81.0
 ## explicit; go 1.11
 cloud.google.com/go/compute/metadata
-# github.com/ActiveState/termtest v0.7.1
+# github.com/ActiveState/termtest v0.7.2
 ## explicit; go 1.14
 github.com/ActiveState/termtest
 github.com/ActiveState/termtest/internal/osutils

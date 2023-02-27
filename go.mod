@@ -3,7 +3,7 @@ module github.com/redhat-developer/odo
 go 1.19
 
 require (
-	github.com/ActiveState/termtest v0.7.1
+	github.com/ActiveState/termtest v0.7.2
 	github.com/ActiveState/termtest/expect v0.7.0
 	github.com/AlecAivazis/survey/v2 v2.3.5
 	github.com/Xuanwo/go-locale v1.1.0
