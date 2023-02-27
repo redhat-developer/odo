@@ -16,6 +16,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 
@@ -3341,5 +3342,157 @@ CMD ["npm", "start"]
 			component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 			component.ExpectIsNotDeployed()
 		})
+	})
+
+	When("running applications listening on the container loopback interface", func() {
+
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-endpoint-on-loopback"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-endpoint-on-loopback.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+
+		haveHttpResponse := func(status int, body string) types.GomegaMatcher {
+			return WithTransform(func(urlWithoutProto string) (*http.Response, error) {
+				return http.Get("http://" + urlWithoutProto)
+			}, SatisfyAll(HaveHTTPStatus(status), HaveHTTPBody(body)))
+		}
+
+		for _, plt := range []string{"", "cluster"} {
+			plt := plt
+
+			It("should error out if using --ignore-localhost on any platform other than Podman", func() {
+				args := []string{"dev", "--ignore-localhost", "--random-ports"}
+				var env []string
+				if plt != "" {
+					args = append(args, "--platform", plt)
+					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
+				}
+				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				Expect(stderr).Should(ContainSubstring("--ignore-localhost cannot be used when running in cluster mode"))
+			})
+		}
+
+		When("running on default cluster platform", func() {
+			var devSession helper.DevSession
+			var stdout, stderr string
+			var ports map[string]string
+
+			BeforeEach(func() {
+				var bOut, bErr []byte
+				var err error
+				devSession, bOut, bErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+				Expect(err).ShouldNot(HaveOccurred())
+				stdout = string(bOut)
+				stderr = string(bErr)
+			})
+
+			AfterEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			It("should port-forward successfully", func() {
+				By("not displaying warning message for loopback port", func() {
+					Expect(stderr).ShouldNot(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface"))
+				})
+				By("forwarding both loopback and non-loopback ports", func() {
+					Expect(ports).Should(HaveLen(2))
+					Expect(ports).Should(SatisfyAll(HaveKey("3000"), HaveKey("3001")))
+				})
+				By("displaying both loopback and non-loopback ports as forwarded", func() {
+					Expect(stdout).Should(SatisfyAll(
+						ContainSubstring("Forwarding from %s -> 3000", ports["3000"]),
+						ContainSubstring("Forwarding from %s -> 3001", ports["3001"])))
+				})
+				By("reaching both loopback and non-loopback ports via port-forwarding", func() {
+					for port, body := range map[int]string{
+						3000: "Hello from Node.js Application!",
+						3001: "Hello from Node.js Admin Application!",
+					} {
+						Eventually(func(g Gomega) {
+							g.Expect(ports[strconv.Itoa(port)]).Should(haveHttpResponse(http.StatusOK, body))
+						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
+					}
+				})
+			})
+		})
+
+		Context("running on Podman", Label(helper.LabelPodman), func() {
+
+			It("should error out if not ignoring localhost", func() {
+				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
+			})
+
+			When("ignoring localhost", func() {
+
+				var devSession helper.DevSession
+				var stderr string
+				var ports map[string]string
+
+				BeforeEach(func() {
+					var bErr []byte
+					var err error
+					devSession, _, bErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: true,
+						CmdlineArgs: []string{"--ignore-localhost"},
+					})
+					Expect(err).ShouldNot(HaveOccurred())
+					stderr = string(bErr)
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should port-forward successfully", func() {
+					By("displaying warning message for loopback port", func() {
+						Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
+					})
+					By("reaching the local port for the non-loopback interface", func() {
+						Eventually(func(g Gomega) {
+							g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Application!"))
+						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
+					})
+					By("not succeeding to reach the local port for the loopback interface", func() {
+						// By design, Podman will not forward to container apps listening on localhost.
+						// See https://github.com/redhat-developer/odo/issues/6510 and https://github.com/containers/podman/issues/17353
+						Consistently(func() error {
+							_, err := http.Get("http://" + ports["3001"])
+							return err
+						}).Should(HaveOccurred())
+					})
+				})
+
+				When("making changes in the project source code during the dev session", func() {
+					BeforeEach(func() {
+						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello from", "Hiya from the updated")
+						var err error
+						_, _, ports, err = devSession.WaitSync()
+						Expect(err).ShouldNot(HaveOccurred())
+					})
+
+					It("should port-forward successfully", func() {
+						By("reaching the local port for the non-loopback interface", func() {
+							Eventually(func(g Gomega) {
+								g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Application!"))
+							}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
+						})
+						By("not succeeding to reach the local port for the loopback interface", func() {
+							// By design, Podman will not forward to container apps listening on localhost.
+							// See https://github.com/redhat-developer/odo/issues/6510 and https://github.com/containers/podman/issues/17353
+							Consistently(func() error {
+								_, err := http.Get("http://" + ports["3001"])
+								return err
+							}).Should(HaveOccurred())
+						})
+					})
+				})
+			})
+		})
+
 	})
 })
