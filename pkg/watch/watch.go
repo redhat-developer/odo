@@ -90,6 +90,9 @@ type WatchParameters struct {
 	Variables map[string]string
 	// RandomPorts is true to forward containers ports on local random ports
 	RandomPorts bool
+	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.
+	// Applicable to Podman only.
+	IgnoreLocalhost bool
 	// WatchFiles indicates to watch for file changes and sync changes to the container
 	WatchFiles bool
 	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)

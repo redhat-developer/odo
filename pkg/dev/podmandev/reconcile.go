@@ -116,26 +116,39 @@ func (o *DevClient) reconcile(
 	}
 
 	// By default, Podman will not forward to container applications listening on the loopback interface.
-	// So we are trying to detect such cases accordingly.
+	// So we are trying to detect such cases and act accordingly.
 	// See https://github.com/redhat-developer/odo/issues/6510#issuecomment-1439986558
-	loopbackPorts, err := port.DetectRemotePortsBoundOnLoopback(o.execClient, pod.Name, pod.Spec.Containers[0].Name, fwPorts)
-	if err != nil {
-		return fmt.Errorf("unable to detect container ports bound on the loopback interface: %w", err)
+	var loopbackPorts []api.ForwardedPort
+	if len(pod.Spec.Containers) != 0 {
+		loopbackPorts, err = port.DetectRemotePortsBoundOnLoopback(o.execClient, pod.Name, pod.Spec.Containers[0].Name, fwPorts)
+		if err != nil {
+			return fmt.Errorf("unable to detect container ports bound on the loopback interface: %w", err)
+		}
+		klog.V(4).Infof("detected %d ports bound on the loopback interface in the pod", len(loopbackPorts))
 	}
-	klog.V(4).Infof("detected %d ports bound on the loopback interface in the pod: %v", len(loopbackPorts), loopbackPorts)
-
 	if len(loopbackPorts) != 0 {
 		list := make([]string, 0, len(loopbackPorts))
 		for _, p := range loopbackPorts {
 			list = append(list, fmt.Sprintf("%s (%d)", p.PortName, p.ContainerPort))
 		}
-
-		log.Errorf(`Detected that the following port(s) can be reached only via the container loopback interface: %s.
+		msg := fmt.Sprintf(`Detected that the following port(s) can be reached only via the container loopback interface: %s.
 Port forwarding on Podman currently does not work with applications listening on the loopback interface.
-Either change the application to make those port(s) reachable on all interfaces (0.0.0.0), or rerun 'odo dev' with any of the following options:
+Either change the application to make those port(s) reachable on all interfaces (0.0.0.0), or rerun 'odo dev' with `, strings.Join(list, ", "))
+		if options.IgnoreLocalhost {
+			msg += "'--forward-localhost' to make port-forwarding work with such ports."
+		} else {
+			msg += `any of the following options:
 - --ignore-localhost: no error will be returned by odo, but port-forwarding on those ports might not work on Podman.
-- --forward-localhost: odo will inject a dedicated side container to redirect traffic to such ports.`, strings.Join(list, ", "))
-		return errors.New("cannot make port forwarding work with ports bound to the loopback interface only")
+- --forward-localhost: odo will inject a dedicated side container to redirect traffic to such ports.`
+		}
+
+		if !options.IgnoreLocalhost {
+			log.Errorf(msg)
+			return errors.New("cannot make port forwarding work with ports bound to the loopback interface only")
+		}
+
+		// Only a warning if using --ignore-localhost
+		log.Warningf(msg)
 	}
 
 	for _, fwPort := range fwPorts {

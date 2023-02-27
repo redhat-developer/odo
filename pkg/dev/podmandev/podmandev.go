@@ -107,6 +107,7 @@ func (o *DevClient) Start(
 		DevfileRunCmd:       options.RunCommand,
 		Variables:           options.Variables,
 		RandomPorts:         options.RandomPorts,
+		IgnoreLocalhost:     options.IgnoreLocalhost,
 		WatchFiles:          options.WatchFiles,
 		WatchCluster:        false,
 		Out:                 out,
@@ -188,13 +189,14 @@ func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushPa
 	printWarningsOnDevfileChanges(ctx, watchParams)
 
 	startOptions := dev.StartOptions{
-		IgnorePaths:  watchParams.FileIgnores,
-		Debug:        watchParams.Debug,
-		BuildCommand: watchParams.DevfileBuildCmd,
-		RunCommand:   watchParams.DevfileRunCmd,
-		RandomPorts:  watchParams.RandomPorts,
-		WatchFiles:   watchParams.WatchFiles,
-		Variables:    watchParams.Variables,
+		IgnorePaths:     watchParams.FileIgnores,
+		Debug:           watchParams.Debug,
+		BuildCommand:    watchParams.DevfileBuildCmd,
+		RunCommand:      watchParams.DevfileRunCmd,
+		RandomPorts:     watchParams.RandomPorts,
+		IgnoreLocalhost: watchParams.IgnoreLocalhost,
+		WatchFiles:      watchParams.WatchFiles,
+		Variables:       watchParams.Variables,
 	}
 	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
 }
