@@ -45,10 +45,15 @@ var _ = Describe("odo dev debug command tests", func() {
 				var ports map[string]string
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					opts := helper.DevSessionOpts{
 						CmdlineArgs: []string{"--debug"},
 						RunOnPodman: podman,
-					})
+					}
+					if podman {
+						// TODO(rm3l): use forward-localhost when it is implemented
+						opts.CmdlineArgs = append(opts.CmdlineArgs, "--ignore-localhost")
+					}
+					devSession, _, _, ports, err = helper.StartDevMode(opts)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -62,7 +67,7 @@ var _ = Describe("odo dev debug command tests", func() {
 						helper.HttpWaitForWithStatus("http://"+ports["3000"], "Hello from Node.js Starter Application!", 12, 5, 200)
 					})
 					if podman {
-						//TODO(rm3l): Remove this once https://github.com/redhat-developer/odo/issues/6510 is fixed
+						//TODO(rm3l): Remove this once https://github.com/redhat-developer/odo/issues/6510 is fixed and --forward-localhost is implemented
 						Skip("temporarily skipped on Podman because of https://github.com/redhat-developer/odo/issues/6510")
 					}
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {

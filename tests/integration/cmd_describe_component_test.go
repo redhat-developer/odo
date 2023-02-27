@@ -250,6 +250,10 @@ var _ = Describe("odo describe component command tests", func() {
 						opts := helper.DevSessionOpts{RunOnPodman: podman}
 						if debug {
 							opts.CmdlineArgs = []string{"--debug"}
+							if podman {
+								// TODO(rm3l): use forward-localhost when it is implemented
+								opts.CmdlineArgs = append(opts.CmdlineArgs, "--ignore-localhost")
+							}
 						}
 						var err error
 						devSession, _, _, ports, err = helper.StartDevMode(opts)
