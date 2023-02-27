@@ -1523,6 +1523,16 @@ func TestValidateURL(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "Valid URL, with port",
+			url:     "http://192.168.1.10:30741/",
+			wantErr: false,
+		},
+		{
+			name:    "Valid URL, with port, login and password",
+			url:     "http://user:pass@192.168.1.10:30741/",
+			wantErr: false,
+		},
+		{
 			name:    "Case 2: Invalid URL - No host",
 			url:     "http://",
 			wantErr: true,
