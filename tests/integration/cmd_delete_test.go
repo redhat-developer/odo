@@ -228,9 +228,6 @@ var _ = Describe("odo delete command tests", func() {
 				When("the component is deployed in DEV mode and dev mode stopped", helper.LabelPodmanIf(podman, func() {
 					var devSession helper.DevSession
 					BeforeEach(func() {
-						if podman {
-							helper.EnableExperimentalMode()
-						}
 						var err error
 						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
 							RunOnPodman: podman,
@@ -251,10 +248,6 @@ var _ = Describe("odo delete command tests", func() {
 						}
 						args = append(args, "-f", "--wait")
 						helper.Cmd("odo", args...).ShouldPass()
-
-						if podman {
-							helper.ResetExperimentalMode()
-						}
 					})
 
 					for _, runningIn := range []string{"", "dev", "deploy"} {

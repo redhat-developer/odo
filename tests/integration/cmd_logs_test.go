@@ -21,9 +21,6 @@ func getLogCommand(podman bool, otherArgs ...string) *helper.CmdWrapper {
 		args = append(args, "--platform", "podman")
 	}
 	cmd := helper.Cmd("odo", args...)
-	if podman {
-		cmd = cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-	}
 	return cmd
 }
 

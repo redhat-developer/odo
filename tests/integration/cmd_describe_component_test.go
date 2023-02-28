@@ -87,7 +87,6 @@ var _ = Describe("odo describe component command tests", func() {
 	It("should fail, with podman", Label(helper.LabelPodman), func() {
 		By("running odo describe component -o json with an unknown name", func() {
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman", "-o", "json").
-				AddEnv("ODO_EXPERIMENTAL_MODE=true").
 				ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -97,7 +96,6 @@ var _ = Describe("odo describe component command tests", func() {
 
 		By("running odo describe component with an unknown name", func() {
 			stderr := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman").
-				AddEnv("ODO_EXPERIMENTAL_MODE=true").
 				ShouldFail().Err()
 			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\""))
 		})
@@ -145,76 +143,58 @@ var _ = Describe("odo describe component command tests", func() {
 			helper.LabelNoCluster, helper.LabelUnauth,
 		} {
 			label := label
-			for _, experimental := range []bool{false, true} {
-				experimental := experimental
+			It("should describe the component in the current directory", Label(label), func() {
+				By("running with json output", func() {
+					res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(helper.IsJSON(stdout)).To(BeTrue())
+					Expect(stderr).To(BeEmpty())
+					checkDevfileJSONDescription(stdout, "devfile.yaml")
+					helper.JsonPathContentIs(stdout, "runningIn", "")
+					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+					helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
+					helper.JsonPathDoesNotExist(stdout, "platform")
+				})
 
-				When("experimental mode="+strconv.FormatBool(experimental), func() {
+				By("running with default output", func() {
+					res := helper.Cmd("odo", "describe", "component").ShouldPass()
+					stdout := res.Out()
+					checkDevfileDescription(stdout, false)
+					Expect(stdout).To(ContainSubstring("Running in: None"))
+					Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
+					Expect(stdout).ToNot(ContainSubstring("Running on:"))
+				})
+			})
 
-					BeforeEach(func() {
-						if experimental {
-							helper.EnableExperimentalMode()
-						}
+			When("renaming to hide devfile.yaml file", Label(label), func() {
+				BeforeEach(func() {
+					err := os.Rename("devfile.yaml", ".devfile.yaml")
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should describe the component in the current directory using the hidden devfile", func() {
+					By("running with json output", func() {
+						res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
+						stdout, stderr := res.Out(), res.Err()
+						Expect(helper.IsJSON(stdout)).To(BeTrue())
+						Expect(stderr).To(BeEmpty())
+						checkDevfileJSONDescription(stdout, ".devfile.yaml")
+						helper.JsonPathContentIs(stdout, "runningIn", "")
+						helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
+						helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
+						helper.JsonPathDoesNotExist(stdout, "platform")
 					})
-					AfterEach(func() {
-						if experimental {
-							helper.ResetExperimentalMode()
-						}
-					})
 
-					It("should describe the component in the current directory", Label(label), func() {
-						By("running with json output", func() {
-							res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
-							stdout, stderr := res.Out(), res.Err()
-							Expect(helper.IsJSON(stdout)).To(BeTrue())
-							Expect(stderr).To(BeEmpty())
-							checkDevfileJSONDescription(stdout, "devfile.yaml")
-							helper.JsonPathContentIs(stdout, "runningIn", "")
-							helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
-							helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
-							helper.JsonPathDoesNotExist(stdout, "platform")
-						})
-
-						By("running with default output", func() {
-							res := helper.Cmd("odo", "describe", "component").ShouldPass()
-							stdout := res.Out()
-							checkDevfileDescription(stdout, false)
-							Expect(stdout).To(ContainSubstring("Running in: None"))
-							Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
-							Expect(stdout).ToNot(ContainSubstring("Running on:"))
-						})
-					})
-
-					When("renaming to hide devfile.yaml file", Label(label), func() {
-						BeforeEach(func() {
-							err := os.Rename("devfile.yaml", ".devfile.yaml")
-							Expect(err).NotTo(HaveOccurred())
-						})
-
-						It("should describe the component in the current directory using the hidden devfile", func() {
-							By("running with json output", func() {
-								res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
-								stdout, stderr := res.Out(), res.Err()
-								Expect(helper.IsJSON(stdout)).To(BeTrue())
-								Expect(stderr).To(BeEmpty())
-								checkDevfileJSONDescription(stdout, ".devfile.yaml")
-								helper.JsonPathContentIs(stdout, "runningIn", "")
-								helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
-								helper.JsonPathDoesNotExist(stdout, "runningOn") // Deprecated
-								helper.JsonPathDoesNotExist(stdout, "platform")
-							})
-
-							By("running with default output", func() {
-								res := helper.Cmd("odo", "describe", "component").ShouldPass()
-								stdout := res.Out()
-								checkDevfileDescription(stdout, false)
-								Expect(stdout).To(ContainSubstring("Running in: None"))
-								Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
-								Expect(stdout).ToNot(ContainSubstring("Running on:"))
-							})
-						})
+					By("running with default output", func() {
+						res := helper.Cmd("odo", "describe", "component").ShouldPass()
+						stdout := res.Out()
+						checkDevfileDescription(stdout, false)
+						Expect(stdout).To(ContainSubstring("Running in: None"))
+						Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
+						Expect(stdout).ToNot(ContainSubstring("Running on:"))
 					})
 				})
-			}
+			})
 		}
 
 		It("should not describe the component from another directory", func() {
@@ -301,7 +281,7 @@ var _ = Describe("odo describe component command tests", func() {
 						When("describing the component in dev mode and with the experimental mode enabled", func() {
 							var stdout string
 							BeforeEach(func() {
-								stdout = helper.Cmd("odo", "describe", "component").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
+								stdout = helper.Cmd("odo", "describe", "component").ShouldPass().Out()
 							})
 
 							It("should describe the component", func() {
@@ -376,7 +356,6 @@ var _ = Describe("odo describe component command tests", func() {
 								var stdout string
 								BeforeEach(func() {
 									stdout = helper.Cmd("odo", "describe", "component", "--name", cmpName).
-										AddEnv("ODO_EXPERIMENTAL_MODE=true").
 										ShouldPass().
 										Out()
 								})
@@ -447,7 +426,6 @@ var _ = Describe("odo describe component command tests", func() {
 							var stdout, stderr string
 							BeforeEach(func() {
 								stdout, stderr = helper.Cmd("odo", "describe", "component", "-o", "json").
-									AddEnv("ODO_EXPERIMENTAL_MODE=true").
 									ShouldPass().
 									OutAndErr()
 							})
@@ -555,7 +533,6 @@ var _ = Describe("odo describe component command tests", func() {
 								var stdout, stderr string
 								BeforeEach(func() {
 									stdout, stderr = helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").
-										AddEnv("ODO_EXPERIMENTAL_MODE=true").
 										ShouldPass().
 										OutAndErr()
 								})
@@ -728,7 +705,7 @@ var _ = Describe("odo describe component command tests", func() {
 							cmd := helper.Cmd("odo", args...)
 							if podman {
 								args = append(args, "--platform=podman")
-								cmd = helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true")
+								cmd = helper.Cmd("odo", args...)
 							}
 							output := cmd.ShouldPass().Out()
 							ctx.checker(output, false)
@@ -738,7 +715,7 @@ var _ = Describe("odo describe component command tests", func() {
 							cmd := helper.Cmd("odo", args...)
 							if podman {
 								args = append(args, "--platform=podman")
-								cmd = helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true")
+								cmd = helper.Cmd("odo", args...)
 							}
 							output := cmd.ShouldPass().Out()
 							ctx.checker(output, true)

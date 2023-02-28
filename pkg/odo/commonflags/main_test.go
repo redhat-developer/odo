@@ -14,11 +14,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// --platform is considered experimental for now. As such, to exist, it requires the ODO_EXPERIMENTAL_MODE env var to be set.
 	ctx := context.Background()
-	cfg := config.Configuration{
-		OdoExperimentalMode: true,
-	}
+	cfg := config.Configuration{}
 	ctx = envcontext.WithEnvConfig(ctx, cfg)
 	klog.InitFlags(nil)
 	AddOutputFlag()
