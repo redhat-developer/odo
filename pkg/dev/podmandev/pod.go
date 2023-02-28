@@ -37,6 +37,7 @@ func createPodFromComponent(
 	buildCommand string,
 	runCommand string,
 	debugCommand string,
+	withHelperContainer bool,
 	randomPorts bool,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
@@ -100,28 +101,7 @@ func createPodFromComponent(
 		return nil, nil, err
 	}
 
-	// Remove all containerPorts, as they will be set afterwards in the helper container
-	for i := range containers {
-		containers[i].Ports = nil
-	}
-	// Add helper container for port-forwarding
-	pfHelperContainer := corev1.Container{
-		Name:    portForwardingHelperContainerName,
-		Image:   portForwardingHelperImage,
-		Command: []string{"tail"},
-		Args:    []string{"-f", "/dev/null"},
-	}
-	for _, fwPort := range fwPorts {
-		pfHelperContainer.Ports = append(pfHelperContainer.Ports, corev1.ContainerPort{
-			// It is intentional here to use the same port as ContainerPort and HostPort, for simplicity.
-			// In the helper container, a process will be run afterwards and will be listening on this port;
-			// this process will leverage socat to forward requests to the actual application port.
-			Name:          fwPort.PortName,
-			ContainerPort: int32(fwPort.LocalPort),
-			HostPort:      int32(fwPort.LocalPort),
-		})
-	}
-	containers = append(containers, pfHelperContainer)
+	containers = addHostPorts(withHelperContainer, containers, fwPorts)
 
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
@@ -142,6 +122,51 @@ func createPodFromComponent(
 	labels.SetProjectType(pod.GetLabels(), component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	return &pod, fwPorts, nil
+}
+
+func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPorts []api.ForwardedPort) []corev1.Container {
+	if withHelperContainer {
+		// A side helper container is added and will be responsible for redirecting the traffic,
+		// so it can work even if the application is listening on the container loopback interface.
+		for i := range containers {
+			containers[i].Ports = nil
+		}
+		// Add helper container for port-forwarding
+		pfHelperContainer := corev1.Container{
+			Name:    portForwardingHelperContainerName,
+			Image:   portForwardingHelperImage,
+			Command: []string{"tail"},
+			Args:    []string{"-f", "/dev/null"},
+		}
+		for _, fwPort := range fwPorts {
+			pfHelperContainer.Ports = append(pfHelperContainer.Ports, corev1.ContainerPort{
+				// It is intentional here to use the same port as ContainerPort and HostPort, for simplicity.
+				// In the helper container, a process will be run afterwards and will be listening on this port;
+				// this process will leverage socat to forward requests to the actual application port.
+				Name:          fwPort.PortName,
+				ContainerPort: int32(fwPort.LocalPort),
+				HostPort:      int32(fwPort.LocalPort),
+			})
+		}
+		containers = append(containers, pfHelperContainer)
+	} else {
+		// the original ports in container contains all Devfile endpoints that have been set by the Devfile library.
+		// We need to filter them out, to set only the ports that we need to port-forward.
+		for i := range containers {
+			var containerPorts []corev1.ContainerPort
+			for _, p := range containers[i].Ports {
+				for _, fwPort := range fwPorts {
+					if containers[i].Name == fwPort.ContainerName && int(p.ContainerPort) == fwPort.ContainerPort {
+						p.HostPort = int32(fwPort.LocalPort)
+						containerPorts = append(containerPorts, p)
+						break
+					}
+				}
+			}
+			containers[i].Ports = containerPorts
+		}
+	}
+	return containers
 }
 
 func getVolumeName(volume string, componentName string, appName string) string {

@@ -122,13 +122,14 @@ var (
 func Test_createPodFromComponent(t *testing.T) {
 
 	type args struct {
-		devfileObj    func() parser.DevfileObj
-		componentName string
-		appName       string
-		debug         bool
-		buildCommand  string
-		runCommand    string
-		debugCommand  string
+		devfileObj       func() parser.DevfileObj
+		componentName    string
+		appName          string
+		debug            bool
+		buildCommand     string
+		runCommand       string
+		debugCommand     string
+		forwardLocalhost bool
 	}
 	tests := []struct {
 		name        string
@@ -543,6 +544,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				tt.args.runCommand,
 				tt.args.debugCommand,
 				false,
+				tt.args.forwardLocalhost,
 				[]int{20001, 20002, 20003, 20004, 20005},
 			)
 			if (err != nil) != tt.wantErr {

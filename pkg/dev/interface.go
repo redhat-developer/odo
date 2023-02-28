@@ -23,6 +23,9 @@ type StartOptions struct {
 	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.
 	// Applicable to Podman only.
 	IgnoreLocalhost bool
+	// ForwardLocalhost is a flag indicating if we inject a side container that will make port-forwarding work with container apps listening on the loopback interface.
+	// Applicable to Podman only.
+	ForwardLocalhost bool
 	// Variables to override in the Devfile
 	Variables map[string]string
 }

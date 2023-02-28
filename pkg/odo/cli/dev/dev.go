@@ -51,12 +51,13 @@ type DevOptions struct {
 	cancel context.CancelFunc
 
 	// Flags
-	noWatchFlag         bool
-	randomPortsFlag     bool
-	debugFlag           bool
-	buildCommandFlag    string
-	runCommandFlag      string
-	ignoreLocalhostFlag bool
+	noWatchFlag          bool
+	randomPortsFlag      bool
+	debugFlag            bool
+	buildCommandFlag     string
+	runCommandFlag       string
+	ignoreLocalhostFlag  bool
+	forwardLocalhostFlag bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -110,11 +111,17 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		if o.ignoreLocalhostFlag {
 			return errors.New("--ignore-localhost cannot be used when running in cluster mode")
 		}
+		if o.forwardLocalhostFlag {
+			return errors.New("--forward-localhost cannot be used when running in cluster mode")
+		}
 		if o.clientset.KubernetesClient == nil {
 			return kclient.NewNoConnectionError()
 		}
 		scontext.SetPlatform(ctx, o.clientset.KubernetesClient)
 	case commonflags.PlatformPodman:
+		if o.ignoreLocalhostFlag && o.forwardLocalhostFlag {
+			return errors.New("--ignore-localhost and --forward-localhost cannot be used together")
+		}
 		if o.clientset.PodmanClient == nil {
 			return podman.NewPodmanNotFoundError(nil)
 		}
@@ -185,14 +192,15 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		o.out,
 		o.errOut,
 		dev.StartOptions{
-			IgnorePaths:     o.ignorePaths,
-			Debug:           o.debugFlag,
-			BuildCommand:    o.buildCommandFlag,
-			RunCommand:      o.runCommandFlag,
-			RandomPorts:     o.randomPortsFlag,
-			WatchFiles:      !o.noWatchFlag,
-			IgnoreLocalhost: o.ignoreLocalhostFlag,
-			Variables:       variables,
+			IgnorePaths:      o.ignorePaths,
+			Debug:            o.debugFlag,
+			BuildCommand:     o.buildCommandFlag,
+			RunCommand:       o.runCommandFlag,
+			RandomPorts:      o.randomPortsFlag,
+			WatchFiles:       !o.noWatchFlag,
+			IgnoreLocalhost:  o.ignoreLocalhostFlag,
+			ForwardLocalhost: o.forwardLocalhostFlag,
+			Variables:        variables,
 		},
 	)
 }
@@ -236,6 +244,10 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Whether to ignore errors related to port-forwarding apps listening on the container loopback interface. Applicable only if platform is podman.")
 	// TODO Unhide when moving Podman out of the experimental mode : https://github.com/redhat-developer/odo/issues/6592
 	_ = devCmd.Flags().MarkHidden("ignore-localhost")
+	devCmd.Flags().BoolVar(&o.forwardLocalhostFlag, "forward-localhost", false,
+		"Whether to enable port-forwarding if app is listening on the container loopback interface. Applicable only if platform is podman.")
+	// TODO Unhide when moving Podman out of the experimental mode : https://github.com/redhat-developer/odo/issues/6592
+	_ = devCmd.Flags().MarkHidden("forward-localhost")
 
 	clientset.Add(devCmd,
 		clientset.BINDING,
