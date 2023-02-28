@@ -143,11 +143,6 @@ var _ = Describe("odo generic", func() {
 			helper.ResetExperimentalMode()
 		})
 
-		It("should not list experimental flags by default", func() {
-			helpOutput := helper.Cmd("odo", "help").ShouldPass().Out()
-			Expect(helpOutput).ShouldNot(ContainSubstring(experimentalFlag))
-		})
-
 		When("experimental mode is enabled", func() {
 			BeforeEach(func() {
 				helper.EnableExperimentalMode()

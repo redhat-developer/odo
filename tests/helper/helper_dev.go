@@ -128,7 +128,6 @@ type DevSessionOpts struct {
 func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, errOut []byte, endpoints map[string]string, err error) {
 	if options.RunOnPodman {
 		options.CmdlineArgs = append(options.CmdlineArgs, "--platform", "podman")
-		options.EnvVars = append(options.EnvVars, "ODO_EXPERIMENTAL_MODE=true")
 	}
 	c, err := expect.NewConsole(expect.WithStdout(os.Stdout))
 	if err != nil {
@@ -265,7 +264,6 @@ func DevModeShouldFail(options DevSessionOpts, substring string) (DevSession, []
 	args = append(args, options.CmdlineArgs...)
 	if options.RunOnPodman {
 		args = append(args, "--platform", "podman")
-		options.EnvVars = append(options.EnvVars, "ODO_EXPERIMENTAL_MODE=true")
 	}
 	session := Cmd("odo", args...).AddEnv(options.EnvVars...).Runner().session
 	WaitForOutputToContain(substring, 360, 10, session)

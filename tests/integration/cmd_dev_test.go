@@ -237,9 +237,6 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
 					Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 					experimentalValue := false
-					if podman {
-						experimentalValue = true
-					}
 					Expect(td.Properties.CmdProperties[segment.ExperimentalMode]).To(Equal(experimentalValue))
 					if podman {
 						Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("podman"))
