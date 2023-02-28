@@ -85,6 +85,31 @@ func (c *Client) ListDynamicResources(namespace string, gvr schema.GroupVersionR
 	return list, nil
 }
 
+// ListClusterWideDynamicResources returns an unstructured list of instances of a Custom
+// Resource currently deployed cluster-wide in the cluster.
+// If a selector is passed, then it will be used as a label selector to list the resources.
+func (c *Client) ListClusterWideDynamicResources(gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error) {
+
+	if c.DynamicClient == nil {
+		return nil, nil
+	}
+
+	listOptions := metav1.ListOptions{}
+	if selector != "" {
+		listOptions.LabelSelector = selector
+	}
+
+	list, err := c.DynamicClient.Resource(gvr).List(context.TODO(), listOptions)
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return &unstructured.UnstructuredList{}, nil
+		}
+		return nil, err
+	}
+
+	return list, nil
+}
+
 // GetDynamicResource returns an unstructured instance of a Custom Resource currently deployed in the active namespace
 func (c *Client) GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
 	res, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
