@@ -79,15 +79,20 @@ func addDevfileRegistries(list *unstructured.UnstructuredList) ([]api.Registry, 
 				return nil, fmt.Errorf("unable to read url in resource %s/%s", item.GetKind(), item.GetName())
 			}
 
-			skipTLSVerify, ok := castedVal["skipTLSVerify"].(bool)
-			if !ok {
-				return nil, fmt.Errorf("unable to read skipTLSVerify in resource %s/%s", item.GetKind(), item.GetName())
+			var secure bool = true
+			skipTLSVerify, found := castedVal["skipTLSVerify"]
+			if found {
+				castedSkipTLSVerify, ok := skipTLSVerify.(bool)
+				if !ok {
+					return nil, fmt.Errorf("unable to read skipTLSVerify in resource %s/%s", item.GetKind(), item.GetName())
+				}
+				secure = !castedSkipTLSVerify
 			}
 
 			result = append(result, api.Registry{
 				Name:   name,
 				URL:    url,
-				Secure: !skipTLSVerify,
+				Secure: secure,
 			})
 		}
 	}

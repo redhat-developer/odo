@@ -201,4 +201,46 @@ OdoSettings:
 			})
 		})
 	}
+	When("DevfileRegistriesList and ClusterDevfileRegistriesList CR are installed on cluster", func() {
+		var commonVar helper.CommonVar
+		BeforeEach(func() {
+			commonVar = helper.CommonBeforeEach()
+			// install CRDs for devfile registry
+			//TODO: install clusterRegestryList from scripts
+			// clusterRegistryList := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "clusterdevfileregistrieslists.yaml"))
+			// Expect(clusterRegistryList.ExitCode()).To(BeEquivalentTo(0))
+			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
+			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		AfterEach(func() {
+			helper.CommonAfterEach(commonVar)
+			// clusterRegistryList := commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "clusterdevfileregistrieslists.yaml"))
+			// Expect(clusterRegistryList.ExitCode()).To(BeEquivalentTo(0))
+		})
+		When("CR for devfileregistrieslists is installed", func() {
+			BeforeEach(func() {
+				command := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileRegistryListCR.yaml"))
+				Expect(command.ExitCode()).To(BeEquivalentTo(0))
+			})
+
+			It("registry list should return registry listed in CR", func() {
+				stdout, stderr := helper.Cmd("odo", "preference", "view", "-o", "json").ShouldPass().OutAndErr()
+				Expect(stderr).To(BeEmpty())
+				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentIs(stdout, "registries.#", "3")
+				helper.JsonPathContentIs(stdout, "registries.0.name", "devfile-staging")
+				helper.JsonPathContentIs(stdout, "registries.0.url", "https://registry.stage.devfile.io")
+				helper.JsonPathContentIs(stdout, "registries.0.secure", "true")
+
+				helper.JsonPathContentIs(stdout, "registries.1.name", "second-devfile-reg")
+				helper.JsonPathContentIs(stdout, "registries.1.url", "https://registry.devfile.io")
+				helper.JsonPathContentIs(stdout, "registries.1.secure", "false")
+
+				helper.JsonPathContentIs(stdout, "registries.2.name", "DefaultDevfileRegistry")
+				helper.JsonPathContentIs(stdout, "registries.2.url", "https://registry.stage.devfile.io")
+				helper.JsonPathContentIs(stdout, "registries.2.secure", "false")
+			})
+		})
+	})
 })
