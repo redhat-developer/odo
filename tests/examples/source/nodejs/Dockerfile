@@ -1,4 +1,4 @@
-FROM quay.io/phmartin/node:17
+FROM node
 
 WORKDIR /usr/src/app
 
