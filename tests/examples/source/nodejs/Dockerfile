@@ -1,4 +1,4 @@
-FROM node
+FROM quay.io/odo-dev/node:19
 
 WORKDIR /usr/src/app
 
