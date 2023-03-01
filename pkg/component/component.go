@@ -221,7 +221,7 @@ func ListAllComponents(client kclient.ClientInterface, podmanClient podman.Clien
 		allComponents = append(allComponents, clusterComponents...)
 	}
 
-	// PdomanClient can be nil if experimental mode is not active
+	// PdomanClient can be nil if podman platform is not accessible
 	if podmanClient != nil {
 		podmanComponents, err := podmanClient.ListAllComponents()
 		if err != nil {

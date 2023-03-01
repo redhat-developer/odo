@@ -137,8 +137,6 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Describe("Experimental Mode", Label(helper.LabelNoCluster), func() {
-		experimentalFlag := "--platform"
-
 		AfterEach(func() {
 			helper.ResetExperimentalMode()
 		})
@@ -155,13 +153,6 @@ var _ = Describe("odo generic", func() {
 			It("should display warning message", func() {
 				out := helper.Cmd("odo", "version", "--client").ShouldPass().Out()
 				Expect(out).Should(ContainSubstring("Experimental mode enabled. Use at your own risk."))
-			})
-
-			It("experimental flags should be usable", func() {
-				By("via help output", func() {
-					helpOutput := helper.Cmd("odo", "help").ShouldPass().Out()
-					Expect(helpOutput).Should(ContainSubstring(experimentalFlag))
-				})
 			})
 		})
 	})

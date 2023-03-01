@@ -247,7 +247,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 					Context("Default output", func() {
 
-						When("describing the component in dev mode and with the experimental mode enabled", func() {
+						When("describing the component in dev mode", func() {
 							var stdout string
 							BeforeEach(func() {
 								stdout = helper.Cmd("odo", "describe", "component").ShouldPass().Out()
@@ -286,7 +286,7 @@ var _ = Describe("odo describe component command tests", func() {
 								Expect(err).NotTo(HaveOccurred())
 							})
 
-							When("describing the component from another directory and with the experimental mode enabled", func() {
+							When("describing the component from another directory", func() {
 								var stdout string
 								BeforeEach(func() {
 									stdout = helper.Cmd("odo", "describe", "component", "--name", cmpName).
@@ -313,7 +313,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 					Context("JSON output", func() {
 
-						When("describing the component in dev mode and with the experimental mode enabled", func() {
+						When("describing the component in dev mode", func() {
 							var stdout, stderr string
 							BeforeEach(func() {
 								stdout, stderr = helper.Cmd("odo", "describe", "component", "-o", "json").
@@ -374,7 +374,7 @@ var _ = Describe("odo describe component command tests", func() {
 								Expect(err).NotTo(HaveOccurred())
 							})
 
-							When("describing the component from another directory and with the experimental mode enabled", func() {
+							When("describing the component from another directory", func() {
 								var stdout, stderr string
 								BeforeEach(func() {
 									stdout, stderr = helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").

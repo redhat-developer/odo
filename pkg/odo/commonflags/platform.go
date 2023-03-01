@@ -35,7 +35,7 @@ func UsePlatformFlag(cmd *cobra.Command) {
 // package
 func AddPlatformFlag(ctx context.Context) {
 	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
-		flag.CommandLine.String(PlatformFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman" (experimental)`)
+		flag.CommandLine.String(PlatformFlagName, "", `Specify target platform, supported platforms: "cluster" (default), "podman"`)
 		_ = pflag.CommandLine.MarkHidden(PlatformFlagName)
 	}
 }
@@ -50,7 +50,7 @@ func CheckPlatformCommand(cmd *cobra.Command) error {
 
 	// Check the valid output
 	if hasFlagChanged && platformFlag.Value.String() != PlatformPodman && platformFlag.Value.String() != PlatformCluster {
-		return fmt.Errorf(`%s is not a valid target platform for --platform, please select either "cluster" (default) or "podman" (experimental)`, platformFlag.Value.String())
+		return fmt.Errorf(`%s is not a valid target platform for --platform, please select either "cluster" (default) or "podman"`, platformFlag.Value.String())
 	}
 
 	// Check that if -o json has been passed, that the command actually USES json.. if not, error out.
