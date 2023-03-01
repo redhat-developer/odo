@@ -20,6 +20,9 @@ type StartOptions struct {
 	RandomPorts bool
 	// if WatchFiles is set, files changes will trigger a new sync to the container
 	WatchFiles bool
+	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.
+	// Applicable to Podman only.
+	IgnoreLocalhost bool
 	// Variables to override in the Devfile
 	Variables map[string]string
 }

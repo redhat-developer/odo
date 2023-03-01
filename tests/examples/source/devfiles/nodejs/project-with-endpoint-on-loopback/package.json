@@ -1,0 +1,13 @@
+{
+  "name": "nodejs-with-endpoint-on-loopback",
+  "version": "1.0.0",
+  "description": "Simple Node.js application with one server listening on all interfaces and another on the loopback interface",
+  "license": "EPL-2.0",
+  "scripts": {
+    "start": "node server.js",
+    "debug": "node --inspect=${DEBUG_PORT} server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

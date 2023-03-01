@@ -2,6 +2,7 @@ package dev
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -50,11 +51,12 @@ type DevOptions struct {
 	cancel context.CancelFunc
 
 	// Flags
-	noWatchFlag      bool
-	randomPortsFlag  bool
-	debugFlag        bool
-	buildCommandFlag string
-	runCommandFlag   string
+	noWatchFlag         bool
+	randomPortsFlag     bool
+	debugFlag           bool
+	buildCommandFlag    string
+	runCommandFlag      string
+	ignoreLocalhostFlag bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -105,6 +107,9 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 	switch platform {
 	case commonflags.PlatformCluster:
+		if o.ignoreLocalhostFlag {
+			return errors.New("--ignore-localhost cannot be used when running in cluster mode")
+		}
 		if o.clientset.KubernetesClient == nil {
 			return kclient.NewNoConnectionError()
 		}
@@ -180,13 +185,14 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		o.out,
 		o.errOut,
 		dev.StartOptions{
-			IgnorePaths:  o.ignorePaths,
-			Debug:        o.debugFlag,
-			BuildCommand: o.buildCommandFlag,
-			RunCommand:   o.runCommandFlag,
-			RandomPorts:  o.randomPortsFlag,
-			WatchFiles:   !o.noWatchFlag,
-			Variables:    variables,
+			IgnorePaths:     o.ignorePaths,
+			Debug:           o.debugFlag,
+			BuildCommand:    o.buildCommandFlag,
+			RunCommand:      o.runCommandFlag,
+			RandomPorts:     o.randomPortsFlag,
+			WatchFiles:      !o.noWatchFlag,
+			IgnoreLocalhost: o.ignoreLocalhostFlag,
+			Variables:       variables,
 		},
 	)
 }
@@ -226,6 +232,11 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Alternative build command. The default one will be used if this flag is not set.")
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
+	devCmd.Flags().BoolVar(&o.ignoreLocalhostFlag, "ignore-localhost", false,
+		"Whether to ignore errors related to port-forwarding apps listening on the container loopback interface. Applicable only if platform is podman.")
+	// TODO Unhide when moving Podman out of the experimental mode : https://github.com/redhat-developer/odo/issues/6592
+	_ = devCmd.Flags().MarkHidden("ignore-localhost")
+
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
