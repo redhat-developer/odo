@@ -3372,6 +3372,17 @@ CMD ["npm", "start"]
 				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("--ignore-localhost cannot be used when running in cluster mode"))
 			})
+
+			It("should error out if using --forward-localhost on any platform other than Podman", func() {
+				args := []string{"dev", "--forward-localhost", "--random-ports"}
+				var env []string
+				if plt != "" {
+					args = append(args, "--platform", plt)
+					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
+				}
+				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				Expect(stderr).Should(ContainSubstring("--forward-localhost cannot be used when running in cluster mode"))
+			})
 		}
 
 		When("running on default cluster platform", func() {
@@ -3421,6 +3432,14 @@ CMD ["npm", "start"]
 
 		Context("running on Podman", Label(helper.LabelPodman), func() {
 
+			It("should error out if using both --ignore-localhost and --forward-localhost", func() {
+				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman", "--ignore-localhost", "--forward-localhost").
+					AddEnv("ODO_EXPERIMENTAL_MODE=true").
+					ShouldFail().
+					Err()
+				Expect(stderr).Should(ContainSubstring("--ignore-localhost and --forward-localhost cannot be used together"))
+			})
+
 			It("should error out if not ignoring localhost", func() {
 				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
@@ -3451,6 +3470,11 @@ CMD ["npm", "start"]
 				It("should port-forward successfully", func() {
 					By("displaying warning message for loopback port", func() {
 						Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
+					})
+					By("creating a pod with a single container pod because --forward-localhost is false", func() {
+						podDef := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner).GetPodDef()
+						Expect(podDef.Spec.Containers).Should(HaveLen(1))
+						Expect(podDef.Spec.Containers[0].Name).Should(Equal(fmt.Sprintf("%s-app-runtime", cmpName)))
 					})
 					By("reaching the local port for the non-loopback interface", func() {
 						Eventually(func(g Gomega) {
@@ -3488,6 +3512,84 @@ CMD ["npm", "start"]
 								_, err := http.Get("http://" + ports["3001"])
 								return err
 							}).Should(HaveOccurred())
+						})
+					})
+				})
+			})
+
+			When("forwarding localhost", func() {
+				var devSession helper.DevSession
+				var stdout, stderr string
+				var ports map[string]string
+
+				BeforeEach(func() {
+					var bOut, bErr []byte
+					var err error
+					devSession, bOut, bErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: true,
+						CmdlineArgs: []string{"--forward-localhost"},
+					})
+					Expect(err).ShouldNot(HaveOccurred())
+					stdout = string(bOut)
+					stderr = string(bErr)
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should port-forward successfully", func() {
+					By("not displaying warning message for loopback port", func() {
+						for _, output := range []string{stdout, stderr} {
+							Expect(output).ShouldNot(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface"))
+						}
+					})
+					By("creating a pod with a two-containers pod because --forward-localhost is true", func() {
+						podDef := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner).GetPodDef()
+						Expect(podDef.Spec.Containers).Should(HaveLen(2))
+						var found bool
+						var pfHelperContainer corev1.Container
+						for _, container := range podDef.Spec.Containers {
+							if container.Name == fmt.Sprintf("%s-app-odo-helper-port-forwarding", cmpName) {
+								pfHelperContainer = container
+								found = true
+								break
+							}
+						}
+						Expect(found).Should(BeTrue(), fmt.Sprintf("Could not find container 'odo-helper-port-forwarding' in pod spec: %v", podDef))
+						Expect(pfHelperContainer.Image).Should(HavePrefix("quay.io/devfile/base-developer-image"))
+					})
+					By("reaching the local port for the non-loopback interface", func() {
+						Eventually(func(g Gomega) {
+							g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Application!"))
+						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
+					})
+					By("reaching the local port for the loopback interface", func() {
+						Eventually(func(g Gomega) {
+							g.Expect(ports["3001"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Admin Application!"))
+						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
+					})
+				})
+
+				When("making changes in the project source code during the dev session", func() {
+					BeforeEach(func() {
+						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello from", "Hiya from the updated")
+						var err error
+						_, _, ports, err = devSession.WaitSync()
+						Expect(err).ShouldNot(HaveOccurred())
+					})
+
+					It("should port-forward successfully", func() {
+						By("reaching the local port for the non-loopback interface", func() {
+							Eventually(func(g Gomega) {
+								g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Application!"))
+							}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
+						})
+						By("reaching the local port for the loopback interface", func() {
+							Eventually(func(g Gomega) {
+								g.Expect(ports["3001"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Admin Application!"))
+							}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 						})
 					})
 				})

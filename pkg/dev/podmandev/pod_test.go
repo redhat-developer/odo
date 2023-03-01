@@ -42,8 +42,10 @@ var (
 	volume = generator.GetVolumeComponent(generator.VolumeComponentParams{
 		Name: "myvolume",
 	})
+)
 
-	basePod = &corev1.Pod{
+func buildBasePod(withPfContainer bool) *corev1.Pod {
+	basePod := corev1.Pod{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Pod",
@@ -90,12 +92,6 @@ var (
 						},
 					},
 				},
-				{
-					Args:    []string{"-f", "/dev/null"},
-					Command: []string{"tail"},
-					Image:   portForwardingHelperImage,
-					Name:    portForwardingHelperContainerName,
-				},
 			},
 			Volumes: []corev1.Volume{
 				{
@@ -117,7 +113,16 @@ var (
 			},
 		},
 	}
-)
+	if withPfContainer {
+		basePod.Spec.Containers = append(basePod.Spec.Containers, corev1.Container{
+			Args:    []string{"-f", "/dev/null"},
+			Command: []string{"tail"},
+			Image:   portForwardingHelperImage,
+			Name:    portForwardingHelperContainerName,
+		})
+	}
+	return &basePod
+}
 
 func Test_createPodFromComponent(t *testing.T) {
 
@@ -134,12 +139,12 @@ func Test_createPodFromComponent(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		wantPod     func() *corev1.Pod
+		wantPod     func(basePod *corev1.Pod) *corev1.Pod
 		wantFwPorts []api.ForwardedPort
 		wantErr     bool
 	}{
 		{
-			name: "basic component without command",
+			name: "basic component without command / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -152,13 +157,32 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				return basePod.DeepCopy()
+			},
+		},
+		{
+			name: "basic component without command / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					_ = data.AddComponents([]v1alpha2.Component{baseComponent})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				return pod
 			},
 		},
 		{
-			name: "basic component with command",
+			name: "basic component with command / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -174,7 +198,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[0].Command = []string{"./cmd"}
 				pod.Spec.Containers[0].Args = []string{"arg1", "arg2"}
@@ -182,7 +206,32 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + memory limit",
+			name: "basic component with command / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Command = []string{"./cmd"}
+					cmp.Container.Args = []string{"arg1", "arg2"}
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Command = []string{"./cmd"}
+				pod.Spec.Containers[0].Args = []string{"arg1", "arg2"}
+				return pod
+			},
+		},
+		{
+			name: "basic component + memory limit / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -197,7 +246,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[0].Resources.Limits = corev1.ResourceList{
 					"memory": resource.MustParse("1Gi"),
@@ -206,7 +255,32 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + application endpoint",
+			name: "basic component + memory limit / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.MemoryLimit = "1Gi"
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Resources.Limits = corev1.ResourceList{
+					"memory": resource.MustParse("1Gi"),
+				}
+				return pod
+			},
+		},
+		{
+			name: "basic component + application endpoint / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -224,7 +298,49 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					HostPort:      20001,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -246,7 +362,7 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + application endpoint + debug endpoint - without debug",
+			name: "basic component + application endpoint + debug endpoint - without debug / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -268,7 +384,53 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					HostPort:      20001,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint - without debug / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -290,7 +452,7 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + application endpoint + debug endpoint - with debug",
+			name: "basic component + application endpoint + debug endpoint - with debug / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -313,7 +475,69 @@ func Test_createPodFromComponent(t *testing.T) {
 				appName:       appName,
 				debug:         true,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					HostPort:      20001,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug",
+					ContainerPort: 5858,
+					HostPort:      20002,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20002,
+					ContainerPort: 5858,
+					IsDebug:       true,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint - with debug / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				debug:            true,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -349,7 +573,7 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component with volume mount",
+			name: "basic component with volume mount / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -369,7 +593,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				componentName: devfileName,
 				appName:       appName,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
 					Name: volume.Name,
@@ -387,7 +611,46 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + application endpoint + debug endpoint + container ports known - with debug",
+			name: "basic component with volume mount / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					_ = data.AddComponents([]v1alpha2.Component{baseComponent, volume})
+					_ = data.AddVolumeMounts(baseComponent.Name, []v1alpha2.VolumeMount{
+						{
+							Name: volume.Name,
+							Path: "/path/to/mount",
+						},
+					})
+
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+					Name: volume.Name,
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+							ClaimName: volume.Name + "-" + devfileName + "-" + appName,
+						},
+					},
+				})
+				pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+					Name:      volume.Name,
+					MountPath: "/path/to/mount",
+				})
+				return pod
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint + container ports known - with debug / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -414,7 +677,88 @@ func Test_createPodFromComponent(t *testing.T) {
 				appName:       appName,
 				debug:         true,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 20001,
+					HostPort:      20003,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug",
+					ContainerPort: 20002,
+					HostPort:      20004,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug-1",
+					ContainerPort: 5858,
+					HostPort:      20005,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20003,
+					ContainerPort: 20001,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20004,
+					ContainerPort: 20002,
+					IsDebug:       true,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug-1",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20005,
+					ContainerPort: 5858,
+					IsDebug:       true,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint + container ports known - with debug / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 20001,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 20002,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug-1",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				debug:            true,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -464,7 +808,7 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + application endpoint + debug endpoint + container ports known - without debug",
+			name: "basic component + application endpoint + debug endpoint + container ports known - without debug / forwardLocalhost=false",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -495,7 +839,77 @@ func Test_createPodFromComponent(t *testing.T) {
 				appName:       appName,
 				debug:         false,
 			},
-			wantPod: func() *corev1.Pod {
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 20001,
+					HostPort:      20002,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http-1",
+					ContainerPort: 8080,
+					HostPort:      20003,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20002,
+					ContainerPort: 20001,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http-1",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20003,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint + container ports known - without debug / forwardLocalhost=true",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 20001,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 20002,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug-1",
+						TargetPort: 5858,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http-1",
+						TargetPort: 8080,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName:    devfileName,
+				appName:          appName,
+				debug:            false,
+				forwardLocalhost: true,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
 				pod := basePod.DeepCopy()
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "http",
@@ -530,8 +944,6 @@ func Test_createPodFromComponent(t *testing.T) {
 				},
 			},
 		},
-
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -543,8 +955,8 @@ func Test_createPodFromComponent(t *testing.T) {
 				tt.args.buildCommand,
 				tt.args.runCommand,
 				tt.args.debugCommand,
-				false,
 				tt.args.forwardLocalhost,
+				false,
 				[]int{20001, 20002, 20003, 20004, 20005},
 			)
 			if (err != nil) != tt.wantErr {
@@ -552,7 +964,8 @@ func Test_createPodFromComponent(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(tt.wantPod(), got, cmpopts.EquateEmpty()); diff != "" {
+			basePod := buildBasePod(tt.args.forwardLocalhost)
+			if diff := cmp.Diff(tt.wantPod(basePod), got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("createPodFromComponent() pod mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.wantFwPorts, gotFwPorts, cmpopts.EquateEmpty()); diff != "" {
