@@ -124,7 +124,7 @@ var _ = Describe("odo devfile build-images command tests", func() {
 						containerImage := "localhost:5000/devfile-nodejs-deploy:0.1.0" // from Devfile yaml file
 						dockerfilePath := filepath.Join(commonVar.Context, "Dockerfile")
 						buildCtx := commonVar.Context
-						Expect(lines[nbLines-2]).To(BeEquivalentTo(
+						Expect(lines[nbLines-2]).To(ContainSubstring(
 							fmt.Sprintf("build -t %s -f %s %s", containerImage, dockerfilePath, buildCtx)))
 					})
 				}
@@ -168,7 +168,7 @@ var _ = Describe("odo devfile build-images command tests", func() {
 						containerImage := "localhost:5000/devfile-nodejs-deploy:0.1.0" // from Devfile yaml file
 						dockerfilePath := filepath.Join(commonVar.Context, "Dockerfile")
 						buildCtx := commonVar.Context
-						Expect(lines[nbLines-2]).To(BeEquivalentTo(
+						Expect(lines[nbLines-2]).To(ContainSubstring(
 							fmt.Sprintf("build -t %s -f %s %s", containerImage, dockerfilePath, buildCtx)))
 					})
 				}

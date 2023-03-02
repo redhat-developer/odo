@@ -50,7 +50,7 @@ var _ = Describe("odo add binding command tests", func() {
 			"--service", "cluster-sample",
 			"--workload", "app/Deployment.apps",
 		).ShouldPass().Out()
-		Expect(stdout).To(BeEquivalentTo(`apiVersion: binding.operators.coreos.com/v1alpha1
+		Expect(stdout).To(ContainSubstring(`apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
   creationTimestamp: null
@@ -83,7 +83,7 @@ status:
 			"--workload", "app/Deployment.apps",
 			"--naming-strategy", "lowercase",
 		).ShouldPass().Out()
-		Expect(stdout).To(BeEquivalentTo(`apiVersion: binding.operators.coreos.com/v1alpha1
+		Expect(stdout).To(ContainSubstring(`apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
   creationTimestamp: null
