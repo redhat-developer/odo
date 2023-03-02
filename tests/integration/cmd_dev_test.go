@@ -3343,12 +3343,10 @@ CMD ["npm", "start"]
 
 			It("should error out if using --ignore-localhost on any platform other than Podman", func() {
 				args := []string{"dev", "--ignore-localhost", "--random-ports"}
-				var env []string
 				if plt != "" {
 					args = append(args, "--platform", plt)
-					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 				}
-				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				stderr := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("--ignore-localhost cannot be used when running in cluster mode"))
 			})
 
@@ -3420,7 +3418,7 @@ CMD ["npm", "start"]
 			})
 
 			It("should error out if not ignoring localhost", func() {
-				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
 			})
 

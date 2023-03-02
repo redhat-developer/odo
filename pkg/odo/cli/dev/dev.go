@@ -242,12 +242,8 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	devCmd.Flags().BoolVar(&o.ignoreLocalhostFlag, "ignore-localhost", false,
 		"Whether to ignore errors related to port-forwarding apps listening on the container loopback interface. Applicable only if platform is podman.")
-	// TODO Unhide when moving Podman out of the experimental mode : https://github.com/redhat-developer/odo/issues/6592
-	_ = devCmd.Flags().MarkHidden("ignore-localhost")
 	devCmd.Flags().BoolVar(&o.forwardLocalhostFlag, "forward-localhost", false,
 		"Whether to enable port-forwarding if app is listening on the container loopback interface. Applicable only if platform is podman.")
-	// TODO Unhide when moving Podman out of the experimental mode : https://github.com/redhat-developer/odo/issues/6592
-	_ = devCmd.Flags().MarkHidden("forward-localhost")
 
 	clientset.Add(devCmd,
 		clientset.BINDING,
