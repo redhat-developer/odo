@@ -643,3 +643,12 @@ func (oc OcRunner) GetVersion() string {
 	}
 	return val
 }
+
+func (oc OcRunner) GetJobs(args ...string) string {
+	runnerArgs := []string{"get", "jobs"}
+	runnerArgs = append(runnerArgs, args...)
+	session := CmdRunner(oc.path, runnerArgs...)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	return output
+}

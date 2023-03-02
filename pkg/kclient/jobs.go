@@ -14,9 +14,13 @@ import (
 
 // constants for volumes
 const (
-	JobsKind         = "Job"
-	JobsAPIVersion   = "batch/v1"
-	JobNameMaxLength = 61
+	JobsKind       = "Job"
+	JobsAPIVersion = "batch/v1"
+	// JobNameOdoMaxLength is the max length of a job name
+	// To be on the safe side, we keep the max length less than the original(k8s) max length;
+	// we do this because k8s job in odo is created to run exec commands in Deploy mode and this is not a user created resource,
+	// so we do not want to break because of any error with job
+	JobNameOdoMaxLength = 60
 )
 
 func (c *Client) ListJobs(selector string) (*batchv1.JobList, error) {

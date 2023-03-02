@@ -111,8 +111,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component
 	getJobName := func() string {
-		lengthOfHyphens := 1
-		maxLen := kclient.JobNameMaxLength - len(command.Id) - lengthOfHyphens
+		maxLen := kclient.JobNameOdoMaxLength - len(command.Id)
 		// We ignore the error here because our component name or app name will never be empty; which are the only cases when an error might be raised.
 		name, _ := util.NamespaceKubernetesObjectWithTrim(o.componentName, o.appName, maxLen)
 		name += "-" + command.Id
@@ -151,9 +150,9 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 			klog.V(4).Infof("failed to list jobs; cause: %s", dErr.Error())
 			return
 		}
-		partialJobName := o.componentName + "-" + o.appName + "-" + command.Id
+		jobName := getJobName()
 		for _, item := range items.Items {
-			if strings.Contains(item.Name, partialJobName) {
+			if strings.Contains(item.Name, jobName) {
 				dErr = o.kubeClient.DeleteJob(item.Name)
 				if dErr != nil {
 					klog.V(4).Infof("failed to delete job %q; cause: %s", item.Name, dErr.Error())

@@ -454,3 +454,12 @@ func (kubectl KubectlRunner) GetVersion() string {
 	major := sv["major"].(string)
 	return major + "." + minor
 }
+
+func (kubectl KubectlRunner) GetJobs(args ...string) string {
+	runnerArgs := []string{"get", "jobs"}
+	runnerArgs = append(runnerArgs, args...)
+	session := CmdRunner(kubectl.path, runnerArgs...)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	return output
+}
