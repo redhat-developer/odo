@@ -62,5 +62,4 @@ type CliRunner interface {
 	EnsurePodIsUp(namespace, podName string)
 	AssertNonAuthenticated()
 	GetVersion() string
-	GetJobs(args ...string) string
 }
