@@ -244,6 +244,44 @@ The following command will override the `USER` Devfile variable with the `john` 
 odo dev --var USER=john --var-file config.vars
 ```
 
+### Running on Podman
+
+Instead of deploying the container into a Kubernetes cluster, `odo dev` can leverage the podman installation on your system to deploy the container.
+
+You need to use the `--platform podman` flags to run the component using podman instead of a Kubernetes cluster.
+
+```console
+odo dev --platform podman
+```
+<details>
+<summary>Example</summary>
+
+```console
+$ odo init --name my-nodejs-app --devfile nodejs --starter nodejs-starter
+
+$ odo dev --platform podman
+  __
+ /  \__     Developing using the "my-nodejs-app" Devfile
+ \__/  \    Platform: podman
+ /  \__/    odo version: v3.7.0
+ \__/
+
+↪ Running on podman in Dev mode
+ ✓  Deploying pod [4s]
+ ✓  Building your application in container (command: install) [3s]
+ •  Executing the application (command: run)  ...
+ -  Forwarding from 127.0.0.1:20001 -> 3000
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /path/to/project/nodejs
+
+ Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from podman
+     [p] - Manually apply local changes to the application on podman
+```
+</details>
+
 ## Devfile (Advanced Usage)
 
 ### Devfile Overview
