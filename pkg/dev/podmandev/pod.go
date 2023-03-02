@@ -252,6 +252,7 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 				LocalPort:     freePort,
 				ContainerPort: ep.TargetPort,
 				Exposure:      string(ep.Exposure),
+				Protocol:      string(ep.Protocol),
 			}
 			result = append(result, fp)
 		}

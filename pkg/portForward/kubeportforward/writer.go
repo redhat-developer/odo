@@ -95,6 +95,7 @@ containerLoop:
 				fp.PortName = ep.Name
 				fp.Exposure = string(ep.Exposure)
 				fp.IsDebug = libdevfile.IsDebugPort(ep.Name)
+				fp.Protocol = string(ep.Protocol)
 				break containerLoop
 			}
 		}

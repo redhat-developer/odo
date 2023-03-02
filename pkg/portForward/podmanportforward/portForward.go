@@ -9,6 +9,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -120,11 +121,17 @@ func getPodName(componentName string) string {
 }
 
 func getCommandDefinition(port api.ForwardedPort) remotecmd.CommandDefinition {
+	proto := "tcp"
+	switch {
+	case strings.EqualFold(port.Protocol, string(corev1.ProtocolUDP)):
+		proto = "udp"
+	case strings.EqualFold(port.Protocol, string(corev1.ProtocolSCTP)):
+		proto = "sctp"
+	}
 	return remotecmd.CommandDefinition{
 		Id: fmt.Sprintf("pf-%s", port.PortName),
 		// PidDirectory needs to be writable
 		PidDirectory: "/projects/",
-		//TODO(rm3l) Use the right L4 protocol: tcp or udp?
-		CmdLine: fmt.Sprintf("socat -d tcp-listen:%d,reuseaddr,fork tcp:localhost:%d", port.LocalPort, port.ContainerPort),
+		CmdLine:      fmt.Sprintf("socat -d %[1]s-listen:%[2]d,reuseaddr,fork %[1]s:localhost:%[3]d", proto, port.LocalPort, port.ContainerPort),
 	}
 }
