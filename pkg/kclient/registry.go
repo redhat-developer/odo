@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/redhat-developer/odo/pkg/api"
 
@@ -79,7 +80,7 @@ func addDevfileRegistries(list *unstructured.UnstructuredList) ([]api.Registry, 
 				return nil, fmt.Errorf("unable to read url in resource %s/%s", item.GetKind(), item.GetName())
 			}
 
-			var secure bool = true
+			secure := true
 			skipTLSVerify, found := castedVal["skipTLSVerify"]
 			if found {
 				castedSkipTLSVerify, ok := skipTLSVerify.(bool)
@@ -87,6 +88,11 @@ func addDevfileRegistries(list *unstructured.UnstructuredList) ([]api.Registry, 
 					return nil, fmt.Errorf("unable to read skipTLSVerify in resource %s/%s", item.GetKind(), item.GetName())
 				}
 				secure = !castedSkipTLSVerify
+			}
+
+			if strings.TrimSpace(url) == "" {
+				klog.V(4).Infof("ignored registry %q because url is blank", name)
+				continue
 			}
 
 			result = append(result, api.Registry{
