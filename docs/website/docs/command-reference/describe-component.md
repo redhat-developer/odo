@@ -2,7 +2,7 @@
 title: odo describe component
 ---
 
-`odo describe component` command is useful for getting information about a component managed by `odo`. 
+`odo describe component` command is useful for getting information about a component. 
 
 ## Running the command
 There are 2 ways to describe a component:
@@ -59,7 +59,7 @@ This command returns information extracted from the Devfile:
 - the list of Kubernetes components.
 - the list of forwarded ports if the component is running in Dev mode.
 
-The command also displays if the component is currently running in the cluster on Dev and/or Deploy mode.
+The command also displays if the component is currently running in the cluster or in Podman on Dev and/or Deploy mode.
 
 ### Describe without access to Devfile
 
@@ -98,4 +98,8 @@ Kubernetes Routes:
 
 The command extracts information from the labels and annotations attached to the deployed component to display the known metadata of the Devfile used to deploy the component.
 
-The command also displays if the component is currently running in the cluster on Dev and/or Deploy mode.
+The command also displays if the component is currently running in the cluster or in Podman on Dev and/or Deploy mode.
+
+### Targeting a specific platform
+
+By default, `odo describe component` will search components in both the current namespace of the cluster and podman. You can restrict the search in one of the platform only, using the `--platform` flag, giving a value `cluster` or `podman`.

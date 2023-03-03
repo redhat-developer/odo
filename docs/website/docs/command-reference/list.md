@@ -15,11 +15,11 @@ odo list
 
 ```shell
 $ odo list
- ✓  Listing resources from the namespace "my-percona-server-mongodb-operator" [302ms]
- NAME              PROJECT TYPE  RUNNING IN  MANAGED
- my-nodejs         nodejs        Deploy      odo (v3.0.0-rc1)
- my-go-app         go            Dev         odo (v3.0.0-rc1)
- mongodb-instance  Unknown       None        percona-server-mongodb-operator 
+ ✓  Listing components from namespace 'my-percona-server-mongodb-operator' [292ms]
+ NAME              PROJECT TYPE  RUNNING IN  MANAGED                          PLATFORM
+ * my-nodejs       nodejs        Deploy      odo (v3.7)                       cluster
+ my-go-app         go            Dev         odo (v3.7)                       podman
+ mongodb-instance  Unknown       None        percona-server-mongodb-operator  cluster
 
 Bindings:
  NAME                        APPLICATION                 SERVICES                                                   RUNNING IN 

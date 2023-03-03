@@ -5,8 +5,11 @@ toc_max_heading_level: 4
 ---
 
 `odo delete component` command is useful for deleting resources that are managed by `odo`.
-By default, it deletes the component and its related inner-loop, and outer-loop resources from the cluster.
-But the `running-in` flag allows to be more specific about which resources (either inner-loop or outer-loop) to delete.
+By default, it deletes the component and its related inner-loop, and outer-loop resources from the cluster and from podman.
+
+The `running-in` flag allows to be more specific about which resources (either inner-loop or outer-loop) to delete.
+
+The `platofmr` flag allows to restrict the deletion from a specific platform only, either cluster or podman.
 
 ## Running the command
 There are 2 ways to delete a component:
@@ -31,13 +34,15 @@ If these resources have been deployed on the cluster, then `odo` will delete the
 Otherwise, `odo` will exit with a message stating that it could not find the resources on the cluster.
 
 :::note
-If some resources attached to the component are present on the cluster, but not in the Devfile, then they will not be deleted.
+If some resources attached to the component are present on the cluster or on podman, but not in the Devfile, then they will not be deleted.
 You can delete these resources by running the command in the [next section](#delete-without-access-to-devfile).
 :::
 
 #### Filtering resources to delete
 You can specify the type of resources candidate for deletion via the `--running-in` flag.
 Acceptable values are `dev` (for inner-loop resources) or `deploy` (for outer-loop resources).
+
+You can target a specific platform from which delete the resources, with the `--platform` flag. Acceptable values are `cluster` and `podman`.
 
 <details>
 <summary>Example</summary>
@@ -91,15 +96,17 @@ import DeleteNamedComponentOutput from './docs-mdx/delete-component/delete_named
 </details>
 
 
-`odo` searches for resources attached to the given component in the given namespace on the cluster.
+`odo` searches for resources attached to the given component in the given namespace on the cluster and on Podman.
 If `odo` finds the resources, it will delete them after user confirmation.
-Otherwise, `odo` will exit with a message stating that it could not find the resources on the cluster.
+Otherwise, `odo` will exit with a message stating that it could not find the resources on the cluster or on Podman.
 
 `--namespace` is optional, if not provided, `odo` will use the current active namespace.
 
 #### Filtering resources to delete
 You can specify the type of resources candidate for deletion via the `--running-in` flag.
 Acceptable values are `dev` (for inner-loop resources) or `deploy` (for outer-loop resources).
+
+You can target a specific platform from which delete the resources, with the `--platform` flag. Acceptable values are `cluster` and `podman`.
 
 <details>
 <summary>Example</summary>

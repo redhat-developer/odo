@@ -2,7 +2,7 @@
 title: odo list component
 ---
 
-`odo list component` command is useful for getting information about components running on a specific namespace.
+`odo list component` command is useful for getting information about components running on a specific namespace of a cluster or on Podman.
 
 If the command is executed from a directory containing a Devfile, it also displays the component
 defined in the Devfile as part of the list, prefixed with a star(*).
@@ -12,7 +12,8 @@ For each component, the command displays:
 - its project type,
 - on which mode it is running (None, Dev, Deploy, or both), note that None is only applicable to the component 
 defined in the local Devfile,
-- by which application the component has been deployed.
+- by which application the component has been deployed,
+- the platform on which the component is running (cluster or podman).
 
 ### Running the command
 ```shell
@@ -24,13 +25,16 @@ odo list component
 ```shell
 $ odo list component
  ✓  Listing components from namespace 'my-percona-server-mongodb-operator' [292ms]
- NAME              PROJECT TYPE  RUNNING IN  MANAGED
- * my-nodejs         nodejs        Deploy      odo (v3.0.0-rc1)
- my-go-app         go            Dev         odo (v3.0.0-rc1)
- mongodb-instance  Unknown       None        percona-server-mongodb-operator 
+ NAME              PROJECT TYPE  RUNNING IN  MANAGED                          PLATFORM
+ * my-nodejs       nodejs        Deploy      odo (v3.7)                       cluster
+ my-go-app         go            Dev         odo (v3.7)                       podman
+ mongodb-instance  Unknown       None        percona-server-mongodb-operator  cluster
 ```
 </details>
 
+### Targeting a specific platform
+
+By default, `odo list component` will search components in both the current namespace of the cluster and podman. You can restrict the search in one of the platform only, using the `--platform` flag, giving a value `cluster` or `podman`.
 
 :::tip use of cache
 

@@ -2,7 +2,7 @@
 title: odo logs
 ---
 
-`odo logs` is used to display the logs for all the containers odo created for the component under current working 
+`odo logs` is used to display the logs for all the containers odo created on cluster or on Podman for the component under current working 
 directory.
 
 ## Running the command 
@@ -11,7 +11,7 @@ If you haven't already done so, you must [initialize](../command-reference/init)
 init` command. 
 
 ```shell
-odo logs [--follow] [--dev | --deploy]
+odo logs [--follow] [--dev | --deploy] [--platform podman]
 ```
 <details>
 <summary>Example</summary>
@@ -47,6 +47,7 @@ main: Wed Sep 21 08:27:22 UTC 2022 - this is infinite while loop
 * Use `odo logs --dev` to see the logs for the containers created by `odo dev` command.
 * Use `odo logs --deploy` to see the logs for the containers created by `odo deploy` command.
 * Use `odo logs` (without any flag) to see the logs of all the containers created by both `odo dev` and `odo deploy`.
+* Use `odo logs --platform podman` to target the Podman platform instead of the cluster
 
 Note that if multiple containers are named the same (for example, `main`), the `odo logs` output appends a number to 
 container name to help differentiate between the containers. In the output, you will see containers named as `main`, 
