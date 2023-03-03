@@ -126,7 +126,7 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 		registry := reg                 // Needed to prevent the lambda from capturing the value
 		registryPriority := regPriority // Needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			registryDevfiles, err := getRegistryStacks(ctx, o.preferenceClient, registry)
+			registryDevfiles, err := getRegistryStacks(ctx, registry)
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL, and credential and remove add the registry again (refer to `odo preference add registry --help`)\n", registry.Name, err)
 				return
@@ -196,7 +196,7 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 }
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
-func getRegistryStacks(ctx context.Context, preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
+func getRegistryStacks(ctx context.Context, registry api.Registry) ([]api.DevfileStack, error) {
 	isGithubregistry, err := IsGithubBasedRegistry(registry.URL)
 	if err != nil {
 		return nil, err

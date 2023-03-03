@@ -586,15 +586,13 @@ func TestGetRegistryDevfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			prefClient := preference.NewMockClient(ctrl)
 			ctx := envcontext.WithEnvConfig(context.Background(), config.Configuration{})
 			server, url := tt.registryServerProvider(t)
 			if server != nil {
 				defer server.Close()
 			}
 
-			got, err := getRegistryStacks(ctx, prefClient, api.Registry{Name: registryName, URL: url})
+			got, err := getRegistryStacks(ctx, api.Registry{Name: registryName, URL: url})
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
