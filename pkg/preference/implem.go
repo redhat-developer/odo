@@ -228,7 +228,7 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		registryList = append(registryList, registry)
 
 	case "remove":
-		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
+		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist or it is not managed by odo", operation, registryName)
 	}
 
 	return registryList, nil

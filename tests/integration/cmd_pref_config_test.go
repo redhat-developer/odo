@@ -241,6 +241,12 @@ OdoSettings:
 				helper.JsonPathContentIs(stdout, "registries.2.url", "https://registry.stage.devfile.io")
 				helper.JsonPathContentIs(stdout, "registries.2.secure", "false")
 			})
+
+			It("should fail to delete the in-cluster registry", func() {
+				regName := "second-devfile-reg"
+				stderr := helper.Cmd("odo", "preference", "remove", "registry", regName).ShouldFail().Err()
+				Expect(stderr).Should(ContainSubstring("failed to remove registry: registry %q doesn't exist or it is not managed by odo", regName))
+			})
 		})
 	})
 })
