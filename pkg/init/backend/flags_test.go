@@ -14,7 +14,7 @@ import (
 	dffilesystem "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -70,12 +70,11 @@ func TestFlagsBackend_Validate(t *testing.T) {
 		dir   string
 	}
 	tests := []struct {
-		name               string
-		fields             fields
-		args               args
-		registryNameExists bool
-		registryList       []api.Registry
-		wantErr            bool
+		name         string
+		fields       fields
+		args         args
+		registryList []api.Registry
+		wantErr      bool
 	}{
 		{
 			name: "no name passed",
@@ -126,8 +125,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					Name: "aregistry",
 				},
 			},
-			registryNameExists: true,
-			wantErr:            false,
+			wantErr: false,
 		},
 		{
 			name: "devfile and devfile-path passed",
@@ -161,8 +159,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 				},
 				dir: "/tmp",
 			},
-			registryNameExists: true,
-			wantErr:            false,
+			registryList: []api.Registry{
+				{
+					Name: "aregistry",
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "devfile and devfile-registry passed with non existing registry",
@@ -179,8 +181,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 				},
 				dir: "/tmp",
 			},
-			registryNameExists: false,
-			wantErr:            true,
+			wantErr: true,
 		},
 		{
 			name: "devfile-path and devfile-registry passed",
@@ -197,8 +198,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 				},
 				dir: "/tmp",
 			},
-			registryNameExists: true,
-			wantErr:            true,
+			registryList: []api.Registry{
+				{
+					Name: "aregistry",
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name: "numeric name",
@@ -272,12 +277,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().RegistryNameExists(gomock.Any()).Return(tt.registryNameExists).AnyTimes()
-			prefClient.EXPECT().RegistryList().Return(tt.registryList).AnyTimes()
+
+			registryClient := registry.NewMockClient(ctrl)
+			registryClient.EXPECT().GetDevfileRegistries(gomock.Eq(tt.args.flags[FLAG_DEVFILE_REGISTRY])).Return(tt.registryList, nil).AnyTimes()
 
 			o := &FlagsBackend{
-				preferenceClient: prefClient,
+				registryClient: registryClient,
 			}
 			if err := o.Validate(tt.args.flags, tt.args.fsys(), tt.args.dir); (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.Validate() error = %v, wantErr %v", err, tt.wantErr)
@@ -288,7 +293,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 
 func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 	type fields struct {
-		preferenceClient preference.Client
+		registryClient registry.Client
 	}
 	type args struct {
 		devfile func() parser.DevfileObj
@@ -374,7 +379,7 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &FlagsBackend{
-				preferenceClient: tt.fields.preferenceClient,
+				registryClient: tt.fields.registryClient,
 			}
 			got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
 			if (err != nil) != tt.wantErr {
@@ -390,7 +395,7 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 
 func TestFlagsBackend_PersonalizeName(t *testing.T) {
 	type fields struct {
-		preferenceClient preference.Client
+		registryClient registry.Client
 	}
 	type args struct {
 		devfile func(fs dffilesystem.Filesystem) parser.DevfileObj
@@ -449,7 +454,7 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &FlagsBackend{
-				preferenceClient: tt.fields.preferenceClient,
+				registryClient: tt.fields.registryClient,
 			}
 			fs := dffilesystem.NewFakeFs()
 			newName, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)
