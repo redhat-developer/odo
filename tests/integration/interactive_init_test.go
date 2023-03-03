@@ -595,6 +595,11 @@ spec:
 			})
 
 			It("should download correct devfile from the first in-cluster registry", func() {
+				// This test fails on Windows because of terminal emulator behaviour
+				if os.Getenv("SKIP_WELCOMING_MESSAGES") == "true" {
+					Skip("This is a Unix specific scenario, skipping")
+				}
+
 				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Java")
