@@ -7,12 +7,12 @@ slug: container-based-application-development-air-gapped-environment
 
 # Container-based application development in an air-gapped environment
 
-An air-gapped environment (otherwise known as offline or disconnected environment) will prevent both odo and the application
-developed with odo to access the internet directly.
+An air-gapped environment (otherwise known as offline or disconnected environment) will prevent both `odo` and the application
+developed with `odo` to access the internet directly.
 
-In this case, you will need to apply some configuration and/or to deploy some elements in the local network to be able to work with odo.
+In this case, you will need to apply some configuration and/or deploy some elements in the local network to be able to work with `odo`.
 
-The development with odo is done in two phases. The first phase is to obtain a Devfile from a Devfile Registry, and the second phase
+The development with `odo` is done in two phases. The first phase is to obtain a Devfile from a Devfile Registry, and the second phase
 is to run the application into a cluster, based on the configuration defined in the Devfile.
 
 ## Accessing a Devfile Registry
@@ -35,7 +35,7 @@ and how to deploy the image you have built in a local Kubernetes cluster:
 
 To execute the application in the cluster, `odo` first deploys a Pod into this cluster, based on a container image defined in the Devfile. This container image will be pulled by the cluster to instantiate the pod.
 
-Then, the source files will be synchronized into the container and the application will be built from inside the container. Depending on the language and/or framework used for your application, the build may need to access a dependency registry (NPM registry, Maven registry, etc).
+Then, the source files will be synchronized into the container and the application will be built from inside the container. Depending on the language and/or framework used for your application, the build may need to access a dependency registry (NPM registry, Maven repository, etc).
 
 ### Pulling the container image
 
@@ -47,7 +47,7 @@ to the cluster, using an `ImagePullSecret`. Instructions to work with `ImagePull
 are provided here: [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
 
 As described in the previous instructions, you will need to define an `ImagePullSecret` for the Pod
-that will be deployed by `odo`. For this, you can use the `pod-overrides` feature provided by the Devfile, for example:
+that will be deployed by `odo`. For this, you can use the [`pod-overrides`](https://devfile.io/docs/2.2.0/overriding-pod-and-container-attributes#pod-overrides) feature provided by the Devfile, for example:
 
 ```yaml
 [...]
@@ -117,7 +117,7 @@ commands:
   id: install
 ```
 
-You can also provide additional environment variable to the container:
+You can also provide additional environment variables to the container:
 
 ```yaml
 [...]
