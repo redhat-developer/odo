@@ -9,11 +9,9 @@ import (
 	"path/filepath"
 	"regexp"
 
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -483,6 +481,101 @@ CMD ["npm", "start"]
 					})
 				})
 			})
+
 		})
 	}
+	Context("deploying devfile with exec", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+		for _, ctx := range []struct {
+			title, compName string
+		}{
+			{
+				title:    "component name of at max(63) characters length",
+				compName: "document-how-odo-translates-container-component-to-deploymentss",
+			},
+			{
+				title:    "component name of a normal character length",
+				compName: helper.RandString(6),
+			},
+		} {
+			ctx := ctx
+			When(fmt.Sprintf("using devfile that works; with %s", ctx.title), func() {
+				BeforeEach(func() {
+					helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(ctx.compName)})
+				})
+				It("should complete the command execution successfully", func() {
+					out := helper.Cmd("odo", "deploy").ShouldPass().Out()
+					Expect(out).To(ContainSubstring("Executing command in container (command: deploy-exec)"))
+				})
+			})
+
+			// We check the following tests for character length as long as 63 and for normal character length because for 63 char,
+			// the job name will be truncated, and we want to ensure the correct truncated name is used to delete the old job before running a new one so that `odo deploy` does not fail
+			When(fmt.Sprintf("the deploy command terminates abruptly; %s", ctx.title), func() {
+				BeforeEach(func() {
+					helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(ctx.compName)})
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `image: registry.access.redhat.com/ubi8/nodejs-14:latest`, `image: registry.access.redhat.com/ubi8/nodejs-does-not-exist-14:latest`)
+					helper.Cmd("odo", "deploy").WithTimeout(10).ShouldFail()
+				})
+				When("odo deploy command is run again", func() {
+					BeforeEach(func() {
+						// Restore the Devfile; this is not a required step to test, but we do it to not abruptly terminate the command again
+						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `image: registry.access.redhat.com/ubi8/nodejs-does-not-exist-14:latest`, `image: registry.access.redhat.com/ubi8/nodejs-14:latest`)
+					})
+					It("should run successfully", func() {
+						helper.Cmd("odo", "deploy").ShouldPass()
+					})
+				})
+			})
+
+		}
+
+		When("using a devfile name with length more than 63", func() {
+			const (
+				unacceptableLongName = "document-how-odo-translates-container-component-to-deploymentsss"
+			)
+			BeforeEach(func() {
+				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(unacceptableLongName)})
+			})
+			It("should fail with invalid component name error", func() {
+				errOut := helper.Cmd("odo", "deploy").ShouldFail().Err()
+				Expect(errOut).To(SatisfyAll(ContainSubstring(fmt.Sprintf("component name %q is not valid", unacceptableLongName)),
+					ContainSubstring("Contain at most 63 characters"),
+					ContainSubstring("Start with an alphanumeric character"),
+					ContainSubstring("End with an alphanumeric character"),
+					ContainSubstring("Must not contain all numeric values")))
+			})
+		})
+
+		When("using devfile with a long running command in exec", func() {
+			BeforeEach(func() {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: sleep 62; echo hello world`)
+			})
+			It("should print the tip to run odo logs after 1 minute of execution", func() {
+				out := helper.Cmd("odo", "deploy").ShouldPass().Out()
+				Expect(out).To(ContainSubstring("Tip: Run `odo logs --deploy --follow` to get the logs of the command output."))
+			})
+		})
+
+		When("using devfile where the exec command is bound to fail", func() {
+			BeforeEach(func() {
+				// the following new commandLine ensures "counter $i counter" is printed on 99 lines of the output and the last line is a failure from running a non-existent binary
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `commandLine: echo Hello world`, `commandLine: for i in {1..100}; do echo counter $i counter; done; run-non-existent-binary`)
+			})
+
+			It("should print the last 100 lines of the log to the output", func() {
+				out, errOut := helper.Cmd("odo", "deploy").ShouldFail().OutAndErr()
+				Expect(out).To(ContainSubstring("Execution output:"))
+				// checking 'counter 1 counter' does not exist in the log output ensures that only the last 100 lines are printed
+				Expect(errOut).ToNot(ContainSubstring("counter 1 counter"))
+				Expect(errOut).To(ContainSubstring("/bin/sh: run-non-existent-binary: command not found"))
+			})
+		})
+
+	})
 })

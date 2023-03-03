@@ -484,7 +484,7 @@ func (a *Adapter) createOrUpdateComponent(
 	serviceAnnotations["service.binding/backend_ip"] = "path={.spec.clusterIP}"
 	serviceAnnotations["service.binding/backend_port"] = "path={.spec.ports},elementType=sliceOfMaps,sourceKey=name,sourceValue=port"
 
-	serviceName, err := util.NamespaceKubernetesObjectWithTrim(componentName, a.AppName)
+	serviceName, err := util.NamespaceKubernetesObjectWithTrim(componentName, a.AppName, 63)
 	if err != nil {
 		return nil, false, err
 	}

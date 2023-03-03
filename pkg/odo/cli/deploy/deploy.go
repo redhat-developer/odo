@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -62,7 +63,9 @@ func (o *DeployOptions) Validate(ctx context.Context) error {
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
-	return nil
+	componentName := odocontext.GetComponentName(ctx)
+	err := dfutil.ValidateK8sResourceName("component name", componentName)
+	return err
 }
 
 // Run contains the logic for the odo command
