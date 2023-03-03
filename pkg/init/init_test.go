@@ -37,6 +37,10 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
+					return client
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
 					registryList := []api.Registry{
 						{
 							Name: "Registry0",
@@ -47,11 +51,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(registryList)
-					return client
-				},
-				registryClient: func(ctrl *gomock.Controller) registry.Client {
-					client := registry.NewMockClient(ctrl)
+					client.EXPECT().GetDevfileRegistries(gomock.Eq("Registry1")).Return(registryList, nil).Times(1)
 					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), gomock.Any()).Return(nil).Times(1)
 					return client
 				},
@@ -68,6 +68,10 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
+					return client
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
 					registryList := []api.Registry{
 						{
 							Name: "Registry0",
@@ -78,11 +82,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(registryList)
-					return client
-				},
-				registryClient: func(ctrl *gomock.Controller) registry.Client {
-					client := registry.NewMockClient(ctrl)
+					client.EXPECT().GetDevfileRegistries(gomock.Eq("Registry1")).Return(registryList, nil).Times(1)
 					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), gomock.Any()).Return(errors.New("")).Times(1)
 					return client
 				},
@@ -98,7 +98,10 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			name: "Download devfile from all registries where devfile is present in second registry",
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
-					client := preference.NewMockClient(ctrl)
+					return preference.NewMockClient(ctrl)
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
 					registryList := []api.Registry{
 						{
 							Name: "Registry0",
@@ -109,11 +112,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(registryList)
-					return client
-				},
-				registryClient: func(ctrl *gomock.Controller) registry.Client {
-					client := registry.NewMockClient(ctrl)
+					client.EXPECT().GetDevfileRegistries(gomock.Eq("")).Return(registryList, nil).Times(1)
 					client.EXPECT().PullStackFromRegistry("http://registry0", "java", gomock.Any(), gomock.Any()).Return(errors.New("")).Times(1)
 					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), gomock.Any()).Return(nil).Times(1)
 					return client
@@ -131,6 +130,10 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			fields: fields{
 				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
 					client := preference.NewMockClient(ctrl)
+					return client
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
 					registryList := []api.Registry{
 						{
 							Name: "Registry0",
@@ -141,11 +144,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 							URL:  "http://registry1",
 						},
 					}
-					client.EXPECT().RegistryList().Return(registryList)
-					return client
-				},
-				registryClient: func(ctrl *gomock.Controller) registry.Client {
-					client := registry.NewMockClient(ctrl)
+					client.EXPECT().GetDevfileRegistries(gomock.Eq("")).Return(registryList, nil).Times(1)
 					client.EXPECT().PullStackFromRegistry("http://registry0", "java", gomock.Any(), gomock.Any()).Return(errors.New("")).Times(1)
 					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), gomock.Any()).Return(errors.New("")).Times(1)
 					return client
