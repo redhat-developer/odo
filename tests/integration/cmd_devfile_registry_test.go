@@ -11,6 +11,20 @@ import (
 )
 
 var _ = Describe("odo devfile registry command tests", func() {
+
+	var commonVar helper.CommonVar
+
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
+	})
+
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
+	})
+
 	for _, label := range []string{
 		helper.LabelNoCluster, helper.LabelUnauth,
 	} {
@@ -25,19 +39,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 			if proxy != "" {
 				addRegistryURL = "http://" + proxy
 			}
-
-			var commonVar helper.CommonVar
-
-			// This is run before every Spec (It)
-			var _ = BeforeEach(func() {
-				commonVar = helper.CommonBeforeEach()
-				helper.Chdir(commonVar.Context)
-			})
-
-			// This is run after every Spec (It)
-			var _ = AfterEach(func() {
-				helper.CommonAfterEach(commonVar)
-			})
 
 			It("Should list all default registries", func() {
 				output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
@@ -200,4 +201,76 @@ var _ = Describe("odo devfile registry command tests", func() {
 			})
 		})
 	}
+
+	When("DevfileRegistriesList CRD is installed on cluster", func() {
+		BeforeEach(func() {
+			// install CRDs for devfile registry
+			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
+			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		When("CR for devfileregistrieslists is installed in namespace", func() {
+			BeforeEach(func() {
+				command := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileRegistryListCR.yaml"))
+				Expect(command.ExitCode()).To(BeEquivalentTo(0))
+			})
+
+			It("should list detailed information regarding nodejs when using an in-cluster registry", func() {
+				args := []string{"registry", "--details", "--devfile", "nodejs", "--devfile-registry", "second-devfile-reg"}
+
+				By("using human readable output", func() {
+					output := helper.Cmd("odo", args...).ShouldPass().Out()
+					By("checking headers", func() {
+						for _, h := range []string{
+							"Name",
+							"Display Name",
+							"Registry",
+							"Registry URL",
+							"Version",
+							"Description",
+							"Tags",
+							"Project Type",
+							"Language",
+							"Starter Projects",
+							"Supported odo Features",
+							"Versions",
+						} {
+							Expect(output).Should(ContainSubstring(h + ":"))
+						}
+					})
+					By("checking values", func() {
+						helper.MatchAllInOutput(output, []string{"nodejs-starter", "JavaScript", "Node.js Runtime", "Dev: Y"})
+					})
+				})
+				By("using JSON output", func() {
+					args = append(args, "-o", "json")
+					res := helper.Cmd("odo", args...).ShouldPass()
+					stdout, stderr := res.Out(), res.Err()
+					Expect(stderr).To(BeEmpty())
+					Expect(helper.IsJSON(stdout)).To(BeTrue())
+					helper.JsonPathContentIs(stdout, "0.name", "nodejs")
+					helper.JsonPathContentContain(stdout, "0.displayName", "Node")
+					helper.JsonPathContentContain(stdout, "0.description", "Node")
+					helper.JsonPathContentContain(stdout, "0.language", "JavaScript")
+					helper.JsonPathContentContain(stdout, "0.projectType", "Node.js")
+					helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
+					helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
+
+					defaultVersion := gjson.Get(stdout, "0.version").String()
+					By("returning backward-compatible information linked to the default stack version", func() {
+						helper.JsonPathContentContain(stdout, "0.starterProjects.0", "nodejs-starter")
+						Expect(defaultVersion).ShouldNot(BeEmpty())
+					})
+					By("returning a non-empty list of versions", func() {
+						versions := gjson.Get(stdout, "0.versions").Array()
+						Expect(versions).ShouldNot(BeEmpty())
+					})
+					By("listing the default version as such in the versions list", func() {
+						Expect(gjson.Get(stdout, "0.versions.#(isDefault==true).version").String()).Should(Equal(defaultVersion))
+					})
+				})
+			})
+
+		})
+	})
 })

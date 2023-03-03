@@ -275,7 +275,10 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	}
 	defer os.Remove(tmpFile)
 
-	registries := o.preferenceClient.RegistryList()
+	registries, err := o.GetDevfileRegistries(registryName)
+	if err != nil {
+		return api.DevfileData{}, err
+	}
 	registryOptions := segment.GetRegistryOptions(ctx)
 	registryOptions.NewIndexSchema = true
 	// Get the file and save it to the temporary file
