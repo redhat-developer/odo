@@ -234,6 +234,10 @@ func CommonBeforeEach() CommonVar {
 	err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
 
+	// Set UpdateNotification to false so that it does not display notifications related to updates
+	err = cfg.SetConfiguration(preference.UpdateNotificationSetting, "false")
+	Expect(err).To(BeNil())
+
 	// Use ephemeral volumes (emptyDir) in tests to make test faster
 	err = cfg.SetConfiguration(preference.EphemeralSetting, "true")
 	Expect(err).To(BeNil())
