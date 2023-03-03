@@ -22,23 +22,23 @@ import (
 )
 
 var _ = Describe("odo devfile init command tests", func() {
+	var commonVar helper.CommonVar
+
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
+		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+	})
+
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
+	})
+
 	for _, label := range []string{
 		helper.LabelNoCluster, helper.LabelUnauth,
 	} {
 		label := label
 		var _ = Context("label "+label, Label(label), func() {
-
-			var commonVar helper.CommonVar
-
-			var _ = BeforeEach(func() {
-				commonVar = helper.CommonBeforeEach()
-				helper.Chdir(commonVar.Context)
-				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
-			})
-
-			var _ = AfterEach(func() {
-				helper.CommonAfterEach(commonVar)
-			})
 
 			It("should fail", func() {
 				By("running odo init with incomplete flags", func() {
@@ -576,4 +576,25 @@ var _ = Describe("odo devfile init command tests", func() {
 			})
 		})
 	}
+	When("DevfileRegistriesList and ClusterDevfileRegistriesList CR are installed on cluster", func() {
+		const (
+			inClusterDevfileRegName = "second-devfile-reg"
+		)
+		BeforeEach(func() {
+			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
+			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		When("CR for devfileregistrieslists is installed in namespace", func() {
+			BeforeEach(func() {
+				command := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileRegistryListCR.yaml"))
+				Expect(command.ExitCode()).To(BeEquivalentTo(0))
+			})
+			FIt("should be able to download devfile from the in-cluster registry", func() {
+				helper.Cmd("odo", "init", "--devfile-registry", inClusterDevfileRegName, "--devfile", "go", "--name", "go-devfile").ShouldPass()
+				helper.VerifyFileExists(filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+		})
+	})
+
 })
