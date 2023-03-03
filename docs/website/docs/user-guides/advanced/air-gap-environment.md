@@ -37,6 +37,16 @@ To execute the application in the cluster, `odo` first deploys a Pod into this c
 
 Then, the source files will be synchronized into the container and the application will be built from inside the container. Depending on the language and/or framework used for your application, the build may need to access a dependency registry (NPM registry, Maven repository, etc).
 
+### Accessing the cluster's control-plane
+
+To create resources into the cluster, `odo` needs to communicate with the cluster's control-plane through its API.
+
+If the cluster is not accessible directly from the air-gapped environment but accessible through an HTTPS proxy, you can define the `HTTPS_PROXY` environment variable when executing `odo dev` and `odo deploy`. For example:
+
+```
+$ HTTPS_PROXY=https://your_proxy odo dev
+```
+
 ### Pulling the container image
 
 If this image is accessible from a local container registry without any authentication,
