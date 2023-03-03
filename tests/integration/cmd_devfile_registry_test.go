@@ -1,7 +1,9 @@
 package integration
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -211,12 +213,25 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 		When("CR for devfileregistrieslists is installed in namespace", func() {
 			BeforeEach(func() {
-				command := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileRegistryListCR.yaml"))
+				manifestFilePath := filepath.Join(commonVar.ConfigDir, "devfileRegistryListCR.yaml")
+				// NOTE: Use reachable URLs as we might be on a cluster with the registry operator installed, which would perform validations.
+				err := helper.CreateFileWithContent(manifestFilePath, fmt.Sprintf(`
+apiVersion: registry.devfile.io/v1alpha1
+kind: DevfileRegistriesList
+metadata:
+  name: namespace-list
+spec:
+  devfileRegistries:
+    - name: ns-devfile-reg
+      url: %q
+`, helper.GetDevfileRegistryURL()))
+				Expect(err).ToNot(HaveOccurred())
+				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
 				Expect(command.ExitCode()).To(BeEquivalentTo(0))
 			})
 
 			It("should list detailed information regarding nodejs when using an in-cluster registry", func() {
-				args := []string{"registry", "--details", "--devfile", "nodejs", "--devfile-registry", "second-devfile-reg"}
+				args := []string{"registry", "--details", "--devfile", "nodejs", "--devfile-registry", "ns-devfile-reg"}
 
 				By("using human readable output", func() {
 					output := helper.Cmd("odo", args...).ShouldPass().Out()

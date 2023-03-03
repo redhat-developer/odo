@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tidwall/gjson"
 
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -15,25 +16,25 @@ const promptMessageSubString = "Help odo improve by allowing it to collect usage
 
 var _ = Describe("odo preference and config command tests", func() {
 
+	// TODO: A neater way to provide odo path. Currently we assume odo and oc in $PATH already.
+	var commonVar helper.CommonVar
+
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
+	})
+
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
+	})
+
 	for _, label := range []string{
 		helper.LabelNoCluster, helper.LabelUnauth,
 	} {
 		label := label
 		var _ = Context("label "+label, Label(label), func() {
-
-			// TODO: A neater way to provide odo path. Currently we assume odo and oc in $PATH already.
-			var commonVar helper.CommonVar
-
-			// This is run before every Spec (It)
-			var _ = BeforeEach(func() {
-				commonVar = helper.CommonBeforeEach()
-			})
-
-			// Clean up after the test
-			// This is run after every Spec (It)
-			var _ = AfterEach(func() {
-				helper.CommonAfterEach(commonVar)
-			})
 
 			Context("check that help works", func() {
 				It("should display help info", func() {
@@ -201,10 +202,8 @@ OdoSettings:
 			})
 		})
 	}
-	When("DevfileRegistriesList and ClusterDevfileRegistriesList CR are installed on cluster", func() {
-		var commonVar helper.CommonVar
+	When("DevfileRegistriesList CRD is installed on cluster", func() {
 		BeforeEach(func() {
-			commonVar = helper.CommonBeforeEach()
 			// install CRDs for devfile registry
 			//TODO: install clusterRegestryList from scripts
 			// clusterRegistryList := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "clusterdevfileregistrieslists.yaml"))
@@ -213,14 +212,28 @@ OdoSettings:
 			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
 		})
 
-		AfterEach(func() {
-			helper.CommonAfterEach(commonVar)
-			// clusterRegistryList := commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "clusterdevfileregistrieslists.yaml"))
-			// Expect(clusterRegistryList.ExitCode()).To(BeEquivalentTo(0))
-		})
-		When("CR for devfileregistrieslists is installed", func() {
+		When("CR for devfileregistrieslists is installed in namespace", func() {
+			var registryURL string
+
 			BeforeEach(func() {
-				command := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileRegistryListCR.yaml"))
+				manifestFilePath := filepath.Join(commonVar.ConfigDir, "devfileRegistryListCR.yaml")
+				registryURL = helper.GetDevfileRegistryURL()
+				// NOTE: Use reachable URLs as we might be on a cluster with the registry operator installed, which would perform validations.
+				err := helper.CreateFileWithContent(manifestFilePath, fmt.Sprintf(`
+apiVersion: registry.devfile.io/v1alpha1
+kind: DevfileRegistriesList
+metadata:
+  name: namespace-list
+spec:
+  devfileRegistries:
+    - name: ns-devfile-reg
+      url: %q
+      skipTLSVerify: true
+    - name: ns-devfile-prod
+      url: 'https://registry.devfile.io'
+`, registryURL))
+				Expect(err).ToNot(HaveOccurred())
+				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
 				Expect(command.ExitCode()).To(BeEquivalentTo(0))
 			})
 
@@ -228,22 +241,34 @@ OdoSettings:
 				stdout, stderr := helper.Cmd("odo", "preference", "view", "-o", "json").ShouldPass().OutAndErr()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "registries.#", "3")
-				helper.JsonPathContentIs(stdout, "registries.0.name", "devfile-staging")
-				helper.JsonPathContentIs(stdout, "registries.0.url", "https://registry.stage.devfile.io")
-				helper.JsonPathContentIs(stdout, "registries.0.secure", "true")
 
-				helper.JsonPathContentIs(stdout, "registries.1.name", "second-devfile-reg")
-				helper.JsonPathContentIs(stdout, "registries.1.url", "https://registry.devfile.io")
-				helper.JsonPathContentIs(stdout, "registries.1.secure", "false")
+				By("ensuring we have the minimum number of registries returned", func() {
+					nbRegistries := gjson.Get(stdout, "registries.#").Int()
+					// 3 is the minimum we want here (2 from the cluster namespace, and 1 from the local preferences).
+					// But we might have more since we might be on a cluster potentially containing cluster-wide registries, with would be returned here as well.
+					// So we'll check that the first registries are the one from the current namespace, and the last one comes from the preference file.
+					Expect(nbRegistries).Should(BeNumerically(">=", 3))
+				})
 
-				helper.JsonPathContentIs(stdout, "registries.2.name", "DefaultDevfileRegistry")
-				helper.JsonPathContentIs(stdout, "registries.2.url", "https://registry.stage.devfile.io")
-				helper.JsonPathContentIs(stdout, "registries.2.secure", "false")
+				By("ensuring the first registries returned are those in the namespace", func() {
+					helper.JsonPathContentIs(stdout, "registries.0.name", "ns-devfile-reg")
+					helper.JsonPathContentIs(stdout, "registries.0.url", registryURL)
+					helper.JsonPathContentIs(stdout, "registries.0.secure", "false")
+
+					helper.JsonPathContentIs(stdout, "registries.1.name", "ns-devfile-prod")
+					helper.JsonPathContentIs(stdout, "registries.1.url", "https://registry.devfile.io")
+					helper.JsonPathContentIs(stdout, "registries.1.secure", "true")
+				})
+
+				By("ensuring the last registries returned are those coming from the odo preferences", func() {
+					helper.JsonPathContentIs(stdout, "registries.@reverse.0.name", "DefaultDevfileRegistry")
+					helper.JsonPathContentIs(stdout, "registries.@reverse.0.url", registryURL)
+					helper.JsonPathContentIs(stdout, "registries.@reverse.0.secure", "false")
+				})
 			})
 
 			It("should fail to delete the in-cluster registry", func() {
-				regName := "second-devfile-reg"
+				regName := "ns-devfile-prod"
 				stderr := helper.Cmd("odo", "preference", "remove", "registry", regName).ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("failed to remove registry: registry %q doesn't exist or it is not managed by odo", regName))
 			})
