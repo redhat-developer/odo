@@ -68,6 +68,9 @@ GOLANGCI_LINT_VERSION=1.49.0
 
 RUN_GINKGO = go run -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 
+# making sure that mockgen binary version is the same as github.com/golang/mock library version
+GO_MOCK_LIBRARY_VERSION = $(shell go list -mod=readonly -m -f '{{.Version}}' github.com/golang/mock)
+
 default: bin
 
 .PHONY: help
@@ -127,8 +130,9 @@ clean:
 	@rm -rf $(FILES)
 
 .PHONY: goget-tools
-goget-tools:
-	(cd / && go install -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION))
+goget-tools:  ## Install binaries of the tools used by odo (current list: golangci-lint, mockgen)
+	cd / && go install -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
+	cd / && go install -mod=mod github.com/golang/mock/mockgen@$(GO_MOCK_LIBRARY_VERSION)
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
