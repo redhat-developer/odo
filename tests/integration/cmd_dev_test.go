@@ -3352,12 +3352,10 @@ CMD ["npm", "start"]
 
 			It("should error out if using --forward-localhost on any platform other than Podman", func() {
 				args := []string{"dev", "--forward-localhost", "--random-ports"}
-				var env []string
 				if plt != "" {
 					args = append(args, "--platform", plt)
-					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 				}
-				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				stderr := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("--forward-localhost cannot be used when running in cluster mode"))
 			})
 		}
@@ -3411,7 +3409,6 @@ CMD ["npm", "start"]
 
 			It("should error out if using both --ignore-localhost and --forward-localhost", func() {
 				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman", "--ignore-localhost", "--forward-localhost").
-					AddEnv("ODO_EXPERIMENTAL_MODE=true").
 					ShouldFail().
 					Err()
 				Expect(stderr).Should(ContainSubstring("--ignore-localhost and --forward-localhost cannot be used together"))
