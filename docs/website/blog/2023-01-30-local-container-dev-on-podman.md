@@ -146,9 +146,8 @@ If you skipped Step 0 and selected "starter project", your output will be slight
 ### Step 2. Enabling the experimental mode
 
 Because the support for Podman is still experimental at the time of writing, we first need to explicitly opt-in.
-Find more details about the experimental mode on this [dedicated page](../../docs/user-guides/advanced/experimental-mode).
 
-[Enabling the experimental mode](../../docs/user-guides/advanced/experimental-mode#enabling-the-experimental-mode) can be done by setting the `ODO_EXPERIMENTAL_MODE` environment variable to `true` in the terminal session, like so:
+Enabling the experimental mode can be done by setting the `ODO_EXPERIMENTAL_MODE` environment variable to `true` in the terminal session, like so:
 
 ```console
 export ODO_EXPERIMENTAL_MODE=true
