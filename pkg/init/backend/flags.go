@@ -14,7 +14,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -29,14 +28,14 @@ const (
 
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
 type FlagsBackend struct {
-	preferenceClient preference.Client
+	registryClient registry.Client
 }
 
 var _ InitBackend = (*FlagsBackend)(nil)
 
-func NewFlagsBackend(preferenceClient preference.Client) *FlagsBackend {
+func NewFlagsBackend(registryClient registry.Client) *FlagsBackend {
 	return &FlagsBackend{
-		preferenceClient: preferenceClient,
+		registryClient: registryClient,
 	}
 }
 
@@ -51,23 +50,31 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 		return errors.New("only one of --devfile or --devfile-path parameter should be specified")
 	}
 
-	if flags[FLAG_DEVFILE_REGISTRY] != "" {
-		if !o.preferenceClient.RegistryNameExists(flags[FLAG_DEVFILE_REGISTRY]) {
-			return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo preference <add/remove> registry` command to configure devfile registries", flags[FLAG_DEVFILE_REGISTRY])
+	registryName := flags[FLAG_DEVFILE_REGISTRY]
+	if registryName != "" {
+		registries, err := o.registryClient.GetDevfileRegistries(registryName)
+		if err != nil {
+			return err
 		}
-		registries := o.preferenceClient.RegistryList()
+		if len(registries) == 0 {
+			//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+			return fmt.Errorf(`Registry %q not found in the list of devfile registries.
+Please use 'odo preference <add/remove> registry'' command to configure devfile registries or add an in-cluster registry (see https://devfile.io/docs/2.2.0/deploying-a-devfile-registry).`,
+				registryName)
+			//revive:enable:error-strings
+		}
 		for _, r := range registries {
 			isGithubRegistry, err := registry.IsGithubBasedRegistry(r.URL)
 			if err != nil {
 				return err
 			}
-			if r.Name == flags[FLAG_DEVFILE_REGISTRY] && isGithubRegistry {
+			if r.Name == registryName && isGithubRegistry {
 				return &registry.ErrGithubRegistryNotSupported{}
 			}
 		}
 	}
 
-	if flags[FLAG_DEVFILE_PATH] != "" && flags[FLAG_DEVFILE_REGISTRY] != "" {
+	if flags[FLAG_DEVFILE_PATH] != "" && registryName != "" {
 		return errors.New("--devfile-registry parameter cannot be used with --devfile-path")
 	}
 

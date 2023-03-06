@@ -73,7 +73,7 @@ func (o *RegistryOptions) Validate(ctx context.Context) (err error) {
 // Run contains the logic for "odo preference remove registry" command
 func (o *RegistryOptions) Run(ctx context.Context) (err error) {
 	isSecure := registryUtil.IsSecure(o.clientset.PreferenceClient, o.registryName)
-	err = o.clientset.PreferenceClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
+	err = o.clientset.PreferenceClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, isSecure)
 	if err != nil {
 		return err
 	}

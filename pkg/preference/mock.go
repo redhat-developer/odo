@@ -9,6 +9,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	api "github.com/redhat-developer/odo/pkg/api"
 )
 
 // MockClient is a mock of Client interface.
@@ -175,10 +176,10 @@ func (mr *MockClientMockRecorder) IsSet(parameter interface{}) *gomock.Call {
 }
 
 // NewPreferenceList mocks base method.
-func (m *MockClient) NewPreferenceList() PreferenceList {
+func (m *MockClient) NewPreferenceList() api.PreferenceList {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewPreferenceList")
-	ret0, _ := ret[0].(PreferenceList)
+	ret0, _ := ret[0].(api.PreferenceList)
 	return ret0
 }
 
@@ -231,10 +232,10 @@ func (mr *MockClientMockRecorder) RegistryHandler(operation, registryName, regis
 }
 
 // RegistryList mocks base method.
-func (m *MockClient) RegistryList() []Registry {
+func (m *MockClient) RegistryList() []api.Registry {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegistryList")
-	ret0, _ := ret[0].([]Registry)
+	ret0, _ := ret[0].([]api.Registry)
 	return ret0
 }
 

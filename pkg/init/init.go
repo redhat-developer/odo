@@ -44,7 +44,7 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()
 	return &InitClient{
-		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
+		flagsBackend:       backend.NewFlagsBackend(registryClient),
 		interactiveBackend: backend.NewInteractiveBackend(askerClient, registryClient, alizerClient),
 		alizerBackend:      backend.NewAlizerBackend(askerClient, alizerClient),
 		fsys:               fsys,
@@ -182,9 +182,11 @@ func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName stri
 	}
 	defer downloadSpinner.End(false)
 
-	registries := o.preferenceClient.RegistryList()
-	var reg preference.Registry
-	for _, reg = range registries {
+	registries, err := o.registryClient.GetDevfileRegistries(registryName)
+	if err != nil {
+		return err
+	}
+	for _, reg := range registries {
 		if forceRegistry && reg.Name == registryName {
 			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, registryOptions)
 			if err != nil {

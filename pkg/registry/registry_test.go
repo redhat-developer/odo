@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -43,7 +45,9 @@ OdoSettings:
 	tests := []struct {
 		name         string
 		registryName string
+		kclient      func(ctrl *gomock.Controller) kclient.ClientInterface
 		want         []api.Registry
+		wantErr      bool
 	}{
 		{
 			name:         "Case 1: Test get all devfile registries",
@@ -72,6 +76,57 @@ OdoSettings:
 				},
 			},
 		},
+		{
+			name: "with devfileRegistrylists in cluster",
+			kclient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+				result := kclient.NewMockClientInterface(ctrl)
+				list := []api.Registry{
+					{
+						Name:   "secure-name",
+						URL:    "secure-url",
+						Secure: true,
+					},
+					{
+						Name:   "unsecure-name",
+						URL:    "unsecure-url",
+						Secure: false,
+					},
+				}
+				result.EXPECT().GetRegistryList().Return(list, nil)
+				return result
+			},
+			want: []api.Registry{
+				{
+					Name:   "secure-name",
+					URL:    "secure-url",
+					Secure: true,
+				},
+				{
+					Name:   "unsecure-name",
+					URL:    "unsecure-url",
+					Secure: false,
+				},
+				{
+					Name:   "CheDevfileRegistry",
+					URL:    "https://che-devfile-registry.openshift.io/",
+					Secure: false,
+				},
+				{
+					Name:   "DefaultDevfileRegistry",
+					URL:    "https://registry.devfile.io",
+					Secure: false,
+				},
+			},
+		},
+		{
+			name: "error getting devfileRegistrylists from cluster",
+			kclient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+				result := kclient.NewMockClientInterface(ctrl)
+				result.EXPECT().GetRegistryList().Return(nil, errors.New("an error"))
+				return result
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -80,11 +135,20 @@ OdoSettings:
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{
 				Globalodoconfig: &tempConfigFileName,
 			})
+
+			ctrl := gomock.NewController(t)
+
 			prefClient, _ := preference.NewClient(ctx)
-			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
+			// TODO(rm3l) Test with both nil and non-nil kubeclient
+			var kc kclient.ClientInterface
+			if tt.kclient != nil {
+				kc = tt.kclient(ctrl)
+			}
+			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, kc)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
-			if err != nil {
-				t.Errorf("Error message is %v", err)
+
+			if tt.wantErr != (err != nil) {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if diff := cmp.Diff(tt.want, got); diff != "" {
@@ -253,13 +317,14 @@ func TestListDevfileStacks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().RegistryList().Return([]preference.Registry{
+			prefClient.EXPECT().RegistryList().Return([]api.Registry{
 				{
 					Name: "TestRegistry",
 					URL:  server.URL,
 				},
 			}).AnyTimes()
-			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
+			// TODO(rm3l) Test with both nil and non-nil kubeclient
+			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, nil)
 			ctx := context.Background()
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
 			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false)
@@ -521,15 +586,13 @@ func TestGetRegistryDevfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			prefClient := preference.NewMockClient(ctrl)
 			ctx := envcontext.WithEnvConfig(context.Background(), config.Configuration{})
 			server, url := tt.registryServerProvider(t)
 			if server != nil {
 				defer server.Close()
 			}
 
-			got, err := getRegistryStacks(ctx, prefClient, api.Registry{Name: registryName, URL: url})
+			got, err := getRegistryStacks(ctx, api.Registry{Name: registryName, URL: url})
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)

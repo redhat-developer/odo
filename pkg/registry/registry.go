@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -28,14 +29,16 @@ import (
 type RegistryClient struct {
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
+	kubeClient       kclient.ClientInterface
 }
 
 var _ Client = (*RegistryClient)(nil)
 
-func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.Client) RegistryClient {
+func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.Client, kubeClient kclient.ClientInterface) RegistryClient {
 	return RegistryClient{
 		fsys:             fsys,
 		preferenceClient: preferenceClient,
+		kubeClient:       kubeClient,
 	}
 }
 
@@ -59,36 +62,41 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
 func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registry, error) {
-	var devfileRegistries []api.Registry
+	var allRegistries []api.Registry
 
-	hasName := len(registryName) != 0
-	if o.preferenceClient.RegistryList() != nil {
-		registryList := o.preferenceClient.RegistryList()
-		for _, registry := range registryList {
-			if hasName {
-				if registryName == registry.Name {
-					reg := api.Registry{
-						Name:   registry.Name,
-						URL:    registry.URL,
-						Secure: registry.Secure,
-					}
-					devfileRegistries = append(devfileRegistries, reg)
-					return devfileRegistries, nil
-				}
-			} else {
+	if o.kubeClient != nil {
+		clusterRegistries, err := o.kubeClient.GetRegistryList()
+		if err != nil {
+			return nil, err
+		}
+		allRegistries = append(allRegistries, clusterRegistries...)
+	}
+	allRegistries = append(allRegistries, o.preferenceClient.RegistryList()...)
+
+	hasName := registryName != ""
+	var result []api.Registry
+	for _, registry := range allRegistries {
+		if hasName {
+			if registryName == registry.Name {
 				reg := api.Registry{
 					Name:   registry.Name,
 					URL:    registry.URL,
 					Secure: registry.Secure,
 				}
-				devfileRegistries = append(devfileRegistries, reg)
+				result = append(result, reg)
+				return result, nil
 			}
+			continue
 		}
-	} else {
-		return nil, nil
+		reg := api.Registry{
+			Name:   registry.Name,
+			URL:    registry.URL,
+			Secure: registry.Secure,
+		}
+		result = append(result, reg)
 	}
 
-	return devfileRegistries, nil
+	return result, nil
 }
 
 // ListDevfileStacks lists all the available devfile stacks in devfile registry
@@ -118,7 +126,7 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 		registry := reg                 // Needed to prevent the lambda from capturing the value
 		registryPriority := regPriority // Needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			registryDevfiles, err := getRegistryStacks(ctx, o.preferenceClient, registry)
+			registryDevfiles, err := getRegistryStacks(ctx, registry)
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL, and credential and remove add the registry again (refer to `odo preference add registry --help`)\n", registry.Name, err)
 				return
@@ -188,7 +196,7 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 }
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
-func getRegistryStacks(ctx context.Context, preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
+func getRegistryStacks(ctx context.Context, registry api.Registry) ([]api.DevfileStack, error) {
 	isGithubregistry, err := IsGithubBasedRegistry(registry.URL)
 	if err != nil {
 		return nil, err
@@ -267,8 +275,10 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	}
 	defer os.Remove(tmpFile)
 
-	registries := o.preferenceClient.RegistryList()
-	var reg preference.Registry
+	registries, err := o.GetDevfileRegistries(registryName)
+	if err != nil {
+		return api.DevfileData{}, err
+	}
 	registryOptions := segment.GetRegistryOptions(ctx)
 	registryOptions.NewIndexSchema = true
 	// Get the file and save it to the temporary file
@@ -277,7 +287,7 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	// 2. The devfile api library does not support saving in memory
 	// 3. We need to get the file from the registry and save it to the temporary file
 	// 4. We need to read the file from the temporary file, unmarshal it and then return the devfile data
-	for _, reg = range registries {
+	for _, reg := range registries {
 		if reg.Name == registryName {
 			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, registryOptions)
 			if err != nil {

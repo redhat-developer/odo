@@ -22,23 +22,23 @@ import (
 )
 
 var _ = Describe("odo devfile init command tests", func() {
+	var commonVar helper.CommonVar
+
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
+		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+	})
+
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
+	})
+
 	for _, label := range []string{
 		helper.LabelNoCluster, helper.LabelUnauth,
 	} {
 		label := label
 		var _ = Context("label "+label, Label(label), func() {
-
-			var commonVar helper.CommonVar
-
-			var _ = BeforeEach(func() {
-				commonVar = helper.CommonBeforeEach()
-				helper.Chdir(commonVar.Context)
-				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
-			})
-
-			var _ = AfterEach(func() {
-				helper.CommonAfterEach(commonVar)
-			})
 
 			It("should fail", func() {
 				By("running odo init with incomplete flags", func() {
@@ -576,4 +576,38 @@ var _ = Describe("odo devfile init command tests", func() {
 			})
 		})
 	}
+
+	When("DevfileRegistriesList CRD is installed on cluster", func() {
+		BeforeEach(func() {
+			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
+			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		When("CR for devfileregistrieslists is installed in namespace", func() {
+			BeforeEach(func() {
+				manifestFilePath := filepath.Join(commonVar.ConfigDir, "devfileRegistriesListCR.yaml")
+				// NOTE: Use reachable URLs as we might be on a cluster with the registry operator installed, which would perform validations.
+				err := helper.CreateFileWithContent(manifestFilePath, fmt.Sprintf(`
+apiVersion: registry.devfile.io/v1alpha1
+kind: DevfileRegistriesList
+metadata:
+  name: namespace-list
+spec:
+  devfileRegistries:
+    - name: ns-devfile-reg
+      url: %q
+`, helper.GetDevfileRegistryURL()))
+				Expect(err).ToNot(HaveOccurred())
+				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
+				Expect(command.ExitCode()).To(BeEquivalentTo(0))
+			})
+
+			It("should be able to download devfile from the in-cluster registry", func() {
+				out := helper.Cmd("odo", "init", "--devfile-registry", "ns-devfile-reg", "--devfile", "go", "--name", "go-devfile").ShouldPass().Out()
+				Expect(out).To(ContainSubstring("Downloading devfile \"go\" from registry \"ns-devfile-reg\""))
+				helper.VerifyFileExists(filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+		})
+	})
+
 })

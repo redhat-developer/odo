@@ -97,7 +97,7 @@ var subdeps map[string][]string = map[string][]string{
 	LOGS:             {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
 	PORT_FORWARD:     {KUBERNETES_NULLABLE, EXEC, STATE},
 	PROJECT:          {KUBERNETES},
-	REGISTRY:         {FILESYSTEM, PREFERENCE},
+	REGISTRY:         {FILESYSTEM, PREFERENCE, KUBERNETES_NULLABLE},
 	STATE:            {FILESYSTEM},
 	SYNC:             {EXEC},
 	WATCH:            {KUBERNETES_NULLABLE},
@@ -185,7 +185,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, REGISTRY) {
-		dep.RegistryClient = registry.NewRegistryClient(dep.FS, dep.PreferenceClient)
+		dep.RegistryClient = registry.NewRegistryClient(dep.FS, dep.PreferenceClient, dep.KubernetesClient)
 	}
 
 	/* With sub-dependencies */

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -227,7 +228,7 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		registryList = append(registryList, registry)
 
 	case "remove":
-		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
+		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist or it is not managed by odo", operation, registryName)
 	}
 
 	return registryList, nil
@@ -432,9 +433,18 @@ func (c *preferenceInfo) ConsentTelemetry() *bool {
 //
 // Adding a new registry always adds it to the end of the list in the preferences file,
 // but RegistryList intentionally reverses the order to prioritize the most recently added registries.
-func (c *preferenceInfo) RegistryList() []Registry {
-	regList := make([]Registry, len(*c.OdoSettings.RegistryList))
-	copy(regList, *c.OdoSettings.RegistryList)
+func (c *preferenceInfo) RegistryList() []api.Registry {
+	if c.OdoSettings.RegistryList == nil {
+		return nil
+	}
+	regList := make([]api.Registry, 0, len(*c.OdoSettings.RegistryList))
+	for _, registry := range *c.OdoSettings.RegistryList {
+		regList = append(regList, api.Registry{
+			Name:   registry.Name,
+			URL:    registry.URL,
+			Secure: registry.Secure,
+		})
+	}
 	i := 0
 	j := len(regList) - 1
 	for i < j {

@@ -24,29 +24,29 @@ import (
 )
 
 var _ = Describe("odo init interactive command tests", func() {
+	var commonVar helper.CommonVar
+
+	// This is run before every Spec (It)
+	var _ = BeforeEach(func() {
+		commonVar = helper.CommonBeforeEach()
+		helper.Chdir(commonVar.Context)
+
+		// We make EXPLICITLY sure that we are outputting with NO COLOR
+		// this is because in some cases we are comparing the output with a colorized one
+		os.Setenv("NO_COLOR", "true")
+	})
+
+	// Clean up after the test
+	// This is run after every Spec (It)
+	var _ = AfterEach(func() {
+		helper.CommonAfterEach(commonVar)
+	})
+
 	for _, label := range []string{
 		helper.LabelNoCluster, helper.LabelUnauth,
 	} {
 		label := label
 		var _ = Context("label "+label, Label(label), func() {
-			var commonVar helper.CommonVar
-
-			// This is run before every Spec (It)
-			var _ = BeforeEach(func() {
-				commonVar = helper.CommonBeforeEach()
-				helper.Chdir(commonVar.Context)
-
-				// We make EXPLICITLY sure that we are outputting with NO COLOR
-				// this is because in some cases we are comparing the output with a colorized one
-				os.Setenv("NO_COLOR", "true")
-			})
-
-			// Clean up after the test
-			// This is run after every Spec (It)
-			var _ = AfterEach(func() {
-				helper.CommonAfterEach(commonVar)
-			})
-
 			It("should not fail when using -v flag", func() {
 				command := []string{"odo", "init", "-v", "4"}
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
@@ -566,4 +566,69 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 		})
 	}
+
+	When("DevfileRegistriesList CRD is installed on cluster", func() {
+		BeforeEach(func() {
+			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
+			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		When("CR for devfileregistrieslists is installed in namespace", func() {
+			const devfileRegistryName = "ns-devfile-reg"
+
+			BeforeEach(func() {
+				manifestFilePath := filepath.Join(commonVar.ConfigDir, "devfileRegistryListCR.yaml")
+				// NOTE: Use reachable URLs as we might be on a cluster with the registry operator installed, which would perform validations.
+				err := helper.CreateFileWithContent(manifestFilePath, fmt.Sprintf(`
+apiVersion: registry.devfile.io/v1alpha1
+kind: DevfileRegistriesList
+metadata:
+  name: namespace-list
+spec:
+  devfileRegistries:
+    - name: %s
+      url: %q
+`, devfileRegistryName, helper.GetDevfileRegistryURL()))
+				Expect(err).ToNot(HaveOccurred())
+				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
+				Expect(command.ExitCode()).To(BeEquivalentTo(0))
+			})
+
+			It("should download correct devfile from the first in-cluster registry", func() {
+				// This test fails on Windows because of terminal emulator behaviour
+				if os.Getenv("SKIP_WELCOMING_MESSAGES") == "true" {
+					Skip("This is a Unix specific scenario, skipping")
+				}
+
+				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Select language")
+					helper.SendLine(ctx, "Java")
+
+					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Which starter project do you want to use")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, "my-java-maven-app")
+
+					helper.ExpectString(ctx, "Your new component 'my-java-maven-app' is ready in the current directory")
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+
+				By("displaying automation command with the in-cluster registry", func() {
+					Expect(output).Should(ContainSubstring(
+						"odo init --name my-java-maven-app --devfile java-maven --devfile-registry %s --starter springbootproject", devfileRegistryName))
+				})
+				By("actually downloading the Devfile", func() {
+					Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+				})
+			})
+
+		})
+	})
 })

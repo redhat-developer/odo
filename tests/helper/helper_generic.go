@@ -358,11 +358,15 @@ type ResourceInfo struct {
 
 func SetDefaultDevfileRegistryAsStaging() {
 	const registryName string = "DefaultDevfileRegistry"
-	addRegistryURL := "https://registry.stage.devfile.io"
+	Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
+	Cmd("odo", "preference", "add", "registry", registryName, GetDevfileRegistryURL()).ShouldPass()
+}
+
+func GetDevfileRegistryURL() string {
+	registryURL := "https://registry.stage.devfile.io"
 	proxy := os.Getenv("DEVFILE_PROXY")
 	if proxy != "" {
-		addRegistryURL = "http://" + proxy
+		registryURL = "http://" + proxy
 	}
-	Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
-	Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldPass()
+	return registryURL
 }

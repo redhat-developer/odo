@@ -2,6 +2,8 @@ package preference
 
 import (
 	"time"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 type Client interface {
@@ -23,8 +25,8 @@ type Client interface {
 	RegistryCacheTime() *time.Duration
 	EphemeralSourceVolume() *bool
 	ConsentTelemetry() *bool
-	RegistryList() []Registry
+	RegistryList() []api.Registry
 	RegistryNameExists(name string) bool
 
-	NewPreferenceList() PreferenceList
+	NewPreferenceList() api.PreferenceList
 }
