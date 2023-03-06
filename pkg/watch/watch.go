@@ -95,6 +95,8 @@ type WatchParameters struct {
 	IgnoreLocalhost bool
 	// WatchFiles indicates to watch for file changes and sync changes to the container
 	WatchFiles bool
+	// ForwardLocalhost indicates whether to try to make port-forwarding work with container apps listening on the loopback interface.
+	ForwardLocalhost bool
 	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
 	WatchCluster bool
 	// ErrOut is a Writer to output forwarded port information

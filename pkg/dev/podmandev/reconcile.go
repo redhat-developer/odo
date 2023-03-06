@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -123,6 +124,14 @@ func (o *DevClient) reconcile(
 		return err
 	}
 
+	if options.ForwardLocalhost {
+		// Port-forwarding is enabled by executing dedicated socat commands
+		err = o.portForwardClient.StartPortForwarding(*devfileObj, componentName, options.Debug, options.RandomPorts, out, errOut, fwPorts)
+		if err != nil {
+			return adapters.NewErrPortForward(err)
+		}
+	} // else port-forwarding is done via the main container ports in the pod spec
+
 	for _, fwPort := range fwPorts {
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
 		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
@@ -171,7 +180,8 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.Debug,
 		options.BuildCommand,
 		options.RunCommand,
-		"",
+		options.DebugCommand,
+		options.ForwardLocalhost,
 		options.RandomPorts,
 		o.usedPorts,
 	)
@@ -238,12 +248,13 @@ Either change the application to make those port(s) reachable on all interfaces 
 - --ignore-localhost: no error will be returned by odo, but forwarding to those ports might not work on Podman.
 - --forward-localhost: odo will inject a dedicated side container to redirect traffic to such ports.`
 	}
-	if !options.IgnoreLocalhost {
+	if options.IgnoreLocalhost {
+		// ForwardLocalhost should not be true at this point.
+		log.Warningf(msg)
+	} else if !options.ForwardLocalhost {
 		log.Errorf(msg)
-		return errors.New("cannot make port forwarding work with applications listening only on the loopback interface")
+		return errors.New("cannot make port forwarding work with ports bound to the loopback interface only")
 	}
-	// No error, but only a warning if using --ignore-localhost
-	log.Warningf(msg)
 
 	return nil
 }

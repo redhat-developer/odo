@@ -1,23 +1,23 @@
 package remotecmd
 
 // RemoteProcessStatus is an enum type for representing process statuses.
-type RemoteProcessStatus int
+type RemoteProcessStatus string
 
 const (
 	// Unknown represents a process for which the status cannot be determined reliably or is not handled yet by us.
-	Unknown RemoteProcessStatus = iota + 1
+	Unknown RemoteProcessStatus = "unknown"
 
 	// Starting represents a process that is just about to start.
-	Starting
+	Starting = "starting"
 
 	// Stopped represents a process stopped.
-	Stopped
+	Stopped = "stopped"
 
 	// Errored represents a process that errored out, i.e. exited with a non-zero status code.
-	Errored
+	Errored = "errored"
 
 	// Running represents a running process.
-	Running
+	Running = "running"
 )
 
 const (
@@ -38,6 +38,10 @@ type RemoteProcessInfo struct {
 type CommandDefinition struct {
 	// Id is any unique (and short) identifier that helps manage the process associated to this command.
 	Id string
+
+	// PidDirectory is the directory where the PID file for this process will be stored.
+	// The directory needs to be present in the remote container and be writable by the user (in the container) executing the command.
+	PidDirectory string
 
 	// WorkingDir is the working directory from which the command should get executed.
 	WorkingDir string

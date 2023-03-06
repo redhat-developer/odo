@@ -23,6 +23,12 @@ import (
 	"k8s.io/klog"
 )
 
+// See https://github.com/devfile/developer-images and https://quay.io/repository/devfile/base-developer-image?tab=tags
+const (
+	portForwardingHelperContainerName = "odo-helper-port-forwarding"
+	portForwardingHelperImage         = "quay.io/devfile/base-developer-image@sha256:27d5ce66a259decb84770ea0d1ce8058a806f39dfcfeed8387f9cf2f29e76480"
+)
+
 func createPodFromComponent(
 	devfileObj parser.DevfileObj,
 	componentName string,
@@ -31,6 +37,7 @@ func createPodFromComponent(
 	buildCommand string,
 	runCommand string,
 	debugCommand string,
+	withHelperContainer bool,
 	randomPorts bool,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
@@ -42,22 +49,13 @@ func createPodFromComponent(
 		return nil, nil, fmt.Errorf("no valid components found in the devfile")
 	}
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(devfileObj, containers, buildCommand, runCommand, debugCommand)
+	fwPorts, err := getPortMapping(devfileObj, debug, randomPorts, usedPorts)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
-
-	// get the endpoint/port information for containers in devfile
-	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
-		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	ceMapping := libdevfile.GetContainerEndpointMapping(containerComponents, debug)
-	fwPorts := addHostPorts(containers, ceMapping, debug, randomPorts, usedPorts)
 
 	volumes := []corev1.Volume{
 		{
@@ -98,6 +96,13 @@ func createPodFromComponent(
 		}
 	}
 
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(devfileObj, containers, buildCommand, runCommand, debugCommand)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	containers = addHostPorts(withHelperContainer, containers, fwPorts)
+
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
 			Containers: containers,
@@ -119,25 +124,93 @@ func createPodFromComponent(
 	return &pod, fwPorts, nil
 }
 
+func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPorts []api.ForwardedPort) []corev1.Container {
+	if withHelperContainer {
+		// A side helper container is added and will be responsible for redirecting the traffic,
+		// so it can work even if the application is listening on the container loopback interface.
+		for i := range containers {
+			containers[i].Ports = nil
+		}
+		// Add helper container for port-forwarding
+		pfHelperContainer := corev1.Container{
+			Name:    portForwardingHelperContainerName,
+			Image:   portForwardingHelperImage,
+			Command: []string{"tail"},
+			Args:    []string{"-f", "/dev/null"},
+		}
+		for _, fwPort := range fwPorts {
+			pfHelperContainer.Ports = append(pfHelperContainer.Ports, corev1.ContainerPort{
+				// It is intentional here to use the same port as ContainerPort and HostPort, for simplicity.
+				// In the helper container, a process will be run afterwards and will be listening on this port;
+				// this process will leverage socat to forward requests to the actual application port.
+				Name:          fwPort.PortName,
+				ContainerPort: int32(fwPort.LocalPort),
+				HostPort:      int32(fwPort.LocalPort),
+			})
+		}
+		containers = append(containers, pfHelperContainer)
+	} else {
+		// the original ports in container contains all Devfile endpoints that have been set by the Devfile library.
+		// We need to filter them out, to set only the ports that we need to port-forward.
+		for i := range containers {
+			var containerPorts []corev1.ContainerPort
+			for _, p := range containers[i].Ports {
+				for _, fwPort := range fwPorts {
+					if containers[i].Name == fwPort.ContainerName && int(p.ContainerPort) == fwPort.ContainerPort {
+						p.HostPort = int32(fwPort.LocalPort)
+						containerPorts = append(containerPorts, p)
+						break
+					}
+				}
+			}
+			containers[i].Ports = containerPorts
+		}
+	}
+	return containers
+}
+
 func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func addHostPorts(containers []corev1.Container, ceMapping map[string][]v1alpha2.Endpoint, debug bool, randomPorts bool, usedPorts []int) []api.ForwardedPort {
+func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, usedPorts []int) ([]api.ForwardedPort, error) {
+	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+	ceMapping := libdevfile.GetContainerEndpointMapping(containerComponents, debug)
+
+	var existingContainerPorts []int
+	for _, endpoints := range ceMapping {
+		for _, ep := range endpoints {
+			existingContainerPorts = append(existingContainerPorts, ep.TargetPort)
+		}
+	}
+
+	isPortUsedInContainer := func(p int) bool {
+		for _, port := range existingContainerPorts {
+			if p == port {
+				return true
+			}
+		}
+		return false
+	}
+
 	var result []api.ForwardedPort
 	startPort := 20001
 	endPort := startPort + 10000
 	usedPortsCopy := make([]int, len(usedPorts))
 	copy(usedPortsCopy, usedPorts)
-	for i := range containers {
-		var ports []corev1.ContainerPort
-		for _, port := range containers[i].Ports {
-			containerName := containers[i].Name
-			portName := port.Name
+	for containerName, endpoints := range ceMapping {
+	epLoop:
+		for _, ep := range endpoints {
+			portName := ep.Name
 			isDebugPort := libdevfile.IsDebugPort(portName)
 			if !debug && isDebugPort {
-				klog.V(4).Infof("not running in Debug mode, so skipping container Debug port: %v:%v:%v",
-					containerName, portName, port.ContainerPort)
+				klog.V(4).Infof("not running in Debug mode, so skipping Debug endpoint %s (%d) for container %q",
+					portName, ep.TargetPort, containerName)
 				continue
 			}
 			var freePort int
@@ -149,23 +222,27 @@ func addHostPorts(containers []corev1.Container, ceMapping map[string][]v1alpha2
 					rand.Seed(time.Now().UnixNano()) //#nosec
 					for {
 						freePort = rand.Intn(endPort-startPort+1) + startPort //#nosec
-						if util.IsPortFree(freePort) {
+						if !isPortUsedInContainer(freePort) && util.IsPortFree(freePort) {
 							break
 						}
 						time.Sleep(100 * time.Millisecond)
 					}
 				}
 			} else {
-				var err error
-				freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
-				if err != nil {
-					klog.Infof("%s", err)
-					continue
+				for {
+					freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+					if err != nil {
+						klog.Infof("%s", err)
+						continue epLoop
+					}
+					if !isPortUsedInContainer(freePort) {
+						break
+					}
+					startPort = freePort + 1
+					time.Sleep(100 * time.Millisecond)
 				}
 				startPort = freePort + 1
 			}
-			// Find the endpoint in the container-endpoint mapping
-			containerPort := int(port.ContainerPort)
 			fp := api.ForwardedPort{
 				Platform:      commonflags.PlatformPodman,
 				PortName:      portName,
@@ -173,22 +250,14 @@ func addHostPorts(containers []corev1.Container, ceMapping map[string][]v1alpha2
 				ContainerName: containerName,
 				LocalAddress:  "127.0.0.1",
 				LocalPort:     freePort,
-				ContainerPort: containerPort,
-			}
-
-			for _, ep := range ceMapping[containerName] {
-				if ep.TargetPort == containerPort {
-					fp.Exposure = string(ep.Exposure)
-					break
-				}
+				ContainerPort: ep.TargetPort,
+				Exposure:      string(ep.Exposure),
+				Protocol:      string(ep.Protocol),
 			}
 			result = append(result, fp)
-			port.HostPort = int32(freePort)
-			ports = append(ports, port)
 		}
-		containers[i].Ports = ports
 	}
-	return result
+	return result, nil
 }
 
 func addVolumeMountToContainer(containers []corev1.Container, devfileVolume storage.LocalStorage) error {

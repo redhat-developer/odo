@@ -26,6 +26,7 @@ type ForwardedPort struct {
 	LocalPort     int    `json:"localPort"`
 	ContainerPort int    `json:"containerPort"`
 	Exposure      string `json:"exposure,omitempty"`
+	Protocol      string `json:"protocol,omitempty"`
 }
 
 type ConnectionData struct {
