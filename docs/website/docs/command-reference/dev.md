@@ -257,7 +257,6 @@ odo dev --platform podman
 <summary>Example</summary>
 
 ```console
-$ odo init --name my-nodejs-app --devfile nodejs --starter nodejs-starter
 
 $ odo dev --platform podman
   __

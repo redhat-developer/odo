@@ -11,7 +11,7 @@ If you haven't already done so, you must [initialize](../command-reference/init)
 init` command. 
 
 ```shell
-odo logs [--follow] [--dev | --deploy] [--platform podman]
+odo logs [--follow] [--dev | --deploy] [--platform {cluster|podman}]
 ```
 <details>
 <summary>Example</summary>

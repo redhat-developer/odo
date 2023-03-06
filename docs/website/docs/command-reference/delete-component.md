@@ -9,7 +9,7 @@ By default, it deletes the component and its related inner-loop, and outer-loop 
 
 The `running-in` flag allows to be more specific about which resources (either inner-loop or outer-loop) to delete.
 
-The `platofmr` flag allows to restrict the deletion from a specific platform only, either cluster or podman.
+The `platform` flag allows to restrict the deletion from a specific platform only, either cluster or podman.
 
 ## Running the command
 There are 2 ways to delete a component:
@@ -106,7 +106,7 @@ Otherwise, `odo` will exit with a message stating that it could not find the res
 You can specify the type of resources candidate for deletion via the `--running-in` flag.
 Acceptable values are `dev` (for inner-loop resources) or `deploy` (for outer-loop resources).
 
-You can target a specific platform from which delete the resources, with the `--platform` flag. Acceptable values are `cluster` and `podman`.
+You can target a specific platform from which to delete the resources, with the `--platform` flag. Acceptable values are `cluster` and `podman`.
 
 <details>
 <summary>Example</summary>

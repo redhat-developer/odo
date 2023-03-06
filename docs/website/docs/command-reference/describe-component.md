@@ -102,4 +102,4 @@ The command also displays if the component is currently running in the cluster o
 
 ### Targeting a specific platform
 
-By default, `odo describe component` will search components in both the current namespace of the cluster and podman. You can restrict the search in one of the platform only, using the `--platform` flag, giving a value `cluster` or `podman`.
+By default, `odo describe component` will search components in both the current namespace of the cluster and podman. You can restrict the search to one of the platforms only, using the `--platform` flag, giving a value `cluster` or `podman`.

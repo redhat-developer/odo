@@ -34,7 +34,7 @@ $ odo list component
 
 ### Targeting a specific platform
 
-By default, `odo list component` will search components in both the current namespace of the cluster and podman. You can restrict the search in one of the platform only, using the `--platform` flag, giving a value `cluster` or `podman`.
+By default, `odo list component` will search components in both the current namespace of the cluster and podman. You can restrict the search to one of the platforms only, using the `--platform` flag, giving a value `cluster` or `podman`.
 
 :::tip use of cache
 
