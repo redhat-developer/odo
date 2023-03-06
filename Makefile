@@ -131,7 +131,8 @@ clean:
 
 .PHONY: goget-tools
 goget-tools:  ## Install binaries of the tools used by odo (current list: golangci-lint, mockgen)
-	(cd / && go install -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION) && go install -mod=mod github.com/golang/mock/mockgen@$(GO_MOCK_LIBRARY_VERSION))
+	cd / && go install -mod=mod github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
+	cd / && go install -mod=mod github.com/golang/mock/mockgen@$(GO_MOCK_LIBRARY_VERSION)
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
