@@ -15,7 +15,7 @@ type OdoFeature struct {
 var (
 	// GenericPlatformFlag is the feature supporting the `--platform` generic CLI flag.
 	GenericPlatformFlag = OdoFeature{
-		isExperimental: true,
+		isExperimental: false,
 	}
 )
 

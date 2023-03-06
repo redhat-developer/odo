@@ -400,12 +400,10 @@ var _ = Describe("odo dev debug command tests", func() {
 
 			It("should fail running odo dev --debug", func() {
 				args := []string{"dev", "--debug"}
-				var env []string
 				if podman {
 					args = append(args, "--platform", "podman")
-					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 				}
-				output := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				output := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no command of kind \"debug\" found in the devfile"))
 			})
 		}))

@@ -39,7 +39,7 @@ func TestUsePlatformFlagWrongValue(t *testing.T) {
 		t.Errorf("Set error should be nil but is %v", err)
 	}
 	err = CheckPlatformCommand(cmd)
-	if err.Error() != `wrong-value is not a valid target platform for --platform, please select either "cluster" (default) or "podman" (experimental)` {
+	if err.Error() != `wrong-value is not a valid target platform for --platform, please select either "cluster" (default) or "podman"` {
 		t.Errorf("Check error is %v", err)
 	}
 }

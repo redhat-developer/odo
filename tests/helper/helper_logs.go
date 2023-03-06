@@ -17,9 +17,7 @@ func StartLogsFollow(podman bool, opts ...string) (LogsSession, []byte, []byte, 
 		args = append(args, "--platform", "podman")
 	}
 	session := CmdRunner("odo", args...)
-	if podman {
-		session.Command.Env = append(session.Command.Env, "ODO_EXPERIMENTAL_MODE=true")
-	}
+
 	result := LogsSession{
 		session: session,
 	}

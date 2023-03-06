@@ -237,9 +237,6 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(td.Properties.CmdProperties).Should(HaveKey(segment.Caller))
 					Expect(td.Properties.CmdProperties[segment.Caller]).To(BeEmpty())
 					experimentalValue := false
-					if podman {
-						experimentalValue = true
-					}
 					Expect(td.Properties.CmdProperties[segment.ExperimentalMode]).To(Equal(experimentalValue))
 					if podman {
 						Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("podman"))
@@ -2052,9 +2049,6 @@ CMD ["npm", "start"]
 					args = append(args, "--platform", "podman")
 				}
 				cmd := helper.Cmd("odo", args...)
-				if podman {
-					cmd = cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-				}
 				output := cmd.ShouldFail().Err()
 				// This is expected to fail for now.
 				// see https://github.com/redhat-developer/odo/issues/4187 for more info
@@ -2109,9 +2103,6 @@ CMD ["npm", "start"]
 					args = append(args, "--platform", "podman")
 				}
 				cmd := helper.Cmd("odo", args...)
-				if podman {
-					cmd = cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-				}
 				stderr = cmd.ShouldFail().Err()
 			})
 
@@ -2295,9 +2286,6 @@ CMD ["npm", "start"]
 								args = append(args, "--platform", "podman")
 							}
 							cmd := helper.Cmd("odo", args...)
-							if podman {
-								cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-							}
 							output := cmd.ShouldFail().Err()
 							Expect(output).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
 						})
@@ -2309,9 +2297,6 @@ CMD ["npm", "start"]
 								args = append(args, "--platform", "podman")
 							}
 							cmd := helper.Cmd("odo", args...)
-							if podman {
-								cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-							}
 							output := cmd.ShouldFail().Err()
 							Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 						})
@@ -2362,9 +2347,6 @@ CMD ["npm", "start"]
 								args = append(args, "--platform", "podman")
 							}
 							cmd := helper.Cmd("odo", args...)
-							if podman {
-								cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-							}
 							output := cmd.ShouldFail().Err()
 							Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
 						})
@@ -2376,9 +2358,6 @@ CMD ["npm", "start"]
 								args = append(args, "--platform", "podman")
 							}
 							cmd := helper.Cmd("odo", args...)
-							if podman {
-								cmd.AddEnv("ODO_EXPERIMENTAL_MODE=true")
-							}
 							output := cmd.ShouldFail().Err()
 							Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
 						})
@@ -3324,7 +3303,7 @@ CMD ["npm", "start"]
 				helper.DevfileMetadataNameSetter(cmpName))
 		})
 		It("should fail to run odo dev", func() {
-			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo", "ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo").ShouldFail().Err()
 			Expect(errOut).To(ContainSubstring("unable to access podman. Do you have podman client installed and configured correctly? cause: exec: \"echo\": executable file not found in $PATH"))
 		})
 	})
@@ -3337,7 +3316,7 @@ CMD ["npm", "start"]
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "registry.access.redhat.com/ubi8/nodejs", "registry.access.redhat.com/ubi8/nose")
 		})
 		It("should fail with an error and cleanup resources", func() {
-			errContents := helper.Cmd("odo", "dev", "--platform=podman").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+			errContents := helper.Cmd("odo", "dev", "--platform=podman").ShouldFail().Err()
 			helper.MatchAllInOutput(errContents, []string{"Complete Podman output", "registry.access.redhat.com/ubi8/nose", "Repo not found"})
 			component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 			component.ExpectIsNotDeployed()
@@ -3364,23 +3343,19 @@ CMD ["npm", "start"]
 
 			It("should error out if using --ignore-localhost on any platform other than Podman", func() {
 				args := []string{"dev", "--ignore-localhost", "--random-ports"}
-				var env []string
 				if plt != "" {
 					args = append(args, "--platform", plt)
-					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 				}
-				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				stderr := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("--ignore-localhost cannot be used when running in cluster mode"))
 			})
 
 			It("should error out if using --forward-localhost on any platform other than Podman", func() {
 				args := []string{"dev", "--forward-localhost", "--random-ports"}
-				var env []string
 				if plt != "" {
 					args = append(args, "--platform", plt)
-					env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 				}
-				stderr := helper.Cmd("odo", args...).AddEnv(env...).ShouldFail().Err()
+				stderr := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("--forward-localhost cannot be used when running in cluster mode"))
 			})
 		}
@@ -3434,14 +3409,13 @@ CMD ["npm", "start"]
 
 			It("should error out if using both --ignore-localhost and --forward-localhost", func() {
 				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman", "--ignore-localhost", "--forward-localhost").
-					AddEnv("ODO_EXPERIMENTAL_MODE=true").
 					ShouldFail().
 					Err()
 				Expect(stderr).Should(ContainSubstring("--ignore-localhost and --forward-localhost cannot be used together"))
 			})
 
 			It("should error out if not ignoring localhost", func() {
-				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
 			})
 
