@@ -776,7 +776,7 @@ github.com/segmentio/backo-go
 # github.com/sergi/go-diff v1.1.0
 ## explicit; go 1.12
 github.com/sergi/go-diff/diffmatchpatch
-# github.com/sethvargo/go-envconfig v0.8.2
+# github.com/sethvargo/go-envconfig v0.9.0
 ## explicit; go 1.17
 github.com/sethvargo/go-envconfig
 # github.com/sirupsen/logrus v1.8.1

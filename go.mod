@@ -41,7 +41,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/securego/gosec/v2 v2.14.0
 	github.com/segmentio/backo-go v1.0.1-0.20200129164019-23eae7c10bd3
-	github.com/sethvargo/go-envconfig v0.8.2
+	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
@@ -61,6 +61,7 @@ require (
 	k8s.io/cli-runtime v0.24.0
 	k8s.io/client-go v0.24.0
 	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubectl v0.24.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.11.1
@@ -203,7 +204,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/apiserver v0.23.2 // indirect
 	k8s.io/component-base v0.24.0 // indirect
-	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	oras.land/oras-go v1.1.0 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect

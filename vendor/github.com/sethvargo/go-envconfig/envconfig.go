@@ -76,6 +76,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 const (
@@ -236,6 +237,28 @@ func ProcessWith(ctx context.Context, i interface{}, l Lookuper, fns ...MutatorF
 	return processWith(ctx, i, l, false, fns...)
 }
 
+// ExtractDefaults is a helper that returns a fully-populated struct with the
+// default values resolved. This is helpful when you want to return a constant
+// "default" configuration that is not affected by the user's environment.
+//
+//	type Config struct {
+//	  Port string `env:"PORT,default=8080"`
+//	}
+//
+//	func DefaultConfig() *Config {
+//	  var cfg Config
+//	  if err := envconfig.ExtractDefaults(ctx, &cfg); err != nil {
+//	    panic("failed to extract default config: %s" + err.Error())
+//	  }
+//	  return &cfg
+//	}
+//
+// This is effectively the same as calling [ProcessWith] with an empty
+// [MapLookuper].
+func ExtractDefaults(ctx context.Context, i interface{}, fns ...MutatorFunc) error {
+	return processWith(ctx, i, MapLookuper(nil), false, fns...)
+}
+
 // processWith is a helper that captures whether the parent wanted
 // initialization.
 func processWith(ctx context.Context, i interface{}, l Lookuper, parentNoInit bool, fns ...MutatorFunc) error {
@@ -278,7 +301,11 @@ func processWith(ctx context.Context, i interface{}, l Lookuper, parentNoInit bo
 		}
 
 		// NoInit is only permitted on pointers.
-		if opts.NoInit && ef.Kind() != reflect.Ptr {
+		if opts.NoInit &&
+			ef.Kind() != reflect.Ptr &&
+			ef.Kind() != reflect.Slice &&
+			ef.Kind() != reflect.Map &&
+			ef.Kind() != reflect.UnsafePointer {
 			return fmt.Errorf("%s: %w", tf.Name, ErrNoInitNotPtr)
 		}
 		shouldNotInit := opts.NoInit || parentNoInit
@@ -430,7 +457,7 @@ func keyAndOpts(tag string) (string, *options, error) {
 
 LOOP:
 	for i, o := range tagOpts {
-		o = strings.TrimSpace(o)
+		o = strings.TrimLeftFunc(o, unicode.IsSpace)
 		switch {
 		case o == optOverwrite:
 			opts.Overwrite = true
