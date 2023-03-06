@@ -77,7 +77,7 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 
 	// Case 1
 	if containsDevfile, _ := location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); containsDevfile {
-		_ = os.RemoveAll(contextDir)
+		_ = o.fsys.RemoveAll(filepath.Join(contextDir, "*"))
 		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
 		if copyErr != nil {
 			// TODO: probably need to cleanup here.
