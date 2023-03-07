@@ -206,6 +206,9 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 	When("DevfileRegistriesList CRD is installed on cluster", func() {
 		BeforeEach(func() {
+			if !helper.IsKubernetesCluster() {
+				Skip("skipped on non Kubernetes clusters")
+			}
 			// install CRDs for devfile registry
 			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
 			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))

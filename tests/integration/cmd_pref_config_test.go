@@ -204,6 +204,9 @@ OdoSettings:
 	}
 	When("DevfileRegistriesList CRD is installed on cluster", func() {
 		BeforeEach(func() {
+			if !helper.IsKubernetesCluster() {
+				Skip("skipped on non Kubernetes clusters")
+			}
 			// install CRDs for devfile registry
 			//TODO: install clusterRegestryList from scripts
 			// clusterRegistryList := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "clusterdevfileregistrieslists.yaml"))
