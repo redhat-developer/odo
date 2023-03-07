@@ -1,0 +1,19 @@
+---
+- name: Create Cluster on IBM Cloud
+  hosts: localhost
+  tasks:
+    - name: Fetch the variables from Cluster var file
+      include_vars: 
+        file: vars.yml
+
+- name: create a kubernetes cluster
+  ansible.builtin.import_playbook: ./kubernetes-cluster/create.yml
+
+- name: create a openshift cluster
+  ansible.builtin.import_playbook: ./openshift-cluster/create.yml
+
+- name: create a windows-openshift cluster
+  ansible.builtin.import_playbook: ./windows-openshift-cluster/create.yml
+
+- name: create NFS server for clusters
+  ansible.builtin.import_playbook: ./NFS-vm/create.yaml

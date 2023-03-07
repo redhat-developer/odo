@@ -1,0 +1,34 @@
+---
+- name: Install Operators on Kubernetes Cluster
+  hosts: localhost
+
+  tasks:
+
+  - name: Create a Subscription for Service Binding Operator
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+          name: my-service-binding-operator
+          namespace: operators
+        spec:
+          channel: stable
+          name: service-binding-operator
+          source: operatorhubio-catalog
+          sourceNamespace: olm
+  - name: Create a Subscription for EDB Postgresql Operator
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+          name: my-cloud-native-postgresql
+          namespace: operators
+        spec:
+          channel: stable-v1.18
+          name: cloud-native-postgresql
+          source: operatorhubio-catalog
+          sourceNamespace: olm

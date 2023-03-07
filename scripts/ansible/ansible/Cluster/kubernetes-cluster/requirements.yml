@@ -1,0 +1,5 @@
+---
+collections:
+- ibm.cloudcollection
+- name: kubernetes.core
+  version: 2.0.0

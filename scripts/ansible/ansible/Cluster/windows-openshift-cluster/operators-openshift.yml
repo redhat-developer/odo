@@ -1,12 +1,10 @@
 ---
 - name: Install Operators on Kubernetes Cluster
   hosts: localhost
-  collections:
-   - community.kubernetes
   tasks:
 
   - name: Create a Subscription for Service Binding Operator
-    k8s:
+    kubernetes.core.k8s:
       state: present
       definition:
         apiVersion: operators.coreos.com/v1alpha1
@@ -20,7 +18,7 @@
           source: redhat-operators
           sourceNamespace: openshift-marketplace
   - name: Create a Subscription for EDB Postgresql Operator
-    k8s:
+    kubernetes.core.k8s:
       state: present
       definition:
         apiVersion: operators.coreos.com/v1alpha1
