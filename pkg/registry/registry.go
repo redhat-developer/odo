@@ -67,9 +67,11 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registr
 	if o.kubeClient != nil {
 		clusterRegistries, err := o.kubeClient.GetRegistryList()
 		if err != nil {
-			return nil, err
+			// #6636 : errors should not be blocking
+			klog.V(3).Infof("failed to get Devfile registries from the cluster: %v", err)
+		} else {
+			allRegistries = append(allRegistries, clusterRegistries...)
 		}
-		allRegistries = append(allRegistries, clusterRegistries...)
 	}
 	allRegistries = append(allRegistries, o.preferenceClient.RegistryList()...)
 
