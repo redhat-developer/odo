@@ -77,14 +77,14 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 
 	// Case 1
 	if containsDevfile, _ := location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); containsDevfile {
-		_ = o.fsys.RemoveAll(filepath.Join(contextDir, "*"))
-		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
-		if copyErr != nil {
-			// TODO: probably need to cleanup here.
-			return copyErr
+		err = removeDirectoryContents(contextDir, o.fsys)
+		if err != nil {
+			klog.V(0).Infof(err.Error())
 		}
-		return nil
+		return dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
 	}
+
+	// Case 2 & 3
 	conflictingFiles, cerr := isConflicting(starterProjectTmpDir, contextDir)
 	if cerr != nil {
 		return cerr
@@ -109,6 +109,17 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 			return copyErr
 		}
 		log.Warningf("\nThere are conflicting files (%s) between starter project and the context directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictDirName)
+	}
+	return nil
+}
+
+func removeDirectoryContents(path string, fs filesystem.Filesystem) error {
+	dir, err := os.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	for _, f := range dir {
+		_ = fs.RemoveAll(f.Name())
 	}
 	return nil
 }
