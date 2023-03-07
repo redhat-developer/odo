@@ -569,6 +569,9 @@ var _ = Describe("odo init interactive command tests", func() {
 
 	When("DevfileRegistriesList CRD is installed on cluster", func() {
 		BeforeEach(func() {
+			if !helper.IsKubernetesCluster() {
+				Skip("skipped on non Kubernetes clusters")
+			}
 			devfileRegistriesLists := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "devfileregistrieslists.yaml"))
 			Expect(devfileRegistriesLists.ExitCode()).To(BeEquivalentTo(0))
 		})
