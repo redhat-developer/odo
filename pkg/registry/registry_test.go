@@ -125,7 +125,18 @@ OdoSettings:
 				result.EXPECT().GetRegistryList().Return(nil, errors.New("an error"))
 				return result
 			},
-			wantErr: true,
+			want: []api.Registry{
+				{
+					Name:   "CheDevfileRegistry",
+					URL:    "https://che-devfile-registry.openshift.io/",
+					Secure: false,
+				},
+				{
+					Name:   "DefaultDevfileRegistry",
+					URL:    "https://registry.devfile.io",
+					Secure: false,
+				},
+			},
 		},
 	}
 
@@ -139,7 +150,6 @@ OdoSettings:
 			ctrl := gomock.NewController(t)
 
 			prefClient, _ := preference.NewClient(ctx)
-			// TODO(rm3l) Test with both nil and non-nil kubeclient
 			var kc kclient.ClientInterface
 			if tt.kclient != nil {
 				kc = tt.kclient(ctrl)
