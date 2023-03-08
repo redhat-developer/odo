@@ -67,9 +67,26 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 	}
 
-	It("should fail, with cluster", func() {
+	It("should fail, with default cluster mode", func() {
 		By("running odo describe component -o json with an unknown name", func() {
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+			Expect(stdout).To(BeEmpty())
+			helper.JsonPathContentContain(stderr, "message", "no component found with name \"unknown-name\"")
+		})
+
+		By("running odo describe component with an unknown name", func() {
+			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\""))
+		})
+	})
+
+	It("should fail, with cluster", func() {
+		By("running odo describe component -o json with an unknown name", func() {
+			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "cluster", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
 			Expect(stdout).To(BeEmpty())
@@ -77,7 +94,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
-			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name").ShouldFail()
+			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "cluster").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
 			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\" in the namespace \"" + commonVar.Project + "\""))
@@ -197,11 +214,32 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 		}
 
-		It("should not describe the component from another directory", func() {
+		It("should not describe the component from another directory, with default cluster mode", func() {
 			By("running with json output", func() {
 				err := os.Chdir("/")
 				Expect(err).NotTo(HaveOccurred())
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(helper.IsJSON(stderr)).To(BeTrue())
+				Expect(stdout).To(BeEmpty())
+				helper.JsonPathContentContain(stderr, "message", "no component found with name \""+cmpName+"\"")
+			})
+
+			By("running with default output", func() {
+				err := os.Chdir("/")
+				Expect(err).NotTo(HaveOccurred())
+				res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldFail()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stdout).To(BeEmpty())
+				Expect(stderr).To(ContainSubstring("no component found with name %q", cmpName))
+			})
+		})
+
+		It("should not describe the component from another directory, with cluster", func() {
+			By("running with json output", func() {
+				err := os.Chdir("/")
+				Expect(err).NotTo(HaveOccurred())
+				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json", "--platform", "cluster").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(helper.IsJSON(stderr)).To(BeTrue())
 				Expect(stdout).To(BeEmpty())
@@ -211,10 +249,10 @@ var _ = Describe("odo describe component command tests", func() {
 			By("running with default output", func() {
 				err := os.Chdir("/")
 				Expect(err).NotTo(HaveOccurred())
-				res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldFail()
+				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "--platform", "cluster").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stdout).To(BeEmpty())
-				Expect(stderr).To(ContainSubstring("no component found with name \"" + cmpName + "\" in the namespace \"" + commonVar.Project + "\""))
+				Expect(stderr).To(ContainSubstring("no component found with name %q in the namespace %q", cmpName, commonVar.Project))
 			})
 		})
 
