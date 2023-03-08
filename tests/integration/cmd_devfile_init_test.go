@@ -251,10 +251,15 @@ var _ = Describe("odo devfile init command tests", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "init", "--name", "aname", "--starter", "nodejs-starter", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml")).ShouldPass()
 				})
-				It("should pass and keep the devfile in starter", func() {
+				It("should pass and keep the devfile in the starter project", func() {
 					devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
 					Expect(err).To(Not(HaveOccurred()))
-					helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "kubernetes-deploy", "deployk8s", "image-build"})
+					Expect(devfileContent).To(SatisfyAll(
+						ContainSubstring("2.0.0"), Not(ContainSubstring("2.2.0")),
+						Not(ContainSubstring("kubernetes-deploy")),
+						Not(ContainSubstring("deployk8s")),
+						Not(ContainSubstring("image-build")),
+					))
 				})
 			})
 
