@@ -402,11 +402,17 @@ func TestGetVolumesAndVolumeMounts(t *testing.T) {
 				}(),
 			}
 
-			containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
+			podTemplateSpec, err := generator.GetPodTemplateSpec(devObj, generator.PodTemplateParams{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestGetVolumesAndVolumeMounts error - %v", err)
 				return
 			}
+
+			if tt.wantErr && err != nil {
+				return
+			}
+
+			containers := podTemplateSpec.Spec.Containers
 
 			var options parsercommon.DevfileOptions
 			if tt.wantErr {

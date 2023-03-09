@@ -66,7 +66,7 @@ func NewCmdCompletion(name, fullName string) *cobra.Command {
 		Example:               fmt.Sprintf(completionExample, fullName),
 		DisableFlagsInUseLine: true,
 		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
-		Args:                  cobra.ExactValidArgs(1),
+		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Below we ignore the error returns in order to pass golint validation
 			// We will handle the error in the main function / output when the user inputs `odo completion`.

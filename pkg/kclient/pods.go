@@ -51,7 +51,8 @@ func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string,
 		return fmt.Errorf("unable execute command via SPDY: %w", err)
 	}
 	// initialize the transport of the standard shell streams
-	err = exec.Stream(remotecommand.StreamOptions{
+	// TODO(feloy) related to https://github.com/redhat-developer/odo/issues/6196
+	err = exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
 		Stdin:  stdin,
 		Stdout: stdout,
 		Stderr: stderr,
