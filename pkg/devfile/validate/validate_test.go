@@ -32,7 +32,7 @@ func Test_getCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: util.GetBoolPtr(false),
+							HotReloadCapable: util.GetBool(false),
 						},
 					},
 				},
@@ -42,7 +42,7 @@ func Test_getCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: util.GetBoolPtr(false),
+							HotReloadCapable: util.GetBool(false),
 						},
 					},
 				},
@@ -55,7 +55,7 @@ func Test_getCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: util.GetBoolPtr(false),
+							HotReloadCapable: util.GetBool(false),
 						},
 					},
 				},
@@ -63,7 +63,7 @@ func Test_getCommands(t *testing.T) {
 					Id: "somecommand2",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: util.GetBoolPtr(false),
+							HotReloadCapable: util.GetBool(false),
 						},
 					},
 				},
@@ -83,7 +83,7 @@ func Test_getCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: util.GetBoolPtr(false),
+							HotReloadCapable: util.GetBool(false),
 						},
 					},
 				},
@@ -91,7 +91,7 @@ func Test_getCommands(t *testing.T) {
 					Id: "somecommand2",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: util.GetBoolPtr(false),
+							HotReloadCapable: util.GetBool(false),
 						},
 					},
 				},

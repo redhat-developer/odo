@@ -339,7 +339,7 @@ func UpdateDevfileContent(path string, handlers []DevfileUpdater) {
 		return
 	}
 
-	d, err := parser.ParseDevfile(parser.ParserArgs{Path: path, FlattenedDevfile: pointer.BoolPtr(false)})
+	d, err := parser.ParseDevfile(parser.ParserArgs{Path: path, FlattenedDevfile: pointer.Bool(false)})
 	Expect(err).NotTo(HaveOccurred())
 	for _, h := range handlers {
 		err = h(&d)

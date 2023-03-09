@@ -456,7 +456,7 @@ func (a *Adapter) createOrUpdateComponent(
 		ObjectMeta:        deploymentObjectMeta,
 		PodTemplateSpec:   podTemplateSpec,
 		PodSelectorLabels: selectorLabels,
-		Replicas:          pointer.Int32Ptr(1),
+		Replicas:          pointer.Int32(1),
 	}
 
 	// Save generation to check if deployment is updated later

@@ -45,7 +45,7 @@ func (c *Client) PatchDynamicResource(resource unstructured.Unstructured) (bool,
 	}
 
 	// Patch the dynamic resource
-	current, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), unversionedResource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
+	current, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), unversionedResource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: Bool(true)})
 	if err != nil {
 		return false, err
 	}

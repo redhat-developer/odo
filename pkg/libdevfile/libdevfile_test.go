@@ -133,7 +133,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -193,7 +193,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -206,7 +206,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -228,7 +228,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -241,7 +241,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -263,7 +263,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBool(false)},
 								},
 							},
 							CommandLine: commands[0],
@@ -293,7 +293,7 @@ func TestGetCommand(t *testing.T) {
 						Composite: &v1alpha2.CompositeCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -358,25 +358,25 @@ func TestDeploy(t *testing.T) {
 	deployDefault1 := generator.GetCompositeCommand(generator.CompositeCommandParams{
 		Kind:      v1alpha2.DeployCommandGroupKind,
 		Id:        "deploy-default-1",
-		IsDefault: pointer.BoolPtr(true),
+		IsDefault: pointer.Bool(true),
 		Commands:  []string{"image-command", "deployment-command", "service-command"},
 	})
 	applyImageCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
 		Kind:      v1alpha2.DeployCommandGroupKind,
 		Id:        "image-command",
-		IsDefault: pointer.BoolPtr(false),
+		IsDefault: pointer.Bool(false),
 		Component: "image-component",
 	})
 	applyDeploymentCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
 		Kind:      v1alpha2.DeployCommandGroupKind,
 		Id:        "deployment-command",
-		IsDefault: pointer.BoolPtr(false),
+		IsDefault: pointer.Bool(false),
 		Component: "deployment-component",
 	})
 	applyServiceCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
 		Kind:      v1alpha2.DeployCommandGroupKind,
 		Id:        "service-command",
-		IsDefault: pointer.BoolPtr(false),
+		IsDefault: pointer.Bool(false),
 		Component: "service-component",
 	})
 
@@ -467,14 +467,14 @@ func TestBuild(t *testing.T) {
 	defaultBuildCommand := generator.GetExecCommand(generator.ExecCommandParams{
 		Kind:        v1alpha2.BuildCommandGroupKind,
 		Id:          "my-default-build-command",
-		IsDefault:   pointer.BoolPtr(true),
+		IsDefault:   pointer.Bool(true),
 		CommandLine: "build my-app",
 		Component:   containerComp.Name,
 	})
 	nonDefaultBuildCommandExplicit := generator.GetExecCommand(generator.ExecCommandParams{
 		Kind:        v1alpha2.BuildCommandGroupKind,
 		Id:          "my-explicit-non-default-build-command",
-		IsDefault:   pointer.BoolPtr(false),
+		IsDefault:   pointer.Bool(false),
 		CommandLine: "build my-app",
 		Component:   containerComp.Name,
 	})
@@ -1517,7 +1517,7 @@ func TestValidateAndGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -1553,7 +1553,7 @@ func TestValidateAndGetCommand(t *testing.T) {
 						Exec: &v1alpha2.ExecCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBool(false)},
 								},
 							},
 							CommandLine: commands[0],
@@ -1583,7 +1583,7 @@ func TestValidateAndGetCommand(t *testing.T) {
 						Composite: &v1alpha2.CompositeCommand{
 							LabeledCommand: v1alpha2.LabeledCommand{
 								BaseCommand: v1alpha2.BaseCommand{
-									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBool(true)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -1659,7 +1659,7 @@ func TestValidateAndGetPushCommands(t *testing.T) {
 						BaseCommand: v1alpha2.BaseCommand{
 							Group: &v1alpha2.CommandGroup{
 								Kind:      runGroup,
-								IsDefault: util.GetBoolPtr(true),
+								IsDefault: util.GetBool(true),
 							},
 						},
 					},
@@ -1709,7 +1709,7 @@ func TestValidateAndGetPushCommands(t *testing.T) {
 			Exec: &v1alpha2.ExecCommand{
 				LabeledCommand: v1alpha2.LabeledCommand{
 					BaseCommand: v1alpha2.BaseCommand{
-						Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+						Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBool(true)},
 					},
 				},
 				CommandLine: command,

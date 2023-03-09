@@ -515,7 +515,7 @@ var _ = Describe("odo init interactive command tests", func() {
 						Expect(err).ShouldNot(HaveOccurred())
 
 						// Now make sure the Devfile contains a single container component with the right endpoint
-						d, err := parser.ParseDevfile(parser.ParserArgs{Path: filepath.Join(commonVar.Context, "devfile.yaml"), FlattenedDevfile: pointer.BoolPtr(false)})
+						d, err := parser.ParseDevfile(parser.ParserArgs{Path: filepath.Join(commonVar.Context, "devfile.yaml"), FlattenedDevfile: pointer.Bool(false)})
 						Expect(err).ShouldNot(HaveOccurred())
 
 						containerComponents, err := d.Data.GetDevfileContainerComponents(common.DevfileOptions{})

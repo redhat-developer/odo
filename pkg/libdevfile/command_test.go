@@ -16,17 +16,17 @@ func Test_newCommand(t *testing.T) {
 	execCommand := generator.GetExecCommand(generator.ExecCommandParams{
 		Kind:      v1alpha2.RunCommandGroupKind,
 		Id:        "exec-command",
-		IsDefault: pointer.BoolPtr(true),
+		IsDefault: pointer.Bool(true),
 	})
 	compositeCommand := generator.GetCompositeCommand(generator.CompositeCommandParams{
 		Kind:      v1alpha2.DeployCommandGroupKind,
 		Id:        "composite-command",
-		IsDefault: pointer.BoolPtr(true),
+		IsDefault: pointer.Bool(true),
 	})
 	applyCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
 		Kind:      v1alpha2.DeployCommandGroupKind,
 		Id:        "apply-command",
-		IsDefault: pointer.BoolPtr(false),
+		IsDefault: pointer.Bool(false),
 	})
 
 	data, _ := data.NewDevfileData(string(data.APISchemaVersion200))

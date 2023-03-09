@@ -767,8 +767,8 @@ func GetGitOriginPath(path string) string {
 	return ""
 }
 
-// BoolPtr returns pointer to passed boolean
-func GetBoolPtr(b bool) *bool {
+// Bool returns pointer to passed boolean
+func GetBool(b bool) *bool {
 	return &b
 }
 

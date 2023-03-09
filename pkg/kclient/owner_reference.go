@@ -10,7 +10,7 @@ import (
 // If a Forbidden errors occurs, it will call `exec` again with the original `ownerReference`
 func (c *Client) TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error {
 	blockOwnerRef := ownerReference
-	blockOwnerRef.BlockOwnerDeletion = pointer.BoolPtr(true)
+	blockOwnerRef.BlockOwnerDeletion = pointer.Bool(true)
 	err := exec(blockOwnerRef)
 	if err == nil {
 		return nil
