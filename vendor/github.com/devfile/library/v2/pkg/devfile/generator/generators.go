@@ -16,6 +16,7 @@
 package generator
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/devfile/api/v2/pkg/attributes"
@@ -34,6 +35,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	psaapi "k8s.io/pod-security-admission/api"
 )
 
 const (
@@ -74,6 +76,8 @@ func GetObjectMeta(name, namespace string, labels, annotations map[string]string
 }
 
 // GetContainers iterates through all container components, filters out init containers and returns corresponding containers
+//
+// Deprecated: in favor of GetPodTemplateSpec
 func GetContainers(devfileObj parser.DevfileObj, options common.DevfileOptions) ([]corev1.Container, error) {
 	allContainers, err := getAllContainers(devfileObj, options)
 	if err != nil {
@@ -120,6 +124,8 @@ func GetContainers(devfileObj parser.DevfileObj, options common.DevfileOptions) 
 }
 
 // GetInitContainers gets the init container for every preStart devfile event
+//
+// Deprecated: in favor of GetPodTemplateSpec
 func GetInitContainers(devfileObj parser.DevfileObj) ([]corev1.Container, error) {
 	containers, err := getAllContainers(devfileObj, common.DevfileOptions{})
 	if err != nil {
@@ -170,11 +176,16 @@ func GetInitContainers(devfileObj parser.DevfileObj) ([]corev1.Container, error)
 
 // DeploymentParams is a struct that contains the required data to create a deployment object
 type DeploymentParams struct {
-	TypeMeta          metav1.TypeMeta
-	ObjectMeta        metav1.ObjectMeta
-	InitContainers    []corev1.Container
-	Containers        []corev1.Container
+	TypeMeta   metav1.TypeMeta
+	ObjectMeta metav1.ObjectMeta
+	// Deprecated: InitContainers, Containers and Volumes are deprecated and are replaced by PodTemplateSpec.
+	// A PodTemplateSpec value can be obtained calling GetPodTemplateSpec function, instead of calling GetContainers and GetInitContainers
+	InitContainers []corev1.Container
+	// Deprecated: see InitContainers
+	Containers []corev1.Container
+	// Deprecated: see InitContainers
 	Volumes           []corev1.Volume
+	PodTemplateSpec   *corev1.PodTemplateSpec
 	PodSelectorLabels map[string]string
 	Replicas          *int32
 }
@@ -182,31 +193,31 @@ type DeploymentParams struct {
 // GetDeployment gets a deployment object
 func GetDeployment(devfileObj parser.DevfileObj, deployParams DeploymentParams) (*appsv1.Deployment, error) {
 
-	podTemplateSpecParams := podTemplateSpecParams{
-		ObjectMeta:     deployParams.ObjectMeta,
-		InitContainers: deployParams.InitContainers,
-		Containers:     deployParams.Containers,
-		Volumes:        deployParams.Volumes,
-	}
-	var globalAttributes attributes.Attributes
-	// attributes is not supported in versions less than 2.1.0, so we skip it
-	if devfileObj.Data.GetSchemaVersion() > string(data.APISchemaVersion200) {
-		// the only time GetAttributes will return an error is if DevfileSchemaVersion is 2.0.0, a case we've already covered;
-		// so we'll skip checking for error here
-		globalAttributes, _ = devfileObj.Data.GetAttributes()
-	}
-	components, err := devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-	podTemplateSpec, err := getPodTemplateSpec(globalAttributes, components, podTemplateSpecParams)
-	if err != nil {
-		return nil, err
-	}
 	deploySpecParams := deploymentSpecParams{
-		PodTemplateSpec:   *podTemplateSpec,
 		PodSelectorLabels: deployParams.PodSelectorLabels,
 		Replicas:          deployParams.Replicas,
+	}
+	if deployParams.PodTemplateSpec == nil {
+		// Deprecated
+		podTemplateSpecParams := podTemplateSpecParams{
+			ObjectMeta:     deployParams.ObjectMeta,
+			InitContainers: deployParams.InitContainers,
+			Containers:     deployParams.Containers,
+			Volumes:        deployParams.Volumes,
+		}
+		podTemplateSpec, err := getPodTemplateSpec(podTemplateSpecParams)
+		if err != nil {
+			return nil, err
+		}
+		deploySpecParams.PodTemplateSpec = *podTemplateSpec
+	} else {
+		if len(deployParams.InitContainers) > 0 ||
+			len(deployParams.Containers) > 0 ||
+			len(deployParams.Volumes) > 0 {
+			return nil, errors.New("InitContainers, Containers and Volumes cannot be set when PodTemplateSpec is set in parameters")
+		}
+
+		deploySpecParams.PodTemplateSpec = *deployParams.PodTemplateSpec
 	}
 
 	containerAnnotations, err := getContainerAnnotations(devfileObj, common.DevfileOptions{})
@@ -222,6 +233,116 @@ func GetDeployment(devfileObj parser.DevfileObj, deployParams DeploymentParams) 
 	}
 
 	return deployment, nil
+}
+
+// PodTemplateParams is a struct that contains the required data to create a podtemplatespec object
+type PodTemplateParams struct {
+	ObjectMeta metav1.ObjectMeta
+	// PodSecurityAdmissionPolicy is the policy to be respected by the created pod
+	// The pod will be patched, if necessary, to respect the policies
+	PodSecurityAdmissionPolicy psaapi.Policy
+}
+
+// GetPodTemplateSpec returns a pod template
+// The function:
+// - iterates through all container components, filters out init containers and gets corresponding containers
+// - gets the init container for every preStart devfile event
+// - patches the pod template and containers to satisfy PodSecurityAdmissionPolicy
+// - patches the pod template and containers to apply pod and container overrides
+func GetPodTemplateSpec(devfileObj parser.DevfileObj, podTemplateParams PodTemplateParams) (*corev1.PodTemplateSpec, error) {
+	containers, err := GetContainers(devfileObj, common.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
+	initContainers, err := GetInitContainers(devfileObj)
+	if err != nil {
+		return nil, err
+	}
+
+	podTemplateSpecParams := podTemplateSpecParams{
+		ObjectMeta:     podTemplateParams.ObjectMeta,
+		InitContainers: initContainers,
+		Containers:     containers,
+	}
+	var globalAttributes attributes.Attributes
+	// attributes is not supported in versions less than 2.1.0, so we skip it
+	if devfileObj.Data.GetSchemaVersion() > string(data.APISchemaVersion200) {
+		// the only time GetAttributes will return an error is if DevfileSchemaVersion is 2.0.0, a case we've already covered;
+		// so we'll skip checking for error here
+		globalAttributes, _ = devfileObj.Data.GetAttributes()
+	}
+	components, err := devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	podTemplateSpec, err := getPodTemplateSpec(podTemplateSpecParams)
+	if err != nil {
+		return nil, err
+	}
+
+	podTemplateSpec, err = patchForPolicy(podTemplateSpec, podTemplateParams.PodSecurityAdmissionPolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	if needsPodOverrides(globalAttributes, components) {
+		patchedPodTemplateSpec, err := applyPodOverrides(globalAttributes, components, podTemplateSpec)
+		if err != nil {
+			return nil, err
+		}
+		patchedPodTemplateSpec.ObjectMeta = podTemplateSpecParams.ObjectMeta
+		podTemplateSpec = patchedPodTemplateSpec
+	}
+
+	podTemplateSpec.Spec.Containers, err = applyContainerOverrides(devfileObj, podTemplateSpec.Spec.Containers)
+	if err != nil {
+		return nil, err
+	}
+	podTemplateSpec.Spec.InitContainers, err = applyContainerOverrides(devfileObj, podTemplateSpec.Spec.InitContainers)
+	if err != nil {
+		return nil, err
+	}
+
+	return podTemplateSpec, nil
+}
+
+func applyContainerOverrides(devfileObj parser.DevfileObj, containers []corev1.Container) ([]corev1.Container, error) {
+	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1.ContainerComponentType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	getContainerByName := func(name string) (*corev1.Container, bool) {
+		for _, container := range containers {
+			if container.Name == name {
+				return &container, true
+			}
+		}
+		return nil, false
+	}
+
+	result := make([]corev1.Container, 0, len(containers))
+	for _, comp := range containerComponents {
+		container, found := getContainerByName(comp.Name)
+		if !found {
+			continue
+		}
+		if comp.Attributes.Exists(ContainerOverridesAttribute) {
+			patched, err := containerOverridesHandler(comp, container)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, *patched)
+		} else {
+			result = append(result, *container)
+		}
+	}
+	return result, nil
 }
 
 // PVCParams is a struct to create PVC

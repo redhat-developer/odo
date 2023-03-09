@@ -16,7 +16,7 @@ run:
   #
   # Allowed values: readonly|vendor|mod
   # By default, it isn't set.
-  modules-download-mode: readonly
+  modules-download-mode: vendor
 
 linters:
   # Note that some linters not listed below are enabled by default.

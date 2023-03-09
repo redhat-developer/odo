@@ -127,7 +127,7 @@ func GenerateDummyContainerComponent(name string, volMounts []v1.VolumeMount, en
 			}}}
 }
 
-//DockerImageValues struct can be used to set override or main component struct values
+// DockerImageValues struct can be used to set override or main component struct values
 type DockerImageValues struct {
 	//maps to Image.ImageName
 	ImageName string
@@ -139,8 +139,8 @@ type DockerImageValues struct {
 	RootRequired *bool
 }
 
-//GetDockerImageTestComponent returns a docker image component that is used for testing.
-//The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
+// GetDockerImageTestComponent returns a docker image component that is used for testing.
+// The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
 func GetDockerImageTestComponent(div DockerImageValues, autobuild *bool, attr attributes.Attributes) v1.Component {
 	comp := v1.Component{
 		Name: "image",
@@ -175,8 +175,8 @@ func GetDockerImageTestComponent(div DockerImageValues, autobuild *bool, attr at
 	return comp
 }
 
-//GetDockerImageTestComponentParentOverride returns a docker image parent override component that is used for testing.
-//The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
+// GetDockerImageTestComponentParentOverride returns a docker image parent override component that is used for testing.
+// The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
 func GetDockerImageTestComponentParentOverride(div DockerImageValues) v1.ComponentParentOverride {
 	comp := v1.ComponentParentOverride{
 		Name: "image",
@@ -206,8 +206,8 @@ func GetDockerImageTestComponentParentOverride(div DockerImageValues) v1.Compone
 	return comp
 }
 
-//GetDockerImageTestComponentPluginOverride returns a docker image parent override component that is used for testing.
-//The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
+// GetDockerImageTestComponentPluginOverride returns a docker image parent override component that is used for testing.
+// The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
 func GetDockerImageTestComponentPluginOverride(div DockerImageValues) v1.ComponentPluginOverride {
 	comp := v1.ComponentPluginOverride{
 		Name: "image",
