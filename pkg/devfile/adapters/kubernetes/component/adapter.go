@@ -390,10 +390,17 @@ func (a *Adapter) createOrUpdateComponent(
 	odolabels.AddCommonAnnotations(annotations)
 	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
-	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(deployment, labels, annotations)
 	if err != nil {
 		return nil, false, err
 	}
+	podTemplateSpec, err := generator.GetPodTemplateSpec(a.Devfile, generator.PodTemplateParams{
+		ObjectMeta: deploymentObjectMeta,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	containers := podTemplateSpec.Spec.Containers
 	if len(containers) == 0 {
 		return nil, false, fmt.Errorf("no valid components found in the devfile")
 	}
@@ -407,10 +414,7 @@ func (a *Adapter) createOrUpdateComponent(
 		return nil, false, err
 	}
 
-	initContainers, err := generator.GetInitContainers(a.Devfile)
-	if err != nil {
-		return nil, false, err
-	}
+	initContainers := podTemplateSpec.Spec.InitContainers
 
 	// list all the pvcs for the component
 	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
@@ -445,17 +449,12 @@ func (a *Adapter) createOrUpdateComponent(
 		"component": componentName,
 	}
 
-	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(deployment, labels, annotations)
-	if err != nil {
-		return nil, false, err
-	}
+	podTemplateSpec.Spec.Volumes = allVolumes
 
 	deployParams := generator.DeploymentParams{
 		TypeMeta:          generator.GetTypeMeta(kclient.DeploymentKind, kclient.DeploymentAPIVersion),
 		ObjectMeta:        deploymentObjectMeta,
-		InitContainers:    initContainers,
-		Containers:        containers,
-		Volumes:           allVolumes,
+		PodTemplateSpec:   podTemplateSpec,
 		PodSelectorLabels: selectorLabels,
 		Replicas:          pointer.Int32Ptr(1),
 	}

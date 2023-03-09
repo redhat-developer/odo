@@ -41,10 +41,11 @@ func createPodFromComponent(
 	randomPorts bool,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
-	containers, err := generator.GetContainers(devfileObj, common.DevfileOptions{})
+	podTemplate, err := generator.GetPodTemplateSpec(devfileObj, generator.PodTemplateParams{})
 	if err != nil {
 		return nil, nil, err
 	}
+	containers := podTemplate.Spec.Containers
 	if len(containers) == 0 {
 		return nil, nil, fmt.Errorf("no valid components found in the devfile")
 	}
