@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
@@ -125,7 +126,23 @@ type resourceMap struct {
 
 func findAPIs(client discovery.DiscoveryInterface) (*resourceMap, error) {
 	start := time.Now()
-	resList, err := client.ServerPreferredResources()
+
+	var resList []*metav1.APIResourceList
+
+	// TODO(feloy) Remove call to ServerGroups() when https://github.com/kubernetes/kubernetes/issues/116414 is fixed
+
+	// The call to ServerGroups() prevents from calling ServerPreferredResources() when ServerGroups() returns nil
+	// (which will make ServerPreferredResources() panic)
+	originalErrorHandlers := runtime.ErrorHandlers
+	runtime.ErrorHandlers = nil
+	groups, err := client.ServerGroups()
+	if groups == nil {
+		resList = nil
+	} else {
+		resList, err = client.ServerPreferredResources()
+	}
+	runtime.ErrorHandlers = originalErrorHandlers
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch api groups from kubernetes: %w", err)
 	}
