@@ -454,3 +454,9 @@ func (kubectl KubectlRunner) GetVersion() string {
 	major := sv["major"].(string)
 	return major + "." + minor
 }
+
+func (kubectl KubectlRunner) SetLabelsOnNamespace(ns string, labelValues ...string) {
+	args := []string{"label", "namespaces", ns}
+	args = append(args, labelValues...)
+	Cmd(kubectl.path, args...).ShouldPass()
+}
