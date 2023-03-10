@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -116,13 +117,26 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	return nil
 }
 
+// removeDirectoryContents attempts to remove dir contents, checks if the dir is empty and returns an error if it is not
 func removeDirectoryContents(path string, fsys filesystem.Filesystem) error {
 	dir, err := fsys.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	for _, f := range dir {
-		_ = fsys.RemoveAll(f.Name())
+		// a bit of cheating to make sure this works with a fake filesystem, especially a memory map
+		// memorymap's Name() method trims the full path and returns just the file name, which then becomes impossible to find by the RemoveAll method that looks for prefix
+		fileName := filepath.Join(path, f.Name())
+		_ = fsys.RemoveAll(fileName)
+	}
+
+	// TODO: perhaps this can be removed
+	dir, err = fsys.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	if len(dir) != 0 {
+		return fmt.Errorf("directory contents could not be removed, no error identified")
 	}
 	return nil
 }

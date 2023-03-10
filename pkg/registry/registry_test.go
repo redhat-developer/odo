@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -695,7 +696,7 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 				decryptedToken: "",
 				contextDir:     contextDir,
 			},
-			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someotherfile.txt"},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someFile.txt"},
 			wantErr: false,
 		},
 		{
@@ -737,6 +738,8 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 				t.Errorf("failed to walk %s; cause:%s", contextDir, err.Error())
 				return
 			}
+			sort.Strings(got)
+			sort.Strings(tt.want)
 			if diff := cmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("DownloadStarterProject() mismatch (-want +got):\n%s", diff)
 			}
