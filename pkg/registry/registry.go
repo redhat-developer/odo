@@ -55,7 +55,7 @@ func (o RegistryClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([
 }
 
 // DownloadStarterProject downloads a starter project referenced in devfile
-// This will first remove the content of the contextDir
+// TODO: Make this more verbose
 func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
 	// Let the project be downloaded in a temp directory
 	// Fetch the contents of the temp directory
@@ -97,7 +97,6 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	if len(conflictingFiles) == 0 {
 		copyErr := util.CopyDirWithFS(starterProjectTmpDir, contextDir, o.fsys)
 		if copyErr != nil {
-			// TODO: probably need to cleanup here.
 			return copyErr
 		}
 	} else {
@@ -110,7 +109,6 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 
 		copyErr := util.CopyDirWithFS(starterProjectTmpDir, conflictDirName, o.fsys)
 		if copyErr != nil {
-			// TODO: probably need to cleanup here.
 			return copyErr
 		}
 		log.Warningf("\nThere are conflicting files (%s) between starter project and the context directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictDirName)
@@ -134,7 +132,7 @@ func isConflicting(spDir, contextDir string, fsys filesystem.Filesystem) (confli
 		contextDirMap = map[string]struct{}{}
 	)
 	err = fsys.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
-		path = strings.ReplaceAll(path, contextDir, "")
+		path = strings.TrimPrefix(path, contextDir)
 		if path != "" {
 			contextDirMap[path] = struct{}{}
 		}
@@ -145,7 +143,7 @@ func isConflicting(spDir, contextDir string, fsys filesystem.Filesystem) (confli
 	}
 
 	err = fsys.Walk(spDir, func(path string, info fs.FileInfo, err error) error {
-		path = strings.ReplaceAll(path, spDir, "")
+		path = strings.TrimPrefix(path, spDir)
 		if _, ok := contextDirMap[path]; ok {
 			conflictingFiles = append(conflictingFiles, path)
 		}

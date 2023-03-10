@@ -224,7 +224,7 @@ func IsValidProjectDir(fs filesystem.Filesystem, path string, devfilePath string
 // takes an absolute path prefixed with file:// and extracts it to a destination.
 // pathToUnzip specifies the path within the zip folder to extract
 // TODO(feloy) sync with devfile library?
-func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string) error {
+func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string, fsys filesystem.Filesystem) error {
 	if zipURL == "" {
 		return fmt.Errorf("empty zip url: %s", zipURL)
 	}
@@ -239,7 +239,11 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 		// Generate temporary zip file location
 		time := time.Now().Format(time.RFC3339)
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
-		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
+		tempPath, err := fsys.TempDir("", "")
+		if err != nil {
+			return err
+		}
+		pathToZip = path.Join(tempPath, "_"+time+".zip")
 
 		params := dfutil.DownloadParams{
 			Request: dfutil.HTTPRequestParams{
@@ -248,13 +252,13 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 			},
 			Filepath: pathToZip,
 		}
-		err := dfutil.DownloadFile(params)
+		err = dfutil.DownloadFile(params)
 		if err != nil {
 			return err
 		}
 
 		defer func() {
-			if err := dfutil.DeletePath(pathToZip); err != nil {
+			if err = fsys.Remove(pathToZip); err != nil && !os.IsNotExist(err) {
 				klog.Errorf("Could not delete temporary directory for zip file. Error: %s", err)
 			}
 		}()
@@ -262,7 +266,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 		return fmt.Errorf("invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
-	filenames, err := Unzip(pathToZip, destination, pathToUnzip)
+	filenames, err := Unzip(pathToZip, destination, pathToUnzip, fsys)
 	if err != nil {
 		return err
 	}
@@ -279,7 +283,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 // Source: https://golangcode.com/unzip-files-in-go/
 // pathToUnzip (parameter 3) is the path within the zip folder to extract
 // TODO(feloy) sync with devfile library?
-func Unzip(src, dest, pathToUnzip string) ([]string, error) {
+func Unzip(src, dest, pathToUnzip string, fsys filesystem.Filesystem) ([]string, error) {
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -335,18 +339,18 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 
 		if f.FileInfo().IsDir() {
 			// Make Folder
-			if err = os.MkdirAll(fpath, os.ModePerm); err != nil {
+			if err = fsys.MkdirAll(fpath, os.ModePerm); err != nil {
 				return filenames, err
 			}
 			continue
 		}
 
 		// Make File
-		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		if err = fsys.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		outFile, err := fsys.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return filenames, err
 		}

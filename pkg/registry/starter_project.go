@@ -22,12 +22,12 @@ const (
 	RegistryUser = "default"
 )
 
-func checkoutProject(subDir, zipURL, path, starterToken string) error {
+func checkoutProject(subDir, zipURL, path, starterToken string, fsys filesystem.Filesystem) error {
 
 	if subDir == "" {
 		subDir = "/"
 	}
-	err := util.GetAndExtractZip(zipURL, path, subDir, starterToken)
+	err := util.GetAndExtractZip(zipURL, path, subDir, starterToken, fsys)
 	if err != nil {
 		return fmt.Errorf("failed to download and extract project zip folder: %w", err)
 	}
@@ -73,7 +73,7 @@ func DownloadStarterProject(fs filesystem.Filesystem, starterProject *devfilev1.
 		if verbose {
 			downloadSpinner = log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, url)
 		}
-		err := checkoutProject(sparseDir, url, path, decryptedToken)
+		err := checkoutProject(sparseDir, url, path, decryptedToken, fs)
 		if err != nil {
 			if verbose {
 				downloadSpinner.End(false)

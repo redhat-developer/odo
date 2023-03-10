@@ -1325,7 +1325,7 @@ func TestUnzip(t *testing.T) {
 			dir := t.TempDir()
 			t.Logf(dir)
 
-			_, err := Unzip(filepath.FromSlash(tt.src), dir, tt.pathToUnzip)
+			_, err := Unzip(filepath.FromSlash(tt.src), dir, tt.pathToUnzip, filesystem.DefaultFs{})
 			if err != nil {
 				tt.expectedError = strings.ReplaceAll(tt.expectedError, "/", string(filepath.Separator))
 				if !strings.HasPrefix(err.Error(), tt.expectedError) {
