@@ -1,19 +1,23 @@
 package component
 
 import (
+	"context"
 	"fmt"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // getComponentDeployment returns the deployment associated with the component, if deployed
@@ -32,6 +36,21 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	}
 	componentExists := deployment != nil
 	return deployment, componentExists, nil
+}
+
+func (a *Adapter) handleAutoImageComponents(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj) error {
+	components, err := devfile.GetImageComponentsToPush(devfileObj)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range components {
+		err = image.BuildPushSpecificImage(ctx, fs, c, true)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // pushDevfileKubernetesComponents gets the Kubernetes components from the Devfile and push them to the cluster

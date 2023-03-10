@@ -109,6 +109,14 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		return err
 	}
 
+	klog.V(4).Infof("component state: %q\n", componentStatus.State)
+	if componentStatus.State == "" || componentStatus.State == watch.StateReady {
+		err = a.handleAutoImageComponents(ctx, a.FS, a.Devfile)
+		if err != nil {
+			return err
+		}
+	}
+
 	deployment, deploymentExists, err := a.getComponentDeployment()
 	if err != nil {
 		return err
