@@ -1405,7 +1405,7 @@ func TestIsValidProjectDir(t *testing.T) {
 				}
 			}
 
-			err := IsValidProjectDir(tmpDir, tt.devfilePath)
+			err := IsValidProjectDir(filesystem.DefaultFs{}, tmpDir, tt.devfilePath)
 			expectedError := tt.expectedError
 			if expectedError != "" {
 				expectedError = fmt.Sprintf(expectedError, tmpDir)
@@ -2010,7 +2010,7 @@ func TestCopyDirWithFS(t *testing.T) {
 				t.Errorf("error while setting up test: %v", err)
 			}
 
-			err = copyDirWithFS(tt.args.src, tt.args.dst, tt.args.fs)
+			err = CopyDirWithFS(tt.args.src, tt.args.dst, tt.args.fs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MoveDir() error = %v, wantErr %v", err, tt.wantErr)
 			}

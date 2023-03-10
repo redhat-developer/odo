@@ -201,20 +201,16 @@ func CheckPathExists(path string) bool {
 // IsValidProjectDir checks that the folder to download the project from devfile is
 // either empty or contains the devfile used.
 // TODO(feloy) sync with devfile library?
-func IsValidProjectDir(path string, devfilePath string) error {
-	entries, err := os.ReadDir(path)
+func IsValidProjectDir(fs filesystem.Filesystem, path string, devfilePath string) error {
+	entries, err := fs.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	if len(entries) >= 1 {
 		for _, entry := range entries {
-			file, err := entry.Info()
-			if err != nil {
-				return err
-			}
-			fileName := file.Name()
+			fileName := entry.Name()
 			devfilePath = strings.TrimPrefix(devfilePath, "./")
-			if !file.IsDir() && fileName == devfilePath {
+			if !entry.IsDir() && fileName == devfilePath {
 				return nil
 			}
 		}
@@ -591,8 +587,8 @@ func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 	return fs.Chmod(dst, srcinfo.Mode())
 }
 
-// copyDirWithFS copies a whole directory recursively
-func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
+// CopyDirWithFS copies a whole directory recursively
+func CopyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 	var err error
 	var fds []os.FileInfo
 	var srcinfo os.FileInfo
@@ -613,7 +609,7 @@ func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 		dstfp := path.Join(dst, fd.Name())
 
 		if fd.IsDir() {
-			if err = copyDirWithFS(srcfp, dstfp, fs); err != nil {
+			if err = CopyDirWithFS(srcfp, dstfp, fs); err != nil {
 				return err
 			}
 		} else {
@@ -713,7 +709,7 @@ func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 			oldPath := filepath.Join(srcPath, subDir, fileName)
 
 			if outputFileHere.IsDir() {
-				err = copyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
+				err = CopyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
 			} else {
 				err = copyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
 			}

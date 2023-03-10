@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -66,13 +64,19 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	// Case 1: If there is devfile in the temp directory, remove everything from contextDir and copy the content of temp directory in contextDir; klog about it.
 	// Case 2: If there is no devfile, but contents of the temp directory match some contents of the contextDir, copy contents of the temp dir into a dir named CONFLICT_STARTER_PROJECT; warn about this
 	// Case 3: If there is no devfile, and no contents of the temp dir matching contents of the contextDir, copy contents of the temp dir into contextDir.
-	starterProjectTmpDir, err := os.MkdirTemp("", "odostarterproject")
+	starterProjectTmpDir, err := o.fsys.TempDir("", "odostarterproject")
 	if err != nil {
 		return err
 	}
-	downloadStarterProjectErr := DownloadStarterProject(starterProject, decryptedToken, starterProjectTmpDir, verbose)
-	if downloadStarterProjectErr != nil {
+	err = o.fsys.MkdirAll(starterProjectTmpDir, 0755)
+	if err != nil {
 		return err
+	}
+	defer o.fsys.RemoveAll(starterProjectTmpDir)
+
+	downloadStarterProjectErr := DownloadStarterProject(o.fsys, starterProject, decryptedToken, starterProjectTmpDir, verbose)
+	if downloadStarterProjectErr != nil {
+		return downloadStarterProjectErr
 	}
 
 	// Case 1
@@ -81,17 +85,17 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 		if err != nil {
 			klog.V(0).Infof(err.Error())
 		}
-		return dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
+		return util.CopyDirWithFS(starterProjectTmpDir, contextDir, o.fsys)
 	}
 
 	// Case 2 & 3
-	conflictingFiles, cerr := isConflicting(starterProjectTmpDir, contextDir)
+	conflictingFiles, cerr := isConflicting(starterProjectTmpDir, contextDir, o.fsys)
 	if cerr != nil {
 		return cerr
 	}
 	// Case 3
 	if len(conflictingFiles) == 0 {
-		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, contextDir)
+		copyErr := util.CopyDirWithFS(starterProjectTmpDir, contextDir, o.fsys)
 		if copyErr != nil {
 			// TODO: probably need to cleanup here.
 			return copyErr
@@ -99,11 +103,12 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	} else {
 		// Case 2
 		conflictDirName := "CONFLICT_STARTER_PROJECT"
-		err = os.Mkdir(conflictDirName, 0750)
+		err = o.fsys.MkdirAll(conflictDirName, 0750)
 		if err != nil {
 			return err
 		}
-		copyErr := dfutil.CopyAllDirFiles(starterProjectTmpDir, conflictDirName)
+
+		copyErr := util.CopyDirWithFS(starterProjectTmpDir, conflictDirName, o.fsys)
 		if copyErr != nil {
 			// TODO: probably need to cleanup here.
 			return copyErr
@@ -113,22 +118,22 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	return nil
 }
 
-func removeDirectoryContents(path string, fs filesystem.Filesystem) error {
-	dir, err := os.ReadDir(path)
+func removeDirectoryContents(path string, fsys filesystem.Filesystem) error {
+	dir, err := fsys.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	for _, f := range dir {
-		_ = fs.RemoveAll(f.Name())
+		_ = fsys.RemoveAll(f.Name())
 	}
 	return nil
 }
 
-func isConflicting(spDir, contextDir string) (conflictingFiles []string, err error) {
+func isConflicting(spDir, contextDir string, fsys filesystem.Filesystem) (conflictingFiles []string, err error) {
 	var (
 		contextDirMap = map[string]struct{}{}
 	)
-	err = filepath.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
+	err = fsys.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
 		path = strings.ReplaceAll(path, contextDir, "")
 		if path != "" {
 			contextDirMap[path] = struct{}{}
@@ -139,7 +144,7 @@ func isConflicting(spDir, contextDir string) (conflictingFiles []string, err err
 		return nil, fmt.Errorf("failed to walk %s dir; cause: %w", contextDir, err)
 	}
 
-	err = filepath.Walk(spDir, func(path string, info fs.FileInfo, err error) error {
+	err = fsys.Walk(spDir, func(path string, info fs.FileInfo, err error) error {
 		path = strings.ReplaceAll(path, spDir, "")
 		if _, ok := contextDirMap[path]; ok {
 			conflictingFiles = append(conflictingFiles, path)
@@ -365,11 +370,15 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, registryName string, devfileName string) (api.DevfileData, error) {
 
 	// Create random temporary file
-	tmpFile, err := os.MkdirTemp("", "odo")
+	tmpFile, err := o.fsys.TempDir("", "odo")
 	if err != nil {
 		return api.DevfileData{}, err
 	}
-	defer os.Remove(tmpFile)
+	err = o.fsys.MkdirAll(tmpFile, 0700)
+	if err != nil {
+		return api.DevfileData{}, err
+	}
+	defer o.fsys.Remove(tmpFile)
 
 	registries, err := o.GetDevfileRegistries(registryName)
 	if err != nil {

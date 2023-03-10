@@ -3,6 +3,7 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"os"
 	"path/filepath"
 
@@ -35,7 +36,7 @@ func checkoutProject(subDir, zipURL, path, starterToken string) error {
 
 // DownloadStarterProject downloads a starter project referenced in devfile
 // This will first remove the content of the contextDir
-func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
+func DownloadStarterProject(fs filesystem.Filesystem, starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
 	var path string
 	var err error
 	// Retrieve the working directory in order to clone correctly
@@ -49,7 +50,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	}
 
 	// We will check to see if the project has a valid directory
-	err = util.IsValidProjectDir(path, location.DevfileLocation(""))
+	err = util.IsValidProjectDir(fs, path, location.DevfileLocation(""))
 	if err != nil {
 		return err
 	}
