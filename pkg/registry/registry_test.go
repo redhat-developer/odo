@@ -3,9 +3,15 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -614,6 +620,125 @@ func TestGetRegistryDevfiles(t *testing.T) {
 					t.Errorf("getRegistryStacks() mismatch (-want +got):\n%s", diff)
 					t.Logf("Error message is: %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestRegistryClient_DownloadStarterProject(t *testing.T) {
+	fakeFS := filesystem.NewFakeFs()
+	contextDir, ferr := fakeFS.TempDir("", "downloadstarterproject")
+	if ferr != nil {
+		t.Errorf("failed to create temp dir; cause: %s", ferr)
+	}
+
+	directoriesToBeCreated := []string{"kubernetes", "docker"}
+	for _, dirToBeCreated := range directoriesToBeCreated {
+		dirName := filepath.Join(contextDir, dirToBeCreated)
+		ferr = fakeFS.MkdirAll(dirName, os.FileMode(0750))
+		if ferr != nil {
+			t.Errorf("failed to create %s; cause: %s", dirName, ferr)
+		}
+
+	}
+
+	filesToBeCreated := []string{"devfile.yaml", "kubernetes/deploy.yaml", "docker/Dockerfile"}
+	for _, fileToBeCreated := range filesToBeCreated {
+		fileName := filepath.Join(contextDir, fileToBeCreated)
+		_, ferr = fakeFS.Create(fileName)
+		if ferr != nil {
+			t.Errorf("failed to create %s; cause: %s", fileName, ferr)
+		}
+	}
+
+	getFilePath := func(name string) string {
+		// filename of this file
+		_, filename, _, _ := runtime.Caller(0)
+		// path to the devfile
+		return filepath.Join(filepath.Dir(filename), "..", "..", "tests", "examples", filepath.Join("source", "devfiles", "zips", name))
+	}
+	type fields struct {
+		fsys             filesystem.Filesystem
+		preferenceClient preference.Client
+		kubeClient       kclient.ClientInterface
+	}
+	type args struct {
+		starterProject *devfilev1.StarterProject
+		decryptedToken string
+		contextDir     string
+		verbose        bool
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "Starter project has a Devfile",
+			fields: fields{
+				fsys: fakeFS,
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-devfile",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getFilePath("starterproject-with-devfile.zip")),
+						},
+					},
+				},
+				decryptedToken: "",
+				contextDir:     contextDir,
+			},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someotherfile.txt"},
+			wantErr: false,
+		},
+		{
+			name:    "Starter project has conflicting files",
+			fields:  fields{},
+			args:    args{},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name:    "Starter project does not have any conflicting files",
+			fields:  fields{},
+			args:    args{},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := RegistryClient{
+				fsys:             tt.fields.fsys,
+				preferenceClient: tt.fields.preferenceClient,
+				kubeClient:       tt.fields.kubeClient,
+			}
+			if err := o.DownloadStarterProject(tt.args.starterProject, tt.args.decryptedToken, tt.args.contextDir, tt.args.verbose); (err != nil) != tt.wantErr {
+				t.Errorf("DownloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			var got []string
+			err := o.fsys.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
+				path = strings.TrimPrefix(path, contextDir)
+				path = strings.TrimPrefix(path, string(os.PathSeparator))
+				if path != "" {
+					got = append(got, path)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("failed to walk %s; cause:%s", contextDir, err.Error())
+				return
+			}
+			if diff := cmp.Diff(got, tt.want); diff != "" {
+				t.Errorf("DownloadStarterProject() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
