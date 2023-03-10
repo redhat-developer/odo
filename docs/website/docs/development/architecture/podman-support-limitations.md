@@ -39,9 +39,9 @@ Here are a list of limitations when `odo` is working on Podman:
   This command without  the `--platform` flag will delete components from both the cluster and Podman. You can use the `--platform` flag to limit the deletion from a specific platform, either `cluster` or `podman`.
 
 
-## Apply command are not supported
+## Apply commands referencing Kubernetes or OpenShift Components are not supported
 
-A Devfile `Apply` command gives the possibility to "apply" any Kubernetes resource to the cluster. As Podman only supports a limited number of Kubernetes resources, `Apply` commands are not executed by `odo` when running on Podman.
+A Devfile `Apply` command gives the possibility to "apply" any Kubernetes or OpenShift resource to the cluster. As Podman only supports a limited number of Kubernetes resources, `Apply` commands are not executed by `odo` when running on Podman.
 
 ## Component listening on localhost not forwarded
 
