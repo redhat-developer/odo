@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	psaApi "k8s.io/pod-security-admission/api"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/platform"
@@ -85,6 +86,7 @@ type ClientInterface interface {
 	DeleteNamespace(name string, wait bool) error
 	SetCurrentNamespace(namespace string) error
 	WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error
+	GetCurrentNamespacePolicy() (psaApi.Policy, error)
 
 	// oc_server.go
 	GetServerVersion(timeout time.Duration) (*ServerInfo, error)

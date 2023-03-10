@@ -394,8 +394,14 @@ func (a *Adapter) createOrUpdateComponent(
 	if err != nil {
 		return nil, false, err
 	}
+
+	policy, err := a.kubeClient.GetCurrentNamespacePolicy()
+	if err != nil {
+		return nil, false, err
+	}
 	podTemplateSpec, err := generator.GetPodTemplateSpec(a.Devfile, generator.PodTemplateParams{
-		ObjectMeta: deploymentObjectMeta,
+		ObjectMeta:                 deploymentObjectMeta,
+		PodSecurityAdmissionPolicy: policy,
 	})
 	if err != nil {
 		return nil, false, err

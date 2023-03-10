@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+	"k8s.io/pod-security-admission/api"
+	psaApi "k8s.io/pod-security-admission/api"
 )
 
 const (
@@ -199,4 +201,14 @@ func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName 
 		}
 	}
 	return nil
+}
+
+func (c *Client) GetCurrentNamespacePolicy() (psaApi.Policy, error) {
+	ns, err := c.GetNamespaceNormal(c.GetCurrentNamespace())
+	if err != nil {
+		return psaApi.Policy{}, err
+	}
+	labels := ns.GetLabels()
+	policy, _ := api.PolicyToEvaluate(labels, api.Policy{})
+	return policy, nil
 }

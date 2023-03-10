@@ -31,6 +31,7 @@ import (
 	kubernetes "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
+	api0 "k8s.io/pod-security-admission/api"
 )
 
 // MockClientInterface is a mock of ClientInterface interface.
@@ -488,6 +489,21 @@ func (m *MockClientInterface) GetCurrentNamespace() string {
 func (mr *MockClientInterfaceMockRecorder) GetCurrentNamespace() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentNamespace))
+}
+
+// GetCurrentNamespacePolicy mocks base method.
+func (m *MockClientInterface) GetCurrentNamespacePolicy() (api0.Policy, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentNamespacePolicy")
+	ret0, _ := ret[0].(api0.Policy)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentNamespacePolicy indicates an expected call of GetCurrentNamespacePolicy.
+func (mr *MockClientInterfaceMockRecorder) GetCurrentNamespacePolicy() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentNamespacePolicy", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentNamespacePolicy))
 }
 
 // GetCurrentProjectName mocks base method.
