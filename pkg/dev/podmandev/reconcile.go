@@ -14,9 +14,11 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -44,6 +46,11 @@ func (o *DevClient) reconcile(
 	)
 
 	o.warnAboutK8sComponents(*devfileObj)
+
+	err := o.handleAutoImageComponents(ctx, *devfileObj)
+	if err != nil {
+		return err
+	}
 
 	pod, fwPorts, err := o.deployPod(ctx, options)
 	if err != nil {
@@ -160,6 +167,21 @@ func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
 	}
 
 	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(components, ", "))
+}
+
+func (o *DevClient) handleAutoImageComponents(ctx context.Context, devfileObj parser.DevfileObj) error {
+	components, err := devfile.GetImageComponentsToPush(devfileObj)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range components {
+		err = image.BuildPushSpecificImage(ctx, o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // deployPod deploys the component as a Pod in podman
