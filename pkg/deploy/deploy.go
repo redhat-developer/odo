@@ -17,6 +17,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -50,8 +51,58 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		componentName = odocontext.GetComponentName(ctx)
 		appName       = odocontext.GetApplication(ctx)
 	)
-	deployHandler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
-	return libdevfile.Deploy(*devfileObj, deployHandler)
+
+	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
+
+	err := o.handleAutoImageComponents(handler, *devfileObj)
+	if err != nil {
+		return err
+	}
+
+	err = o.handleAutoK8sOrOcComponents(handler, *devfileObj)
+	if err != nil {
+		return err
+	}
+
+	return libdevfile.Deploy(*devfileObj, handler)
+}
+
+func (o *DeployClient) handleAutoImageComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
+	components, err := devfile.GetImageComponentsToPush(devfileObj)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range components {
+		err = handler.ApplyImage(c)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (o *DeployClient) handleAutoK8sOrOcComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
+	components, err := devfile.GetK8sAndOcComponentsToPush(devfileObj, false)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range components {
+		var f func(component2 v1alpha2.Component) error
+		if c.Kubernetes != nil {
+			f = handler.ApplyKubernetes
+		} else if c.Openshift != nil {
+			f = handler.ApplyOpenShift
+		}
+		if f == nil {
+			continue
+		}
+		if err = f(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type deployHandler struct {
