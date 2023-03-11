@@ -8,10 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devfile/library/v2/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/v2/pkg/util"
-	"k8s.io/utils/pointer"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -310,41 +307,4 @@ func AppendToFile(filepath string, s string) error {
 		return err
 	}
 	return nil
-}
-
-// DevfileUpdater is a helper type that can mutate a Devfile object.
-// It is intended to be used in conjunction with the UpdateDevfileContent function.
-type DevfileUpdater func(*parser.DevfileObj) error
-
-// DevfileMetadataNameSetter sets the 'metadata.name' field into the given Devfile
-var DevfileMetadataNameSetter = func(name string) DevfileUpdater {
-	return func(d *parser.DevfileObj) error {
-		return d.SetMetadataName(name)
-	}
-}
-
-// DevfileMetadataNameRemover removes the 'metadata.name' field from the given Devfile
-var DevfileMetadataNameRemover = DevfileMetadataNameSetter("")
-
-// UpdateDevfileContent parses the Devfile at the given path, then updates its content using the given handlers, and writes the updated Devfile to the given path.
-//
-// The handlers are invoked in the order they are provided.
-//
-// No operation is performed if no handler function is specified.
-//
-// See DevfileMetadataNameRemover for an example of handler function that can operate on the Devfile content.
-func UpdateDevfileContent(path string, handlers []DevfileUpdater) {
-	if len(handlers) == 0 {
-		//Nothing to do => skip
-		return
-	}
-
-	d, err := parser.ParseDevfile(parser.ParserArgs{Path: path, FlattenedDevfile: pointer.Bool(false)})
-	Expect(err).NotTo(HaveOccurred())
-	for _, h := range handlers {
-		err = h(&d)
-		Expect(err).NotTo(HaveOccurred())
-	}
-	err = d.WriteYamlDevfile()
-	Expect(err).NotTo(HaveOccurred())
 }
