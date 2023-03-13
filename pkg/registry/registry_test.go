@@ -627,32 +627,27 @@ func TestGetRegistryDevfiles(t *testing.T) {
 }
 
 func TestRegistryClient_DownloadStarterProject(t *testing.T) {
-	fakeFS := filesystem.NewFakeFs()
-	contextDir, ferr := fakeFS.TempDir("", "downloadstarterproject")
-	if ferr != nil {
-		t.Errorf("failed to create temp dir; cause: %s", ferr)
-	}
-
-	directoriesToBeCreated := []string{"kubernetes", "docker"}
-	for _, dirToBeCreated := range directoriesToBeCreated {
-		dirName := filepath.Join(contextDir, dirToBeCreated)
-		ferr = fakeFS.MkdirAll(dirName, os.FileMode(0750))
-		if ferr != nil {
-			t.Errorf("failed to create %s; cause: %s", dirName, ferr)
+	setupFS := func(contextDir string, fs filesystem.Filesystem) {
+		directoriesToBeCreated := []string{"kubernetes", "docker"}
+		for _, dirToBeCreated := range directoriesToBeCreated {
+			dirName := filepath.Join(contextDir, dirToBeCreated)
+			err := fs.MkdirAll(dirName, os.FileMode(0750))
+			if err != nil {
+				t.Errorf("failed to create %s; cause: %s", dirName, err)
+			}
 		}
 
-	}
-
-	filesToBeCreated := []string{"devfile.yaml", "kubernetes/deploy.yaml", "docker/Dockerfile"}
-	for _, fileToBeCreated := range filesToBeCreated {
-		fileName := filepath.Join(contextDir, fileToBeCreated)
-		_, ferr = fakeFS.Create(fileName)
-		if ferr != nil {
-			t.Errorf("failed to create %s; cause: %s", fileName, ferr)
+		filesToBeCreated := []string{"devfile.yaml", "kubernetes/deploy.yaml", "docker/Dockerfile"}
+		for _, fileToBeCreated := range filesToBeCreated {
+			fileName := filepath.Join(contextDir, fileToBeCreated)
+			_, err := fs.Create(fileName)
+			if err != nil {
+				t.Errorf("failed to create %s; cause: %s", fileName, err)
+			}
 		}
 	}
 
-	getFilePath := func(name string) string {
+	getZipFilePath := func(name string) string {
 		// filename of this file
 		_, filename, _, _ := runtime.Caller(0)
 		// path to the devfile
@@ -680,7 +675,7 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 		{
 			name: "Starter project has a Devfile",
 			fields: fields{
-				fsys: fakeFS,
+				fsys: filesystem.NewFakeFs(),
 			},
 			args: args{
 				starterProject: &devfilev1.StarterProject{
@@ -689,33 +684,67 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 						SourceType: "",
 						Zip: &devfilev1.ZipProjectSource{
 							CommonProjectSource: devfilev1.CommonProjectSource{},
-							Location:            fmt.Sprintf("file://%s", getFilePath("starterproject-with-devfile.zip")),
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-devfile.zip")),
 						},
 					},
 				},
-				decryptedToken: "",
-				contextDir:     contextDir,
 			},
 			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someFile.txt"},
 			wantErr: false,
 		},
 		{
-			name:    "Starter project has conflicting files",
-			fields:  fields{},
-			args:    args{},
-			want:    nil,
+			name: "Starter project has conflicting files",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-conflicting-files",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-conflicts.zip")),
+						},
+					},
+				},
+			},
+			want: []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"),
+				CONFLICT_DIR_NAME, filepath.Join(CONFLICT_DIR_NAME, "kubernetes"), filepath.Join(CONFLICT_DIR_NAME, "kubernetes", "deploy.yaml"),
+				filepath.Join(CONFLICT_DIR_NAME, "main.go"), filepath.Join(CONFLICT_DIR_NAME, "go.mod"), filepath.Join(CONFLICT_DIR_NAME, "README.md"), filepath.Join(CONFLICT_DIR_NAME, "someFile.txt")},
 			wantErr: false,
 		},
 		{
-			name:    "Starter project does not have any conflicting files",
-			fields:  fields{},
-			args:    args{},
-			want:    nil,
+			name: "Starter project does not have any conflicting files",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-no-conflicting-files",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-no-conflicts.zip")),
+						},
+					},
+				},
+			},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"), "README.md", "main.go", "go.mod"},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			contextDir, ferr := tt.fields.fsys.TempDir("", "downloadstarterproject")
+			if ferr != nil {
+				t.Errorf("failed to create temp dir; cause: %s", ferr)
+			}
+			tt.args.contextDir = contextDir
+
+			setupFS(tt.args.contextDir, tt.fields.fsys)
+
 			o := RegistryClient{
 				fsys:             tt.fields.fsys,
 				preferenceClient: tt.fields.preferenceClient,

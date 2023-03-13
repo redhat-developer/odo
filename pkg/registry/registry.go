@@ -36,6 +36,10 @@ type RegistryClient struct {
 
 var _ Client = (*RegistryClient)(nil)
 
+const (
+	CONFLICT_DIR_NAME = "CONFLICT_STARTER_PROJECT"
+)
+
 func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.Client, kubeClient kclient.ClientInterface) RegistryClient {
 	return RegistryClient{
 		fsys:             fsys,
@@ -102,17 +106,16 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 		}
 	} else {
 		// Case 2
-		conflictDirName := "CONFLICT_STARTER_PROJECT"
-		err = o.fsys.MkdirAll(conflictDirName, 0750)
+		err = o.fsys.MkdirAll(filepath.Join(contextDir, CONFLICT_DIR_NAME), 0750)
 		if err != nil {
 			return err
 		}
 
-		copyErr := util.CopyDirWithFS(starterProjectTmpDir, conflictDirName, o.fsys)
+		copyErr := util.CopyDirWithFS(starterProjectTmpDir, filepath.Join(contextDir, CONFLICT_DIR_NAME), o.fsys)
 		if copyErr != nil {
 			return copyErr
 		}
-		log.Warningf("\nThere are conflicting files (%s) between starter project and the context directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictDirName)
+		log.Warningf("\nThere are conflicting files (%s) between starter project and the context directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), CONFLICT_DIR_NAME)
 	}
 	return nil
 }
