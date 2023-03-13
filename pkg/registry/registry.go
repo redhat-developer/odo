@@ -60,15 +60,12 @@ func (o RegistryClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([
 }
 
 // DownloadStarterProject downloads a starter project referenced in devfile
-// TODO: Make this more verbose
+// There are 3 cases to consider here:
+// Case 1: If there is devfile in the temp directory, remove everything from contextDir and copy the content of temp directory in contextDir; klog about it.
+// Case 2: If there is no devfile, but contents of the temp directory match some contents of the contextDir, copy contents of the temp dir into a dir named CONFLICT_STARTER_PROJECT; warn about this
+// Case 3: If there is no devfile, and no contents of the temp dir matching contents of the contextDir, copy contents of the temp dir into contextDir.
 func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
 	// Let the project be downloaded in a temp directory
-	// Fetch the contents of the temp directory
-	// Fetch the contents of the contextDir
-	// Compare the 2 contents
-	// Case 1: If there is devfile in the temp directory, remove everything from contextDir and copy the content of temp directory in contextDir; klog about it.
-	// Case 2: If there is no devfile, but contents of the temp directory match some contents of the contextDir, copy contents of the temp dir into a dir named CONFLICT_STARTER_PROJECT; warn about this
-	// Case 3: If there is no devfile, and no contents of the temp dir matching contents of the contextDir, copy contents of the temp dir into contextDir.
 	starterProjectTmpDir, err := o.fsys.TempDir("", "odostarterproject")
 	if err != nil {
 		return err
@@ -77,7 +74,12 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	if err != nil {
 		return err
 	}
-	defer o.fsys.RemoveAll(starterProjectTmpDir)
+	defer func() {
+		ferr := o.fsys.RemoveAll(starterProjectTmpDir)
+		if ferr != nil {
+			klog.V(2).Infof("failed to delete temporary starter project dir %s", starterProjectTmpDir)
+		}
+	}()
 
 	downloadStarterProjectErr := DownloadStarterProject(o.fsys, starterProject, decryptedToken, starterProjectTmpDir, verbose)
 	if downloadStarterProjectErr != nil {
@@ -86,6 +88,8 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 
 	// Case 1
 	if containsDevfile, _ := location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); containsDevfile {
+		fmt.Println()
+		log.Warning("devfile.yaml is present inside the starter project; replacing the entire content of the current directory with the starter project")
 		err = removeDirectoryContents(contextDir, o.fsys)
 		if err != nil {
 			klog.V(0).Infof(err.Error())
@@ -115,39 +119,38 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 		if copyErr != nil {
 			return copyErr
 		}
-		log.Warningf("\nThere are conflicting files (%s) between starter project and the context directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), CONFLICT_DIR_NAME)
+		log.Warningf("\nThere are conflicting files (%s) between starter project and the current directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), filepath.Join(contextDir, CONFLICT_DIR_NAME))
 	}
 	return nil
 }
 
-// removeDirectoryContents attempts to remove dir contents, checks if the dir is empty and returns an error if it is not
+// removeDirectoryContents attempts to remove dir contents without deleting the directory itself, unlike os.RemoveAll() method
 func removeDirectoryContents(path string, fsys filesystem.Filesystem) error {
 	dir, err := fsys.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	for _, f := range dir {
-		// a bit of cheating to make sure this works with a fake filesystem, especially a memory map
+		// a bit of cheating by using absolute file name to make sure this works with a fake filesystem, especially a memory map which is used by our unit tests
 		// memorymap's Name() method trims the full path and returns just the file name, which then becomes impossible to find by the RemoveAll method that looks for prefix
-		fileName := filepath.Join(path, f.Name())
-		_ = fsys.RemoveAll(fileName)
+		// See: https://github.com/redhat-developer/odo/blob/d717421494f746a5cb12da135f561d12750935f3/vendor/github.com/spf13/afero/memmap.go#L282
+		absFileName := filepath.Join(path, f.Name())
+		err = fsys.RemoveAll(absFileName)
+		if err != nil {
+			return fmt.Errorf("failed to remove %s; cause: %s", absFileName, err)
+		}
 	}
 
-	// TODO: perhaps this can be removed
-	dir, err = fsys.ReadDir(path)
-	if err != nil {
-		return err
-	}
-	if len(dir) != 0 {
-		return fmt.Errorf("directory contents could not be removed, no error identified")
-	}
 	return nil
 }
 
+// isConflicting fetches the contents of the two directories in question and compares them to check for conflicting files.
+// it returns a list of conflicting files (if any) along with an error (if any).
 func isConflicting(spDir, contextDir string, fsys filesystem.Filesystem) (conflictingFiles []string, err error) {
 	var (
 		contextDirMap = map[string]struct{}{}
 	)
+	// walk through the contextDir, trim the file path from the file name and append it to a map
 	err = fsys.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
 		path = strings.TrimPrefix(path, contextDir)
 		if path != "" {
@@ -159,6 +162,8 @@ func isConflicting(spDir, contextDir string, fsys filesystem.Filesystem) (confli
 		return nil, fmt.Errorf("failed to walk %s dir; cause: %w", contextDir, err)
 	}
 
+	// walk through the starterproject dir, trim the file path from file name, and check if it exists in the contextDir map;
+	// if it does, it is a conflicting file, hence append it to the conflictingFiles list.
 	err = fsys.Walk(spDir, func(path string, info fs.FileInfo, err error) error {
 		path = strings.TrimPrefix(path, spDir)
 		if _, ok := contextDirMap[path]; ok {
@@ -393,7 +398,12 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	if err != nil {
 		return api.DevfileData{}, err
 	}
-	defer o.fsys.Remove(tmpFile)
+	defer func() {
+		ferr := o.fsys.Remove(tmpFile)
+		if ferr != nil {
+			klog.V(2).Infof("failed to delete temp file %s", tmpFile)
+		}
+	}()
 
 	registries, err := o.GetDevfileRegistries(registryName)
 	if err != nil {
