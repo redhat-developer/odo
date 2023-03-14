@@ -715,11 +715,11 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 
 			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
 			if err != nil {
-				if !kerrors.IsNotFound(err) || !kerrors.IsMethodNotSupported(err) {
+				if !(kerrors.IsNotFound(err) || kerrors.IsMethodNotSupported(err)) {
 					err = fmt.Errorf("unable to delete resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
 					return
 				}
-				klog.V(1).Infof("Failed to delete resource: %s/%s; resource not found", objectToRemove.GetKind(), objectToRemove.GetName())
+				klog.V(4).Infof("Failed to delete resource: %s/%s; resource not found or method not supported", objectToRemove.GetKind(), objectToRemove.GetName())
 				err = nil
 			}
 		}()
