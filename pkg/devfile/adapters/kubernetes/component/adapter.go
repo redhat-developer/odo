@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	sync2 "sync"
 
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	"golang.org/x/sync/errgroup"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/binding"
@@ -693,40 +692,38 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 		resources = append(resources, fmt.Sprintf("%s/%s", u.GetKind(), u.GetName()))
 	}
 
-	var err error
 	spinner := log.Spinnerf("Deleting resources not present in the Devfile: %s", strings.Join(resources, ", "))
-	defer spinner.End(err == nil)
+	defer spinner.End(false)
 
-	var wg sync2.WaitGroup
-	// Delete the resources present on the cluster but not in the Devfile
+	g := new(errgroup.Group)
 	for _, objectToRemove := range objectsToRemove {
-		wg.Add(1)
 		// Avoid re-use of the same `objectToRemove` value in each goroutine closure.
 		// See https://golang.org/doc/faq#closures_and_goroutines for more details.
 		objectToRemove := objectToRemove
-		go func() {
-			defer wg.Done()
-			var gvr schema.GroupVersionResource
-			gvr, err = a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
+		g.Go(func() error {
+			gvr, err := a.kubeClient.GetGVRFromGVK(objectToRemove.GroupVersionKind())
 			if err != nil {
-				err = fmt.Errorf("unable to get information about resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
-				return
+				return fmt.Errorf("unable to get information about resource: %s/%s: %w", objectToRemove.GetKind(), objectToRemove.GetName(), err)
 			}
 
 			err = a.kubeClient.DeleteDynamicResource(objectToRemove.GetName(), gvr, true)
 			if err != nil {
 				if !(kerrors.IsNotFound(err) || kerrors.IsMethodNotSupported(err)) {
-					err = fmt.Errorf("unable to delete resource: %s/%s: %s", objectToRemove.GetKind(), objectToRemove.GetName(), err.Error())
-					return
+					return fmt.Errorf("unable to delete resource: %s/%s: %w", objectToRemove.GetKind(), objectToRemove.GetName(), err)
 				}
-				klog.V(4).Infof("Failed to delete resource: %s/%s; resource not found or method not supported", objectToRemove.GetKind(), objectToRemove.GetName())
-				err = nil
+				klog.V(3).Infof("Failed to delete resource: %s/%s; resource not found or method not supported", objectToRemove.GetKind(), objectToRemove.GetName())
 			}
-		}()
+
+			return nil
+		})
 	}
 
-	wg.Wait()
-	return err
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	return nil
 }
 
 // deleteServiceBindingSecrets takes a list of Service Binding secrets(unstructured) that should be deleted;
