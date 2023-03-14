@@ -1,12 +1,16 @@
 package component
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -240,6 +244,193 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("Adapter.generateDeploymentObjectMeta() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAdapter_deleteRemoteResources(t *testing.T) {
+	type fields struct {
+		kubeClientCustomizer func(kubeClient *kclient.MockClientInterface)
+	}
+	type args struct {
+		objectsToRemove []unstructured.Unstructured
+	}
+
+	var u1 unstructured.Unstructured
+	u1.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "metrics.k8s.io",
+		Version: "v1beta1",
+		Kind:    "PodMetrics",
+	})
+	u1.SetName("my-pod-metrics")
+
+	var u2 unstructured.Unstructured
+	u2.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "postgresql.k8s.enterprisedb.io",
+		Version: "v1",
+		Kind:    "Cluster",
+	})
+	u2.SetName("my-pg-cluster")
+	toRemove := []unstructured.Unstructured{u1, u2}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "nothing to delete - nil list",
+			args: args{
+				objectsToRemove: nil,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "nothing to delete - empty list",
+			args: args{
+				objectsToRemove: []unstructured.Unstructured{},
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "error getting information about resource",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, errors.New("error on GetGVRFromGVK(u2)"))
+					// Only u1 should be deleted
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).Times(0)
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "generic error deleting resource",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).Return(nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).Return(errors.New("generic error while deleting u1"))
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "generic error deleting all resources",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).
+						Return(errors.New("generic error while deleting u1"))
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).
+						Return(errors.New("generic error while deleting u2"))
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "not found error deleting resource",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).Return(nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).
+						Return(kerrors.NewNotFound(schema.GroupResource{}, "u2"))
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "method not allowed error deleting resource",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).Return(nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).
+						Return(kerrors.NewMethodNotSupported(schema.GroupResource{Resource: "PodMetrics"}, "DELETE"))
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "not found error deleting all resources",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).
+						Return(kerrors.NewNotFound(schema.GroupResource{}, "u1"))
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).
+						Return(kerrors.NewNotFound(schema.GroupResource{}, "u2"))
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "method not allowed error deleting all resources",
+			args: args{
+				objectsToRemove: toRemove,
+			},
+			fields: fields{
+				kubeClientCustomizer: func(kubeClient *kclient.MockClientInterface) {
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u1.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().GetGVRFromGVK(gomock.Eq(u2.GroupVersionKind())).Return(schema.GroupVersionResource{}, nil)
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u1.GetName()), gomock.Any(), gomock.Any()).
+						Return(kerrors.NewMethodNotSupported(schema.GroupResource{}, "DELETE"))
+					kubeClient.EXPECT().DeleteDynamicResource(gomock.Eq(u2.GetName()), gomock.Any(), gomock.Any()).
+						Return(kerrors.NewMethodNotSupported(schema.GroupResource{}, "DELETE"))
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			kubeClient := kclient.NewMockClientInterface(ctrl)
+			if tt.fields.kubeClientCustomizer != nil {
+				tt.fields.kubeClientCustomizer(kubeClient)
+			}
+			a := Adapter{
+				kubeClient: kubeClient,
+			}
+			if err := a.deleteRemoteResources(tt.args.objectsToRemove); (err != nil) != tt.wantErr {
+				t.Errorf("deleteRemoteResources() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
