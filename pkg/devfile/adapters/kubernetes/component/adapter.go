@@ -692,9 +692,8 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 		resources = append(resources, fmt.Sprintf("%s/%s", u.GetKind(), u.GetName()))
 	}
 
-	spinner := log.Spinnerf("Deleting resources not present in the Devfile: %s", strings.Join(resources, ", "))
-	defer spinner.End(false)
-
+	// Delete the resources present on the cluster but not in the Devfile
+	klog.V(3).Infof("Deleting %d resource(s) not present in the Devfile: %s", len(resources), strings.Join(resources, ", "))
 	g := new(errgroup.Group)
 	for _, objectToRemove := range objectsToRemove {
 		// Avoid re-use of the same `objectToRemove` value in each goroutine closure.
@@ -722,7 +721,6 @@ func (a Adapter) deleteRemoteResources(objectsToRemove []unstructured.Unstructur
 		return err
 	}
 
-	spinner.End(true)
 	return nil
 }
 
