@@ -61,66 +61,61 @@ func (o RegistryClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([
 
 // DownloadStarterProject downloads a starter project referenced in devfile
 // There are 3 cases to consider here:
-// Case 1: If there is devfile in the temp directory, remove everything from contextDir and copy the content of temp directory in contextDir; klog about it.
-// Case 2: If there is no devfile, but contents of the temp directory match some contents of the contextDir, copy contents of the temp dir into a dir named CONFLICT_STARTER_PROJECT; warn about this
-// Case 3: If there is no devfile, and no contents of the temp dir matching contents of the contextDir, copy contents of the temp dir into contextDir.
+// Case 1: If there is devfile in the starterproject, replace all the contents of contextDir with that of the starterproject; warn about this
+// Case 2: If there is no devfile, and there is no conflict between the contents of contextDir and starterproject, then copy the contents of the starterproject into contextDir.
+// Case 3: If there is no devfile, and there is conflict between the contents of contextDir and starterproject, copy contents of starterproject into a dir named CONFLICT_STARTER_PROJECT; warn about this
 func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
 	// Let the project be downloaded in a temp directory
 	starterProjectTmpDir, err := o.fsys.TempDir("", "odostarterproject")
 	if err != nil {
 		return err
 	}
-	err = o.fsys.MkdirAll(starterProjectTmpDir, 0755)
+
+	err = DownloadStarterProject(o.fsys, starterProject, decryptedToken, starterProjectTmpDir, verbose)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		ferr := o.fsys.RemoveAll(starterProjectTmpDir)
-		if ferr != nil {
-			klog.V(2).Infof("failed to delete temporary starter project dir %s", starterProjectTmpDir)
-		}
-	}()
 
-	downloadStarterProjectErr := DownloadStarterProject(o.fsys, starterProject, decryptedToken, starterProjectTmpDir, verbose)
-	if downloadStarterProjectErr != nil {
-		return downloadStarterProjectErr
-	}
-
-	// Case 1
-	if containsDevfile, _ := location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); containsDevfile {
+	// Case 1: If there is devfile in the starterproject, replace all the contents of contextDir with that of the starterproject; warn about this
+	var containsDevfile bool
+	if containsDevfile, err = location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); err != nil {
+		return err
+	} else if containsDevfile {
 		fmt.Println()
 		log.Warning("A Devfile is present inside the starter project; replacing the entire content of the current directory with the starter project")
 		err = removeDirectoryContents(contextDir, o.fsys)
 		if err != nil {
-			klog.V(0).Infof(err.Error())
+			return fmt.Errorf("failed to delete contents of the current directory; cause %w", err)
 		}
 		return util.CopyDirWithFS(starterProjectTmpDir, contextDir, o.fsys)
 	}
 
-	// Case 2 & 3
-	conflictingFiles, cerr := isConflicting(starterProjectTmpDir, contextDir, o.fsys)
-	if cerr != nil {
-		return cerr
+	// Case 2: If there is no devfile, and there is no conflict between the contents of contextDir and starterproject, then copy the contents of the starterproject into contextDir.
+	// Case 3: If there is no devfile, and there is conflict between the contents of contextDir and starterproject, copy contents of starterproject into a dir named CONFLICT_STARTER_PROJECT; warn about this
+	var conflictingFiles []string
+	conflictingFiles, err = isConflicting(starterProjectTmpDir, contextDir, o.fsys)
+	if err != nil {
+		return err
 	}
-	// Case 3
-	if len(conflictingFiles) == 0 {
-		copyErr := util.CopyDirWithFS(starterProjectTmpDir, contextDir, o.fsys)
-		if copyErr != nil {
-			return copyErr
-		}
-	} else {
-		// Case 2
-		err = o.fsys.MkdirAll(filepath.Join(contextDir, CONFLICT_DIR_NAME), 0750)
-		if err != nil {
-			return err
-		}
 
-		copyErr := util.CopyDirWithFS(starterProjectTmpDir, filepath.Join(contextDir, CONFLICT_DIR_NAME), o.fsys)
-		if copyErr != nil {
-			return copyErr
-		}
-		log.Warningf("\nThere are conflicting files (%s) between starter project and the current directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), filepath.Join(contextDir, CONFLICT_DIR_NAME))
+	// Case 2
+	if len(conflictingFiles) == 0 {
+		return util.CopyDirWithFS(starterProjectTmpDir, contextDir, o.fsys)
 	}
+
+	// Case 3
+	conflictingDirPath := filepath.Join(contextDir, CONFLICT_DIR_NAME)
+	err = o.fsys.MkdirAll(conflictingDirPath, 0750)
+	if err != nil {
+		return err
+	}
+
+	err = util.CopyDirWithFS(starterProjectTmpDir, conflictingDirPath, o.fsys)
+	if err != nil {
+		return err
+	}
+	log.Warningf("\nThere are conflicting files (%s) between starter project and the current directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictingDirPath)
+
 	return nil
 }
 
@@ -394,16 +389,6 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	if err != nil {
 		return api.DevfileData{}, err
 	}
-	err = o.fsys.MkdirAll(tmpFile, 0700)
-	if err != nil {
-		return api.DevfileData{}, err
-	}
-	defer func() {
-		ferr := o.fsys.Remove(tmpFile)
-		if ferr != nil {
-			klog.V(2).Infof("failed to delete temp file %s", tmpFile)
-		}
-	}()
 
 	registries, err := o.GetDevfileRegistries(registryName)
 	if err != nil {
