@@ -89,7 +89,7 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	// Case 1
 	if containsDevfile, _ := location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); containsDevfile {
 		fmt.Println()
-		log.Warning("devfile.yaml is present inside the starter project; replacing the entire content of the current directory with the starter project")
+		log.Warning("A Devfile is present inside the starter project; replacing the entire content of the current directory with the starter project")
 		err = removeDirectoryContents(contextDir, o.fsys)
 		if err != nil {
 			klog.V(0).Infof(err.Error())
