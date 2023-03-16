@@ -137,7 +137,7 @@ func removeDirectoryContents(path string, fsys filesystem.Filesystem) error {
 		absFileName := filepath.Join(path, f.Name())
 		err = fsys.RemoveAll(absFileName)
 		if err != nil {
-			return fmt.Errorf("failed to remove %s; cause: %s", absFileName, err)
+			return fmt.Errorf("failed to remove %s; cause: %w", absFileName, err)
 		}
 	}
 
