@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/url"
 	"os"
@@ -201,7 +202,7 @@ func CheckPathExists(path string) bool {
 // IsValidProjectDir checks that the folder to download the project from devfile is
 // either empty or contains the devfile used.
 // TODO(feloy) sync with devfile library?
-func IsValidProjectDir(fs filesystem.Filesystem, path string, devfilePath string) error {
+func IsValidProjectDir(path string, devfilePath string, fs filesystem.Filesystem) error {
 	entries, err := fs.ReadDir(path)
 	if err != nil {
 		return err

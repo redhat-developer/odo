@@ -1405,7 +1405,7 @@ func TestIsValidProjectDir(t *testing.T) {
 				}
 			}
 
-			err := IsValidProjectDir(filesystem.DefaultFs{}, tmpDir, tt.devfilePath)
+			err := IsValidProjectDir(tmpDir, tt.devfilePath, filesystem.DefaultFs{})
 			expectedError := tt.expectedError
 			if expectedError != "" {
 				expectedError = fmt.Sprintf(expectedError, tmpDir)

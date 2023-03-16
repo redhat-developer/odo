@@ -50,7 +50,7 @@ func DownloadStarterProject(fs filesystem.Filesystem, starterProject *devfilev1.
 	}
 
 	// We will check to see if the project has a valid directory
-	err = util.IsValidProjectDir(fs, path, location.DevfileLocation(""))
+	err = util.IsValidProjectDir(path, location.DevfileLocation(""), fs)
 	if err != nil {
 		return err
 	}
