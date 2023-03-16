@@ -258,7 +258,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 		}
 
 		defer func() {
-			if err = fsys.Remove(pathToZip); err != nil && !os.IsNotExist(err) {
+			if err = fsys.Remove(pathToZip); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				klog.Errorf("Could not delete temporary directory for zip file. Error: %s", err)
 			}
 		}()
