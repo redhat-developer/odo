@@ -14,9 +14,7 @@ As a matter of fact, Podman is simpler to apprehend, install and maintain than a
 Thanks to the support for the **Kubernetes Pod** abstraction by Podman, `odo`, and 
 the user, can work on both Podman and Kubernetes on top of this abstraction.
 
-Here are a list of limitations when `odo` is working on Podman:
-
-## Commands working on Podman
+The commands working on Podman are:
 
 - `odo dev --platform podman`
 
@@ -38,6 +36,7 @@ Here are a list of limitations when `odo` is working on Podman:
 
   This command without  the `--platform` flag will delete components from both the cluster and Podman. You can use the `--platform` flag to limit the deletion from a specific platform, either `cluster` or `podman`.
 
+Following is a list of limitations when `odo` is working on Podman.
 
 ## Apply commands referencing Kubernetes or OpenShift Components are not supported
 
@@ -45,9 +44,9 @@ A Devfile `Apply` command gives the possibility to "apply" any Kubernetes or Ope
 
 ## Component listening on localhost not forwarded
 
-When working on a cluster, `odo dev` forwards the ports opened by the application to the developer's machine. This port forwarding works when the application is listening either on localhost or on `0.0.0.0` address.
+When working on a cluster, `odo dev` forwards ports from the developer's machine to the ports opened by the application. This port forwarding works when the application is listening either on localhost or on `0.0.0.0` address.
 
-Podman is natively not able to forward ports bound to localhost. In this situation, you may have two solutions:
+Podman is natively not able to port-forward to programs listening on localhost. In this situation, you may have two solutions:
 - you can change your application to listen on `0.0.0.0`. This will be necessary for the ports giving access to the application or, in Production, this port would not be available (this port will most probably be exposed through an Ingress or a Route in Production, and these methods need the port to be bound to `0.0.0.0`),
 - you can keep the port bound to `localhost`. This is the best choice for the Debug port, to restrict access to this Debug port. In this case, you can use the flag `--forward-localhost` when running `odo dev` on Podman. This way, you keep the Debug port secure on cluster.
 
