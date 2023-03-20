@@ -715,6 +715,28 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Starter project has conflicting files and an empty dir",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-conflicting-files-and-empty-dir",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-conflicts-and-empty-dir.zip")),
+						},
+					},
+				},
+			},
+			want: []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"),
+				filepath.Join(CONFLICT_DIR_NAME, "kubernetes"), CONFLICT_DIR_NAME, filepath.Join(CONFLICT_DIR_NAME, "docker"), filepath.Join(CONFLICT_DIR_NAME, "docker", "Dockerfile"),
+				filepath.Join(CONFLICT_DIR_NAME, "main.go"), filepath.Join(CONFLICT_DIR_NAME, "go.mod"), filepath.Join(CONFLICT_DIR_NAME, "README.md")},
+			wantErr: false,
+		},
+		{
 			name: "Starter project does not have any conflicting files",
 			fields: fields{
 				fsys: filesystem.NewFakeFs(),
@@ -727,6 +749,26 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 						Zip: &devfilev1.ZipProjectSource{
 							CommonProjectSource: devfilev1.CommonProjectSource{},
 							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-no-conflicts.zip")),
+						},
+					},
+				},
+			},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"), "README.md", "main.go", "go.mod"},
+			wantErr: false,
+		},
+		{
+			name: "Starter project does not have any conflicting files but has empty dir",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-no-conflicting-files-and-empty-dir",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-no-conflicts-and-empty-dir.zip")),
 						},
 					},
 				},
