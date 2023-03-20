@@ -222,8 +222,8 @@ var _ = Describe("odo dev command tests", func() {
 				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					podDef := component.GetPodDef()
-					Expect(podDef.Spec.SecurityContext.RunAsNonRoot).To(Not(BeNil()))
-					Expect(podDef.Spec.SecurityContext.SeccompProfile).To(Not(BeNil()))
+					Expect(*podDef.Spec.SecurityContext.RunAsNonRoot).To(BeTrue())
+					Expect(string(podDef.Spec.SecurityContext.SeccompProfile.Type)).To(Equal("RuntimeDefault"))
 				})
 				Expect(err).ToNot(HaveOccurred())
 			})

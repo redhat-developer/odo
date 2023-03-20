@@ -92,4 +92,5 @@ issues:
         - staticcheck
       # Workaround to exclude some 'staticcheck' messages, because line-based directive does not seem to work with golangci-lint
       # See https://github.com/golangci/golangci-lint/issues/741#issuecomment-1017014331
+      # TODO(feloy) Remove when https://github.com/devfile/library/pull/167 is merged
       text: 'SA1019: generator.GetContainers is deprecated: in favor of GetPodTemplateSpec'
