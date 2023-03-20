@@ -782,12 +782,11 @@ func SafeGetBool(b *bool) bool {
 
 // IsPortFree checks if the port on localhost is free to use
 func IsPortFree(port int) bool {
-	address := fmt.Sprintf("localhost:%d", port)
+	address := fmt.Sprintf("0.0.0.0:%d", port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return false
 	}
-	_ = listener.Addr().(*net.TCPAddr).Port
 	err = listener.Close()
 	return err == nil
 }
