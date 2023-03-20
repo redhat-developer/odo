@@ -149,6 +149,9 @@ func getConflictingFiles(spDir, contextDir string, fsys filesystem.Filesystem) (
 	)
 	// walk through the contextDir, trim the file path from the file name and append it to a map
 	err = fsys.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed to fetch contents of dir %s; cause: %w", contextDirMap, err)
+		}
 		if info.IsDir() {
 			return nil
 		}
@@ -164,6 +167,9 @@ func getConflictingFiles(spDir, contextDir string, fsys filesystem.Filesystem) (
 	// walk through the starterproject dir, trim the file path from file name, and check if it exists in the contextDir map;
 	// if it does, it is a conflicting file, hence append it to the conflictingFiles list.
 	err = fsys.Walk(spDir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed to fetch contents of dir %s; cause: %w", spDir, err)
+		}
 		if info.IsDir() {
 			return nil
 		}
