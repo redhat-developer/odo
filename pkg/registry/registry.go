@@ -80,7 +80,8 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	var containsDevfile bool
 	if containsDevfile, err = location.DirectoryContainsDevfile(o.fsys, starterProjectTmpDir); err != nil {
 		return err
-	} else if containsDevfile {
+	}
+	if containsDevfile {
 		fmt.Println()
 		log.Warning("A Devfile is present inside the starter project; replacing the entire content of the current directory with the starter project")
 		err = removeDirectoryContents(contextDir, o.fsys)
@@ -93,7 +94,7 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	// Case 2: If there is no devfile, and there is no conflict between the contents of contextDir and starterproject, then copy the contents of the starterproject into contextDir.
 	// Case 3: If there is no devfile, and there is conflict between the contents of contextDir and starterproject, copy contents of starterproject into a dir named CONFLICT_STARTER_PROJECT; warn about this
 	var conflictingFiles []string
-	conflictingFiles, err = isConflicting(starterProjectTmpDir, contextDir, o.fsys)
+	conflictingFiles, err = getConflictingFiles(starterProjectTmpDir, contextDir, o.fsys)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,8 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	if err != nil {
 		return err
 	}
-	log.Warningf("\nThere are conflicting files (%s) between starter project and the current directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictingDirPath)
+	fmt.Println()
+	log.Warningf("There are conflicting files (%s) between starter project and the current directory, hence the starter project has been copied to %s", strings.Join(conflictingFiles, ", "), conflictingDirPath)
 
 	return nil
 }
@@ -139,9 +141,9 @@ func removeDirectoryContents(path string, fsys filesystem.Filesystem) error {
 	return nil
 }
 
-// isConflicting fetches the contents of the two directories in question and compares them to check for conflicting files.
+// getConflictingFiles fetches the contents of the two directories in question and compares them to check for conflicting files.
 // it returns a list of conflicting files (if any) along with an error (if any).
-func isConflicting(spDir, contextDir string, fsys filesystem.Filesystem) (conflictingFiles []string, err error) {
+func getConflictingFiles(spDir, contextDir string, fsys filesystem.Filesystem) (conflictingFiles []string, err error) {
 	var (
 		contextDirMap = map[string]struct{}{}
 	)
