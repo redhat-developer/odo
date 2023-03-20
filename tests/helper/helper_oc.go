@@ -643,3 +643,9 @@ func (oc OcRunner) GetVersion() string {
 	}
 	return val
 }
+
+func (oc OcRunner) SetLabelsOnNamespace(ns string, labelValues ...string) {
+	args := []string{"label", "namespaces"}
+	args = append(args, labelValues...)
+	Cmd(oc.path, args...)
+}

@@ -220,15 +220,15 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 	)
 
 	execBuildGroup := devfilev1.CommandGroup{
-		IsDefault: util.GetBoolPtr(true),
+		IsDefault: util.GetBool(true),
 		Kind:      devfilev1.BuildCommandGroupKind,
 	}
 	execRunGroup := devfilev1.CommandGroup{
-		IsDefault: util.GetBoolPtr(true),
+		IsDefault: util.GetBool(true),
 		Kind:      devfilev1.RunCommandGroupKind,
 	}
 	execDebugGroup := devfilev1.CommandGroup{
-		IsDefault: util.GetBoolPtr(true),
+		IsDefault: util.GetBool(true),
 		Kind:      devfilev1.DebugCommandGroupKind,
 	}
 

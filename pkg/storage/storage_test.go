@@ -15,25 +15,25 @@ func TestPush(t *testing.T) {
 		Size:      "1Gi",
 		Path:      "/data",
 		Container: "runtime-0",
-		Ephemeral: util.GetBoolPtr(false),
+		Ephemeral: util.GetBool(false),
 	}
 	localStorage1 := localConfigProvider.LocalStorage{
 		Name:      "storage-1",
 		Size:      "5Gi",
 		Path:      "/path",
 		Container: "runtime-1",
-		Ephemeral: util.GetBoolPtr(false),
+		Ephemeral: util.GetBool(false),
 	}
 	localEphemeralStorage0 := localConfigProvider.LocalStorage{
 		Name:      "ephemeral-storage-0",
 		Size:      "5Gi",
 		Path:      "/path",
 		Container: "runtime-1",
-		Ephemeral: util.GetBoolPtr(true),
+		Ephemeral: util.GetBool(true),
 	}
 
-	clusterStorage0 := NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBoolPtr(false))
-	clusterStorage1 := NewStorageWithContainer("storage-1", "5Gi", "/path", "runtime-1", util.GetBoolPtr(false))
+	clusterStorage0 := NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBool(false))
+	clusterStorage1 := NewStorageWithContainer("storage-1", "5Gi", "/path", "runtime-1", util.GetBool(false))
 
 	tests := []struct {
 		name                string
@@ -60,14 +60,14 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/data",
 					Container: "runtime-0",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 				{
 					Name:      "storage-1",
 					Size:      "5Gi",
 					Path:      "/path",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			wantEphemeralNames: []string{},
@@ -100,7 +100,7 @@ func TestPush(t *testing.T) {
 					Size:      "5Gi",
 					Path:      "/path",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			returnedFromCluster: StorageList{
@@ -115,7 +115,7 @@ func TestPush(t *testing.T) {
 					Size:      "5Gi",
 					Path:      "/path",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			deletedItems:       []string{clusterStorage1.Name},
@@ -129,7 +129,7 @@ func TestPush(t *testing.T) {
 					Size:      "3Gi",
 					Path:      "/path",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			returnedFromCluster: StorageList{
@@ -150,14 +150,14 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/data",
 					Container: "runtime-0",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 				{
 					Name:      "storage-0",
 					Size:      "1Gi",
 					Path:      "/path",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			returnedFromCluster: StorageList{},
@@ -167,7 +167,7 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/path",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			wantEphemeralNames: []string{},
@@ -180,7 +180,7 @@ func TestPush(t *testing.T) {
 					Size:      "5Gi",
 					Path:      "/data",
 					Container: "runtime-1",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			returnedFromCluster: StorageList{
@@ -195,8 +195,8 @@ func TestPush(t *testing.T) {
 			returnedFromLocal: []localConfigProvider.LocalStorage{},
 			returnedFromCluster: StorageList{
 				Items: []Storage{
-					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBoolPtr(false)),
-					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-1", util.GetBoolPtr(false)),
+					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBool(false)),
+					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-1", util.GetBool(false)),
 				},
 			},
 			deletedItems:       []string{"storage-0"},
@@ -218,7 +218,7 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/data",
 					Container: "runtime-0",
-					Ephemeral: util.GetBoolPtr(false),
+					Ephemeral: util.GetBool(false),
 				},
 			},
 			wantEphemeralNames: []string{"ephemeral-storage-0"},

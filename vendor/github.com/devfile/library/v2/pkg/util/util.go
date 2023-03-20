@@ -302,10 +302,10 @@ func GetAbsPath(path string) (string, error) {
 // existList: List to verify that the returned name does not already exist
 // retries: number of retries to try generating a unique name
 // Returns:
-//		1. randomname: is prefix-suffix, where:
-//				prefix: string passed as prefix or fetched current directory of length same as the passed prefixMaxLen
-//				suffix: 4 char random string
-//      2. error: if requested number of retries also failed to generate unique name
+//  1. randomname: is prefix-suffix, where:
+//     prefix: string passed as prefix or fetched current directory of length same as the passed prefixMaxLen
+//     suffix: 4 char random string
+//  2. error: if requested number of retries also failed to generate unique name
 func GetRandomName(prefix string, prefixMaxLen int, existList []string, retries int) (string, error) {
 	prefix = TruncateString(GetDNS1123Name(strings.ToLower(prefix)), prefixMaxLen)
 	name := fmt.Sprintf("%s-%s", prefix, GenerateRandomString(4))
@@ -458,7 +458,7 @@ func checkPathExistsOnFS(path string, fs filesystem.Filesystem) bool {
 // host:port even if port was not specifically specified in the origin url.
 // If port is not specified, standart port corresponding to url schema is provided.
 // example: for url https://example.com function will return "example.com:443"
-//          for url https://example.com:8443 function will return "example:8443"
+// for url https://example.com:8443 function will return "example:8443"
 func GetHostWithPort(inputURL string) (string, error) {
 	u, err := url.Parse(inputURL)
 	if err != nil {

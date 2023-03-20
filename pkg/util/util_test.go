@@ -2594,12 +2594,12 @@ func TestSafeGetBool(t *testing.T) {
 		},
 		{
 			name: "case 2: true",
-			arg:  GetBoolPtr(true),
+			arg:  GetBool(true),
 			want: true,
 		},
 		{
 			name: "case 3: false",
-			arg:  GetBoolPtr(false),
+			arg:  GetBool(false),
 			want: false,
 		},
 	}

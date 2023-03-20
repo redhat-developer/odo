@@ -57,7 +57,7 @@ func TestValidateCommand(t *testing.T) {
 					Composite: &devfilev1.CompositeCommand{
 						LabeledCommand: devfilev1.LabeledCommand{
 							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBool(true)},
 							},
 						},
 					},

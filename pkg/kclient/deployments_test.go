@@ -8,7 +8,6 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
-	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/v2/pkg/testingutil"
 
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -37,7 +36,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 
 	devObj := devfileParser.DevfileObj{Data: devfileData}
 
-	containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
+	podTemplateSpec, err := generator.GetPodTemplateSpec(devObj, generator.PodTemplateParams{})
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +44,8 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 	objectMeta := generator.GetObjectMeta(podName, "default", labels, nil)
 
 	deploymentParams := generator.DeploymentParams{
-		ObjectMeta: objectMeta,
-		Containers: containers,
+		ObjectMeta:      objectMeta,
+		PodTemplateSpec: podTemplateSpec,
 	}
 	deploy, _ := generator.GetDeployment(devObj, deploymentParams)
 	fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -197,9 +196,9 @@ func TestUpdateDeployment(t *testing.T) {
 		}(),
 	}
 
-	containers, err := generator.GetContainers(devObj, parsercommon.DevfileOptions{})
+	podTemplateSpec, err := generator.GetPodTemplateSpec(devObj, generator.PodTemplateParams{})
 	if err != nil {
-		t.Errorf("generator.GetContainers unexpected error %v", err)
+		t.Errorf("generator.GetPodTemplateSpec unexpected error %v", err)
 	}
 
 	tests := []struct {
@@ -227,8 +226,8 @@ func TestUpdateDeployment(t *testing.T) {
 			objectMeta := generator.GetObjectMeta(tt.deploymentName, "default", labels, nil)
 
 			deploymentParams := generator.DeploymentParams{
-				ObjectMeta: objectMeta,
-				Containers: containers,
+				ObjectMeta:      objectMeta,
+				PodTemplateSpec: podTemplateSpec,
 			}
 			deploy, _ := generator.GetDeployment(devObj, deploymentParams)
 			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {

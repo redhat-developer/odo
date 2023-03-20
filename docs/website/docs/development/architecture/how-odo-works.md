@@ -239,6 +239,12 @@ spec:
 
 The number of Replicas for this Deployment is explicitly set to 1 and is expected to always have this value.
 
+#### Security Context
+
+`odo` determines by looking at the labels set in the current namespace if [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-admission/) have to be respected for the deployed pod. 
+
+If necessary, `odo` will add Security Context restrictions to the Pod definition to make the Pod admissible.
+
 #### Pods and Containers
 
 Each `components[].container` block is translated into a dedicated `container` definition in the Pod template.

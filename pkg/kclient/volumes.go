@@ -96,7 +96,7 @@ func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, 
 		if err != nil {
 			return fmt.Errorf("unable to marshal deployment: %w", err)
 		}
-		_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Patch(context.TODO(), updatedPVC.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
+		_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Patch(context.TODO(), updatedPVC.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: Bool(true)})
 		if err != nil {
 			return err
 		}

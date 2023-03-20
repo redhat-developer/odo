@@ -30,7 +30,7 @@ type FakeK8sClient struct {
 	Errors                map[string]string
 }
 
-func (client *FakeK8sClient) Get(_ context.Context, namespacedName client.ObjectKey, obj client.Object) error {
+func (client *FakeK8sClient) Get(_ context.Context, namespacedName client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
 	template, ok := obj.(*v1alpha2.DevWorkspaceTemplate)
 	if !ok {
 		return fmt.Errorf("called Get() in fake client with non-DevWorkspaceTemplate")

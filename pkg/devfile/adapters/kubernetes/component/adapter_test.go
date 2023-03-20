@@ -25,6 +25,7 @@ import (
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -121,6 +122,12 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					return true, &deployment, nil
 				})
 			}
+
+			fkclientset.Kubernetes.PrependReactor("get", "namespaces", func(action ktesting.Action) (bool, runtime.Object, error) {
+				ns := &corev1.Namespace{}
+				ns.SetName("my-ns")
+				return true, ns, nil
+			})
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume()

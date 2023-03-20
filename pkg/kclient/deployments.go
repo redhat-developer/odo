@@ -18,7 +18,7 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
-func boolPtr(b bool) *bool {
+func Bool(b bool) *bool {
 	return &b
 }
 
@@ -121,7 +121,7 @@ func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, 
 		return nil, err
 	}
 
-	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: Bool(true)})
 	if err != nil {
 		return nil, fmt.Errorf("unable to update Deployment %s: %w", deploy.Name, err)
 	}

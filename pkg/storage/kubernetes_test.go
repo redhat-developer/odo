@@ -366,7 +366,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: NewStorageWithContainer("storage-0", "5Gi", "/data", "runtime", util.GetBoolPtr(false)),
+				storage: NewStorageWithContainer("storage-0", "5Gi", "/data", "runtime", util.GetBool(false)),
 			},
 		},
 		{
@@ -378,7 +378,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: NewStorageWithContainer("storage-0", "example", "/data", "runtime", util.GetBoolPtr(false)),
+				storage: NewStorageWithContainer("storage-0", "example", "/data", "runtime", util.GetBool(false)),
 			},
 			wantErr: true,
 		},
@@ -391,7 +391,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: NewStorageWithContainer("odo-projects-vol", "5Gi", "/data", "runtime", util.GetBoolPtr(false)),
+				storage: NewStorageWithContainer("odo-projects-vol", "5Gi", "/data", "runtime", util.GetBool(false)),
 			},
 		},
 	}

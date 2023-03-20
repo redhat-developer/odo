@@ -193,6 +193,42 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should not set securitycontext for podsecurity admission", func() {
+			if os.Getenv("KUBERNETES") != "true" {
+				Skip("This is a Kubernetes specific scenario, skipping")
+			}
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+				podDef := component.GetPodDef()
+				Expect(podDef.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
+				Expect(podDef.Spec.SecurityContext.SeccompProfile).To(BeNil())
+			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		When("pod security is enforced as restricted", func() {
+			BeforeEach(func() {
+				commonVar.CliRunner.SetLabelsOnNamespace(
+					commonVar.Project,
+					"pod-security.kubernetes.io/enforce=restricted",
+					"pod-security.kubernetes.io/enforce-version=latest",
+				)
+			})
+
+			It("should set securitycontext for podsecurity admission", func() {
+				if os.Getenv("KUBERNETES") != "true" {
+					Skip("This is a Kubernetes specific scenario, skipping")
+				}
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					podDef := component.GetPodDef()
+					Expect(*podDef.Spec.SecurityContext.RunAsNonRoot).To(BeTrue())
+					Expect(string(podDef.Spec.SecurityContext.SeccompProfile.Type)).To(Equal("RuntimeDefault"))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
 		When("a state file is not writable", func() {
 			BeforeEach(func() {
 				stateFile := filepath.Join(commonVar.Context, ".odo", "devstate.json")

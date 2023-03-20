@@ -241,7 +241,7 @@ type podTemplateSpecParams struct {
 }
 
 // getPodTemplateSpec gets a pod template spec that can be used to create a deployment spec
-func getPodTemplateSpec(globalAttributes attributes.Attributes, components []v1.Component, podTemplateSpecParams podTemplateSpecParams) (*corev1.PodTemplateSpec, error) {
+func getPodTemplateSpec(podTemplateSpecParams podTemplateSpecParams) (*corev1.PodTemplateSpec, error) {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: podTemplateSpecParams.ObjectMeta,
 		Spec: corev1.PodSpec{
@@ -249,14 +249,6 @@ func getPodTemplateSpec(globalAttributes attributes.Attributes, components []v1.
 			Containers:     podTemplateSpecParams.Containers,
 			Volumes:        podTemplateSpecParams.Volumes,
 		},
-	}
-	if needsPodOverrides(globalAttributes, components) {
-		patchedPodTemplateSpec, err := applyPodOverrides(globalAttributes, components, podTemplateSpec)
-		if err != nil {
-			return nil, err
-		}
-		patchedPodTemplateSpec.ObjectMeta = podTemplateSpecParams.ObjectMeta
-		podTemplateSpec = patchedPodTemplateSpec
 	}
 
 	return podTemplateSpec, nil
@@ -736,16 +728,7 @@ func getAllContainers(devfileObj parser.DevfileObj, options common.DevfileOption
 				return nil, err
 			}
 		}
-		// Check if there is an override attribute
-		if comp.Attributes.Exists(ContainerOverridesAttribute) {
-			patched, err := containerOverridesHandler(comp, container)
-			if err != nil {
-				return nil, err
-			}
-			containers = append(containers, *patched)
-		} else {
-			containers = append(containers, *container)
-		}
+		containers = append(containers, *container)
 	}
 	return containers, nil
 }

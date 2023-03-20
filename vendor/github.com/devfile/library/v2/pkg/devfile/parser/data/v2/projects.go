@@ -108,7 +108,7 @@ func (d *DevfileV2) DeleteProject(name string) error {
 	}
 }
 
-//GetStarterProjects returns the DevfileStarterProject parsed from devfile
+// GetStarterProjects returns the DevfileStarterProject parsed from devfile
 func (d *DevfileV2) GetStarterProjects(options common.DevfileOptions) ([]v1.StarterProject, error) {
 
 	if reflect.DeepEqual(options, common.DevfileOptions{}) {
