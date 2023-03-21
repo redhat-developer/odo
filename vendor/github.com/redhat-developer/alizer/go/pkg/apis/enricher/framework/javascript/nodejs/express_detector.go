@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"os"
 	"regexp"
 	"strings"
@@ -31,8 +32,8 @@ func (e ExpressDetector) DoFrameworkDetection(language *model.Language, config s
 	}
 }
 
-func (e ExpressDetector) DoPortsDetection(component *model.Component) {
-	files, err := utils.GetFilePathsFromRoot(component.Path)
+func (e ExpressDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
+	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
 	if err != nil {
 		return
 	}

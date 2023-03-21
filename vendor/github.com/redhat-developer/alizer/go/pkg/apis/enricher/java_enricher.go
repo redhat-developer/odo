@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -53,7 +54,7 @@ func (j JavaEnricher) DoEnrichLanguage(language *model.Language, files *[]string
 	}
 }
 
-func (j JavaEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
+func (j JavaEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := getProjectNameMaven(component.Path)
 	if projectName == "" {
 		projectName = getProjectNameGradle(component.Path)
@@ -81,7 +82,7 @@ func (j JavaEnricher) DoEnrichComponent(component *model.Component, settings mod
 				for _, detector := range getJavaFrameworkDetectors() {
 					for _, framework := range component.Languages[0].Frameworks {
 						if utils.Contains(detector.GetSupportedFrameworks(), framework) {
-							detector.DoPortsDetection(component)
+							detector.DoPortsDetection(component, ctx)
 						}
 					}
 				}
@@ -143,8 +144,8 @@ func isParentModuleMaven(configPath string) bool {
 		return false
 	}
 
-	hasTag, _ := utils.IsTagInPomXMLFile(configPath, "modules")
-	return hasTag
+	pomContent, _ := utils.GetPomFileContent(configPath)
+	return pomContent.Modules.Module != ""
 }
 
 func detectJavaFrameworks(language *model.Language, configFile string) {

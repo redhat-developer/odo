@@ -19,7 +19,6 @@ GCC Machine Description:
 Go:
   configuration_files:
     - "go.mod"
-    - "go.sum"
   component: true
 Java:
   configuration_files:
@@ -27,10 +26,12 @@ Java:
     - "build.gradle"
   component: true
 JavaScript:
+  aliases:
+    - "TypeScript"
   exclude_folders:
     - "node_modules"
   configuration_files:
-    - "package.json"
+    - "[^-]package.json"
   component: true
 Python:
   component: true
@@ -39,10 +40,12 @@ Rust:
     - "Cargo.toml"
   component: true
 TypeScript:
+  aliases:
+    - "JavaScript"
   exclude_folders:
     - "node_modules"
   configuration_files:
-    - "package.json"
+    - "[^-]package.json"
   component: true
 Visual Basic .NET:
   aliases:

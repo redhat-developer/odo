@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -52,14 +53,14 @@ func (a AngularDetector) DoFrameworkDetection(language *model.Language, config s
 	}
 }
 
-func (a AngularDetector) DoPortsDetection(component *model.Component) {
+func (a AngularDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on angular.json file
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
 			Dir:  "",
 			File: "angular.json",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}
@@ -90,7 +91,7 @@ func (a AngularDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "",
 			File: "angular-cli.json",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

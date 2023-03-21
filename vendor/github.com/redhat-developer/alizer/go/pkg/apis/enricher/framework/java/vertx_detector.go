@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -37,13 +38,13 @@ func (v VertxDetector) DoFrameworkDetection(language *model.Language, config str
 	}
 }
 
-func (v VertxDetector) DoPortsDetection(component *model.Component) {
+func (v VertxDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
 			Dir:  "src/main/conf",
 			File: ".*.json",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

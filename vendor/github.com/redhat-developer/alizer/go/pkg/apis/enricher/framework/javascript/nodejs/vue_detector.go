@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -29,7 +30,7 @@ func (v VueDetector) DoFrameworkDetection(language *model.Language, config strin
 	}
 }
 
-func (v VueDetector) DoPortsDetection(component *model.Component) {
+func (v VueDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`--port (\d*)`, `PORT=(\d*)`}
 	// check if --port or PORT is set in start script in package.json
 	port := getPortFromStartScript(component.Path, regexes)
@@ -56,7 +57,7 @@ func (v VueDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "",
 			File: "vue.config.js",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

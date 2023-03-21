@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"path/filepath"
@@ -41,7 +42,7 @@ func (s SpringDetector) DoFrameworkDetection(language *model.Language, config st
 	}
 }
 
-func (s SpringDetector) DoPortsDetection(component *model.Component) {
+func (s SpringDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	ports := getSpringPortsFromEnvs()
 	if len(ports) > 0 {
@@ -62,7 +63,7 @@ func (s SpringDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "src/main/resources",
 			File: "application.yaml",
 		},
-	})
+	}, ctx)
 	if applicationFile == "" {
 		return
 	}

@@ -11,6 +11,8 @@
 package enricher
 
 import (
+	"context"
+
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/python"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
@@ -33,7 +35,7 @@ func (p PythonEnricher) DoEnrichLanguage(language *model.Language, files *[]stri
 	detectPythonFrameworks(language, files)
 }
 
-func (j PythonEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
+func (j PythonEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
@@ -55,7 +57,7 @@ func (j PythonEnricher) DoEnrichComponent(component *model.Component, settings m
 				for _, detector := range getPythonFrameworkDetectors() {
 					for _, framework := range component.Languages[0].Frameworks {
 						if utils.Contains(detector.GetSupportedFrameworks(), framework) {
-							detector.DoPortsDetection(component)
+							detector.DoPortsDetection(component, ctx)
 						}
 					}
 				}

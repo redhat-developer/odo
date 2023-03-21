@@ -11,6 +11,8 @@
 package enricher
 
 import (
+	"context"
+
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
@@ -27,7 +29,7 @@ func (n NextDetector) DoFrameworkDetection(language *model.Language, config stri
 	}
 }
 
-func (n NextDetector) DoPortsDetection(component *model.Component) {
+func (n NextDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`-p (\d*)`}
 	// check if port is set in start script in package.json
 	port := getPortFromStartScript(component.Path, regexes)
@@ -36,7 +38,7 @@ func (n NextDetector) DoPortsDetection(component *model.Component) {
 		return
 	}
 
-	// check if port is set in start script in package.json
+	// check if port is set in dev script in package.json
 	port = getPortFromDevScript(component.Path, regexes)
 	if utils.IsValidPort(port) {
 		component.Ports = []int{port}

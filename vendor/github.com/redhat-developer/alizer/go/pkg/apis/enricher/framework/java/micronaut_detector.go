@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"os"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -42,7 +43,7 @@ func (m MicronautDetector) DoFrameworkDetection(language *model.Language, config
 	}
 }
 
-func (m MicronautDetector) DoPortsDetection(component *model.Component) {
+func (m MicronautDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	ports := getMicronautPortsFromEnvs()
 	if len(ports) > 0 {
@@ -59,7 +60,7 @@ func (m MicronautDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "src/main/resources",
 			File: "application.yaml",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

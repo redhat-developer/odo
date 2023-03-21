@@ -11,6 +11,8 @@
 package enricher
 
 import (
+	"context"
+
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/dotnet"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
@@ -35,7 +37,7 @@ func (j DotNetEnricher) DoEnrichLanguage(language *model.Language, files *[]stri
 	}
 }
 
-func (j DotNetEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
+func (j DotNetEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
