@@ -247,17 +247,6 @@ var _ = Describe("odo devfile init command tests", func() {
 				})
 			})
 
-			When("a devfile is provided which has a starter that has its own devfile", func() {
-				BeforeEach(func() {
-					helper.Cmd("odo", "init", "--name", "aname", "--starter", "nodejs-starter", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml")).ShouldPass()
-				})
-				It("should pass and keep the devfile in starter", func() {
-					devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
-					Expect(err).To(Not(HaveOccurred()))
-					helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "kubernetes-deploy", "deployk8s", "image-build"})
-				})
-			})
-
 			When("running odo init with a devfile that has a subDir starter project", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-with-subDir.yaml"), "--starter", "springbootproject").ShouldPass()

@@ -3,9 +3,16 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -614,6 +621,198 @@ func TestGetRegistryDevfiles(t *testing.T) {
 					t.Errorf("getRegistryStacks() mismatch (-want +got):\n%s", diff)
 					t.Logf("Error message is: %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestRegistryClient_DownloadStarterProject(t *testing.T) {
+	setupFS := func(contextDir string, fs filesystem.Filesystem) {
+		directoriesToBeCreated := []string{"kubernetes", "docker"}
+		for _, dirToBeCreated := range directoriesToBeCreated {
+			dirName := filepath.Join(contextDir, dirToBeCreated)
+			err := fs.MkdirAll(dirName, os.FileMode(0750))
+			if err != nil {
+				t.Errorf("failed to create %s; cause: %s", dirName, err)
+			}
+		}
+
+		filesToBeCreated := []string{"devfile.yaml", "kubernetes/deploy.yaml", "docker/Dockerfile"}
+		for _, fileToBeCreated := range filesToBeCreated {
+			fileName := filepath.Join(contextDir, fileToBeCreated)
+			_, err := fs.Create(fileName)
+			if err != nil {
+				t.Errorf("failed to create %s; cause: %s", fileName, err)
+			}
+		}
+	}
+
+	getZipFilePath := func(name string) string {
+		// filename of this file
+		_, filename, _, _ := runtime.Caller(0)
+		// path to the devfile
+		return filepath.Join(filepath.Dir(filename), "..", "..", "tests", "examples", filepath.Join("source", "devfiles", "zips", name))
+	}
+	type fields struct {
+		fsys             filesystem.Filesystem
+		preferenceClient preference.Client
+		kubeClient       kclient.ClientInterface
+	}
+	type args struct {
+		starterProject *devfilev1.StarterProject
+		decryptedToken string
+		contextDir     string
+		verbose        bool
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "Starter project has a Devfile",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-devfile",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-devfile.zip")),
+						},
+					},
+				},
+			},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someFile.txt"},
+			wantErr: false,
+		},
+		{
+			name: "Starter project has conflicting files",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-conflicting-files",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-conflicts.zip")),
+						},
+					},
+				},
+			},
+			want: []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"),
+				CONFLICT_DIR_NAME, filepath.Join(CONFLICT_DIR_NAME, "kubernetes"), filepath.Join(CONFLICT_DIR_NAME, "kubernetes", "deploy.yaml"),
+				filepath.Join(CONFLICT_DIR_NAME, "main.go"), filepath.Join(CONFLICT_DIR_NAME, "go.mod"), filepath.Join(CONFLICT_DIR_NAME, "README.md"), filepath.Join(CONFLICT_DIR_NAME, "someFile.txt")},
+			wantErr: false,
+		},
+		{
+			name: "Starter project has conflicting files and an empty dir",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-conflicting-files-and-empty-dir",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-conflicts-and-empty-dir.zip")),
+						},
+					},
+				},
+			},
+			want: []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"),
+				filepath.Join(CONFLICT_DIR_NAME, "kubernetes"), CONFLICT_DIR_NAME, filepath.Join(CONFLICT_DIR_NAME, "docker"), filepath.Join(CONFLICT_DIR_NAME, "docker", "Dockerfile"),
+				filepath.Join(CONFLICT_DIR_NAME, "main.go"), filepath.Join(CONFLICT_DIR_NAME, "go.mod"), filepath.Join(CONFLICT_DIR_NAME, "README.md")},
+			wantErr: false,
+		},
+		{
+			name: "Starter project does not have any conflicting files",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-no-conflicting-files",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-no-conflicts.zip")),
+						},
+					},
+				},
+			},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"), "README.md", "main.go", "go.mod"},
+			wantErr: false,
+		},
+		{
+			name: "Starter project does not have any conflicting files but has empty dir",
+			fields: fields{
+				fsys: filesystem.NewFakeFs(),
+			},
+			args: args{
+				starterProject: &devfilev1.StarterProject{
+					Name: "starter-project-with-no-conflicting-files-and-empty-dir",
+					ProjectSource: devfilev1.ProjectSource{
+						SourceType: "",
+						Zip: &devfilev1.ZipProjectSource{
+							CommonProjectSource: devfilev1.CommonProjectSource{},
+							Location:            fmt.Sprintf("file://%s", getZipFilePath("starterproject-with-no-conflicts-and-empty-dir.zip")),
+						},
+					},
+				},
+			},
+			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "kubernetes", filepath.Join("kubernetes", "deploy.yaml"), "README.md", "main.go", "go.mod"},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			contextDir, ferr := tt.fields.fsys.TempDir("", "downloadstarterproject")
+			if ferr != nil {
+				t.Errorf("failed to create temp dir; cause: %s", ferr)
+			}
+			tt.args.contextDir = contextDir
+
+			setupFS(tt.args.contextDir, tt.fields.fsys)
+
+			o := RegistryClient{
+				fsys:             tt.fields.fsys,
+				preferenceClient: tt.fields.preferenceClient,
+				kubeClient:       tt.fields.kubeClient,
+			}
+			if err := o.DownloadStarterProject(tt.args.starterProject, tt.args.decryptedToken, tt.args.contextDir, tt.args.verbose); (err != nil) != tt.wantErr {
+				t.Errorf("DownloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			var got []string
+			err := o.fsys.Walk(contextDir, func(path string, info fs.FileInfo, err error) error {
+				path = strings.TrimPrefix(path, contextDir)
+				path = strings.TrimPrefix(path, string(os.PathSeparator))
+				if path != "" {
+					got = append(got, path)
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("failed to walk %s; cause:%s", contextDir, err.Error())
+				return
+			}
+			sort.Strings(got)
+			sort.Strings(tt.want)
+			if diff := cmp.Diff(got, tt.want); diff != "" {
+				t.Errorf("DownloadStarterProject() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -3,6 +3,7 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"os"
 	"path/filepath"
 
@@ -21,12 +22,12 @@ const (
 	RegistryUser = "default"
 )
 
-func checkoutProject(subDir, zipURL, path, starterToken string) error {
+func checkoutProject(subDir, zipURL, path, starterToken string, fsys filesystem.Filesystem) error {
 
 	if subDir == "" {
 		subDir = "/"
 	}
-	err := util.GetAndExtractZip(zipURL, path, subDir, starterToken)
+	err := util.GetAndExtractZip(zipURL, path, subDir, starterToken, fsys)
 	if err != nil {
 		return fmt.Errorf("failed to download and extract project zip folder: %w", err)
 	}
@@ -35,7 +36,7 @@ func checkoutProject(subDir, zipURL, path, starterToken string) error {
 
 // DownloadStarterProject downloads a starter project referenced in devfile
 // This will first remove the content of the contextDir
-func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
+func DownloadStarterProject(fs filesystem.Filesystem, starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
 	var path string
 	var err error
 	// Retrieve the working directory in order to clone correctly
@@ -49,7 +50,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	}
 
 	// We will check to see if the project has a valid directory
-	err = util.IsValidProjectDir(path, location.DevfileLocation(""))
+	err = util.IsValidProjectDir(path, location.DevfileLocation(""), fs)
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 		if verbose {
 			downloadSpinner = log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, url)
 		}
-		err := checkoutProject(sparseDir, url, path, decryptedToken)
+		err := checkoutProject(sparseDir, url, path, decryptedToken, fs)
 		if err != nil {
 			if verbose {
 				downloadSpinner.End(false)

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/url"
 	"os"
@@ -201,20 +202,16 @@ func CheckPathExists(path string) bool {
 // IsValidProjectDir checks that the folder to download the project from devfile is
 // either empty or contains the devfile used.
 // TODO(feloy) sync with devfile library?
-func IsValidProjectDir(path string, devfilePath string) error {
-	entries, err := os.ReadDir(path)
+func IsValidProjectDir(path string, devfilePath string, fs filesystem.Filesystem) error {
+	entries, err := fs.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	if len(entries) >= 1 {
 		for _, entry := range entries {
-			file, err := entry.Info()
-			if err != nil {
-				return err
-			}
-			fileName := file.Name()
+			fileName := entry.Name()
 			devfilePath = strings.TrimPrefix(devfilePath, "./")
-			if !file.IsDir() && fileName == devfilePath {
+			if !entry.IsDir() && fileName == devfilePath {
 				return nil
 			}
 		}
@@ -228,7 +225,7 @@ func IsValidProjectDir(path string, devfilePath string) error {
 // takes an absolute path prefixed with file:// and extracts it to a destination.
 // pathToUnzip specifies the path within the zip folder to extract
 // TODO(feloy) sync with devfile library?
-func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string) error {
+func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string, fsys filesystem.Filesystem) error {
 	if zipURL == "" {
 		return fmt.Errorf("empty zip url: %s", zipURL)
 	}
@@ -243,7 +240,11 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 		// Generate temporary zip file location
 		time := time.Now().Format(time.RFC3339)
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
-		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
+		tempPath, err := fsys.TempDir("", "")
+		if err != nil {
+			return err
+		}
+		pathToZip = path.Join(tempPath, "_"+time+".zip")
 
 		params := dfutil.DownloadParams{
 			Request: dfutil.HTTPRequestParams{
@@ -252,13 +253,13 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 			},
 			Filepath: pathToZip,
 		}
-		err := dfutil.DownloadFile(params)
+		err = dfutil.DownloadFile(params)
 		if err != nil {
 			return err
 		}
 
 		defer func() {
-			if err := dfutil.DeletePath(pathToZip); err != nil {
+			if err = fsys.Remove(pathToZip); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				klog.Errorf("Could not delete temporary directory for zip file. Error: %s", err)
 			}
 		}()
@@ -266,7 +267,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 		return fmt.Errorf("invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
-	filenames, err := Unzip(pathToZip, destination, pathToUnzip)
+	filenames, err := Unzip(pathToZip, destination, pathToUnzip, fsys)
 	if err != nil {
 		return err
 	}
@@ -283,7 +284,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 // Source: https://golangcode.com/unzip-files-in-go/
 // pathToUnzip (parameter 3) is the path within the zip folder to extract
 // TODO(feloy) sync with devfile library?
-func Unzip(src, dest, pathToUnzip string) ([]string, error) {
+func Unzip(src, dest, pathToUnzip string, fsys filesystem.Filesystem) ([]string, error) {
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -339,18 +340,18 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 
 		if f.FileInfo().IsDir() {
 			// Make Folder
-			if err = os.MkdirAll(fpath, os.ModePerm); err != nil {
+			if err = fsys.MkdirAll(fpath, os.ModePerm); err != nil {
 				return filenames, err
 			}
 			continue
 		}
 
 		// Make File
-		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		if err = fsys.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		outFile, err := fsys.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return filenames, err
 		}
@@ -591,8 +592,8 @@ func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 	return fs.Chmod(dst, srcinfo.Mode())
 }
 
-// copyDirWithFS copies a whole directory recursively
-func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
+// CopyDirWithFS copies a whole directory recursively
+func CopyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 	var err error
 	var fds []os.FileInfo
 	var srcinfo os.FileInfo
@@ -613,7 +614,7 @@ func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 		dstfp := path.Join(dst, fd.Name())
 
 		if fd.IsDir() {
-			if err = copyDirWithFS(srcfp, dstfp, fs); err != nil {
+			if err = CopyDirWithFS(srcfp, dstfp, fs); err != nil {
 				return err
 			}
 		} else {
@@ -713,7 +714,7 @@ func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem
 			oldPath := filepath.Join(srcPath, subDir, fileName)
 
 			if outputFileHere.IsDir() {
-				err = copyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
+				err = CopyDirWithFS(oldPath, filepath.Join(destinationPath, fileName), fs)
 			} else {
 				err = copyFileWithFs(oldPath, filepath.Join(destinationPath, fileName), fs)
 			}
