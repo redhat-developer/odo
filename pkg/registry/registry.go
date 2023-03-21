@@ -70,7 +70,12 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 	if err != nil {
 		return err
 	}
-
+	defer func() {
+		err = o.fsys.RemoveAll(starterProjectTmpDir)
+		if err != nil {
+			klog.V(2).Infof("failed to delete temporary starter project dir %s; cause: %s", starterProjectTmpDir, err.Error())
+		}
+	}()
 	err = DownloadStarterProject(o.fsys, starterProject, decryptedToken, starterProjectTmpDir, verbose)
 	if err != nil {
 		return err
@@ -402,6 +407,12 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	if err != nil {
 		return api.DevfileData{}, err
 	}
+	defer func() {
+		err = o.fsys.RemoveAll(tmpFile)
+		if err != nil {
+			klog.V(2).Infof("failed to delete temporary starter project dir %s; cause: %s", tmpFile, err.Error())
+		}
+	}()
 
 	registries, err := o.GetDevfileRegistries(registryName)
 	if err != nil {
