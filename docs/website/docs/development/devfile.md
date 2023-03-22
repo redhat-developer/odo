@@ -82,13 +82,63 @@ The order in which the commands are ran for `odo dev` are:
 3. `run`: The application is ran within the container
 4. `debug`: This is ran when `odo dev --debug` is executed
 
-When `odo deploy` is executed, we use: deploy.
+When `odo deploy` is executed, we use: `deploy`.
 
 These commands are typically tied to Kubernetes or OpenShift inline resources. They are defined as a component. However, you can use `container` or `image` components as well under the deploy group.
 
 The most common deploy scenario is the following:
 1. Use the `image` component to build a container
 2. Deploy a `kubernetes` component(s) with a Kubernetes resource defined
+
+### How odo runs exec commands in Deploy mode
+```yaml
+commands:
+  - exec:
+      commandLine: helm repo add bitnami https://charts.bitnami.com/bitnami && helm install my-db bitnami/postgresql
+      component: runtime
+    id: deploy-db
+  - id: deploy
+    composite:
+      commands:
+      - app-image
+      - deploy-pvc
+      - deploy-service
+      - deploy-route
+      - deploy-app
+      - deploy-db
+      group:
+        kind: deploy
+        isDefault: true
+
+components:
+  - container:
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+      image: quay.io/tkral/devbox-demo-devbox
+      memoryLimit: 1024Mi
+      mountSources: true
+      sourceMapping: /project
+    name: runtime
+```
+
+In the example above, `exec` command is a part of the composite deploy command.
+Every `exec` command must correspond to a container component command.
+`exec` command can be used to execute any command, which makes it possible to use tools such as helm, kustomize, or any with odo, given that the binary is made available by the image of the container component that is referenced by the command.
+
+Commands defined by the `exec` command are run inside a Kubernetes Job. Every `exec` command references a Devfile container component. `odo` makes use of this container component definition to define the Kubernetes Job.
+
+`odo` takes into account the complete container definition which includes any endpoints exposed, environment variables exported, memory or cpu limit imposed, or any source mounting and mapping to be done(this feature is yet to be implemented, see[#6658](https://github.com/redhat-developer/odo/issues/6658)); the only thing it overwrites is command and args; which are taken from the `exec` _commandLine_.
+
+`odo` also takes into account the complete command definition which includes setting any environment variables, and using the given workingDir; this works similarly to how commands are run in Dev mode.
+
+#### Kubernetes Job Specification
+1. The naming convention for the Kubernetes Job `<component-name>-<app-name>-<command-id>`; the maximum character limit for a resource name allowed by Kubernetes is 63, but since this resource is created by `odo`, we do not want the character limit to be any issue to the user, and so we use a max character limit of 60.
+2. If the Kubernetes Job fails to run the command the first time, it will retry one more time before giving up(BackOffLimit).
+3. If the Kubernetes Job succeeds, but `odo` is unable to delete it for some reason, it will be automatically deleted after 60 seconds(TTLSecondsAfterFinished).
+4. The Kubernetes Job is created with appropriate annotations and labels so that it can be deleted by `odo delete component --name <name>` command if the need be.
+5. If the Kubernetes Job fails, a new pod is created to re-run the job instead of re-running it inside the same pod's container, this ensures that we can fetch the logs when needed.
+
 
 ## File Reference
 
