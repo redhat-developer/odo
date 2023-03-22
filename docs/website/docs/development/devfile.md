@@ -124,7 +124,7 @@ components:
 
 In the example above, `exec` command is a part of the composite deploy command.
 Every `exec` command must correspond to a container component command.
-`exec` command can be used to execute any command, which makes it possible to use tools such as helm, kustomize, or any with odo, given that the binary is made available by the image of the container component that is referenced by the command.
+`exec` command can be used to execute any command, which makes it possible to use tools such as helm, kustomize, etc. in the development workflow with odo, given that the binary is made available by the image of the container component that is referenced by the command.
 
 Commands defined by the `exec` command are run inside a container started by a Kubernetes Job. Every `exec` command references a Devfile container component. `odo` makes use of this container component definition to define the Kubernetes Job.
 
@@ -133,7 +133,7 @@ Commands defined by the `exec` command are run inside a container started by a K
 `odo` also takes into account the complete command definition which includes setting any environment variables, and using the given workingDir; this works similarly to how commands are run in Dev mode.
 
 #### Kubernetes Job Specification
-1. The naming convention for the Kubernetes Job `<component-name>-<app-name>-<command-id>`; the maximum character limit for a resource name allowed by Kubernetes is 63, but since this resource is created by `odo`, we do not want the character limit to be any issue to the user, and so we use a max character limit of 60.
+1. The naming convention for the Kubernetes Job is `<component-name>-<app-name>-<command-id>`; the maximum character limit for a resource name allowed by Kubernetes is 63, but since this resource is created by `odo`, we do not want the character limit to be any issue to the user, and so we use a max character limit of 60.
 2. If the Kubernetes Job fails to run the command the first time, it will retry one more time before giving up(BackOffLimit).
 3. If the Kubernetes Job succeeds, but `odo` is unable to delete it for some reason, it will be automatically deleted after 60 seconds(TTLSecondsAfterFinished).
 4. The Kubernetes Job is created with appropriate annotations and labels so that it can be deleted by `odo delete component --name <name>` command if the need be.
