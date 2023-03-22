@@ -126,7 +126,7 @@ In the example above, `exec` command is a part of the composite deploy command.
 Every `exec` command must correspond to a container component command.
 `exec` command can be used to execute any command, which makes it possible to use tools such as helm, kustomize, or any with odo, given that the binary is made available by the image of the container component that is referenced by the command.
 
-Commands defined by the `exec` command are run inside a Kubernetes Job. Every `exec` command references a Devfile container component. `odo` makes use of this container component definition to define the Kubernetes Job.
+Commands defined by the `exec` command are run inside a container started by a Kubernetes Job. Every `exec` command references a Devfile container component. `odo` makes use of this container component definition to define the Kubernetes Job.
 
 `odo` takes into account the complete container definition which includes any endpoints exposed, environment variables exported, memory or cpu limit imposed, or any source mounting and mapping to be done(this feature is yet to be implemented, see[#6658](https://github.com/redhat-developer/odo/issues/6658)); the only thing it overwrites is command and args; which are taken from the `exec` _commandLine_.
 
