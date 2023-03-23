@@ -2,9 +2,11 @@ package registry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/devfile/registry-support/index/generator/schema"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
@@ -66,7 +68,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(ctx, o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag)
+	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(ctx, o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag, log.IsJSON())
 	if err != nil {
 		return err
 	}
@@ -188,6 +190,12 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 
 		if o.detailsFlag {
 
+			defaultVersionDetails, err := getVersion(devfileComponent, devfileComponent.DefaultVersion)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
 			// Output the details of the component
 			fmt.Printf(`%s: %s
 %s: %s
@@ -219,9 +227,9 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 				log.Sbold("Language"), devfileComponent.Language,
 				log.Sbold("Starter Projects"), strings.Join(defaultVersionDetails.StarterProjects, "\n  - "),
 				log.Sbold("Supported odo Features"),
-				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Dev),
-				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Deploy),
-				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Debug),
+				boolToYesNo(defaultVersionDetails.CommandGroups[schema.RunCommandGroupKind]),
+				boolToYesNo(defaultVersionDetails.CommandGroups[schema.DeployCommandGroupKind]),
+				boolToYesNo(defaultVersionDetails.CommandGroups[schema.DebugCommandGroupKind]),
 				log.Sbold("Versions"),
 				strings.Join(vList, "\n  - "),
 				"\n")
@@ -256,4 +264,13 @@ func boolToYesNo(b bool) string {
 		return "Y"
 	}
 	return "N"
+}
+
+func getVersion(stack api.DevfileStack, v string) (api.DevfileStackVersion, error) {
+	for _, version := range stack.Versions {
+		if version.Version == v {
+			return version, nil
+		}
+	}
+	return api.DevfileStackVersion{}, errors.New("version not found")
 }
