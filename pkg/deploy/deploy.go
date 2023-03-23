@@ -192,6 +192,9 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	// Wait for the command to complete execution
 	_, err = o.kubeClient.WaitForJobToComplete(createdJob)
 	done <- struct{}{}
+
+	spinner.End(err == nil)
+
 	if err != nil {
 		err = fmt.Errorf("failed to execute (command: %s)", command.Id)
 		// Print the job logs if the job failed
@@ -202,8 +205,6 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		fmt.Println("Execution output:")
 		_ = util.DisplayLog(false, jobLogs, log.GetStderr(), o.componentName, 100)
 	}
-
-	spinner.End(err == nil)
 
 	return err
 }
