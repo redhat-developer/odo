@@ -96,6 +96,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 					helper.JsonPathContentContain(stdout, "0.projectType", "Node.js")
 					helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
 					helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
+					helper.JsonPathContentContain(stdout, "0.versions.0.CommandGroups.run", "true")
 
 					defaultVersion := gjson.Get(stdout, "0.version").String()
 					By("returning backward-compatible information linked to the default stack version", func() {
@@ -277,6 +278,7 @@ spec:
 					helper.JsonPathContentContain(stdout, "0.projectType", "Node.js")
 					helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
 					helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
+					helper.JsonPathContentContain(stdout, "0.versions.0.CommandGroups.run", "true")
 
 					defaultVersion := gjson.Get(stdout, "0.version").String()
 					By("returning backward-compatible information linked to the default stack version", func() {
