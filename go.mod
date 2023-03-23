@@ -9,7 +9,7 @@ require (
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/api/v2 v2.2.0
-	github.com/devfile/library/v2 v2.2.1-0.20230308185609-bd4a12f27257
+	github.com/devfile/library/v2 v2.2.1-0.20230323124903-d36e409ff94f
 	github.com/devfile/registry-support/index/generator v0.0.0-20221018203505-df96d34d4273
 	github.com/devfile/registry-support/registry-library v0.0.0-20221201200738-19293ac0b8ab
 	github.com/fatih/color v1.14.1
