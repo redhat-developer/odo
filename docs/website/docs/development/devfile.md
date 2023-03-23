@@ -84,7 +84,7 @@ The order in which the commands are ran for `odo dev` are:
 
 When `odo deploy` is executed, we use: `deploy`.
 
-These commands are typically tied to Kubernetes or OpenShift inline resources. They are defined as a component. However, you can use `container` or `image` components as well under the deploy group.
+These commands are typically tied to Kubernetes or OpenShift inline resources. They are defined as a component. However, you can use `container` or `image` components as well under the `deploy` group.
 
 The most common deploy scenario is the following:
 1. Use the `image` component to build a container
@@ -93,19 +93,16 @@ The most common deploy scenario is the following:
 ### How odo runs exec commands in Deploy mode
 ```yaml
 commands:
-  - exec:
+  - id: deploy-db
+    exec:
       commandLine: |
         helm repo add bitnami https://charts.bitnami.com/bitnami && \
         helm install my-db bitnami/postgresql
       component: runtime
-    id: deploy-db
   - id: deploy
     composite:
       commands:
       - app-image
-      - deploy-pvc
-      - deploy-service
-      - deploy-route
       - deploy-app
       - deploy-db
       group:
@@ -125,7 +122,9 @@ components:
 ```
 
 In the example above, `exec` command is a part of the composite deploy command.
+
 Every `exec` command must correspond to a container component command.
+
 `exec` command can be used to execute any command, which makes it possible to use tools such as [Helm](https://helm.sh/), [Kustomize](https://kustomize.io/), etc. in the development workflow with odo, given that the binary is made available by the image of the container component that is referenced by the command.
 
 Commands defined by the `exec` command are run inside a container started by a [Kubernetes Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/). Every `exec` command references a Devfile container component. `odo` makes use of this container component definition to define the Kubernetes Job.

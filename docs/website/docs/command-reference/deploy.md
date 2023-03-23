@@ -9,11 +9,12 @@ necessary to deploy the components.
 When running the command `odo deploy`, `odo` searches for the default command of kind `deploy` in the devfile, and executes this command.
 The kind `deploy` is supported by the devfile format starting from version 2.2.0.
 
-The `deploy` command is typically a *composite* command, composed of several *apply* commands:
-- a command referencing an `image` component that, when applied, will build the image of the container to deploy, and push it to its registry,
-- a command referencing a [`kubernetes` component](https://devfile.io/docs/2.2.0/defining-kubernetes-resources) that, when applied, will create a Kubernetes resource in the cluster.
+The `deploy` command is typically a *composite* command, composed of several *apply* and *exec* commands:
+- an `apply` command referencing an `image` component that, when applied, will build the image of the container to deploy, and push it to its registry,
+- an `apply` command referencing a [`kubernetes` component](https://devfile.io/docs/2.2.0/defining-kubernetes-resources) that, when applied, will create a Kubernetes resource in the cluster.
+- an `exec` command referencing a container component that, when applied, will run the command defined by `commandLine` inside a container started by a Kubernetes Job; read more about it [here](../development/devfile#how-odo-runs-exec-commands-in-deploy-mode).
 
-With the following example `devfile.yaml` file, a container image will be built by using the `Dockerfile` present in the directory,
+- With the following example `devfile.yaml` file, a container image will be built by using the `Dockerfile` present in the directory,
 the image will be pushed to its registry and a Kubernetes Deployment will be created in the cluster, using this freshly built image.
 
 ```
@@ -28,11 +29,16 @@ commands:
   - id: deployk8s
     apply:
       component: outerloop-deploy
+  - id: deploy-db
+    exec:
+      commandLine: helm repo add bitnami https://charts.bitnami.com/bitnami && helm install my-db bitnami/postgresql
+      component: tools
   - id: deploy
     composite:
       commands:
         - build-image
         - deployk8s
+        - deploy-db
       group:
         kind: deploy
         isDefault: true
@@ -63,6 +69,9 @@ components:
               containers:
                 - name: main
                   image: {{CONTAINER_IMAGE}}
+  - name: tools
+    container:
+      image: quay.io/tkral/devbox-demo-devbox
 ```
 
 :::note
@@ -88,7 +97,7 @@ $ odo deploy
  /  \__/    odo version: v3.0.0-rc1
  \__/
 
-↪ Building & Pushing Container: quay.io/pvala18/myimage
+↪ Building & Pushing Container: quay.io/phmartin/myimage
  •  Building image locally  ...
 STEP 1/7: FROM quay.io/phmartin/node:17
 STEP 2/7: WORKDIR /usr/src/app
@@ -105,9 +114,9 @@ STEP 5/7: COPY . .
 STEP 6/7: EXPOSE 8080
 --> 9892b562a8a
 STEP 7/7: CMD [ "node", "server.js" ]
-COMMIT quay.io/pvala18/myimage
+COMMIT quay.io/phmartin/myimage
 --> 7578e3e3667
-Successfully tagged quay.io/pvala18/myimage:latest
+Successfully tagged quay.io/phmartin/myimage:latest
 7578e3e36676418853c579063dd190c9d736114ca414e28c8646880b446a1618
  ✓  Building image locally [2s]
  •  Pushing image to container registry  ...
@@ -124,6 +133,9 @@ Storing signatures
 
 ↪ Deploying Kubernetes Component: my-component
  ✓  Creating kind Deployment 
+
+↪ Executing command:
+ ✓  Executing command in container (command: deploy-db) [12s]
 
 Your Devfile has been successfully deployed
 
