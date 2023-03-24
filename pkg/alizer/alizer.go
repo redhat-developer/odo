@@ -138,11 +138,12 @@ func (o *Alizer) DetectPorts(path string) ([]int, error) {
 	return components[0].Ports, nil
 }
 
-func NewDetectionResult(typ model.DevFileType, registry api.Registry, appPorts []int, devfileVersion string) *api.DetectionResult {
+func NewDetectionResult(typ model.DevFileType, registry api.Registry, appPorts []int, devfileVersion, name string) *api.DetectionResult {
 	return &api.DetectionResult{
 		Devfile:          typ.Name,
 		DevfileRegistry:  registry.Name,
 		ApplicationPorts: appPorts,
 		DevfileVersion:   devfileVersion,
+		Name:             name,
 	}
 }

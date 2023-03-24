@@ -30,7 +30,7 @@ var _ = Describe("odo analyze command tests", func() {
 
 			When("source files are in the directory", func() {
 				BeforeEach(func() {
-					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				})
 
 				It("analyze should return correct value", func() {
@@ -40,6 +40,8 @@ var _ = Describe("odo analyze command tests", func() {
 					Expect(helper.IsJSON(stdout)).To(BeTrue())
 					helper.JsonPathContentIs(stdout, "0.devfile", "nodejs")
 					helper.JsonPathContentIs(stdout, "0.devfileRegistry", "DefaultDevfileRegistry")
+					helper.JsonPathContentIs(stdout, "0.name", "node-echo")
+					helper.JsonPathExist(stdout, "0.ports")
 				})
 			})
 
