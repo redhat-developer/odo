@@ -12,7 +12,7 @@ The kind `deploy` is supported by the devfile format starting from version 2.2.0
 The `deploy` command is typically a *composite* command, composed of several *apply* and *exec* commands:
 - an `apply` command referencing an `image` component that, when applied, will build the image of the container to deploy, and push it to its registry,
 - an `apply` command referencing a [`kubernetes` component](https://devfile.io/docs/2.2.0/defining-kubernetes-resources) that, when applied, will create a Kubernetes resource in the cluster.
-- an `exec` command referencing a container component that, when applied, will run the command defined by `commandLine` inside a container started by a Kubernetes Job; read more about it [here](../development/devfile#how-odo-runs-exec-commands-in-deploy-mode).
+- an `exec` command referencing a container component that, when applied, will run the command defined by `commandLine` inside a container started by a Kubernetes Job; read more about it [here](../../development/devfile#how-odo-runs-exec-commands-in-deploy-mode).
 
 - With the following example `devfile.yaml` file, a container image will be built by using the `Dockerfile` present in the directory,
 the image will be pushed to its registry and a Kubernetes Deployment will be created in the cluster, using this freshly built image.
