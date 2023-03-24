@@ -173,18 +173,18 @@ func (mr *MockClientMockRecorder) SelectDevfile(ctx, flags, fs, dir interface{})
 }
 
 // SelectStarterProject mocks base method.
-func (m *MockClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error) {
+func (m *MockClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, isEmptyDir bool) (*v1alpha2.StarterProject, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectStarterProject", devfile, flags, fs, dir)
+	ret := m.ctrl.Call(m, "SelectStarterProject", devfile, flags, isEmptyDir)
 	ret0, _ := ret[0].(*v1alpha2.StarterProject)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectStarterProject indicates an expected call of SelectStarterProject.
-func (mr *MockClientMockRecorder) SelectStarterProject(devfile, flags, fs, dir interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SelectStarterProject(devfile, flags, isEmptyDir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectStarterProject", reflect.TypeOf((*MockClient)(nil).SelectStarterProject), devfile, flags, fs, dir)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectStarterProject", reflect.TypeOf((*MockClient)(nil).SelectStarterProject), devfile, flags, isEmptyDir)
 }
 
 // Validate mocks base method.
