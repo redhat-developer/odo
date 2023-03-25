@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -47,7 +48,7 @@ func (q QuarkusDetector) DoFrameworkDetection(language *model.Language, config s
 	}
 }
 
-func (q QuarkusDetector) DoPortsDetection(component *model.Component) {
+func (q QuarkusDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	ports := getQuarkusPortsFromEnvs()
 	if len(ports) > 0 {
@@ -79,7 +80,7 @@ func (q QuarkusDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "src/main/resources",
 			File: "application.yaml",
 		},
-	})
+	}, ctx)
 	if applicationFile == "" {
 		return
 	}

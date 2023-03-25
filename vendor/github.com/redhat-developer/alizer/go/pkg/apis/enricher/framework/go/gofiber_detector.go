@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"os"
 	"regexp"
 
@@ -31,8 +32,8 @@ func (g GoFiberDetector) DoFrameworkDetection(language *model.Language, goMod *m
 	}
 }
 
-func (g GoFiberDetector) DoPortsDetection(component *model.Component) {
-	files, err := utils.GetFilePathsFromRoot(component.Path)
+func (g GoFiberDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
+	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
 	if err != nil {
 		return
 	}

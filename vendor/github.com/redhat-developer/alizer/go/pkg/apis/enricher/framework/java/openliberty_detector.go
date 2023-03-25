@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"encoding/xml"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -38,7 +39,7 @@ func (o OpenLibertyDetector) DoFrameworkDetection(language *model.Language, conf
 	}
 }
 
-func (o OpenLibertyDetector) DoPortsDetection(component *model.Component) {
+func (o OpenLibertyDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
 			Dir:  "",
@@ -48,7 +49,7 @@ func (o OpenLibertyDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "src/main/liberty/config",
 			File: "server.xml",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

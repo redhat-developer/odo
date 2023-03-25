@@ -43,3 +43,7 @@ exceptions:
   - github.com/ActiveState/vt10x
   # MIT licence - wwhrd is not detecting it correctly
   - github.com/acomagu/bufpipe
+  # Apache License 2.0 - wwhrd is not detecting it correctly
+  - github.com/pjbgf/sha1cd
+  - github.com/pjbgf/sha1cd/ubc
+  - github.com/pjbgf/sha1cd/cgo

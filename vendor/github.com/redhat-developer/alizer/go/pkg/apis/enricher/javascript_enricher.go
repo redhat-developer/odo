@@ -11,12 +11,14 @@
 package enricher
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/javascript/nodejs"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	langfile "github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
 )
 
 type JavaScriptEnricher struct{}
@@ -41,12 +43,23 @@ func (j JavaScriptEnricher) DoEnrichLanguage(language *model.Language, files *[]
 	packageJson := utils.GetFile(files, "package.json")
 
 	if packageJson != "" {
-		language.Tools = []string{"NodeJs"}
+		language.Tools = []string{"NodeJs", "Node.js"}
+		var targetLanguage string
+		if utils.IsTagInPackageJsonFile(packageJson, "typescript") || utils.IsTagInPackageJsonFile(packageJson, "tslib") {
+			targetLanguage = "TypeScript"
+		} else {
+			targetLanguage = "JavaScript"
+		}
+		lang, err := langfile.Get().GetLanguageByName(targetLanguage)
+		if err == nil {
+			language.Name = lang.Name
+			language.Aliases = lang.Aliases
+		}
 		detectJavaScriptFrameworks(language, packageJson)
 	}
 }
 
-func (j JavaScriptEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
+func (j JavaScriptEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := ""
 	packageJsonPath := filepath.Join(component.Path, "package.json")
 	if _, err := os.Stat(packageJsonPath); err == nil {
@@ -78,7 +91,7 @@ func (j JavaScriptEnricher) DoEnrichComponent(component *model.Component, settin
 				for _, detector := range getJavaScriptFrameworkDetectors() {
 					for _, framework := range component.Languages[0].Frameworks {
 						if utils.Contains(detector.GetSupportedFrameworks(), framework) {
-							detector.DoPortsDetection(component)
+							detector.DoPortsDetection(component, ctx)
 						}
 					}
 				}

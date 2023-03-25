@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"encoding/xml"
 	"io/ioutil"
 	"os"
@@ -46,7 +47,7 @@ func (d DotNetDetector) DoFrameworkDetection(language *model.Language, configFil
 	}
 }
 
-func (d DotNetDetector) DoPortsDetection(component *model.Component) {
+func (d DotNetDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 }
 
 func getFrameworks(configFilePath string) string {

@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 
@@ -25,7 +26,7 @@ type GoEnricher struct{}
 type GoFrameworkDetector interface {
 	GetSupportedFrameworks() []string
 	DoFrameworkDetection(language *model.Language, goMod *modfile.File)
-	DoPortsDetection(component *model.Component)
+	DoPortsDetection(component *model.Component, ctx *context.Context)
 }
 
 func getGoFrameworkDetectors() []GoFrameworkDetector {
@@ -58,7 +59,7 @@ func (j GoEnricher) DoEnrichLanguage(language *model.Language, files *[]string) 
 	}
 }
 
-func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings) {
+func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
@@ -80,7 +81,7 @@ func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model
 				for _, detector := range getGoFrameworkDetectors() {
 					for _, framework := range component.Languages[0].Frameworks {
 						if utils.Contains(detector.GetSupportedFrameworks(), framework) {
-							detector.DoPortsDetection(component)
+							detector.DoPortsDetection(component, ctx)
 						}
 					}
 				}

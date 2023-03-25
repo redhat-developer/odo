@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -29,7 +30,7 @@ func (n NuxtDetector) DoFrameworkDetection(language *model.Language, config stri
 	}
 }
 
-func (n NuxtDetector) DoPortsDetection(component *model.Component) {
+func (n NuxtDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`--port=(\d*)`}
 	// check if port is set in start script in package.json
 	port := getPortFromStartScript(component.Path, regexes)
@@ -51,7 +52,7 @@ func (n NuxtDetector) DoPortsDetection(component *model.Component) {
 			Dir:  "",
 			File: "nuxt.config.js",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

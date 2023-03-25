@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -45,13 +46,13 @@ type ApplicationPropertiesFile struct {
 	File string
 }
 
-func (d DjangoDetector) DoPortsDetection(component *model.Component) {
+func (d DjangoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
 			Dir:  "",
 			File: "manage.py",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"os"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -29,7 +30,7 @@ func (r ReactJsDetector) DoFrameworkDetection(language *model.Language, config s
 	}
 }
 
-func (r ReactJsDetector) DoPortsDetection(component *model.Component) {
+func (r ReactJsDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	portValue := os.Getenv("PORT")
 	if port, err := utils.GetValidPort(portValue); err == nil {

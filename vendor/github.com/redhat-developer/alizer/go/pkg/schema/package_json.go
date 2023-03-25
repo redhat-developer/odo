@@ -13,6 +13,7 @@ package schema
 type PackageJson struct {
 	Name             string            `json:"name"`
 	Dependencies     map[string]string `json:"dependencies"`
+	DevDependencies  map[string]string `json:"devDependencies"`
 	PeerDependencies map[string]string `json:"peerDependencies"`
 	Scripts          Script            `json:"scripts"`
 }

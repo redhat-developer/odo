@@ -11,6 +11,7 @@
 package enricher
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -35,13 +36,13 @@ type ApplicationPropertiesFile struct {
 	File string
 }
 
-func (b BeegoDetector) DoPortsDetection(component *model.Component) {
+func (b BeegoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
 			Dir:  "conf",
 			File: "app.conf",
 		},
-	})
+	}, ctx)
 	if err != nil {
 		return
 	}

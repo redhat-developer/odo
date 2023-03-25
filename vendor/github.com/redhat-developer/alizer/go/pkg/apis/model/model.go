@@ -67,3 +67,8 @@ type PortMatchSubRule struct {
 	Regex    *regexp.Regexp
 	SubRegex *regexp.Regexp
 }
+
+type DevFileScore struct {
+	DevFileIndex int
+	Score        int
+}
