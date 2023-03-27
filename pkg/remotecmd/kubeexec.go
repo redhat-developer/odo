@@ -203,7 +203,12 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		return nil
 	}
 
-	children, err := k.getProcessChildren(ppid, podName, containerName)
+	allProcesses, err := k.getAllProcesses(podName, containerName)
+	if err != nil {
+		return err
+	}
+
+	children, err := k.getProcessChildren(allProcesses, ppid)
 	if err != nil {
 		return err
 	}
@@ -318,40 +323,70 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	return process, nil
 }
 
-// getProcessChildren returns all the children (either direct or indirect) of the specified process in the given container.
-// It works by reading the /proc/<pid>/task/<tid>/children file, which is a space-separated list of children,
-// and then recursively finds the children for each child.
-// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm.
-func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
+// getAllProcesses returns a map of all the processes and their direct children:
+// i) the key is the process PID;
+// ii) and the value is a list of all its direct children.
+// It does so by reading all /proc/<pid>/stat files. More details on https://man7.org/linux/man-pages/man5/proc.5.html.
+func (k *kubeExecProcessHandler) getAllProcesses(podName string, containerName string) (map[int][]int, error) {
+	stdout, stderr, err := k.execClient.ExecuteCommand([]string{ShellExecutable, "-c", "cat /proc/*/stat || true"},
+		podName, containerName, false, nil, nil)
+	if err != nil {
+		klog.V(7).Infof("stdout: %s\n", strings.Join(stdout, "\n"))
+		klog.V(7).Infof("stderr: %s\n", strings.Join(stderr, "\n"))
+		return nil, err
+	}
+
+	allProcesses := make(map[int][]int)
+	for _, line := range stdout {
+		var pid int
+		_, err = fmt.Sscanf(line, "%d ", &pid)
+		if err != nil {
+			return nil, err
+		}
+
+		// Last index of the last ")" character to unambiguously parse the content.
+		// See https://unix.stackexchange.com/questions/558239/way-to-unambiguously-parse-proc-pid-stat-given-arbitrary-contents-of-name-fi
+		i := strings.LastIndex(line, ")")
+		if i < 0 {
+			continue
+		}
+
+		// At this point, "i" is the index of the last ")" character, and we have an additional space before the process state character, hence the "i+2".
+		// For example:
+		// 87 (main) S 0 81 81 0 -1 ...
+		var state byte
+		var ppid int
+		_, err = fmt.Sscanf(line[i+2:], "%c %d", &state, &ppid)
+		if err != nil {
+			return nil, err
+		}
+
+		allProcesses[ppid] = append(allProcesses[ppid], pid)
+	}
+
+	return allProcesses, nil
+}
+
+// getProcessChildren return an ordered list of children PIDs of the given pid,
+// using a recursive post-order traversal algorithm so that the returned list can start with the deepest children processes.
+// The allProcesses map is the parent-children process hierarchy of all processes, where the key is a parent PID,
+// and the value is a list of all its direct children. See the getAllProcesses method.
+func (k *kubeExecProcessHandler) getProcessChildren(allProcesses map[int][]int, pid int) ([]int, error) {
 	if pid <= 0 {
 		return nil, fmt.Errorf("invalid pid: %d", pid)
 	}
 
-	stdout, _, err := k.execClient.ExecuteCommand(
-		[]string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid)},
-		podName, containerName, false, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var children []int
-	for _, line := range stdout {
-		l := strings.Split(strings.TrimSpace(line), " ")
-		for _, p := range l {
-			c, err := strconv.Atoi(p)
-			if err != nil {
-				return children, err
-			}
-			childChildren, err := k.getProcessChildren(c, podName, containerName)
-			if err != nil {
-				return children, err
-			}
-			children = append(children, childChildren...)
-			children = append(children, c)
+	var allChildren []int
+	for _, child := range allProcesses[pid] {
+		processChildren, err := k.getProcessChildren(allProcesses, child)
+		if err != nil {
+			return nil, err
 		}
+		allChildren = append(allChildren, processChildren...)
 	}
+	allChildren = append(allChildren, pid)
 
-	return children, nil
+	return allChildren, nil
 }
 
 // getPidFileForCommand returns the path to the PID file in the remote container.
