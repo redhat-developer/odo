@@ -12,7 +12,6 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
@@ -96,22 +95,28 @@ func (o *deployHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml
 func (o *deployHandler) Execute(command v1alpha2.Command) error {
+	policy, err := o.kubeClient.GetCurrentNamespacePolicy()
+	if err != nil {
+		return err
+	}
 	podTemplateSpec, err := generator.GetPodTemplateSpec(o.devfileObj, generator.PodTemplateParams{
 		Options: common.DevfileOptions{
 			FilterByName: command.Exec.Component,
 		},
+		PodSecurityAdmissionPolicy: policy,
 	})
 	if err != nil {
 		return err
 	}
-	containerComps := podTemplateSpec.Spec.Containers
-	if len(containerComps) != 1 {
+	// Setting the restart policy to "never" so that pods are kept around after the job finishes execution; this is helpful in obtaining logs to debug.
+	podTemplateSpec.Spec.RestartPolicy = "Never"
+
+	if len(podTemplateSpec.Spec.Containers) != 1 {
 		return fmt.Errorf("could not find the component")
 	}
 
-	containerComp := containerComps[0]
-	containerComp.Command = []string{"/bin/sh"}
-	containerComp.Args = getCmdline(command)
+	podTemplateSpec.Spec.Containers[0].Command = []string{"/bin/sh"}
+	podTemplateSpec.Spec.Containers[0].Args = getCmdline(command)
 
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component
@@ -128,13 +133,7 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: getJobName(),
 		},
-		PodTemplateSpec: corev1.PodTemplateSpec{
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{containerComp},
-				// Setting the restart policy to "never" so that pods are kept around after the job finishes execution; this is helpful in obtaining logs to debug.
-				RestartPolicy: "Never",
-			},
-		},
+		PodTemplateSpec: *podTemplateSpec,
 		SpecParams: odogenerator.JobSpecParams{
 			CompletionMode:          &completionMode,
 			TTLSecondsAfterFinished: pointer.Int32(60),
