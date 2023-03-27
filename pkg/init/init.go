@@ -208,14 +208,10 @@ func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName stri
 }
 
 // SelectStarterProject calls SelectStarterProject methods of the adequate backend
-func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error) {
+func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, isEmptyDir bool) (*v1alpha2.StarterProject, error) {
 	var backend backend.InitBackend
 
-	onlyDevfile, err := location.DirContainsOnlyDevfile(fs, dir)
-	if err != nil {
-		return nil, err
-	}
-	if onlyDevfile && len(flags) == 0 {
+	if isEmptyDir && len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else if len(flags) == 0 {
 		backend = o.alizerBackend

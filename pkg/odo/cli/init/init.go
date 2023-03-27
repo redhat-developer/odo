@@ -213,7 +213,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		return parser.DevfileObj{}, "", "", nil, nil, err
 	}
 
-	starterInfo, err = o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, workingDir)
+	starterInfo, err = o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, isEmptyDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", "", nil, nil, err
 	}

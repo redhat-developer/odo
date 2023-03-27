@@ -193,6 +193,41 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
+			It("should ask to download the starter project when the devfile stack has extra files", func() {
+				command := []string{"odo", "init"}
+				starter := "go-starter"
+				componentName := "my-go-app"
+				devfileVersion := "2.0.0"
+
+				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+					helper.ExpectString(ctx, "Select language")
+					helper.SendLine(ctx, "Go")
+
+					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select version")
+					helper.SendLine(ctx, devfileVersion)
+
+					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Which starter project do you want to use")
+					helper.SendLine(ctx, starter)
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, componentName)
+
+					helper.ExpectString(ctx, "Your new component 'my-go-app' is ready in the current directory")
+
+				})
+
+				Expect(err).To(BeNil())
+				Expect(output).To(ContainSubstring("Your new component 'my-go-app' is ready in the current directory"))
+				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml", "kubernetes", "docker", "go.mod", "main.go"))
+			})
+
 			It("should download correct devfile-starter", func() {
 
 				command := []string{"odo", "init"}

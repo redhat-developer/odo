@@ -45,7 +45,7 @@ type Client interface {
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
 	// depending on the flags. If not starter project is selected, a nil starter is returned
-	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error)
+	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, isEmptyDir bool) (*v1alpha2.StarterProject, error)
 
 	// DownloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
 	// WARNING: This will first remove all the content of dest.
