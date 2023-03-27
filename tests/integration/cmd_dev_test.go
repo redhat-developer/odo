@@ -1807,11 +1807,12 @@ CMD ["npm", "start"]
 					})
 
 					It("should not build images when odo dev is run", func() {
-						_, sessionOut, _, err := helper.DevModeShouldFail(
+						_, sessionOut, _, err := helper.WaitForDevModeToContain(
 							helper.DevSessionOpts{
 								EnvVars: env,
 							},
-							"failed to retrieve "+url)
+							"failed to retrieve "+url,
+							false)
 						Expect(err).To(BeNil())
 						Expect(sessionOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
 						Expect(sessionOut).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
@@ -2658,47 +2659,28 @@ CMD ["npm", "start"]
 		}))
 	}
 
-	Context("using Kubernetes cluster", func() {
+	Context("using a default namespace", func() {
 		BeforeEach(func() {
-			if os.Getenv("KUBERNETES") != "true" {
-				Skip("This is a Kubernetes specific scenario, skipping")
-			}
+			commonVar.CliRunner.SetProject("default")
 		})
-
-		It("should run odo dev successfully on default namespace", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-
-			session, _, errContents, _, err := helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-			defer func() {
-				session.Stop()
-				session.WaitEnd()
-			}()
-			helper.DontMatchAllInOutput(string(errContents), []string{"odo may not work as expected in the default project"})
+		AfterEach(func() {
+			commonVar.CliRunner.SetProject(commonVar.Project)
+		})
+		When("a component is created", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			})
+			It("should print warning about default namespace when running odo dev", func() {
+				namespace := "project"
+				if helper.IsKubernetesCluster() {
+					namespace = "namespace"
+				}
+				helper.WaitForDevModeToContain(helper.DevSessionOpts{}, fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace), true)
+			})
 		})
 	})
-
-	/* TODO(feloy) Issue #5591
-	Context("using OpenShift cluster", func() {
-		BeforeEach(func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-		})
-		It("should run odo dev successfully on default namespace", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-
-			session, _, errContents, err := helper.StartDevMode(helper.DevSessionOpts{})
-			Expect(err).ToNot(HaveOccurred())
-			defer session.Stop()
-			helper.MatchAllInOutput(string(errContents), []string{"odo may not work as expected in the default project"})
-		})
-	})
-	*/
 
 	// Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
 	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238

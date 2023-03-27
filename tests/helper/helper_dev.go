@@ -255,18 +255,22 @@ func RunDevMode(options DevSessionOpts, inside func(session *gexec.Session, outC
 	return nil
 }
 
-// DevModeShouldFail runs `odo dev` with an intention to fail, and checks for a given substring
+// WaitForDevModeToContain runs `odo dev` until it contains a given substring in output or errOut(depending on checkErrOut arg).
 // `odo dev` runs in an infinite reconciliation loop, and hence running it with Cmd will not work for a lot of failing cases,
 // this function is helpful in such cases.
 // TODO(pvala): Modify StartDevMode to take substring arg into account, and replace this method with it.
-func DevModeShouldFail(options DevSessionOpts, substring string) (DevSession, []byte, []byte, error) {
+func WaitForDevModeToContain(options DevSessionOpts, substring string, checkErrOut bool) (DevSession, []byte, []byte, error) {
 	args := []string{"dev", "--random-ports"}
 	args = append(args, options.CmdlineArgs...)
 	if options.RunOnPodman {
 		args = append(args, "--platform", "podman")
 	}
 	session := Cmd("odo", args...).AddEnv(options.EnvVars...).Runner().session
-	WaitForOutputToContain(substring, 360, 10, session)
+	if checkErrOut {
+		WaitForErroutToContain(substring, 360, 10, session)
+	} else {
+		WaitForOutputToContain(substring, 360, 10, session)
+	}
 	result := DevSession{
 		session: session,
 	}

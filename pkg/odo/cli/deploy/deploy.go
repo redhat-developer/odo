@@ -63,6 +63,8 @@ func (o *DeployOptions) Validate(ctx context.Context) error {
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
+
+	genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	componentName := odocontext.GetComponentName(ctx)
 	err := dfutil.ValidateK8sResourceName("component name", componentName)
 	return err
