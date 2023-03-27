@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	. "github.com/onsi/gomega"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/redhat-developer/odo/pkg/labels"
@@ -68,6 +69,19 @@ func (o *ClusterComponent) GetPodDef() *corev1.Pod {
 	err := json.Unmarshal(bufferOutput, &podDef)
 	Expect(err).ToNot(HaveOccurred())
 	return &podDef
+}
+
+func (o *ClusterComponent) GetJobDef() *batchv1.Job {
+	var jobDef batchv1.Job
+	var jobName string
+	Eventually(func() string {
+		jobName = o.cli.GetJobNameByComponent(o.name, o.namespace)
+		return jobName
+	}).Should(Not(BeEmpty()))
+	bufferOutput := o.cli.Run("get", "jobs", jobName, "-o", "json").Out.Contents()
+	err := json.Unmarshal(bufferOutput, &jobDef)
+	Expect(err).ToNot(HaveOccurred())
+	return &jobDef
 }
 
 func (o *ClusterComponent) GetPodLogs() string {

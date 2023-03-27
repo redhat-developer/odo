@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/kubectl/pkg/scheme"
@@ -108,6 +109,11 @@ func (o *PodmanComponent) GetPodDef() *corev1.Pod {
 	_, _, err = serializer.Decode(resultBytes, nil, &pod)
 	Expect(err).ToNot(HaveOccurred())
 	return &pod
+}
+
+func (o *PodmanComponent) GetJobDef() *batchv1.Job {
+	// Not implemented for Podman
+	return nil
 }
 
 func (o *PodmanComponent) GetLabels() map[string]string {

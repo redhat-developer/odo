@@ -11,6 +11,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
+	"github.com/redhat-developer/odo/pkg/labels"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -577,5 +579,36 @@ CMD ["npm", "start"]
 			})
 		})
 
+	})
+
+	Context("deploying devfile with long-running exec", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec-long.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+
+		When("pod security is enforced as restricted", func() {
+			BeforeEach(func() {
+				commonVar.CliRunner.SetLabelsOnNamespace(
+					commonVar.Project,
+					"pod-security.kubernetes.io/enforce=restricted",
+					"pod-security.kubernetes.io/enforce-version=latest",
+				)
+			})
+
+			It("should set securitycontext for podsecurity admission on job's pod template", func() {
+				if os.Getenv("KUBERNETES") != "true" {
+					Skip("This is a Kubernetes specific scenario, skipping")
+				}
+				helper.Cmd("odo", "deploy").Should(func(session *gexec.Session) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDeployMode, commonVar.Project, commonVar.CliRunner)
+					jobDef := component.GetJobDef()
+					Expect(*jobDef.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeTrue())
+					Expect(string(jobDef.Spec.Template.Spec.SecurityContext.SeccompProfile.Type)).To(Equal("RuntimeDefault"))
+				})
+			})
+		})
 	})
 })
