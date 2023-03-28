@@ -102,6 +102,11 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		return err
 	}
 
+	buildCmd, err := libdevfile.ValidateAndGetCommand(parameters.Devfile, parameters.StartOptions.BuildCommand, devfilev1.BuildCommandGroupKind)
+	if err != nil {
+		return err
+	}
+
 	commandType, err := parsercommon.GetCommandType(cmd)
 	if err != nil {
 		return err
@@ -148,7 +153,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			return libdevfile.Build(ctx, parameters.Devfile, parameters.StartOptions.BuildCommand, execHandler)
 		}
 		if running {
-			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
+			if buildCmd.Exec == nil || !util.SafeGetBool(buildCmd.Exec.HotReloadCapable) {
 				if err = doExecuteBuildCommand(); err != nil {
 					componentStatus.SetState(watch.StateReady)
 					return err
