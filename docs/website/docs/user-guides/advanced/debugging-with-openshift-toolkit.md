@@ -1,6 +1,6 @@
 ---
 title: Running an Application with OpenShift Toolkit
-sidebar_position: 1
+sidebar_position: 7
 ---
 
 Debugging is an unavoidable part of development, and it can prove even more difficult when developing an application that runs remotely.
@@ -22,41 +22,41 @@ In the plugin window, you should be able to see the cluster you are logged into 
 
 ## Step 1. Start the Dev session to run the application on cluster
 
-Right click on "my-nodejs-app" and select "Start on Dev".
+1. Right click on "my-nodejs-app" and select "Start on Dev".
 
-![](/img/docs/user-guides/advanced/Start%20Dev%20Session.png "Starting Dev session")
+![Starting Dev session](../../assets/user-guides/advanced/Start%20Dev%20Session.png)
 
-Wait until the application is running on the cluster.
+2. Wait until the application is running on the cluster.
 
-![](/img/docs/user-guides/advanced/Wait%20until%20Dev%20Session%20finishes.png "Wait until Dev session finishes")
+![Wait until Dev session finishes](../../assets/user-guides/advanced/Wait%20until%20Dev%20Session%20finishes.png)
 
 Our application is now available at 127.0.0.1:20001. The debug server is running at 127.0.0.1:20002.
 
 ## Step 2. Start the Debugging session
 
-Right click on "my-nodejs-app" and select "Debug".
+1. Right click on "my-nodejs-app" and select "Debug".
 
-![](/img/docs/user-guides/advanced/Select%20Debug%20Session.png "Select Debug")
+![Select Debug](../../assets/user-guides/advanced/Select%20Debug%20Session.png)
 
-Debug session should have started successfully at the debug port, in this case, 3000. And you must be looking at the "DEBUG CONSOLE".
+2. Debug session should have started successfully at the debug port, in this case, 3000. And you must be looking at the "DEBUG CONSOLE".
 
-![](/img/docs/user-guides/advanced/Debug%20Session%20Starts.png "Debug session starts")
+![Debug session starts](../../assets/user-guides/advanced/Debug%20Session%20Starts.png)
 
 ## Step 3. Set Breakpoints in the application
 
 Now that the debug session is running, we can set breakpoints in the code.
 
-Open 'server.js' file if you haven't opened it already. We will set a breakpoint on Line 55 by clicking the red dot that appears right next to line numbers.
+1. Open 'server.js' file if you haven't opened it already. We will set a breakpoint on Line 55 by clicking the red dot that appears right next to line numbers.
 
-![](/img/docs/user-guides/advanced/Add%20Breakpoint.png "Add breakpoint")
+![Add breakpoint](../../assets/user-guides/advanced/Add%20Breakpoint.png)
 
-From a new terminal, or a browser window, ping the url at which the application is available, in this case, it is 127.0.0.1:20001.
+2. From a new terminal, or a browser window, ping the url at which the application is available, in this case, it is 127.0.0.1:20001.
 
-![](/img/docs/user-guides/advanced/Ping%20Application.png "Ping Application")
+![Ping Application](../../assets/user-guides/advanced/Ping%20Application.png)
 
-The debug session should halt execution at the breakpoint, at which point you can start debugging the application.
+3. The debug session should halt execution at the breakpoint, at which point you can start debugging the application.
 
-![](/img/docs/user-guides/advanced/Application%20Debugged.png "Application Debugged")
+![Application Debugged](../../assets/user-guides/advanced/Application%20Debugged.png)
 
 
 To learn more about running and debugging an application on cluster with OpenShift Toolkit, see the links below.
