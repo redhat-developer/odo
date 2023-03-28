@@ -1,5 +1,5 @@
 ---
-title: Running an Application with OpenShift Toolkit
+title: Debugging an Application with OpenShift Toolkit
 sidebar_position: 7
 ---
 
@@ -13,12 +13,16 @@ However, this task is made absurdly simple with the help of OpenShift Toolkit.
 
 ## Prerequisites
 1. [You have logged in to your cluster](../quickstart/nodejs.md#step-1-connect-to-your-cluster-and-create-a-new-namespace-or-project).
-2. [You have initialized a Node.js application with odo](../quickstart/nodejs.md#step-2-initializing-your-application--odo-init-).
-3. Open the application in the IDE.
-4. Install OpenShift Toolkit Plugin in your preferred VS Code or a Jet Brains IDE.
+2. [You have initialized a Node.js application with odo](../quickstart/nodejs.md#step-2-initializing-your-application-odo-init).
+:::note
+ This tutorial uses a nodejs application, but you can use any application that has Devfile with debug command defined in it. If your Devfile does not contain a debug command, refer [Configure Devfile to support debugging](#configure-devfile-to-support-debugging).
+:::
+3. You have installed OpenShift Toolkit Plugin in your preferred VS Code or a Jet Brains IDE.
+4. You have opened the application in the IDE.
 
 In the plugin window, you should be able to see the cluster you are logged into in "APPLICATION EXPLORER" section, and your component "my-nodejs-app" in "COMPONENTS" section.
 
+![Pre-requisite Setup](../../assets/user-guides/advanced/Prerequisite%20Setup.png)
 
 ## Step 1. Start the Dev session to run the application on cluster
 
@@ -26,7 +30,7 @@ In the plugin window, you should be able to see the cluster you are logged into 
 
 ![Starting Dev session](../../assets/user-guides/advanced/Start%20Dev%20Session.png)
 
-2. Wait until the application is running on the cluster.
+2. Wait until the application is running on the cluster, i.e. until you see "Keyboard Commands" appear in your "TERMINAL" window.
 
 ![Wait until Dev session finishes](../../assets/user-guides/advanced/Wait%20until%20Dev%20Session%20finishes.png)
 
@@ -59,6 +63,217 @@ Now that the debug session is running, we can set breakpoints in the code.
 ![Application Debugged](../../assets/user-guides/advanced/Application%20Debugged.png)
 
 
+## Configure Devfile to support debugging
+Here, we are taking example of a Go devfile that currently does not have a debug command out-of-the-box.
+<details>
+<summary>Sample Go Devfile</summary>
+
+```yaml
+schemaVersion: 2.1.0
+metadata:
+  description: "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software."
+  displayName: Go Runtime
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
+  name: go
+  projectType: Go
+  provider: Red Hat
+  language: Go
+  tags:
+    - Go
+  version: 1.0.2
+starterProjects:
+  - name: go-starter
+    description: A Go project with a simple HTTP server
+    git:
+      checkoutFrom:
+        revision: main
+      remotes:
+        origin: https://github.com/devfile-samples/devfile-stack-go.git
+components:
+  - container:
+      endpoints:
+        - name: http-go
+          targetPort: 8080
+      image: registry.access.redhat.com/ubi9/go-toolset:latest
+      args: ["tail", "-f", "/dev/null"]
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+commands:
+  - exec:
+      env:
+        - name: GOPATH
+          value: ${PROJECT_SOURCE}/.go
+        - name: GOCACHE
+          value: ${PROJECT_SOURCE}/.cache
+      commandLine: go build main.go
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+  - exec:
+      commandLine: ./main
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: run
+```
+</details>
+
+1. Add an exec command with `group`:`kind` set to `debug`. The debugger tool you use must be able to start a debug server that we can later on connect to. The binary for your debugger tool should be made available by the container component image.
+```yaml
+commands:
+- exec:
+    env:
+    - name: GOPATH
+      value: ${PROJECT_SOURCE}/.go
+    - name: GOCACHE
+      value: ${PROJECT_SOURCE}/.cache
+    commandLine: |
+        dlv \
+          --listen=127.0.0.1:${DEBUG_PORT} \
+          --only-same-user=false \
+          --headless=true \
+          --api-version=2 \
+          --accept-multiclient \
+          debug --continue main.go
+    component: runtime
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: ${PROJECT_SOURCE}
+  id: debug
+```
+For the example above, we use [`dlv`](https://github.com/go-delve/delve) debugger for debugging a Go application and it listens to port exposed by env variable *DEBUG_PORT* inside the container. The debug command references a container component called "runtime".
+
+2. Add Debug endpoint to the container component's [`endpoints`](https://devfile.io/docs/2.2.0/defining-endpoints) with `exposure` set to `none` so that it cannot be accessed from outside, and export the debug port number via `DEBUG_PORT` `env` variable.
+
+The debug endpoint name must be named **debug** or be prefixed by **debug** so that `odo` can recognize it as a debug port.
+
+```yaml
+components:
+  - container:
+      endpoints:
+      - name: http-go
+        targetPort: 8080
+        # highlight-start
+      - exposure: none
+        name: debug
+        targetPort: 5858
+        # highlight-end
+      image: registry.access.redhat.com/ubi9/go-toolset:latest
+      args: ["tail", "-f", "/dev/null"]
+    # highlight-start
+      env:
+      - name: DEBUG_PORT
+        value: '5858'
+    # highlight-end
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+```
+
+For the example above, we assume that the "runtime" container's `image` provides the binary for delve debugger. We also add an endpoint called "debug" with `targetPort` set to *5858* and `exposure` set to `none`. We also export debug port number via `env` variable called `DEBUG_PORT`.
+
+The final Devfile should look like the following:
+<details>
+<summary>Go Devfile configured for debugging</summary>
+
+```yaml showLineNumbers
+commands:
+- exec:
+    commandLine: go build main.go
+    component: runtime
+    env:
+    - name: GOPATH
+      value: ${PROJECT_SOURCE}/.go
+    - name: GOCACHE
+      value: ${PROJECT_SOURCE}/.cache
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: build
+- exec:
+    commandLine: ./main
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+# highlight-start
+- exec:
+    env:
+    - name: GOPATH
+      value: ${PROJECT_SOURCE}/.go
+    - name: GOCACHE
+      value: ${PROJECT_SOURCE}/.cache
+    commandLine: |
+        dlv \
+          --listen=127.0.0.1:${DEBUG_PORT} \
+          --only-same-user=false \
+          --headless=true \
+          --api-version=2 \
+          --accept-multiclient \
+          debug --continue main.go
+    component: runtime
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: ${PROJECT_SOURCE}
+  id: debug
+# highlight-end
+components:
+- container:
+    args:
+    - tail
+    - -f
+    - /dev/null
+    endpoints:
+    - name: http-go
+      targetPort: 8080
+# highlight-start
+    - name: debug
+      exposure: none
+      targetPort: 5858
+    env:
+    - name: DEBUG_PORT
+      value: '5858'
+# highlight-end
+    image: registry.access.redhat.com/ubi9/go-toolset:latest
+    memoryLimit: 1024Mi
+    mountSources: true
+  name: runtime
+metadata:
+  description: Go is an open source programming language that makes it easy to build
+    simple, reliable, and efficient software.
+  displayName: Go Runtime
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
+  language: Go
+  name: my-go-app
+  projectType: Go
+  provider: Red Hat
+  tags:
+  - Go
+  version: 1.0.2
+schemaVersion: 2.1.0
+starterProjects:
+- description: A Go project with a simple HTTP server
+  git:
+    checkoutFrom:
+      revision: main
+    remotes:
+      origin: https://github.com/devfile-samples/devfile-stack-go.git
+  name: go-starter
+```
+</details>
+
+## Extra Resources
 To learn more about running and debugging an application on cluster with OpenShift Toolkit, see the links below.
 1. [Using OpenShift Toolkit - project with existing devfile](https://www.youtube.com/watch?v=2jfV0QqG8Sg)
 2. [Using OpenShift Toolkit with two microservices](https://www.youtube.com/watch?v=8SpV6UZ23_c)
