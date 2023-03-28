@@ -61,11 +61,38 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("a component is bootstrapped and pushed", func() {
+	When("a component is bootstrapped", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+		})
+
+		It("should fail to run odo dev when not connected to any cluster", Label(helper.LabelNoCluster), func() {
+			errOut := helper.Cmd("odo", "dev").ShouldFail().Err()
+			Expect(errOut).To(ContainSubstring("unable to access the cluster"))
+		})
+		It("should fail to run odo dev when podman is nil", Label(helper.LabelPodman), func() {
+			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo").ShouldFail().Err()
+			Expect(errOut).To(ContainSubstring("unable to access podman"))
+		})
+		When("using a default namespace", func() {
+			BeforeEach(func() {
+				commonVar.CliRunner.SetProject("default")
+			})
+			AfterEach(func() {
+				commonVar.CliRunner.SetProject(commonVar.Project)
+			})
+			It("should print warning about default namespace when running odo dev", func() {
+				namespace := "project"
+				if helper.IsKubernetesCluster() {
+					namespace = "namespace"
+				}
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+					Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace)))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
 		})
 
 		It("should add annotation to use ImageStreams", func() {
@@ -2658,29 +2685,6 @@ CMD ["npm", "start"]
 			})
 		}))
 	}
-
-	Context("using a default namespace", func() {
-		BeforeEach(func() {
-			commonVar.CliRunner.SetProject("default")
-		})
-		AfterEach(func() {
-			commonVar.CliRunner.SetProject(commonVar.Project)
-		})
-		When("a component is created", func() {
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			})
-			It("should print warning about default namespace when running odo dev", func() {
-				namespace := "project"
-				if helper.IsKubernetesCluster() {
-					namespace = "namespace"
-				}
-				helper.WaitForDevModeToContain(helper.DevSessionOpts{}, fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace), true)
-			})
-		})
-	})
 
 	// Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
 	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238

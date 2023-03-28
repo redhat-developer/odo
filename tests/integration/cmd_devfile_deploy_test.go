@@ -43,22 +43,20 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 		})
 	})
-	When("using a default namespace", func() {
+	When("a component is bootstrapped", func() {
 		BeforeEach(func() {
-			commonVar.CliRunner.SetProject("default")
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-deploy.yaml")).ShouldPass()
 		})
-		AfterEach(func() {
-			helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
-			commonVar.CliRunner.SetProject(commonVar.Project)
-		})
-		When("deploying a devfile with deploy command", func() {
+		When("using a default namespace", func() {
 			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
-					path.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+				commonVar.CliRunner.SetProject("default")
 			})
+			AfterEach(func() {
+				helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
+				commonVar.CliRunner.SetProject(commonVar.Project)
+			})
+
 			It("should display warning when running the deploy command", func() {
 				errOut := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldRun().Err()
 				namespace := "project"
@@ -68,7 +66,10 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				Expect(errOut).To(ContainSubstring(fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace)))
 			})
 		})
-
+		It("should fail to run odo deploy when not connected to any cluster", Label(helper.LabelNoCluster), func() {
+			errOut := helper.Cmd("odo", "deploy").ShouldFail().Err()
+			Expect(errOut).To(ContainSubstring("unable to access the cluster"))
+		})
 	})
 	for _, ctx := range []struct {
 		title       string
