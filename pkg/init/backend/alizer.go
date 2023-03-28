@@ -63,7 +63,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 	if !confirm {
 		return nil, nil
 	}
-	return alizer.NewDetectionResult(selected, registry, appPorts, defaultVersion), nil
+	return alizer.NewDetectionResult(selected, registry, appPorts, defaultVersion, ""), nil
 }
 
 func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error) {

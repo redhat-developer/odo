@@ -17,4 +17,6 @@ type DetectionResult struct {
 	// ApplicationPorts represents the list of ports detected
 	ApplicationPorts []int  `json:"ports,omitempty"`
 	DevfileVersion   string `json:"devfileVersion,omitempty"`
+	// Name represents the project/application name as detected by alizer
+	Name string `json:"name,omitempty"`
 }

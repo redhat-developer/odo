@@ -58,7 +58,11 @@ func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	result := alizer.NewDetectionResult(df, reg, appPorts, defaultVersion)
+	name, err := o.clientset.AlizerClient.DetectName(workingDir)
+	if err != nil {
+		return nil, err
+	}
+	result := alizer.NewDetectionResult(df, reg, appPorts, defaultVersion, name)
 	return []api.DetectionResult{*result}, nil
 }
 

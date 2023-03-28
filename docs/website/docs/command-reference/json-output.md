@@ -22,6 +22,7 @@ The structures used to return information using JSON output are defined in [the 
 The `analyze` command analyzes the files in the current directory and returns the following information:
 - the best devfiles to use, from the devfiles in the registries defined in the list of preferred registries with the command `odo preference view`
 - the ports used in the application, if that was possible to determine.
+- the name of the application, if that was possible to determine; else it returns name of the current directory.
 
 The output of this command contains a list of devfile name and registry name:
 
@@ -35,7 +36,8 @@ odo analyze -o json
 	    "devfileRegistry": "DefaultDevfileRegistry",
         "ports": [
             3000
-        ]
+        ],
+        "name": "node-echo"
 	}
 ]
 ```

@@ -319,6 +319,12 @@ func JsonPathDoesNotExist(json string, path string) {
 		fmt.Sprintf("content should not contain %q but is %q", path, result.String()))
 }
 
+// JsonPathExist expects that the content of the path exists in the JSON string
+func JsonPathExist(json string, path string) {
+	result := gjson.Get(json, path)
+	Expect(result.Exists()).To(BeTrue(),
+		fmt.Sprintf("content should contain %q", path))
+}
 func JsonPathContentIsValidUserPort(json string, path string) {
 	result := gjson.Get(json, path)
 	intVal, err := strconv.Atoi(result.String())
