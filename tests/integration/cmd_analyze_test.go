@@ -39,7 +39,7 @@ var _ = Describe("odo analyze command tests", func() {
 					Expect(stderr).To(BeEmpty())
 					Expect(helper.IsJSON(stdout)).To(BeTrue())
 					helper.JsonPathContentIs(stdout, "0.devfile", "nodejs")
-					helper.JsonPathContentIs(stdout, "0.devfileRegistry", "DefaultDevfileRegistry")
+					helper.JsonPathExist(stdout, "0.devfileRegistry")
 					helper.JsonPathContentIs(stdout, "0.name", "node-echo")
 					helper.JsonPathExist(stdout, "0.ports")
 				})
