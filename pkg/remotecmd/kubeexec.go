@@ -203,12 +203,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		return nil
 	}
 
-	allProcesses, err := k.getAllProcesses(podName, containerName)
-	if err != nil {
-		return err
-	}
-
-	children, err := k.getProcessChildren(allProcesses, ppid)
+	children, err := k.getProcessChildren(ppid, podName, containerName)
 	if err != nil {
 		return err
 	}
@@ -367,18 +362,30 @@ func (k *kubeExecProcessHandler) getAllProcesses(podName string, containerName s
 	return allProcesses, nil
 }
 
-// getProcessChildren return an ordered list of children PIDs of the given pid,
-// using a recursive post-order traversal algorithm so that the returned list can start with the deepest children processes.
-// The allProcesses map is the parent-children process hierarchy of all processes, where the key is a parent PID,
-// and the value is a list of all its direct children. See the getAllProcesses method.
-func (k *kubeExecProcessHandler) getProcessChildren(allProcesses map[int][]int, pid int) ([]int, error) {
+// getProcessChildren returns all the children (either direct or indirect) of the specified process in the given container.
+// It works by reading the /proc/<pid>/stat files, giving PPID for each PID.
+// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm.
+func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
 	if pid <= 0 {
 		return nil, fmt.Errorf("invalid pid: %d", pid)
 	}
 
+	allProcesses, err := k.getAllProcesses(podName, containerName)
+	if err != nil {
+		return nil, err
+	}
+
+	return k.getProcessChildrenRec(allProcesses, pid)
+}
+
+// getProcessChildrenRec return an ordered list of children PIDs of the given pid,
+// using a recursive post-order traversal algorithm so that the returned list can start with the deepest children processes.
+// The allProcesses map is the parent-children process hierarchy of all processes, where the key is a parent PID,
+// and the value is a list of all its direct children. See the getAllProcesses method.
+func (k *kubeExecProcessHandler) getProcessChildrenRec(allProcesses map[int][]int, pid int) ([]int, error) {
 	var allChildren []int
 	for _, child := range allProcesses[pid] {
-		processChildren, err := k.getProcessChildren(allProcesses, child)
+		processChildren, err := k.getProcessChildrenRec(allProcesses, child)
 		if err != nil {
 			return nil, err
 		}
