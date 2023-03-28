@@ -118,7 +118,6 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 			return kclient.NewNoConnectionError()
 		}
 		scontext.SetPlatform(ctx, o.clientset.KubernetesClient)
-		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	case commonflags.PlatformPodman:
 		if o.ignoreLocalhostFlag && o.forwardLocalhostFlag {
 			return errors.New("--ignore-localhost and --forward-localhost cannot be used together")
@@ -158,6 +157,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	log.Title("Developing using the \""+componentName+"\" Devfile",
 		dest,
 		"odo version: "+version.VERSION)
+
+	genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore.
 	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)

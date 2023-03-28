@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	dfutil "github.com/devfile/library/v2/pkg/util"
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -63,8 +64,9 @@ func (o *DeployOptions) Validate(ctx context.Context) error {
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
-
-	genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
+	if o.clientset.KubernetesClient == nil {
+		return kclient.NewNoConnectionError()
+	}
 	componentName := odocontext.GetComponentName(ctx)
 	err := dfutil.ValidateK8sResourceName("component name", componentName)
 	return err
@@ -86,6 +88,8 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 	log.Title("Running the application in Deploy mode using "+devfileName+" Devfile",
 		"Namespace: "+namespace,
 		"odo version: "+version.VERSION)
+
+	genericclioptions.WarnIfDefaultNamespace(namespace, o.clientset.KubernetesClient)
 
 	// Run actual deploy command to be used
 	err := o.clientset.DeployClient.Deploy(ctx)
