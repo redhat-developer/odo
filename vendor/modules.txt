@@ -146,7 +146,7 @@ github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
-# github.com/devfile/library/v2 v2.2.1-0.20230308185609-bd4a12f27257
+# github.com/devfile/library/v2 v2.2.1-0.20230323124903-d36e409ff94f
 ## explicit; go 1.15
 github.com/devfile/library/v2/pkg/devfile
 github.com/devfile/library/v2/pkg/devfile/generator

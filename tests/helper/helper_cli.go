@@ -14,6 +14,7 @@ type CliRunner interface {
 	Exec(podName string, projectName string, args []string, expectedSuccess *bool) (string, string)
 	CheckCmdOpInRemoteDevfilePod(podName string, containerName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool
 	GetRunningPodNameByComponent(compName string, namespace string) string
+	GetJobNameByComponent(compName string, namespace string) string
 	GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string
 	WaitAndCheckForExistence(resourceType, namespace string, timeoutMinutes int) bool
 	GetServices(namespace string) string

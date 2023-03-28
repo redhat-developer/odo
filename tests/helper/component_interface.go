@@ -2,6 +2,7 @@ package helper
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -22,6 +23,8 @@ type Component interface {
 	GetLabels() map[string]string
 	// GetPodDef returns the definition of the pod
 	GetPodDef() *corev1.Pod
+	// GetJobDef returns the definition of the job
+	GetJobDef() *batchv1.Job
 	// GetPodLogs returns logs for the pod
 	GetPodLogs() string
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright 2022-2023 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -238,6 +238,7 @@ func GetDeployment(devfileObj parser.DevfileObj, deployParams DeploymentParams) 
 // PodTemplateParams is a struct that contains the required data to create a podtemplatespec object
 type PodTemplateParams struct {
 	ObjectMeta metav1.ObjectMeta
+	Options    common.DevfileOptions
 	// PodSecurityAdmissionPolicy is the policy to be respected by the created pod
 	// The pod will be patched, if necessary, to respect the policies
 	PodSecurityAdmissionPolicy psaapi.Policy
@@ -249,8 +250,9 @@ type PodTemplateParams struct {
 // - gets the init container for every preStart devfile event
 // - patches the pod template and containers to satisfy PodSecurityAdmissionPolicy
 // - patches the pod template and containers to apply pod and container overrides
+// The containers included in the podTemplateSpec can be filtered using podTemplateParams.Options
 func GetPodTemplateSpec(devfileObj parser.DevfileObj, podTemplateParams PodTemplateParams) (*corev1.PodTemplateSpec, error) {
-	containers, err := GetContainers(devfileObj, common.DevfileOptions{})
+	containers, err := GetContainers(devfileObj, podTemplateParams.Options)
 	if err != nil {
 		return nil, err
 	}

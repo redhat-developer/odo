@@ -164,6 +164,13 @@ func (oc OcRunner) GetRunningPodNameByComponent(compName string, namespace strin
 	return strings.TrimSpace(stdOut)
 }
 
+// GetJobNameByComponent executes kubectl command and returns the running job name
+func (oc OcRunner) GetJobNameByComponent(compName string, namespace string) string {
+	selector := fmt.Sprintf("--selector=app.kubernetes.io/instance=%s", compName)
+	stdOut := Cmd(oc.path, "get", ResourceTypeJob, "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
+	return strings.TrimSpace(stdOut)
+}
+
 // GetPVCSize executes oc command and returns the bound storage size
 func (oc OcRunner) GetPVCSize(compName, storageName, namespace string) string {
 	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
