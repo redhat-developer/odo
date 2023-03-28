@@ -113,7 +113,7 @@ func (o *PodmanComponent) GetPodDef() *corev1.Pod {
 
 func (o *PodmanComponent) GetJobDef() *batchv1.Job {
 	// Not implemented for Podman
-	return nil
+	panic("not implemented for Podman")
 }
 
 func (o *PodmanComponent) GetLabels() map[string]string {
