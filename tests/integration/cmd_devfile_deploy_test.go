@@ -535,6 +535,18 @@ CMD ["npm", "start"]
 				})
 			})
 
+			It("should not set securitycontext for podsecurity admission on job's pod template", func() {
+				if os.Getenv("KUBERNETES") != "true" {
+					Skip("This is a Kubernetes specific scenario, skipping")
+				}
+				helper.Cmd("odo", "deploy").Should(func(session *gexec.Session) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDeployMode, commonVar.Project, commonVar.CliRunner)
+					jobDef := component.GetJobDef()
+					Expect(jobDef.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
+					Expect(jobDef.Spec.Template.Spec.SecurityContext.SeccompProfile).To(BeNil())
+				})
+			})
+
 		}
 
 		When("using a devfile name with length more than 63", func() {
