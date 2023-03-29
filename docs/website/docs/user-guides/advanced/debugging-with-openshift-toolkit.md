@@ -5,7 +5,7 @@ sidebar_position: 7
 
 Debugging is an unavoidable part of development, and it can prove even more difficult when developing an application that runs remotely.
 
-However, this task is made absurdly simple with the help of OpenShift Toolkit.
+However, this task is made absurdly simple with the help of the OpenShift Toolkit IDE plugin.
 
 ## OpenShift Toolkit
 [OpenShift Toolkit](https://github.com/redhat-developer/intellij-openshift-connector) is an IDE plugin that allows you to do all things that `odo` does, i.e. create, test, debug and deploy cloud-native applications on a cloud-native environment in simple steps.
