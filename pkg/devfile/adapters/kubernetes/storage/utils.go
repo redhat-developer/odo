@@ -204,8 +204,10 @@ func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 	return
 }
 
-// HandleEphemeralStorage creates or deletes the ephemeral volume based on the preference setting
-func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
+// HandleOdoSourceStorage creates or deletes the volume containing project sources, based on the preference setting
+// - if Ephemeral preference is true, any PVC with labels "component=..." and "odo-source-pvc=odo-projects" is removed
+// - if Ephemeral preference is false and no PVC with matching labels exists, it is created
+func HandleOdoSourceStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
 	selector := odolabels.Builder().WithComponentName(componentName).WithSourcePVC(storage.OdoSourceVolume).Selector()
 	pvcs, err := client.ListPVCs(selector)
 	if err != nil && !kerrors.IsNotFound(err) {

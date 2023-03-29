@@ -380,8 +380,8 @@ func (a *Adapter) createOrUpdateComponent(
 		Runtime: runtime,
 	})
 
-	// handle the ephemeral storage
-	err := storage.HandleEphemeralStorage(a.kubeClient, storageClient, componentName, isMainStorageEphemeral)
+	// Create the volume for the project sources, if not ephemeral
+	err := storage.HandleOdoSourceStorage(a.kubeClient, storageClient, componentName, isMainStorageEphemeral)
 	if err != nil {
 		return nil, false, err
 	}
