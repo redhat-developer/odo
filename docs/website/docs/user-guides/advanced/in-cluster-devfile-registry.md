@@ -54,3 +54,5 @@ Devfile registries:
 
 ```
 </details>
+
+Please refer to [this blog post](/blog/deploying-and-using-in-cluster-devfile-registry) for more details on how to deploy a Devfile Registry into a cluster and use it with `odo`.
