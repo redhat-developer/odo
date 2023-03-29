@@ -318,6 +318,34 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	return process, nil
 }
 
+// getProcessChildren returns all the children (either direct or indirect) of the specified process in the given container.
+// It works by reading the /proc/<pid>/stat files, giving PPID for each PID.
+// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm,
+// so that the returned list can start with the deepest children processes.
+// The last element of this list is the parent pid given here.
+func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
+	if pid <= 0 {
+		return nil, fmt.Errorf("invalid pid: %d", pid)
+	}
+
+	allProcesses, err := k.getAllProcesses(podName, containerName)
+	if err != nil {
+		return nil, err
+	}
+
+	var getProcessChildrenRec func(int) []int
+	getProcessChildrenRec = func(p int) []int {
+		var result []int
+		for _, child := range allProcesses[p] {
+			result = append(result, getProcessChildrenRec(child)...)
+		}
+		result = append(result, p)
+		return result
+	}
+
+	return getProcessChildrenRec(pid), nil
+}
+
 // getAllProcesses returns a map of all the processes and their direct children:
 // i) the key is the process PID;
 // ii) and the value is a list of all its direct children.
@@ -360,34 +388,6 @@ func (k *kubeExecProcessHandler) getAllProcesses(podName string, containerName s
 	}
 
 	return allProcesses, nil
-}
-
-// getProcessChildren returns all the children (either direct or indirect) of the specified process in the given container.
-// It works by reading the /proc/<pid>/stat files, giving PPID for each PID.
-// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm,
-// so that the returned list can start with the deepest children processes.
-// The last element of this list is the parent pid given here.
-func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
-	if pid <= 0 {
-		return nil, fmt.Errorf("invalid pid: %d", pid)
-	}
-
-	allProcesses, err := k.getAllProcesses(podName, containerName)
-	if err != nil {
-		return nil, err
-	}
-
-	var getProcessChildrenRec func(int) []int
-	getProcessChildrenRec = func(p int) []int {
-		var result []int
-		for _, child := range allProcesses[p] {
-			result = append(result, getProcessChildrenRec(child)...)
-		}
-		result = append(result, p)
-		return result
-	}
-
-	return getProcessChildrenRec(pid), nil
 }
 
 // getPidFileForCommand returns the path to the PID file in the remote container.
