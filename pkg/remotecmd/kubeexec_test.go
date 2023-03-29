@@ -351,11 +351,22 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider()),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("an error"))
+				// parent process should still be killed.
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, _ = stderr.Write([]byte("no such process"))
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
 			},
 			wantErr: true,
 		},
 		{
-			name: "no process children killed if missing children file",
+			name: "no process children killed if no children file found",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
@@ -431,6 +442,17 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(333)),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("error killing process 333"))
+				// parent process should be stopped in all cases
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(81)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(81)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, _ = stderr.Write([]byte("no such process"))
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
 			},
 			wantErr: true,
 		},
@@ -767,7 +789,21 @@ func Test_getProcessChildren(t *testing.T) {
 					})
 			},
 			ppid: ppid,
-			want: []int{ppid},
+			want: nil,
+		},
+		{
+			name: "empty stat file",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				cmd := cmdProvider()
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte(""))
+						return err
+					})
+			},
+			ppid: ppid,
+			want: nil,
 		},
 		{
 			name: "stat file with children at several levels",
@@ -782,7 +818,7 @@ func Test_getProcessChildren(t *testing.T) {
 					})
 			},
 			ppid: 81,
-			want: []int{333, 334, 222, 223, 87, 81},
+			want: []int{333, 334, 222, 223, 87},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

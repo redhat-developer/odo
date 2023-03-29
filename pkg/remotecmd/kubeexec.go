@@ -202,6 +202,11 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	if ppid == 0 {
 		return nil
 	}
+	defer func() {
+		if kErr := kill(ppid); kErr != nil {
+			klog.V(3).Infof("could not kill parent process %d: %v", ppid, kErr)
+		}
+	}()
 
 	children, err := k.getProcessChildren(ppid, podName, containerName)
 	if err != nil {
@@ -314,7 +319,6 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 // It works by reading the /proc/<pid>/stat files, giving PPID for each PID.
 // The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm,
 // so that the returned list can start with the deepest children processes.
-// The last element of this list is the parent pid given here.
 func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
 	if pid <= 0 {
 		return nil, fmt.Errorf("invalid pid: %d", pid)
@@ -331,7 +335,10 @@ func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, con
 		for _, child := range allProcesses[p] {
 			result = append(result, getProcessChildrenRec(child)...)
 		}
-		result = append(result, p)
+		if p != pid {
+			// Do not include the root ppid, as we are getting only children.
+			result = append(result, p)
+		}
 		return result
 	}
 
