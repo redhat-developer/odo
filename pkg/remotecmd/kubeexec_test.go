@@ -30,7 +30,7 @@ const (
 334 (my-cmd) S 222 81 81 0 -1 4210688 541 0 0 0 0 0 0 0 20 0 5 0 172022 1032048640 1892 18446744073709551615 4194304 6405776 140730311069152 0 0 0 0 0 2143420159 0 0 0 17 1 0 0 0 0 0 8507392 8757920 34906112 140730311072280 140730311072287 140730311072287 140730311073777 0`
 )
 
-func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
+func Test_kubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
 	kill0CmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
@@ -173,7 +173,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 	}
 }
 
-func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
+func Test_kubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 	kill0CmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
@@ -298,7 +298,7 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 	}
 }
 
-func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
+func Test_kubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
 	retrieveChildrenCmdProvider := func() []string {
 		return []string{ShellExecutable, "-c", "cat /proc/*/stat || true"}
@@ -479,7 +479,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 	}
 }
 
-func Test_getProcessInfoFromPid(t *testing.T) {
+func Test_kubeExecProcessHandler_getProcessInfoFromPid(t *testing.T) {
 	cmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
@@ -591,7 +591,7 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 	}
 }
 
-func Test_getRemoteProcessPID(t *testing.T) {
+func Test_kubeExecProcessHandler_getRemoteProcessPID(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
 	cmd := []string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}
 	for _, tt := range []struct {
@@ -744,7 +744,7 @@ func Test_getRemoteProcessPID(t *testing.T) {
 	}
 }
 
-func Test_getProcessChildren(t *testing.T) {
+func Test_kubeExecProcessHandler_getProcessChildren(t *testing.T) {
 	const ppid = 123
 	cmdProvider := func() []string {
 		return []string{ShellExecutable, "-c", "cat /proc/*/stat || true"}
