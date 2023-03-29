@@ -377,7 +377,7 @@ func (k *kubeExecProcessHandler) getAllProcesses(podName string, containerName s
 		// At this point, "i" is the index of the last ")" character, and we have an additional space before the process state character, hence the "i+2".
 		// For example:
 		// 87 (main) S 0 81 81 0 -1 ...
-        // This is required to scan the ppid correctly.
+		// This is required to scan the ppid correctly.
 		var state byte
 		var ppid int
 		_, err = fmt.Sscanf(line[i+2:], "%c %d", &state, &ppid)
