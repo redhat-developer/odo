@@ -15,6 +15,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
@@ -48,12 +49,13 @@ import (
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
-	kubeClient        kclient.ClientInterface
-	prefClient        preference.Client
-	portForwardClient portForward.Client
-	bindingClient     binding.Client
-	syncClient        sync.Client
-	execClient        exec.Client
+	kubeClient            kclient.ClientInterface
+	prefClient            preference.Client
+	portForwardClient     portForward.Client
+	bindingClient         binding.Client
+	syncClient            sync.Client
+	execClient            exec.Client
+	configAutomountClient configAutomount.Client
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -78,17 +80,19 @@ func NewKubernetesAdapter(
 	bindingClient binding.Client,
 	syncClient sync.Client,
 	execClient exec.Client,
+	configAutomountClient configAutomount.Client,
 	context AdapterContext,
 ) Adapter {
 	return Adapter{
-		kubeClient:        kubernetesClient,
-		prefClient:        prefClient,
-		portForwardClient: portForwardClient,
-		bindingClient:     bindingClient,
-		syncClient:        syncClient,
-		execClient:        execClient,
-		AdapterContext:    context,
-		logger:            machineoutput.NewMachineEventLoggingClient(),
+		kubeClient:            kubernetesClient,
+		prefClient:            prefClient,
+		portForwardClient:     portForwardClient,
+		bindingClient:         bindingClient,
+		syncClient:            syncClient,
+		execClient:            execClient,
+		configAutomountClient: configAutomountClient,
+		AdapterContext:        context,
+		logger:                machineoutput.NewMachineEventLoggingClient(),
 	}
 }
 
@@ -582,6 +586,12 @@ func (a *Adapter) buildVolumes(containers, initContainers []corev1.Container) ([
 		return nil, err
 	}
 	allVolumes = append(allVolumes, ephemeralVolumes...)
+
+	automountVolumes, err := storage.GetAutomountVolumes(a.configAutomountClient, containers, initContainers)
+	if err != nil {
+		return nil, err
+	}
+	allVolumes = append(allVolumes, automountVolumes...)
 
 	return allVolumes, nil
 }

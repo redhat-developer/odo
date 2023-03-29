@@ -10,6 +10,7 @@ import (
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/v2/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/storage"
@@ -242,4 +243,14 @@ func HandleOdoSourceStorage(client kclient.ClientInterface, storageClient storag
 		}
 	}
 	return nil
+}
+
+func GetAutomountVolumes(configAutomountClient configAutomount.Client, containers, initContainers []corev1.Container) ([]corev1.Volume, error) {
+	volumesInfos, err := configAutomountClient.GetAutomountingVolumes()
+	if err != nil {
+		return nil, err
+	}
+	_ = volumesInfos
+	//	fmt.Printf(">>>\n%#v\n<<<\n", volumesInfos)
+	return nil, nil
 }
