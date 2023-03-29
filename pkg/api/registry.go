@@ -36,9 +36,9 @@ type DevfileStack struct {
 }
 
 type DevfileStackVersion struct {
-	Version         string   `json:"version,omitempty"`
-	IsDefault       bool     `json:"isDefault"`
-	SchemaVersion   string   `json:"schemaVersion,omitempty"`
-	StarterProjects []string `json:"starterProjects"`
-	CommandGroups   map[schema.CommandGroupKind]bool
+	Version         string                           `json:"version,omitempty"`
+	IsDefault       bool                             `json:"isDefault"`
+	SchemaVersion   string                           `json:"schemaVersion,omitempty"`
+	StarterProjects []string                         `json:"starterProjects"`
+	CommandGroups   map[schema.CommandGroupKind]bool `json:"commandGroups"`
 }

@@ -2,7 +2,6 @@ package registry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -272,5 +271,5 @@ func getVersion(stack api.DevfileStack, v string) (api.DevfileStackVersion, erro
 			return version, nil
 		}
 	}
-	return api.DevfileStackVersion{}, errors.New("version not found")
+	return api.DevfileStackVersion{}, fmt.Errorf("version %q not found in Devfile stack for %q", v, stack.Name)
 }
