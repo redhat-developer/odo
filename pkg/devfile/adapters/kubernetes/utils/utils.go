@@ -21,6 +21,7 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 	var sourceVolume corev1.Volume
 
 	if sourcePVCName != "" {
+		// Define a Persistent volume using the found PVC volume source
 		sourceVolume = corev1.Volume{
 			Name: storage.OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{
@@ -28,8 +29,12 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 			},
 		}
 	} else {
+		// Define an Ephemeral volume using an EmptyDir volume source
 		sourceVolume = corev1.Volume{
 			Name: storage.OdoSourceVolume,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
 		}
 	}
 

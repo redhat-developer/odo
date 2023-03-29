@@ -130,7 +130,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			})
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)
-			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
+			fakePrefClient.EXPECT().GetEphemeralSourceVolume().AnyTimes()
 			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, adapterCtx)
 			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, libdevfile.DevfileCommands{}, nil)
 

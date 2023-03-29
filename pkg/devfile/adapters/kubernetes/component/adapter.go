@@ -369,28 +369,9 @@ func (a *Adapter) createOrUpdateComponent(
 	deployment *appsv1.Deployment,
 ) (*appsv1.Deployment, bool, error) {
 
-	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
-
 	componentName := a.ComponentName
 
 	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
-
-	storageClient := storagepkg.NewClient(componentName, a.AppName, storagepkg.ClientOptions{
-		Client:  a.kubeClient,
-		Runtime: runtime,
-	})
-
-	// Create the volume for the project sources, if not ephemeral
-	err := storage.HandleOdoSourceStorage(a.kubeClient, storageClient, componentName, isMainStorageEphemeral)
-	if err != nil {
-		return nil, false, err
-	}
-
-	// From devfile info, create PVCs and return ephemeral storages
-	ephemerals, err := storagepkg.Push(storageClient, a.Devfile)
-	if err != nil {
-		return nil, false, err
-	}
 
 	// Set the labels
 	labels := odolabels.GetLabels(componentName, a.AppName, runtime, odolabels.ComponentDevMode, true)
@@ -421,29 +402,54 @@ func (a *Adapter) createOrUpdateComponent(
 		return nil, false, fmt.Errorf("no valid components found in the devfile")
 	}
 
-	// Add the project volume before generating init containers
-	utils.AddOdoProjectVolume(containers)
-	utils.AddOdoMandatoryVolume(containers)
+	initContainers := podTemplateSpec.Spec.InitContainers
 
 	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
 	if err != nil {
 		return nil, false, err
 	}
 
-	initContainers := podTemplateSpec.Spec.InitContainers
+	storageClient := storagepkg.NewClient(componentName, a.AppName, storagepkg.ClientOptions{
+		Client:  a.kubeClient,
+		Runtime: runtime,
+	})
 
-	// list all the pvcs for the component
+	// Create the volume for the project sources, if not ephemeral
+	err = storage.HandleOdoSourceStorage(a.kubeClient, storageClient, componentName, a.prefClient.GetEphemeralSourceVolume())
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Create PVCs for non-ephemeral Volumes defined in the Devfile
+	// and returns the Ephemeral volumes defined in the Devfile
+	ephemerals, err := storagepkg.Push(storageClient, a.Devfile)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// get all the PVCs from the cluster belonging to the component
+	// These PVCs have been created earlier with `storage.HandleOdoSourceStorage` and `storagepkg.Push`
 	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
 	if err != nil {
 		return nil, false, err
 	}
 
+	var allVolumes []corev1.Volume
+
+	// Get the name of the PVC for project sources + a map of (storageName => VolumeInfo)
+	// odoSourcePVCName will be empty when Ephemeral preference is true
 	odoSourcePVCName, volumeNameToVolInfo, err := storage.GetVolumeInfos(pvcs)
 	if err != nil {
 		return nil, false, err
 	}
 
-	var allVolumes []corev1.Volume
+	// Add the volumes for the projects source and the Odo-specific directory
+	odoMandatoryVolumes := utils.GetOdoContainerVolumes(odoSourcePVCName)
+	allVolumes = append(allVolumes, odoMandatoryVolumes...)
+
+	// Add the volumeMounts for the project sources volume and the Odo-specific volume into the containers
+	utils.AddOdoProjectVolume(containers)
+	utils.AddOdoMandatoryVolume(containers)
 
 	// Get PVC volumes and Volume Mounts
 	pvcVolumes, err := storage.GetPersistentVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
@@ -457,9 +463,6 @@ func (a *Adapter) createOrUpdateComponent(
 		return nil, false, err
 	}
 	allVolumes = append(allVolumes, ephemeralVolumes...)
-
-	odoMandatoryVolumes := utils.GetOdoContainerVolumes(odoSourcePVCName)
-	allVolumes = append(allVolumes, odoMandatoryVolumes...)
 
 	selectorLabels := map[string]string{
 		"component": componentName,
