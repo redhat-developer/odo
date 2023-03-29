@@ -55,8 +55,8 @@ func createPodFromComponent(
 		return nil, nil, err
 	}
 
-	utils.AddOdoProjectVolume(&containers)
-	utils.AddOdoMandatoryVolume(&containers)
+	utils.AddOdoProjectVolume(containers)
+	utils.AddOdoMandatoryVolume(containers)
 
 	volumes := []corev1.Volume{
 		{

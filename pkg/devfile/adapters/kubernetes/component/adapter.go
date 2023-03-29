@@ -422,8 +422,8 @@ func (a *Adapter) createOrUpdateComponent(
 	}
 
 	// Add the project volume before generating init containers
-	utils.AddOdoProjectVolume(&containers)
-	utils.AddOdoMandatoryVolume(&containers)
+	utils.AddOdoProjectVolume(containers)
+	utils.AddOdoMandatoryVolume(containers)
 
 	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
 	if err != nil {
