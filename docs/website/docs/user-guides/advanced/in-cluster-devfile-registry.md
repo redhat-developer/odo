@@ -14,7 +14,14 @@ It does so by detecting the presence of the following [Custom Resources](https:/
 
 More details on the [Devfile Registry Operator documentation](https://github.com/devfile/registry-operator/blob/main/REGISTRIES_LISTS.md).
 
-Registries detected from the cluster are added automatically to the top of the list of registries usable by `odo`, and `odo` will use them in the following priority order:
+:::info
+
+Registries declared in `ClusterDevfileRegistriesList` and `DevfileRegistriesList` Custom Resources do not necessarily need to be deployed and running in the cluster.
+Only their URLs are listed in those resources.
+
+:::
+
+Registries listed in the Custom Resources above are added automatically to the top of the list of registries usable by `odo`, and `odo` will use them in the following priority order:
 1. registries from the current namespace (declared in the `DevfileRegistriesList` resource)
 2. cluster-wide registries (declared in the `ClusterDevfileRegistriesList` resource) 
 3. all other registries configured in the local configuration file
