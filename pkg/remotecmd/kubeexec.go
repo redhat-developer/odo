@@ -210,14 +210,6 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 
 	klog.V(3).Infof("Found %d children (either direct and indirect) for parent process %d: %v", len(children), ppid, children)
 
-	if len(children) == 0 {
-		//TODO(rm3l): A length of 0 might indicate that there is no children file, which might happen if the host kernel
-		//was not built with the CONFIG_PROC_CHILDREN config.
-		//This happened for example with the Minikube VM when using its (non-default) VirtualBox driver.
-		//In this case, we should find a fallback mechanism to identify those children processes and kill them.
-		return kill(ppid)
-	}
-
 	for _, child := range children {
 		if err = kill(child); err != nil {
 			return err
