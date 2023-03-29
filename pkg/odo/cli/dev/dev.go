@@ -157,7 +157,9 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	log.Title("Developing using the \""+componentName+"\" Devfile",
 		dest,
 		"odo version: "+version.VERSION)
-
+	if platform == commonflags.PlatformCluster {
+		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
+	}
 	// check for .gitignore file and add odo-file-index.json to .gitignore.
 	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
 	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).

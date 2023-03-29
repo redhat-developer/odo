@@ -353,7 +353,11 @@ func RunTestSpecs(t *testing.T, description string) {
 }
 
 func IsKubernetesCluster() bool {
-	return os.Getenv("KUBERNETES") == "true"
+	k8s, err := strconv.ParseBool(os.Getenv("KUBERNETES"))
+	if err != nil {
+		return false
+	}
+	return k8s
 }
 
 type ResourceInfo struct {
