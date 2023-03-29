@@ -114,11 +114,16 @@ func (k kubernetesClient) List() (StorageList, error) {
 	for _, container := range k.deployment.Spec.Template.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
 
-			// avoid the volume mounts only from the init containers
-			// and the source volume mount
+			// avoid the volume mounts:
+			// - only from the init containers
+			// - of source volume
+			// - of automounted volumes
 			_, initOK := initContainerVolumeMounts[volumeMount.Name]
 			_, ok := containerVolumeMounts[volumeMount.Name]
-			if (!ok && initOK) || volumeMount.Name == OdoSourceVolume || volumeMount.Name == SharedDataVolumeName {
+			if (!ok && initOK) ||
+				volumeMount.Name == OdoSourceVolume ||
+				volumeMount.Name == SharedDataVolumeName ||
+				strings.HasPrefix(volumeMount.Name, "auto-") {
 				continue
 			}
 

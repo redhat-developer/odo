@@ -250,7 +250,34 @@ func GetAutomountVolumes(configAutomountClient configAutomount.Client, container
 	if err != nil {
 		return nil, err
 	}
-	_ = volumesInfos
-	//	fmt.Printf(">>>\n%#v\n<<<\n", volumesInfos)
-	return nil, nil
+
+	var result []corev1.Volume
+	for _, volumeInfo := range volumesInfos {
+		switch volumeInfo.VolumeType {
+		case configAutomount.VolumeTypePVC:
+			result = mountPVC(volumeInfo, containers, initContainers, result)
+		}
+	}
+	return result, nil
+}
+
+func mountPVC(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-" + volumeInfo.VolumeName
+	containerNameToMountPaths := map[string][]string{}
+	allContainers := containers
+	allContainers = append(allContainers, initContainers...)
+	for _, container := range allContainers {
+		containerNameToMountPaths[container.Name] = []string{volumeInfo.MountPath}
+	}
+
+	addVolumeMountToContainers(containers, initContainers, volumeName, containerNameToMountPaths)
+	result = append(result, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return result
 }
