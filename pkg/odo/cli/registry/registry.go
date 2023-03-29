@@ -32,8 +32,8 @@ var Example = `  # Get all devfile components
 # Filter by name and devfile registry
 %[1]s --filter nodejs --devfile-registry DefaultDevfileRegistry
 
-# Show more details
-%[1]s --details
+# Show more details from a specific devfile
+%[1]s --details --devfile nodejs
 
 # Show more details from a specific devfile and registry
 %[1]s --details --devfile nodejs --devfile-registry DefaultDevfileRegistry`
@@ -120,7 +120,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
-	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of each component")
+	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of a Devfile, to be used only with --devfile")
 
 	// Add a defined annotation in order to appear in the help menu
 	odoutil.SetCommandGroup(listCmd, odoutil.MainGroup)

@@ -370,7 +370,7 @@ odo registry -o json
 ]
 ```
 
-Using the `--details` flag, you will also get information about the Devfile:
+Using the `--details` flag with `--devfile <name>`, you will also get information about the Devfile:
 
 ```shell
 odo registry --devfile java-springboot --details -o json
