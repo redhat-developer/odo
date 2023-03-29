@@ -168,12 +168,10 @@ In this example, the Devfile Registry is reachable at the following URLs:
   </TabItem>
 </Tabs>
 
-:::note
+Try it out by opening your browser at the Registry URL returned above, but please note that it might take some time (around 1 to 2 minutes)
+before the Registry is accessible, depending on how long it takes for the resources to be ready in the cluster.
 
-Note that it might take some time (around 1 to 2 minutes) before the Registry is accessible at the URL exposed,
-depending on how long it takes for the resources to be ready.
-
-:::
+![in-cluster Devfile Registry preview](/img/blog/deploying-and-using-in-cluster-devfile-registry/preview-url-in-cluster-devfile-registry.png)
 
 ## Installing the Devfile Registry Operator Custom Resource Definitions
 
