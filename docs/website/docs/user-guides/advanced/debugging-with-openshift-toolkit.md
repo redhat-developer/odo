@@ -8,7 +8,7 @@ Debugging is an unavoidable part of development, and it can prove even more diff
 However, this task is made absurdly simple with the help of the OpenShift Toolkit IDE plugin.
 
 ## OpenShift Toolkit
-[OpenShift Toolkit](https://github.com/redhat-developer/intellij-openshift-connector) is an IDE plugin that allows you to do all things that `odo` does, i.e. create, test, debug and deploy cloud-native applications on a cloud-native environment in simple steps.
+OpenShift Toolkit is an IDE plugin available on [VS Code](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) and [Jet Brains](https://plugins.jetbrains.com/plugin/12030-openshift-toolkit-by-red-hat/) IDEs, that allows you to do all things that `odo` does, i.e. create, test, debug and deploy cloud-native applications on a cloud-native environment in simple steps.
 `odo` enables this plugin to do what it does.
 
 ## Prerequisites
