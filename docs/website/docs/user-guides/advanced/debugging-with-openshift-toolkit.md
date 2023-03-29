@@ -13,11 +13,11 @@ However, this task is made absurdly simple with the help of OpenShift Toolkit.
 
 ## Prerequisites
 1. [You have logged in to your cluster](../quickstart/nodejs.md#step-1-connect-to-your-cluster-and-create-a-new-namespace-or-project).
-2. [You have initialized a Node.js application with odo](../quickstart/nodejs.md#step-2-initializing-your-application-odo-init).
+2. You have [initialized an application with `odo`](/docs/command-reference/init), for example [the Node.JS quickstart application](../quickstart/nodejs.md#step-2-initializing-your-application-odo-init).
 :::note
- This tutorial uses a nodejs application, but you can use any application that has Devfile with debug command defined in it. If your Devfile does not contain a debug command, refer [Configure Devfile to support debugging](#configure-devfile-to-support-debugging).
+ This tutorial uses a Node.js application, but you can use any application that has Devfile with debug command defined in it. If your Devfile does not contain a debug command, refer to [Configure Devfile to support debugging](#configure-devfile-to-support-debugging).
 :::
-3. You have installed OpenShift Toolkit Plugin in your preferred VS Code or a Jet Brains IDE.
+3. You have [installed](/docs/overview/installation#ide-installation) the OpenShift Toolkit Plugin in your preferred VS Code or a JetBrains IDE.
 4. You have opened the application in the IDE.
 
 In the plugin window, you should be able to see the cluster you are logged into in "APPLICATION EXPLORER" section, and your component "my-nodejs-app" in "COMPONENTS" section.
@@ -34,7 +34,7 @@ In the plugin window, you should be able to see the cluster you are logged into 
 
 ![Wait until Dev session finishes](../../assets/user-guides/advanced/Wait%20until%20Dev%20Session%20finishes.png)
 
-Our application is now available at 127.0.0.1:20001. The debug server is running at 127.0.0.1:20002.
+Our application is now available at 127.0.0.1:20001. The debug server is available at 127.0.0.1:20002.
 
 ## Step 2. Start the Debugging session
 
@@ -42,7 +42,7 @@ Our application is now available at 127.0.0.1:20001. The debug server is running
 
 ![Select Debug](../../assets/user-guides/advanced/Select%20Debug%20Session.png)
 
-2. Debug session should have started successfully at the debug port, in this case, 3000. And you must be looking at the "DEBUG CONSOLE".
+2. Debug session should have started successfully in the container at the debug port, in this case, 5858. And you must be looking at the "DEBUG CONSOLE".
 
 ![Debug session starts](../../assets/user-guides/advanced/Debug%20Session%20Starts.png)
 
@@ -54,7 +54,7 @@ Now that the debug session is running, we can set breakpoints in the code.
 
 ![Add breakpoint](../../assets/user-guides/advanced/Add%20Breakpoint.png)
 
-2. From a new terminal, or a browser window, ping the url at which the application is available, in this case, it is 127.0.0.1:20001.
+2. From a new terminal, or a browser window, ping the URL at which the application is available, in this case, it is 127.0.0.1:20001.
 
 ![Ping Application](../../assets/user-guides/advanced/Ping%20Application.png)
 
@@ -148,11 +148,11 @@ commands:
     workingDir: ${PROJECT_SOURCE}
   id: debug
 ```
-For the example above, we use [`dlv`](https://github.com/go-delve/delve) debugger for debugging a Go application and it listens to port exposed by env variable *DEBUG_PORT* inside the container. The debug command references a container component called "runtime".
+For the example above, we use [`dlv`](https://github.com/go-delve/delve) debugger for debugging a Go application and it listens to the port exposed by the environment variable *DEBUG_PORT* inside the container. The debug command references a container component called "runtime".
 
 2. Add Debug endpoint to the container component's [`endpoints`](https://devfile.io/docs/2.2.0/defining-endpoints) with `exposure` set to `none` so that it cannot be accessed from outside, and export the debug port number via `DEBUG_PORT` `env` variable.
 
-The debug endpoint name must be named **debug** or be prefixed by **debug** so that `odo` can recognize it as a debug port.
+The debug endpoint name must be named **debug** or be prefixed by **debug-** so that `odo` can recognize it as a debug port.
 
 ```yaml
 components:
