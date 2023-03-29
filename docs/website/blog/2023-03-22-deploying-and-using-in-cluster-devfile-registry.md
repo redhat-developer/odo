@@ -196,7 +196,7 @@ instead if we have the appropriate permissions in the cluster.
 
 Make sure you replace `<devfileRegistryUrl>` in the `url` field with the Devfile Registry Host (and protocol) we got from the previous sections.
 
-:::note
+:::caution
 Due to [#6635](https://github.com/redhat-developer/odo/issues/6635), `odo` cannot be forced to work with HTTPS registries exposed over insecure or self-signed certificates.
 So we will need to communicate with the Registry over HTTP for now.
 :::
