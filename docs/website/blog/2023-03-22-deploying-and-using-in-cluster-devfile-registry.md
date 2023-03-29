@@ -117,7 +117,11 @@ TEST SUITE: None
 
 On Kubernetes, the Helm Chart installed above will create an Ingress reachable via a DNS domain named as follows: `devfile-registry-<namespace>.<ingressDomain>`.
 
-You can get the actual Host by getting the Ingress Resource, via the following command: `kubectl get ingress <registryName>`.
+You can get the actual Host by getting the Ingress Resource, via the following command:
+
+```shell
+kubectl get ingress <registryName>
+```
 
 <details>
 <summary>Example output:</summary>
@@ -138,7 +142,11 @@ In this example, the Devfile Registry is now reachable at http://devfile-registr
 
 On OpenShift, the Helm Chart installed above will create a Route with a URL generated automatically.
 
-You can get the actual URL by getting the Route Resource, via the following command: `oc get route <registryName>`.
+You can get the actual URL by getting the Route Resource, via the following command:
+
+```shell
+oc get route <registryName>
+```
 
 <details>
 <summary>Example output:</summary>
@@ -159,6 +167,13 @@ In this example, the Devfile Registry is reachable at the following URLs:
 
   </TabItem>
 </Tabs>
+
+:::note
+
+Note that it might take some time (around 1 to 2 minutes) before the Registry is accessible at the URL exposed,
+depending on how long it takes for the resources to be ready.
+
+:::
 
 ## Installing the Devfile Registry Operator Custom Resource Definitions
 
