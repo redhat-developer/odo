@@ -6,6 +6,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
+const (
+	labelMountName  = "controller.devfile.io/mount-to-devworkspace"
+	labelMountValue = "true"
+)
+
 type KubernetesClient struct {
 	kubeClient kclient.ClientInterface
 }
@@ -17,7 +22,7 @@ func NewKubernetesClient(kubeClient kclient.ClientInterface) KubernetesClient {
 }
 
 func (o KubernetesClient) GetAutomountingVolumes() ([]AutomountInfo, error) {
-	pvcs, err := o.kubeClient.ListPVCs("controller.devfile.io/mount-to-devworkspace=true")
+	pvcs, err := o.kubeClient.ListPVCs(labelMountName + "=" + labelMountValue)
 	if err != nil {
 		return nil, err
 	}

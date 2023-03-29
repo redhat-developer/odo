@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -9,12 +10,13 @@ import (
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 func TestGetPVC(t *testing.T) {
@@ -468,6 +470,119 @@ func TestGetVolumesAndVolumeMounts(t *testing.T) {
 						}
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestGetAutomountVolumes(t *testing.T) {
+
+	container1 := corev1.Container{
+		Name:  "container1",
+		Image: "image1",
+	}
+	container2 := corev1.Container{
+		Name:  "container2",
+		Image: "image2",
+	}
+	initContainer1 := corev1.Container{
+		Name:  "initContainer1",
+		Image: "image1",
+	}
+	initContainer2 := corev1.Container{
+		Name:  "initContainer2",
+		Image: "image2",
+	}
+
+	type args struct {
+		configAutomountClient func(ctrl *gomock.Controller) configAutomount.Client
+		containers            []corev1.Container
+		initContainers        []corev1.Container
+	}
+	tests := []struct {
+		name             string
+		args             args
+		want             []corev1.Volume
+		wantVolumeMounts []corev1.VolumeMount
+		wantErr          bool
+	}{
+		{
+			name: "No automounting volume",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want:             nil,
+			wantVolumeMounts: nil,
+			wantErr:          false,
+		},
+		{
+			name: "One PVC",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypePVC,
+						VolumeName: "pvc1",
+						MountPath:  "/path/to/mount1",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []v1.Volume{
+				{
+					Name: "auto-pvc1",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "pvc1",
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "auto-pvc1",
+					MountPath: "/path/to/mount1",
+				},
+			},
+			wantErr: false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			got, err := GetAutomountVolumes(tt.args.configAutomountClient(ctrl), tt.args.containers, tt.args.initContainers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAutomountVolumes() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetAutomountVolumes() mismatch (-want +got):\n%s", diff)
+			}
+
+			checkContainers := func(containers, initContainers []corev1.Container) error {
+				allContainers := containers
+				allContainers = append(allContainers, initContainers...)
+				for _, container := range allContainers {
+					if diff := cmp.Diff(tt.wantVolumeMounts, container.VolumeMounts); diff != "" {
+						return fmt.Errorf(diff)
+					}
+				}
+				return nil
+			}
+
+			if err := checkContainers(tt.args.containers, tt.args.initContainers); err != nil {
+				t.Errorf("GetAutomountVolumes() containers error: %v", err)
 			}
 		})
 	}
