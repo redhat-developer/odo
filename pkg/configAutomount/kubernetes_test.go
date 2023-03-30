@@ -53,6 +53,24 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		annotationMountPathName: "/specific/secret/mount/path",
 	})
 
+	secretMountAsSubpath := corev1.Secret{}
+	secretMountAsSubpath.SetName("secretMountAsSubpath")
+	secretMountAsSubpath.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	secretMountAsSubpath.SetAnnotations(map[string]string{
+		annotationMountAsName: "subpath",
+	})
+
+	secretMountAsEnv := corev1.Secret{}
+	secretMountAsEnv.SetName("secretMountAsEnv")
+	secretMountAsEnv.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	secretMountAsEnv.SetAnnotations(map[string]string{
+		annotationMountAsName: "env",
+	})
+
 	defaultCM1 := corev1.ConfigMap{}
 	defaultCM1.SetName("defaultCM1")
 	defaultCM1.SetLabels(map[string]string{
@@ -72,6 +90,24 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 	})
 	cmMountPath.SetAnnotations(map[string]string{
 		annotationMountPathName: "/specific/configmap/mount/path",
+	})
+
+	cmMountAsSubpath := corev1.ConfigMap{}
+	cmMountAsSubpath.SetName("cmMountAsSubpath")
+	cmMountAsSubpath.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	cmMountAsSubpath.SetAnnotations(map[string]string{
+		annotationMountAsName: "subpath",
+	})
+
+	cmMountAsEnv := corev1.ConfigMap{}
+	cmMountAsEnv.SetName("cmMountAsEnv")
+	cmMountAsEnv.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	cmMountAsEnv.SetAnnotations(map[string]string{
+		annotationMountAsName: "env",
 	})
 
 	type fields struct {
@@ -214,6 +250,45 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					VolumeName: "cmMountPath",
 					MountPath:  "/specific/configmap/mount/path",
 					MountAs:    MountAsFile,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Secret and ConfigMap with mount-as annotations",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{secretMountAsSubpath, secretMountAsEnv}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{cmMountAsSubpath, cmMountAsEnv}, nil).AnyTimes()
+					return client
+				},
+			},
+			want: []AutomountInfo{
+				{
+					VolumeType: VolumeTypeSecret,
+					VolumeName: "secretMountAsSubpath",
+					MountPath:  "/etc/secret/secretMountAsSubpath",
+					MountAs:    MountAsSubpath,
+				},
+				{
+					VolumeType: VolumeTypeSecret,
+					VolumeName: "secretMountAsEnv",
+					MountPath:  "",
+					MountAs:    MountAsEnv,
+				},
+				{
+					VolumeType: VolumeTypeConfigmap,
+					VolumeName: "cmMountAsSubpath",
+					MountPath:  "/etc/config/cmMountAsSubpath",
+					MountAs:    MountAsSubpath,
+				},
+				{
+					VolumeType: VolumeTypeConfigmap,
+					VolumeName: "cmMountAsEnv",
+					MountPath:  "",
+					MountAs:    MountAsEnv,
 				},
 			},
 			wantErr: false,
