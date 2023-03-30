@@ -32,6 +32,15 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		annotationMountPathName: "/specific/pvc/mount/path",
 	})
 
+	roPVC := corev1.PersistentVolumeClaim{}
+	roPVC.SetName("roPVC")
+	roPVC.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	roPVC.SetAnnotations(map[string]string{
+		annotationReadOnlyName: "true",
+	})
+
 	defaultSecret1 := corev1.Secret{}
 	defaultSecret1.SetName("defaultSecret1")
 	defaultSecret1.SetLabels(map[string]string{
@@ -75,6 +84,15 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		annotationMountAsName: "env",
 	})
 
+	roSecret := corev1.Secret{}
+	roSecret.SetName("roSecret")
+	roSecret.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	roSecret.SetAnnotations(map[string]string{
+		annotationReadOnlyName: "true",
+	})
+
 	defaultCM1 := corev1.ConfigMap{}
 	defaultCM1.SetName("defaultCM1")
 	defaultCM1.SetLabels(map[string]string{
@@ -116,6 +134,15 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 	})
 	cmMountAsEnv.SetAnnotations(map[string]string{
 		annotationMountAsName: "env",
+	})
+
+	roCM := corev1.ConfigMap{}
+	roCM.SetName("roCM")
+	roCM.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	roCM.SetAnnotations(map[string]string{
+		annotationReadOnlyName: "true",
 	})
 
 	type fields struct {
@@ -303,8 +330,42 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// TODO: Add test cases.
-	}
+		{
+			name: "PVC, Secret and ConfigMap read-only",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{roPVC}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{roSecret}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{roCM}, nil).AnyTimes()
+					return client
+				},
+			},
+			want: []AutomountInfo{
+				{
+					VolumeType: VolumeTypePVC,
+					VolumeName: "roPVC",
+					MountPath:  "/tmp/roPVC",
+					MountAs:    MountAsFile,
+					ReadOnly:   true,
+				},
+				{
+					VolumeType: VolumeTypeSecret,
+					VolumeName: "roSecret",
+					MountPath:  "/etc/secret/roSecret",
+					MountAs:    MountAsFile,
+					ReadOnly:   true,
+				},
+				{
+					VolumeType: VolumeTypeConfigmap,
+					VolumeName: "roCM",
+					MountPath:  "/etc/config/roCM",
+					MountAs:    MountAsFile,
+					ReadOnly:   true,
+				},
+			},
+			wantErr: false,
+		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)

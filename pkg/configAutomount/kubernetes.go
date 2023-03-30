@@ -13,6 +13,7 @@ const (
 
 	annotationMountPathName = "controller.devfile.io/mount-path"
 	annotationMountAsName   = "controller.devfile.io/mount-as"
+	annotationReadOnlyName  = "controller.devfile.io/read-only"
 )
 
 type KubernetesClient struct {
@@ -66,7 +67,7 @@ func (o KubernetesClient) getAutomountingPVCs() ([]AutomountInfo, error) {
 			VolumeName: pvc.Name,
 			MountPath:  mountPath,
 			MountAs:    MountAsFile,
-			ReadOnly:   false, // TODO consider annotation "controller.devfile.io/read-only"
+			ReadOnly:   pvc.Annotations[annotationReadOnlyName] == "true",
 		})
 	}
 	return result, nil
@@ -100,7 +101,7 @@ func (o KubernetesClient) getAutomountingSecrets() ([]AutomountInfo, error) {
 			VolumeName: secret.Name,
 			MountPath:  mountPath,
 			MountAs:    mountAs,
-			ReadOnly:   false, // TODO consider annotation "controller.devfile.io/read-only"
+			ReadOnly:   secret.Annotations[annotationReadOnlyName] == "true",
 			Keys:       keys,
 		})
 	}
@@ -135,7 +136,7 @@ func (o KubernetesClient) getAutomountingConfigmaps() ([]AutomountInfo, error) {
 			VolumeName: cm.Name,
 			MountPath:  mountPath,
 			MountAs:    mountAs,
-			ReadOnly:   false, // TODO consider annotation "controller.devfile.io/read-only"
+			ReadOnly:   cm.Annotations[annotationReadOnlyName] == "true",
 			Keys:       keys,
 		})
 	}

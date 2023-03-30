@@ -272,6 +272,7 @@ func mountPVC(volumeInfo configAutomount.AutomountInfo, containers, initContaine
 		addVolumeMountToContainer(container, corev1.VolumeMount{
 			Name:      volumeName,
 			MountPath: volumeInfo.MountPath,
+			ReadOnly:  volumeInfo.ReadOnly,
 		})
 	})
 
@@ -305,6 +306,7 @@ func mountSecretAsFile(volumeInfo configAutomount.AutomountInfo, containers, ini
 		addVolumeMountToContainer(container, corev1.VolumeMount{
 			Name:      volumeName,
 			MountPath: volumeInfo.MountPath,
+			ReadOnly:  volumeInfo.ReadOnly,
 		})
 	})
 
@@ -341,6 +343,7 @@ func mountSecretAsSubpath(volumeInfo configAutomount.AutomountInfo, containers, 
 				Name:      volumeName,
 				MountPath: filepath.ToSlash(filepath.Join(volumeInfo.MountPath, key)),
 				SubPath:   key,
+				ReadOnly:  volumeInfo.ReadOnly,
 			})
 		}
 	})
@@ -375,6 +378,7 @@ func mountConfigMapAsFile(volumeInfo configAutomount.AutomountInfo, containers, 
 		addVolumeMountToContainer(container, corev1.VolumeMount{
 			Name:      volumeName,
 			MountPath: volumeInfo.MountPath,
+			ReadOnly:  volumeInfo.ReadOnly,
 		})
 	})
 
@@ -413,6 +417,7 @@ func mountConfigMapAsSubpath(volumeInfo configAutomount.AutomountInfo, container
 				Name:      volumeName,
 				MountPath: filepath.ToSlash(filepath.Join(volumeInfo.MountPath, key)),
 				SubPath:   key,
+				ReadOnly:  volumeInfo.ReadOnly,
 			})
 		}
 	})
