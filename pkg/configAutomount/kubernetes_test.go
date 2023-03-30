@@ -54,6 +54,10 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 	})
 
 	secretMountAsSubpath := corev1.Secret{}
+	secretMountAsSubpath.Data = map[string][]byte{
+		"secretKey1": []byte(""),
+		"secretKey2": []byte(""),
+	}
 	secretMountAsSubpath.SetName("secretMountAsSubpath")
 	secretMountAsSubpath.SetLabels(map[string]string{
 		labelMountName: labelMountValue,
@@ -93,6 +97,10 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 	})
 
 	cmMountAsSubpath := corev1.ConfigMap{}
+	cmMountAsSubpath.Data = map[string]string{
+		"cmKey1": "",
+		"cmKey2": "",
+	}
 	cmMountAsSubpath.SetName("cmMountAsSubpath")
 	cmMountAsSubpath.SetLabels(map[string]string{
 		labelMountName: labelMountValue,
@@ -271,6 +279,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					VolumeName: "secretMountAsSubpath",
 					MountPath:  "/etc/secret/secretMountAsSubpath",
 					MountAs:    MountAsSubpath,
+					Keys:       []string{"secretKey1", "secretKey2"},
 				},
 				{
 					VolumeType: VolumeTypeSecret,
@@ -283,6 +292,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					VolumeName: "cmMountAsSubpath",
 					MountPath:  "/etc/config/cmMountAsSubpath",
 					MountAs:    MountAsSubpath,
+					Keys:       []string{"cmKey1", "cmKey2"},
 				},
 				{
 					VolumeType: VolumeTypeConfigmap,

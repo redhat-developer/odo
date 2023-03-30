@@ -2,6 +2,7 @@ package configAutomount
 
 import (
 	"path/filepath"
+	"sort"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 )
@@ -81,11 +82,18 @@ func (o KubernetesClient) getAutomountingSecrets() ([]AutomountInfo, error) {
 	for _, secret := range secrets {
 		mountAs := getMountAsFromAnnotation(secret.Annotations)
 		mountPath := filepath.ToSlash(filepath.Join("/", "etc", "secret", secret.Name))
+		var keys []string
 		if val, found := getMountPathFromAnnotation(secret.Annotations); found {
 			mountPath = val
 		}
 		if mountAs == MountAsEnv {
 			mountPath = ""
+		}
+		if mountAs == MountAsSubpath {
+			for k := range secret.Data {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
 		}
 		result = append(result, AutomountInfo{
 			VolumeType: VolumeTypeSecret,
@@ -93,6 +101,7 @@ func (o KubernetesClient) getAutomountingSecrets() ([]AutomountInfo, error) {
 			MountPath:  mountPath,
 			MountAs:    mountAs,
 			ReadOnly:   false, // TODO consider annotation "controller.devfile.io/read-only"
+			Keys:       keys,
 		})
 	}
 	return result, nil
@@ -108,11 +117,18 @@ func (o KubernetesClient) getAutomountingConfigmaps() ([]AutomountInfo, error) {
 	for _, cm := range cms {
 		mountAs := getMountAsFromAnnotation(cm.Annotations)
 		mountPath := filepath.ToSlash(filepath.Join("/", "etc", "config", cm.Name))
+		var keys []string
 		if val, found := getMountPathFromAnnotation(cm.Annotations); found {
 			mountPath = val
 		}
 		if mountAs == MountAsEnv {
 			mountPath = ""
+		}
+		if mountAs == MountAsSubpath {
+			for k := range cm.Data {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
 		}
 		result = append(result, AutomountInfo{
 			VolumeType: VolumeTypeConfigmap,
@@ -120,6 +136,7 @@ func (o KubernetesClient) getAutomountingConfigmaps() ([]AutomountInfo, error) {
 			MountPath:  mountPath,
 			MountAs:    mountAs,
 			ReadOnly:   false, // TODO consider annotation "controller.devfile.io/read-only"
+			Keys:       keys,
 		})
 	}
 	return result, nil

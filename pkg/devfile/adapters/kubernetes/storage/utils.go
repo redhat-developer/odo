@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -291,6 +292,8 @@ func mountSecret(volumeInfo configAutomount.AutomountInfo, containers, initConta
 		return mountSecretAsFile(volumeInfo, containers, initContainers, volumes)
 	case configAutomount.MountAsEnv:
 		return mountSecretAsEnv(volumeInfo, containers, initContainers, volumes)
+	case configAutomount.MountAsSubpath:
+		return mountSecretAsSubpath(volumeInfo, containers, initContainers, volumes)
 	}
 	return volumes
 }
@@ -329,12 +332,38 @@ func mountSecretAsEnv(volumeInfo configAutomount.AutomountInfo, containers, init
 	return volumes
 }
 
+func mountSecretAsSubpath(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-secret-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		for _, key := range volumeInfo.Keys {
+			addVolumeMountToContainer(container, corev1.VolumeMount{
+				Name:      volumeName,
+				MountPath: filepath.ToSlash(filepath.Join(volumeInfo.MountPath, key)),
+				SubPath:   key,
+			})
+		}
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return volumes
+}
+
 func mountConfigMap(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
 	switch volumeInfo.MountAs {
 	case configAutomount.MountAsFile:
 		return mountConfigMapAsFile(volumeInfo, containers, initContainers, volumes)
 	case configAutomount.MountAsEnv:
 		return mountConfigMapAsEnv(volumeInfo, containers, initContainers, volumes)
+	case configAutomount.MountAsSubpath:
+		return mountConfigMapAsSubpath(volumeInfo, containers, initContainers, volumes)
 	}
 	return volumes
 }
@@ -371,6 +400,32 @@ func mountConfigMapAsEnv(volumeInfo configAutomount.AutomountInfo, containers, i
 				},
 			},
 		})
+	})
+	return volumes
+}
+
+func mountConfigMapAsSubpath(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-cm-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		for _, key := range volumeInfo.Keys {
+			addVolumeMountToContainer(container, corev1.VolumeMount{
+				Name:      volumeName,
+				MountPath: filepath.ToSlash(filepath.Join(volumeInfo.MountPath, key)),
+				SubPath:   key,
+			})
+		}
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		},
 	})
 	return volumes
 }
