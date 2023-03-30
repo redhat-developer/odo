@@ -23,6 +23,18 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		labelMountName: labelMountValue,
 	})
 
+	defaultSecret1 := corev1.Secret{}
+	defaultSecret1.SetName("defaultSecret1")
+	defaultSecret1.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+
+	defaultSecret2 := corev1.Secret{}
+	defaultSecret2.SetName("defaultSecret2")
+	defaultSecret2.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+
 	type fields struct {
 		kubeClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
@@ -38,6 +50,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{defaultPVC1}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{}, nil).AnyTimes()
 					return client
 				},
 			},
@@ -57,6 +70,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{defaultPVC1, defaultPVC2}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{}, nil).AnyTimes()
 					return client
 				},
 			},
@@ -71,6 +85,32 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					VolumeType: VolumeTypePVC,
 					VolumeName: "defaultPVC2",
 					MountPath:  "/tmp/defaultPVC2",
+					MountAs:    MountAsFile,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Two default secrets",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{defaultSecret1, defaultSecret2}, nil).AnyTimes()
+					return client
+				},
+			},
+			want: []AutomountInfo{
+				{
+					VolumeType: VolumeTypeSecret,
+					VolumeName: "defaultSecret1",
+					MountPath:  "/etc/secret/defaultSecret1",
+					MountAs:    MountAsFile,
+				},
+				{
+					VolumeType: VolumeTypeSecret,
+					VolumeName: "defaultSecret2",
+					MountPath:  "/etc/secret/defaultSecret2",
 					MountAs:    MountAsFile,
 				},
 			},

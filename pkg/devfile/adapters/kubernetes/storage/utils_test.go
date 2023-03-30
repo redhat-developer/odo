@@ -540,7 +540,7 @@ func TestGetAutomountVolumes(t *testing.T) {
 			},
 			want: []v1.Volume{
 				{
-					Name: "auto-pvc1",
+					Name: "auto-pvc-pvc1",
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
 							ClaimName: "pvc1",
@@ -550,8 +550,61 @@ func TestGetAutomountVolumes(t *testing.T) {
 			},
 			wantVolumeMounts: []v1.VolumeMount{
 				{
-					Name:      "auto-pvc1",
+					Name:      "auto-pvc-pvc1",
 					MountPath: "/path/to/mount1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One PVC and one secret",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypePVC,
+						VolumeName: "pvc1",
+						MountPath:  "/path/to/mount1",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret2",
+						MountPath:  "/path/to/mount2",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []v1.Volume{
+				{
+					Name: "auto-pvc-pvc1",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "pvc1",
+						},
+					},
+				},
+				{
+					Name: "auto-secret-secret2",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret2",
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "auto-pvc-pvc1",
+					MountPath: "/path/to/mount1",
+				},
+				{
+					Name:      "auto-secret-secret2",
+					MountPath: "/path/to/mount2",
 				},
 			},
 			wantErr: false,

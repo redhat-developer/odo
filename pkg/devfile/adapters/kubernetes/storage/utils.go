@@ -256,21 +256,19 @@ func GetAutomountVolumes(configAutomountClient configAutomount.Client, container
 		switch volumeInfo.VolumeType {
 		case configAutomount.VolumeTypePVC:
 			result = mountPVC(volumeInfo, containers, initContainers, result)
+		case configAutomount.VolumeTypeSecret:
+			result = mountSecret(volumeInfo, containers, initContainers, result)
 		}
 	}
 	return result, nil
 }
 
 func mountPVC(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
-	volumeName := "auto-" + volumeInfo.VolumeName
-	containerNameToMountPaths := map[string][]string{}
-	allContainers := containers
-	allContainers = append(allContainers, initContainers...)
-	for _, container := range allContainers {
-		containerNameToMountPaths[container.Name] = []string{volumeInfo.MountPath}
-	}
+	volumeName := "auto-pvc-" + volumeInfo.VolumeName
 
+	containerNameToMountPaths := getContainerNameToMountPaths(volumeInfo, containers, initContainers)
 	addVolumeMountToContainers(containers, initContainers, volumeName, containerNameToMountPaths)
+
 	result = append(result, corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
@@ -280,4 +278,31 @@ func mountPVC(volumeInfo configAutomount.AutomountInfo, containers, initContaine
 		},
 	})
 	return result
+}
+
+func mountSecret(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-secret-" + volumeInfo.VolumeName
+
+	containerNameToMountPaths := getContainerNameToMountPaths(volumeInfo, containers, initContainers)
+	addVolumeMountToContainers(containers, initContainers, volumeName, containerNameToMountPaths)
+
+	result = append(result, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return result
+}
+
+func getContainerNameToMountPaths(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container) map[string][]string {
+	containerNameToMountPaths := map[string][]string{}
+	allContainers := containers
+	allContainers = append(allContainers, initContainers...)
+	for _, container := range allContainers {
+		containerNameToMountPaths[container.Name] = []string{volumeInfo.MountPath}
+	}
+	return containerNameToMountPaths
 }
