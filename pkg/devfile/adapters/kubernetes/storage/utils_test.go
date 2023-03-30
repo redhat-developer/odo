@@ -504,6 +504,7 @@ func TestGetAutomountVolumes(t *testing.T) {
 		args             args
 		want             []corev1.Volume
 		wantVolumeMounts []corev1.VolumeMount
+		wantEnvFroms     []corev1.EnvFromSource
 		wantErr          bool
 	}{
 		{
@@ -682,7 +683,48 @@ func TestGetAutomountVolumes(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// TODO: Add test cases.
+		{
+			name: "One secret and one configmap mounted as Env",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret1",
+						MountAs:    configAutomount.MountAsEnv,
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeConfigmap,
+						VolumeName: "cm2",
+						MountAs:    configAutomount.MountAsEnv,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want:             nil,
+			wantVolumeMounts: nil,
+			wantEnvFroms: []corev1.EnvFromSource{
+				{
+					SecretRef: &v1.SecretEnvSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: "secret1",
+						},
+					},
+				},
+				{
+					ConfigMapRef: &v1.ConfigMapEnvSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: "cm2",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		}, // TODO: Add test cases.
+
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -701,6 +743,9 @@ func TestGetAutomountVolumes(t *testing.T) {
 				allContainers = append(allContainers, initContainers...)
 				for _, container := range allContainers {
 					if diff := cmp.Diff(tt.wantVolumeMounts, container.VolumeMounts); diff != "" {
+						return fmt.Errorf(diff)
+					}
+					if diff := cmp.Diff(tt.wantEnvFroms, container.EnvFrom); diff != "" {
 						return fmt.Errorf(diff)
 					}
 				}

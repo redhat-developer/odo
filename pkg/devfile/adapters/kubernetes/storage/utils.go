@@ -283,6 +283,16 @@ func mountPVC(volumeInfo configAutomount.AutomountInfo, containers, initContaine
 }
 
 func mountSecret(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	switch volumeInfo.MountAs {
+	case configAutomount.MountAsFile:
+		return mountSecretAsFile(volumeInfo, containers, initContainers, result)
+	case configAutomount.MountAsEnv:
+		return mountSecretAsEnv(volumeInfo, containers, initContainers, result)
+	}
+	return result
+}
+
+func mountSecretAsFile(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
 	volumeName := "auto-secret-" + volumeInfo.VolumeName
 
 	containerNameToMountPaths := getContainerNameToMountPaths(volumeInfo, containers, initContainers)
@@ -299,7 +309,39 @@ func mountSecret(volumeInfo configAutomount.AutomountInfo, containers, initConta
 	return result
 }
 
+func mountSecretAsEnv(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	for i := range containers {
+		addEnvFromToContainer(&containers[i], corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		})
+	}
+	for i := range initContainers {
+		addEnvFromToContainer(&initContainers[i], corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		})
+	}
+	return result
+}
+
 func mountConfigMap(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	switch volumeInfo.MountAs {
+	case configAutomount.MountAsFile:
+		return mountConfigMapAsFile(volumeInfo, containers, initContainers, result)
+	case configAutomount.MountAsEnv:
+		return mountConfigMapAsEnv(volumeInfo, containers, initContainers, result)
+	}
+	return result
+}
+
+func mountConfigMapAsFile(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
 	volumeName := "auto-cm-" + volumeInfo.VolumeName
 
 	containerNameToMountPaths := getContainerNameToMountPaths(volumeInfo, containers, initContainers)
@@ -318,6 +360,28 @@ func mountConfigMap(volumeInfo configAutomount.AutomountInfo, containers, initCo
 	return result
 }
 
+func mountConfigMapAsEnv(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	for i := range containers {
+		addEnvFromToContainer(&containers[i], corev1.EnvFromSource{
+			ConfigMapRef: &corev1.ConfigMapEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		})
+	}
+	for i := range initContainers {
+		addEnvFromToContainer(&initContainers[i], corev1.EnvFromSource{
+			ConfigMapRef: &corev1.ConfigMapEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		})
+	}
+	return result
+}
+
 func getContainerNameToMountPaths(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container) map[string][]string {
 	containerNameToMountPaths := map[string][]string{}
 	allContainers := containers
@@ -326,4 +390,8 @@ func getContainerNameToMountPaths(volumeInfo configAutomount.AutomountInfo, cont
 		containerNameToMountPaths[container.Name] = []string{volumeInfo.MountPath}
 	}
 	return containerNameToMountPaths
+}
+
+func addEnvFromToContainer(container *corev1.Container, envFrom corev1.EnvFromSource) {
+	container.EnvFrom = append(container.EnvFrom, envFrom)
 }
