@@ -43,6 +43,9 @@ type ClientInterface interface {
 	NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
 	GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error)
 
+	// configmap.go
+	ListConfigMaps(labelSelector string) ([]corev1.ConfigMap, error)
+
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
 	GetOneDeployment(componentName, appName string, isPartOfComponent bool) (*appsv1.Deployment, error)

@@ -609,6 +609,79 @@ func TestGetAutomountVolumes(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "One PVC, one secret and one configmap",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypePVC,
+						VolumeName: "pvc1",
+						MountPath:  "/path/to/mount1",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret2",
+						MountPath:  "/path/to/mount2",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					info3 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeConfigmap,
+						VolumeName: "cm3",
+						MountPath:  "/path/to/mount3",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2, info3}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []v1.Volume{
+				{
+					Name: "auto-pvc-pvc1",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "pvc1",
+						},
+					},
+				},
+				{
+					Name: "auto-secret-secret2",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret2",
+						},
+					},
+				},
+				{
+					Name: "auto-cm-cm3",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm3",
+							},
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "auto-pvc-pvc1",
+					MountPath: "/path/to/mount1",
+				},
+				{
+					Name:      "auto-secret-secret2",
+					MountPath: "/path/to/mount2",
+				},
+				{
+					Name:      "auto-cm-cm3",
+					MountPath: "/path/to/mount3",
+				},
+			},
+			wantErr: false,
+		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {

@@ -258,6 +258,8 @@ func GetAutomountVolumes(configAutomountClient configAutomount.Client, container
 			result = mountPVC(volumeInfo, containers, initContainers, result)
 		case configAutomount.VolumeTypeSecret:
 			result = mountSecret(volumeInfo, containers, initContainers, result)
+		case configAutomount.VolumeTypeConfigmap:
+			result = mountConfigMap(volumeInfo, containers, initContainers, result)
 		}
 	}
 	return result, nil
@@ -291,6 +293,25 @@ func mountSecret(volumeInfo configAutomount.AutomountInfo, containers, initConta
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
 				SecretName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return result
+}
+
+func mountConfigMap(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, result []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-cm-" + volumeInfo.VolumeName
+
+	containerNameToMountPaths := getContainerNameToMountPaths(volumeInfo, containers, initContainers)
+	addVolumeMountToContainers(containers, initContainers, volumeName, containerNameToMountPaths)
+
+	result = append(result, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
 			},
 		},
 	})

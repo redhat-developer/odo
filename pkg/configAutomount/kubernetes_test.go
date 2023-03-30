@@ -35,6 +35,18 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		labelMountName: labelMountValue,
 	})
 
+	defaultCM1 := corev1.ConfigMap{}
+	defaultCM1.SetName("defaultCM1")
+	defaultCM1.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+
+	defaultCM2 := corev1.ConfigMap{}
+	defaultCM2.SetName("defaultCM2")
+	defaultCM2.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+
 	type fields struct {
 		kubeClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
@@ -51,6 +63,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{defaultPVC1}, nil).AnyTimes()
 					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{}, nil).AnyTimes()
 					return client
 				},
 			},
@@ -71,6 +84,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{defaultPVC1, defaultPVC2}, nil).AnyTimes()
 					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{}, nil).AnyTimes()
 					return client
 				},
 			},
@@ -97,6 +111,7 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
 					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{defaultSecret1, defaultSecret2}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{}, nil).AnyTimes()
 					return client
 				},
 			},
@@ -111,6 +126,33 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					VolumeType: VolumeTypeSecret,
 					VolumeName: "defaultSecret2",
 					MountPath:  "/etc/secret/defaultSecret2",
+					MountAs:    MountAsFile,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Two default configmaps",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{defaultCM1, defaultCM2}, nil).AnyTimes()
+					return client
+				},
+			},
+			want: []AutomountInfo{
+				{
+					VolumeType: VolumeTypeConfigmap,
+					VolumeName: "defaultCM1",
+					MountPath:  "/etc/config/defaultCM1",
+					MountAs:    MountAsFile,
+				},
+				{
+					VolumeType: VolumeTypeConfigmap,
+					VolumeName: "defaultCM2",
+					MountPath:  "/etc/config/defaultCM2",
 					MountAs:    MountAsFile,
 				},
 			},

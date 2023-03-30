@@ -1118,6 +1118,21 @@ func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
 }
 
+// ListConfigMaps mocks base method.
+func (m *MockClientInterface) ListConfigMaps(labelSelector string) ([]v12.ConfigMap, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListConfigMaps", labelSelector)
+	ret0, _ := ret[0].([]v12.ConfigMap)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListConfigMaps indicates an expected call of ListConfigMaps.
+func (mr *MockClientInterfaceMockRecorder) ListConfigMaps(labelSelector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListConfigMaps", reflect.TypeOf((*MockClientInterface)(nil).ListConfigMaps), labelSelector)
+}
+
 // ListDynamicResources mocks base method.
 func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource, selector string) (*unstructured.UnstructuredList, error) {
 	m.ctrl.T.Helper()
