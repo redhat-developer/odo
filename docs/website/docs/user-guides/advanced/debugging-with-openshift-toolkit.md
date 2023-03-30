@@ -3,12 +3,12 @@ title: Debugging an Application with OpenShift Toolkit
 sidebar_position: 7
 ---
 
-Debugging is an unavoidable part of development, and it can prove even more difficult when developing an application that runs remotely.
+Debugging is an unavoidable part of development, and it can prove even more difficult when developing an application that runs remotely in containers.
 
 However, this task is made absurdly simple with the help of the OpenShift Toolkit IDE plugin.
 
 ## OpenShift Toolkit
-OpenShift Toolkit is an IDE plugin available on [VS Code](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) and [Jet Brains](https://plugins.jetbrains.com/plugin/12030-openshift-toolkit-by-red-hat/) IDEs, that allows you to do all things that `odo` does, i.e. create, test, debug and deploy cloud-native applications on a cloud-native environment in simple steps.
+OpenShift Toolkit is an IDE plugin available on [VS Code](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) and [JetBrains](https://plugins.jetbrains.com/plugin/12030-openshift-toolkit-by-red-hat/) IDEs, that allows you to do all things that `odo` does, i.e. create, test, debug and deploy cloud-native applications on a cloud-native environment in simple steps.
 `odo` enables this plugin to do what it does.
 
 ## Prerequisites
@@ -17,7 +17,7 @@ OpenShift Toolkit is an IDE plugin available on [VS Code](https://marketplace.vi
 :::note
  This tutorial uses a Node.js application, but you can use any application that has Devfile with debug command defined in it. If your Devfile does not contain a debug command, refer to [Configure Devfile to support debugging](#configure-devfile-to-support-debugging).
 :::
-3. You have [installed](/docs/overview/installation#ide-installation) the OpenShift Toolkit Plugin in your preferred VS Code or a JetBrains IDE.
+3. You have [installed](/docs/overview/installation#ide-installation) the OpenShift Toolkit Plugin in your preferred VS Code or a JetBrains IDE. This tutorial uses VSCode, but the steps are similar for a JetBrains IDE.
 4. You have opened the application in the IDE.
 
 In the plugin window, you should be able to see the cluster you are logged into in "APPLICATION EXPLORER" section, and your component "my-nodejs-app" in "COMPONENTS" section.
