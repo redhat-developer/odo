@@ -23,6 +23,15 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		labelMountName: labelMountValue,
 	})
 
+	pvcMountPath := corev1.PersistentVolumeClaim{}
+	pvcMountPath.SetName("pvcMountPath")
+	pvcMountPath.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	pvcMountPath.SetAnnotations(map[string]string{
+		annotationMountPathName: "/specific/pvc/mount/path",
+	})
+
 	defaultSecret1 := corev1.Secret{}
 	defaultSecret1.SetName("defaultSecret1")
 	defaultSecret1.SetLabels(map[string]string{
@@ -35,6 +44,15 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		labelMountName: labelMountValue,
 	})
 
+	secretMountPath := corev1.Secret{}
+	secretMountPath.SetName("secretMountPath")
+	secretMountPath.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	secretMountPath.SetAnnotations(map[string]string{
+		annotationMountPathName: "/specific/secret/mount/path",
+	})
+
 	defaultCM1 := corev1.ConfigMap{}
 	defaultCM1.SetName("defaultCM1")
 	defaultCM1.SetLabels(map[string]string{
@@ -45,6 +63,15 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 	defaultCM2.SetName("defaultCM2")
 	defaultCM2.SetLabels(map[string]string{
 		labelMountName: labelMountValue,
+	})
+
+	cmMountPath := corev1.ConfigMap{}
+	cmMountPath.SetName("cmMountPath")
+	cmMountPath.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	cmMountPath.SetAnnotations(map[string]string{
+		annotationMountPathName: "/specific/configmap/mount/path",
 	})
 
 	type fields struct {
@@ -153,6 +180,39 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 					VolumeType: VolumeTypeConfigmap,
 					VolumeName: "defaultCM2",
 					MountPath:  "/etc/config/defaultCM2",
+					MountAs:    MountAsFile,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "PVC, Secret and ConfigMap with non default mount paths",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{pvcMountPath}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{secretMountPath}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{cmMountPath}, nil).AnyTimes()
+					return client
+				},
+			},
+			want: []AutomountInfo{
+				{
+					VolumeType: VolumeTypePVC,
+					VolumeName: "pvcMountPath",
+					MountPath:  "/specific/pvc/mount/path",
+					MountAs:    MountAsFile,
+				},
+				{
+					VolumeType: VolumeTypeSecret,
+					VolumeName: "secretMountPath",
+					MountPath:  "/specific/secret/mount/path",
+					MountAs:    MountAsFile,
+				},
+				{
+					VolumeType: VolumeTypeConfigmap,
+					VolumeName: "cmMountPath",
+					MountPath:  "/specific/configmap/mount/path",
 					MountAs:    MountAsFile,
 				},
 			},

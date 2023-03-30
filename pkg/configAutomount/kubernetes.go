@@ -9,6 +9,8 @@ import (
 const (
 	labelMountName  = "controller.devfile.io/mount-to-devworkspace"
 	labelMountValue = "true"
+
+	annotationMountPathName = "controller.devfile.io/mount-path"
 )
 
 type KubernetesClient struct {
@@ -53,10 +55,14 @@ func (o KubernetesClient) getAutomountingPVCs() ([]AutomountInfo, error) {
 
 	var result []AutomountInfo
 	for _, pvc := range pvcs {
+		mountPath := filepath.ToSlash(filepath.Join("/", "tmp", pvc.Name))
+		if val, found := getMountPathFromAnnotation(pvc.Annotations); found {
+			mountPath = val
+		}
 		result = append(result, AutomountInfo{
 			VolumeType: VolumeTypePVC,
 			VolumeName: pvc.Name,
-			MountPath:  filepath.ToSlash(filepath.Join("/", "tmp", pvc.Name)), // TODO consider annotation "controller.devfile.io/mount-path"
+			MountPath:  mountPath,
 			MountAs:    MountAsFile,
 			ReadOnly:   false, // TODO consider annotation "controller.devfile.io/read-only"
 		})
@@ -72,12 +78,16 @@ func (o KubernetesClient) getAutomountingSecrets() ([]AutomountInfo, error) {
 
 	var result []AutomountInfo
 	for _, secret := range secrets {
+		mountPath := filepath.ToSlash(filepath.Join("/", "etc", "secret", secret.Name))
+		if val, found := getMountPathFromAnnotation(secret.Annotations); found {
+			mountPath = val
+		}
 		result = append(result, AutomountInfo{
 			VolumeType: VolumeTypeSecret,
 			VolumeName: secret.Name,
-			MountPath:  filepath.ToSlash(filepath.Join("/", "etc", "secret", secret.Name)), // TODO consider annotation "controller.devfile.io/mount-path"
-			MountAs:    MountAsFile,                                                        // TODO consider annotation "controller.devfile.io/mount-as"
-			ReadOnly:   false,                                                              // TODO consider annotation "controller.devfile.io/read-only"
+			MountPath:  mountPath,
+			MountAs:    MountAsFile, // TODO consider annotation "controller.devfile.io/mount-as"
+			ReadOnly:   false,       // TODO consider annotation "controller.devfile.io/read-only"
 		})
 	}
 	return result, nil
@@ -91,13 +101,22 @@ func (o KubernetesClient) getAutomountingConfigmaps() ([]AutomountInfo, error) {
 
 	var result []AutomountInfo
 	for _, cm := range cms {
+		mountPath := filepath.ToSlash(filepath.Join("/", "etc", "config", cm.Name))
+		if val, found := getMountPathFromAnnotation(cm.Annotations); found {
+			mountPath = val
+		}
 		result = append(result, AutomountInfo{
 			VolumeType: VolumeTypeConfigmap,
 			VolumeName: cm.Name,
-			MountPath:  filepath.ToSlash(filepath.Join("/", "etc", "config", cm.Name)), // TODO consider annotation "controller.devfile.io/mount-path"
-			MountAs:    MountAsFile,                                                    // TODO consider annotation "controller.devfile.io/mount-as"
-			ReadOnly:   false,                                                          // TODO consider annotation "controller.devfile.io/read-only"
+			MountPath:  mountPath,
+			MountAs:    MountAsFile, // TODO consider annotation "controller.devfile.io/mount-as"
+			ReadOnly:   false,       // TODO consider annotation "controller.devfile.io/read-only"
 		})
 	}
 	return result, nil
+}
+
+func getMountPathFromAnnotation(annotations map[string]string) (string, bool) {
+	val, found := annotations[annotationMountPathName]
+	return val, found
 }
