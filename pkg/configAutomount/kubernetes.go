@@ -22,10 +22,23 @@ func NewKubernetesClient(kubeClient kclient.ClientInterface) KubernetesClient {
 }
 
 func (o KubernetesClient) GetAutomountingVolumes() ([]AutomountInfo, error) {
+	var result []AutomountInfo
+
+	pvcs, err := o.getAutomountingPVCs()
+	if err != nil {
+		return nil, err
+	}
+	result = append(result, pvcs...)
+
+	return result, nil
+}
+
+func (o KubernetesClient) getAutomountingPVCs() ([]AutomountInfo, error) {
 	pvcs, err := o.kubeClient.ListPVCs(labelMountName + "=" + labelMountValue)
 	if err != nil {
 		return nil, err
 	}
+
 	var result []AutomountInfo
 	for _, pvc := range pvcs {
 		result = append(result, AutomountInfo{
