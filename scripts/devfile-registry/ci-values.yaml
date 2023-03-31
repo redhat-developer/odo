@@ -1,0 +1,48 @@
+#
+#   Copyright 2021-2022 Red Hat, Inc.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+global:
+  ingress:
+    class: 'public-iks-k8s-nginx'
+    domain: 'odo-test-kubernetes-clust-49529fc6e6a4a9fe7ebba9a3db5b55c4-0000.eu-de.containers.appdomain.cloud'
+    secretName: ''
+  isOpenShift: false
+  tlsEnabled: false
+  headless: false
+
+devfileIndex:
+  image: quay.io/pvala18/devfile-index
+  tag: latest
+  imagePullPolicy: Always
+  memoryLimit: 256Mi
+
+registryViewer:
+  image: quay.io/devfile/registry-viewer
+  tag: next
+  imagePullPolicy: Always
+  memoryLimit: 256Mi
+
+ociRegistry:
+  image: quay.io/devfile/oci-registry
+  tag: sha-4bc237b
+  imagePullPolicy: Always
+  memoryLimit: 256Mi
+
+persistence:
+  enabled: false
+  size: 1Gi
+
+telemetry:
+  registryName: "devfile-registry"
