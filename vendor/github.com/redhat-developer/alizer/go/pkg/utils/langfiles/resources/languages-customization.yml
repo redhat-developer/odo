@@ -34,6 +34,9 @@ JavaScript:
     - "[^-]package.json"
   component: true
 Python:
+  configuration_files:
+    - "requirements.txt"
+    - "pyproject.toml"
   component: true
 Rust:
   configuration_files:

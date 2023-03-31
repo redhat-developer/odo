@@ -712,7 +712,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/redhat-developer/alizer/go v0.0.0-20230124144157-ad2d3056c08d
+# github.com/redhat-developer/alizer/go v0.0.0-20230331140053-a1115da45e0c
 ## explicit; go 1.17
 github.com/redhat-developer/alizer/go/pkg/apis/enricher
 github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/dotnet

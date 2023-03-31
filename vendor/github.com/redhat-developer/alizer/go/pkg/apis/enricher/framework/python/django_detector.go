@@ -29,14 +29,19 @@ func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]
 	urlsPy := utils.GetFile(files, "urls.py")
 	wsgiPy := utils.GetFile(files, "wsgi.py")
 	asgiPy := utils.GetFile(files, "asgi.py")
+	requirementsTxt := utils.GetFile(files, "requirements.txt")
+	projectToml := utils.GetFile(files, "pyproject.toml")
 
 	djangoFiles := []string{}
+	configDjangoFiles := []string{}
 	utils.AddToArrayIfValueExist(&djangoFiles, managePy)
 	utils.AddToArrayIfValueExist(&djangoFiles, urlsPy)
 	utils.AddToArrayIfValueExist(&djangoFiles, wsgiPy)
 	utils.AddToArrayIfValueExist(&djangoFiles, asgiPy)
+	utils.AddToArrayIfValueExist(&configDjangoFiles, requirementsTxt)
+	utils.AddToArrayIfValueExist(&configDjangoFiles, projectToml)
 
-	if hasFramework(&djangoFiles, "from django.") {
+	if hasFramework(&djangoFiles, "from django.") || hasFramework(&configDjangoFiles, "django") || hasFramework(&configDjangoFiles, "Django") {
 		language.Frameworks = append(language.Frameworks, "Django")
 	}
 }
