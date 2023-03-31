@@ -94,7 +94,7 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	CONFIG_AUTOMOUNT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE, EXEC},
-	DEPLOY:           {KUBERNETES, FILESYSTEM},
+	DEPLOY:           {KUBERNETES, FILESYSTEM, CONFIG_AUTOMOUNT},
 	DEV: {
 		BINDING,
 		DELETE_COMPONENT,
@@ -230,7 +230,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.PodmanClient, dep.ExecClient)
 	}
 	if isDefined(command, DEPLOY) {
-		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient, dep.FS)
+		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient, dep.ConfigAutomountClient, dep.FS)
 	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
