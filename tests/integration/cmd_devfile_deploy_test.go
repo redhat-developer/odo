@@ -13,8 +13,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/redhat-developer/odo/pkg/labels"
 	"k8s.io/utils/pointer"
+
+	"github.com/redhat-developer/odo/pkg/labels"
 
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
@@ -728,7 +729,7 @@ CMD ["npm", "start"]
 			})
 		})
 
-		When("running odo dev with some components referenced in the Devfile", func() {
+		When("running odo deploy with some components referenced in the Devfile", func() {
 			var stdout string
 
 			BeforeEach(func() {
