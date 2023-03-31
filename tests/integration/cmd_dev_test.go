@@ -591,6 +591,96 @@ ComponentSettings:
 				helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
 			})
 		})
+
+		When("Automount volumes are present in the namespace", func() {
+
+			BeforeEach(func() {
+				commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "config-automount/"))
+			})
+
+			When("odo dev is executed", func() {
+
+				var devSession helper.DevSession
+
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should mount the volumes", func() {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+
+					// Check volumes are mounted
+					for _, path := range []string{
+						"/tmp/automount-default-pvc",
+						"/etc/config/automount-default-configmap",
+						"/etc/secret/automount-default-secret",
+
+						"/tmp/automount-readonly-pvc",
+
+						"/mnt/mount-path/pvc",
+						"/mnt/mount-path/configmap",
+						"/mnt/mount-path/secret",
+					} {
+						var output string
+						Eventually(func() bool {
+							output, _ = component.Exec("runtime", []string{"df", path}, nil)
+							return len(output) > 0
+						}).WithPolling(1 * time.Second).WithTimeout(60 * time.Second).Should(BeTrue())
+						// This checks this is really a mount
+						Expect(output).ToNot(ContainSubstring("overlay"))
+					}
+
+					// Check files are present for configmap / secret
+					files := map[string]string{
+						"/etc/config/automount-default-configmap/foo1":  "bar1",
+						"/etc/config/automount-default-configmap/ping1": "pong1",
+						"/etc/secret/automount-default-secret/code1":    "1234",
+						"/etc/secret/automount-default-secret/secret1":  "PassWd1",
+
+						"/mnt/mount-path/configmap/foo2":  "bar2",
+						"/mnt/mount-path/configmap/ping2": "pong2",
+						"/mnt/mount-path/secret/code2":    "2345",
+						"/mnt/mount-path/secret/secret2":  "PassWd2",
+
+						"/mnt/subpaths/foo5":    "bar5",
+						"/mnt/subpaths/ping5":   "pong5",
+						"/mnt/subpaths/code5":   "5678",
+						"/mnt/subpaths/secret5": "PassWd5",
+					}
+					for file, content := range files {
+						output, _ := component.Exec("runtime", []string{"cat", file}, pointer.Bool(true))
+						Expect(output).To(Equal(content))
+					}
+
+					envVars := map[string]string{
+						"foo4":  "bar4",
+						"ping4": "pong4",
+
+						"code4":   "4567",
+						"secret4": "PassWd4",
+					}
+					for name, value := range envVars {
+						output, _ := component.Exec("runtime", []string{"bash", "-c", "echo -n $" + name}, pointer.Bool(true))
+						Expect(output).To(Equal(value))
+					}
+
+					// Default PVC is not read-only
+					component.Exec("runtime", []string{"touch", "/tmp/automount-default-pvc/newfile"}, pointer.Bool(true))
+
+					// Read-only PVC is read-only
+					_, stderr := component.Exec("runtime", []string{"touch", "/tmp/automount-readonly-pvc/newfile"}, pointer.Bool(false))
+					Expect(stderr).To(ContainSubstring("Read-only file system"))
+
+				})
+			})
+		})
 	})
 	Context("checking if odo dev matches local Devfile K8s resources and remote resources", func() {
 		for _, devfile := range []struct {

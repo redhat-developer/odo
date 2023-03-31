@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automount-mount-path-configmap
+  labels:
+    controller.devfile.io/mount-to-devworkspace: "true"
+  annotations:
+    controller.devfile.io/mount-path: "/mnt/mount-path/configmap"
+data:
+  foo2: bar2
+  ping2: pong2
