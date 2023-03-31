@@ -46,7 +46,7 @@ var _ = Describe("doc command reference odo create namespace", func() {
 
 	Context("To create a project resource", func() {
 
-		BeforeEach(func() {
+		AfterEach(func() {
 			commonVar.CliRunner.DeleteNamespaceProject("myproject", true)
 		})
 
