@@ -4,8 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/redhat-developer/odo/pkg/api"
 	"io"
+	"k8s.io/klog"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -58,6 +64,9 @@ type DevOptions struct {
 	runCommandFlag       string
 	ignoreLocalhostFlag  bool
 	forwardLocalhostFlag bool
+	// TODO: Add doc
+	portForwardFlag []string
+	addressFlag     string
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -127,6 +136,26 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		}
 		scontext.SetPlatform(ctx, o.clientset.PodmanClient)
 	}
+
+	if o.randomPortsFlag && o.portForwardFlag != nil {
+		return errors.New("--random-ports and --port-forward cannot be used together")
+	}
+
+	if o.portForwardFlag != nil {
+		containerEndpointMapping, err := libdevfile.GetDevfileContainerEndpointMapping(devfileObj, true)
+		if err != nil {
+			return fmt.Errorf("failed to obtain container endpoints to validate --port-forward ports; cause:%w", err)
+		}
+
+		forwardedPorts, err := parsePortForwardFlag(o.portForwardFlag)
+		if err != nil {
+			return err
+		}
+		o.forwardedPorts = forwardedPorts
+
+		return validatePortForwardFlagData(forwardedPorts, containerEndpointMapping)
+	}
+
 	return nil
 }
 
@@ -246,6 +275,12 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Whether to ignore errors related to port-forwarding apps listening on the container loopback interface. Applicable only if platform is podman.")
 	devCmd.Flags().BoolVar(&o.forwardLocalhostFlag, "forward-localhost", false,
 		"Whether to enable port-forwarding if app is listening on the container loopback interface. Applicable only if platform is podman.")
+	// TODO: Fix usage
+	//   kubectl port-forward TYPE/NAME [options] [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]
+	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
+		"Define custom port forwards")
+	devCmd.Flags().StringVar(&o.addressFlag, "address", "",
+		"Which local address the port will be listening")
 
 	clientset.Add(devCmd,
 		clientset.BINDING,
@@ -267,4 +302,95 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	commonflags.UseVariablesFlags(devCmd)
 	commonflags.UsePlatformFlag(devCmd)
 	return devCmd
+}
+
+// validatePortForwardFlagData runs validation checks on the --port-forward flag data as follows:
+// 1. Every container port defined by the flag is present in the devfile
+// 2. Every local port defined by the flag is unique
+// 3. If multiple containers have the same container port, the validation fails and asks the user to provide container names
+func validatePortForwardFlagData(forwardedPorts []api.ForwardedPort, containerEndpointMapping map[string][]v1alpha2.Endpoint) error {
+	// TODO: Should we check for all errors before returning?
+
+	// Validate that local Ports present in forwardedPorts are unique
+	var localPorts = make(map[int]struct{})
+	for _, fPort := range forwardedPorts {
+		if _, ok := localPorts[fPort.LocalPort]; ok {
+			return fmt.Errorf("local port %d is used more than once, please use unique local ports", fPort.LocalPort)
+		}
+		localPorts[fPort.LocalPort] = struct{}{}
+	}
+
+	// portContainerMapping maps a target port with a list of containers where it is present.
+	// This is useful for checking that no custom port-forwarding config contains duplicate containerPort without a container name
+	// {"runtime": {{TargetPort: 9090}, {TargetPort: 8000}}, "tools":   {{TargetPort: 9090}}}
+	// >>>> {9090: {"runtime", "tools"}, 8000: {"runtime"}}
+	portContainerMapping := make(map[int][]string)
+	for container, endpoints := range containerEndpointMapping {
+		for _, endpoint := range endpoints {
+			portContainerMapping[endpoint.TargetPort] = append(portContainerMapping[endpoint.TargetPort], container)
+		}
+	}
+
+	// 	Check that all endpoints are valid and present in the Devfile
+portLoop:
+	for _, fPort := range forwardedPorts {
+		if fPort.ContainerName != "" {
+			if containerEndpoints, ok := containerEndpointMapping[fPort.ContainerName]; ok {
+				for _, endpoint := range containerEndpoints {
+					if endpoint.TargetPort == fPort.ContainerPort {
+						klog.V(1).Infof("%d container port matches %s endpoints of container:%s", fPort.ContainerPort, endpoint.Name, fPort.ContainerName)
+						continue portLoop
+					}
+				}
+				return fmt.Errorf("%d container port does not match any endpoints of container:%s", fPort.ContainerPort, fPort.ContainerName)
+			} else {
+				return fmt.Errorf("container:%s defined by --port-forward not found", fPort.ContainerName)
+			}
+		} else {
+			// Validate that a custom portforwarding config without a container targets a unique containerPort
+			if containers, ok := portContainerMapping[fPort.ContainerPort]; ok && len(containers) > 1 {
+				return fmt.Errorf("multiple container component (%s) found with same container port %d, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>", strings.Join(portContainerMapping[fPort.ContainerPort], ", "), fPort.ContainerPort)
+			}
+			for _, containerEndpoints := range containerEndpointMapping {
+				for _, endpoint := range containerEndpoints {
+					if endpoint.TargetPort == fPort.ContainerPort {
+						klog.V(1).Infof("%d port matches %s endpoints of container %s", fPort.ContainerPort, endpoint.Name, fPort.ContainerName)
+						continue portLoop
+					}
+				}
+			}
+			return fmt.Errorf("%d container port defined by --port-forward not found", fPort.ContainerPort)
+		}
+	}
+	return nil
+}
+
+// parsePortForwardFlag parses custom port forwarding configuration; acceptable patterns: <localPort>:<containerPort>, <localPort>:<containerName>:<containerPort>
+func parsePortForwardFlag(portForwardFlag []string) (forwardedPorts []api.ForwardedPort, err error) {
+	// acceptable examples: 8000:runtime_123:8080, 8000:9000, 8000:runtime:8080, 20001:20000
+	// unacceptable examples: :8000, 80000:
+	pattern := `^(\d{1,5})(:\w*)?:(\d{1,5})$`
+	const largestPortValue = 65535
+	for _, portData := range portForwardFlag {
+		if matched, _ := regexp.MatchString(pattern, portData); !matched {
+			return nil, errors.New("ports are not defined properly, acceptable formats are: <localPort>:<containerPort>, <localPort>:<containerName>:<containerPort>")
+		}
+		var portF api.ForwardedPort
+
+		portDataArr := strings.Split(portData, ":")
+		switch len(portDataArr) {
+		case 2:
+			portF.LocalPort, _ = strconv.Atoi(portDataArr[0])
+			portF.ContainerPort, _ = strconv.Atoi(portDataArr[1])
+		case 3:
+			portF.LocalPort, _ = strconv.Atoi(portDataArr[0])
+			portF.ContainerName = portDataArr[1]
+			portF.ContainerPort, _ = strconv.Atoi(portDataArr[2])
+		}
+		if !(portF.LocalPort > 0 && portF.LocalPort <= largestPortValue) || !(portF.ContainerPort > 0 && portF.ContainerPort <= largestPortValue) {
+			return nil, fmt.Errorf("%s is invalid; port number must not be greater than 0 and less than %d", portData, largestPortValue)
+		}
+		forwardedPorts = append(forwardedPorts, portF)
+	}
+	return forwardedPorts, nil
 }
