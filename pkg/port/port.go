@@ -1,12 +1,16 @@
 package port
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/segmentio/backo-go"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -234,6 +238,86 @@ func GetConnections(execClient exec.Client, podName string, containerName string
 	}
 
 	return connections, nil
+}
+
+// CheckAppPortsListening checks whether all the specified ports are really opened and in LISTEN mode in each corresponding container
+// of the pod specified.
+// It does so by periodically looking inside the container for listening connections until it finds each of the specified ports,
+// or until the specified timeout has elapsed.
+func CheckAppPortsListening(
+	ctx context.Context,
+	execClient exec.Client,
+	podName string,
+	containerPortMapping map[string][]int,
+	timeout time.Duration,
+) error {
+	if len(containerPortMapping) == 0 {
+		return nil
+	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	hasPortFn := func(connections []Connection, p int) bool {
+		for _, c := range connections {
+			if p == c.LocalPort {
+				return true
+			}
+		}
+		return false
+	}
+
+	g := new(errgroup.Group)
+	for container, ports := range containerPortMapping {
+		container := container
+		ports := ports
+
+		g.Go(func() error {
+			b := backo.NewBacko(1*time.Second, 2, 0, 10*time.Second)
+			ticker := b.NewTicker()
+			portsNotListening := make(map[int]struct{})
+
+			for {
+				select {
+				case <-ctxWithTimeout.Done():
+					var unopenedPorts []string
+					for p := range portsNotListening {
+						unopenedPorts = append(unopenedPorts, strconv.Itoa(p))
+					}
+					msg := fmt.Sprintf("timeout while checking for ports in container %q", container)
+					if len(unopenedPorts) != 0 {
+						msg += fmt.Sprintf("; ports not listening: %s", strings.Join(unopenedPorts, ", "))
+					}
+					return fmt.Errorf("%s: %w", msg, ctxWithTimeout.Err())
+
+				case <-ticker.C:
+					connections, err := GetListeningConnections(execClient, podName, container)
+					if err != nil {
+						klog.V(3).Infof("error getting listening connections in container %q: %v", container, err)
+					} else {
+						for _, p := range ports {
+							if hasPortFn(connections, p) {
+								delete(portsNotListening, p)
+								continue
+							}
+							klog.V(3).Infof("port %d not listening in container %q", p, container)
+							portsNotListening[p] = struct{}{}
+						}
+						if len(portsNotListening) == 0 {
+							// no error and all ports expected to be opened are opened at this point
+							return nil
+						}
+					}
+				}
+			}
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func stateToString(state int) string {
