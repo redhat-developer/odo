@@ -2,6 +2,7 @@ package dev
 
 import (
 	"context"
+	"github.com/redhat-developer/odo/pkg/api"
 	"io"
 )
 
@@ -18,6 +19,8 @@ type StartOptions struct {
 	DebugCommand string
 	// if RandomPorts is set, will port forward on random local ports, else uses ports starting at 20001
 	RandomPorts bool
+	// CustomForwardedPorts define custom ports for port forwarding
+	CustomForwardedPorts []api.ForwardedPort
 	// if WatchFiles is set, files changes will trigger a new sync to the container
 	WatchFiles bool
 	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.

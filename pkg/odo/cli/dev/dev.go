@@ -46,9 +46,10 @@ type DevOptions struct {
 	clientset *clientset.Clientset
 
 	// Variables
-	ignorePaths []string
-	out         io.Writer
-	errOut      io.Writer
+	ignorePaths    []string
+	out            io.Writer
+	errOut         io.Writer
+	forwardedPorts []api.ForwardedPort
 
 	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
 	ctx context.Context
@@ -223,15 +224,16 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		o.out,
 		o.errOut,
 		dev.StartOptions{
-			IgnorePaths:      o.ignorePaths,
-			Debug:            o.debugFlag,
-			BuildCommand:     o.buildCommandFlag,
-			RunCommand:       o.runCommandFlag,
-			RandomPorts:      o.randomPortsFlag,
-			WatchFiles:       !o.noWatchFlag,
-			IgnoreLocalhost:  o.ignoreLocalhostFlag,
-			ForwardLocalhost: o.forwardLocalhostFlag,
-			Variables:        variables,
+			IgnorePaths:          o.ignorePaths,
+			Debug:                o.debugFlag,
+			BuildCommand:         o.buildCommandFlag,
+			RunCommand:           o.runCommandFlag,
+			RandomPorts:          o.randomPortsFlag,
+			WatchFiles:           !o.noWatchFlag,
+			IgnoreLocalhost:      o.ignoreLocalhostFlag,
+			ForwardLocalhost:     o.forwardLocalhostFlag,
+			Variables:            variables,
+			CustomForwardedPorts: o.forwardedPorts,
 		},
 	)
 }
