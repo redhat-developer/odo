@@ -125,12 +125,11 @@ func (o *DevClient) reconcile(
 
 	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
 	appReadySpinner := log.Spinner("Waiting for the application to be ready")
-	defer appReadySpinner.End(false)
-	err = o.checkAppPorts(pod.Name, fwPorts)
+	err = o.checkAppPorts(ctx, pod.Name, fwPorts)
+	appReadySpinner.End(err == nil)
 	if err != nil {
-		return err
+		log.Warningf("Port Forwarding might not work correctly: %v", err)
 	}
-	appReadySpinner.End(true)
 
 	// By default, Podman will not forward to container applications listening on the loopback interface.
 	// So we are trying to detect such cases and act accordingly.
@@ -246,12 +245,12 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 	return pod, fwPorts, nil
 }
 
-func (o *DevClient) checkAppPorts(podName string, portsToFwd []api.ForwardedPort) error {
+func (o *DevClient) checkAppPorts(ctx context.Context, podName string, portsToFwd []api.ForwardedPort) error {
 	containerPortsMapping := make(map[string][]int)
 	for _, p := range portsToFwd {
 		containerPortsMapping[p.ContainerName] = append(containerPortsMapping[p.ContainerName], p.ContainerPort)
 	}
-	return port.CheckAppPortsListening(o.execClient, podName, containerPortsMapping, 1*time.Minute)
+	return port.CheckAppPortsListening(ctx, o.execClient, podName, containerPortsMapping, 1*time.Minute)
 }
 
 // handleLoopbackPorts tries to detect if any of the ports to forward (in fwPorts) is actually bound to the loopback interface within the specified pod.

@@ -354,12 +354,11 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 
 	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
 	appReadySpinner := log.Spinner("Waiting for the application to be ready")
-	defer appReadySpinner.End(false)
-	err = a.checkAppPorts(pod.Name, portsToForward)
+	err = a.checkAppPorts(ctx, pod.Name, portsToForward)
+	appReadySpinner.End(err == nil)
 	if err != nil {
-		return err
+		log.Warningf("Port Forwarding might not work correctly: %v", err)
 	}
-	appReadySpinner.End(true)
 
 	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
 	if err != nil {
@@ -776,14 +775,14 @@ func (a Adapter) deleteServiceBindingSecrets(serviceBindingSecretsToRemove []uns
 	return nil
 }
 
-func (a *Adapter) checkAppPorts(podName string, portsToFwd map[string][]devfilev1.Endpoint) error {
+func (a *Adapter) checkAppPorts(ctx context.Context, podName string, portsToFwd map[string][]devfilev1.Endpoint) error {
 	containerPortsMapping := make(map[string][]int)
 	for c, ports := range portsToFwd {
 		for _, p := range ports {
 			containerPortsMapping[c] = append(containerPortsMapping[c], p.TargetPort)
 		}
 	}
-	return port.CheckAppPortsListening(a.execClient, podName, containerPortsMapping, 1*time.Minute)
+	return port.CheckAppPortsListening(ctx, a.execClient, podName, containerPortsMapping, 1*time.Minute)
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.
