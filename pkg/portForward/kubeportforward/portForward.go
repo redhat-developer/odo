@@ -72,21 +72,11 @@ func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentNa
 
 	var portPairs map[string][]string
 	if len(definedPorts) != 0 {
-		portPairs = make(map[string][]string)
-		for _, port := range definedPorts {
-			s := fmt.Sprintf("%d:%d", port.LocalPort, port.ContainerPort)
-			if port.LocalPort == 0 {
-				// random port
-				s = fmt.Sprintf(":%d", port.ContainerPort)
-			}
-			portPairs[port.ContainerName] = append(portPairs[port.ContainerName], s)
-		}
+		portPairs = getCustomPortPairs(definedPorts, ceMapping)
+	} else if randomPorts {
+		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
 	} else {
-		if randomPorts {
-			portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
-		} else {
-			portPairs = portPairsFromContainerEndpoints(ceMapping)
-		}
+		portPairs = portPairsFromContainerEndpoints(ceMapping)
 	}
 	var portPairsSlice []string
 	for _, v1 := range portPairs {
@@ -174,6 +164,48 @@ func (o *PFClient) StopPortForwarding(componentName string) {
 
 func (o *PFClient) GetForwardedPorts() map[string][]v1alpha2.Endpoint {
 	return o.appliedEndpoints
+}
+
+// getCustomPortPairs assigns custom port on localhost to a container port if provided by the definedPorts config,
+// if not, it assigns a port starting from 20001 as done in portPairsFromContainerEndpoints
+func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][]v1alpha2.Endpoint) map[string][]string {
+	portPairs := make(map[string][]string)
+
+	// getCustomLocalPort analyzes the definedPorts i.e. custom portforwarding to see if a containerPort has a custom localPort, if a container name is provided, it also takes that into account.
+	getCustomLocalPort := func(containerPort int, container string) int {
+		for _, dp := range definedPorts {
+			if dp.ContainerPort == containerPort {
+				if dp.ContainerName != "" {
+					if dp.ContainerName == container {
+						return dp.LocalPort
+					}
+				} else {
+					return dp.LocalPort
+				}
+			}
+		}
+		return 0
+	}
+	startPort := 20001
+	endPort := startPort + 10000
+	for name, ports := range ceMapping {
+		for _, p := range ports {
+			freePort := getCustomLocalPort(p.TargetPort, name)
+			if freePort == 0 {
+				var err error
+				freePort, err = util.NextFreePort(startPort, endPort, nil)
+				if err != nil {
+					klog.Infof("%s", err)
+					continue
+				}
+				startPort = freePort + 1
+			}
+			pair := fmt.Sprintf("%d:%d", freePort, p.TargetPort)
+			portPairs[name] = append(portPairs[name], pair)
+		}
+	}
+
+	return portPairs
 }
 
 // randomPortPairsFromContainerEndpoints assigns a random (empty) port on localhost to each port in the provided containerEndpoints map
