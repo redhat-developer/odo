@@ -32,7 +32,7 @@ var _ = Describe("doc command reference odo create namespace", func() {
 			commonVar.CliRunner.DeleteNamespaceProject("mynamespace", true)
 		})
 
-		FIt("Creates a namespace for a kubernetes cluster", func() {
+		It("Creates a namespace for a kubernetes cluster", func() {
 			args := []string{"create", "namespace", "mynamespace"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
@@ -50,7 +50,7 @@ var _ = Describe("doc command reference odo create namespace", func() {
 			commonVar.CliRunner.DeleteNamespaceProject("myproject", true)
 		})
 
-		FIt("Creates a project resource for a kubernetes cluster", func() {
+		It("Creates a project resource for a kubernetes cluster", func() {
 			args := []string{"create", "project", "myproject"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
