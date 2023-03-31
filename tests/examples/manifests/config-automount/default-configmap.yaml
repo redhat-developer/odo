@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: automount-default-configmap
   labels:
-    controller.devfile.io/mount-to-devworkspace: "true"
+    controller.devfile.io/mount-to-containers: "true"
 data:
   foo1: bar1
   ping1: pong1

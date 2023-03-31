@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: automount-env-configmap
   labels:
-    controller.devfile.io/mount-to-devworkspace: "true"
+    controller.devfile.io/mount-to-containers: "true"
   annotations:
     controller.devfile.io/mount-as: env
 data:

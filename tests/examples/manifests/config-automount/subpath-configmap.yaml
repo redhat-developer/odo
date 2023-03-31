@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: automount-subpath-configmap
   labels:
-    controller.devfile.io/mount-to-devworkspace: "true"
+    controller.devfile.io/mount-to-containers: "true"
   annotations:
     controller.devfile.io/mount-path: "/mnt/subpaths"
     controller.devfile.io/mount-as: subpath

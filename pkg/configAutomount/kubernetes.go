@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	labelMountName  = "controller.devfile.io/mount-to-devworkspace"
+	labelMountName  = "controller.devfile.io/mount-to-containers"
 	labelMountValue = "true"
 
 	annotationMountPathName = "controller.devfile.io/mount-path"
