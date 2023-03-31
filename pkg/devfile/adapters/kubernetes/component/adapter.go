@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"golang.org/x/sync/errgroup"
@@ -25,6 +26,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/port"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
@@ -349,6 +351,15 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	if podChanged || portsChanged {
 		a.portForwardClient.StopPortForwarding(a.ComponentName)
 	}
+
+	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
+	appReadySpinner := log.Spinner("Waiting for the application to be ready")
+	defer appReadySpinner.End(false)
+	err = a.checkAppPorts(pod.Name, portsToForward)
+	if err != nil {
+		return err
+	}
+	appReadySpinner.End(true)
 
 	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
 	if err != nil {
@@ -763,6 +774,16 @@ func (a Adapter) deleteServiceBindingSecrets(serviceBindingSecretsToRemove []uns
 		spinner.End(true)
 	}
 	return nil
+}
+
+func (a *Adapter) checkAppPorts(podName string, portsToFwd map[string][]devfilev1.Endpoint) error {
+	containerPortsMapping := make(map[string][]int)
+	for c, ports := range portsToFwd {
+		for _, p := range ports {
+			containerPortsMapping[c] = append(containerPortsMapping[c], p.TargetPort)
+		}
+	}
+	return port.CheckAppPortsListening(a.execClient, podName, containerPortsMapping, 1*time.Minute)
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.
