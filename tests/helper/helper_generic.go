@@ -378,5 +378,9 @@ func GetDevfileRegistryURL() string {
 	if proxy != "" {
 		registryURL = "http://" + proxy
 	}
+	customReg := os.Getenv("DEVFILE_REGISTRY")
+	if customReg != "" {
+		registryURL = customReg
+	}
 	return registryURL
 }

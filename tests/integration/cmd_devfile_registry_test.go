@@ -41,6 +41,10 @@ var _ = Describe("odo devfile registry command tests", func() {
 			if proxy != "" {
 				addRegistryURL = "http://" + proxy
 			}
+			customDevfileRegistry := os.Getenv("DEVFILE_REGISTRY")
+			if customDevfileRegistry != "" {
+				addRegistryURL = customDevfileRegistry
+			}
 
 			It("Should list all default registries", func() {
 				output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
