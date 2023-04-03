@@ -42,10 +42,13 @@ func CmdRunner(program string, args ...string) *gexec.Session {
 	return session
 }
 
-// WaitForOutputToContain waits for the session stdout output to contain a particular substring
+// WaitForOutputToContain waits for the session stdout output to contain a particular substring;
+// if the session exits, it checks for the substring and returns early
 func WaitForOutputToContain(substring string, timeoutInSeconds int, intervalInSeconds int, session *gexec.Session) {
-
 	Eventually(func() string {
+		if session.ExitCode() != -1 {
+			Expect(string(session.Out.Contents())).To(ContainSubstring(substring), "session exited, but substring not found")
+		}
 		contents := string(session.Out.Contents())
 		return contents
 	}, timeoutInSeconds, intervalInSeconds).Should(ContainSubstring(substring))
@@ -59,15 +62,22 @@ func WaitForOutputToContainOne(substrings []string, timeoutInSeconds int, interv
 		matchers = append(matchers, ContainSubstring(substring))
 	}
 	Eventually(func() string {
+		if session.ExitCode() != -1 {
+			Expect(string(session.Out.Contents())).To(SatisfyAny(matchers...), "session exited, but substring not found")
+		}
 		contents := string(session.Out.Contents())
 		return contents
 	}, timeoutInSeconds, intervalInSeconds).Should(SatisfyAny(matchers...))
 }
 
 // WaitForErroutToContain waits for the session stdout output to contain a particular substring
+// if the session exits, it checks for the substring and returns early
 func WaitForErroutToContain(substring string, timeoutInSeconds int, intervalInSeconds int, session *gexec.Session) {
 
 	Eventually(func() string {
+		if session.ExitCode() != -1 {
+			Expect(string(session.Err.Contents())).To(ContainSubstring(substring), "session exited, but substring not found")
+		}
 		contents := string(session.Err.Contents())
 		return contents
 	}, timeoutInSeconds, intervalInSeconds).Should(ContainSubstring(substring))
