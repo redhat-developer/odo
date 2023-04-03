@@ -526,7 +526,7 @@ func (a *Adapter) createOrUpdateComponent(
 // - (side effect on cluster) creates the PVC for the project sources if Epehemeral preference is false
 // - (side effect on cluster) creates the PVCs for non-ephemeral volumes defined in the Devfile
 // - (side effect on input parameters) adds volumeMounts to containers and initContainers for the PVCs and Ephemeral volumes
-// - TODO(feloy) add volumeMounts for automounted volumes
+// - (side effect on input parameters) adds volumeMounts for automounted volumes
 // => Returns the list of Volumes to add to the PodTemplate
 func (a *Adapter) buildVolumes(containers, initContainers []corev1.Container) ([]corev1.Volume, error) {
 
