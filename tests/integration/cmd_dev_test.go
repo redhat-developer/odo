@@ -714,6 +714,19 @@ ComponentSettings:
 
 	// TODO(pvala): Merge this into the test below once custom port mapping for port-forwarding has been implemented for podman.
 	Context("port-forwarding for the component with custom port mapping", func() {
+		When("a component is bootstrapped", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			})
+
+			It("should fail when using --random-ports and --port-forward together", func() {
+				errOut := helper.Cmd("odo", "dev", "--random-ports", "--port-forward=8000:3000").ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("--random-ports and --port-forward cannot be used together"))
+			})
+
+		})
 		When("devfile has single endpoint", func() {
 			const (
 				LocalPort     = "8080"

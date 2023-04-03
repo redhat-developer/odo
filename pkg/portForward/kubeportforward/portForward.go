@@ -49,7 +49,9 @@ func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Cli
 }
 
 func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentName string, debug bool, randomPorts bool, out io.Writer, errOut io.Writer, definedPorts []api.ForwardedPort) error {
-
+	if randomPorts && len(definedPorts) != 0 {
+		return errors.New("cannot use randomPorts and custom definePorts together")
+	}
 	ceMapping, err := libdevfile.GetDevfileContainerEndpointMapping(devFileObj, debug)
 	if err != nil {
 		return err
