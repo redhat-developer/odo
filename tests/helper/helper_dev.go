@@ -119,6 +119,7 @@ type DevSessionOpts struct {
 	CmdlineArgs      []string
 	RunOnPodman      bool
 	TimeoutInSeconds int
+	NoRandomPorts    bool
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -134,7 +135,10 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 		return DevSession{}, nil, nil, nil, err
 	}
 
-	args := []string{"dev", "--random-ports"}
+	args := []string{"dev"}
+	if !options.NoRandomPorts {
+		args = append(args, "--random-ports")
+	}
 	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)
 	cmd.Cmd.Stdin = c.Tty()
