@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
@@ -344,7 +345,7 @@ func TestListDevfileStacks(t *testing.T) {
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient, nil)
 			ctx := context.Background()
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
-			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false)
+			got, err := catClient.ListDevfileStacks(ctx, tt.registryName, tt.devfileName, tt.filter, false, false)
 			if err != nil {
 				t.Error(err)
 			}

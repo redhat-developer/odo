@@ -1,5 +1,9 @@
 package api
 
+import (
+	schema "github.com/devfile/registry-support/index/generator/schema"
+)
+
 // Registry is the main struct of devfile registry
 type Registry struct {
 	Name   string `json:"name"`
@@ -32,8 +36,9 @@ type DevfileStack struct {
 }
 
 type DevfileStackVersion struct {
-	Version         string   `json:"version,omitempty"`
-	IsDefault       bool     `json:"isDefault"`
-	SchemaVersion   string   `json:"schemaVersion,omitempty"`
-	StarterProjects []string `json:"starterProjects"`
+	Version         string                           `json:"version,omitempty"`
+	IsDefault       bool                             `json:"isDefault"`
+	SchemaVersion   string                           `json:"schemaVersion,omitempty"`
+	StarterProjects []string                         `json:"starterProjects"`
+	CommandGroups   map[schema.CommandGroupKind]bool `json:"commandGroups"`
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/devfile/registry-support/index/generator/schema"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
@@ -31,8 +32,8 @@ var Example = `  # Get all devfile components
 # Filter by name and devfile registry
 %[1]s --filter nodejs --devfile-registry DefaultDevfileRegistry
 
-# Show more details
-%[1]s --details
+# Show more details from a specific devfile
+%[1]s --details --devfile nodejs
 
 # Show more details from a specific devfile and registry
 %[1]s --details --devfile nodejs --devfile-registry DefaultDevfileRegistry`
@@ -66,7 +67,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(ctx, o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag)
+	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(ctx, o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag, log.IsJSON())
 	if err != nil {
 		return err
 	}
@@ -119,7 +120,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
-	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of each component")
+	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of a Devfile, to be used only with --devfile")
 
 	// Add a defined annotation in order to appear in the help menu
 	odoutil.SetCommandGroup(listCmd, odoutil.MainGroup)
@@ -188,6 +189,12 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 
 		if o.detailsFlag {
 
+			defaultVersionDetails, err := getVersion(devfileComponent, devfileComponent.DefaultVersion)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
 			// Output the details of the component
 			fmt.Printf(`%s: %s
 %s: %s
@@ -217,11 +224,11 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 				log.Sbold("Tags"), strings.Join(devfileComponent.Tags[:], ", "),
 				log.Sbold("Project Type"), devfileComponent.ProjectType,
 				log.Sbold("Language"), devfileComponent.Language,
-				log.Sbold("Starter Projects"), strings.Join(devfileComponent.DefaultStarterProjects, "\n  - "),
+				log.Sbold("Starter Projects"), strings.Join(defaultVersionDetails.StarterProjects, "\n  - "),
 				log.Sbold("Supported odo Features"),
-				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Dev),
-				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Deploy),
-				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Debug),
+				boolToYesNo(defaultVersionDetails.CommandGroups[schema.RunCommandGroupKind]),
+				boolToYesNo(defaultVersionDetails.CommandGroups[schema.DeployCommandGroupKind]),
+				boolToYesNo(defaultVersionDetails.CommandGroups[schema.DebugCommandGroupKind]),
 				log.Sbold("Versions"),
 				strings.Join(vList, "\n  - "),
 				"\n")
@@ -256,4 +263,13 @@ func boolToYesNo(b bool) string {
 		return "Y"
 	}
 	return "N"
+}
+
+func getVersion(stack api.DevfileStack, v string) (api.DevfileStackVersion, error) {
+	for _, version := range stack.Versions {
+		if version.Version == v {
+			return version, nil
+		}
+	}
+	return api.DevfileStackVersion{}, fmt.Errorf("version %q not found in Devfile stack for %q", v, stack.Name)
 }

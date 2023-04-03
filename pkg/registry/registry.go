@@ -234,7 +234,8 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registr
 }
 
 // ListDevfileStacks lists all the available devfile stacks in devfile registry
-func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error) {
+// When `withDevfileContent` and `detailsFlag` are both true, another HTTP call is executed to download the Devfile
+func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool, withDevfileContent bool) (DevfileStackList, error) {
 	catalogDevfileList := &DevfileStackList{}
 	var err error
 
@@ -278,9 +279,6 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 	// Go through all the devfiles and filter based on:
 	// What's in the name or description
 	// The exact name of the devfile
-	//
-	// We also add additional details such as supported odo features (which we
-	// manually http get) if the details flag has been passed in.
 	for priorityNumber, registryDevfiles := range registrySlice {
 
 		devfiles := []api.DevfileStack{}
@@ -302,7 +300,8 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 				}
 			}
 
-			if detailsFlag {
+			// We are fetching the Devfile content only when `--details` and `-o json` flags are used
+			if detailsFlag && withDevfileContent {
 				devfileData, err := o.retrieveDevfileDataFromRegistry(ctx, devfile.Registry.Name, devfile.Name)
 				if err != nil {
 					return *catalogDevfileList, err
@@ -380,6 +379,7 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 				Version:         v.Version,
 				SchemaVersion:   v.SchemaVersion,
 				StarterProjects: v.StarterProjects,
+				CommandGroups:   v.CommandGroups,
 			})
 		}
 		sort.Slice(stackDevfile.Versions, func(i, j int) bool {

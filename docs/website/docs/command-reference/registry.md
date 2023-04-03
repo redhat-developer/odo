@@ -22,7 +22,7 @@ By default, the name, registry, description and versions of the Devfile stacks a
 
 The flags below let you change the content of the output:
 
-* `--details` to display details about the Devfile stacks
+* `--details` to display details about a specific Devfile stack (to be used only with `--devfile <name>`)
 * `-o json` to output the information in a JSON format
 
 ## Running the command

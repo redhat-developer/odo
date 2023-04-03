@@ -31,7 +31,7 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 // to use depending on the files in the path
 func (o *Alizer) DetectFramework(ctx context.Context, path string) (_ model.DevFileType, defaultVersion string, _ api.Registry, _ error) {
 	types := []model.DevFileType{}
-	components, err := o.registryClient.ListDevfileStacks(ctx, "", "", "", false)
+	components, err := o.registryClient.ListDevfileStacks(ctx, "", "", "", false, false)
 	if err != nil {
 		return model.DevFileType{}, defaultVersion, api.Registry{}, err
 	}

@@ -116,7 +116,7 @@ func TestDetectFramework(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			registryClient := registry.NewMockClient(ctrl)
 			ctx := context.Background()
-			registryClient.EXPECT().ListDevfileStacks(ctx, "", "", "", false).Return(list, nil)
+			registryClient.EXPECT().ListDevfileStacks(ctx, "", "", "", false, false).Return(list, nil)
 			alizerClient := NewAlizerClient(registryClient)
 			// Run function DetectFramework
 			detected, _, registry, err := alizerClient.DetectFramework(ctx, tt.args.path)

@@ -15,5 +15,5 @@ type Client interface {
 	DownloadFileInMemory(params dfutil.HTTPRequestParams) ([]byte, error)
 	DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error
 	GetDevfileRegistries(registryName string) ([]api.Registry, error)
-	ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error)
+	ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool, withDevfileContent bool) (DevfileStackList, error)
 }
