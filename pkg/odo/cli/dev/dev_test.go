@@ -5,6 +5,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/redhat-developer/odo/pkg/api"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -14,10 +15,10 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 		containerEndpointMapping map[string][]v1alpha2.Endpoint
 	}
 	tests := []struct {
-		name          string
-		args          args
-		wantErr       bool
-		wantErrString string
+		name           string
+		args           args
+		wantErr        bool
+		wantErrStrings []string
 	}{
 		// TODO: Add test cases.
 		{
@@ -77,8 +78,8 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 					"tools":   {{TargetPort: 5050}},
 				},
 			},
-			wantErr:       true,
-			wantErrString: "8080 container port defined by --port-forward not found",
+			wantErr:        true,
+			wantErrStrings: []string{"container port 8080 not found in the devfile container endpoints"},
 		},
 		{
 			name: "container port(with container name) defined by a forwarded port is not found in the container-endpoint mapping",
@@ -93,8 +94,8 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 					"tools":   {{TargetPort: 5050}},
 				},
 			},
-			wantErr:       true,
-			wantErrString: "8080 container port does not match any endpoints of container:runtime",
+			wantErr:        true,
+			wantErrStrings: []string{"container port 8080 does not match any endpoints of container \"runtime\" in the devfile"},
 		},
 		{
 			name: "container name defined by a forwarded port is not found in the container-endpoint mapping",
@@ -109,11 +110,11 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 					"tools":   {{TargetPort: 5050}},
 				},
 			},
-			wantErr:       true,
-			wantErrString: "container:invisible defined by --port-forward not found",
+			wantErr:        true,
+			wantErrStrings: []string{"container \"invisible\" not found in the devfile"},
 		},
 		{
-			name: "duplicate target port in containers when a port forward does not container container name",
+			name: "duplicate container ports when a port mapping does not container container name",
 			args: args{
 				forwardedPorts: []api.ForwardedPort{
 					{LocalPort: 9000, ContainerPort: 9090},
@@ -124,8 +125,8 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 					"tools":   {{TargetPort: 9090}},
 				},
 			},
-			wantErr:       true,
-			wantErrString: "multiple container component (runtime, tools) found with same container port 9090, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>",
+			wantErr:        true,
+			wantErrStrings: []string{"multiple container components (runtime, tools) found with same container port 9090 in the devfile, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>"},
 		},
 		{
 			name: "duplicate local port cannot be used",
@@ -139,19 +140,39 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 					"tools":   {{TargetPort: 5000}},
 				},
 			},
-			wantErr:       true,
-			wantErrString: "local port 9000 is used more than once, please use unique local ports",
+			wantErr:        true,
+			wantErrStrings: []string{"local port 9000 is used more than once, please use unique local ports"},
+		},
+		{
+			name: "port mapping contains multiple invalids",
+			args: args{
+				forwardedPorts: []api.ForwardedPort{
+					{LocalPort: 9000, ContainerPort: 9090},
+					{LocalPort: 9000, ContainerPort: 5858},
+					{LocalPort: 9090, ContainerPort: 5858},
+					{LocalPort: 8000, ContainerPort: 3000, ContainerName: "invisible"},
+					{LocalPort: 5000, ContainerPort: 3000, ContainerName: "runtime"},
+				},
+				containerEndpointMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 9090}, {TargetPort: 5858}},
+					"tools":   {{TargetPort: 5858}, {TargetPort: 3000}},
+				},
+			},
+			wantErr:        true,
+			wantErrStrings: []string{"container port 3000 does not match any endpoints of container \"runtime\" in the devfile", "multiple container components (runtime, tools) found with same container port 5858 in the devfile, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>", "container \"invisible\" not found in the devfile", "local port 9000 is used more than once, please use unique local ports"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validatePortForwardFlagData(tt.args.forwardedPorts, tt.args.containerEndpointMapping)
+			errStrings, err := validatePortForwardFlagData(tt.args.forwardedPorts, tt.args.containerEndpointMapping)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validatePortForwardFlagData() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantErr {
-				if diff := cmp.Diff(err.Error(), tt.wantErrString); diff != "" {
+				sort.Strings(errStrings)
+				sort.Strings(tt.wantErrStrings)
+				if diff := cmp.Diff(errStrings, tt.wantErrStrings); diff != "" {
 					t.Errorf("validatePortForwardFlagData() (error vs. wantErr) diff= %v", diff)
 				}
 			}
