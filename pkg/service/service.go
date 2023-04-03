@@ -287,8 +287,6 @@ func isLinkResource(kind string) bool {
 // updateOperatorService creates the given operator on the cluster
 // it returns true if the generation of the resource increased or the resource is created
 func updateOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
-	s := log.Spinnerf("Creating resource %s/%s", u.GetKind(), u.GetName())
-	defer s.End(false)
 
 	// Create the service on cluster
 	updated, err := client.PatchDynamicResource(u)
@@ -296,6 +294,9 @@ func updateOperatorService(client kclient.ClientInterface, u unstructured.Unstru
 		return false, err
 	}
 
-	s.End(true)
-	return updated, nil
+	if updated {
+		createSpinner := log.Spinnerf("Creating resource %s/%s", u.GetKind(), u.GetName())
+		createSpinner.End(true)
+	}
+	return updated, err
 }
