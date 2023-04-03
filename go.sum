@@ -388,8 +388,6 @@ github.com/devfile/api/v2 v2.2.0/go.mod h1:dN7xFrOVG+iPqn4UKGibXLd5oVsdE8XyK9OEb
 github.com/devfile/library v1.2.1-0.20211104222135-49d635cb492f/go.mod h1:uFZZdTuRqA68FVe/JoJHP92CgINyQkyWnM2Qyiim+50=
 github.com/devfile/library v1.2.1-0.20220308191614-f0f7e11b17de/go.mod h1:GSPfJaBg0+bBjBHbwBE5aerJLH6tWGQu2q2rHYd9czM=
 github.com/devfile/library/v2 v2.0.1/go.mod h1:paJ0PARAVy0br13VpBEQ4fO3rZVDxWtooQ29+23PNBk=
-github.com/devfile/library/v2 v2.2.1-0.20230308185609-bd4a12f27257 h1:BgnMyht1qUYqMRR1H2aAMIcEXb9ignawJbdSMrAZg8Y=
-github.com/devfile/library/v2 v2.2.1-0.20230308185609-bd4a12f27257/go.mod h1:9mHgcxKzzFYRrnac8BRJ2gC6Ff1A2ZeZ4Iy73N6Vrp0=
 github.com/devfile/library/v2 v2.2.1-0.20230323124903-d36e409ff94f h1:DRWf62j2diJCEPPumsKUkypNlyMV2/P6e3q6zcDT+WM=
 github.com/devfile/library/v2 v2.2.1-0.20230323124903-d36e409ff94f/go.mod h1:9mHgcxKzzFYRrnac8BRJ2gC6Ff1A2ZeZ4Iy73N6Vrp0=
 github.com/devfile/registry-support/index/generator v0.0.0-20220222194908-7a90a4214f3e/go.mod h1:iRPBxs+ZjfLEduVXpCCIOzdD2588Zv9OCs/CcXMcCCY=
@@ -1164,8 +1162,8 @@ github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1
 github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5mo=
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
-github.com/redhat-developer/alizer/go v0.0.0-20230124144157-ad2d3056c08d h1:AoJP3Cs9XynT8cHGxVo+xwVGXpYg6q44U46nNwrDWVk=
-github.com/redhat-developer/alizer/go v0.0.0-20230124144157-ad2d3056c08d/go.mod h1:cdCGkfY9r1M1KkqHdpTt7QkQVGMMdohpGSILqL7laiQ=
+github.com/redhat-developer/alizer/go v0.0.0-20230331140053-a1115da45e0c h1:9YfR8CiU/LlLuLD1CoGLvi4Vun7ZFkJ94K0M8/eBgzk=
+github.com/redhat-developer/alizer/go v0.0.0-20230331140053-a1115da45e0c/go.mod h1:cdCGkfY9r1M1KkqHdpTt7QkQVGMMdohpGSILqL7laiQ=
 github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3 h1:hj+Y8vIzfQzzGx0az0MbIqDcW0+MZMc2rht8LuKt8uA=
 github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3/go.mod h1:pODWh91lgIyjf2n9ZqWYb1EBrLTmvKnjusKw0eG4vcE=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=

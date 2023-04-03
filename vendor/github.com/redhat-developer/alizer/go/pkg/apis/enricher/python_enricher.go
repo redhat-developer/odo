@@ -23,6 +23,7 @@ type PythonEnricher struct{}
 func getPythonFrameworkDetectors() []FrameworkDetectorWithoutConfigFile {
 	return []FrameworkDetectorWithoutConfigFile{
 		&framework.DjangoDetector{},
+		&framework.FlaskDetector{},
 	}
 }
 
