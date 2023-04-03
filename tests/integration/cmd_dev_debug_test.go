@@ -45,10 +45,12 @@ var _ = Describe("odo dev debug command tests", func() {
 				When("running odo dev with debug flag and custom port mapping for port forwarding", func() {
 					var devSession helper.DevSession
 					var ports map[string]string
+					var (
+						LocalPort      = helper.GetRandomFreePort()
+						LocalDebugPort = helper.GetRandomFreePort()
+					)
 					const (
-						LocalPort          = "8000"
 						ContainerPort      = "3000"
-						LocalDebugPort     = "5000"
 						ContainerDebugPort = "5858"
 					)
 					BeforeEach(func() {
