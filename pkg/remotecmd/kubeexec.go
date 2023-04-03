@@ -202,6 +202,11 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	if ppid == 0 {
 		return nil
 	}
+	defer func() {
+		if kErr := kill(ppid); kErr != nil {
+			klog.V(3).Infof("could not kill parent process %d: %v", ppid, kErr)
+		}
+	}()
 
 	children, err := k.getProcessChildren(ppid, podName, containerName)
 	if err != nil {
@@ -209,14 +214,6 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	}
 
 	klog.V(3).Infof("Found %d children (either direct and indirect) for parent process %d: %v", len(children), ppid, children)
-
-	if len(children) == 0 {
-		//TODO(rm3l): A length of 0 might indicate that there is no children file, which might happen if the host kernel
-		//was not built with the CONFIG_PROC_CHILDREN config.
-		//This happened for example with the Minikube VM when using its (non-default) VirtualBox driver.
-		//In this case, we should find a fallback mechanism to identify those children processes and kill them.
-		return kill(ppid)
-	}
 
 	for _, child := range children {
 		if err = kill(child); err != nil {
@@ -319,39 +316,78 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 }
 
 // getProcessChildren returns all the children (either direct or indirect) of the specified process in the given container.
-// It works by reading the /proc/<pid>/task/<tid>/children file, which is a space-separated list of children,
-// and then recursively finds the children for each child.
-// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm.
+// It works by reading the /proc/<pid>/stat files, giving PPID for each PID.
+// The overall result is an ordered list of children PIDs obtained via a recursive post-order traversal algorithm,
+// so that the returned list can start with the deepest children processes.
 func (k *kubeExecProcessHandler) getProcessChildren(pid int, podName string, containerName string) ([]int, error) {
 	if pid <= 0 {
 		return nil, fmt.Errorf("invalid pid: %d", pid)
 	}
 
-	stdout, _, err := k.execClient.ExecuteCommand(
-		[]string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid)},
-		podName, containerName, false, nil, nil)
+	allProcesses, err := k.getAllProcesses(podName, containerName)
 	if err != nil {
 		return nil, err
 	}
 
-	var children []int
-	for _, line := range stdout {
-		l := strings.Split(strings.TrimSpace(line), " ")
-		for _, p := range l {
-			c, err := strconv.Atoi(p)
-			if err != nil {
-				return children, err
-			}
-			childChildren, err := k.getProcessChildren(c, podName, containerName)
-			if err != nil {
-				return children, err
-			}
-			children = append(children, childChildren...)
-			children = append(children, c)
+	var getProcessChildrenRec func(int) []int
+	getProcessChildrenRec = func(p int) []int {
+		var result []int
+		for _, child := range allProcesses[p] {
+			result = append(result, getProcessChildrenRec(child)...)
 		}
+		if p != pid {
+			// Do not include the root ppid, as we are getting only children.
+			result = append(result, p)
+		}
+		return result
 	}
 
-	return children, nil
+	return getProcessChildrenRec(pid), nil
+}
+
+// getAllProcesses returns a map of all the processes and their direct children:
+// i) the key is the process PID;
+// ii) and the value is a list of all its direct children.
+// It does so by reading all /proc/<pid>/stat files. More details on https://man7.org/linux/man-pages/man5/proc.5.html.
+func (k *kubeExecProcessHandler) getAllProcesses(podName string, containerName string) (map[int][]int, error) {
+	stdout, stderr, err := k.execClient.ExecuteCommand([]string{ShellExecutable, "-c", "cat /proc/*/stat || true"},
+		podName, containerName, false, nil, nil)
+	if err != nil {
+		klog.V(7).Infof("stdout: %s\n", strings.Join(stdout, "\n"))
+		klog.V(7).Infof("stderr: %s\n", strings.Join(stderr, "\n"))
+		return nil, err
+	}
+
+	allProcesses := make(map[int][]int)
+	for _, line := range stdout {
+		var pid int
+		_, err = fmt.Sscanf(line, "%d ", &pid)
+		if err != nil {
+			return nil, err
+		}
+
+		// Last index of the last ")" character to unambiguously parse the content.
+		// See https://unix.stackexchange.com/questions/558239/way-to-unambiguously-parse-proc-pid-stat-given-arbitrary-contents-of-name-fi
+		i := strings.LastIndex(line, ")")
+		if i < 0 {
+			continue
+		}
+
+		// At this point, "i" is the index of the last ")" character, and we have an additional space before the process state character, hence the "i+2".
+		// For example:
+		// 87 (main) S 0 81 81 0 -1 ...
+		// This is required to scan the ppid correctly.
+		var state byte
+		var ppid int
+		_, err = fmt.Sscanf(line[i+2:], "%c %d", &state, &ppid)
+		if err != nil {
+			return nil, err
+		}
+
+		allProcesses[ppid] = append(allProcesses[ppid], pid)
+	}
+
+	return allProcesses, nil
 }
 
 // getPidFileForCommand returns the path to the PID file in the remote container.

@@ -18,9 +18,19 @@ import (
 const (
 	_podName       = "my-pod"
 	_containerName = "my-container"
+	statFile       = `1 (tail) S 0 1 1 0 -1 1077952768 943 0 0 0 1 1 0 0 20 0 1 0 171838 5050368 338 18446744073709551615 94133334573056 94133335487553 140737112090992 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 94133335803888 94133335849476 94133343424512 140737112095206 140737112095282 140737112095282 140737112096746 0
+118 (bash) S 0 118 118 34816 128 4210944 1144 454 0 0 0 1 0 0 20 0 1 0 185395 4554752 926 18446744073709551615 93924054794240 93924055688405 140724979077904 0 0 0 65536 3686404 1266761467 0 0 0 17 1 0 0 0 0 0 93924055927824 93924055975568 93924085239808 140724979079714 140724979079719 140724979079719 140724979081194 0
+81 (sh) (param) S 0 81 81 0 -1 4210944 693 0 0 0 0 0 0 0 20 0 1 0 172021 4284416 760 18446744073709551615 94666717065216 94666717959381 140728008896192 0 0 0 65536 4 65538 0 0 0 17 0 0 0 0 0 0 94666718198800 94666718246544 94666730864640 140728008903100 140728008903254 140728008903254 140728008904688 0
+87 (main) S 81 81 81 0 -1 4210688 541 0 0 0 0 0 0 0 20 0 5 0 172022 1032048640 1892 18446744073709551615 4194304 6405776 140730311069152 0 0 0 0 0 2143420159 0 0 0 17 1 0 0 0 0 0 8507392 8757920 34906112 140730311072280 140730311072287 140730311072287 140730311073777 0
+128 (cat) R 118 128 118 34816 128 4210688 152 0 0 0 0 0 0 0 20 0 1 0 193754 5185536 625 18446744073709551615 94301628837888 94301629752385 140721174235312 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 94301630068720 94301630114308 94301634404352 140721174243694 140721174243865 140721174243865 140721174245355 0
+128 (cat) R 118 128 118 34816 128 4210688 152 0 0 0 0 0 0 0 20 0 1 0 193754 5185536 625 18446744073709551615 94301628837888 94301629752385 140721174235312 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 94301630068720 94301630114308 94301634404352 140721174243694 140721174243865 140721174243865 140721174245355 0
+222 (my-cmd) S 87 81 81 0 -1 4210688 541 0 0 0 0 0 0 0 20 0 5 0 172022 1032048640 1892 18446744073709551615 4194304 6405776 140730311069152 0 0 0 0 0 2143420159 0 0 0 17 1 0 0 0 0 0 8507392 8757920 34906112 140730311072280 140730311072287 140730311072287 140730311073777 0
+223 (my-cmd) S 87 81 81 0 -1 4210688 541 0 0 0 0 0 0 0 20 0 5 0 172022 1032048640 1892 18446744073709551615 4194304 6405776 140730311069152 0 0 0 0 0 2143420159 0 0 0 17 1 0 0 0 0 0 8507392 8757920 34906112 140730311072280 140730311072287 140730311072287 140730311073777 0
+333 (my-cmd) S 222 81 81 0 -1 4210688 541 0 0 0 0 0 0 0 20 0 5 0 172022 1032048640 1892 18446744073709551615 4194304 6405776 140730311069152 0 0 0 0 0 2143420159 0 0 0 17 1 0 0 0 0 0 8507392 8757920 34906112 140730311072280 140730311072287 140730311072287 140730311073777 0
+334 (my-cmd) S 222 81 81 0 -1 4210688 541 0 0 0 0 0 0 0 20 0 5 0 172022 1032048640 1892 18446744073709551615 4194304 6405776 140730311069152 0 0 0 0 0 2143420159 0 0 0 17 1 0 0 0 0 0 8507392 8757920 34906112 140730311072280 140730311072287 140730311072287 140730311073777 0`
 )
 
-func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
+func Test_kubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
 	kill0CmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
@@ -163,7 +173,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 	}
 }
 
-func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
+func Test_kubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 	kill0CmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
@@ -288,10 +298,10 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 	}
 }
 
-func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
+func Test_kubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
-	retrieveChildrenCmdProvider := func(p int) []string {
-		return []string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", p)}
+	retrieveChildrenCmdProvider := func() []string {
+		return []string{ShellExecutable, "-c", "cat /proc/*/stat || true"}
 	}
 	killCmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)}
@@ -338,14 +348,25 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 						_, err := stdout.Write([]byte("123"))
 						return err
 					})
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(123)),
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider()),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("an error"))
+				// parent process should still be killed.
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, _ = stderr.Write([]byte("no such process"))
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
 			},
 			wantErr: true,
 		},
 		{
-			name: "no process children killed if missing children file",
+			name: "no process children killed if no children file found",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
@@ -354,7 +375,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 						_, err := stdout.Write([]byte("123"))
 						return err
 					})
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(123)),
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider()),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stderr.Write([]byte("no such file or directory"))
@@ -379,23 +400,16 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("123"))
+						_, err := stdout.Write([]byte("81"))
 						return err
 					})
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(123)),
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider()),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("987 765"))
+						_, err := stdout.Write([]byte(statFile))
 						return err
 					})
-				for _, p := range []int{987, 765} {
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(p)),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							//Simulate the fact that those children process have no direct descendant processes
-							_, err := stderr.Write([]byte("no such file or directory"))
-							return err
-						})
+				for _, p := range []int{333, 334, 222, 223, 87, 81} {
 					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(p)),
 						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil)
@@ -416,25 +430,29 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("123"))
+						_, err := stdout.Write([]byte("81"))
 						return err
 					})
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(123)),
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider()),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("987"))
+						_, err := stdout.Write([]byte(statFile))
 						return err
 					})
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(987)),
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(333)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("error killing process 333"))
+				// parent process should be stopped in all cases
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(81)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(81)),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						//Simulate the fact that those children process have no direct descendant processes
-						_, err := stderr.Write([]byte("no such file or directory"))
+						_, _ = stderr.Write([]byte("no such process"))
+						_, err := stdout.Write([]byte("1"))
 						return err
 					})
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(987)),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(errors.New("error killing process 987"))
 			},
 			wantErr: true,
 		},
@@ -461,7 +479,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 	}
 }
 
-func Test_getProcessInfoFromPid(t *testing.T) {
+func Test_kubeExecProcessHandler_getProcessInfoFromPid(t *testing.T) {
 	cmdProvider := func(p int) []string {
 		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
@@ -573,7 +591,7 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 	}
 }
 
-func Test_getRemoteProcessPID(t *testing.T) {
+func Test_kubeExecProcessHandler_getRemoteProcessPID(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
 	cmd := []string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}
 	for _, tt := range []struct {
@@ -726,10 +744,10 @@ func Test_getRemoteProcessPID(t *testing.T) {
 	}
 }
 
-func Test_getProcessChildren(t *testing.T) {
+func Test_kubeExecProcessHandler_getProcessChildren(t *testing.T) {
 	const ppid = 123
-	cmdProvider := func(pid int) []string {
-		return []string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid)}
+	cmdProvider := func() []string {
+		return []string{ShellExecutable, "-c", "cat /proc/*/stat || true"}
 	}
 
 	for _, tt := range []struct {
@@ -751,7 +769,7 @@ func Test_getProcessChildren(t *testing.T) {
 		{
 			name: "error returned at command execution",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				cmd := cmdProvider(ppid)
+				cmd := cmdProvider()
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("an error"))
@@ -760,9 +778,9 @@ func Test_getProcessChildren(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "missing children file",
+			name: "missing stat file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				cmd := cmdProvider(ppid)
+				cmd := cmdProvider()
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
@@ -771,164 +789,36 @@ func Test_getProcessChildren(t *testing.T) {
 					})
 			},
 			ppid: ppid,
+			want: nil,
 		},
 		{
-			name: "one child in children file without trailing space",
+			name: "empty stat file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				for _, p := range []int{ppid, 987} {
-					p := p
-					cmd := cmdProvider(p)
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-						gomock.Eq(cmd),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							var err error
-							if p == ppid {
-								_, err = stdout.Write([]byte("987"))
-							} else {
-								//Simulate the fact that those children process have no direct descendant processes
-								_, err = stderr.Write([]byte("no such file or directory"))
-							}
-							return err
-						})
-				}
+				cmd := cmdProvider()
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte(""))
+						return err
+					})
 			},
 			ppid: ppid,
-			want: []int{987},
+			want: nil,
 		},
 		{
-			name: "one child in children file with trailing space",
+			name: "stat file with children at several levels",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				for _, p := range []int{ppid, 987} {
-					p := p
-					cmd := cmdProvider(p)
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-						gomock.Eq(cmd),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							var err error
-							if p == ppid {
-								_, err = stdout.Write([]byte("987 "))
-							} else {
-								//Simulate the fact that those children process have no direct descendant processes
-								_, err = stderr.Write([]byte("no such file or directory"))
-							}
-							return err
-						})
-				}
+				cmd := cmdProvider()
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq(cmd),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte(statFile))
+						return err
+					})
 			},
-			ppid: ppid,
-			want: []int{987},
-		},
-		{
-			name: "multiple children in children file",
-			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				for _, p := range []int{ppid, 987, 765, 432} {
-					p := p
-					cmd := cmdProvider(p)
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-						gomock.Eq(cmd),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							var err error
-							if p == ppid {
-								_, err = stdout.Write([]byte(" 987 765 432 "))
-							} else {
-								//Simulate the fact that those children process have no direct descendant processes
-								_, err = stderr.Write([]byte("no such file or directory"))
-							}
-							return err
-						})
-				}
-			},
-			ppid: ppid,
-			want: []int{987, 765, 432},
-		},
-		{
-			name: "multiple children in children file (on many lines)",
-			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				for _, p := range []int{ppid, 987, 765, 432} {
-					p := p
-					cmd := cmdProvider(p)
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-						gomock.Eq(cmd),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							var err error
-							if p == ppid {
-								_, _ = stdout.Write([]byte(" 987 765 \n"))
-								_, err = stdout.Write([]byte("432"))
-							} else {
-								//Simulate the fact that those children process have no direct descendant processes
-								_, err = stderr.Write([]byte("no such file or directory"))
-							}
-							return err
-						})
-				}
-			},
-			ppid: ppid,
-			want: []int{987, 765, 432},
-		},
-		{
-			name: "multiple children in children file, with non-integer pid",
-			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				for _, p := range []int{ppid, 987, 765} {
-					p := p
-					cmd := cmdProvider(p)
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-						gomock.Eq(cmd),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							var err error
-							if p == ppid {
-								_, err = stdout.Write([]byte("987 765 an-invalid-pid 432 321"))
-							} else {
-								//Simulate the fact that those children process have no direct descendant processes
-								_, err = stderr.Write([]byte("no such file or directory"))
-							}
-							return err
-						})
-				}
-			},
-			ppid:    ppid,
-			wantErr: true,
-			want:    []int{987, 765},
-		},
-		{
-			name: "child with descendants",
-			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				for _, p := range []int{ppid, 400, 20, 200, 543, 432, 10, 654, 765, 987} {
-					p := p
-					cmd := cmdProvider(p)
-					kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-						gomock.Eq(cmd),
-						gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-							var err error
-							switch p {
-							case ppid:
-								_, err = stdout.Write([]byte("987"))
-							case 987:
-								_, err = stdout.Write([]byte("765"))
-							case 765:
-								_, err = stdout.Write([]byte("654"))
-							case 654:
-								_, err = stdout.Write([]byte("543 432 10"))
-							case 543:
-								_, err = stdout.Write([]byte("400 200"))
-							case 200:
-								_, err = stdout.Write([]byte("20"))
-							default:
-								//Simulate the fact that those children process have no direct descendant processes
-								_, err = stderr.Write([]byte("no such file or directory"))
-							}
-							return err
-						})
-				}
-			},
-			ppid: ppid,
-			// order is important here: post-order tree traversal
-			want: []int{400, 20, 200, 543, 432, 10, 654, 765, 987},
+			ppid: 81,
+			want: []int{333, 334, 222, 223, 87},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
