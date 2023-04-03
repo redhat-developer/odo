@@ -806,6 +806,10 @@ ComponentSettings:
 
 		When("devfile has multiple endpoints", func() {
 			const (
+				// ContainerPort<N> are hard-coded from devfile-with-multiple-endpoints.yaml
+				// Note 1:	Debug endpoints will not be exposed for this instance, so we do not add custom mapping for them.
+				// Note 2: We add custom mapping for all the endpoints so that none of them are assigned random ports from the 20001-30001 range;
+				// Note 2(contd.): this is to avoid a race condition where a test running in parallel is also assigned similar ranged port the one here, and we fail to access either of them.
 				LocalPort1     = "8080"
 				ContainerPort1 = "3000"
 				LocalPort2     = "5000"
