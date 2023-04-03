@@ -351,7 +351,14 @@ odo registry -o json
         "schemaVersion": "2.1.0",
         "starterProjects": [
           "flask-example"
-        ]
+        ],
+        "commandGroups": {
+            "build": true,
+            "debug": true,
+            "deploy": false,
+            "run": true,
+            "test": false
+        }
       },
       {
         "version": "3.0.0",
@@ -359,7 +366,14 @@ odo registry -o json
         "schemaVersion": "2.2.0",
         "starterProjects": [
           "flask-example"
-        ]
+        ],
+        "commandGroups": {
+            "build": true,
+            "debug": true,
+            "deploy": false,
+            "run": true,
+            "test": false
+        }
       }
     ],
     "starterProjects": [
@@ -400,7 +414,14 @@ odo registry --devfile java-springboot --details -o json
         "schemaVersion": "2.1.0",
         "starterProjects": [
           "springbootproject"
-        ]
+        ],
+        "commandGroups": {
+            "build": true,
+            "debug": true,
+            "deploy": false,
+            "run": true,
+            "test": false
+        }
       },
       {
         "version": "2.0.0",
@@ -408,7 +429,14 @@ odo registry --devfile java-springboot --details -o json
         "schemaVersion": "2.2.0",
         "starterProjects": [
           "springbootproject"
-        ]
+        ],
+        "commandGroups": {
+            "build": true,
+            "debug": true,
+            "deploy": true,
+            "run": true,
+            "test": false
+        }
       }
     ],
     "starterProjects": [
