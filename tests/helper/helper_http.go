@@ -58,7 +58,7 @@ func GetRandomFreePort(portRange ...int) string {
 	max := 65535
 	min := 1024
 	var (
-		startPort = rand.Intn(max-min) + min
+		startPort = rand.Intn(max-min) + min // #nosec  // cannot use crypto/rand library here
 		endPort   = max
 	)
 	// WARN: If length of portRange is anything other than 2 and first index is gte second index, it will be ignored
@@ -68,7 +68,7 @@ func GetRandomFreePort(portRange ...int) string {
 	}
 	freePort, err := util.NextFreePort(startPort, endPort, nil)
 	if err != nil {
-		Fail(fmt.Sprintf("failed to obtain a free port"))
+		Fail("failed to obtain a free port")
 	}
 	return strconv.Itoa(freePort)
 

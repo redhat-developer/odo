@@ -10,6 +10,7 @@ import (
 	"k8s.io/klog"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -65,7 +66,7 @@ type DevOptions struct {
 	runCommandFlag       string
 	ignoreLocalhostFlag  bool
 	forwardLocalhostFlag bool
-	portForwardFlag []string
+	portForwardFlag      []string
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -355,7 +356,9 @@ portLoop:
 		} else {
 			// Validate that a custom port mapping for port forwarding config without a container targets a unique containerPort
 			if containers, ok := portContainerMapping[fPort.ContainerPort]; ok && len(containers) > 1 {
-				msg := fmt.Sprintf("multiple container components (%s) found with same container port %d in the devfile, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>", strings.Join(portContainerMapping[fPort.ContainerPort], ", "), fPort.ContainerPort)
+				// this workaround makes sure the unit tests do not fail because of a change in the order
+				sort.Strings(containers)
+				msg := fmt.Sprintf("multiple container components (%s) found with same container port %d in the devfile, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>", strings.Join(containers, ", "), fPort.ContainerPort)
 				if !strings.Contains(strings.Join(errors, ", "), msg) {
 					errors = append(errors, msg)
 				}
@@ -384,9 +387,10 @@ func parsePortForwardFlag(portForwardFlag []string) (forwardedPorts []api.Forwar
 	// acceptable examples: 8000:runtime_123:8080, 8000:9000, 8000:runtime:8080, 20001:20000
 	// unacceptable examples: :8000, 80000:
 	pattern := `^(\d{1,5})(:\w*)?:(\d{1,5})$`
+	portReg := regexp.MustCompile(pattern)
 	const largestPortValue = 65535
 	for _, portData := range portForwardFlag {
-		if matched, _ := regexp.MatchString(pattern, portData); !matched {
+		if !portReg.MatchString(portData) {
 			return nil, errors.New("ports are not defined properly, acceptable formats are: <localPort>:<containerPort>, <localPort>:<containerName>:<containerPort>")
 		}
 		var portF api.ForwardedPort
