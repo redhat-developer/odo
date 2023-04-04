@@ -77,7 +77,7 @@ func TestState_SetForwardedPorts(t *testing.T) {
 			o := State{
 				fs: fs,
 			}
-			if err := o.SetForwardedPorts(tt.args.fwPorts); (err != nil) != tt.wantErr {
+			if err := o.SetForwardedPorts(1, tt.args.fwPorts); (err != nil) != tt.wantErr {
 				t.Errorf("State.SetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if check := tt.checkState(fs); check != nil {
@@ -136,7 +136,9 @@ func TestState_SaveExit(t *testing.T) {
 			o := State{
 				fs: fs,
 			}
-			if err := o.SaveExit(); (err != nil) != tt.wantErr {
+			pid := 1
+			_ = o.SetForwardedPorts(pid, nil)
+			if err := o.SaveExit(pid); (err != nil) != tt.wantErr {
 				t.Errorf("State.SaveExit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if check := tt.checkState(fs); check != nil {
@@ -177,7 +179,8 @@ func TestState_GetForwardedPorts(t *testing.T) {
 					if err != nil {
 						t.Errorf("Error marshaling data")
 					}
-					err = fs.WriteFile(_filepath, jsonContent, 0644)
+					pid := 1
+					err = fs.WriteFile(getFilename(pid), jsonContent, 0644)
 					if err != nil {
 						t.Errorf("Error saving content to file")
 					}
@@ -194,7 +197,8 @@ func TestState_GetForwardedPorts(t *testing.T) {
 				content: tt.fields.content,
 				fs:      tt.fields.fs(t),
 			}
-			got, err := o.GetForwardedPorts()
+			pid := 1
+			got, err := o.GetForwardedPorts(pid)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("State.GetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 				return

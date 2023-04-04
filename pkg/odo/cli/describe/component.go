@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -241,7 +242,7 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		kubeClient = nil
 	}
 
-	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts()
+	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts(os.Getpid())
 	if err != nil {
 		return api.Component{}, nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -153,7 +154,7 @@ func (o *DevClient) reconcile(
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
 		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
 	}
-	err = o.stateClient.SetForwardedPorts(fwPorts)
+	err = o.stateClient.SetForwardedPorts(os.Getpid(), fwPorts)
 	if err != nil {
 		return err
 	}

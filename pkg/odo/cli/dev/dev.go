@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -12,13 +13,11 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"k8s.io/klog"
-
-	"github.com/redhat-developer/odo/pkg/api"
-
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -261,7 +260,7 @@ func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
 		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
 	}
-	_ = o.clientset.StateClient.SaveExit()
+	_ = o.clientset.StateClient.SaveExit(os.Getpid())
 }
 
 // NewCmdDev implements the odo dev command

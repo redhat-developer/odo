@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"sort"
 	"time"
@@ -114,7 +115,7 @@ func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentNa
 
 			go func() {
 				portsBuf.Wait()
-				err = o.stateClient.SetForwardedPorts(portsBuf.GetForwardedPorts())
+				err = o.stateClient.SetForwardedPorts(os.Getpid(), portsBuf.GetForwardedPorts())
 				if err != nil {
 					err = fmt.Errorf("unable to save forwarded ports to state file: %v", err)
 				}

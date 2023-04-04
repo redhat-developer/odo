@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -24,14 +25,15 @@ func NewStateClient(fs filesystem.Filesystem) *State {
 	}
 }
 
-func (o *State) SetForwardedPorts(fwPorts []api.ForwardedPort) error {
+func (o *State) SetForwardedPorts(pid int, fwPorts []api.ForwardedPort) error {
 	// TODO(feloy) When other data is persisted into the state file, it will be needed to read the file first
 	o.content.ForwardedPorts = fwPorts
-	return o.save()
+	o.content.PID = pid
+	return o.save(pid)
 }
 
-func (o *State) GetForwardedPorts() ([]api.ForwardedPort, error) {
-	err := o.read()
+func (o *State) GetForwardedPorts(pid int) ([]api.ForwardedPort, error) {
+	err := o.read(pid)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil // if the state file does not exist, no ports are forwarded
@@ -41,13 +43,63 @@ func (o *State) GetForwardedPorts() ([]api.ForwardedPort, error) {
 	return o.content.ForwardedPorts, err
 }
 
-func (o *State) SaveExit() error {
+func (o *State) SaveExit(pid int) error {
 	o.content.ForwardedPorts = nil
-	return o.save()
+	o.content.PID = 0
+	err := o.delete(pid)
+	if err != nil {
+		return err
+	}
+	return o.saveCommonIfOwner(pid)
 }
 
 // save writes the content structure in json format in file
-func (o *State) save() error {
+func (o *State) save(pid int) error {
+
+	err := o.saveCommonIfOwner(pid)
+	if err != nil {
+		return err
+	}
+
+	jsonContent, err := json.MarshalIndent(o.content, "", " ")
+	if err != nil {
+		return err
+	}
+	// .odo directory is supposed to exist, don't create it
+	dir := filepath.Dir(getFilename(pid))
+	err = os.MkdirAll(dir, 0750)
+	if err != nil {
+		return err
+	}
+	return o.fs.WriteFile(getFilename(pid), jsonContent, 0644)
+}
+
+func (o *State) read(pid int) error {
+	jsonContent, err := o.fs.ReadFile(getFilename(pid))
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(jsonContent, &o.content)
+}
+
+func (o *State) delete(pid int) error {
+	return o.fs.Remove(getFilename(pid))
+}
+
+func getFilename(pid int) string {
+	return fmt.Sprintf(_filepathPid, pid)
+}
+
+func (o *State) saveCommonIfOwner(pid int) error {
+
+	ok, err := o.isFreeOrOwnedBy(pid)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
+
 	jsonContent, err := json.MarshalIndent(o.content, "", " ")
 	if err != nil {
 		return err
@@ -61,10 +113,27 @@ func (o *State) save() error {
 	return o.fs.WriteFile(_filepath, jsonContent, 0644)
 }
 
-func (o *State) read() error {
+func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 	jsonContent, err := o.fs.ReadFile(_filepath)
 	if err != nil {
-		return err
+		if errors.Is(err, os.ErrNotExist) {
+			return true, nil
+		}
+		// File not found, it is free
+		return false, err
 	}
-	return json.Unmarshal(jsonContent, &o.content)
+	var savedContent Content
+	err = json.Unmarshal(jsonContent, &savedContent)
+	if err != nil {
+		return false, err
+	}
+	if savedContent.PID == 0 {
+		// PID is 0 in file, it is free
+		return true, nil
+	}
+	if savedContent.PID == pid {
+		// File is owned by process
+		return true, nil
+	}
+	return false, nil
 }
