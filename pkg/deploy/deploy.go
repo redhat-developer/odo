@@ -17,7 +17,6 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -67,8 +66,8 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 	return libdevfile.Deploy(*devfileObj, handler)
 }
 
-func (o *DeployClient) handleAutoImageComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
-	components, err := devfile.GetImageComponentsToPush(devfileObj)
+func (o *DeployClient) buildPushAutoImageComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
+	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
 	if err != nil {
 		return err
 	}
@@ -82,8 +81,8 @@ func (o *DeployClient) handleAutoImageComponents(handler *deployHandler, devfile
 	return nil
 }
 
-func (o *DeployClient) handleAutoK8sOrOcComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
-	components, err := devfile.GetK8sAndOcComponentsToPush(devfileObj, false)
+func (o *DeployClient) applyAutoK8sOrOcComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
+	components, err := libdevfile.GetK8sAndOcComponentsToPush(devfileObj, false)
 	if err != nil {
 		return err
 	}

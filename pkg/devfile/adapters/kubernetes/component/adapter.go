@@ -16,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev/common"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -642,7 +641,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	}
 
 	var devfileK8sResources []devfilev1.Component
-	devfileK8sResources, err = devfile.GetK8sAndOcComponentsToPush(a.Devfile, true)
+	devfileK8sResources, err = libdevfile.GetK8sAndOcComponentsToPush(a.Devfile, true)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to obtain resources from the Devfile: %w", err)
 	}

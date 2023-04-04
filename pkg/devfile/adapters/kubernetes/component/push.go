@@ -12,7 +12,6 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -41,8 +40,8 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	return deployment, componentExists, nil
 }
 
-func (a *Adapter) handleAutoImageComponents(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, compStatus *watch.ComponentStatus) error {
-	components, err := devfile.GetImageComponentsToPush(devfileObj)
+func (a *Adapter) buildPushAutoImageComponents(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, compStatus *watch.ComponentStatus) error {
+	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
 	if err != nil {
 		return err
 	}
@@ -90,7 +89,7 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 ) ([]devfilev1.Component, error) {
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of ServiceBinding
-	k8sComponents, err := devfile.GetK8sAndOcComponentsToPush(a.Devfile, false)
+	k8sComponents, err := libdevfile.GetK8sAndOcComponentsToPush(a.Devfile, false)
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
 	}

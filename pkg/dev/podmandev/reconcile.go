@@ -16,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -156,7 +155,7 @@ func (o *DevClient) reconcile(
 func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
 	var components []string
 	// get all standalone k8s components for a given commandGK
-	k8sComponents, _ := devfile.GetK8sAndOcComponentsToPush(devfileObj, false)
+	k8sComponents, _ := libdevfile.GetK8sAndOcComponentsToPush(devfileObj, false)
 
 	if len(k8sComponents) == 0 {
 		return
@@ -169,8 +168,8 @@ func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
 	log.Warningf("Kubernetes components are not supported on Podman. Skipping: %v.", strings.Join(components, ", "))
 }
 
-func (o *DevClient) handleAutoImageComponents(ctx context.Context, devfileObj parser.DevfileObj) error {
-	components, err := devfile.GetImageComponentsToPush(devfileObj)
+func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj parser.DevfileObj) error {
+	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
 	if err != nil {
 		return err
 	}
