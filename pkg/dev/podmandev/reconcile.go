@@ -46,7 +46,7 @@ func (o *DevClient) reconcile(
 
 	o.warnAboutK8sComponents(*devfileObj)
 
-	err := o.handleAutoImageComponents(ctx, *devfileObj)
+	err := o.buildPushAutoImageComponents(ctx, *devfileObj)
 	if err != nil {
 		return err
 	}
