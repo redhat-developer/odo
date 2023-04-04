@@ -114,7 +114,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	klog.V(4).Infof("component state: %q\n", componentStatus.State)
-	err = a.handleAutoImageComponents(ctx, a.FS, a.Devfile, componentStatus)
+	err = a.buildPushAutoImageComponents(ctx, a.FS, a.Devfile, componentStatus)
 	if err != nil {
 		return err
 	}
