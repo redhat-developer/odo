@@ -53,12 +53,12 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 
 	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
 
-	err := o.handleAutoImageComponents(handler, *devfileObj)
+	err := o.buildPushAutoImageComponents(handler, *devfileObj)
 	if err != nil {
 		return err
 	}
 
-	err = o.handleAutoK8sOrOcComponents(handler, *devfileObj)
+	err = o.applyAutoK8sOrOcComponents(handler, *devfileObj)
 	if err != nil {
 		return err
 	}
