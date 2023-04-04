@@ -160,7 +160,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		if len(errStrings) != 0 {
 			log.Error("There are following issues with values provided by --port-forward flag:")
 			for _, errStr := range errStrings {
-				fmt.Printf("\t- %s\n", errStr)
+				fmt.Fprintf(log.GetStderr(), "\t- %s\n", errStr)
 			}
 		}
 		return err
