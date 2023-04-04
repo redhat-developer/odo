@@ -303,7 +303,7 @@ CMD ["npm", "start"]
 			})
 		})
 
-		When("running building and pushing images", func() {
+		When("building and pushing images", func() {
 			var stdout string
 
 			BeforeEach(func() {

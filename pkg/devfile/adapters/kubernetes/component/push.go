@@ -52,7 +52,7 @@ func (a *Adapter) buildPushAutoImageComponents(ctx context.Context, fs filesyste
 		}
 		alreadyApplied, ok := compStatus.ImageComponentsAutoApplied[c.Name]
 		if ok && reflect.DeepEqual(*c.Image, alreadyApplied) {
-			klog.V(3).Infof("Skipping image component %q; already applied and not changed", c.Name)
+			klog.V(1).Infof("Skipping image component %q; already applied and not changed", c.Name)
 			continue
 		}
 		err = image.BuildPushSpecificImage(ctx, fs, c, true)

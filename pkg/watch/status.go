@@ -23,7 +23,7 @@ type ComponentStatus struct {
 	RunExecuted        bool
 	EndpointsForwarded map[string][]v1alpha2.Endpoint
 	// ImageComponentsAutoApplied is a cache of all image components that have been auto-applied.
-	// This map allows to avoid applied them too many times upon state changes in the cluster for example.
+	// This map allows to avoid applying them too many times upon state changes in the cluster for example.
 	ImageComponentsAutoApplied map[string]v1alpha2.ImageComponent
 }
 

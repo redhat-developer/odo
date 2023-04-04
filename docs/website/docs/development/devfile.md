@@ -221,7 +221,7 @@ When running `odo`, the following Image components will be applied automatically
 - `autobuild-true` because it has `autoBuild` set to `true`.
 - `autobuild-not-set-and-not-referenced` because it doesn't set `autoBuild` and is not referenced by any `apply` commands.
 
-Because it is referenced in the `image-autobuild-false-and-referenced` `apply` command, `autobuild-false-and-referenced` will be applied when this command
+Because the `image` component `autobuild-false-and-referenced` is referenced by the `apply` command `image-autobuild-false-and-referenced`, it will be applied when this command
 is invoked, that is, in this example, when the `run` or `deploy` commands are invoked.
 
 
@@ -290,7 +290,7 @@ When running `odo`, the following Kubernetes components will be applied automati
 - `k8s-deploybydefault-true` because it has `deployByDefault` set to `true`.
 - `k8s-deploybydefault-not-set-and-not-referenced` because it doesn't set `deployByDefault` and is not referenced by any `apply` commands.
 
-Because it is referenced in the `apply-k8s-deploybydefault-false-and-referenced` `apply` command, `k8s-deploybydefault-false-and-referenced` will be applied when this command
+Because the `kubernetes` component `k8s-deploybydefault-false-and-referenced` is referenced by the `apply` command `apply-k8s-deploybydefault-false-and-referenced` , it will be applied when this command
 is invoked, that is, in this example, when the `run` or `deploy` commands are invoked.
 
 
