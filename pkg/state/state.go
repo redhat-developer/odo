@@ -87,6 +87,9 @@ func (o *State) delete(pid int) error {
 }
 
 func getFilename(pid int) string {
+	if pid == 0 {
+		return _filepath
+	}
 	return fmt.Sprintf(_filepathPid, pid)
 }
 
