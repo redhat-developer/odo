@@ -18,14 +18,22 @@ commands:
         isDefault: true
         kind: build
       workingDir: $PROJECT_SOURCE
-  - id: run
+  - id: innerloop-pod-command
+    apply:
+      component: innerloop-pod
+  - id: start
     exec:
       commandLine: npm start
       component: runtime
-      group:
-        isDefault: true
-        kind: run
       workingDir: $PROJECT_SOURCE
+  - id: run
+    composite:
+      commands:
+        - innerloop-pod-command
+        - start
+      group:
+        kind: run
+        isDefault: true
   - id: build-image
     apply:
       component: prod-image
@@ -111,6 +119,9 @@ components:
                       port: 3000
   - name: innerloop-pod
     kubernetes:
+      # This will be applied only if referenced by an apply command, in which case it will be applied when the apply command is invoked.
+      # Not setting deployByDefault to false and not referencing this component will make it automatically created by both 'odo dev' and 'odo deploy'.
+      deployByDefault: false
       inlined: |
         apiVersion: v1
         kind: Pod
