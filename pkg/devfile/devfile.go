@@ -44,7 +44,10 @@ func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 // ParseAndValidateFromFile reads, parses and validates  devfile from a file
 // if there are warning it logs them on stdout
 func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
-	return parseDevfile(parser.ParserArgs{Path: devfilePath})
+	return parseDevfile(parser.ParserArgs{
+		Path:               devfilePath,
+		SetBooleanDefaults: pointer.Bool(false),
+	})
 }
 
 // ParseAndValidateFromFileWithVariables reads, parses and validates  devfile from a file
