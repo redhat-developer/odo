@@ -54,7 +54,6 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 // GetRandomFreePort returns a random free port(string) between 1024 and 65535, or within a given portRange if provided
 // WARN: If length of portRange is anything other than 2 and first index is greater-than-or-equal-to second index, it will use the default range.
 func GetRandomFreePort(portRange ...int) string {
-	rand.Seed(time.Now().UnixNano())
 	max := 65535
 	min := 1024
 	var (
