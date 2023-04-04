@@ -176,6 +176,9 @@ func (o DevSession) Kill() {
 
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
 func (o *DevSession) Stop() {
+	if o.session == nil {
+		return
+	}
 	if o.console != nil {
 		err := o.console.Close()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
@@ -183,13 +186,14 @@ func (o *DevSession) Stop() {
 	if o.stopped {
 		return
 	}
+
 	err := terminateProc(o.session)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	o.stopped = true
 }
 
 func (o *DevSession) PressKey(p byte) {
-	if o.console == nil {
+	if o.console == nil || o.session == nil {
 		return
 	}
 	_, err := o.console.Write([]byte{p})
@@ -197,6 +201,9 @@ func (o *DevSession) PressKey(p byte) {
 }
 
 func (o DevSession) WaitEnd() {
+	if o.session == nil {
+		return
+	}
 	o.session.Wait(3 * time.Minute)
 }
 
