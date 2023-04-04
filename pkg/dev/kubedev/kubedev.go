@@ -6,6 +6,8 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+
 	"github.com/redhat-developer/odo/pkg/binding"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/dev"
@@ -107,7 +109,9 @@ func (o *DevClient) Start(
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
-	componentStatus := watch.ComponentStatus{}
+	componentStatus := watch.ComponentStatus{
+		ImageComponentsAutoApplied: make(map[string]v1alpha2.ImageComponent),
+	}
 	err := adapter.Push(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err

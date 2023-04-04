@@ -3,11 +3,13 @@ package component
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -18,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 // getComponentDeployment returns the deployment associated with the component, if deployed
@@ -38,18 +41,43 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	return deployment, componentExists, nil
 }
 
-func (a *Adapter) handleAutoImageComponents(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj) error {
+func (a *Adapter) handleAutoImageComponents(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, compStatus *watch.ComponentStatus) error {
 	components, err := devfile.GetImageComponentsToPush(devfileObj)
 	if err != nil {
 		return err
 	}
 
 	for _, c := range components {
+		if c.Image == nil {
+			return fmt.Errorf("component %q should be an Image Component", c.Name)
+		}
+		alreadyApplied, ok := compStatus.ImageComponentsAutoApplied[c.Name]
+		if ok && reflect.DeepEqual(*c.Image, alreadyApplied) {
+			klog.V(3).Infof("Skipping image component %q; already applied and not changed", c.Name)
+			continue
+		}
 		err = image.BuildPushSpecificImage(ctx, fs, c, true)
 		if err != nil {
 			return err
 		}
+		compStatus.ImageComponentsAutoApplied[c.Name] = *c.Image
 	}
+
+	// Remove keys that might no longer be valid
+	devfileHasCompFn := func(n string) bool {
+		for _, c := range components {
+			if c.Name == n {
+				return true
+			}
+		}
+		return false
+	}
+	for n := range compStatus.ImageComponentsAutoApplied {
+		if !devfileHasCompFn(n) {
+			delete(compStatus.ImageComponentsAutoApplied, n)
+		}
+	}
+
 	return nil
 }
 

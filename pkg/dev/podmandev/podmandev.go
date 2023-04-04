@@ -88,7 +88,9 @@ func (o *DevClient) Start(
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 
-		componentStatus = watch.ComponentStatus{}
+		componentStatus = watch.ComponentStatus{
+			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
+		}
 	)
 
 	err := o.reconcile(ctx, out, errOut, options, &componentStatus)

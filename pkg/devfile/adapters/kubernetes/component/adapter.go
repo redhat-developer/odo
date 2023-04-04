@@ -109,12 +109,15 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		return err
 	}
 
+	if componentStatus.State == watch.StateSyncOutdated {
+		// Clear the cache of image components already applied, hence forcing image components to be reapplied.
+		componentStatus.ImageComponentsAutoApplied = make(map[string]devfilev1.ImageComponent)
+	}
+
 	klog.V(4).Infof("component state: %q\n", componentStatus.State)
-	if componentStatus.State == "" || componentStatus.State == watch.StateReady {
-		err = a.handleAutoImageComponents(ctx, a.FS, a.Devfile)
-		if err != nil {
-			return err
-		}
+	err = a.handleAutoImageComponents(ctx, a.FS, a.Devfile, componentStatus)
+	if err != nil {
+		return err
 	}
 
 	deployment, deploymentExists, err := a.getComponentDeployment()
