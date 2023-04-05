@@ -3599,8 +3599,7 @@ CMD ["npm", "start"]
 		// More details on https://github.com/devfile/api/issues/852#issuecomment-1211928487
 		When("starting with Devfile with autoBuild or deployByDefault components", helper.LabelPodmanIf(podman, func() {
 			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExample(filepath.Join("source", "nodejs", "Dockerfile"), filepath.Join(commonVar.Context, "Dockerfile"))
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
 					helper.DevfileMetadataNameSetter(cmpName))
