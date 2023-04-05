@@ -3,12 +3,11 @@ package helper
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
 	"io"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -51,24 +50,10 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 	Fail(fmt.Sprintf("Failed after %d retries. Content in %s doesn't include '%s'.", maxRetry, url, match))
 }
 
-// GetRandomFreePort returns a random free port(string) between 1024 and 65535, or within a given portRange if provided
-// WARN: If length of portRange is anything other than 2 and first index is greater-than-or-equal-to second index, it will use the default range.
-func GetRandomFreePort(portRange ...int) string {
-	max := 65535
-	min := 1024
-	var (
-		startPort = rand.Intn(max-min) + min // #nosec  // cannot use crypto/rand library here
-		endPort   = max
-	)
-	// WARN: If length of portRange is anything other than 2 and first index is gte second index, it will be ignored
-	if len(portRange) == 2 && portRange[0] < portRange[1] {
-		startPort = portRange[0]
-		endPort = portRange[1]
-	}
-	freePort, err := util.NextFreePort(startPort, endPort, nil)
-	if err != nil {
-		Fail("failed to obtain a free port")
-	}
-	return strconv.Itoa(freePort)
+var startPort int64 = 30000
 
+// GetRandomFreePort increases the counter of global variable startPort, and returns.
+func GetRandomFreePort() string {
+	atomic.AddInt64(&startPort, 1)
+	return strconv.FormatInt(startPort, 10)
 }
