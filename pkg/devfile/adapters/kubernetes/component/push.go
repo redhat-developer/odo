@@ -41,7 +41,7 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 }
 
 func (a *Adapter) buildPushAutoImageComponents(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, compStatus *watch.ComponentStatus) error {
-	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
+	components, err := libdevfile.GetImageComponentsToPushAutomatically(devfileObj)
 	if err != nil {
 		return err
 	}

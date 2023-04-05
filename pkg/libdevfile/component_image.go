@@ -29,10 +29,10 @@ func (e *imageComponent) Apply(handler Handler) error {
 	return handler.ApplyImage(e.component)
 }
 
-// GetImageComponentsToPush returns the list of Image components that can be automatically created on startup.
+// GetImageComponentsToPushAutomatically returns the list of Image components that can be automatically created on startup.
 // The list returned is governed by the AutoBuild field in each component.
 // All components with AutoBuild set to true are included, along with those with no AutoBuild set and not-referenced.
-func GetImageComponentsToPush(devfileObj parser.DevfileObj) ([]v1alpha2.Component, error) {
+func GetImageComponentsToPushAutomatically(devfileObj parser.DevfileObj) ([]v1alpha2.Component, error) {
 	imageComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ImageComponentType},
 	})
