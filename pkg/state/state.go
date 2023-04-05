@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -29,11 +31,13 @@ func NewStateClient(fs filesystem.Filesystem) *State {
 
 func (o *State) SetForwardedPorts(ctx context.Context, fwPorts []api.ForwardedPort) error {
 	var (
-		pid = odocontext.GetPID(ctx)
+		pid      = odocontext.GetPID(ctx)
+		platform = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 	)
 	// TODO(feloy) When other data is persisted into the state file, it will be needed to read the file first
 	o.content.ForwardedPorts = fwPorts
 	o.content.PID = pid
+	o.content.Platform = platform
 	return o.save(pid)
 }
 
@@ -57,6 +61,7 @@ func (o *State) SaveExit(ctx context.Context) error {
 	)
 	o.content.ForwardedPorts = nil
 	o.content.PID = 0
+	o.content.Platform = ""
 	err := o.delete(pid)
 	if err != nil {
 		return err
