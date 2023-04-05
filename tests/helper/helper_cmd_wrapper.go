@@ -117,6 +117,7 @@ func (cw *CmdWrapper) ShouldRun() *CmdWrapper {
 func (cw *CmdWrapper) Should(f func(session *gexec.Session)) {
 	cw.Runner()
 	f(cw.session)
+	cw.session.Wait()
 }
 
 func (cw *CmdWrapper) WithTerminate(timeoutAfter time.Duration, stop chan bool) *CmdWrapper {
