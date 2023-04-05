@@ -16,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev/common"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -105,6 +104,17 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	err = dfutil.ValidateK8sResourceName("component namespace", a.kubeClient.GetCurrentNamespace())
+	if err != nil {
+		return err
+	}
+
+	if componentStatus.State == watch.StateSyncOutdated {
+		// Clear the cache of image components already applied, hence forcing image components to be reapplied.
+		componentStatus.ImageComponentsAutoApplied = make(map[string]devfilev1.ImageComponent)
+	}
+
+	klog.V(4).Infof("component state: %q\n", componentStatus.State)
+	err = a.buildPushAutoImageComponents(ctx, a.FS, a.Devfile, componentStatus)
 	if err != nil {
 		return err
 	}
@@ -631,7 +641,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	}
 
 	var devfileK8sResources []devfilev1.Component
-	devfileK8sResources, err = devfile.GetK8sAndOcComponentsToPush(a.Devfile, true)
+	devfileK8sResources, err = libdevfile.GetK8sAndOcComponentsToPush(a.Devfile, true)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to obtain resources from the Devfile: %w", err)
 	}

@@ -50,8 +50,58 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		componentName = odocontext.GetComponentName(ctx)
 		appName       = odocontext.GetApplication(ctx)
 	)
-	deployHandler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
-	return libdevfile.Deploy(*devfileObj, deployHandler)
+
+	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
+
+	err := o.buildPushAutoImageComponents(handler, *devfileObj)
+	if err != nil {
+		return err
+	}
+
+	err = o.applyAutoK8sOrOcComponents(handler, *devfileObj)
+	if err != nil {
+		return err
+	}
+
+	return libdevfile.Deploy(*devfileObj, handler)
+}
+
+func (o *DeployClient) buildPushAutoImageComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
+	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range components {
+		err = handler.ApplyImage(c)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (o *DeployClient) applyAutoK8sOrOcComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
+	components, err := libdevfile.GetK8sAndOcComponentsToPush(devfileObj, false)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range components {
+		var f func(component2 v1alpha2.Component) error
+		if c.Kubernetes != nil {
+			f = handler.ApplyKubernetes
+		} else if c.Openshift != nil {
+			f = handler.ApplyOpenShift
+		}
+		if f == nil {
+			continue
+		}
+		if err = f(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type deployHandler struct {

@@ -108,6 +108,9 @@ type ParserArgs struct {
 	ExternalVariables map[string]string
 	// HTTPTimeout overrides the request and response timeout values for reading a parent devfile reference from the registry.  If a negative value is specified, the default timeout will be used.
 	HTTPTimeout *int
+	// SetBooleanDefaults sets the boolean properties to their default values after a devfile been parsed.
+	// The value is true by default.  Clients can set this to false if they want to set the boolean properties themselves
+	SetBooleanDefaults *bool
 }
 
 // ParseDevfile func populates the devfile data, parses and validates the devfile integrity.
@@ -144,9 +147,13 @@ func ParseDevfile(args ParserArgs) (d DevfileObj, err error) {
 		return d, errors.Wrap(err, "failed to populateAndParseDevfile")
 	}
 
-	//set defaults only if we are flattening parent and parsing succeeded
-	if flattenedDevfile && err == nil {
-		err = setDefaults(d)
+	setBooleanDefaults := true
+	if args.SetBooleanDefaults != nil {
+		setBooleanDefaults = *args.SetBooleanDefaults
+	}
+	//set defaults only if parsing succeeded
+	if err == nil && setBooleanDefaults {
+		err := setDefaults(d)
 		if err != nil {
 			return d, errors.Wrap(err, "failed to setDefaults")
 		}

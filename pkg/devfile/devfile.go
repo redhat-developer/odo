@@ -2,11 +2,11 @@ package devfile
 
 import (
 	"fmt"
-
 	"strings"
 
 	"github.com/devfile/library/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -44,7 +44,10 @@ func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 // ParseAndValidateFromFile reads, parses and validates  devfile from a file
 // if there are warning it logs them on stdout
 func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
-	return parseDevfile(parser.ParserArgs{Path: devfilePath})
+	return parseDevfile(parser.ParserArgs{
+		Path:               devfilePath,
+		SetBooleanDefaults: pointer.Bool(false),
+	})
 }
 
 // ParseAndValidateFromFileWithVariables reads, parses and validates  devfile from a file
@@ -52,8 +55,9 @@ func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
 // if there are warning it logs them on stdout
 func ParseAndValidateFromFileWithVariables(devfilePath string, variables map[string]string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{
-		Path:              devfilePath,
-		ExternalVariables: variables,
+		Path:               devfilePath,
+		ExternalVariables:  variables,
+		SetBooleanDefaults: pointer.Bool(false),
 	})
 }
 

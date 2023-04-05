@@ -1,0 +1,390 @@
+commands:
+  - exec:
+      commandLine: npm install
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+
+  - exec:
+      commandLine: npm run start
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: start-app
+  - exec:
+      commandLine: npm run debug
+      component: runtime
+      group:
+        isDefault: true
+        kind: debug
+      workingDir: ${PROJECT_SOURCE}
+    id: start-app-debug
+
+  - apply:
+      component: autobuild-true-and-referenced
+    id: image-autobuild-true-and-referenced
+  - apply:
+      component: autobuild-false-and-referenced
+    id: image-autobuild-false-and-referenced
+  - apply:
+      component: autobuild-not-set-and-referenced
+    id: image-autobuild-not-set-and-referenced
+
+  - composite:
+      commands:
+        - image-autobuild-true-and-referenced
+        - image-autobuild-false-and-referenced
+        - image-autobuild-not-set-and-referenced
+        - apply-k8s-deploybydefault-true-and-referenced
+        - apply-ocp-deploybydefault-true-and-referenced
+        - apply-k8s-deploybydefault-false-and-referenced
+        - apply-ocp-deploybydefault-false-and-referenced
+        - apply-k8s-deploybydefault-not-set-and-referenced
+        - apply-ocp-deploybydefault-not-set-and-referenced
+        - start-app
+      group:
+        isDefault: false
+        kind: run
+    id: run-with-referenced-components
+  - composite:
+      commands:
+        - image-autobuild-true-and-referenced
+        - image-autobuild-false-and-referenced
+        - image-autobuild-not-set-and-referenced
+        - apply-k8s-deploybydefault-true-and-referenced
+        - apply-ocp-deploybydefault-true-and-referenced
+        - apply-k8s-deploybydefault-false-and-referenced
+        - apply-ocp-deploybydefault-false-and-referenced
+        - apply-k8s-deploybydefault-not-set-and-referenced
+        - apply-ocp-deploybydefault-not-set-and-referenced
+        - start-app-debug
+      group:
+        isDefault: false
+        kind: debug
+    id: debug-with-referenced-components
+
+  - composite:
+      group:
+        isDefault: true
+        kind: deploy
+    id: deploy
+
+  - apply:
+      component: k8s-deploybydefault-true-and-referenced
+    id: apply-k8s-deploybydefault-true-and-referenced
+  - apply:
+      component: ocp-deploybydefault-true-and-referenced
+    id: apply-ocp-deploybydefault-true-and-referenced
+  - apply:
+      component: k8s-deploybydefault-false-and-referenced
+    id: apply-k8s-deploybydefault-false-and-referenced
+  - apply:
+      component: ocp-deploybydefault-false-and-referenced
+    id: apply-ocp-deploybydefault-false-and-referenced
+  - apply:
+      component: k8s-deploybydefault-not-set-and-referenced
+    id: apply-k8s-deploybydefault-not-set-and-referenced
+  - apply:
+      component: ocp-deploybydefault-not-set-and-referenced
+    id: apply-ocp-deploybydefault-not-set-and-referenced
+
+  - composite:
+      commands:
+        - image-autobuild-true-and-referenced
+        - image-autobuild-false-and-referenced
+        - image-autobuild-not-set-and-referenced
+        - apply-k8s-deploybydefault-true-and-referenced
+        - apply-ocp-deploybydefault-true-and-referenced
+        - apply-k8s-deploybydefault-false-and-referenced
+        - apply-ocp-deploybydefault-false-and-referenced
+        - apply-k8s-deploybydefault-not-set-and-referenced
+        - apply-ocp-deploybydefault-not-set-and-referenced
+      group:
+        isDefault: false
+        kind: deploy
+    id: deploy-with-referenced-components
+
+
+components:
+  - container:
+      command: [ 'tail' ]
+      args: [ '-f', '/dev/null' ]
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+        - name: "debug"
+          targetPort: 5858
+          exposure: none
+      env:
+        - name: DEBUG_PORT_PROJECT
+          value: "5858"
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+
+  #######################
+  # Kubernetes components
+  #######################
+
+  # deployByDefault true, referenced in apply command => automatically created on startup
+  - kubernetes:
+      deployByDefault: true
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-true-and-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-true-and-referenced
+
+  # deployByDefault true, not referenced in apply command => automatically created on startup
+  - kubernetes:
+      deployByDefault: true
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-true-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-true-and-not-referenced
+
+  # deployByDefault false, referenced in apply command => created when apply command is invoked
+  - kubernetes:
+      deployByDefault: false
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-false-and-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-false-and-referenced
+
+  # deployByDefault false, not referenced in apply command => never started ???
+  - kubernetes:
+      deployByDefault: false
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-false-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-false-and-not-referenced
+
+  # deployByDefault not set, referenced in apply command => created when apply command is invoked
+  - kubernetes:
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-not-set-and-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-not-set-and-referenced
+
+  # deployByDefault not set, not referenced in apply command => automatically created on startup
+  - kubernetes:
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-not-set-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-not-set-and-not-referenced
+
+  #######################
+  # OpenShift components
+  #######################
+
+  # deployByDefault true, referenced in apply command => automatically created on startup
+  - openshift:
+      deployByDefault: true
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-true-and-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-true-and-referenced
+
+  # deployByDefault true, not referenced in apply command => automatically created on startup
+  - openshift:
+      deployByDefault: true
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-true-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-true-and-not-referenced
+
+  # deployByDefault false, referenced in apply command => created when apply command is invoked
+  - openshift:
+      deployByDefault: false
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-false-and-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-false-and-referenced
+
+  # deployByDefault false, not referenced in apply command => never started ???
+  - openshift:
+      deployByDefault: false
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-false-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-false-and-not-referenced
+
+  # deployByDefault not set, referenced in apply command => created when apply command is invoked
+  - openshift:
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-not-set-and-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-not-set-and-referenced
+
+  # deployByDefault not set, not referenced in apply command => automatically created on startup
+  - openshift:
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-not-set-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-not-set-and-not-referenced
+
+  #######################
+  # Image components
+  #######################
+
+  # autoBuild true, referenced in apply command => automatically created on startup
+  - image:
+      autoBuild: true
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-true-and-referenced"
+    name: autobuild-true-and-referenced
+
+  # autoBuild true, not referenced in apply command => automatically created on startup
+  - image:
+      autoBuild: true
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-true-and-not-referenced"
+    name: autobuild-true-and-not-referenced
+
+  # autoBuild false, referenced in apply command => created when apply command is invoked
+  - image:
+      autoBuild: false
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-false-and-referenced"
+    name: autobuild-false-and-referenced
+
+  # autoBuild false, not referenced in apply command => never started ???
+  - image:
+      autoBuild: false
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-false-and-not-referenced"
+    name: autobuild-false-and-not-referenced
+
+  # autoBuild not set, referenced in apply command => created when apply command is invoked
+  - image:
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-not-set-and-referenced"
+    name: autobuild-not-set-and-referenced
+
+  # autoBuild not set, not referenced in apply command => automatically created on startup
+  - image:
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-not-set-and-not-referenced"
+    name: autobuild-not-set-and-not-referenced
+
+metadata:
+  description: Stack with Node.js 14
+  displayName: Node.js Runtime
+  icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+  language: javascript
+  name: my-node-app
+  projectType: nodejs
+  tags:
+    - NodeJS
+    - Express
+    - ubi8
+  version: 1.0.0
+schemaVersion: 2.2.0
+starterProjects:
+  - git:
+      remotes:
+        origin: https://github.com/odo-devfiles/nodejs-ex.git
+    name: nodejs-starter
+variables:
+  CONTAINER_IMAGE_REPO: localhost:5000/odo-dev/node

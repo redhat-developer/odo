@@ -13,6 +13,7 @@ import (
 	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	"k8s.io/utils/pointer"
 )
 
 // GetFakeContainerComponent returns a fake container component for testing
@@ -142,7 +143,10 @@ func GetTestDevfileObjFromFile(fileName string) parser.DevfileObj {
 	// path to the devfile
 	devfilePath := filepath.Join(filepath.Dir(filename), "..", "..", "tests", "examples", filepath.Join("source", "devfiles", "nodejs", fileName))
 
-	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath})
+	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{
+		Path:               devfilePath,
+		SetBooleanDefaults: pointer.Bool(false),
+	})
 	if err != nil {
 		return parser.DevfileObj{}
 	}

@@ -9,10 +9,14 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"k8s.io/utils/pointer"
+
 	"github.com/redhat-developer/odo/pkg/labels"
+
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -649,5 +653,168 @@ CMD ["npm", "start"]
 				})
 			})
 		})
+	})
+
+	// More details on https://github.com/devfile/api/issues/852#issuecomment-1211928487
+	When("starting with Devfile with autoBuild or deployByDefault components", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+
+		When("running odo deploy with some components not referenced in the Devfile", func() {
+			var stdout string
+
+			BeforeEach(func() {
+				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			})
+
+			It("should create the appropriate resources", func() {
+				By("automatically applying Kubernetes/OpenShift components with deployByDefault=true", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-true-and-referenced",
+						"k8s-deploybydefault-true-and-not-referenced",
+						"ocp-deploybydefault-true-and-referenced",
+						"ocp-deploybydefault-true-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+				By("automatically applying non-referenced Kubernetes/OpenShift components with deployByDefault not set", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-not-set-and-not-referenced",
+						"ocp-deploybydefault-not-set-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+				By("not applying Kubernetes/OpenShift components with deployByDefault=false", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-false-and-referenced",
+						"k8s-deploybydefault-false-and-not-referenced",
+						"ocp-deploybydefault-false-and-referenced",
+						"ocp-deploybydefault-false-and-not-referenced",
+					} {
+						Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+				By("not applying referenced Kubernetes/OpenShift components with deployByDefault unset", func() {
+					Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/k8s-deploybydefault-not-set-and-referenced"))
+				})
+
+				By("automatically applying image components with autoBuild=true", func() {
+					for _, tag := range []string{
+						"autobuild-true-and-referenced",
+						"autobuild-true-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:%s", tag))
+					}
+				})
+				By("automatically applying non-referenced Image components with autoBuild not set", func() {
+					Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced"))
+				})
+				By("not applying image components with autoBuild=false", func() {
+					for _, tag := range []string{
+						"autobuild-false-and-referenced",
+						"autobuild-false-and-not-referenced",
+					} {
+						Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:%s", tag))
+					}
+				})
+				By("not applying referenced Image components with deployByDefault unset", func() {
+					Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-not-set-and-referenced"))
+				})
+			})
+		})
+
+		When("running odo deploy with some components referenced in the Devfile", func() {
+			var stdout string
+
+			BeforeEach(func() {
+				//TODO (rm3l): we do not support passing a custom deploy command yet. That's why we are manually updating the Devfile to set the default deploy command.
+				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{
+					helper.DevfileCommandGroupUpdater("deploy", v1alpha2.CompositeCommandType, &v1alpha2.CommandGroup{
+						Kind:      v1alpha2.DeployCommandGroupKind,
+						IsDefault: pointer.Bool(false),
+					}),
+					helper.DevfileCommandGroupUpdater("deploy-with-referenced-components", v1alpha2.CompositeCommandType, &v1alpha2.CommandGroup{
+						Kind:      v1alpha2.DeployCommandGroupKind,
+						IsDefault: pointer.Bool(true),
+					}),
+				})
+
+				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			})
+
+			It("should create the appropriate resources", func() {
+				By("applying referenced Kubernetes/OpenShift components", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-true-and-referenced",
+						"k8s-deploybydefault-false-and-referenced",
+						"k8s-deploybydefault-not-set-and-referenced",
+						"ocp-deploybydefault-true-and-referenced",
+						"ocp-deploybydefault-false-and-referenced",
+						"ocp-deploybydefault-not-set-and-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+
+				By("automatically applying Kubernetes/OpenShift components with deployByDefault=true", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-true-and-referenced",
+						"k8s-deploybydefault-true-and-not-referenced",
+						"ocp-deploybydefault-true-and-referenced",
+						"ocp-deploybydefault-true-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+				By("automatically applying non-referenced Kubernetes/OpenShift components with deployByDefault not set", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-not-set-and-not-referenced",
+						"ocp-deploybydefault-not-set-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+
+				By("not applying non-referenced Kubernetes/OpenShift components with deployByDefault=false", func() {
+					for _, l := range []string{
+						"k8s-deploybydefault-false-and-not-referenced",
+						"ocp-deploybydefault-false-and-not-referenced",
+					} {
+						Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
+					}
+				})
+
+				By("applying referenced image components", func() {
+					for _, tag := range []string{
+						"autobuild-true-and-referenced",
+						"autobuild-false-and-referenced",
+						"autobuild-not-set-and-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:%s", tag))
+					}
+				})
+				By("automatically applying image components with autoBuild=true", func() {
+					for _, tag := range []string{
+						"autobuild-true-and-referenced",
+						"autobuild-true-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:%s", tag))
+					}
+				})
+				By("automatically applying non-referenced Image components with autoBuild not set", func() {
+					Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced"))
+				})
+				By("not applying non-referenced image components with autoBuild=false", func() {
+					Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-false-and-not-referenced"))
+				})
+			})
+		})
+
 	})
 })

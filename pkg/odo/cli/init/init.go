@@ -235,7 +235,11 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 
 		// in case the starter project contains a devfile, read it again
 		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
-			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.Bool(false)})
+			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{
+				Path:               devfilePath,
+				FlattenedDevfile:   pointer.Bool(false),
+				SetBooleanDefaults: pointer.Bool(false),
+			})
 			if err != nil {
 				return parser.DevfileObj{}, "", "", nil, nil, err
 			}

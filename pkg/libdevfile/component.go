@@ -42,3 +42,15 @@ func newComponent(devfileObj parser.DevfileObj, devfileCmp v1alpha2.Component) (
 	}
 	return cmp, nil
 }
+
+func isComponentReferenced(allApplyCommands []v1alpha2.Command, cmpName string) bool {
+	for _, cmd := range allApplyCommands {
+		if cmd.Apply == nil {
+			continue
+		}
+		if cmd.Apply.Component == cmpName {
+			return true
+		}
+	}
+	return false
+}
