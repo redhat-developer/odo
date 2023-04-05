@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -260,7 +259,7 @@ func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 	if commandError != nil {
 		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
 	}
-	_ = o.clientset.StateClient.SaveExit(os.Getpid())
+	_ = o.clientset.StateClient.SaveExit(ctx)
 }
 
 // NewCmdDev implements the odo dev command

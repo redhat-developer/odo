@@ -366,7 +366,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		fmt.Fprintln(log.GetStdout())
 	}
 
-	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
+	err = a.portForwardClient.StartPortForwarding(ctx, a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
 	if err != nil {
 		return adapters.NewErrPortForward(err)
 	}

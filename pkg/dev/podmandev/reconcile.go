@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -144,7 +143,7 @@ func (o *DevClient) reconcile(
 
 	if options.ForwardLocalhost {
 		// Port-forwarding is enabled by executing dedicated socat commands
-		err = o.portForwardClient.StartPortForwarding(*devfileObj, componentName, options.Debug, options.RandomPorts, out, errOut, fwPorts)
+		err = o.portForwardClient.StartPortForwarding(ctx, *devfileObj, componentName, options.Debug, options.RandomPorts, out, errOut, fwPorts)
 		if err != nil {
 			return adapters.NewErrPortForward(err)
 		}
@@ -154,7 +153,7 @@ func (o *DevClient) reconcile(
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
 		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
 	}
-	err = o.stateClient.SetForwardedPorts(os.Getpid(), fwPorts)
+	err = o.stateClient.SetForwardedPorts(ctx, fwPorts)
 	if err != nil {
 		return err
 	}

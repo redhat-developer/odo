@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -77,7 +79,9 @@ func TestState_SetForwardedPorts(t *testing.T) {
 			o := State{
 				fs: fs,
 			}
-			if err := o.SetForwardedPorts(1, tt.args.fwPorts); (err != nil) != tt.wantErr {
+			ctx := context.Background()
+			ctx = odocontext.WithPID(ctx, 1)
+			if err := o.SetForwardedPorts(ctx, tt.args.fwPorts); (err != nil) != tt.wantErr {
 				t.Errorf("State.SetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if check := tt.checkState(fs); check != nil {
@@ -136,9 +140,10 @@ func TestState_SaveExit(t *testing.T) {
 			o := State{
 				fs: fs,
 			}
-			pid := 1
-			_ = o.SetForwardedPorts(pid, nil)
-			if err := o.SaveExit(pid); (err != nil) != tt.wantErr {
+			ctx := context.Background()
+			ctx = odocontext.WithPID(ctx, 1)
+			_ = o.SetForwardedPorts(ctx, nil)
+			if err := o.SaveExit(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("State.SaveExit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if check := tt.checkState(fs); check != nil {
@@ -197,8 +202,9 @@ func TestState_GetForwardedPorts(t *testing.T) {
 				content: tt.fields.content,
 				fs:      tt.fields.fs(t),
 			}
-			pid := 1
-			got, err := o.GetForwardedPorts(pid)
+			ctx := context.Background()
+			ctx = odocontext.WithPID(ctx, 1)
+			got, err := o.GetForwardedPorts(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("State.GetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 				return

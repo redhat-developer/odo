@@ -242,7 +242,7 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 	}
 
 	// TODO(feloy) Pass PID with `--pid` flag
-	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts(0)
+	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts(ctx)
 	if err != nil {
 		return api.Component{}, nil, err
 	}

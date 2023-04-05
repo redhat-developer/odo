@@ -1,10 +1,10 @@
 package kubeportforward
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"sort"
 	"time"
@@ -50,7 +50,7 @@ func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Cli
 	}
 }
 
-func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentName string, debug bool, randomPorts bool, out io.Writer, errOut io.Writer, definedPorts []api.ForwardedPort) error {
+func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.DevfileObj, componentName string, debug bool, randomPorts bool, out io.Writer, errOut io.Writer, definedPorts []api.ForwardedPort) error {
 	if randomPorts && len(definedPorts) != 0 {
 		return errors.New("cannot use randomPorts and custom definePorts together")
 	}
@@ -115,7 +115,7 @@ func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentNa
 
 			go func() {
 				portsBuf.Wait()
-				err = o.stateClient.SetForwardedPorts(os.Getpid(), portsBuf.GetForwardedPorts())
+				err = o.stateClient.SetForwardedPorts(ctx, portsBuf.GetForwardedPorts())
 				if err != nil {
 					err = fmt.Errorf("unable to save forwarded ports to state file: %v", err)
 				}

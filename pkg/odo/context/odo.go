@@ -9,6 +9,7 @@ import (
 type (
 	applicationKeyType   struct{}
 	cwdKeyType           struct{}
+	pidKeyType           struct{}
 	devfilePathKeyType   struct{}
 	devfileObjKeyType    struct{}
 	componentNameKeyType struct{}
@@ -17,6 +18,7 @@ type (
 var (
 	applicationKey   applicationKeyType
 	cwdKey           cwdKeyType
+	pidKey           pidKeyType
 	devfilePathKey   devfilePathKeyType
 	devfileObjKey    devfileObjKeyType
 	componentNameKey componentNameKeyType
@@ -55,6 +57,23 @@ func GetWorkingDirectory(ctx context.Context) string {
 		return cast
 	}
 	panic("this should not happen, either the original context is not passed or WithWorkingDirectory is not called as it should. Check that FILESYSTEM dependency is added to the command")
+}
+
+// WithPID sets the value of the PID in ctx
+// This function must be used before calling GetPID
+// Use this function only with a context obtained from Complete/Validate/Run/... methods of Runnable interface
+func WithPID(ctx context.Context, val int) context.Context {
+	return context.WithValue(ctx, pidKey, val)
+}
+
+// GetPID gets the PID value in ctx
+// This function will panic if the context does not contain the value
+func GetPID(ctx context.Context) int {
+	value := ctx.Value(pidKey)
+	if cast, ok := value.(int); ok {
+		return cast
+	}
+	panic("this should not happen, either the original context is not passed or WithPID is not called as it should")
 }
 
 // WithDevfilePath sets the value of the devfile path in ctx

@@ -1,6 +1,7 @@
 package portForward
 
 import (
+	"context"
 	"io"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -16,6 +17,7 @@ type Client interface {
 	// output will be written to errOut writer
 	// definedPorts allows callers to explicitly define the mapping they want to set.
 	StartPortForwarding(
+		ctx context.Context,
 		devFileObj parser.DevfileObj,
 		componentName string,
 		debug bool,

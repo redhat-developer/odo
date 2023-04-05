@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -25,14 +27,20 @@ func NewStateClient(fs filesystem.Filesystem) *State {
 	}
 }
 
-func (o *State) SetForwardedPorts(pid int, fwPorts []api.ForwardedPort) error {
+func (o *State) SetForwardedPorts(ctx context.Context, fwPorts []api.ForwardedPort) error {
+	var (
+		pid = odocontext.GetPID(ctx)
+	)
 	// TODO(feloy) When other data is persisted into the state file, it will be needed to read the file first
 	o.content.ForwardedPorts = fwPorts
 	o.content.PID = pid
 	return o.save(pid)
 }
 
-func (o *State) GetForwardedPorts(pid int) ([]api.ForwardedPort, error) {
+func (o *State) GetForwardedPorts(ctx context.Context) ([]api.ForwardedPort, error) {
+	var (
+		pid = odocontext.GetPID(ctx)
+	)
 	err := o.read(pid)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -43,7 +51,10 @@ func (o *State) GetForwardedPorts(pid int) ([]api.ForwardedPort, error) {
 	return o.content.ForwardedPorts, err
 }
 
-func (o *State) SaveExit(pid int) error {
+func (o *State) SaveExit(ctx context.Context) error {
+	var (
+		pid = odocontext.GetPID(ctx)
+	)
 	o.content.ForwardedPorts = nil
 	o.content.PID = 0
 	err := o.delete(pid)
