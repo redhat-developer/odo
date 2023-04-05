@@ -39,6 +39,7 @@ func createPodFromComponent(
 	debugCommand string,
 	withHelperContainer bool,
 	randomPorts bool,
+	customForwardedPorts []api.ForwardedPort,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	podTemplate, err := generator.GetPodTemplateSpec(devfileObj, generator.PodTemplateParams{})
@@ -50,9 +51,14 @@ func createPodFromComponent(
 		return nil, nil, fmt.Errorf("no valid components found in the devfile")
 	}
 
-	fwPorts, err := getPortMapping(devfileObj, debug, randomPorts, usedPorts)
-	if err != nil {
-		return nil, nil, err
+	var fwPorts []api.ForwardedPort
+	if len(customForwardedPorts) != 0 {
+
+	} else {
+		fwPorts, err = getPortMapping(devfileObj, debug, randomPorts, usedPorts)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	utils.AddOdoProjectVolume(&containers)

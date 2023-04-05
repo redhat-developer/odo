@@ -204,6 +204,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.DebugCommand,
 		options.ForwardLocalhost,
 		options.RandomPorts,
+		options.CustomForwardedPorts,
 		o.usedPorts,
 	)
 	if err != nil {
