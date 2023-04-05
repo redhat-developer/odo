@@ -34,7 +34,7 @@ func (e *kubernetesComponent) Apply(handler Handler) error {
 // All components with DeployByDefault set to true are included, along with those with no DeployByDefault set and not-referenced.
 // It takes an additional allowApply boolean, which set to true, will append the components referenced from apply commands to the list.
 func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) ([]v1alpha2.Component, error) {
-	var allComponents []v1alpha2.Component
+	var allK8sAndOcComponents []v1alpha2.Component
 
 	k8sComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.KubernetesComponentType},
@@ -42,7 +42,7 @@ func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) 
 	if err != nil {
 		return nil, err
 	}
-	allComponents = append(allComponents, k8sComponents...)
+	allK8sAndOcComponents = append(allK8sAndOcComponents, k8sComponents...)
 
 	ocComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.OpenshiftComponentType},
@@ -50,7 +50,7 @@ func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) 
 	if err != nil {
 		return nil, err
 	}
-	allComponents = append(allComponents, ocComponents...)
+	allK8sAndOcComponents = append(allK8sAndOcComponents, ocComponents...)
 
 	allApplyCommands, err := devfileObj.Data.GetCommands(parsercommon.DevfileOptions{
 		CommandOptions: parsercommon.CommandOptions{CommandType: v1alpha2.ApplyCommandType},
@@ -60,10 +60,7 @@ func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) 
 	}
 
 	m := make(map[string]v1alpha2.Component)
-	for _, comp := range allComponents {
-		if comp.Kubernetes == nil && comp.Openshift == nil {
-			continue
-		}
+	for _, comp := range allK8sAndOcComponents {
 		var k v1alpha2.K8sLikeComponent
 		if comp.Kubernetes != nil {
 			k = comp.Kubernetes.K8sLikeComponent

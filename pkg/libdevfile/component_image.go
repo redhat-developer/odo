@@ -49,9 +49,6 @@ func GetImageComponentsToPush(devfileObj parser.DevfileObj) ([]v1alpha2.Componen
 
 	m := make(map[string]v1alpha2.Component)
 	for _, comp := range imageComponents {
-		if comp.Image == nil {
-			continue
-		}
 		var add bool
 		if comp.Image.AutoBuild == nil {
 			// auto-created only if not referenced by any apply command
