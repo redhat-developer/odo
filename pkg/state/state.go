@@ -154,5 +154,15 @@ func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 		// File is owned by process
 		return true, nil
 	}
+
+	exists, err := pidExists(savedContent.PID)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		// Process already finished
+		return true, nil
+	}
+
 	return false, nil
 }
