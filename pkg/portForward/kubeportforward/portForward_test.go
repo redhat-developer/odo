@@ -2,8 +2,8 @@ package kubeportforward
 
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/google/go-cmp/cmp"
 	"github.com/redhat-developer/odo/pkg/api"
-	"reflect"
 	"testing"
 )
 
@@ -54,7 +54,8 @@ func Test_getCompleteCustomPortPairs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotPortPairs := getCustomPortPairs(tt.args.definedPorts, tt.args.ceMapping); !reflect.DeepEqual(gotPortPairs, tt.wantPortPairs) {
+			gotPortPairs := getCustomPortPairs(tt.args.definedPorts, tt.args.ceMapping)
+			if diff := cmp.Diff(gotPortPairs, tt.wantPortPairs); diff != "" {
 				t.Errorf("getCompleteCustomPortPairs() = %v, want %v", gotPortPairs, tt.wantPortPairs)
 			}
 		})

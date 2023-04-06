@@ -199,6 +199,12 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	if platform == commonflags.PlatformCluster {
 		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	}
+
+	// TODO: Remove this once --port-forward has been implemented for podman.
+	if platform == commonflags.PlatformPodman && len(o.portForwardFlag) != 0 {
+		fmt.Println()
+		log.Warning("--port-forward flag has not been implemented for podman yet, we will use the normal port forwarding")
+	}
 	// check for .gitignore file and add odo-file-index.json to .gitignore.
 	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
 	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).
@@ -287,7 +293,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().BoolVar(&o.forwardLocalhostFlag, "forward-localhost", false,
 		"Whether to enable port-forwarding if app is listening on the container loopback interface. Applicable only if platform is podman.")
 	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
-		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT")
+		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT. Currently, it is applicable only if platform is cluster.")
 
 	clientset.Add(devCmd,
 		clientset.BINDING,
@@ -391,7 +397,7 @@ func parsePortForwardFlag(portForwardFlag []string) (forwardedPorts []api.Forwar
 	const largestPortValue = 65535
 	for _, portData := range portForwardFlag {
 		if !portReg.MatchString(portData) {
-			return nil, errors.New("ports are not defined properly, acceptable formats are: <localPort>:<containerPort>, <localPort>:<containerName>:<containerPort>")
+			return nil, errors.New("ports are not defined properly, acceptable formats are: <localPort>:<containerPort>, <localPort>:<containerName>:<containerPort>; where ports must be numbers in the range [1, 65535]")
 		}
 		var portF api.ForwardedPort
 
@@ -406,7 +412,7 @@ func parsePortForwardFlag(portForwardFlag []string) (forwardedPorts []api.Forwar
 			portF.ContainerPort, _ = strconv.Atoi(portDataArr[2])
 		}
 		if !(portF.LocalPort > 0 && portF.LocalPort <= largestPortValue) || !(portF.ContainerPort > 0 && portF.ContainerPort <= largestPortValue) {
-			return nil, fmt.Errorf("%s is invalid; port number must not be greater than 0 and less than %d", portData, largestPortValue)
+			return nil, fmt.Errorf("%s is invalid; port numbers must be between 1 and %d", portData, largestPortValue)
 		}
 		forwardedPorts = append(forwardedPorts, portF)
 	}

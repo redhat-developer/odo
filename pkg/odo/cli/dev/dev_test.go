@@ -3,9 +3,8 @@ package dev
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/redhat-developer/odo/pkg/api"
-	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -170,9 +169,7 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 				return
 			}
 			if tt.wantErr {
-				sort.Strings(errStrings)
-				sort.Strings(tt.wantErrStrings)
-				if diff := cmp.Diff(errStrings, tt.wantErrStrings); diff != "" {
+				if diff := cmp.Diff(errStrings, tt.wantErrStrings, cmpopts.SortSlices(func(x, y string) bool { return x < y })); diff != "" {
 					t.Errorf("validatePortForwardFlagData() (error vs. wantErr) diff= %v", diff)
 				}
 			}
@@ -282,7 +279,7 @@ func Test_parsePortForwardFlag(t *testing.T) {
 				t.Errorf("parsePortForwardFlag() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(gotForwardedPorts, tt.wantForwardedPorts) {
+			if diff := cmp.Diff(gotForwardedPorts, tt.wantForwardedPorts); diff != "" {
 				t.Errorf("parsePortForwardFlag() gotForwardedPorts = %v, want %v", gotForwardedPorts, tt.wantForwardedPorts)
 			}
 		})
