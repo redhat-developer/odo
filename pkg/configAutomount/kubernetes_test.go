@@ -3,7 +3,7 @@ package configAutomount
 import (
 	"testing"
 
-	gomock "github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	corev1 "k8s.io/api/core/v1"

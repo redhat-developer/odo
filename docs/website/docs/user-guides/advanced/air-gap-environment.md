@@ -127,7 +127,7 @@ commands:
   id: install
 ```
 
-You can also provide additional environment variables to the container, by creating an auto-mounted configmap:
+You can also provide additional environment variables to the container, by creating an [auto-mounted configmap](/docs/user-guides/advanced/automounting-volumes):
 
 ```yaml
 apiVersion: v1

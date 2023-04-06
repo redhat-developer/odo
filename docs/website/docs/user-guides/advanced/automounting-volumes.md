@@ -3,7 +3,7 @@ title: Automounting Volumes
 sidebar_position: 8
 ---
 
-Existing configmaps, secrets, and persistent volume claims on the cluster can be mounted automatically to all containers created by `odo`. These resources can be configured by applying the appropriate labels.
+Existing [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/), [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/), and [Persistent Volume Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) on the cluster can be mounted automatically to all containers created by `odo`. These resources can be configured by applying the appropriate labels.
 
 To mark a resource for mounting to containers created by `odo`, apply the following label to the resource:
 
