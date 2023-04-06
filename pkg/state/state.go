@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -43,16 +44,27 @@ func (o *State) SetForwardedPorts(ctx context.Context, fwPorts []api.ForwardedPo
 
 func (o *State) GetForwardedPorts(ctx context.Context) ([]api.ForwardedPort, error) {
 	var (
-		pid = odocontext.GetPID(ctx)
+		result    []api.ForwardedPort
+		platforms []string
+		platform  = fcontext.GetPlatform(ctx, "")
 	)
-	err := o.read(pid)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil // if the state file does not exist, no ports are forwarded
-		}
-		return nil, err
+	if platform == "" {
+		platforms = []string{commonflags.PlatformCluster, commonflags.PlatformPodman}
+	} else {
+		platforms = []string{platform}
 	}
-	return o.content.ForwardedPorts, err
+
+	for _, platform = range platforms {
+		content, err := o.read(platform)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue // if the state file does not exist, no ports are forwarded
+			}
+			return nil, err
+		}
+		result = append(result, content.ForwardedPorts...)
+	}
+	return result, nil
 }
 
 func (o *State) SaveExit(ctx context.Context) error {
@@ -90,12 +102,39 @@ func (o *State) save(pid int) error {
 	return o.fs.WriteFile(getFilename(pid), jsonContent, 0644)
 }
 
-func (o *State) read(pid int) error {
-	jsonContent, err := o.fs.ReadFile(getFilename(pid))
+// read returns the content of the devstate.${PID}.json file for the platform
+func (o *State) read(platform string) (Content, error) {
+
+	var content Content
+
+	// We could use Glob, but it is not implemented by the Filesystem abstraction
+	entries, err := o.fs.ReadDir(_dirpath)
 	if err != nil {
-		return err
+		return Content{}, nil
 	}
-	return json.Unmarshal(jsonContent, &o.content)
+	re := regexp.MustCompile(`^devstate\.[0-9]*\.json$`)
+	for _, entry := range entries {
+		if !re.MatchString(entry.Name()) {
+			continue
+		}
+		jsonContent, err := o.fs.ReadFile(filepath.Join(_dirpath, entry.Name()))
+		if err != nil {
+			return Content{}, err
+		}
+		err = json.Unmarshal(jsonContent, &content)
+		if err != nil {
+			return Content{}, err
+		}
+		if content.Platform == platform {
+			break
+		} else {
+			content = Content{}
+		}
+	}
+	if content.Platform == "" {
+		return Content{}, fs.ErrNotExist
+	}
+	return content, nil
 }
 
 func (o *State) delete(pid int) error {
@@ -103,9 +142,6 @@ func (o *State) delete(pid int) error {
 }
 
 func getFilename(pid int) string {
-	if pid == 0 {
-		return _filepath
-	}
 	return fmt.Sprintf(_filepathPid, pid)
 }
 
