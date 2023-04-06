@@ -30,7 +30,7 @@ jobs:
         SSHKEY: './ssh_key'
       with:
         playbook: scripts/ansible/create-infra.yaml
-        requirements: scripts/ansible/requirements.yml
+        requirements: scripts/ansible/requirements.yaml
 
     - name: login to the three cluster 
       env:
