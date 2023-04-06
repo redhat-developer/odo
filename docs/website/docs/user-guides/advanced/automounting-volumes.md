@@ -33,7 +33,7 @@ Mounting resources can be additionally configured via annotations:
 
     - If `controller.devfile.io/mount-as: env`, the keys and values in the configmap/secret will be mounted as environment variables in all containers.
 
-    When `file` is used, the configmap is mounted as a directory within the containers, erasing any files/directories already present. When `subpath` is used, each key in the configmap/secret is mounted as a subpath volume mount in the mount path, leaving existing files intact but preventing changes to the secret/configmap from propagating into the containers without a restart.
+  When `file` is used, the configmap is mounted as a directory within the containers, erasing any files/directories already present. When `subpath` is used, each key in the configmap/secret is mounted as a subpath volume mount in the mount path, leaving existing files intact but preventing changes to the secret/configmap from propagating into the containers without a restart.
 
 - `controller.devfile.io/read-only`: for persistent volume claims, mount the resource as read-only
 
