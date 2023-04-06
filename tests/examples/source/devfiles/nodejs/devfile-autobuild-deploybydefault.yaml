@@ -27,7 +27,7 @@ commands:
 
   - apply:
       component: autobuild-true-and-referenced
-    id: image-autobuild-true
+    id: image-autobuild-true-and-referenced
   - apply:
       component: autobuild-false-and-referenced
     id: image-autobuild-false-and-referenced
@@ -37,7 +37,7 @@ commands:
 
   - composite:
       commands:
-        - image-autobuild-true
+        - image-autobuild-true-and-referenced
         - image-autobuild-false-and-referenced
         - image-autobuild-not-set-and-referenced
         - apply-k8s-deploybydefault-true-and-referenced
@@ -53,7 +53,7 @@ commands:
     id: run-with-referenced-components
   - composite:
       commands:
-        - image-autobuild-true
+        - image-autobuild-true-and-referenced
         - image-autobuild-false-and-referenced
         - image-autobuild-not-set-and-referenced
         - apply-k8s-deploybydefault-true-and-referenced
@@ -95,7 +95,7 @@ commands:
 
   - composite:
       commands:
-        - image-autobuild-true
+        - image-autobuild-true-and-referenced
         - image-autobuild-false-and-referenced
         - image-autobuild-not-set-and-referenced
         - apply-k8s-deploybydefault-true-and-referenced
