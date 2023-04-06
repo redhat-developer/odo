@@ -29,11 +29,11 @@ var _ = Describe("doc command reference odo create namespace", func() {
 	Context("To create a namespace resource", func() {
 
 		AfterEach(func() {
-			commonVar.CliRunner.DeleteNamespaceProject("mynamespace", true)
+			commonVar.CliRunner.DeleteNamespaceProject("odo-dev", true)
 		})
 
-		It("Creates a namespace for a kubernetes cluster", func() {
-			args := []string{"create", "namespace", "mynamespace"}
+		It("Creates a namespace resource for a kubernetes cluster", func() {
+			args := []string{"create", "namespace", "odo-dev"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
 			file := "create_namespace.mdx"
@@ -42,16 +42,8 @@ var _ = Describe("doc command reference odo create namespace", func() {
 			Expect(diff).To(BeEmpty(), file)
 		})
 
-	})
-
-	Context("To create a project resource", func() {
-
-		AfterEach(func() {
-			commonVar.CliRunner.DeleteNamespaceProject("myproject", true)
-		})
-
 		It("Creates a project resource for a kubernetes cluster", func() {
-			args := []string{"create", "project", "myproject"}
+			args := []string{"create", "project", "odo-dev"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
 			file := "create_project.mdx"
