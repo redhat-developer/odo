@@ -99,13 +99,14 @@ func (o *DevClient) Start(
 		})
 
 	pushParameters := adapters.PushParameters{
-		Path:            path,
-		IgnoredFiles:    options.IgnorePaths,
-		Debug:           options.Debug,
-		DevfileBuildCmd: options.BuildCommand,
-		DevfileRunCmd:   options.RunCommand,
-		RandomPorts:     options.RandomPorts,
-		ErrOut:          errOut,
+		Path:                 path,
+		IgnoredFiles:         options.IgnorePaths,
+		Debug:                options.Debug,
+		DevfileBuildCmd:      options.BuildCommand,
+		DevfileRunCmd:        options.RunCommand,
+		RandomPorts:          options.RandomPorts,
+		CustomForwardedPorts: options.CustomForwardedPorts,
+		ErrOut:               errOut,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
@@ -119,22 +120,23 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
-		DevfilePath:         devfilePath,
-		Path:                path,
-		ComponentName:       componentName,
-		ApplicationName:     odocontext.GetApplication(ctx),
-		DevfileWatchHandler: o.regenerateAdapterAndPush,
-		FileIgnores:         options.IgnorePaths,
-		InitialDevfileObj:   *devfileObj,
-		Debug:               options.Debug,
-		DevfileBuildCmd:     options.BuildCommand,
-		DevfileRunCmd:       options.RunCommand,
-		Variables:           options.Variables,
-		RandomPorts:         options.RandomPorts,
-		WatchFiles:          options.WatchFiles,
-		WatchCluster:        true,
-		ErrOut:              errOut,
-		PromptMessage:       promptMessage,
+		DevfilePath:          devfilePath,
+		Path:                 path,
+		ComponentName:        componentName,
+		ApplicationName:      odocontext.GetApplication(ctx),
+		DevfileWatchHandler:  o.regenerateAdapterAndPush,
+		FileIgnores:          options.IgnorePaths,
+		InitialDevfileObj:    *devfileObj,
+		Debug:                options.Debug,
+		DevfileBuildCmd:      options.BuildCommand,
+		DevfileRunCmd:        options.RunCommand,
+		Variables:            options.Variables,
+		RandomPorts:          options.RandomPorts,
+		CustomForwardedPorts: options.CustomForwardedPorts,
+		WatchFiles:           options.WatchFiles,
+		WatchCluster:         true,
+		ErrOut:               errOut,
+		PromptMessage:        promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)

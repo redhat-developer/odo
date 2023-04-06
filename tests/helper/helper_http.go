@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -46,4 +48,12 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 	}
 	fmt.Fprintf(GinkgoWriter, "Last output from %s: %s\n", url, string(body))
 	Fail(fmt.Sprintf("Failed after %d retries. Content in %s doesn't include '%s'.", maxRetry, url, match))
+}
+
+var startPort int64 = 30000
+
+// GetRandomFreePort increases the counter of global variable startPort, and returns.
+func GetRandomFreePort() string {
+	atomic.AddInt64(&startPort, 1)
+	return strconv.FormatInt(startPort, 10)
 }

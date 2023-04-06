@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/api"
 	"io"
 	"os"
 	"path/filepath"
@@ -90,6 +91,9 @@ type WatchParameters struct {
 	Variables map[string]string
 	// RandomPorts is true to forward containers ports on local random ports
 	RandomPorts bool
+	// Optional: sCustomForwardedPorts configuration to be used to customize the port forwarding; if nil, we automatically select ports
+	CustomForwardedPorts []api.ForwardedPort
+
 	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.
 	// Applicable to Podman only.
 	IgnoreLocalhost bool
@@ -459,6 +463,7 @@ func (o *WatchClient) processEvents(
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 		Debug:                    parameters.Debug,
 		RandomPorts:              parameters.RandomPorts,
+		CustomForwardedPorts:     parameters.CustomForwardedPorts,
 		ErrOut:                   parameters.ErrOut,
 	}
 	oldStatus := *componentStatus
