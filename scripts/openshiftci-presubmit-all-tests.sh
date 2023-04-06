@@ -32,8 +32,6 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 # Check login user name for debugging purpose
 oc whoami
 
-source ./scripts/openshiftci-config.sh
-
 if [ "${ARCH}" == "s390x" ]; then
     # Integration tests
     make test-integration
