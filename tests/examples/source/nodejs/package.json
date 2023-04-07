@@ -14,6 +14,7 @@
   },
   "scripts": {
     "dev": "nodemon --ignore node_modules/ server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "debug": "node --inspect=${DEBUG_PORT_PROJECT} server.js"
   }
 }

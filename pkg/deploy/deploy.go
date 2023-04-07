@@ -67,7 +67,7 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 }
 
 func (o *DeployClient) buildPushAutoImageComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
-	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
+	components, err := libdevfile.GetImageComponentsToPushAutomatically(devfileObj)
 	if err != nil {
 		return err
 	}

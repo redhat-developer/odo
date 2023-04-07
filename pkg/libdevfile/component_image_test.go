@@ -16,7 +16,7 @@ import (
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
 )
 
-func TestGetImageComponentsToPush(t *testing.T) {
+func TestGetImageComponentsToPushAutomatically(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	buildImageComponent := func(name string, autoBuild *bool, referenced bool) (devfilev1.Component, devfilev1.Command) {
@@ -182,9 +182,9 @@ func TestGetImageComponentsToPush(t *testing.T) {
 				return
 			}
 
-			got, err := GetImageComponentsToPush(devfileObj)
+			got, err := GetImageComponentsToPushAutomatically(devfileObj)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetImageComponentsToPush() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetImageComponentsToPushAutomatically() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if len(got) != len(tt.want) {
@@ -195,7 +195,7 @@ func TestGetImageComponentsToPush(t *testing.T) {
 				return x.Name < y.Name
 			}
 			if diff := cmp.Diff(tt.want, got, cmpopts.EquateEmpty(), cmpopts.SortSlices(lessFn)); diff != "" {
-				t.Errorf("GetImageComponentsToPush() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GetImageComponentsToPushAutomatically() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

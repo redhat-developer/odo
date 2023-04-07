@@ -3809,8 +3809,7 @@ CMD ["npm", "start"]
 		// More details on https://github.com/devfile/api/issues/852#issuecomment-1211928487
 		When("starting with Devfile with autoBuild or deployByDefault components", helper.LabelPodmanIf(podman, func() {
 			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExample(filepath.Join("source", "nodejs", "Dockerfile"), filepath.Join(commonVar.Context, "Dockerfile"))
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
 					helper.DevfileMetadataNameSetter(cmpName))
@@ -3847,43 +3846,27 @@ CMD ["npm", "start"]
 
 				It("should create the appropriate resources", func() {
 					if podman {
-						By("skipping Kubernetes/OpenShift components that would have been created automatically", func() {
-							linesErr, _ := helper.ExtractLines(stderr)
-							var skipped []string
-							for _, l := range linesErr {
-								if strings.Contains(l, "Kubernetes components are not supported on Podman. Skipping:") {
-									sl := strings.SplitN(l, ": ", 2)
-									if len(sl) < 2 {
-										break
-									}
-									for _, s := range strings.Split(sl[1], ", ") {
-										skipped = append(skipped, strings.TrimSuffix(s, "."))
-									}
-									break
-								}
-							}
-							expected := []string{
+						k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(stderr)
+						By("handling Kubernetes/OpenShift components that would have been created automatically", func() {
+							Expect(k8sOcComponents).Should(ContainElements(
 								"k8s-deploybydefault-true-and-referenced",
 								"k8s-deploybydefault-true-and-not-referenced",
 								"k8s-deploybydefault-not-set-and-not-referenced",
 								"ocp-deploybydefault-true-and-referenced",
 								"ocp-deploybydefault-true-and-not-referenced",
 								"ocp-deploybydefault-not-set-and-not-referenced",
-							}
-							Expect(skipped).Should(ConsistOf(expected))
+							))
 						})
 						By("not handling Kubernetes/OpenShift components with deployByDefault=false", func() {
-							for _, l := range []string{
+							Expect(k8sOcComponents).ShouldNot(ContainElements(
 								"k8s-deploybydefault-false-and-referenced",
 								"k8s-deploybydefault-false-and-not-referenced",
 								"ocp-deploybydefault-false-and-referenced",
 								"ocp-deploybydefault-false-and-not-referenced",
-							} {
-								Expect(stderr).ShouldNot(ContainSubstring("Skipping: %s", l))
-							}
+							))
 						})
 						By("not handling referenced Kubernetes/OpenShift components with deployByDefault unset", func() {
-							Expect(stderr).ShouldNot(ContainSubstring("Skipping: k8s-deploybydefault-not-set-and-referenced"))
+							Expect(k8sOcComponents).ShouldNot(ContainElement("k8s-deploybydefault-not-set-and-referenced"))
 						})
 					} else {
 						By("automatically applying Kubernetes/OpenShift components with deployByDefault=true", func() {
@@ -3981,52 +3964,34 @@ CMD ["npm", "start"]
 
 				It("should create the appropriate resources", func() {
 					if podman {
-						By("skipping Kubernetes/OpenShift components that would have been created automatically", func() {
-							linesErr, _ := helper.ExtractLines(stderr)
-							var skipped []string
-							for _, l := range linesErr {
-								if strings.Contains(l, "Kubernetes components are not supported on Podman. Skipping:") {
-									sl := strings.SplitN(l, ": ", 2)
-									if len(sl) < 2 {
-										break
-									}
-									for _, s := range strings.Split(sl[1], ", ") {
-										skipped = append(skipped, strings.TrimSuffix(s, "."))
-									}
-									break
-								}
-							}
-							expected := []string{
+						k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(stderr)
+						By("handling Kubernetes/OpenShift components that would have been created automatically", func() {
+							Expect(k8sOcComponents).Should(ContainElements(
 								"k8s-deploybydefault-true-and-referenced",
 								"k8s-deploybydefault-true-and-not-referenced",
 								"k8s-deploybydefault-not-set-and-not-referenced",
 								"ocp-deploybydefault-true-and-referenced",
 								"ocp-deploybydefault-true-and-not-referenced",
 								"ocp-deploybydefault-not-set-and-not-referenced",
-							}
-							Expect(skipped).Should(ConsistOf(expected))
+							))
 						})
 
-						By("skipping referenced Kubernetes/OpenShift components", func() {
-							for _, l := range []string{
+						By("handling referenced Kubernetes/OpenShift components", func() {
+							Expect(k8sOcComponents).Should(ContainElements(
 								"k8s-deploybydefault-true-and-referenced",
 								"k8s-deploybydefault-false-and-referenced",
 								"k8s-deploybydefault-not-set-and-referenced",
 								"ocp-deploybydefault-true-and-referenced",
 								"ocp-deploybydefault-false-and-referenced",
 								"ocp-deploybydefault-not-set-and-referenced",
-							} {
-								Expect(stderr).Should(ContainSubstring("Skipping: %s", l))
-							}
+							))
 						})
 
 						By("not handling non-referenced Kubernetes/OpenShift components with deployByDefault=false", func() {
-							for _, l := range []string{
+							Expect(k8sOcComponents).ShouldNot(ContainElements(
 								"k8s-deploybydefault-false-and-not-referenced",
 								"ocp-deploybydefault-false-and-not-referenced",
-							} {
-								Expect(stderr).ShouldNot(ContainSubstring("Skipping: %s", l))
-							}
+							))
 						})
 					} else {
 						By("applying referenced Kubernetes/OpenShift components", func() {

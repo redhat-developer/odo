@@ -164,7 +164,7 @@ variables:
   CONTAINER_IMAGE_REPO: localhost:5000/odo-dev/node
 
 components:
-  # autoBuild true => automatically created on startup
+  # autoBuild set to true => automatically created on startup
   - image:
       autoBuild: true
       dockerfile:
@@ -173,7 +173,7 @@ components:
       imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-true"
     name: "autobuild-true"
 
-  # autoBuild false, referenced in apply command => created when apply command is invoked
+  # autoBuild set to false, referenced in apply command => created when apply command is invoked
   - image:
       autoBuild: false
       dockerfile:
@@ -189,6 +189,15 @@ components:
         uri: Dockerfile
       imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-not-set-and-not-referenced"
     name: "autobuild-not-set-and-not-referenced"
+    
+  # autoBuild set to false, not referenced in apply command => never created
+  - image:
+      autoBuild: false
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-false-and-not-referenced"
+    name: "autobuild-false-and-not-referenced"
 
   - container:
       image: "{{ CONTAINER_IMAGE_REPO }}:autobuild-not-set-and-not-referenced"
@@ -224,6 +233,8 @@ When running `odo`, the following Image components will be applied automatically
 Because the `image` component `autobuild-false-and-referenced` is referenced by the `apply` command `image-autobuild-false-and-referenced`, it will be applied when this command
 is invoked, that is, in this example, when the `run` or `deploy` commands are invoked.
 
+Because the `image` component `autobuild-false-and-not-referenced` has `autoBuild` set to `false` and is not referenced by any `apply` commands, it will never be applied.
+
 
 #### `deployByDefault` for Kubernetes/OpenShift Components
 
@@ -239,14 +250,14 @@ variables:
   CONTAINER_IMAGE_REPO: localhost:5000/odo-dev/node
 
 components:
-  # deployByDefault true => automatically created on startup
+  # deployByDefault set to true => automatically created on startup
   - kubernetes:
       deployByDefault: true
       inlined: |
         [...]
     name: "k8s-deploybydefault-true"
 
-  # deployByDefault false, referenced in apply command => created when apply command is invoked
+  # deployByDefault set to false, referenced in apply command => created when apply command is invoked
   - kubernetes:
       deployByDefault: false
       inlined: |
@@ -258,6 +269,13 @@ components:
       inlined: |
         [...]
     name: "k8s-deploybydefault-not-set-and-not-referenced"
+
+  # deployByDefault set to false, not referenced in apply command => never created
+  - kubernetes:
+      deployByDefault: false
+      inlined: |
+        [...]
+    name: "k8s-deploybydefault-false-and-not-referenced"
 
   - container:
       image: "{{ CONTAINER_IMAGE_REPO }}:autobuild-not-set-and-not-referenced"
@@ -290,9 +308,10 @@ When running `odo`, the following Kubernetes components will be applied automati
 - `k8s-deploybydefault-true` because it has `deployByDefault` set to `true`.
 - `k8s-deploybydefault-not-set-and-not-referenced` because it doesn't set `deployByDefault` and is not referenced by any `apply` commands.
 
-Because the `kubernetes` component `k8s-deploybydefault-false-and-referenced` is referenced by the `apply` command `apply-k8s-deploybydefault-false-and-referenced` , it will be applied when this command
+Because the `kubernetes` component `k8s-deploybydefault-false-and-referenced` is referenced by the `apply` command `apply-k8s-deploybydefault-false-and-referenced`, it will be applied when this command
 is invoked, that is, in this example, when the `run` or `deploy` commands are invoked.
 
+Because the `kubernetes` component `k8s-deploybydefault-false-and-not-referenced` has `deployByDefault` set to `false` and is not referenced by any `apply` commands, it will never be applied.
 
 ## File Reference
 

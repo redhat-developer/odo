@@ -169,7 +169,7 @@ func (o *DevClient) warnAboutK8sComponents(devfileObj parser.DevfileObj) {
 }
 
 func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj parser.DevfileObj) error {
-	components, err := libdevfile.GetImageComponentsToPush(devfileObj)
+	components, err := libdevfile.GetImageComponentsToPushAutomatically(devfileObj)
 	if err != nil {
 		return err
 	}
