@@ -172,8 +172,11 @@ func (o *PFClient) GetForwardedPorts() map[string][]v1alpha2.Endpoint {
 // if not, it assigns a port starting from 20001 as done in portPairsFromContainerEndpoints
 func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][]v1alpha2.Endpoint) map[string][]string {
 	portPairs := make(map[string][]string)
-
-	// getCustomLocalPort analyzes the definedPorts i.e. custom portforwarding to see if a containerPort has a custom localPort, if a container name is provided, it also takes that into account.
+	usedPorts := make(map[int]struct{})
+	for _, dPort := range definedPorts {
+		usedPorts[dPort.LocalPort] = struct{}{}
+	}
+	// getCustomLocalPort analyzes the definedPorts i.e. custom port forwarding to see if a containerPort has a custom localPort, if a container name is provided, it also takes that into account.
 	getCustomLocalPort := func(containerPort int, container string) int {
 		for _, dp := range definedPorts {
 			if dp.ContainerPort == containerPort {
@@ -194,11 +197,19 @@ func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][
 		for _, p := range ports {
 			freePort := getCustomLocalPort(p.TargetPort, name)
 			if freePort == 0 {
-				var err error
-				freePort, err = util.NextFreePort(startPort, endPort, nil)
-				if err != nil {
-					klog.Infof("%s", err)
-					continue
+				for {
+					var err error
+					freePort, err = util.NextFreePort(startPort, endPort, nil)
+					if err != nil {
+						klog.Infof("%s", err)
+						continue
+					}
+					// if the free port matches any of the custom local port, try again
+					if _, isPortUsed := usedPorts[freePort]; isPortUsed {
+						startPort = freePort + 1
+						continue
+					}
+					break
 				}
 				startPort = freePort + 1
 			}

@@ -51,12 +51,30 @@ func Test_getCompleteCustomPortPairs(t *testing.T) {
 				"tools":   {"5000:5000"},
 			},
 		},
+		{
+			name: "local ports in range [20001-30001] are provided as custom forward ports",
+			args: args{
+				definedPorts: []api.ForwardedPort{
+					{LocalPort: 20001, ContainerPort: 8000},
+					{LocalPort: 20002, ContainerPort: 9000},
+					{LocalPort: 5000, ContainerPort: 5000},
+				},
+				ceMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 8000}, {TargetPort: 9000}},
+					"tools":   {{TargetPort: 5000}, {TargetPort: 8080}},
+				},
+			},
+			wantPortPairs: map[string][]string{
+				"runtime": {"20001:8000", "20002:9000"},
+				"tools":   {"5000:5000", "20003:8080"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotPortPairs := getCustomPortPairs(tt.args.definedPorts, tt.args.ceMapping)
 			if diff := cmp.Diff(gotPortPairs, tt.wantPortPairs); diff != "" {
-				t.Errorf("getCompleteCustomPortPairs() = %v, want %v", gotPortPairs, tt.wantPortPairs)
+				t.Errorf("getCompleteCustomPortPairs() (got vs want) diff = %v", diff)
 			}
 		})
 	}
