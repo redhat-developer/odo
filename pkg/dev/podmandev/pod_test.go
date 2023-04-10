@@ -127,14 +127,15 @@ func buildBasePod(withPfContainer bool) *corev1.Pod {
 func Test_createPodFromComponent(t *testing.T) {
 
 	type args struct {
-		devfileObj       func() parser.DevfileObj
-		componentName    string
-		appName          string
-		debug            bool
-		buildCommand     string
-		runCommand       string
-		debugCommand     string
-		forwardLocalhost bool
+		devfileObj           func() parser.DevfileObj
+		componentName        string
+		appName              string
+		debug                bool
+		buildCommand         string
+		runCommand           string
+		debugCommand         string
+		forwardLocalhost     bool
+		customForwardedPorts []api.ForwardedPort
 	}
 	tests := []struct {
 		name        string
@@ -944,6 +945,210 @@ func Test_createPodFromComponent(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "basic component + application endpoint + debug endpoint - with debug / custom mapping for port forwarding with container name (customForwardedPorts)",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+				debug:         true,
+				customForwardedPorts: []api.ForwardedPort{
+					{
+						LocalPort:     8080,
+						ContainerPort: 8080,
+					},
+				},
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					HostPort:      8080,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug",
+					ContainerPort: 5858,
+					HostPort:      20001,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     8080,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 5858,
+					IsDebug:       true,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint - with debug / custom mapping for port forwarding without container name (customForwardedPorts)",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+				debug:         true,
+				customForwardedPorts: []api.ForwardedPort{
+					{
+						ContainerName: "mycomponent",
+						LocalPort:     8080,
+						ContainerPort: 8080,
+					},
+				},
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					HostPort:      8080,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug",
+					ContainerPort: 5858,
+					HostPort:      20001,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     8080,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 5858,
+					IsDebug:       true,
+				},
+			},
+		},
+		{
+			name: "basic component + application endpoint + debug endpoint - with debug / custom mapping for port forwarding with local port in ranged [20001-30001] ports (customForwardedPorts)",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 8080,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+				debug:         true,
+				customForwardedPorts: []api.ForwardedPort{
+					{
+						ContainerName: "mycomponent",
+						LocalPort:     20001,
+						ContainerPort: 8080,
+					},
+				},
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 8080,
+					HostPort:      20001,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug",
+					ContainerPort: 5858,
+					HostPort:      20002,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 8080,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20002,
+					ContainerPort: 5858,
+					IsDebug:       true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -957,6 +1162,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				tt.args.debugCommand,
 				tt.args.forwardLocalhost,
 				false,
+				tt.args.customForwardedPorts,
 				[]int{20001, 20002, 20003, 20004, 20005},
 			)
 			if (err != nil) != tt.wantErr {
@@ -970,6 +1176,192 @@ func Test_createPodFromComponent(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.wantFwPorts, gotFwPorts, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("createPodFromComponent() fwPorts mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_getCustomPortPairs(t *testing.T) {
+	type args struct {
+		definedPorts []api.ForwardedPort
+		ceMapping    map[string][]v1alpha2.Endpoint
+		usedPorts    []int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []api.ForwardedPort
+	}{
+		// TODO: Add test cases.
+		{
+			name: "ports are provided with container name",
+			args: args{
+				definedPorts: []api.ForwardedPort{
+					{ContainerName: "runtime", LocalPort: 8080, ContainerPort: 8000},
+				},
+				ceMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 8000}, {TargetPort: 9000}},
+					"tools":   {{TargetPort: 5000}},
+				},
+				usedPorts: nil,
+			},
+			want: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     8080,
+					ContainerPort: 8000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalPort:     20001,
+					LocalAddress:  "127.0.0.1",
+					ContainerPort: 9000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "tools",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20002,
+					ContainerPort: 5000,
+				},
+			},
+		},
+		{
+			name: "ports are provided without container name",
+			args: args{
+				definedPorts: []api.ForwardedPort{
+					{LocalPort: 8080, ContainerPort: 8000},
+					{LocalPort: 5000, ContainerPort: 5000},
+				},
+				ceMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 8000}, {TargetPort: 9000}},
+					"tools":   {{TargetPort: 5000}},
+				},
+				usedPorts: nil,
+			},
+			want: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     8080,
+					ContainerPort: 8000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalPort:     20001,
+					LocalAddress:  "127.0.0.1",
+					ContainerPort: 9000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "tools",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     5000,
+					ContainerPort: 5000,
+				},
+			},
+		},
+
+		{
+			name: "custom local ports is same as one of the random ranged [20001-30001] ports",
+			args: args{
+				definedPorts: []api.ForwardedPort{
+					{LocalPort: 20001, ContainerPort: 8000},
+					{LocalPort: 20002, ContainerPort: 9000},
+					{LocalPort: 5000, ContainerPort: 5000},
+				},
+				ceMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 8000}, {TargetPort: 9000}},
+					"tools":   {{TargetPort: 5000}, {TargetPort: 8080}},
+				},
+				usedPorts: nil,
+			},
+			want: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 8000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalPort:     20002,
+					LocalAddress:  "127.0.0.1",
+					ContainerPort: 9000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "tools",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     5000,
+					ContainerPort: 5000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "tools",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20003,
+					ContainerPort: 8080,
+				},
+			},
+		},
+		{
+			name: "should reuse a port if it is defined in usedPorts",
+			args: args{
+				definedPorts: []api.ForwardedPort{
+					{LocalPort: 20001, ContainerPort: 8000},
+					{LocalPort: 5000, ContainerPort: 5000},
+				},
+				ceMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 8000}, {TargetPort: 9000}},
+					"tools":   {{TargetPort: 5000}, {TargetPort: 8080}},
+				},
+				usedPorts: []int{20002, 20003},
+			},
+			want: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20001,
+					ContainerPort: 8000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "runtime",
+					LocalPort:     20002,
+					LocalAddress:  "127.0.0.1",
+					ContainerPort: 9000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "tools",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     5000,
+					ContainerPort: 5000,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "tools",
+					LocalAddress:  "127.0.0.1",
+					LocalPort:     20003,
+					ContainerPort: 8000,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getCustomPortPairs(tt.args.definedPorts, tt.args.ceMapping, tt.args.usedPorts)
+			if diff := cmp.Diff(got, tt.want); diff != "" {
+				t.Errorf("getCustomPortPairs() = %v", diff)
 			}
 		})
 	}
