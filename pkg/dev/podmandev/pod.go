@@ -2,7 +2,7 @@ package podmandev
 
 import (
 	"fmt"
-	"math/rand" //#nosec
+	"math/rand" // #nosec
 	"time"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -51,14 +51,19 @@ func createPodFromComponent(
 		return nil, nil, fmt.Errorf("no valid components found in the devfile")
 	}
 
+	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	ceMapping := libdevfile.GetContainerEndpointMapping(containerComponents, debug)
+
 	var fwPorts []api.ForwardedPort
 	if len(customForwardedPorts) != 0 {
-
+		fwPorts = getCustomPortPairs(customForwardedPorts, ceMapping, usedPorts)
 	} else {
-		fwPorts, err = getPortMapping(devfileObj, debug, randomPorts, usedPorts)
-		if err != nil {
-			return nil, nil, err
-		}
+		fwPorts = getPortMapping(ceMapping, debug, randomPorts, usedPorts)
 	}
 
 	utils.AddOdoProjectVolume(&containers)
@@ -180,15 +185,7 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, usedPorts []int) ([]api.ForwardedPort, error) {
-	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
-		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
-	if err != nil {
-		return nil, err
-	}
-	ceMapping := libdevfile.GetContainerEndpointMapping(containerComponents, debug)
-
+func getPortMapping(ceMapping map[string][]v1alpha2.Endpoint, debug bool, randomPorts bool, usedPorts []int) []api.ForwardedPort {
 	var existingContainerPorts []int
 	for _, endpoints := range ceMapping {
 		for _, ep := range endpoints {
@@ -236,17 +233,11 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 					}
 				}
 			} else {
-				for {
-					freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
-					if err != nil {
-						klog.Infof("%s", err)
-						continue epLoop
-					}
-					if !isPortUsedInContainer(freePort) {
-						break
-					}
-					startPort = freePort + 1
-					time.Sleep(100 * time.Millisecond)
+				var err error
+				freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+				if err != nil {
+					klog.Infof("%s", err)
+					continue epLoop
 				}
 				startPort = freePort + 1
 			}
@@ -264,7 +255,7 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 			result = append(result, fp)
 		}
 	}
-	return result, nil
+	return result
 }
 
 func addVolumeMountToContainer(containers []corev1.Container, devfileVolume storage.LocalStorage) error {
@@ -286,4 +277,65 @@ func getUsedPorts(ports []api.ForwardedPort) []int {
 		res = append(res, port.LocalPort)
 	}
 	return res
+}
+
+func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][]v1alpha2.Endpoint, usedPorts []int) []api.ForwardedPort {
+	var result []api.ForwardedPort
+	customLocalPorts := make(map[int]struct{})
+
+	for _, dPort := range definedPorts {
+		customLocalPorts[dPort.LocalPort] = struct{}{}
+	}
+	// getCustomLocalPort analyzes the definedPorts i.e. custom port forwarding to see if a containerPort has a custom localPort, if a container name is provided, it also takes that into account.
+	getCustomLocalPort := func(containerPort int, container string) int {
+		for _, dp := range definedPorts {
+			if dp.ContainerPort == containerPort {
+				if dp.ContainerName != "" {
+					if dp.ContainerName == container {
+						return dp.LocalPort
+					}
+				} else {
+					return dp.LocalPort
+				}
+			}
+		}
+		return 0
+	}
+	startPort := 20001
+	endPort := startPort + 10000
+	for name, ports := range ceMapping {
+		for _, p := range ports {
+			freePort := getCustomLocalPort(p.TargetPort, name)
+			if freePort == 0 {
+				for {
+					var err error
+					freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+					if err != nil {
+						klog.Infof("%s", err)
+						continue
+					}
+					if _, isPortUsed := customLocalPorts[freePort]; isPortUsed {
+						startPort = freePort + 1
+						continue
+					}
+					break
+				}
+				startPort = freePort + 1
+			}
+			fp := api.ForwardedPort{
+				Platform:      commonflags.PlatformPodman,
+				PortName:      p.Name,
+				IsDebug:       libdevfile.IsDebugPort(p.Name),
+				ContainerName: name,
+				LocalAddress:  "127.0.0.1",
+				LocalPort:     freePort,
+				ContainerPort: p.TargetPort,
+				Exposure:      string(p.Exposure),
+				Protocol:      string(p.Protocol),
+			}
+			result = append(result, fp)
+		}
+	}
+
+	return result
 }
