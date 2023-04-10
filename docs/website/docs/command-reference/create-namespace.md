@@ -14,11 +14,10 @@ odo create namespace <name>
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo create namespace mynamespace
- ✓  Namespace "mynamespace" is ready for use
- ✓  New namespace created and now using namespace: mynamespace
-```
+import CreateNamespace  from './docs-mdx/create-namespace/create_namespace.mdx';
+
+<CreateNamespace />
+
 </details>
 
 
@@ -31,11 +30,10 @@ odo create project <name>
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo create project myproject
- ✓  Project "myproject" is ready for use
- ✓  New project created and now using project: myproject
-```
+import CreateProject from './docs-mdx/create-namespace/create_project.mdx';
+
+<CreateProject />
+
 </details>
 
 
