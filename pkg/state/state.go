@@ -137,10 +137,8 @@ func (o *State) read(platform string) (Content, error) {
 		if err != nil {
 			return Content{}, err
 		}
-		err = json.Unmarshal(jsonContent, &content)
-		if err != nil {
-			return Content{}, err
-		}
+		// Ignore error, to handle empty file
+		_ = json.Unmarshal(jsonContent, &content)
 		if content.Platform == platform {
 			break
 		} else {
@@ -194,10 +192,8 @@ func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 		return false, err
 	}
 	var savedContent Content
-	err = json.Unmarshal(jsonContent, &savedContent)
-	if err != nil {
-		return false, err
-	}
+	// Ignore error, to handle empty file
+	_ = json.Unmarshal(jsonContent, &savedContent)
 	if savedContent.PID == 0 {
 		// PID is 0 in file, it is free
 		return true, nil
@@ -240,10 +236,8 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 			return err
 		}
 		var content Content
-		err = json.Unmarshal(jsonContent, &content)
-		if err != nil {
-			return err
-		}
+		// Ignore error, to handle empty file
+		_ = json.Unmarshal(jsonContent, &content)
 		if content.Platform == platform {
 			if content.PID == pid {
 				continue

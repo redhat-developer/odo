@@ -277,7 +277,7 @@ var _ = Describe("odo dev command tests", func() {
 				stdout := res.Out()
 				stderr := res.Err()
 				Expect(stdout).To(ContainSubstring("Cleaning"))
-				Expect(stderr).To(ContainSubstring("unable to save forwarded ports to state file"))
+				Expect(stderr).To(ContainSubstring("unable to save state file"))
 			})
 		})
 
