@@ -30,6 +30,17 @@ func NewStateClient(fs filesystem.Filesystem) *State {
 	}
 }
 
+func (o *State) Init(ctx context.Context) error {
+	var (
+		pid      = odocontext.GetPID(ctx)
+		platform = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
+	)
+	o.content.PID = pid
+	o.content.Platform = platform
+	return o.save(ctx, pid)
+
+}
+
 func (o *State) SetForwardedPorts(ctx context.Context, fwPorts []api.ForwardedPort) error {
 	var (
 		pid      = odocontext.GetPID(ctx)
@@ -39,7 +50,7 @@ func (o *State) SetForwardedPorts(ctx context.Context, fwPorts []api.ForwardedPo
 	o.content.ForwardedPorts = fwPorts
 	o.content.PID = pid
 	o.content.Platform = platform
-	return o.save(pid)
+	return o.save(ctx, pid)
 }
 
 func (o *State) GetForwardedPorts(ctx context.Context) ([]api.ForwardedPort, error) {
@@ -82,9 +93,14 @@ func (o *State) SaveExit(ctx context.Context) error {
 }
 
 // save writes the content structure in json format in file
-func (o *State) save(pid int) error {
+func (o *State) save(ctx context.Context, pid int) error {
 
-	err := o.saveCommonIfOwner(pid)
+	err := o.checkFirstInPlatform(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = o.saveCommonIfOwner(pid)
 	if err != nil {
 		return err
 	}
@@ -102,7 +118,7 @@ func (o *State) save(pid int) error {
 	return o.fs.WriteFile(getFilename(pid), jsonContent, 0644)
 }
 
-// read returns the content of the devstate.${PID}.json file for the platform
+// read returns the content of the devstate.${PID}.json file for the given platform
 func (o *State) read(platform string) (Content, error) {
 
 	var content Content
@@ -201,4 +217,46 @@ func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (o *State) checkFirstInPlatform(ctx context.Context) error {
+	var (
+		pid      = odocontext.GetPID(ctx)
+		platform = fcontext.GetPlatform(ctx, "cluster")
+	)
+
+	re := regexp.MustCompile(`^devstate\.[0-9]*\.json$`)
+	entries, err := o.fs.ReadDir(_dirpath)
+	if err != nil {
+		// No file found => no problem
+		return nil
+	}
+	for _, entry := range entries {
+		if !re.MatchString(entry.Name()) {
+			continue
+		}
+		jsonContent, err := o.fs.ReadFile(filepath.Join(_dirpath, entry.Name()))
+		if err != nil {
+			return err
+		}
+		var content Content
+		err = json.Unmarshal(jsonContent, &content)
+		if err != nil {
+			return err
+		}
+		if content.Platform == platform {
+			if content.PID == pid {
+				continue
+			}
+			exists, err := pidExists(content.PID)
+			if err != nil {
+				return err
+			}
+			if exists {
+				// Process exists => problem
+				return NewErrAlreadyRunningOnPlatform(platform)
+			}
+		}
+	}
+	return nil
 }

@@ -7,6 +7,9 @@ import (
 )
 
 type Client interface {
+	// Init creates a devstate file for the process
+	Init(ctx context.Context) error
+
 	// SetForwardedPorts sets the forwarded ports in the state file and saves it to the file, updating the metadata
 	SetForwardedPorts(ctx context.Context, fwPorts []api.ForwardedPort) error
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -33,6 +33,7 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/podman"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 )
@@ -229,6 +230,11 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	log.Sectionf("Running on %s in Dev mode", deployingTo)
 
+	err = o.clientset.StateClient.Init(ctx)
+	if err != nil {
+		return err
+	}
+
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		o.out,
@@ -256,6 +262,10 @@ func (o *DevOptions) HandleSignal() error {
 }
 
 func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
+	if errors.As(commandError, &state.ErrAlreadyRunningOnPlatform{}) {
+		klog.V(4).Info("session already running, no need to cleanup")
+		return
+	}
 	if commandError != nil {
 		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
 	}
