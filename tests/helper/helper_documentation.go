@@ -38,10 +38,14 @@ func StripSpinner(docString string) (returnString string) {
 		// This check is to avoid spinner statements in the cmd output
 		// currently it does so for init and dev
 		// e.g. " •  Syncing file changes ..."
-		if (strings.HasPrefix(line, "•  Downloading") || strings.HasPrefix(line, "•  Syncing") || strings.HasPrefix(line, "•  Building")) && strings.HasSuffix(line, "...") {
+		if (strings.HasPrefix(line, "•  Downloading") ||
+			strings.HasPrefix(line, "•  Syncing") ||
+			strings.HasPrefix(line, "•  Building") ||
+			strings.HasPrefix(line, "•  Waiting for the application")) &&
+			strings.HasSuffix(line, "...") {
 			continue
 		}
-		// Remove warnings, execpt "Pod is Pending"
+		// Remove warnings, except "Pod is Pending"
 		if strings.HasPrefix(line, "⚠") && !strings.Contains(line, "Pod is Pending") {
 			continue
 		}
