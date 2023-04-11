@@ -557,7 +557,12 @@ ComponentSettings:
 			var ports map[string]string
 
 			BeforeEach(func() {
-				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "sleep 20 ; npm start")
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"),
+					"npm start",
+					// odo dev now waits some time until the app is ready or a timeout (current set to 1m) expires before starting port-forwarding.
+					// So we are sleeping more than the timeout.
+					// See https://github.com/redhat-developer/odo/issues/6667
+					"sleep 80 ; npm start")
 
 				var err error
 				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
