@@ -52,9 +52,6 @@ func createPodFromComponent(
 	}
 
 	var fwPorts []api.ForwardedPort
-	// if len(customForwardedPorts) != 0 {
-	// 	fwPorts = getCustomPortPairs(customForwardedPorts, ceMapping, usedPorts)
-	// } else {
 	fwPorts, err = getPortMapping(devfileObj, debug, randomPorts, usedPorts, customForwardedPorts)
 	if err != nil {
 		return nil, nil, err
@@ -247,7 +244,6 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 				freePort = getCustomLocalPort(ep.TargetPort, containerName)
 				if freePort == 0 {
 					for {
-						var err error
 						freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
 						if err != nil {
 							klog.Infof("%s", err)
@@ -277,11 +273,17 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 					}
 				}
 			} else {
-				var err error
-				freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
-				if err != nil {
-					klog.Infof("%s", err)
-					continue epLoop
+				for {
+					freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+					if err != nil {
+						klog.Infof("%s", err)
+						continue epLoop
+					}
+					if !isPortUsedInContainer(freePort) {
+						break
+					}
+					startPort = freePort + 1
+					time.Sleep(100 * time.Millisecond)
 				}
 				startPort = freePort + 1
 			}
@@ -321,65 +323,4 @@ func getUsedPorts(ports []api.ForwardedPort) []int {
 		res = append(res, port.LocalPort)
 	}
 	return res
-}
-
-func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][]v1alpha2.Endpoint, usedPorts []int) []api.ForwardedPort {
-	var result []api.ForwardedPort
-	customLocalPorts := make(map[int]struct{})
-
-	for _, dPort := range definedPorts {
-		customLocalPorts[dPort.LocalPort] = struct{}{}
-	}
-	// getCustomLocalPort analyzes the definedPorts i.e. custom port forwarding to see if a containerPort has a custom localPort, if a container name is provided, it also takes that into account.
-	getCustomLocalPort := func(containerPort int, container string) int {
-		for _, dp := range definedPorts {
-			if dp.ContainerPort == containerPort {
-				if dp.ContainerName != "" {
-					if dp.ContainerName == container {
-						return dp.LocalPort
-					}
-				} else {
-					return dp.LocalPort
-				}
-			}
-		}
-		return 0
-	}
-	startPort := 20001
-	endPort := startPort + 10000
-	for containerName, endpoints := range ceMapping {
-		for _, ep := range endpoints {
-			freePort := getCustomLocalPort(ep.TargetPort, containerName)
-			if freePort == 0 {
-				for {
-					var err error
-					freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
-					if err != nil {
-						klog.Infof("%s", err)
-						continue
-					}
-					if _, isPortUsed := customLocalPorts[freePort]; isPortUsed {
-						startPort = freePort + 1
-						continue
-					}
-					break
-				}
-				startPort = freePort + 1
-			}
-			fp := api.ForwardedPort{
-				Platform:      commonflags.PlatformPodman,
-				PortName:      ep.Name,
-				IsDebug:       libdevfile.IsDebugPort(ep.Name),
-				ContainerName: containerName,
-				LocalAddress:  "127.0.0.1",
-				LocalPort:     freePort,
-				ContainerPort: ep.TargetPort,
-				Exposure:      string(ep.Exposure),
-				Protocol:      string(ep.Protocol),
-			}
-			result = append(result, fp)
-		}
-	}
-
-	return result
 }
