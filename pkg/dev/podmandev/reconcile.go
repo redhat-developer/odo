@@ -128,7 +128,9 @@ func (o *DevClient) reconcile(
 	err = o.checkAppPorts(ctx, pod.Name, fwPorts)
 	appReadySpinner.End(err == nil)
 	if err != nil {
-		log.Warningf("Port Forwarding might not work correctly: %v", err)
+		log.Warningf("Port forwarding might not work correctly: %v", err)
+		log.Info("Running `odo logs --follow --platform podman` might help in identifying the problem.")
+		fmt.Fprintln(out)
 	}
 
 	// By default, Podman will not forward to container applications listening on the loopback interface.

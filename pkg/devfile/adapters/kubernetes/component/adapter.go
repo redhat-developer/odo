@@ -357,7 +357,9 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	err = a.checkAppPorts(ctx, pod.Name, portsToForward)
 	appReadySpinner.End(err == nil)
 	if err != nil {
-		log.Warningf("Port Forwarding might not work correctly: %v", err)
+		log.Warningf("Port forwarding might not work correctly: %v", err)
+		log.Info("Running `odo logs --follow` might help in identifying the problem.")
+		fmt.Fprintln(log.GetStdout())
 	}
 
 	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
