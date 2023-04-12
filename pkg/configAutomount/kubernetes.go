@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	labelMountName  = "controller.devfile.io/mount-to-containers"
+	labelMountName  = "devfile.io/auto-mount"
 	labelMountValue = "true"
 
-	annotationMountPathName = "controller.devfile.io/mount-path"
-	annotationMountAsName   = "controller.devfile.io/mount-as"
-	annotationReadOnlyName  = "controller.devfile.io/read-only"
+	annotationMountPathName = "devfile.io/mount-path"
+	annotationMountAsName   = "devfile.io/mount-as"
+	annotationReadOnlyName  = "devfile.io/read-only"
 )
 
 type KubernetesClient struct {

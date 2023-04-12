@@ -3,9 +3,9 @@ kind: ConfigMap
 metadata:
   name: automount-env-configmap
   labels:
-    controller.devfile.io/mount-to-containers: "true"
+    devfile.io/auto-mount: "true"
   annotations:
-    controller.devfile.io/mount-as: env
+    devfile.io/mount-as: env
 data:
   foo4: bar4
   ping4: pong4

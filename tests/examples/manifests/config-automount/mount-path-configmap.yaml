@@ -3,9 +3,9 @@ kind: ConfigMap
 metadata:
   name: automount-mount-path-configmap
   labels:
-    controller.devfile.io/mount-to-containers: "true"
+    devfile.io/auto-mount: "true"
   annotations:
-    controller.devfile.io/mount-path: "/mnt/mount-path/configmap"
+    devfile.io/mount-path: "/mnt/mount-path/configmap"
 data:
   foo2: bar2
   ping2: pong2

@@ -10,7 +10,7 @@ To mark a resource for mounting to containers created by `odo`, apply the follow
 ```yaml
 metadata:
   labels:
-    controller.devfile.io/mount-to-containers: "true"
+    devfile.io/auto-mount: "true"
 ```
 
 By default, resources will be mounted based on the resource name:
@@ -23,17 +23,17 @@ By default, resources will be mounted based on the resource name:
 
 Mounting resources can be additionally configured via annotations:
 
-- `controller.devfile.io/mount-path`: configure where the resource should be mounted
+- `devfile.io/mount-path`: configure where the resource should be mounted
 
-- `controller.devfile.io/mount-as`: for secrets and configmaps only, configure how the resource should be mounted to the container
+- `devfile.io/mount-as`: for secrets and configmaps only, configure how the resource should be mounted to the container
 
-    - If `controller.devfile.io/mount-as: file`, the configmap/secret will be mounted as files within the mount path. This is the default behavior.
+    - If `devfile.io/mount-as: file`, the configmap/secret will be mounted as files within the mount path. This is the default behavior.
 
-    - If `controller.devfile.io/mount-as: subpath`, the keys and values in the configmap/secret will be mounted as files within the mount path using subpath volume mounts.
+    - If `devfile.io/mount-as: subpath`, the keys and values in the configmap/secret will be mounted as files within the mount path using subpath volume mounts.
 
-    - If `controller.devfile.io/mount-as: env`, the keys and values in the configmap/secret will be mounted as environment variables in all containers.
+    - If `devfile.io/mount-as: env`, the keys and values in the configmap/secret will be mounted as environment variables in all containers.
 
   When `file` is used, the configmap is mounted as a directory within the containers, erasing any files/directories already present. When `subpath` is used, each key in the configmap/secret is mounted as a subpath volume mount in the mount path, leaving existing files intact but preventing changes to the secret/configmap from propagating into the containers without a restart.
 
-- `controller.devfile.io/read-only`: for persistent volume claims, mount the resource as read-only
+- `devfile.io/read-only`: for persistent volume claims, mount the resource as read-only
 

@@ -2,9 +2,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
-    controller.devfile.io/mount-to-containers: "true"
+    devfile.io/auto-mount: "true"
   annotations:
-    controller.devfile.io/mount-path: "/mnt/mount-path/pvc"
+    devfile.io/mount-path: "/mnt/mount-path/pvc"
   name: automount-mount-path-pvc
 spec:
   accessModes:

@@ -135,9 +135,9 @@ kind: ConfigMap
 metadata:
   name: proxy-config
   labels:
-    controller.devfile.io/mount-to-containers: "true"
+    devfile.io/auto-mount: "true"
   annotations:
-    controller.devfile.io/mount-as: env
+    devfile.io/mount-as: env
 data:
   npm_config_registry: "https://your_local_registry"
 ```
