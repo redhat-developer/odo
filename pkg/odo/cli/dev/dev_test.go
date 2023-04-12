@@ -280,7 +280,7 @@ func Test_parsePortForwardFlag(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(gotForwardedPorts, tt.wantForwardedPorts); diff != "" {
-				t.Errorf("parsePortForwardFlag() gotForwardedPorts = %v, want %v", gotForwardedPorts, tt.wantForwardedPorts)
+				t.Errorf("parsePortForwardFlag() (got vs want) diff = %v", diff)
 			}
 		})
 	}
