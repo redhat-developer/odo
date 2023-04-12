@@ -27,8 +27,6 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 # Check login user name for debugging purpose
 oc whoami
 
-source ./scripts/openshiftci-config.sh
-
 # Operatorhub integration tests
 make test-integration
 make test-e2e
