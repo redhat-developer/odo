@@ -2,9 +2,10 @@ package integration
 
 import (
 	"fmt"
-	"k8s.io/utils/pointer"
 	"path/filepath"
 	"strings"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
@@ -40,47 +41,59 @@ var _ = Describe("odo dev debug command tests", func() {
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 			})
-			if !podman {
-				// TODO(pvala): Refactor this when custom port-mapping for port forwarding has been implemented for podman
-				When("running odo dev with debug flag and custom port mapping for port forwarding", func() {
-					var devSession helper.DevSession
-					var ports map[string]string
-					var (
-						LocalPort      = helper.GetRandomFreePort()
-						LocalDebugPort = helper.GetRandomFreePort()
-					)
-					const (
-						ContainerPort      = "3000"
-						ContainerDebugPort = "5858"
-					)
-					BeforeEach(func() {
-						opts := []string{"--debug", fmt.Sprintf("--port-forward=%s:%s", LocalPort, ContainerPort), fmt.Sprintf("--port-forward=%s:%s", LocalDebugPort, ContainerDebugPort)}
-						var err error
-						devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
-							CmdlineArgs:   opts,
-							NoRandomPorts: true,
-						})
-						Expect(err).ToNot(HaveOccurred())
-					})
+			When("running odo dev with debug flag and custom port mapping for port forwarding", helper.LabelPodmanIf(podman, func() {
+				var (
+					devSession helper.DevSession
+					ports      map[string]string
+				)
+				var (
+					LocalPort      = helper.GetRandomFreePort()
+					LocalDebugPort = helper.GetRandomFreePort()
+				)
+				const (
+					ContainerPort      = "3000"
+					ContainerDebugPort = "5858"
+				)
 
-					AfterEach(func() {
-						devSession.Stop()
-						devSession.WaitEnd()
+				BeforeEach(func() {
+					opts := []string{"--debug", fmt.Sprintf("--port-forward=%s:%s", LocalPort, ContainerPort), fmt.Sprintf("--port-forward=%s:%s", LocalDebugPort, ContainerDebugPort)}
+					if podman {
+						// Debugging works with podman if we use --forward-localhost, but that will not use custom port-mapping;
+						// so we use --ignore-localhost to simply test if custom ports are still taken into account
+						opts = append(opts, "--ignore-localhost")
+					}
+					var err error
+					devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs:   opts,
+						NoRandomPorts: true,
+						RunOnPodman:   podman,
 					})
-					It("should connect to relevant custom ports forwarded", func() {
-						By("connecting to the application port", func() {
-							helper.HttpWaitForWithStatus("http://"+ports[ContainerPort], "Hello from Node.js Starter Application!", 12, 5, 200)
-						})
-						By("expecting a ws connection when tried to connect on default debug port locally", func() {
-							// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
-							// We are just using this to validate if nodejs agent is listening on the other side
-							url := fmt.Sprintf("http://%s", ports[ContainerDebugPort])
-							Expect(url).To(ContainSubstring(LocalDebugPort))
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should connect to relevant custom ports forwarded", func() {
+					By("connecting to the application port", func() {
+						helper.HttpWaitForWithStatus("http://"+ports[ContainerPort], "Hello from Node.js Starter Application!", 12, 5, 200)
+					})
+					By("expecting a ws connection when tried to connect on default debug port locally", func() {
+						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+						// We are just using this to validate if nodejs agent is listening on the other side
+						url := fmt.Sprintf("http://%s", ports[ContainerDebugPort])
+						Expect(url).To(ContainSubstring(LocalDebugPort))
+						if !podman {
+							// this check doesn't work for podman unless we use --forward-localhost,
+							// but using it beats the purpose of testing with custom port mapping, so we skip this check
 							helper.HttpWaitForWithStatus(url, "WebSockets request was expected", 12, 5, 400)
-						})
+						}
 					})
 				})
-			}
+			}))
+
 			When("running odo dev with debug flag", helper.LabelPodmanIf(podman, func() {
 				var devSession helper.DevSession
 				var ports map[string]string

@@ -4,15 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/redhat-developer/odo/pkg/api"
 	"io"
-	"k8s.io/klog"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/api"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -200,11 +202,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	}
 
-	// TODO: Remove this once --port-forward has been implemented for podman.
-	if platform == commonflags.PlatformPodman && len(o.portForwardFlag) != 0 {
-		fmt.Println()
-		log.Warning("--port-forward flag has not been implemented for podman yet, we will use the normal port forwarding")
-	}
 	// check for .gitignore file and add odo-file-index.json to .gitignore.
 	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
 	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).

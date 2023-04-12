@@ -131,6 +131,15 @@ var _ = Describe("odo dev command tests", func() {
 				})
 				Expect(err).ToNot(HaveOccurred())
 			}))
+
+			It("should fail when using --random-ports and --port-forward together", helper.LabelPodmanIf(podman, func() {
+				args := []string{"dev", "--random-ports", "--port-forward=8000:3000"}
+				if podman {
+					args = append(args, "--platform", "podman")
+				}
+				errOut := helper.Cmd("odo", args...).ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("--random-ports and --port-forward cannot be used together"))
+			}))
 		}
 
 		It("ensure that index information is updated", func() {
@@ -712,69 +721,52 @@ ComponentSettings:
 		})
 	}
 
-	for _, manual := range []bool{true, false} {
-		for _, customPortForwarding := range []bool{true, false} {
-			for _, podman := range []bool{true, false} {
+	for _, podman := range []bool{true, false} {
+		podman := podman
+		Context("port-forwarding for the component", helper.LabelPodmanIf(podman, func() {
+			for _, manual := range []bool{true, false} {
 				manual := manual
-				customPortForwarding := customPortForwarding
-				podman := podman
-				Context("port-forwarding for the component", helper.LabelPodmanIf(podman, func() {
+				When("devfile has no endpoint", func() {
+					BeforeEach(func() {
+						if !podman {
+							helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+						}
+						helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-no-endpoint.yaml")).ShouldPass()
+					})
+
+					When("running odo dev", func() {
+						var devSession helper.DevSession
+						var ports map[string]string
+						BeforeEach(func() {
+							var err error
+							opts := []string{}
+							if manual {
+								opts = append(opts, "--no-watch")
+							}
+							devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+								CmdlineArgs: opts,
+								RunOnPodman: podman,
+							})
+							Expect(err).ToNot(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							devSession.Stop()
+							devSession.WaitEnd()
+						})
+
+						It(fmt.Sprintf("should have no endpoint forwarded (podman=%v, manual=%v)", podman, manual), func() {
+							Expect(ports).To(BeEmpty())
+						})
+					})
+				})
+
+				for _, customPortForwarding := range []bool{true, false} {
+					customPortForwarding := customPortForwarding
 					var NoRandomPorts bool
 					if customPortForwarding {
 						NoRandomPorts = true
-					}
-					When("a component is bootstrapped", func() {
-						BeforeEach(func() {
-							helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-							helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-						})
-						if customPortForwarding {
-							It("should fail when using --random-ports and --port-forward together", func() {
-								args := []string{"dev", "--random-ports", "--port-forward=8000:3000"}
-								if podman {
-									args = append(args, "--platform", "podman")
-								}
-								errOut := helper.Cmd("odo", args...).ShouldFail().Err()
-								Expect(errOut).To(ContainSubstring("--random-ports and --port-forward cannot be used together"))
-							})
-						}
-					})
-					if !customPortForwarding {
-						When("devfile has no endpoint", func() {
-							BeforeEach(func() {
-								if !podman {
-									helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
-								}
-								helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-								helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-no-endpoint.yaml")).ShouldPass()
-							})
-
-							When("running odo dev", func() {
-								var devSession helper.DevSession
-								var ports map[string]string
-								BeforeEach(func() {
-									var err error
-									opts := []string{}
-									if manual {
-										opts = append(opts, "--no-watch")
-									}
-									devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
-										CmdlineArgs: opts,
-										RunOnPodman: podman,
-									})
-									Expect(err).ToNot(HaveOccurred())
-								})
-
-								AfterEach(func() {
-									devSession.Stop()
-									devSession.WaitEnd()
-								})
-
-								It("should have no endpoint forwarded", func() {
-									Expect(ports).To(BeEmpty())
-								})
-							})
-						})
 					}
 					When("devfile has single endpoint", func() {
 						var (
@@ -813,7 +805,7 @@ ComponentSettings:
 								devSession.WaitEnd()
 							})
 
-							It("should expose the endpoint on localhost", func() {
+							It(fmt.Sprintf("should expose the endpoint on localhost (podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
 								url := fmt.Sprintf("http://%s", ports[ContainerPort])
 								if customPortForwarding {
 									Expect(url).To(ContainSubstring(LocalPort))
@@ -850,7 +842,7 @@ ComponentSettings:
 									stderr = string(stderrBytes)
 								})
 
-								It("should react on the Devfile modification", func() {
+								It(fmt.Sprintf("should react on the Devfile modification (podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
 									if podman {
 										By("warning users that odo dev needs to be restarted", func() {
 											Expect(stdout).To(ContainSubstring(
@@ -937,7 +929,7 @@ ComponentSettings:
 								devSession.WaitEnd()
 							})
 
-							It("should expose all endpoints on localhost regardless of exposure", func() {
+							It(fmt.Sprintf("should expose all endpoints on localhost regardless of exposure(podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
 								By("not exposing debug endpoints", func() {
 									for _, p := range []int{5005, 5006} {
 										_, found := ports[strconv.Itoa(p)]
@@ -1012,10 +1004,12 @@ ComponentSettings:
 						})
 
 					})
-				}))
+
+				}
 			}
-		}
+		}))
 	}
+
 	for _, devfileHandlerCtx := range []struct {
 		name          string
 		sourceHandler func(path string, originalCmpName string)
