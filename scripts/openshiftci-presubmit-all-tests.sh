@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This file is used for InterOP testing, i.e. testing odo with unreleased OpenShift versions.
+
 # fail if some commands fails
 set -e
 # show commands
@@ -32,6 +34,8 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 # Check login user name for debugging purpose
 oc whoami
 
+# We want to use a stable Devfile registry for InterOP testing, and so we use the custom Devfile Registry setup on IBM cloud
+source ./scripts/openshiftci-config.sh
 if [ "${ARCH}" == "s390x" ]; then
     # Integration tests
     make test-integration
