@@ -105,10 +105,10 @@ func (o *State) save(ctx context.Context, pid int) error {
 		return err
 	}
 
-	return writeStateFile(getFilename(pid))
+	return o.writeStateFile(getFilename(pid))
 }
 
-func writeStateFile(path string) error {
+func (o *State) writeStateFile(path string) error {
 	jsonContent, err := json.MarshalIndent(o.content, "", " ")
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (o *State) saveCommonIfOwner(pid int) error {
 		return nil
 	}
 
-	return writeStateFile(_filepath)
+	return o.writeStateFile(_filepath)
 }
 
 func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
