@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
@@ -122,6 +123,16 @@ func (o *DevClient) reconcile(
 		componentStatus.RunExecuted = true
 	}
 
+	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
+	appReadySpinner := log.Spinner("Waiting for the application to be ready")
+	err = o.checkAppPorts(ctx, pod.Name, fwPorts)
+	appReadySpinner.End(err == nil)
+	if err != nil {
+		log.Warningf("Port forwarding might not work correctly: %v", err)
+		log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
+		fmt.Fprintln(out)
+	}
+
 	// By default, Podman will not forward to container applications listening on the loopback interface.
 	// So we are trying to detect such cases and act accordingly.
 	// See https://github.com/redhat-developer/odo/issues/6510#issuecomment-1439986558
@@ -234,6 +245,14 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 
 	spinner.End(true)
 	return pod, fwPorts, nil
+}
+
+func (o *DevClient) checkAppPorts(ctx context.Context, podName string, portsToFwd []api.ForwardedPort) error {
+	containerPortsMapping := make(map[string][]int)
+	for _, p := range portsToFwd {
+		containerPortsMapping[p.ContainerName] = append(containerPortsMapping[p.ContainerName], p.ContainerPort)
+	}
+	return port.CheckAppPortsListening(ctx, o.execClient, podName, containerPortsMapping, 1*time.Minute)
 }
 
 // handleLoopbackPorts tries to detect if any of the ports to forward (in fwPorts) is actually bound to the loopback interface within the specified pod.

@@ -1,9 +1,11 @@
 package port
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
@@ -408,6 +410,120 @@ sl  local_address                         remote_address                        
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("getListeningConnections() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCheckAppPortsListening(t *testing.T) {
+	type args struct {
+		execClientCustomizer func(client *exec.MockClient)
+		containerPortMapping map[string][]int
+		timeout              time.Duration
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "no container port mapping",
+			wantErr: false,
+		},
+		{
+			name:    "container with no ports",
+			wantErr: false,
+			args: args{
+				containerPortMapping: map[string][]int{
+					containerName:   {},
+					"my-other-cont": {},
+				},
+				timeout: 5 * time.Second,
+			},
+		},
+		{
+			name: "error while checking for ports",
+			args: args{
+				execClientCustomizer: func(client *exec.MockClient) {
+					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Any(), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+						Return(nil, []string{"an error"}, errors.New("some error")).AnyTimes()
+				},
+				containerPortMapping: map[string][]int{
+					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
+					containerName:   {20001, 6443, 22},
+					"my-other-cont": {5355},
+				},
+				timeout: 5 * time.Second,
+			},
+			wantErr: true,
+		},
+		{
+			name: "too small timeout reached while checking for ports, even if they are all opened",
+			args: args{
+				execClientCustomizer: func(client *exec.MockClient) {
+					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Any(), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+						Return(nil, []string{"an error"}, errors.New("some error")).AnyTimes()
+				},
+				containerPortMapping: map[string][]int{
+					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
+					containerName: {20001, 6443, 22},
+					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
+					"my-other-cont": {5355},
+				},
+				timeout: 1 * time.Millisecond,
+			},
+			wantErr: true,
+		},
+		{
+			name: "at least one of the ports are not opened",
+			args: args{
+				execClientCustomizer: func(client *exec.MockClient) {
+					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
+					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq("my-other-cont"), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
+				},
+				containerPortMapping: map[string][]int{
+					// all ports are coming from aggregatedContentFromProcNetFiles
+					containerName: {20001, 6443, 22},
+					// port 5355 is coming from aggregatedContentFromProcNetFiles, but 12345 is intentionally not there
+					"my-other-cont": {5355, 12345},
+				},
+				timeout: 5 * time.Second,
+			},
+			wantErr: true,
+		},
+		{
+			name: "all ports are opened in the container",
+			args: args{
+				execClientCustomizer: func(client *exec.MockClient) {
+					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
+					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq("my-other-cont"), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
+				},
+				containerPortMapping: map[string][]int{
+					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
+					containerName: {20001, 6443, 22},
+					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
+					"my-other-cont": {5355},
+				},
+				timeout: 6 * time.Second,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			execClient := exec.NewMockClient(ctrl)
+			if tt.args.execClientCustomizer != nil {
+				tt.args.execClientCustomizer(execClient)
+			}
+
+			gotErr := CheckAppPortsListening(context.Background(), execClient, podName, tt.args.containerPortMapping, tt.args.timeout)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("CheckAppPortsListening() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}
