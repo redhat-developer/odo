@@ -335,7 +335,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 
 			// if innerloop deployment resource is present, then execute preStop events
 			if isClusterInnerLoopDeployed {
-				err = o.clientset.DeleteClient.ExecutePreStopEvents(*devfileObj, appName, componentName)
+				err = o.clientset.DeleteClient.ExecutePreStopEvents(ctx, *devfileObj, appName, componentName)
 				if err != nil {
 					log.Errorf("Failed to execute preStop events: %v", err)
 				}

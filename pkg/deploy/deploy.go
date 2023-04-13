@@ -67,7 +67,7 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		return err
 	}
 
-	return libdevfile.Deploy(*devfileObj, handler)
+	return libdevfile.Deploy(ctx, *devfileObj, handler)
 }
 
 func (o *DeployClient) buildPushAutoImageComponents(handler *deployHandler, devfileObj parser.DevfileObj) error {
@@ -150,7 +150,7 @@ func (o *deployHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 }
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml
-func (o *deployHandler) Execute(command v1alpha2.Command) error {
+func (o *deployHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
 	policy, err := o.kubeClient.GetCurrentNamespacePolicy()
 	if err != nil {
 		return err

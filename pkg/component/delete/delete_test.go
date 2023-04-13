@@ -689,7 +689,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
-					client.EXPECT().ExecCMDInContainer("runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(nil)
+					client.EXPECT().ExecCMDInContainer(gomock.Any(), "runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(nil)
 
 					return client
 				},
@@ -733,7 +733,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client.EXPECT().GetPodLogs(fakePod.Name, gomock.Any(), gomock.Any()).Return(nil, errors.New("an error"))
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
-					client.EXPECT().ExecCMDInContainer("runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(errors.New("some error"))
+					client.EXPECT().ExecCMDInContainer(gomock.Any(), "runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(errors.New("some error"))
 
 					return client
 				},
@@ -751,7 +751,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
 			do := NewDeleteComponentClient(kubeClient, nil, execClient)
-			if err := do.ExecutePreStopEvents(tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
+			if err := do.ExecutePreStopEvents(context.Background(), tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

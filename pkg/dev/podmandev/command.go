@@ -45,14 +45,6 @@ func (a commandHandler) ApplyOpenShift(openshift devfilev1.Component) error {
 	return nil
 }
 
-func (a commandHandler) Execute(devfileCmd devfilev1.Command) error {
-	return component.ExecuteRunCommand(
-		a.execClient,
-		a.platformClient,
-		devfileCmd,
-		a.componentExists,
-		a.podName,
-		a.appName,
-		a.componentName,
-	)
+func (a commandHandler) Execute(ctx context.Context, command devfilev1.Command) error {
+	return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.componentExists, a.podName, a.appName, a.componentName)
 }

@@ -5,6 +5,7 @@
 package podman
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -52,17 +53,17 @@ func (mr *MockClientMockRecorder) CleanupPodResources(pod interface{}) *gomock.C
 }
 
 // ExecCMDInContainer mocks base method.
-func (m *MockClient) ExecCMDInContainer(containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (m *MockClient) ExecCMDInContainer(ctx context.Context, containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecCMDInContainer", containerName, podName, cmd, stdout, stderr, stdin, tty)
+	ret := m.ctrl.Call(m, "ExecCMDInContainer", ctx, containerName, podName, cmd, stdout, stderr, stdin, tty)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ExecCMDInContainer indicates an expected call of ExecCMDInContainer.
-func (mr *MockClientMockRecorder) ExecCMDInContainer(containerName, podName, cmd, stdout, stderr, stdin, tty interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ExecCMDInContainer(ctx, containerName, podName, cmd, stdout, stderr, stdin, tty interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecCMDInContainer", reflect.TypeOf((*MockClient)(nil).ExecCMDInContainer), containerName, podName, cmd, stdout, stderr, stdin, tty)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecCMDInContainer", reflect.TypeOf((*MockClient)(nil).ExecCMDInContainer), ctx, containerName, podName, cmd, stdout, stderr, stdin, tty)
 }
 
 // GetAllPodsInNamespaceMatchingSelector mocks base method.

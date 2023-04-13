@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,7 +38,7 @@ func NewSyncClient(platformClient platform.Client, execClient exec.Client) *Sync
 // otherwise, it checks which files have changed and syncs the delta
 // it returns a boolean execRequired and an error. execRequired tells us if files have
 // changed and devfile execution is required
-func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
+func (a SyncClient) SyncFiles(ctx context.Context, syncParameters SyncParameters) (bool, error) {
 
 	// Whether to write the indexer content to the index file path (resolvePath)
 	forceWrite := false
@@ -144,14 +145,7 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		}
 	}
 
-	err := a.pushLocal(syncParameters.Path,
-		changedFiles,
-		deletedFiles,
-		syncParameters.ForcePush,
-		syncParameters.IgnoredFiles,
-		syncParameters.CompInfo,
-		ret,
-	)
+	err := a.pushLocal(ctx, syncParameters.Path, changedFiles, deletedFiles, syncParameters.ForcePush, syncParameters.IgnoredFiles, syncParameters.CompInfo, ret)
 	if err != nil {
 		return false, fmt.Errorf("failed to sync to component with name %s: %w", syncParameters.CompInfo.ComponentName, err)
 	}
@@ -166,7 +160,7 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a SyncClient) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, ret util.IndexerRet) error {
+func (a SyncClient) pushLocal(ctx context.Context, path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo ComponentInfo, ret util.IndexerRet) error {
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", compInfo.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -185,7 +179,7 @@ func (a SyncClient) pushLocal(path string, files []string, delFiles []string, is
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		_, _, err = a.execClient.ExecuteCommand(cmdArr, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
+		_, _, err = a.execClient.ExecuteCommand(ctx, cmdArr, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -194,7 +188,7 @@ func (a SyncClient) pushLocal(path string, files []string, delFiles []string, is
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		_, _, err = a.execClient.ExecuteCommand(cmdArr, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
+		_, _, err = a.execClient.ExecuteCommand(ctx, cmdArr, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -208,7 +202,7 @@ func (a SyncClient) pushLocal(path string, files []string, delFiles []string, is
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = a.CopyFile(path, compInfo, syncFolder, files, globExps, ret)
+		err = a.CopyFile(ctx, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			return fmt.Errorf("unable push files to pod: %w", err)
 		}

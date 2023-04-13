@@ -267,7 +267,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		Files:     adapters.GetSyncFilesFromAttributes(pushDevfileCommands[cmdKind]),
 	}
 
-	execRequired, err := a.syncClient.SyncFiles(syncParams)
+	execRequired, err := a.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
 		componentStatus.State = watch.StateReady
 		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
@@ -277,8 +277,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.Devfile) {
-		err = libdevfile.ExecPostStartEvents(a.Devfile,
-			component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name, "Executing post-start command in container", parameters.Show))
+		err = libdevfile.ExecPostStartEvents(ctx, a.Devfile, component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name, "Executing post-start command in container", parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -309,7 +308,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	if commandType == devfilev1.ExecCommandType {
-		running, err = cmdHandler.IsRemoteProcessForCommandRunning(cmd, pod.Name)
+		running, err = cmdHandler.IsRemoteProcessForCommandRunning(ctx, cmd, pod.Name)
 		if err != nil {
 			return err
 		}
@@ -333,7 +332,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name,
 				"Building your application in container", parameters.Show)
-			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
+			return libdevfile.Build(ctx, a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}
 		if running {
 			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
@@ -346,14 +345,14 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 				return err
 			}
 		}
-		err = libdevfile.ExecuteCommandByNameAndKind(a.Devfile, cmdName, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, a.Devfile, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err
 		}
 	}
 
 	if podChanged || portsChanged {
-		a.portForwardClient.StopPortForwarding(a.ComponentName)
+		a.portForwardClient.StopPortForwarding(ctx, a.ComponentName)
 	}
 
 	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work

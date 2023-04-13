@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -52,7 +53,7 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 	return nil
 }
 
-func (o *execHandler) Execute(command v1alpha2.Command) error {
+func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
 	msg := o.msg
 	if msg == "" {
 		msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)
@@ -66,7 +67,7 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
 	cmdline := getCmdline(command)
-	_, _, err := o.execClient.ExecuteCommand(cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
+	_, _, err := o.execClient.ExecuteCommand(ctx, cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 

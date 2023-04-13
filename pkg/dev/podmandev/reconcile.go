@@ -75,7 +75,7 @@ func (o *DevClient) reconcile(
 			"Executing post-start command in container",
 			false, /* TODO */
 		)
-		err = libdevfile.ExecPostStartEvents(*devfileObj, execHandler)
+		err = libdevfile.ExecPostStartEvents(ctx, *devfileObj, execHandler)
 		if err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ func (o *DevClient) reconcile(
 				"Building your application in container",
 				false, /* TODO */
 			)
-			return libdevfile.Build(*devfileObj, options.BuildCommand, execHandler)
+			return libdevfile.Build(ctx, *devfileObj, options.BuildCommand, execHandler)
 		}
 		err = doExecuteBuildCommand()
 		if err != nil {
@@ -116,7 +116,7 @@ func (o *DevClient) reconcile(
 			appName:         appName,
 			componentName:   componentName,
 		}
-		err = libdevfile.ExecuteCommandByNameAndKind(*devfileObj, cmdName, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, *devfileObj, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func (o *DevClient) reconcile(
 	// By default, Podman will not forward to container applications listening on the loopback interface.
 	// So we are trying to detect such cases and act accordingly.
 	// See https://github.com/redhat-developer/odo/issues/6510#issuecomment-1439986558
-	err = o.handleLoopbackPorts(options, pod, fwPorts)
+	err = o.handleLoopbackPorts(ctx, options, pod, fwPorts)
 	if err != nil {
 		return err
 	}
@@ -260,12 +260,12 @@ func (o *DevClient) checkAppPorts(ctx context.Context, podName string, portsToFw
 // If that is the case, it will either return an error if options.IgnoreLocalhost is false, or no error otherwise.
 //
 // Note that this method should be called after the process representing the application (run or debug command) is actually started in the pod.
-func (o *DevClient) handleLoopbackPorts(options dev.StartOptions, pod *corev1.Pod, fwPorts []api.ForwardedPort) error {
+func (o *DevClient) handleLoopbackPorts(ctx context.Context, options dev.StartOptions, pod *corev1.Pod, fwPorts []api.ForwardedPort) error {
 	if len(pod.Spec.Containers) == 0 {
 		return nil
 	}
 
-	loopbackPorts, err := port.DetectRemotePortsBoundOnLoopback(o.execClient, pod.Name, pod.Spec.Containers[0].Name, fwPorts)
+	loopbackPorts, err := port.DetectRemotePortsBoundOnLoopback(ctx, o.execClient, pod.Name, pod.Spec.Containers[0].Name, fwPorts)
 	if err != nil {
 		return fmt.Errorf("unable to detect container ports bound on the loopback interface: %w", err)
 	}

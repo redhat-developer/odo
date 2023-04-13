@@ -54,12 +54,12 @@ func (c Connection) String() string {
 }
 
 // DetectRemotePortsBoundOnLoopback filters the given ports by returning only those that are actually bound to the loopback interface in the specified container.
-func DetectRemotePortsBoundOnLoopback(execClient exec.Client, podName string, containerName string, ports []api.ForwardedPort) ([]api.ForwardedPort, error) {
+func DetectRemotePortsBoundOnLoopback(ctx context.Context, execClient exec.Client, podName string, containerName string, ports []api.ForwardedPort) ([]api.ForwardedPort, error) {
 	if len(ports) == 0 {
 		return nil, nil
 	}
 
-	listening, err := GetListeningConnections(execClient, podName, containerName)
+	listening, err := GetListeningConnections(ctx, execClient, podName, containerName)
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +87,8 @@ func DetectRemotePortsBoundOnLoopback(execClient exec.Client, podName string, co
 // GetListeningConnections retrieves information about ports being listened and on which local address in the specified container.
 // It works by parsing information from the /proc/net/{tcp,tcp6,udp,udp6} files, and is able to parse both IPv4 and IPv6 addresses.
 // See https://www.kernel.org/doc/Documentation/networking/proc_net_tcp.txt for more information about the structure of these files.
-func GetListeningConnections(execClient exec.Client, podName string, containerName string) ([]Connection, error) {
-	return GetConnections(execClient, podName, containerName, func(state int) bool {
+func GetListeningConnections(ctx context.Context, execClient exec.Client, podName string, containerName string) ([]Connection, error) {
+	return GetConnections(ctx, execClient, podName, containerName, func(state int) bool {
 		return stateToString(state) == "LISTEN"
 	})
 }
@@ -97,12 +97,12 @@ func GetListeningConnections(execClient exec.Client, podName string, containerNa
 // It works by parsing information from the /proc/net/{tcp,tcp6,udp,udp6} files, and is able to parse both IPv4 and IPv6 addresses.
 // See https://www.kernel.org/doc/Documentation/networking/proc_net_tcp.txt for more information about the structure of these files.
 // The specified predicate allows to filter the connections based on the state.
-func GetConnections(execClient exec.Client, podName string, containerName string, statePredicate func(state int) bool) ([]Connection, error) {
+func GetConnections(ctx context.Context, execClient exec.Client, podName string, containerName string, statePredicate func(state int) bool) ([]Connection, error) {
 	cmd := []string{
 		remotecmd.ShellExecutable, "-c",
 		"cat /proc/net/tcp /proc/net/udp /proc/net/tcp6 /proc/net/udp6",
 	}
-	stdout, _, err := execClient.ExecuteCommand(cmd, podName, containerName, false, nil, nil)
+	stdout, _, err := execClient.ExecuteCommand(ctx, cmd, podName, containerName, false, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func CheckAppPortsListening(
 					return ctxWithTimeout.Err()
 
 				case <-ticker.C:
-					connections, err := GetListeningConnections(execClient, podName, container)
+					connections, err := GetListeningConnections(ctx, execClient, podName, container)
 					if err != nil {
 						klog.V(3).Infof("error getting listening connections in container %q: %v", container, err)
 						for _, p := range ports {

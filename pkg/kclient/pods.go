@@ -7,7 +7,6 @@ import (
 
 	// api resource types
 
-	"github.com/redhat-developer/odo/pkg/platform"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,10 +14,12 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
+
+	"github.com/redhat-developer/odo/pkg/platform"
 )
 
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
-func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (c *Client) ExecCMDInContainer(ctx context.Context, containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
 	podExecOptions := corev1.PodExecOptions{
 		Command: cmd,
 		Stdin:   stdin != nil,
@@ -51,8 +52,7 @@ func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string,
 		return fmt.Errorf("unable execute command via SPDY: %w", err)
 	}
 	// initialize the transport of the standard shell streams
-	// TODO(feloy) related to https://github.com/redhat-developer/odo/issues/6196
-	err = exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  stdin,
 		Stdout: stdout,
 		Stderr: stderr,

@@ -1,6 +1,9 @@
 package sync
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 // ComponentInfo is a struct that holds information about a component i.e.; component name, pod name, container name, and source mount (if applicable)
 type ComponentInfo struct {
@@ -25,5 +28,5 @@ type SyncParameters struct {
 }
 
 type Client interface {
-	SyncFiles(syncParameters SyncParameters) (bool, error)
+	SyncFiles(ctx context.Context, syncParameters SyncParameters) (bool, error)
 }

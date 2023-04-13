@@ -65,7 +65,7 @@ func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.De
 
 	o.appliedEndpoints = ceMapping
 
-	o.StopPortForwarding(componentName)
+	o.StopPortForwarding(ctx, componentName)
 
 	if len(ceMapping) == 0 {
 		klog.V(4).Infof("no endpoint declared in the component, no ports are forwarded")
@@ -147,7 +147,7 @@ func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.De
 	}
 }
 
-func (o *PFClient) StopPortForwarding(componentName string) {
+func (o *PFClient) StopPortForwarding(ctx context.Context, componentName string) {
 	if o.stopChan == nil {
 		return
 	}

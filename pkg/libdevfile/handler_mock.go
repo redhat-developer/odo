@@ -5,6 +5,7 @@
 package libdevfile
 
 import (
+	context "context"
 	reflect "reflect"
 
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -77,15 +78,15 @@ func (mr *MockHandlerMockRecorder) ApplyOpenShift(openshift interface{}) *gomock
 }
 
 // Execute mocks base method.
-func (m *MockHandler) Execute(command v1alpha2.Command) error {
+func (m *MockHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", command)
+	ret := m.ctrl.Call(m, "Execute", ctx, command)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockHandlerMockRecorder) Execute(command interface{}) *gomock.Call {
+func (mr *MockHandlerMockRecorder) Execute(ctx, command interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockHandler)(nil).Execute), command)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockHandler)(nil).Execute), ctx, command)
 }

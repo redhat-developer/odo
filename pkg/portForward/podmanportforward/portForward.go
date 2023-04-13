@@ -55,7 +55,7 @@ func (o *PFClient) StartPortForwarding(
 		return nil
 	}
 
-	o.StopPortForwarding(componentName)
+	o.StopPortForwarding(ctx, componentName)
 
 	outputHandler := func(fwPort api.ForwardedPort) remotecmd.CommandOutputHandler {
 		return func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
@@ -75,7 +75,7 @@ func (o *PFClient) StartPortForwarding(
 	}
 
 	for _, port := range definedPorts {
-		err := o.remoteProcessHandler.StartProcessForCommand(getCommandDefinition(port), getPodName(componentName), pfHelperContainer, outputHandler(port))
+		err := o.remoteProcessHandler.StartProcessForCommand(ctx, getCommandDefinition(port), getPodName(componentName), pfHelperContainer, outputHandler(port))
 		if err != nil {
 			return fmt.Errorf("error while creating port-forwarding for container port %d: %w", port.ContainerPort, err)
 		}
@@ -84,7 +84,7 @@ func (o *PFClient) StartPortForwarding(
 	return nil
 }
 
-func (o *PFClient) StopPortForwarding(componentName string) {
+func (o *PFClient) StopPortForwarding(ctx context.Context, componentName string) {
 	if len(o.appliedPorts) == 0 {
 		return
 	}
@@ -95,7 +95,7 @@ func (o *PFClient) StopPortForwarding(componentName string) {
 		port := port
 		go func() {
 			defer wg.Done()
-			err := o.remoteProcessHandler.StopProcessForCommand(getCommandDefinition(port), getPodName(componentName), pfHelperContainer)
+			err := o.remoteProcessHandler.StopProcessForCommand(ctx, getCommandDefinition(port), getPodName(componentName), pfHelperContainer)
 			if err != nil {
 				klog.V(4).Infof("error while stopping port-forwarding for container port %d: %v", port.ContainerPort, err)
 			}

@@ -1,6 +1,7 @@
 package podman
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os/exec"
@@ -8,7 +9,7 @@ import (
 	"k8s.io/klog"
 )
 
-func (o *PodmanCli) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (o *PodmanCli) ExecCMDInContainer(ctx context.Context, containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
 	options := []string{}
 	if tty {
 		options = append(options, "--tty")

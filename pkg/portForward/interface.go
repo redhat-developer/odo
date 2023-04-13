@@ -28,7 +28,7 @@ type Client interface {
 	) error
 
 	// StopPortForwarding stops the port forwarding for the specified component.
-	StopPortForwarding(componentName string)
+	StopPortForwarding(ctx context.Context, componentName string)
 
 	// GetForwardedPorts returns the list of ports for each container currently forwarded.
 	GetForwardedPorts() map[string][]v1alpha2.Endpoint

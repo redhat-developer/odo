@@ -82,7 +82,7 @@ func TestDetectRemotePortsBoundOnLoopback(t *testing.T) {
 			name: "error while executing command",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(nil, nil, errors.New("some-err"))
 				},
 				podName:       podName,
@@ -95,7 +95,7 @@ func TestDetectRemotePortsBoundOnLoopback(t *testing.T) {
 			name: "no active connections",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(`
 sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
 sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode ref pointer drops
@@ -114,7 +114,7 @@ sl  local_address                         remote_address                        
 			name: "no input ports",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Times(0)
 				},
 				podName:       podName,
@@ -128,7 +128,7 @@ sl  local_address                         remote_address                        
 			name: "with different connections",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil)
 				},
 				podName:       podName,
@@ -149,7 +149,7 @@ sl  local_address                         remote_address                        
 			execClient := exec.NewMockClient(ctrl)
 			tt.args.execClientCustomizer(execClient)
 
-			got, err := DetectRemotePortsBoundOnLoopback(execClient, tt.args.podName, tt.args.containerName, tt.args.ports)
+			got, err := DetectRemotePortsBoundOnLoopback(context.Background(), execClient, tt.args.podName, tt.args.containerName, tt.args.ports)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("detectRemotePortsBoundOnLoopback() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -177,7 +177,7 @@ func TestGetListeningConnections(t *testing.T) {
 			name: "error while executing command",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(nil, nil, errors.New("some-err"))
 				},
 				podName:       podName,
@@ -189,7 +189,7 @@ func TestGetListeningConnections(t *testing.T) {
 			name: "no active connections",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(`
 sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
 sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode ref pointer drops
@@ -207,7 +207,7 @@ sl  local_address                         remote_address                        
 			name: "with different connections",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil)
 				},
 				podName:       podName,
@@ -249,7 +249,7 @@ sl  local_address                         remote_address                        
 			execClient := exec.NewMockClient(ctrl)
 			tt.args.execClientCustomizer(execClient)
 
-			got, err := GetListeningConnections(execClient, tt.args.podName, tt.args.containerName)
+			got, err := GetListeningConnections(context.Background(), execClient, tt.args.podName, tt.args.containerName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getListeningConnections() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -278,7 +278,7 @@ func TestGetConnections(t *testing.T) {
 			name: "error while executing command",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(nil, nil, errors.New("some-err"))
 				},
 				podName:       podName,
@@ -290,7 +290,7 @@ func TestGetConnections(t *testing.T) {
 			name: "no active connections",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(`
 sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
 sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode ref pointer drops
@@ -308,7 +308,7 @@ sl  local_address                         remote_address                        
 			name: "non-matching filter on state",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil)
 				},
 				podName:       podName,
@@ -324,7 +324,7 @@ sl  local_address                         remote_address                        
 			name: "filter on state: ESTABLISHED",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil)
 				},
 				podName:       podName,
@@ -343,7 +343,7 @@ sl  local_address                         remote_address                        
 			name: "all connections",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil)
 				},
 				podName:       podName,
@@ -403,7 +403,7 @@ sl  local_address                         remote_address                        
 			execClient := exec.NewMockClient(ctrl)
 			tt.args.execClientCustomizer(execClient)
 
-			got, err := GetConnections(execClient, tt.args.podName, tt.args.containerName, tt.args.statePredicate)
+			got, err := GetConnections(context.Background(), execClient, tt.args.podName, tt.args.containerName, tt.args.statePredicate)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getListeningConnections() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -445,7 +445,7 @@ func TestCheckAppPortsListening(t *testing.T) {
 			name: "error while checking for ports",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Any(), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Any(), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(nil, []string{"an error"}, errors.New("some error")).AnyTimes()
 				},
 				containerPortMapping: map[string][]int{
@@ -461,7 +461,7 @@ func TestCheckAppPortsListening(t *testing.T) {
 			name: "too small timeout reached while checking for ports, even if they are all opened",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Any(), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Any(), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(nil, []string{"an error"}, errors.New("some error")).AnyTimes()
 				},
 				containerPortMapping: map[string][]int{
@@ -478,9 +478,9 @@ func TestCheckAppPortsListening(t *testing.T) {
 			name: "at least one of the ports are not opened",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq("my-other-cont"), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq("my-other-cont"), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
 				},
 				containerPortMapping: map[string][]int{
@@ -497,9 +497,9 @@ func TestCheckAppPortsListening(t *testing.T) {
 			name: "all ports are opened in the container",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq(containerName), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
-					client.EXPECT().ExecuteCommand(gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq("my-other-cont"), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
+					client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Eq(cmd), gomock.Eq(podName), gomock.Eq("my-other-cont"), gomock.Eq(false), gomock.Nil(), gomock.Nil()).
 						Return(strings.Split(aggregatedContentFromProcNetFiles, "\n"), nil, nil).AnyTimes()
 				},
 				containerPortMapping: map[string][]int{

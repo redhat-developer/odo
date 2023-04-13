@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"context"
 	"io"
 
 	corev1 "k8s.io/api/core/v1"
@@ -12,7 +13,7 @@ type Client interface {
 
 	// ExecCMDInContainer executes the specified command in the container of a pod.
 	// If an empty string is passed as container name, the command will be executed in the first container found in the pod.
-	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
+	ExecCMDInContainer(ctx context.Context, containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error
 
 	// GetPodLogs returns the logs of the specified pod container.
 	// All logs for all containers part of the pod are returned if an empty string is provided as container name.
