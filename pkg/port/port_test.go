@@ -431,6 +431,17 @@ func TestCheckAppPortsListening(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "container with no ports",
+			wantErr: false,
+			args: args{
+				containerPortMapping: map[string][]int{
+					containerName:   {},
+					"my-other-cont": {},
+				},
+				timeout: 5 * time.Second,
+			},
+		},
+		{
 			name: "error while checking for ports",
 			args: args{
 				execClientCustomizer: func(client *exec.MockClient) {
@@ -439,8 +450,7 @@ func TestCheckAppPortsListening(t *testing.T) {
 				},
 				containerPortMapping: map[string][]int{
 					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
-					containerName: {20001, 6443, 22},
-					// all ports are opened, as decoded from aggregatedContentFromProcNetFiles
+					containerName:   {20001, 6443, 22},
 					"my-other-cont": {5355},
 				},
 				timeout: 5 * time.Second,
