@@ -129,7 +129,7 @@ func (o *DevClient) reconcile(
 	appReadySpinner.End(err == nil)
 	if err != nil {
 		log.Warningf("Port forwarding might not work correctly: %v", err)
-		log.Info("Running `odo logs --follow --platform podman` might help in identifying the problem.")
+		log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
 		fmt.Fprintln(out)
 	}
 
