@@ -697,7 +697,55 @@ ComponentSettings:
 				})
 			})
 		})
+
+		for _, podman := range []bool{true, false} {
+			podman := podman
+
+			When("build command takes really long to start", helper.LabelPodmanIf(podman, func() {
+				BeforeEach(func() {
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"),
+						"npm install",
+						"echo Will execute command after 20m ... && sleep 1200 && npm install")
+				})
+
+				It("should cancel build command and return if odo dev is stopped", func() {
+					opts := helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}
+					devSession, _, _, err := helper.WaitForDevModeToContain(opts, "Building your application in container", false, false)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					// Build is taking long => it should be cancellable
+					devSession.Stop()
+					// WaitEnd will timeout after some time, less than the execution of the build command above
+					devSession.WaitEnd()
+				})
+			}))
+
+			When("run command takes really long to start", helper.LabelPodmanIf(podman, func() {
+				BeforeEach(func() {
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"),
+						"npm start",
+						"echo Will execute command after 20m ... && sleep 1200 && npm start")
+				})
+
+				It("should cancel run command and return if odo dev is stopped", func() {
+					opts := helper.DevSessionOpts{
+						RunOnPodman: podman,
+					}
+					// Run command is launched in the background
+					devSession, _, _, err := helper.WaitForDevModeToContain(opts, "Waiting for the application to be ready", false, false)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					// Build is taking long => it should be cancellable
+					devSession.Stop()
+					// WaitEnd will timeout after some time, less than the execution of the build command above
+					devSession.WaitEnd()
+				})
+			}))
+		}
 	})
+
 	Context("checking if odo dev matches local Devfile K8s resources and remote resources", func() {
 		for _, devfile := range []struct {
 			title             string
@@ -1991,6 +2039,7 @@ CMD ["npm", "start"]
 								EnvVars: env,
 							},
 							"failed to retrieve "+url,
+							true,
 							false)
 						Expect(err).To(BeNil())
 						Expect(sessionOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
