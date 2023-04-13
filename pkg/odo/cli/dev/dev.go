@@ -232,7 +232,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	err = o.clientset.StateClient.Init(ctx)
 	if err != nil {
-		err = fmt.Errorf("unable to save state file: %v", err)
+		err = fmt.Errorf("unable to save state file: %w", err)
 		return err
 	}
 

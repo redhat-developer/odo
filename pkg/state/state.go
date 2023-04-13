@@ -105,17 +105,21 @@ func (o *State) save(ctx context.Context, pid int) error {
 		return err
 	}
 
+	return writeStateFile(getFilename(pid))
+}
+
+func writeStateFile(path string) error {
 	jsonContent, err := json.MarshalIndent(o.content, "", " ")
 	if err != nil {
 		return err
 	}
 	// .odo directory is supposed to exist, don't create it
-	dir := filepath.Dir(getFilename(pid))
+	dir := filepath.Dir(path)
 	err = os.MkdirAll(dir, 0750)
 	if err != nil {
 		return err
 	}
-	return o.fs.WriteFile(getFilename(pid), jsonContent, 0644)
+	return o.fs.WriteFile(path, jsonContent, 0644)
 }
 
 // read returns the content of the devstate.${PID}.json file for the given platform
@@ -169,26 +173,16 @@ func (o *State) saveCommonIfOwner(pid int) error {
 		return nil
 	}
 
-	jsonContent, err := json.MarshalIndent(o.content, "", " ")
-	if err != nil {
-		return err
-	}
-	// .odo directory is supposed to exist, don't create it
-	dir := filepath.Dir(_filepath)
-	err = os.MkdirAll(dir, 0750)
-	if err != nil {
-		return err
-	}
-	return o.fs.WriteFile(_filepath, jsonContent, 0644)
+	return writeStateFile(_filepath)
 }
 
 func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 	jsonContent, err := o.fs.ReadFile(_filepath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			// File not found, it is free
 			return true, nil
 		}
-		// File not found, it is free
 		return false, err
 	}
 	var savedContent Content
@@ -224,8 +218,11 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 	re := regexp.MustCompile(`^devstate\.[0-9]*\.json$`)
 	entries, err := o.fs.ReadDir(_dirpath)
 	if err != nil {
-		// No file found => no problem
-		return nil
+		if errors.Is(err, os.ErrNotExist) {
+			// No file found => no problem
+			return nil
+		}
+		return err
 	}
 	for _, entry := range entries {
 		if !re.MatchString(entry.Name()) {
@@ -238,18 +235,21 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 		var content Content
 		// Ignore error, to handle empty file
 		_ = json.Unmarshal(jsonContent, &content)
-		if content.Platform == platform {
-			if content.PID == pid {
-				continue
-			}
-			exists, err := pidExists(content.PID)
-			if err != nil {
-				return err
-			}
-			if exists {
-				// Process exists => problem
-				return NewErrAlreadyRunningOnPlatform(platform)
-			}
+
+		if content.Platform != platform {
+			continue
+		}
+
+		if content.PID == pid {
+			continue
+		}
+		exists, err := pidExists(content.PID)
+		if err != nil {
+			return err
+		}
+		if exists {
+			// Process exists => problem
+			return NewErrAlreadyRunningOnPlatform(platform, content.PID)
 		}
 	}
 	return nil
