@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"regexp"
@@ -267,6 +268,8 @@ func CheckAppPortsListening(
 		return false
 	}
 
+	notListeningChan := make(chan map[string][]int)
+
 	g := new(errgroup.Group)
 	for container, ports := range containerPortMapping {
 		container := container
@@ -280,15 +283,14 @@ func CheckAppPortsListening(
 			for {
 				select {
 				case <-ctxWithTimeout.Done():
-					var unopenedPorts []string
-					for p := range portsNotListening {
-						unopenedPorts = append(unopenedPorts, strconv.Itoa(p))
+					if len(portsNotListening) != 0 {
+						m := make(map[string][]int)
+						for p := range portsNotListening {
+							m[container] = append(m[container], p)
+						}
+						notListeningChan <- m
 					}
-					msg := fmt.Sprintf("timeout while checking for ports in container %q", container)
-					if len(unopenedPorts) != 0 {
-						msg += fmt.Sprintf("; ports not listening: %s", strings.Join(unopenedPorts, ", "))
-					}
-					return fmt.Errorf("%s: %w", msg, ctxWithTimeout.Err())
+					return ctxWithTimeout.Err()
 
 				case <-ticker.C:
 					connections, err := GetListeningConnections(execClient, podName, container)
@@ -313,8 +315,43 @@ func CheckAppPortsListening(
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
+	// Buffer of 1 because we want to close notListeningChan (because we are iterating over it).
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- g.Wait()
+		close(notListeningChan)
+	}()
+
+	notListening := make(map[string][]int)
+	for e := range notListeningChan {
+		for c, ports := range e {
+			if len(ports) == 0 {
+				continue
+			}
+			notListening[c] = append(notListening[c], ports...)
+		}
+	}
+
+	klog.V(4).Infof("ports not listening: %v", notListening)
+
+	if err := <-errChan; err != nil {
+		msg := "error"
+		if errors.Is(err, context.DeadlineExceeded) {
+			msg = "timeout"
+		}
+		msg += " while checking for ports"
+		if len(notListening) != 0 {
+			var msgList []string
+			for c, ports := range notListening {
+				var l []string
+				for _, p := range ports {
+					l = append(l, strconv.Itoa(p))
+				}
+				msgList = append(msgList, fmt.Sprintf("%s in container %q", strings.Join(l, ", "), c))
+			}
+			msg += fmt.Sprintf("; ports not listening: (%s)", strings.Join(msgList, " / "))
+		}
+		return fmt.Errorf("%s: %w", msg, err)
 	}
 
 	return nil
