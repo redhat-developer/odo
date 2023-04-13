@@ -358,7 +358,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	appReadySpinner.End(err == nil)
 	if err != nil {
 		log.Warningf("Port forwarding might not work correctly: %v", err)
-		log.Info("Running `odo logs --follow` might help in identifying the problem.")
+		log.Warning("Running `odo logs --follow` might help in identifying the problem.")
 		fmt.Fprintln(log.GetStdout())
 	}
 
