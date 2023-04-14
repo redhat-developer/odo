@@ -8,7 +8,10 @@ type ErrAlreadyRunningOnPlatform struct {
 }
 
 func NewErrAlreadyRunningOnPlatform(platform string, pid int) ErrAlreadyRunningOnPlatform {
-	return ErrAlreadyRunningOnPlatform{platform: platform}
+	return ErrAlreadyRunningOnPlatform{
+		platform: platform,
+		pid:      pid,
+	}
 }
 
 func (e ErrAlreadyRunningOnPlatform) Error() string {
