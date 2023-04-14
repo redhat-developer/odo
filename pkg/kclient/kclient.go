@@ -2,6 +2,8 @@ package kclient
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/log"
+	"k8s.io/kubectl/pkg/util/term"
 	"strings"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -126,6 +128,14 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	// and reference implementation: https://github.com/vmware-tanzu/tanzu-framework/pull/1656
 	client.KubeClientConfig.QPS = defaultQPS
 	client.KubeClientConfig.Burst = defaultBurst
+
+	// This warning handler ensures that warnings are not duplicated
+	client.KubeClientConfig.WarningHandler = rest.NewWarningWriter(log.GetStderr(), rest.WarningWriterOptions{
+		// only print a given warning the first time we receive it
+		Deduplicate: true,
+		// highlight the output with color when the output supports it
+		Color: term.AllowsColorOutput(log.GetStderr()),
+	})
 
 	client.KubeClient, err = kubernetes.NewForConfig(client.KubeClientConfig)
 	if err != nil {
