@@ -23,7 +23,6 @@ func Test_getCompleteCustomPortPairs(t *testing.T) {
 			args: args{
 				definedPorts: []api.ForwardedPort{
 					{ContainerName: "runtime", LocalPort: 8080, ContainerPort: 8000},
-					{ContainerName: "tools", LocalPort: 5000, ContainerPort: 5000},
 				},
 				ceMapping: map[string][]v1alpha2.Endpoint{
 					"runtime": {{TargetPort: 8000}, {TargetPort: 9000}},
@@ -32,7 +31,7 @@ func Test_getCompleteCustomPortPairs(t *testing.T) {
 			},
 			wantPortPairs: map[string][]string{
 				"runtime": {"8080:8000", "20001:9000"},
-				"tools":   {"5000:5000"},
+				"tools":   {"20002:5000"},
 			},
 		},
 		{
