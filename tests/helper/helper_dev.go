@@ -191,8 +191,10 @@ func (o *DevSession) Stop() {
 		return
 	}
 
-	err := terminateProc(o.session)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	if o.session.ExitCode() == -1 {
+		err := terminateProc(o.session)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	}
 	o.stopped = true
 }
 
