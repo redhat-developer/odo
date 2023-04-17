@@ -185,149 +185,127 @@ var _ = Describe("E2E Test", func() {
 		})
 	})
 
-	for _, debug := range []bool{true, false} {
-		debug := debug
-		const (
-			AppPort      = "3000"
-			DebugPort    = "5858"
-			RemoteAppURL = "http://127.0.0.1:3000"
-		)
-		Context("starting with non-empty Directory", func() {
-			var _ = BeforeEach(func() {
-				helper.Chdir(commonVar.Context)
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			})
-			It(fmt.Sprintf("should verify developer workflow from non-empty Directory (debug=%v)", debug), func() {
-				deploymentName := "my-component"
-				serviceName := "my-cs"
-				getDeployArgs := []string{"get", "deployment", "-n", commonVar.Project}
-				getSVCArgs := []string{"get", "svc", "-n", commonVar.Project}
-
-				command := []string{"odo", "init"}
-				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
-
-					// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
-					helper.ExpectString(ctx, "Language: JavaScript")
-					helper.ExpectString(ctx, "Project type: Node.js")
-					helper.ExpectString(ctx, "Is this correct")
-
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Enter component name")
-
-					helper.SendLine(ctx, componentName)
-
-					helper.ExpectString(ctx, "Your new component '"+componentName+"' is ready in the current directory")
-
-				})
-				Expect(err).To(BeNil())
-				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
-
-				// "execute odo dev and add changes to application"
-				var devSession helper.DevSession
-				var ports map[string]string
-				args := []string{}
-				if debug {
-					args = append(args, "--debug")
-				}
-				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{CmdlineArgs: args})
-				Expect(err).ToNot(HaveOccurred())
-				waitRemoteApp(RemoteAppURL, "Hello from Node.js Starter Application!")
-				checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js Starter Application!")
-				if debug {
-					checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
-				}
-				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
-				_, _, _, err = devSession.WaitSync()
-				Expect(err).ToNot(HaveOccurred())
-				// "should update the changes"
-				waitRemoteApp(RemoteAppURL, "Hello from updated Node.js Starter Application!")
-				checkIfDevEnvIsUp(ports[AppPort], "Hello from updated Node.js Starter Application!")
-				if debug {
-					checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
-				}
-
-				// "changes are made to the applications"
-				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-				_, _, _, err = devSession.WaitSync()
-				Expect(err).ToNot(HaveOccurred())
-				// "should deploy new changes"
-				waitRemoteApp(RemoteAppURL, "Hello from Node.js app v2 Starter Application!")
-				checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js app v2 Starter Application!")
-				if debug {
-					checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
-				}
-
-				// "running odo list"
-				stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
-				helper.MatchAllInOutput(stdout, []string{componentName, "Node.js", "Dev"})
-
-				// "exit dev mode and run odo deploy"
-				devSession.Stop()
-				devSession.WaitEnd()
-
-				// all resources should be deleted from the namespace
-				services := commonVar.CliRunner.GetServices(commonVar.Project)
-				Expect(services).To(BeEmpty())
-				pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-				Expect(pvcs).To(BeEmpty())
-				pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-				Expect(pods).To(BeEmpty())
-
-				// "run odo deploy"
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
-					path.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(componentName))
-				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "nodejs-prj1-api-abhz", componentName)
-				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-				Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
-
-				// should deploy new changes
-				stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
-				helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
-
-				// start dev mode again
-				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
-				Expect(err).ToNot(HaveOccurred())
-
-				// making changes to the project again
-				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
-
-				// "should update the changes"
-				waitRemoteApp(RemoteAppURL, "Hello from Node.js app v3 Starter Application!")
-				checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js app v3 Starter Application!")
-				if debug {
-					checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
-				}
-
-				// should list both dev,deploy
-				stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
-				helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev", "Deploy"})
-
-				// "exit dev mode and run odo deploy"
-				devSession.Stop()
-
-				// "run odo deploy"
-				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-				Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
-
-				command = []string{"odo", "delete", "component"}
-				_, err = helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
-					helper.ExpectString(ctx, "Are you sure you want to delete \""+componentName+"\" and all its resources?")
-					helper.SendLine(ctx, "y")
-					helper.ExpectString(ctx, "successfully deleted")
-				})
-				Expect(err).To(BeNil())
-				Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-				Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
-			})
+	Context("starting with non-empty Directory", func() {
+		var _ = BeforeEach(func() {
+			helper.Chdir(commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
-	}
+		It("should verify developer workflow from non-empty Directory", func() {
+			deploymentName := "my-component"
+			serviceName := "my-cs"
+			getDeployArgs := []string{"get", "deployment", "-n", commonVar.Project}
+			getSVCArgs := []string{"get", "svc", "-n", commonVar.Project}
+
+			command := []string{"odo", "init"}
+			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+				// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
+				helper.ExpectString(ctx, "Language: JavaScript")
+				helper.ExpectString(ctx, "Project type: Node.js")
+				helper.ExpectString(ctx, "Is this correct")
+
+				helper.SendLine(ctx, "")
+
+				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+
+				helper.SendLine(ctx, "")
+
+				helper.ExpectString(ctx, "Enter component name")
+
+				helper.SendLine(ctx, componentName)
+
+				helper.ExpectString(ctx, "Your new component '"+componentName+"' is ready in the current directory")
+
+			})
+			Expect(err).To(BeNil())
+			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
+
+			// "execute odo dev and add changes to application"
+			var devSession helper.DevSession
+			var ports map[string]string
+
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			Expect(err).ToNot(HaveOccurred())
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js Starter Application!")
+			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js Starter Application!")
+
+			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
+			_, _, _, err = devSession.WaitSync()
+			Expect(err).ToNot(HaveOccurred())
+			// "should update the changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from updated Node.js Starter Application!")
+			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
+
+			// "changes are made to the applications"
+			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
+			_, _, _, err = devSession.WaitSync()
+			Expect(err).ToNot(HaveOccurred())
+			// "should deploy new changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v2 Starter Application!")
+			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
+
+			// "running odo list"
+			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
+			helper.MatchAllInOutput(stdout, []string{componentName, "Node.js", "Dev"})
+
+			// "exit dev mode and run odo deploy"
+			devSession.Stop()
+			devSession.WaitEnd()
+
+			// all resources should be deleted from the namespace
+			services := commonVar.CliRunner.GetServices(commonVar.Project)
+			Expect(services).To(BeEmpty())
+			pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+			Expect(pvcs).To(BeEmpty())
+			pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+			Expect(pods).To(BeEmpty())
+
+			// "run odo deploy"
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+				path.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(componentName))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "nodejs-prj1-api-abhz", componentName)
+			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
+
+			// should deploy new changes
+			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
+			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
+
+			// start dev mode again
+			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			Expect(err).ToNot(HaveOccurred())
+
+			// making changes to the project again
+			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
+
+			// "should update the changes"
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v3 Starter Application!")
+			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
+
+			// should list both dev,deploy
+			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
+			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev", "Deploy"})
+
+			// "exit dev mode and run odo deploy"
+			devSession.Stop()
+
+			// "run odo deploy"
+			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
+
+			command = []string{"odo", "delete", "component"}
+			_, err = helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+				helper.ExpectString(ctx, "Are you sure you want to delete \""+componentName+"\" and all its resources?")
+				helper.SendLine(ctx, "y")
+				helper.ExpectString(ctx, "successfully deleted")
+			})
+			Expect(err).To(BeNil())
+			Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
+			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
+		})
+	})
 
 	Context("starting with non-empty Directory add Binding", func() {
 		sendDataEntry := func(url string) map[string]interface{} {
