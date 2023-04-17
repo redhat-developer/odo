@@ -58,9 +58,7 @@ var _ = Describe("odo dev debug command tests", func() {
 				BeforeEach(func() {
 					opts := []string{"--debug", fmt.Sprintf("--port-forward=%s:%s", LocalPort, ContainerPort), fmt.Sprintf("--port-forward=%s:%s", LocalDebugPort, ContainerDebugPort)}
 					if podman {
-						// Debugging works with podman if we use --forward-localhost, but that will not use custom port-mapping;
-						// so we use --ignore-localhost to simply test if custom ports are still taken into account
-						opts = append(opts, "--ignore-localhost")
+						opts = append(opts, "--forward-localhost")
 					}
 					var err error
 					devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
@@ -85,11 +83,8 @@ var _ = Describe("odo dev debug command tests", func() {
 						// We are just using this to validate if nodejs agent is listening on the other side
 						url := fmt.Sprintf("http://%s", ports[ContainerDebugPort])
 						Expect(url).To(ContainSubstring(LocalDebugPort))
-						if !podman {
-							// this check doesn't work for podman unless we use --forward-localhost,
-							// but using it beats the purpose of testing with custom port mapping, so we skip this check
-							helper.HttpWaitForWithStatus(url, "WebSockets request was expected", 12, 5, 400)
-						}
+
+						helper.HttpWaitForWithStatus(url, "WebSockets request was expected", 12, 5, 400)
 					})
 				})
 			}))

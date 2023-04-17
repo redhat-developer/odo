@@ -3,6 +3,7 @@ package podmandev
 import (
 	"fmt"
 	"math/rand" // #nosec
+	"sort"
 	"time"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -56,7 +57,6 @@ func createPodFromComponent(
 	if err != nil {
 		return nil, nil, err
 	}
-	// }
 
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
@@ -229,7 +229,17 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 	endPort := startPort + 10000
 	usedPortsCopy := make([]int, len(usedPorts))
 	copy(usedPortsCopy, usedPorts)
-	for containerName, endpoints := range ceMapping {
+
+	// Prepare to iterate over the ceMapping in an orderly fashion
+	// This ensures we iterate over the ceMapping in the same way every time, obtain the same result every time and avoid any flakes with tests
+	var containers []string
+	for container := range ceMapping {
+		containers = append(containers, container)
+	}
+	sort.Strings(containers)
+
+	for _, containerName := range containers {
+		endpoints := ceMapping[containerName]
 	epLoop:
 		for _, ep := range endpoints {
 			portName := ep.Name
