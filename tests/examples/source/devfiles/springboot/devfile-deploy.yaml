@@ -35,6 +35,38 @@ components:
     volume:
       size: 3Gi
       ephemeral: true
+  - name: outerloop-build
+    image:
+      imageName: "{{CONTAINER_IMAGE}}"
+      dockerfile:
+        uri: ./Dockerfile
+        buildContext: ${PROJECTS_ROOT}
+        rootRequired: false
+
+  - name: outerloop-deploy
+    kubernetes:
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: my-component
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: springboot-app
+          template:
+            metadata:
+              labels:
+                app: springboot-app
+            spec:
+              containers:
+                - name: main
+                  image: {{CONTAINER_IMAGE}}
+                  resources:
+                    limits:
+                      memory: "128Mi"
+                      cpu: "500m"
 commands:
   - id: defaultbuild
     exec:
@@ -51,4 +83,20 @@ commands:
       group:
         kind: run
         isDefault: true
+  - id: build-image
+    apply:
+      component: outerloop-build
+  - id: deployk8s
+    apply:
+      component: outerloop-deploy
+  - id: deploy
+    composite:
+      commands:
+        - build-image
+        - deployk8s
+      group:
+        kind: deploy
+        isDefault: true
+variables:
+  CONTAINER_IMAGE: quay.io/unknown-account/myimage
 
