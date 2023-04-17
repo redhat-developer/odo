@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -3011,18 +3013,47 @@ CMD ["npm", "start"]
 				devSession.WaitEnd()
 			})
 
-			It("should create a state file containing forwarded ports", func() {
-				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
-				contentJSON, err := os.ReadFile(stateFile)
-				Expect(err).ToNot(HaveOccurred())
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerName", "runtime")
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerName", "runtime")
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.localAddress", "127.0.0.1")
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.localAddress", "127.0.0.1")
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerPort", "3000")
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
-				helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
-				helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
+			It("should fail running a second session on the same platform", func() {
+				_, _, _, err := helper.WaitForDevModeToContain(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				}, "unable to save state file", true)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should create state files containing information, including forwarded ports", func() {
+				var pid int
+				var contentJSON []byte
+				By("creating a devsate.json file", func() {
+					Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
+					var err error
+					contentJSON, err = os.ReadFile(stateFile)
+					Expect(err).ToNot(HaveOccurred())
+					helper.JsonPathExist(string(contentJSON), "pid")
+					platform := "cluster"
+					if podman {
+						platform = "podman"
+					}
+					helper.JsonPathContentIs(string(contentJSON), "platform", platform)
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerName", "runtime")
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerName", "runtime")
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.localAddress", "127.0.0.1")
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.localAddress", "127.0.0.1")
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerPort", "3000")
+					helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
+					helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
+					helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
+					var content state.Content
+					err = json.Unmarshal(contentJSON, &content)
+					Expect(err).ShouldNot(HaveOccurred())
+					pid = content.PID
+					fmt.Printf("PID: %d\n", pid)
+				})
+				By("creating a devsate.$PID.json file with same content as devstate.json", func() {
+					pidStateFile := fmt.Sprintf(".odo/devstate.%d.json", pid)
+					pidContentJSON, err := os.ReadFile(pidStateFile)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(pidContentJSON).To(Equal(contentJSON))
+				})
 			})
 		}))
 
