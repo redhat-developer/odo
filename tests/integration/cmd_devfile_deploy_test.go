@@ -653,6 +653,23 @@ CMD ["npm", "start"]
 				})
 			})
 		})
+
+		When("Automount volumes are present in the namespace", func() {
+
+			BeforeEach(func() {
+				commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "config-automount/"))
+			})
+
+			It("should mount the volumes", func() {
+				helper.Cmd("odo", "deploy").Should(func(session *gexec.Session) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDeployMode, commonVar.Project, commonVar.CliRunner)
+					jobDef := component.GetJobDef()
+					// We only check that at least one volume is automounted
+					// More tests are executed on `odo dev`, see "Automount volumes are present in the namespace" on odo dev tests.
+					Expect(jobDef.Spec.Template.Spec.Volumes[0].Name).To(Equal("auto-pvc-automount-default-pvc"))
+				})
+			})
+		})
 	})
 
 	// More details on https://github.com/devfile/api/issues/852#issuecomment-1211928487

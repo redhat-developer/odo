@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -9,12 +10,13 @@ import (
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/redhat-developer/odo/pkg/testingutil"
 )
 
 func TestGetPVC(t *testing.T) {
@@ -468,6 +470,358 @@ func TestGetVolumesAndVolumeMounts(t *testing.T) {
 						}
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestGetAutomountVolumes(t *testing.T) {
+
+	container1 := corev1.Container{
+		Name:  "container1",
+		Image: "image1",
+	}
+	container2 := corev1.Container{
+		Name:  "container2",
+		Image: "image2",
+	}
+	initContainer1 := corev1.Container{
+		Name:  "initContainer1",
+		Image: "image1",
+	}
+	initContainer2 := corev1.Container{
+		Name:  "initContainer2",
+		Image: "image2",
+	}
+
+	type args struct {
+		configAutomountClient func(ctrl *gomock.Controller) configAutomount.Client
+		containers            []corev1.Container
+		initContainers        []corev1.Container
+	}
+	tests := []struct {
+		name             string
+		args             args
+		want             []corev1.Volume
+		wantVolumeMounts []corev1.VolumeMount
+		wantEnvFroms     []corev1.EnvFromSource
+		wantErr          bool
+	}{
+		{
+			name: "No automounting volume",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want:             nil,
+			wantVolumeMounts: nil,
+			wantErr:          false,
+		},
+		{
+			name: "One PVC",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypePVC,
+						VolumeName: "pvc1",
+						MountPath:  "/path/to/mount1",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []v1.Volume{
+				{
+					Name: "auto-pvc-pvc1",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "pvc1",
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "auto-pvc-pvc1",
+					MountPath: "/path/to/mount1",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One PVC and one secret",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypePVC,
+						VolumeName: "pvc1",
+						MountPath:  "/path/to/mount1",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret2",
+						MountPath:  "/path/to/mount2",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []v1.Volume{
+				{
+					Name: "auto-pvc-pvc1",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "pvc1",
+						},
+					},
+				},
+				{
+					Name: "auto-secret-secret2",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret2",
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "auto-pvc-pvc1",
+					MountPath: "/path/to/mount1",
+				},
+				{
+					Name:      "auto-secret-secret2",
+					MountPath: "/path/to/mount2",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One PVC, one secret and one configmap",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypePVC,
+						VolumeName: "pvc1",
+						MountPath:  "/path/to/mount1",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret2",
+						MountPath:  "/path/to/mount2",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					info3 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeConfigmap,
+						VolumeName: "cm3",
+						MountPath:  "/path/to/mount3",
+						MountAs:    configAutomount.MountAsFile,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2, info3}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []v1.Volume{
+				{
+					Name: "auto-pvc-pvc1",
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "pvc1",
+						},
+					},
+				},
+				{
+					Name: "auto-secret-secret2",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret2",
+						},
+					},
+				},
+				{
+					Name: "auto-cm-cm3",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm3",
+							},
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "auto-pvc-pvc1",
+					MountPath: "/path/to/mount1",
+				},
+				{
+					Name:      "auto-secret-secret2",
+					MountPath: "/path/to/mount2",
+				},
+				{
+					Name:      "auto-cm-cm3",
+					MountPath: "/path/to/mount3",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One secret and one configmap mounted as Env",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret1",
+						MountAs:    configAutomount.MountAsEnv,
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeConfigmap,
+						VolumeName: "cm2",
+						MountAs:    configAutomount.MountAsEnv,
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want:             nil,
+			wantVolumeMounts: nil,
+			wantEnvFroms: []corev1.EnvFromSource{
+				{
+					SecretRef: &v1.SecretEnvSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: "secret1",
+						},
+					},
+				},
+				{
+					ConfigMapRef: &v1.ConfigMapEnvSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: "cm2",
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One secret and one configmap mounted as Subpath",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeSecret,
+						VolumeName: "secret1",
+						MountPath:  "/path/to/secret1",
+						MountAs:    configAutomount.MountAsSubpath,
+						Keys:       []string{"secretKey1", "secretKey2"},
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType: configAutomount.VolumeTypeConfigmap,
+						VolumeName: "cm2",
+						MountPath:  "/path/to/cm2",
+						MountAs:    configAutomount.MountAsSubpath,
+						Keys:       []string{"cmKey1", "cmKey2"},
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []corev1.Volume{
+				{
+					Name: "auto-secret-secret1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret1",
+						},
+					},
+				},
+				{
+					Name: "auto-cm-cm2",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm2",
+							},
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "auto-secret-secret1",
+					MountPath: "/path/to/secret1/secretKey1",
+					SubPath:   "secretKey1",
+				},
+				{
+					Name:      "auto-secret-secret1",
+					MountPath: "/path/to/secret1/secretKey2",
+					SubPath:   "secretKey2",
+				},
+				{
+					Name:      "auto-cm-cm2",
+					MountPath: "/path/to/cm2/cmKey1",
+					SubPath:   "cmKey1",
+				},
+				{
+					Name:      "auto-cm-cm2",
+					MountPath: "/path/to/cm2/cmKey2",
+					SubPath:   "cmKey2",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			got, err := GetAutomountVolumes(tt.args.configAutomountClient(ctrl), tt.args.containers, tt.args.initContainers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAutomountVolumes() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("GetAutomountVolumes() mismatch (-want +got):\n%s", diff)
+			}
+
+			checkContainers := func(containers, initContainers []corev1.Container) error {
+				allContainers := containers
+				allContainers = append(allContainers, initContainers...)
+				for _, container := range allContainers {
+					if diff := cmp.Diff(tt.wantVolumeMounts, container.VolumeMounts); diff != "" {
+						return fmt.Errorf(diff)
+					}
+					if diff := cmp.Diff(tt.wantEnvFroms, container.EnvFrom); diff != "" {
+						return fmt.Errorf(diff)
+					}
+				}
+				return nil
+			}
+
+			if err := checkContainers(tt.args.containers, tt.args.initContainers); err != nil {
+				t.Errorf("GetAutomountVolumes() containers error: %v", err)
 			}
 		})
 	}

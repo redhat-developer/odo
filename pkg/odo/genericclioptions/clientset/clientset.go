@@ -14,6 +14,7 @@ package clientset
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/exec"
@@ -46,6 +47,8 @@ const (
 	ALIZER = "DEP_ALIZER"
 	// BINDING instantiates client for pkg/binding
 	BINDING = "DEP_BINDING"
+	// CONFIG_AUTOMOUNT instantiates client for pkg/configAutomount
+	CONFIG_AUTOMOUNT = "DEP_CONFIG_AUTOMOUNT"
 	// DELETE_COMPONENT instantiates client for pkg/component/delete
 	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 	// DEPLOY instantiates client for pkg/deploy
@@ -89,41 +92,56 @@ const (
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
+	CONFIG_AUTOMOUNT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
 	DELETE_COMPONENT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE, EXEC},
-	DEPLOY:           {KUBERNETES, FILESYSTEM},
-	DEV:              {BINDING, DELETE_COMPONENT, EXEC, FILESYSTEM, KUBERNETES_NULLABLE, PODMAN_NULLABLE, PORT_FORWARD, PREFERENCE, STATE, SYNC, WATCH},
-	EXEC:             {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
-	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
-	LOGS:             {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
-	PORT_FORWARD:     {KUBERNETES_NULLABLE, EXEC, STATE},
-	PROJECT:          {KUBERNETES},
-	REGISTRY:         {FILESYSTEM, PREFERENCE, KUBERNETES_NULLABLE},
-	STATE:            {FILESYSTEM},
-	SYNC:             {EXEC},
-	WATCH:            {KUBERNETES_NULLABLE},
-	BINDING:          {PROJECT, KUBERNETES_NULLABLE},
+	DEPLOY:           {KUBERNETES, FILESYSTEM, CONFIG_AUTOMOUNT},
+	DEV: {
+		BINDING,
+		DELETE_COMPONENT,
+		CONFIG_AUTOMOUNT,
+		EXEC,
+		FILESYSTEM,
+		KUBERNETES_NULLABLE,
+		PODMAN_NULLABLE,
+		PORT_FORWARD,
+		PREFERENCE,
+		STATE,
+		SYNC,
+		WATCH,
+	},
+	EXEC:         {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
+	INIT:         {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
+	LOGS:         {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
+	PORT_FORWARD: {KUBERNETES_NULLABLE, EXEC, STATE},
+	PROJECT:      {KUBERNETES},
+	REGISTRY:     {FILESYSTEM, PREFERENCE, KUBERNETES_NULLABLE},
+	STATE:        {FILESYSTEM},
+	SYNC:         {EXEC},
+	WATCH:        {KUBERNETES_NULLABLE},
+	BINDING:      {PROJECT, KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
-	AlizerClient      alizer.Client
-	BindingClient     binding.Client
-	DeleteClient      _delete.Client
-	DeployClient      deploy.Client
-	DevClient         dev.Client
-	ExecClient        exec.Client
-	FS                filesystem.Filesystem
-	InitClient        _init.Client
-	KubernetesClient  kclient.ClientInterface
-	LogsClient        logs.Client
-	PodmanClient      podman.Client
-	PortForwardClient portForward.Client
-	PreferenceClient  preference.Client
-	ProjectClient     project.Client
-	RegistryClient    registry.Client
-	StateClient       state.Client
-	SyncClient        sync.Client
-	WatchClient       watch.Client
+	AlizerClient          alizer.Client
+	BindingClient         binding.Client
+	ConfigAutomountClient configAutomount.Client
+	DeleteClient          _delete.Client
+	DeployClient          deploy.Client
+	DevClient             dev.Client
+	ExecClient            exec.Client
+	FS                    filesystem.Filesystem
+	InitClient            _init.Client
+	KubernetesClient      kclient.ClientInterface
+	LogsClient            logs.Client
+	PodmanClient          podman.Client
+	PortForwardClient     portForward.Client
+	PreferenceClient      preference.Client
+	ProjectClient         project.Client
+	RegistryClient        registry.Client
+	StateClient           state.Client
+	SyncClient            sync.Client
+	WatchClient           watch.Client
 	/* Add client by alphabetic order */
 }
 
@@ -200,11 +218,19 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			dep.ExecClient = exec.NewExecClient(dep.KubernetesClient)
 		}
 	}
+	if isDefined(command, CONFIG_AUTOMOUNT) {
+		switch platform {
+		case commonflags.PlatformPodman:
+			dep.ConfigAutomountClient = nil // Not supported
+		default:
+			dep.ConfigAutomountClient = configAutomount.NewKubernetesClient(dep.KubernetesClient)
+		}
+	}
 	if isDefined(command, DELETE_COMPONENT) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.PodmanClient, dep.ExecClient)
 	}
 	if isDefined(command, DEPLOY) {
-		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient, dep.FS)
+		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient, dep.ConfigAutomountClient, dep.FS)
 	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
@@ -268,6 +294,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 				dep.FS,
 				dep.ExecClient,
 				dep.DeleteClient,
+				dep.ConfigAutomountClient,
 			)
 		}
 	}

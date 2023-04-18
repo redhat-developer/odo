@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -130,8 +131,10 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			})
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)
-			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
-			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, adapterCtx)
+			fakePrefClient.EXPECT().GetEphemeralSourceVolume().AnyTimes()
+			fakeConfigAutomount := configAutomount.NewMockClient(ctrl)
+			fakeConfigAutomount.EXPECT().GetAutomountingVolumes().AnyTimes()
+			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, adapterCtx)
 			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, libdevfile.DevfileCommands{}, nil)
 
 			// Checks for unexpected error cases

@@ -67,11 +67,7 @@ func TestAddOdoProjectVolume(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if tt.containers == nil {
-				AddOdoProjectVolume(nil)
-			} else {
-				AddOdoProjectVolume(&tt.containers)
-			}
+			AddOdoProjectVolume(tt.containers)
 
 			for wantContainerName, wantMountPath := range tt.volMount {
 				matched := false
@@ -180,11 +176,7 @@ func TestAddOdoMandatoryVolume(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.containers == nil {
-				AddOdoMandatoryVolume(nil)
-			} else {
-				AddOdoMandatoryVolume(&tt.containers)
-			}
+			AddOdoMandatoryVolume(tt.containers)
 
 			for containerName, volMounts := range tt.wantVolumeMounts {
 				c, ok := findContainerByName(tt.containers, containerName)

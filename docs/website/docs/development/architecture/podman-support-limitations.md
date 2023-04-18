@@ -58,3 +58,6 @@ When running `odo dev` on cluster, if you make changes to the Devfile affecting 
 
 Pre-Stop events defined in the Devfile are not triggered when running `odo dev` on Podman.
 
+## Auto-mounting volumes
+
+[Auto-mounting volumes](/docs/user-guides/advanced/automounting-volumes) is not supported when working on Podman.

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automount-subpath-configmap
+  labels:
+    devfile.io/auto-mount: "true"
+  annotations:
+    devfile.io/mount-path: "/mnt/subpaths"
+    devfile.io/mount-as: subpath
+data:
+  foo5: bar5
+  ping5: pong5

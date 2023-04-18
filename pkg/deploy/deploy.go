@@ -17,6 +17,8 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -29,16 +31,18 @@ import (
 )
 
 type DeployClient struct {
-	kubeClient kclient.ClientInterface
-	fs         filesystem.Filesystem
+	kubeClient            kclient.ClientInterface
+	configAutomountClient configAutomount.Client
+	fs                    filesystem.Filesystem
 }
 
 var _ Client = (*DeployClient)(nil)
 
-func NewDeployClient(kubeClient kclient.ClientInterface, fs filesystem.Filesystem) *DeployClient {
+func NewDeployClient(kubeClient kclient.ClientInterface, configAutomountClient configAutomount.Client, fs filesystem.Filesystem) *DeployClient {
 	return &DeployClient{
-		kubeClient: kubeClient,
-		fs:         fs,
+		kubeClient:            kubeClient,
+		configAutomountClient: configAutomountClient,
+		fs:                    fs,
 	}
 }
 
@@ -51,7 +55,7 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		appName       = odocontext.GetApplication(ctx)
 	)
 
-	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, appName, componentName)
+	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, o.configAutomountClient, appName, componentName)
 
 	err := o.buildPushAutoImageComponents(handler, *devfileObj)
 	if err != nil {
@@ -105,26 +109,28 @@ func (o *DeployClient) applyAutoK8sOrOcComponents(handler *deployHandler, devfil
 }
 
 type deployHandler struct {
-	ctx           context.Context
-	fs            filesystem.Filesystem
-	devfileObj    parser.DevfileObj
-	path          string
-	kubeClient    kclient.ClientInterface
-	appName       string
-	componentName string
+	ctx                   context.Context
+	fs                    filesystem.Filesystem
+	devfileObj            parser.DevfileObj
+	path                  string
+	kubeClient            kclient.ClientInterface
+	configAutomountClient configAutomount.Client
+	appName               string
+	componentName         string
 }
 
 var _ libdevfile.Handler = (*deployHandler)(nil)
 
-func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string, componentName string) *deployHandler {
+func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, configAutomountClient configAutomount.Client, appName string, componentName string) *deployHandler {
 	return &deployHandler{
-		ctx:           ctx,
-		fs:            fs,
-		devfileObj:    devfileObj,
-		path:          path,
-		kubeClient:    kubeClient,
-		appName:       appName,
-		componentName: componentName,
+		ctx:                   ctx,
+		fs:                    fs,
+		devfileObj:            devfileObj,
+		path:                  path,
+		kubeClient:            kubeClient,
+		configAutomountClient: configAutomountClient,
+		appName:               appName,
+		componentName:         componentName,
 	}
 }
 
@@ -167,6 +173,13 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 
 	podTemplateSpec.Spec.Containers[0].Command = []string{"/bin/sh"}
 	podTemplateSpec.Spec.Containers[0].Args = getCmdline(command)
+
+	volumes, err := storage.GetAutomountVolumes(o.configAutomountClient, podTemplateSpec.Spec.Containers, podTemplateSpec.Spec.InitContainers)
+	if err != nil {
+		return err
+	}
+
+	podTemplateSpec.Spec.Volumes = volumes
 
 	// Create a Kubernetes Job and use the container image referenced by command.Exec.Component
 	// Get the component for the command with command.Exec.Component

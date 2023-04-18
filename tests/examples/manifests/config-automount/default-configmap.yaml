@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automount-default-configmap
+  labels:
+    devfile.io/auto-mount: "true"
+data:
+  foo1: bar1
+  ping1: pong1

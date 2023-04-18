@@ -10,6 +10,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/exec"
@@ -36,15 +37,16 @@ const (
 )
 
 type DevClient struct {
-	kubernetesClient  kclient.ClientInterface
-	prefClient        preference.Client
-	portForwardClient portForward.Client
-	watchClient       watch.Client
-	bindingClient     binding.Client
-	syncClient        sync.Client
-	filesystem        filesystem.Filesystem
-	execClient        exec.Client
-	deleteClient      _delete.Client
+	kubernetesClient      kclient.ClientInterface
+	prefClient            preference.Client
+	portForwardClient     portForward.Client
+	watchClient           watch.Client
+	bindingClient         binding.Client
+	syncClient            sync.Client
+	filesystem            filesystem.Filesystem
+	execClient            exec.Client
+	deleteClient          _delete.Client
+	configAutomountClient configAutomount.Client
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -59,17 +61,19 @@ func NewDevClient(
 	filesystem filesystem.Filesystem,
 	execClient exec.Client,
 	deleteClient _delete.Client,
+	configAutomountClient configAutomount.Client,
 ) *DevClient {
 	return &DevClient{
-		kubernetesClient:  kubernetesClient,
-		prefClient:        prefClient,
-		portForwardClient: portForwardClient,
-		watchClient:       watchClient,
-		bindingClient:     bindingClient,
-		syncClient:        syncClient,
-		filesystem:        filesystem,
-		execClient:        execClient,
-		deleteClient:      deleteClient,
+		kubernetesClient:      kubernetesClient,
+		prefClient:            prefClient,
+		portForwardClient:     portForwardClient,
+		watchClient:           watchClient,
+		bindingClient:         bindingClient,
+		syncClient:            syncClient,
+		filesystem:            filesystem,
+		execClient:            execClient,
+		deleteClient:          deleteClient,
+		configAutomountClient: configAutomountClient,
 	}
 }
 
@@ -89,7 +93,13 @@ func (o *DevClient) Start(
 	)
 
 	adapter := component.NewKubernetesAdapter(
-		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient, o.syncClient, o.execClient,
+		o.kubernetesClient,
+		o.prefClient,
+		o.portForwardClient,
+		o.bindingClient,
+		o.syncClient,
+		o.execClient,
+		o.configAutomountClient,
 		component.AdapterContext{
 			ComponentName: componentName,
 			Context:       path,
@@ -172,6 +182,7 @@ func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.W
 		o.bindingClient,
 		o.syncClient,
 		o.execClient,
+		o.configAutomountClient,
 		component.AdapterContext{
 			ComponentName: parameters.ComponentName,
 			Context:       parameters.Path,

@@ -127,31 +127,17 @@ commands:
   id: install
 ```
 
-You can also provide additional environment variables to the container:
+You can also provide additional environment variables to the container, by creating an [auto-mounted configmap](/docs/user-guides/advanced/automounting-volumes):
 
 ```yaml
-[...]
-components:
-- container:
-    args:
-    - tail
-    - -f
-    - /dev/null
-    endpoints:
-    - name: http-node
-      targetPort: 3000
-    - exposure: none
-      name: debug
-      targetPort: 5858
-    env:
-    - name: DEBUG_PORT
-      value: "5858"
-# highlight-start
-    - name: npm_config_registry
-      value: https://your_local_registry
-# highlight-end
-    image: your_secure_registry/nodejs-16:latest
-    memoryLimit: 1024Mi
-    mountSources: true
-  name: runtime
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-config
+  labels:
+    devfile.io/auto-mount: "true"
+  annotations:
+    devfile.io/mount-as: env
+data:
+  npm_config_registry: "https://your_local_registry"
 ```

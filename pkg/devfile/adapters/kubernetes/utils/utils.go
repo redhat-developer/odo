@@ -21,6 +21,7 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 	var sourceVolume corev1.Volume
 
 	if sourcePVCName != "" {
+		// Define a Persistent volume using the found PVC volume source
 		sourceVolume = corev1.Volume{
 			Name: storage.OdoSourceVolume,
 			VolumeSource: corev1.VolumeSource{
@@ -28,8 +29,12 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 			},
 		}
 	} else {
+		// Define an Ephemeral volume using an EmptyDir volume source
 		sourceVolume = corev1.Volume{
 			Name: storage.OdoSourceVolume,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
 		}
 	}
 
@@ -47,35 +52,33 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 }
 
 // AddOdoProjectVolume adds the odo project volume to the containers
-func AddOdoProjectVolume(containers *[]corev1.Container) {
+func AddOdoProjectVolume(containers []corev1.Container) {
 	if containers == nil {
 		return
 	}
-	for i, container := range *containers {
-		for _, env := range container.Env {
+	for i := range containers {
+		for _, env := range containers[i].Env {
 			if env.Name == _envProjectsRoot {
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+				containers[i].VolumeMounts = append(containers[i].VolumeMounts, corev1.VolumeMount{
 					Name:      storage.OdoSourceVolume,
 					MountPath: env.Value,
 				})
-				(*containers)[i] = container
 			}
 		}
 	}
 }
 
 // AddOdoMandatoryVolume adds the odo mandatory volumes to the containers
-func AddOdoMandatoryVolume(containers *[]corev1.Container) {
+func AddOdoMandatoryVolume(containers []corev1.Container) {
 	if containers == nil {
 		return
 	}
-	for i, container := range *containers {
-		klog.V(2).Infof("Updating container %v with mandatory volume mounts", container.Name)
-		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+	for i := range containers {
+		klog.V(2).Infof("Updating container %v with mandatory volume mounts", containers[i].Name)
+		containers[i].VolumeMounts = append(containers[i].VolumeMounts, corev1.VolumeMount{
 			Name:      storage.SharedDataVolumeName,
 			MountPath: storage.SharedDataMountPath,
 		})
-		(*containers)[i] = container
 	}
 }
 

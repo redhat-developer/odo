@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -10,10 +11,10 @@ import (
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/v2/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/storage"
-	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -43,7 +44,7 @@ func GetVolumeInfos(pvcs []corev1.PersistentVolumeClaim) (odoSourcePVCName strin
 		}
 
 		storageName := odolabels.GetStorageName(pvc.Labels)
-		if storageName == storagepkg.OdoSourceVolume {
+		if storageName == storage.OdoSourceVolume {
 			odoSourcePVCName = pvc.Name
 			continue
 		}
@@ -204,8 +205,10 @@ func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 	return
 }
 
-// HandleEphemeralStorage creates or deletes the ephemeral volume based on the preference setting
-func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
+// HandleOdoSourceStorage creates or deletes the volume containing project sources, based on the preference setting
+// - if Ephemeral preference is true, any PVC with labels "component=..." and "odo-source-pvc=odo-projects" is removed
+// - if Ephemeral preference is false and no PVC with matching labels exists, it is created
+func HandleOdoSourceStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
 	selector := odolabels.Builder().WithComponentName(componentName).WithSourcePVC(storage.OdoSourceVolume).Selector()
 	pvcs, err := client.ListPVCs(selector)
 	if err != nil && !kerrors.IsNotFound(err) {
@@ -240,4 +243,211 @@ func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storag
 		}
 	}
 	return nil
+}
+
+func GetAutomountVolumes(configAutomountClient configAutomount.Client, containers, initContainers []corev1.Container) ([]corev1.Volume, error) {
+	volumesInfos, err := configAutomountClient.GetAutomountingVolumes()
+	if err != nil {
+		return nil, err
+	}
+
+	var volumes []corev1.Volume
+	for _, volumeInfo := range volumesInfos {
+		switch volumeInfo.VolumeType {
+		case configAutomount.VolumeTypePVC:
+			volumes = mountPVC(volumeInfo, containers, initContainers, volumes)
+		case configAutomount.VolumeTypeSecret:
+			volumes = mountSecret(volumeInfo, containers, initContainers, volumes)
+		case configAutomount.VolumeTypeConfigmap:
+			volumes = mountConfigMap(volumeInfo, containers, initContainers, volumes)
+		}
+	}
+	return volumes, nil
+}
+
+func mountPVC(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-pvc-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		addVolumeMountToContainer(container, corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: volumeInfo.MountPath,
+			ReadOnly:  volumeInfo.ReadOnly,
+		})
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return volumes
+}
+
+func mountSecret(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	switch volumeInfo.MountAs {
+	case configAutomount.MountAsFile:
+		return mountSecretAsFile(volumeInfo, containers, initContainers, volumes)
+	case configAutomount.MountAsEnv:
+		return mountSecretAsEnv(volumeInfo, containers, initContainers, volumes)
+	case configAutomount.MountAsSubpath:
+		return mountSecretAsSubpath(volumeInfo, containers, initContainers, volumes)
+	}
+	return volumes
+}
+
+func mountSecretAsFile(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-secret-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		addVolumeMountToContainer(container, corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: volumeInfo.MountPath,
+			ReadOnly:  volumeInfo.ReadOnly,
+		})
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return volumes
+}
+
+func mountSecretAsEnv(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		addEnvFromToContainer(container, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		})
+	})
+	return volumes
+}
+
+func mountSecretAsSubpath(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-secret-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		for _, key := range volumeInfo.Keys {
+			addVolumeMountToContainer(container, corev1.VolumeMount{
+				Name:      volumeName,
+				MountPath: filepath.ToSlash(filepath.Join(volumeInfo.MountPath, key)),
+				SubPath:   key,
+				ReadOnly:  volumeInfo.ReadOnly,
+			})
+		}
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: volumeInfo.VolumeName,
+			},
+		},
+	})
+	return volumes
+}
+
+func mountConfigMap(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	switch volumeInfo.MountAs {
+	case configAutomount.MountAsFile:
+		return mountConfigMapAsFile(volumeInfo, containers, initContainers, volumes)
+	case configAutomount.MountAsEnv:
+		return mountConfigMapAsEnv(volumeInfo, containers, initContainers, volumes)
+	case configAutomount.MountAsSubpath:
+		return mountConfigMapAsSubpath(volumeInfo, containers, initContainers, volumes)
+	}
+	return volumes
+}
+
+func mountConfigMapAsFile(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-cm-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		addVolumeMountToContainer(container, corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: volumeInfo.MountPath,
+			ReadOnly:  volumeInfo.ReadOnly,
+		})
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		},
+	})
+	return volumes
+}
+
+func mountConfigMapAsEnv(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		addEnvFromToContainer(container, corev1.EnvFromSource{
+			ConfigMapRef: &corev1.ConfigMapEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		})
+	})
+	return volumes
+}
+
+func mountConfigMapAsSubpath(volumeInfo configAutomount.AutomountInfo, containers, initContainers []corev1.Container, volumes []corev1.Volume) []corev1.Volume {
+	volumeName := "auto-cm-" + volumeInfo.VolumeName
+
+	inAllContainers(containers, initContainers, func(container *corev1.Container) {
+		for _, key := range volumeInfo.Keys {
+			addVolumeMountToContainer(container, corev1.VolumeMount{
+				Name:      volumeName,
+				MountPath: filepath.ToSlash(filepath.Join(volumeInfo.MountPath, key)),
+				SubPath:   key,
+				ReadOnly:  volumeInfo.ReadOnly,
+			})
+		}
+	})
+
+	volumes = append(volumes, corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: volumeInfo.VolumeName,
+				},
+			},
+		},
+	})
+	return volumes
+}
+
+func inAllContainers(containers, initContainers []corev1.Container, f func(container *corev1.Container)) {
+	for i := range containers {
+		f(&containers[i])
+	}
+	for i := range initContainers {
+		f(&initContainers[i])
+	}
+}
+
+func addVolumeMountToContainer(container *corev1.Container, volumeMount corev1.VolumeMount) {
+	container.VolumeMounts = append(container.VolumeMounts, volumeMount)
+}
+
+func addEnvFromToContainer(container *corev1.Container, envFrom corev1.EnvFromSource) {
+	container.EnvFrom = append(container.EnvFrom, envFrom)
 }
