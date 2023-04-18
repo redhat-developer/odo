@@ -2372,6 +2372,9 @@ CMD ["npm", "start"]
 			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
 			devfileCmpName := "nodejs"
 			BeforeEach(func() {
+				if podman {
+					Skip("Getting annotations is not available with Podman v3")
+				}
 				helper.Cmd("git", "init").ShouldPass()
 				remote := "origin"
 				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
