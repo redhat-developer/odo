@@ -1,6 +1,7 @@
 package podmandev
 
 import (
+	"context"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -12,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/version"
 
 	corev1 "k8s.io/api/core/v1"
@@ -1290,10 +1292,14 @@ func Test_createPodFromComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			devfileObj := tt.args.devfileObj()
+			ctx = odocontext.WithDevfileObj(ctx, &devfileObj)
+			ctx = odocontext.WithApplication(ctx, tt.args.appName)
+			ctx = odocontext.WithComponentName(ctx, tt.args.componentName)
+			ctx = odocontext.WithWorkingDirectory(ctx, "/tmp/dir")
 			got, gotFwPorts, err := createPodFromComponent(
-				tt.args.devfileObj(),
-				tt.args.componentName,
-				tt.args.appName,
+				ctx,
 				tt.args.debug,
 				tt.args.buildCommand,
 				tt.args.runCommand,

@@ -196,19 +196,12 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj
 
 // deployPod deploys the component as a Pod in podman
 func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*corev1.Pod, []api.ForwardedPort, error) {
-	var (
-		appName       = odocontext.GetApplication(ctx)
-		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
-	)
 
 	spinner := log.Spinner("Deploying pod")
 	defer spinner.End(false)
 
 	pod, fwPorts, err := createPodFromComponent(
-		*devfileObj,
-		componentName,
-		appName,
+		ctx,
 		options.Debug,
 		options.BuildCommand,
 		options.RunCommand,

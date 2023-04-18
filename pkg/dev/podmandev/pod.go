@@ -1,6 +1,7 @@
 package podmandev
 
 import (
+	"context"
 	"fmt"
 	"math/rand" // #nosec
 	"sort"
@@ -17,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -31,9 +33,7 @@ const (
 )
 
 func createPodFromComponent(
-	devfileObj parser.DevfileObj,
-	componentName string,
-	appName string,
+	ctx context.Context,
 	debug bool,
 	buildCommand string,
 	runCommand string,
@@ -43,7 +43,14 @@ func createPodFromComponent(
 	customForwardedPorts []api.ForwardedPort,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
-	podTemplate, err := generator.GetPodTemplateSpec(devfileObj, generator.PodTemplateParams{})
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		workingDir    = odocontext.GetWorkingDirectory(ctx)
+	)
+
+	podTemplate, err := generator.GetPodTemplateSpec(*devfileObj, generator.PodTemplateParams{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -53,7 +60,7 @@ func createPodFromComponent(
 	}
 
 	var fwPorts []api.ForwardedPort
-	fwPorts, err = getPortMapping(devfileObj, debug, randomPorts, usedPorts, customForwardedPorts)
+	fwPorts, err = getPortMapping(*devfileObj, debug, randomPorts, usedPorts, customForwardedPorts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,7 +87,7 @@ func createPodFromComponent(
 		},
 	}
 
-	devfileVolumes, err := storage.ListStorage(devfileObj)
+	devfileVolumes, err := storage.ListStorage(*devfileObj)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -100,7 +107,7 @@ func createPodFromComponent(
 		}
 	}
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(devfileObj, containers, buildCommand, runCommand, debugCommand)
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(*devfileObj, containers, buildCommand, runCommand, debugCommand)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -124,6 +131,13 @@ func createPodFromComponent(
 	runtime := component.GetComponentRuntimeFromDevfileMetadata(devfileObj.Data.GetMetadata())
 	pod.SetLabels(labels.GetLabels(componentName, appName, runtime, labels.ComponentDevMode, true))
 	labels.SetProjectType(pod.GetLabels(), component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+
+	if pod.Annotations == nil {
+		pod.Annotations = make(map[string]string)
+	}
+	if vcsUri := util.GetGitOriginPath(workingDir); vcsUri != "" {
+		pod.Annotations["app.openshift.io/vcs-uri"] = vcsUri
+	}
 
 	return &pod, fwPorts, nil
 }
