@@ -732,12 +732,13 @@ spec:
 As mentioned in [how `odo dev` works](#how-odo-dev-works), `odo` is able to perform a one-way synchronization of the local source code, i.e., from the developer machine to the development pod running in the cluster.
 This is done via a Volume, named `odo-projects`, mounted in the container.
 
-However, this is subject to two things:
+However, this is subject to three things:
 - the value of the `mountSources` flag (default value is `true`) in the Devfile container component. Project sources are not mounted in the container if this is set to `false`.
   Note that odo requires at least one component in the Devfile to set `mountSources: true` in order to synchronize files.
 - the type of volume created depends on the [configuration of `odo`](../../overview/configure#preference-key-table), and more specifically on the value of the `Ephemeral` setting:
   - if `Ephemeral` is `false`, which is the default setting, `odo` creates a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) (with the default storage class)
   - if `Ephemeral` is `true`, `odo` creates an [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) volume, tied to the lifetime of the Pod.
+- the complete content of the current directory and its sub-directories is pushed to the container, except the files listed in the `.odoignore` file, or, if this file is not present, in the `.gitignore` file. `dev.odo.push.path:target` attributes are also considered to push only selected files. See [Pushing Source Files](../../user-guides/advanced/pushing-specific-files) for more details.
 
 | Volume name      | Volume Type                                                                                                                                                                                                                                                                                              | Mount Path                                                                     | Description                                   |
 |------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|-----------------------------------------------|
