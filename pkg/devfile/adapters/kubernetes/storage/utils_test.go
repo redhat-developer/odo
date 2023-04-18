@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 func TestGetPVC(t *testing.T) {
@@ -765,6 +766,140 @@ func TestGetAutomountVolumes(t *testing.T) {
 							LocalObjectReference: v1.LocalObjectReference{
 								Name: "cm2",
 							},
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "auto-secret-secret1",
+					MountPath: "/path/to/secret1/secretKey1",
+					SubPath:   "secretKey1",
+				},
+				{
+					Name:      "auto-secret-secret1",
+					MountPath: "/path/to/secret1/secretKey2",
+					SubPath:   "secretKey2",
+				},
+				{
+					Name:      "auto-cm-cm2",
+					MountPath: "/path/to/cm2/cmKey1",
+					SubPath:   "cmKey1",
+				},
+				{
+					Name:      "auto-cm-cm2",
+					MountPath: "/path/to/cm2/cmKey2",
+					SubPath:   "cmKey2",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One secret and one configmap mounted as file with access mode",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType:      configAutomount.VolumeTypeSecret,
+						VolumeName:      "secret1",
+						MountPath:       "/path/to/secret1",
+						MountAs:         configAutomount.MountAsFile,
+						Keys:            []string{"secretKey1", "secretKey2"},
+						MountAccessMode: pointer.Int32(0400),
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType:      configAutomount.VolumeTypeConfigmap,
+						VolumeName:      "cm2",
+						MountPath:       "/path/to/cm2",
+						MountAs:         configAutomount.MountAsFile,
+						Keys:            []string{"cmKey1", "cmKey2"},
+						MountAccessMode: pointer.Int32(0444),
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []corev1.Volume{
+				{
+					Name: "auto-secret-secret1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							DefaultMode: pointer.Int32(0400),
+							SecretName:  "secret1",
+						},
+					},
+				},
+				{
+					Name: "auto-cm-cm2",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							DefaultMode: pointer.Int32(0444),
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm2",
+							},
+						},
+					},
+				},
+			},
+			wantVolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "auto-secret-secret1",
+					MountPath: "/path/to/secret1",
+				},
+				{
+					Name:      "auto-cm-cm2",
+					MountPath: "/path/to/cm2",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "One secret and one configmap mounted as Subpath with access mode",
+			args: args{
+				configAutomountClient: func(ctrl *gomock.Controller) configAutomount.Client {
+					info1 := configAutomount.AutomountInfo{
+						VolumeType:      configAutomount.VolumeTypeSecret,
+						VolumeName:      "secret1",
+						MountPath:       "/path/to/secret1",
+						MountAs:         configAutomount.MountAsSubpath,
+						Keys:            []string{"secretKey1", "secretKey2"},
+						MountAccessMode: pointer.Int32(0400),
+					}
+					info2 := configAutomount.AutomountInfo{
+						VolumeType:      configAutomount.VolumeTypeConfigmap,
+						VolumeName:      "cm2",
+						MountPath:       "/path/to/cm2",
+						MountAs:         configAutomount.MountAsSubpath,
+						Keys:            []string{"cmKey1", "cmKey2"},
+						MountAccessMode: pointer.Int32(0444),
+					}
+					client := configAutomount.NewMockClient(ctrl)
+					client.EXPECT().GetAutomountingVolumes().Return([]configAutomount.AutomountInfo{info1, info2}, nil)
+					return client
+				},
+				containers:     []corev1.Container{container1, container2},
+				initContainers: []corev1.Container{initContainer1, initContainer2},
+			},
+			want: []corev1.Volume{
+				{
+					Name: "auto-secret-secret1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName:  "secret1",
+							DefaultMode: pointer.Int32(0400),
+						},
+					},
+				},
+				{
+					Name: "auto-cm-cm2",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm2",
+							},
+							DefaultMode: pointer.Int32(0444),
 						},
 					},
 				},

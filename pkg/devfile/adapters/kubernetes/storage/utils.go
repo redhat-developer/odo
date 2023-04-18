@@ -314,7 +314,8 @@ func mountSecretAsFile(volumeInfo configAutomount.AutomountInfo, containers, ini
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: volumeInfo.VolumeName,
+				SecretName:  volumeInfo.VolumeName,
+				DefaultMode: volumeInfo.MountAccessMode,
 			},
 		},
 	})
@@ -352,7 +353,8 @@ func mountSecretAsSubpath(volumeInfo configAutomount.AutomountInfo, containers, 
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: volumeInfo.VolumeName,
+				SecretName:  volumeInfo.VolumeName,
+				DefaultMode: volumeInfo.MountAccessMode,
 			},
 		},
 	})
@@ -386,6 +388,7 @@ func mountConfigMapAsFile(volumeInfo configAutomount.AutomountInfo, containers, 
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
+				DefaultMode: volumeInfo.MountAccessMode,
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: volumeInfo.VolumeName,
 				},
@@ -429,6 +432,7 @@ func mountConfigMapAsSubpath(volumeInfo configAutomount.AutomountInfo, container
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: volumeInfo.VolumeName,
 				},
+				DefaultMode: volumeInfo.MountAccessMode,
 			},
 		},
 	})

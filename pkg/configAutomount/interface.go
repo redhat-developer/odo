@@ -31,6 +31,8 @@ type AutomountInfo struct {
 	ReadOnly bool
 	// Keys defines the list of keys to mount when MountAs is Subpath
 	Keys []string
+	// MountAccessMode indicates the access mode for configmap and secret mounted as files
+	MountAccessMode *int32
 }
 
 type Client interface {
