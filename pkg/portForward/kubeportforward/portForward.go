@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -69,7 +70,6 @@ func (o *PFClient) StartPortForwarding(devFileObj parser.DevfileObj, componentNa
 		klog.V(4).Infof("no endpoint declared in the component, no ports are forwarded")
 		return nil
 	}
-
 	o.stopChan = make(chan struct{}, 1)
 
 	var portPairs map[string][]string
@@ -193,7 +193,17 @@ func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][
 	}
 	startPort := 20001
 	endPort := startPort + 10000
-	for name, ports := range ceMapping {
+
+	// Prepare to iterate over containers so that we can iterate in an orderly manner
+	// This is better to ensure same result every time
+	var containers []string
+	for container := range ceMapping {
+		containers = append(containers, container)
+	}
+	sort.Strings(containers)
+
+	for _, name := range containers {
+		ports := ceMapping[name]
 		for _, p := range ports {
 			freePort := getCustomLocalPort(p.TargetPort, name)
 			if freePort == 0 {
