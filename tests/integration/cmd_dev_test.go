@@ -2372,9 +2372,6 @@ CMD ["npm", "start"]
 			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
 			devfileCmpName := "nodejs"
 			BeforeEach(func() {
-				if podman {
-					Skip("Not implemented yet on Podman - see https://github.com/redhat-developer/odo/issues/6493")
-				}
 				helper.Cmd("git", "init").ShouldPass()
 				remote := "origin"
 				helper.Cmd("git", "remote", "add", remote, remoteURL).ShouldPass()
@@ -2387,10 +2384,12 @@ CMD ["npm", "start"]
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-						annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
+						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						annotations := component.GetAnnotations()
 						var valueFound bool
 						for key, value := range annotations {
-							if key == "app.openshift.io/vcs-uri" && value == remoteURL {
+							// Pdoman adds a suffix to the annotation key with the name of the container
+							if strings.HasPrefix(key, "app.openshift.io/vcs-uri") && value == remoteURL {
 								valueFound = true
 								break
 							}

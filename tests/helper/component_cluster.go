@@ -62,6 +62,17 @@ func (o *ClusterComponent) GetLabels() map[string]string {
 	return result
 }
 
+func (o *ClusterComponent) GetAnnotations() map[string]string {
+	selector := labels.Builder().WithComponentName(o.name).WithAppName(o.app).WithMode(o.mode).SelectorFlag()
+	stdout := o.cli.Run("get", "deployment", selector, "-n", o.namespace, "-o", "jsonpath={.items[0].metadata.annotations}").Out.Contents()
+
+	var result map[string]string
+	err := json.Unmarshal(stdout, &result)
+	Expect(err).ToNot(HaveOccurred())
+
+	return result
+}
+
 func (o *ClusterComponent) GetPodDef() *corev1.Pod {
 	var podDef corev1.Pod
 	podName := o.cli.GetRunningPodNameByComponent(o.name, o.namespace)
