@@ -2,7 +2,8 @@ package podmandev
 
 import (
 	"fmt"
-	"math/rand" //#nosec
+	"math/rand" // #nosec
+	"sort"
 	"time"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -39,6 +40,7 @@ func createPodFromComponent(
 	debugCommand string,
 	withHelperContainer bool,
 	randomPorts bool,
+	customForwardedPorts []api.ForwardedPort,
 	usedPorts []int,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	podTemplate, err := generator.GetPodTemplateSpec(devfileObj, generator.PodTemplateParams{})
@@ -50,7 +52,8 @@ func createPodFromComponent(
 		return nil, nil, fmt.Errorf("no valid components found in the devfile")
 	}
 
-	fwPorts, err := getPortMapping(devfileObj, debug, randomPorts, usedPorts)
+	var fwPorts []api.ForwardedPort
+	fwPorts, err = getPortMapping(devfileObj, debug, randomPorts, usedPorts, customForwardedPorts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -174,7 +177,7 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, usedPorts []int) ([]api.ForwardedPort, error) {
+func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, usedPorts []int, definedPorts []api.ForwardedPort) ([]api.ForwardedPort, error) {
 	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
 	})
@@ -190,6 +193,12 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 		}
 	}
 
+	// this list makes sure that we ranged ports[20001-30001] do not coincide with a custom local port
+	customLocalPorts := make(map[int]struct{})
+	for _, dPort := range definedPorts {
+		customLocalPorts[dPort.LocalPort] = struct{}{}
+	}
+
 	isPortUsedInContainer := func(p int) bool {
 		for _, port := range existingContainerPorts {
 			if p == port {
@@ -199,12 +208,38 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 		return false
 	}
 
+	// getCustomLocalPort analyzes the definedPorts i.e. custom port forwarding to see if a containerPort has a custom localPort, if a container name is provided, it also takes that into account.
+	getCustomLocalPort := func(containerPort int, container string) int {
+		for _, dp := range definedPorts {
+			if dp.ContainerPort == containerPort {
+				if dp.ContainerName != "" {
+					if dp.ContainerName == container {
+						return dp.LocalPort
+					}
+				} else {
+					return dp.LocalPort
+				}
+			}
+		}
+		return 0
+	}
+
 	var result []api.ForwardedPort
 	startPort := 20001
 	endPort := startPort + 10000
 	usedPortsCopy := make([]int, len(usedPorts))
 	copy(usedPortsCopy, usedPorts)
-	for containerName, endpoints := range ceMapping {
+
+	// Prepare to iterate over the ceMapping in an orderly fashion
+	// This ensures we iterate over the ceMapping in the same way every time, obtain the same result every time and avoid any flakes with tests
+	var containers []string
+	for container := range ceMapping {
+		containers = append(containers, container)
+	}
+	sort.Strings(containers)
+
+	for _, containerName := range containers {
+		endpoints := ceMapping[containerName]
 	epLoop:
 		for _, ep := range endpoints {
 			portName := ep.Name
@@ -215,14 +250,32 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 				continue
 			}
 			var freePort int
-			if randomPorts {
+			if len(definedPorts) != 0 {
+				freePort = getCustomLocalPort(ep.TargetPort, containerName)
+				if freePort == 0 {
+					for {
+						freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+						if err != nil {
+							klog.Infof("%s", err)
+							continue
+						}
+						// ensure that freePort is not a custom local port
+						if _, isPortUsed := customLocalPorts[freePort]; isPortUsed {
+							startPort = freePort + 1
+							continue
+						}
+						break
+					}
+					startPort = freePort + 1
+				}
+			} else if randomPorts {
 				if len(usedPortsCopy) != 0 {
 					freePort = usedPortsCopy[0]
 					usedPortsCopy = usedPortsCopy[1:]
 				} else {
-					rand.Seed(time.Now().UnixNano()) //#nosec
+					rand.Seed(time.Now().UnixNano()) // #nosec
 					for {
-						freePort = rand.Intn(endPort-startPort+1) + startPort //#nosec
+						freePort = rand.Intn(endPort-startPort+1) + startPort // #nosec
 						if !isPortUsedInContainer(freePort) && util.IsPortFree(freePort) {
 							break
 						}

@@ -101,25 +101,26 @@ func (o *DevClient) Start(
 	watch.PrintInfoMessage(out, path, options.WatchFiles, promptMessage)
 
 	watchParameters := watch.WatchParameters{
-		DevfilePath:         devfilePath,
-		Path:                path,
-		ComponentName:       componentName,
-		ApplicationName:     appName,
-		InitialDevfileObj:   *devfileObj,
-		DevfileWatchHandler: o.watchHandler,
-		FileIgnores:         options.IgnorePaths,
-		Debug:               options.Debug,
-		DevfileBuildCmd:     options.BuildCommand,
-		DevfileRunCmd:       options.RunCommand,
-		Variables:           options.Variables,
-		RandomPorts:         options.RandomPorts,
-		IgnoreLocalhost:     options.IgnoreLocalhost,
-		ForwardLocalhost:    options.ForwardLocalhost,
-		WatchFiles:          options.WatchFiles,
-		WatchCluster:        false,
-		Out:                 out,
-		ErrOut:              errOut,
-		PromptMessage:       promptMessage,
+		DevfilePath:          devfilePath,
+		Path:                 path,
+		ComponentName:        componentName,
+		ApplicationName:      appName,
+		InitialDevfileObj:    *devfileObj,
+		DevfileWatchHandler:  o.watchHandler,
+		FileIgnores:          options.IgnorePaths,
+		Debug:                options.Debug,
+		DevfileBuildCmd:      options.BuildCommand,
+		DevfileRunCmd:        options.RunCommand,
+		Variables:            options.Variables,
+		RandomPorts:          options.RandomPorts,
+		IgnoreLocalhost:      options.IgnoreLocalhost,
+		ForwardLocalhost:     options.ForwardLocalhost,
+		CustomForwardedPorts: options.CustomForwardedPorts,
+		WatchFiles:           options.WatchFiles,
+		WatchCluster:         false,
+		Out:                  out,
+		ErrOut:               errOut,
+		PromptMessage:        promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
@@ -196,15 +197,16 @@ func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushPa
 	printWarningsOnDevfileChanges(ctx, watchParams)
 
 	startOptions := dev.StartOptions{
-		IgnorePaths:      watchParams.FileIgnores,
-		Debug:            watchParams.Debug,
-		BuildCommand:     watchParams.DevfileBuildCmd,
-		RunCommand:       watchParams.DevfileRunCmd,
-		RandomPorts:      watchParams.RandomPorts,
-		IgnoreLocalhost:  watchParams.IgnoreLocalhost,
-		ForwardLocalhost: watchParams.ForwardLocalhost,
-		WatchFiles:       watchParams.WatchFiles,
-		Variables:        watchParams.Variables,
+		IgnorePaths:          watchParams.FileIgnores,
+		Debug:                watchParams.Debug,
+		BuildCommand:         watchParams.DevfileBuildCmd,
+		RunCommand:           watchParams.DevfileRunCmd,
+		RandomPorts:          watchParams.RandomPorts,
+		IgnoreLocalhost:      watchParams.IgnoreLocalhost,
+		ForwardLocalhost:     watchParams.ForwardLocalhost,
+		CustomForwardedPorts: watchParams.CustomForwardedPorts,
+		WatchFiles:           watchParams.WatchFiles,
+		Variables:            watchParams.Variables,
 	}
 	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
 }
