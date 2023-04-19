@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automount-access-mode-subpath-configmap
+  labels:
+    devfile.io/auto-mount: "true"
+  annotations:
+    devfile.io/mount-path: "/etc"
+    devfile.io/mount-as: subpath
+    devfile.io/mount-access-mode: "0444"
+data:
+  config0444: foo

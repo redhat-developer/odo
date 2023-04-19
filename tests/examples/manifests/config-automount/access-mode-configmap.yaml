@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automount-access-mode-configmap
+  labels:
+    devfile.io/auto-mount: "true"
+  annotations:
+    devfile.io/mount-access-mode: "0444"
+data:
+  config0444: foo
