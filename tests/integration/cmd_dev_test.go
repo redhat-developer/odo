@@ -3065,7 +3065,7 @@ CMD ["npm", "start"]
 			It("should fail running a second session on the same platform", func() {
 				_, _, _, err := helper.WaitForDevModeToContain(helper.DevSessionOpts{
 					RunOnPodman: podman,
-				}, "unable to save state file", true)
+				}, "unable to save state file", true, true)
 				Expect(err).To(HaveOccurred())
 			})
 
