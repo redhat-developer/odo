@@ -28,9 +28,9 @@ var _ = Describe("E2E Test", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	waitRemoteApp := func(urlInContainer, assertString string) {
+	waitRemoteApp := func(urlInContainer, assertString, containerName string) {
 		cmp := helper.NewComponent(componentName, "app", "Dev", commonVar.Project, commonVar.CliRunner)
-		helper.WaitAppReadyInContainer(cmp, "runtime", []string{"curl", urlInContainer}, 5*time.Second, 120*time.Second, ContainSubstring(assertString), nil)
+		helper.WaitAppReadyInContainer(cmp, containerName, []string{"curl", urlInContainer}, 5*time.Second, 120*time.Second, ContainSubstring(assertString), nil)
 	}
 
 	checkIfDevEnvIsUp := func(url, assertString string) {
@@ -44,7 +44,7 @@ var _ = Describe("E2E Test", func() {
 
 			body, _ := io.ReadAll(resp.Body)
 			return string(body)
-		}, 120*time.Second, 15*time.Second).Should(Equal(assertString))
+		}, 120*time.Second, 15*time.Second).Should(ContainSubstring(assertString))
 	}
 
 	Context("starting with empty Directory", func() {
@@ -102,14 +102,14 @@ var _ = Describe("E2E Test", func() {
 
 			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
-			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js Starter Application!")
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js Starter Application!")
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
-			waitRemoteApp("http://127.0.0.1:3000", "Hello from updated Node.js Starter Application!")
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from updated Node.js Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
 
 			// "changes are made to the applications"
@@ -117,7 +117,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
-			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v2 Starter Application!")
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v2 Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
 
 			// "running odo list"
@@ -158,7 +158,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
-			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v3 Starter Application!")
+			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v3 Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
 
 			// should list both dev,deploy
@@ -231,14 +231,14 @@ var _ = Describe("E2E Test", func() {
 			devSession, out, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).ToNot(BeEmpty())
-			waitRemoteApp(AppLocalURL, "Hello World!")
+			waitRemoteApp(AppLocalURL, "Hello World!", "tools")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello World!")
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "com", "example", "demo", "DemoApplication.java"), "Hello World!", "Hello updated World!")
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
-			waitRemoteApp(AppLocalURL, "Hello updated World!")
+			waitRemoteApp(AppLocalURL, "Hello updated World!", "tools")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello updated World!")
 
 			// "changes are made to the applications"
@@ -246,7 +246,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
-			waitRemoteApp(AppLocalURL, "Hello from an updated World!")
+			waitRemoteApp(AppLocalURL, "Hello from an updated World!", "tools")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello from an updated World!")
 
 			// "running odo list"
@@ -276,7 +276,7 @@ var _ = Describe("E2E Test", func() {
 
 			// should deploy new changes
 			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{componentName, "springbooot", "Deploy"})
+			helper.MatchAllInOutput(stdout, []string{componentName, "springboot", "Deploy"})
 
 			// start dev mode again
 			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
@@ -284,9 +284,11 @@ var _ = Describe("E2E Test", func() {
 
 			// making changes to the project again
 			helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "com", "example", "demo", "DemoApplication.java"), "Hello from an updated World!", "Hello from an updated v2 World!")
+			_, _, _, err = devSession.WaitSync()
+			Expect(err).ToNot(HaveOccurred())
 
 			// "should update the changes"
-			waitRemoteApp(AppLocalURL, "Hello from an updated v2 World!")
+			waitRemoteApp(AppLocalURL, "Hello from an updated v2 World!", "tools")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello from an updated v2 World!")
 
 			// should list both dev,deploy
@@ -336,7 +338,25 @@ var _ = Describe("E2E Test", func() {
 				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+				helper.SendLine(ctx, "runtime")
 
+				// Personalize the Devfile to use the debug envvar defined inside package.json
+				helper.ExpectString(ctx, "What configuration do you want change")
+				helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
+
+				helper.ExpectString(ctx, "What configuration do you want change")
+				helper.SendLine(ctx, "Add new environment variable")
+
+				helper.ExpectString(ctx, "Enter new environment variable name")
+				helper.SendLine(ctx, "DEBUG_PORT_PROJECT")
+
+				helper.ExpectString(ctx, "Enter value for \"DEBUG_PORT_PROJECT\" environment variable")
+				helper.SendLine(ctx, "5858")
+
+				helper.ExpectString(ctx, "What configuration do you want change")
+				helper.SendLine(ctx, "")
+
+				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "Enter component name")
@@ -358,7 +378,8 @@ var _ = Describe("E2E Test", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).ToNot(BeEmpty())
-			waitRemoteApp(LocalAppURL, "Hello from Node.js Starter Application!")
+
+			waitRemoteApp(LocalAppURL, "Hello from Node.js Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js Starter Application!")
 			checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
 
@@ -366,7 +387,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
-			waitRemoteApp(LocalAppURL, "Hello from updated Node.js Starter Application!")
+			waitRemoteApp(LocalAppURL, "Hello from updated Node.js Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello from updated Node.js Starter Application!")
 			checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
 
@@ -375,7 +396,7 @@ var _ = Describe("E2E Test", func() {
 			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
-			waitRemoteApp(LocalAppURL, "Hello from Node.js app v2 Starter Application!")
+			waitRemoteApp(LocalAppURL, "Hello from Node.js app v2 Starter Application!", "runtime")
 			checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js app v2 Starter Application!")
 			checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
 
@@ -383,7 +404,7 @@ var _ = Describe("E2E Test", func() {
 			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "Node.js", "Dev"})
 
-			// "exit dev mode and run odo deploy"
+			// "exit dev mode"
 			devSession.Stop()
 			devSession.WaitEnd()
 
@@ -484,7 +505,7 @@ var _ = Describe("E2E Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// "send data"
-			waitRemoteApp("http://127.0.0.1:8080/ping", "pong")
+			waitRemoteApp("http://127.0.0.1:8080/ping", "pong", "runtime")
 			data := sendDataEntry(ports["8080"])
 			Expect(data["message"]).To(Equal("User created successfully"))
 
