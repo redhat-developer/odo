@@ -50,7 +50,12 @@ func ExtractK8sAndOcComponentsFromOutputOnPodman(out string) []string {
 func GetPodmanVersion() string {
 	cmd := exec.Command("podman", "version", "--format", "json")
 	out, err := cmd.Output()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), func() string {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		return err.Error()
+	})
 	var result podman.SystemVersionReport
 	err = json.Unmarshal(out, &result)
 	Expect(err).ToNot(HaveOccurred())
