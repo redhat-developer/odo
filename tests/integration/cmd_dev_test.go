@@ -2373,7 +2373,10 @@ CMD ["npm", "start"]
 			devfileCmpName := "nodejs"
 			BeforeEach(func() {
 				if podman {
-					Skip("Getting annotations is not available with Podman v3")
+					version := helper.GetPodmanVersion()
+					if strings.HasPrefix(version, "3.") {
+						Skip("Getting annotations is not available with Podman v3")
+					}
 				}
 				helper.Cmd("git", "init").ShouldPass()
 				remote := "origin"
