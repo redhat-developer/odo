@@ -21,6 +21,8 @@ type Component interface {
 	GetEnvVars(container string) map[string]string
 	// GetLabels returns the labels defined for the component
 	GetLabels() map[string]string
+	// GetAnnotations returns the annotations defined for the component
+	GetAnnotations() map[string]string
 	// GetPodDef returns the definition of the pod
 	GetPodDef() *corev1.Pod
 	// GetJobDef returns the definition of the job

@@ -1,13 +1,16 @@
 package helper
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	. "github.com/onsi/gomega"
+	"github.com/redhat-developer/odo/pkg/podman"
 )
 
 func GenerateAndSetContainersConf(dir string) {
@@ -41,4 +44,20 @@ func ExtractK8sAndOcComponentsFromOutputOnPodman(out string) []string {
 	}
 
 	return handled
+}
+
+// Returns version of installed podman
+func GetPodmanVersion() string {
+	cmd := exec.Command("podman", "version", "--format", "json")
+	out, err := cmd.Output()
+	Expect(err).ToNot(HaveOccurred(), func() string {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("%s: %s", err, string(exiterr.Stderr))
+		}
+		return err.Error()
+	})
+	var result podman.SystemVersionReport
+	err = json.Unmarshal(out, &result)
+	Expect(err).ToNot(HaveOccurred())
+	return result.Client.Version
 }

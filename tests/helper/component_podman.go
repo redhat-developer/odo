@@ -135,6 +135,11 @@ func (o *PodmanComponent) GetLabels() map[string]string {
 	return result.Labels
 }
 
+func (o *PodmanComponent) GetAnnotations() map[string]string {
+	def := o.GetPodDef()
+	return def.Annotations
+}
+
 func (o *PodmanComponent) GetPodLogs() string {
 	podName := fmt.Sprintf("%s-%s", o.componentName, o.app)
 	cmd := exec.Command("podman", "pod", "logs", podName)
