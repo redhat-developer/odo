@@ -241,7 +241,8 @@ func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result
 		kubeClient = nil
 	}
 
-	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts()
+	// TODO(feloy) Pass PID with `--pid` flag
+	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts(ctx)
 	if err != nil {
 		return api.Component{}, nil, err
 	}

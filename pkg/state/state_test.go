@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -77,7 +79,9 @@ func TestState_SetForwardedPorts(t *testing.T) {
 			o := State{
 				fs: fs,
 			}
-			if err := o.SetForwardedPorts(tt.args.fwPorts); (err != nil) != tt.wantErr {
+			ctx := context.Background()
+			ctx = odocontext.WithPID(ctx, 1)
+			if err := o.SetForwardedPorts(ctx, tt.args.fwPorts); (err != nil) != tt.wantErr {
 				t.Errorf("State.SetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if check := tt.checkState(fs); check != nil {
@@ -136,7 +140,10 @@ func TestState_SaveExit(t *testing.T) {
 			o := State{
 				fs: fs,
 			}
-			if err := o.SaveExit(); (err != nil) != tt.wantErr {
+			ctx := context.Background()
+			ctx = odocontext.WithPID(ctx, 1)
+			_ = o.SetForwardedPorts(ctx, nil)
+			if err := o.SaveExit(ctx); (err != nil) != tt.wantErr {
 				t.Errorf("State.SaveExit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if check := tt.checkState(fs); check != nil {
@@ -147,12 +154,24 @@ func TestState_SaveExit(t *testing.T) {
 }
 
 func TestState_GetForwardedPorts(t *testing.T) {
-	content1 := Content{
+	contentPodman := Content{
+		Platform: "podman",
 		ForwardedPorts: []api.ForwardedPort{
 			{
 				ContainerName: "acontainer",
 				LocalAddress:  "localhost",
 				LocalPort:     20001,
+				ContainerPort: 3000,
+			},
+		},
+	}
+	contentCluster := Content{
+		Platform: "cluster",
+		ForwardedPorts: []api.ForwardedPort{
+			{
+				ContainerName: "acontainer",
+				LocalAddress:  "localhost",
+				LocalPort:     20002,
 				ContainerPort: 3000,
 			},
 		},
@@ -168,23 +187,78 @@ func TestState_GetForwardedPorts(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "get forwarded ports",
+			name: "get forwarded ports, only deployed on podman",
 			fields: fields{
 				content: Content{},
 				fs: func(t *testing.T) filesystem.Filesystem {
 					fs := filesystem.NewFakeFs()
-					jsonContent, err := json.Marshal(content1)
+					jsonContent, err := json.Marshal(contentPodman)
 					if err != nil {
 						t.Errorf("Error marshaling data")
 					}
-					err = fs.WriteFile(_filepath, jsonContent, 0644)
+					pid := 1
+					err = fs.WriteFile(getFilename(pid), jsonContent, 0644)
 					if err != nil {
 						t.Errorf("Error saving content to file")
 					}
 					return fs
 				},
 			},
-			want:    content1.ForwardedPorts,
+			want:    contentPodman.ForwardedPorts,
+			wantErr: false,
+		},
+		{
+			name: "get forwarded ports, only deployed on cluster",
+			fields: fields{
+				content: Content{},
+				fs: func(t *testing.T) filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					jsonContent, err := json.Marshal(contentCluster)
+					if err != nil {
+						t.Errorf("Error marshaling data")
+					}
+					pid := 1
+					err = fs.WriteFile(getFilename(pid), jsonContent, 0644)
+					if err != nil {
+						t.Errorf("Error saving content to file")
+					}
+					return fs
+				},
+			},
+			want:    contentCluster.ForwardedPorts,
+			wantErr: false,
+		},
+		{
+			name: "get forwarded ports, deployed on both podman and cluster",
+			fields: fields{
+				content: Content{},
+				fs: func(t *testing.T) filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+
+					pidCluster := 1
+					jsonContentCluster, err := json.Marshal(contentCluster)
+					if err != nil {
+						t.Errorf("Error marshaling data")
+					}
+					err = fs.WriteFile(getFilename(pidCluster), jsonContentCluster, 0644)
+					if err != nil {
+						t.Errorf("Error saving content to file")
+					}
+
+					pidPodman := 2
+					jsonContentPodman, err := json.Marshal(contentPodman)
+					if err != nil {
+						t.Errorf("Error marshaling data")
+					}
+					err = fs.WriteFile(getFilename(pidPodman), jsonContentPodman, 0644)
+					if err != nil {
+						t.Errorf("Error saving content to file")
+					}
+
+					return fs
+				},
+			},
+			want:    append(append([]api.ForwardedPort{}, contentCluster.ForwardedPorts...), contentPodman.ForwardedPorts...),
 			wantErr: false,
 		},
 	}
@@ -194,7 +268,9 @@ func TestState_GetForwardedPorts(t *testing.T) {
 				content: tt.fields.content,
 				fs:      tt.fields.fs(t),
 			}
-			got, err := o.GetForwardedPorts()
+			ctx := context.Background()
+			ctx = odocontext.WithPID(ctx, 1)
+			got, err := o.GetForwardedPorts(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("State.GetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -31,6 +32,7 @@ func main() {
 		util.LogErrorAndExit(err, "")
 	}
 	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+	ctx = odocontext.WithPID(ctx, os.Getpid())
 
 	// create the complete command
 	klog.InitFlags(nil)

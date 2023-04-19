@@ -1,6 +1,7 @@
 package podmanportforward
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"reflect"
@@ -36,6 +37,7 @@ func NewPFClient(execClient exec.Client) *PFClient {
 }
 
 func (o *PFClient) StartPortForwarding(
+	ctx context.Context,
 	devFileObj parser.DevfileObj,
 	componentName string,
 	debug bool,
