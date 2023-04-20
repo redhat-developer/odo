@@ -1,0 +1,96 @@
+commands:
+- exec:
+    commandLine: mvn clean -Dmaven.repo.local=/home/user/.m2/repository package -Dmaven.test.skip=true
+    component: tools
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: build
+- exec:
+    commandLine: mvn -Dmaven.repo.local=/home/user/.m2/repository spring-boot:run
+    component: tools
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+- exec:
+    commandLine: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n
+      -jar target/*.jar
+    component: tools
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: ${PROJECT_SOURCE}
+  id: debug
+- apply:
+    component: build
+  id: build-image
+- apply:
+    component: deploy
+  id: deployk8s
+- composite:
+    commands:
+    - build-image
+    - deployk8s
+    group:
+      isDefault: true
+      kind: deploy
+  id: deploy
+components:
+- container:
+    command:
+    - tail
+    - -f
+    - /dev/null
+    endpoints:
+    - name: http-springboot
+      targetPort: 8080
+    - exposure: none
+      name: debug
+      targetPort: 5858
+    env:
+    - name: DEBUG_PORT
+      value: "5858"
+    image: registry.access.redhat.com/ubi8/openjdk-11:latest
+    memoryLimit: 768Mi
+    mountSources: true
+    volumeMounts:
+    - name: m2
+      path: /home/user/.m2
+  name: tools
+- name: m2
+  volume:
+    size: 3Gi
+- image:
+    dockerfile:
+      buildContext: .
+      rootRequired: false
+      uri: docker/Dockerfile
+    imageName: java-springboot-image:latest
+  name: build
+- kubernetes:
+    endpoints:
+    - name: http-8081
+      targetPort: 8081
+    uri: kubernetes/deploy.yaml
+  name: deploy
+metadata:
+  description: Java application using Spring Boot® and OpenJDK 11
+  displayName: Spring Boot®
+  globalMemoryLimit: 2674Mi
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/spring.svg
+  language: Java
+  name: demo
+  projectType: springboot
+  tags:
+  - Java
+  - Spring
+  version: 2.0.0
+schemaVersion: 2.2.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/springboot-ex.git
+  name: springbootproject
