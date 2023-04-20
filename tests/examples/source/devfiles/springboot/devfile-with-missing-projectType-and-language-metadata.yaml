@@ -10,7 +10,7 @@ starterProjects:
 components:
   - name: tools
     container:
-      image: quay.io/eclipse/che-java11-maven:next
+      image: registry.access.redhat.com/ubi8/openjdk-11:latest
       memoryLimit: 768Mi
       command: ['tail']
       args: [ '-f', '/dev/null']
@@ -20,7 +20,7 @@ components:
       mountSources: true
   - name: runtime
     container:
-      image: quay.io/eclipse/che-java11-maven:next
+      image: registry.access.redhat.com/ubi8/openjdk-11:latest
       memoryLimit: 768Mi
       endpoints:
         - name: "8080-tcp"
