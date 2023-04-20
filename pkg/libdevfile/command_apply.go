@@ -1,6 +1,8 @@
 package libdevfile
 
 import (
+	"context"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
@@ -26,7 +28,7 @@ func (o *applyCommand) CheckValidity() error {
 	return nil
 }
 
-func (o *applyCommand) Execute(handler Handler) error {
+func (o *applyCommand) Execute(ctx context.Context, handler Handler) error {
 	devfileComponents, err := o.devfileObj.Data.GetComponents(common.DevfileOptions{
 		FilterByName: o.command.Apply.Component,
 	})

@@ -1,6 +1,7 @@
 package libdevfile
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -23,32 +24,26 @@ type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
 	ApplyKubernetes(kubernetes v1alpha2.Component) error
 	ApplyOpenShift(openshift v1alpha2.Component) error
-	Execute(command v1alpha2.Command) error
+	Execute(ctx context.Context, command v1alpha2.Command) error
 }
 
 // Deploy executes the default deploy command of the devfile.
-func Deploy(devfileObj parser.DevfileObj, handler Handler) error {
-	return ExecuteCommandByNameAndKind(devfileObj, "", v1alpha2.DeployCommandGroupKind, handler, false)
+func Deploy(ctx context.Context, devfileObj parser.DevfileObj, handler Handler) error {
+	return ExecuteCommandByNameAndKind(ctx, devfileObj, "", v1alpha2.DeployCommandGroupKind, handler, false)
 }
 
 // Build executes the default Build command of the devfile.
 // If buildCmd is empty, this looks for the default Build command in the Devfile. No error is returned and no operation is performed
 // if the default command could not be found.
 // An error is returned if buildCmd is not empty and has no corresponding command in the Devfile.
-func Build(devfileObj parser.DevfileObj, buildCmd string, handler Handler) error {
-	return ExecuteCommandByNameAndKind(devfileObj, buildCmd, v1alpha2.BuildCommandGroupKind, handler, buildCmd == "")
+func Build(ctx context.Context, devfileObj parser.DevfileObj, buildCmd string, handler Handler) error {
+	return ExecuteCommandByNameAndKind(ctx, devfileObj, buildCmd, v1alpha2.BuildCommandGroupKind, handler, buildCmd == "")
 }
 
 // ExecuteCommandByNameAndKind executes the specified command cmdName of the given kind in the Devfile.
 // If cmdName is empty, it executes the default command for the given kind or returns an error if there is no default command.
 // If ignoreCommandNotFound is true, nothing is executed if the command is not found and no error is returned.
-func ExecuteCommandByNameAndKind(
-	devfileObj parser.DevfileObj,
-	cmdName string,
-	kind v1alpha2.CommandGroupKind,
-	handler Handler,
-	ignoreCommandNotFound bool,
-) error {
+func ExecuteCommandByNameAndKind(ctx context.Context, devfileObj parser.DevfileObj, cmdName string, kind v1alpha2.CommandGroupKind, handler Handler, ignoreCommandNotFound bool) error {
 	cmd, hasDefaultCmd, err := GetCommand(devfileObj, cmdName, kind)
 	if err != nil {
 		if _, isNotFound := err.(NoCommandFoundError); isNotFound {
@@ -67,16 +62,16 @@ func ExecuteCommandByNameAndKind(
 		return NewNoDefaultCommandFoundError(kind)
 	}
 
-	return executeCommand(devfileObj, cmd, handler)
+	return executeCommand(ctx, devfileObj, cmd, handler)
 }
 
 // executeCommand executes a specific command of a devfile using handler as backend
-func executeCommand(devfileObj parser.DevfileObj, command v1alpha2.Command, handler Handler) error {
+func executeCommand(ctx context.Context, devfileObj parser.DevfileObj, command v1alpha2.Command, handler Handler) error {
 	cmd, err := newCommand(devfileObj, command)
 	if err != nil {
 		return err
 	}
-	return cmd.Execute(handler)
+	return cmd.Execute(ctx, handler)
 }
 
 // GetCommand iterates through the devfile commands and returns the devfile command with the specified name and group kind.
@@ -217,14 +212,14 @@ func HasPreStopEvents(devfileObj parser.DevfileObj) bool {
 	return len(preStopEvents) > 0
 }
 
-func ExecPostStartEvents(devfileObj parser.DevfileObj, handler Handler) error {
+func ExecPostStartEvents(ctx context.Context, devfileObj parser.DevfileObj, handler Handler) error {
 	postStartEvents := devfileObj.Data.GetEvents().PostStart
-	return execDevfileEvent(devfileObj, postStartEvents, handler)
+	return execDevfileEvent(ctx, devfileObj, postStartEvents, handler)
 }
 
-func ExecPreStopEvents(devfileObj parser.DevfileObj, handler Handler) error {
+func ExecPreStopEvents(ctx context.Context, devfileObj parser.DevfileObj, handler Handler) error {
 	preStopEvents := devfileObj.Data.GetEvents().PreStop
-	return execDevfileEvent(devfileObj, preStopEvents, handler)
+	return execDevfileEvent(ctx, devfileObj, preStopEvents, handler)
 }
 
 func hasCommand(devfileData data.DevfileData, kind v1alpha2.CommandGroupKind) bool {
@@ -251,7 +246,7 @@ func HasDebugCommand(devfileData data.DevfileData) bool {
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
-func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Handler) error {
+func execDevfileEvent(ctx context.Context, devfileObj parser.DevfileObj, events []string, handler Handler) error {
 	if len(events) > 0 {
 		commandMap, err := allCommandsMap(devfileObj)
 		if err != nil {
@@ -268,7 +263,7 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 				return err
 			}
 			// Execute command in container
-			err = c.Execute(handler)
+			err = c.Execute(ctx, handler)
 			if err != nil {
 				return fmt.Errorf("unable to execute devfile command %q: %w", commandName, err)
 			}

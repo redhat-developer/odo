@@ -1,11 +1,13 @@
 package libdevfile
 
 import (
+	"context"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 )
 
@@ -57,7 +59,7 @@ func Test_applyCommand_Execute(t *testing.T) {
 				devfileObj: tt.fields.devfileObj(),
 			}
 			// TODO handler
-			if err := o.Execute(nil); (err != nil) != tt.wantErr {
+			if err := o.Execute(context.Background(), nil); (err != nil) != tt.wantErr {
 				t.Errorf("applyCommand.Execute() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

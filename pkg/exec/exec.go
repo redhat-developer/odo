@@ -2,6 +2,7 @@ package exec
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -25,14 +26,7 @@ func NewExecClient(platformClient platform.Client) *ExecClient {
 
 // ExecuteCommand executes the given command in the pod's container,
 // writing the output to the specified respective pipe writers
-func (o ExecClient) ExecuteCommand(
-	command []string,
-	podName string,
-	containerName string,
-	show bool,
-	stdoutWriter *io.PipeWriter,
-	stderrWriter *io.PipeWriter,
-) (stdout []string, stderr []string, err error) {
+func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podName string, containerName string, show bool, stdoutWriter *io.PipeWriter, stderrWriter *io.PipeWriter) (stdout []string, stderr []string, err error) {
 	soutReader, soutWriter := io.Pipe()
 	serrReader, serrWriter := io.Pipe()
 
@@ -42,7 +36,7 @@ func (o ExecClient) ExecuteCommand(
 	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, stdoutWriter)
 	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, stderrWriter)
 
-	err = o.platformClient.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
+	err = o.platformClient.ExecCMDInContainer(ctx, containerName, podName, command, soutWriter, serrWriter, nil, false)
 
 	// Block until we have received all the container output from each stream
 	_ = soutWriter.Close()

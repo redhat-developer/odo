@@ -1,6 +1,7 @@
 package libdevfile
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -446,7 +447,7 @@ func TestDeploy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			if err := Deploy(tt.args.devfileObj(), tt.args.handler(ctrl)); (err != nil) != tt.wantErr {
+			if err := Deploy(context.Background(), tt.args.devfileObj(), tt.args.handler(ctrl)); (err != nil) != tt.wantErr {
 				t.Errorf("Deploy() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -507,9 +508,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Eq(defaultBuildCommand)).Times(0)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 			},
@@ -527,9 +528,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Eq(defaultBuildCommand)).Times(1)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(1)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 			},
@@ -547,9 +548,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Eq(defaultBuildCommand)).Times(0)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 				cmdName: "my-explicit-non-default-build-command",
@@ -569,9 +570,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Eq(defaultBuildCommand)).Times(0)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandExplicit)).Times(1)
-					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(1)
+					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 				cmdName: "my-explicit-non-default-build-command",
@@ -579,7 +580,7 @@ func TestBuild(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Build(tt.args.devfileObj(), tt.args.cmdName, tt.args.handler(gomock.NewController(t)))
+			err := Build(context.Background(), tt.args.devfileObj(), tt.args.cmdName, tt.args.handler(gomock.NewController(t)))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 			}

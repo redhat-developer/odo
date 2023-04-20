@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -93,7 +94,7 @@ func TestSyncFiles(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	kc := kclient.NewMockClientInterface(ctrl)
-	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil).AnyTimes()
 
 	// Assert that Bar() is invoked.
@@ -171,7 +172,7 @@ func TestSyncFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			execClient := exec.NewExecClient(kc)
 			syncAdapter := NewSyncClient(kc, execClient)
-			isPushRequired, err := syncAdapter.SyncFiles(tt.syncParameters)
+			isPushRequired, err := syncAdapter.SyncFiles(context.Background(), tt.syncParameters)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestSyncFiles error: unexpected error when syncing files %v", err)
 			} else if !tt.wantErr && isPushRequired != tt.wantIsPushRequired {
@@ -200,7 +201,7 @@ func TestPushLocal(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	kc := kclient.NewMockClientInterface(ctrl)
-	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil).AnyTimes()
 
 	// Assert that Bar() is invoked.
@@ -303,7 +304,7 @@ func TestPushLocal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			execClient := exec.NewExecClient(kc)
 			syncAdapter := NewSyncClient(kc, execClient)
-			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
+			err := syncAdapter.pushLocal(context.Background(), tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)
 			}

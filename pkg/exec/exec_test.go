@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"errors"
 	"io"
 	"testing"
@@ -19,7 +20,7 @@ type fakePlatform struct {
 	execCMDInContainer func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 }
 
-func (o fakePlatform) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (o fakePlatform) ExecCMDInContainer(ctx context.Context, containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
 	return o.execCMDInContainer(containerName, podName, cmd, stdout, stderr, stdin, tty)
 }
 
@@ -81,7 +82,7 @@ func TestExecuteCommand(t *testing.T) {
 			}
 
 			execClient := NewExecClient(platformClient)
-			stdout, stderr, err := execClient.ExecuteCommand(tt.cmd, _podName, _containerName, false, nil, nil)
+			stdout, stderr, err := execClient.ExecuteCommand(context.Background(), tt.cmd, _podName, _containerName, false, nil, nil)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

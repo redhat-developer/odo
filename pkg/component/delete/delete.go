@@ -180,7 +180,7 @@ func (do DeleteComponentClient) ListClusterResourcesToDeleteFromDevfile(devfileO
 }
 
 // ExecutePreStopEvents executes preStop events if any, as a precondition to deleting a devfile component deployment
-func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName string, componentName string) error {
+func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfileObj parser.DevfileObj, appName string, componentName string) error {
 	if !libdevfile.HasPreStopEvents(devfileObj) {
 		return nil
 	}
@@ -216,8 +216,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
-	err = libdevfile.ExecPreStopEvents(devfileObj,
-		component.NewExecHandler(do.kubeClient, do.execClient, appName, componentName, pod.Name, "Executing pre-stop command in container", false))
+	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, component.NewExecHandler(do.kubeClient, do.execClient, appName, componentName, pod.Name, "Executing pre-stop command in container", false))
 	if err != nil {
 		klog.V(4).Infof("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
 	}

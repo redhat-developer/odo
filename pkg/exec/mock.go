@@ -5,6 +5,7 @@
 package exec
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -35,9 +36,9 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // ExecuteCommand mocks base method.
-func (m *MockClient) ExecuteCommand(command []string, podName, containerName string, show bool, stdoutWriter, stderrWriter *io.PipeWriter) ([]string, []string, error) {
+func (m *MockClient) ExecuteCommand(ctx context.Context, command []string, podName, containerName string, show bool, stdoutWriter, stderrWriter *io.PipeWriter) ([]string, []string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecuteCommand", command, podName, containerName, show, stdoutWriter, stderrWriter)
+	ret := m.ctrl.Call(m, "ExecuteCommand", ctx, command, podName, containerName, show, stdoutWriter, stderrWriter)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].([]string)
 	ret2, _ := ret[2].(error)
@@ -45,7 +46,7 @@ func (m *MockClient) ExecuteCommand(command []string, podName, containerName str
 }
 
 // ExecuteCommand indicates an expected call of ExecuteCommand.
-func (mr *MockClientMockRecorder) ExecuteCommand(command, podName, containerName, show, stdoutWriter, stderrWriter interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ExecuteCommand(ctx, command, podName, containerName, show, stdoutWriter, stderrWriter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteCommand", reflect.TypeOf((*MockClient)(nil).ExecuteCommand), command, podName, containerName, show, stdoutWriter, stderrWriter)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteCommand", reflect.TypeOf((*MockClient)(nil).ExecuteCommand), ctx, command, podName, containerName, show, stdoutWriter, stderrWriter)
 }

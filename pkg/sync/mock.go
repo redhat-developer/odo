@@ -5,6 +5,7 @@
 package sync
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -34,16 +35,16 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // SyncFiles mocks base method.
-func (m *MockClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
+func (m *MockClient) SyncFiles(ctx context.Context, syncParameters SyncParameters) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncFiles", syncParameters)
+	ret := m.ctrl.Call(m, "SyncFiles", ctx, syncParameters)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SyncFiles indicates an expected call of SyncFiles.
-func (mr *MockClientMockRecorder) SyncFiles(syncParameters interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SyncFiles(ctx, syncParameters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFiles", reflect.TypeOf((*MockClient)(nil).SyncFiles), syncParameters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFiles", reflect.TypeOf((*MockClient)(nil).SyncFiles), ctx, syncParameters)
 }

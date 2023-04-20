@@ -3,6 +3,7 @@ package sync
 import (
 	taro "archive/tar"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -25,7 +26,7 @@ import (
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func (a SyncClient) CopyFile(localPath string, compInfo ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
+func (a SyncClient) CopyFile(ctx context.Context, localPath string, compInfo ComponentInfo, targetPath string, copyFiles []string, globExps []string, ret util.IndexerRet) error {
 
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.
@@ -46,7 +47,7 @@ func (a SyncClient) CopyFile(localPath string, compInfo ComponentInfo, targetPat
 
 	}()
 
-	err := a.ExtractProjectToComponent(compInfo.ContainerName, compInfo.PodName, targetPath, reader)
+	err := a.ExtractProjectToComponent(ctx, compInfo.ContainerName, compInfo.PodName, targetPath, reader)
 	if err != nil {
 		return err
 	}
@@ -55,13 +56,13 @@ func (a SyncClient) CopyFile(localPath string, compInfo ComponentInfo, targetPat
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a SyncClient) ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error {
+func (a SyncClient) ExtractProjectToComponent(ctx context.Context, containerName, podName, targetPath string, stdin io.Reader) error {
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--no-same-owner"}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	klog.V(3).Infof("Executing command %s", strings.Join(cmdArr, " "))
-	err := a.platformClient.ExecCMDInContainer(containerName, podName, cmdArr, &stdout, &stderr, stdin, false)
+	err := a.platformClient.ExecCMDInContainer(ctx, containerName, podName, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
 		log.Errorf("stdout: %s\n", stdout.String())

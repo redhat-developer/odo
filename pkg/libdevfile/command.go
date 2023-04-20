@@ -1,17 +1,19 @@
 package libdevfile
 
 import (
+	"context"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type command interface {
 	CheckValidity() error
-	Execute(handler Handler) error
+	Execute(ctx context.Context, handler Handler) error
 }
 
 // newCommand returns a command implementation, depending on the type of the command

@@ -1,11 +1,13 @@
 package libdevfile
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -40,7 +42,7 @@ func (o *parallelCompositeCommand) CheckValidity() error {
 }
 
 // Execute loops over each command and executes them in parallel
-func (o *parallelCompositeCommand) Execute(handler Handler) error {
+func (o *parallelCompositeCommand) Execute(ctx context.Context, handler Handler) error {
 	allCommands, err := allCommandsMap(o.devfileObj)
 	if err != nil {
 		return err
@@ -53,7 +55,7 @@ func (o *parallelCompositeCommand) Execute(handler Handler) error {
 		}
 		commandExecs.Add(util.ConcurrentTask{
 			ToRun: func(errChannel chan error) {
-				err3 := cmd.Execute(handler)
+				err3 := cmd.Execute(ctx, handler)
 				if err3 != nil {
 					errChannel <- err3
 				}

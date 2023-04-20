@@ -1,6 +1,8 @@
 package libdevfile
 
 import (
+	"context"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 )
@@ -26,6 +28,6 @@ func (o *execCommand) CheckValidity() error {
 	return nil
 }
 
-func (o *execCommand) Execute(handler Handler) error {
-	return handler.Execute(o.command)
+func (o *execCommand) Execute(ctx context.Context, handler Handler) error {
+	return handler.Execute(ctx, o.command)
 }

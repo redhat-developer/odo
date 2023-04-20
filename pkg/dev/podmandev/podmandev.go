@@ -167,7 +167,7 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 		ForcePush: true,
 		Files:     adapters.GetSyncFilesFromAttributes(devfileCmd),
 	}
-	execRequired, err := o.syncClient.SyncFiles(syncParams)
+	execRequired, err := o.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
 		return false, err
 	}

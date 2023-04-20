@@ -52,17 +52,17 @@ func (mr *MockClientMockRecorder) DeleteResources(resources, wait interface{}) *
 }
 
 // ExecutePreStopEvents mocks base method.
-func (m *MockClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName, componentName string) error {
+func (m *MockClient) ExecutePreStopEvents(ctx context.Context, devfileObj parser.DevfileObj, appName, componentName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecutePreStopEvents", devfileObj, appName, componentName)
+	ret := m.ctrl.Call(m, "ExecutePreStopEvents", ctx, devfileObj, appName, componentName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ExecutePreStopEvents indicates an expected call of ExecutePreStopEvents.
-func (mr *MockClientMockRecorder) ExecutePreStopEvents(devfileObj, appName, componentName interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ExecutePreStopEvents(ctx, devfileObj, appName, componentName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecutePreStopEvents", reflect.TypeOf((*MockClient)(nil).ExecutePreStopEvents), devfileObj, appName, componentName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecutePreStopEvents", reflect.TypeOf((*MockClient)(nil).ExecutePreStopEvents), ctx, devfileObj, appName, componentName)
 }
 
 // ListClusterResourcesToDelete mocks base method.

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (o *DevClient) CleanupResources(ctx context.Context, out io.Writer) error {
@@ -28,7 +29,7 @@ func (o *DevClient) CleanupResources(ctx context.Context, out io.Writer) error {
 	}
 	// if innerloop deployment resource is present, then execute preStop events
 	if isInnerLoopDeployed {
-		err = o.deleteClient.ExecutePreStopEvents(*devfileObj, appname, componentName)
+		err = o.deleteClient.ExecutePreStopEvents(ctx, *devfileObj, appname, componentName)
 		if err != nil {
 			fmt.Fprint(out, "Failed to execute preStop events")
 		}

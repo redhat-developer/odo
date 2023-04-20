@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -20,15 +21,7 @@ const numberOfLinesToOutputLog = 100
 
 // ExecuteRunCommand executes a Devfile command in the specified pod
 // If componentExists, the previous instance of the command will be stopped before (if hotReloadCapable is not set)
-func ExecuteRunCommand(
-	execClient exec.Client,
-	platformClient platform.Client,
-	devfileCmd devfilev1.Command,
-	componentExists bool,
-	podName string,
-	appName string,
-	componentName string,
-) error {
+func ExecuteRunCommand(ctx context.Context, execClient exec.Client, platformClient platform.Client, devfileCmd devfilev1.Command, componentExists bool, podName string, appName string, componentName string) error {
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler(execClient)
 
 	statusHandlerFunc := func(s *log.Status) remotecmd.CommandOutputHandler {
@@ -61,12 +54,12 @@ func ExecuteRunCommand(
 				return err
 			}
 
-			err = remoteProcessHandler.StopProcessForCommand(cmdDef, podName, devfileCmd.Exec.Component)
+			err = remoteProcessHandler.StopProcessForCommand(ctx, cmdDef, podName, devfileCmd.Exec.Component)
 			if err != nil {
 				return err
 			}
 
-			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
+			if err = remoteProcessHandler.StartProcessForCommand(ctx, cmdDef, podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 				return err
 			}
 		} else {
@@ -78,7 +71,7 @@ func ExecuteRunCommand(
 			return err
 		}
 
-		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
+		if err := remoteProcessHandler.StartProcessForCommand(ctx, cmdDef, podName, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 			return err
 		}
 	}
@@ -95,8 +88,7 @@ func ExecuteRunCommand(
 
 	_, err := task.NewRetryable(fmt.Sprintf("process for command %q", devfileCmd.Id), func() (bool, interface{}, error) {
 		klog.V(4).Infof("checking if process for command %q is running", devfileCmd.Id)
-		remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(
-			remotecmd.CommandDefinition{Id: devfileCmd.Id}, podName, devfileCmd.Exec.Component)
+		remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(ctx, remotecmd.CommandDefinition{Id: devfileCmd.Id}, podName, devfileCmd.Exec.Component)
 		if err != nil {
 			return false, nil, err
 		}
@@ -109,8 +101,7 @@ func ExecuteRunCommand(
 		return err
 	}
 
-	return checkRemoteCommandStatus(execClient, platformClient, devfileCmd, podName, appName, componentName,
-		fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
+	return checkRemoteCommandStatus(ctx, execClient, platformClient, devfileCmd, podName, appName, componentName, fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
 }
 
 // devfileCommandToRemoteCmdDefinition builds and returns a new remotecmd.CommandDefinition object from the specified devfileCmd.
@@ -135,17 +126,9 @@ func devfileCommandToRemoteCmdDefinition(devfileCmd devfilev1.Command) (remotecm
 
 // checkRemoteCommandStatus checks if the command is running .
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
-func checkRemoteCommandStatus(
-	execClient exec.Client,
-	platformClient platform.Client,
-	command devfilev1.Command,
-	podName string,
-	appName string,
-	componentName string,
-	notRunningMessage string,
-) error {
+func checkRemoteCommandStatus(ctx context.Context, execClient exec.Client, platformClient platform.Client, command devfilev1.Command, podName string, appName string, componentName string, notRunningMessage string) error {
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler(execClient)
-	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
+	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(ctx, remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return err
 	}

@@ -427,7 +427,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentAnyMode).
 					Return(resources, nil)
-				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
 			},
@@ -444,7 +444,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentDevMode).
 					Return(resources, nil)
-				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
 			},
@@ -462,7 +462,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentDeployMode).
 					Return(resources, nil)
-				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
 			},
@@ -495,7 +495,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentAnyMode).Return(resources, nil)
-				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName, gomock.Any()).Return(errors.New("some error"))
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), appName, gomock.Any()).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
 			},
