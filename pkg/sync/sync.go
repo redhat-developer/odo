@@ -8,6 +8,7 @@ import (
 
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	dfutil "github.com/devfile/library/v2/pkg/util"
+	gitignore "github.com/sabhiram/go-gitignore"
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/platform"
@@ -92,7 +93,6 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
 		// if it is a forced push (ForcePush) reset the index to do a full sync
-		absIgnoreRules := dfutil.GetAbsGlobExps(syncParameters.Path, syncParameters.IgnoredFiles)
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
 		odoFolder := filepath.Join(syncParameters.Path, ".odo")
@@ -127,7 +127,10 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 
 		// apply the glob rules from the .gitignore/.odoignore file
 		// and ignore the files on which the rules apply and filter them out
-		filesChangedFiltered, filesDeletedFiltered := dfutil.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
+		filesChangedFiltered, filesDeletedFiltered, err := filterIgnores(syncParameters.Path, ret.FilesChanged, ret.FilesDeleted, syncParameters.IgnoredFiles)
+		if err != nil {
+			return false, err
+		}
 
 		deletedFiles = append(filesDeletedFiltered, ret.RemoteDeleted...)
 		deletedFiles = append(deletedFiles, ret.RemoteDeleted...)
@@ -163,6 +166,32 @@ func (a SyncClient) SyncFiles(syncParameters SyncParameters) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// filterIgnores applies the gitignore rules on the filesChanged and filesDeleted and filters them
+// returns the filtered results which match any of the gitignore rules
+func filterIgnores(path string, filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string, err error) {
+	ignoreMatcher := gitignore.CompileIgnoreLines(absIgnoreRules...)
+	for _, file := range filesChanged {
+		// filesChanged are absoute paths
+		rel, err := filepath.Rel(path, file)
+		if err != nil {
+			return nil, nil, fmt.Errorf("path=%q, file=%q, %w", path, file, err)
+		}
+		match := ignoreMatcher.MatchesPath(rel)
+		if !match {
+			filesChangedFiltered = append(filesChangedFiltered, file)
+		}
+	}
+
+	for _, file := range filesDeleted {
+		// filesDeleted are relative paths
+		match := ignoreMatcher.MatchesPath(file)
+		if !match {
+			filesDeletedFiltered = append(filesDeletedFiltered, file)
+		}
+	}
+	return filesChangedFiltered, filesDeletedFiltered, nil
 }
 
 // pushLocal syncs source code from the user's disk to the component
