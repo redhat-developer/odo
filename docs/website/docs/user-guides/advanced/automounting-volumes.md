@@ -37,3 +37,4 @@ Mounting resources can be additionally configured via annotations:
 
 - `devfile.io/read-only`: for persistent volume claims, mount the resource as read-only
 
+- `devfile.io/mount-access-mode`: for  secret/configmap, can be used to configure file permissions on mounted files
