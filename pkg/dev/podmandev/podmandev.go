@@ -94,21 +94,10 @@ func (o *DevClient) Start(
 	watch.PrintInfoMessage(options.Out, path, options.WatchFiles, promptMessage)
 
 	watchParameters := watch.WatchParameters{
-		DevfileWatchHandler:  o.watchHandler,
-		FileIgnores:          options.IgnorePaths,
-		Debug:                options.Debug,
-		DevfileBuildCmd:      options.BuildCommand,
-		DevfileRunCmd:        options.RunCommand,
-		Variables:            options.Variables,
-		RandomPorts:          options.RandomPorts,
-		IgnoreLocalhost:      options.IgnoreLocalhost,
-		ForwardLocalhost:     options.ForwardLocalhost,
-		CustomForwardedPorts: options.CustomForwardedPorts,
-		WatchFiles:           options.WatchFiles,
-		WatchCluster:         false,
-		Out:                  options.Out,
-		ErrOut:               options.ErrOut,
-		PromptMessage:        promptMessage,
+		StartOptions:        options,
+		DevfileWatchHandler: o.watchHandler,
+		WatchCluster:        false,
+		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(options.Out, watchParameters, ctx, componentStatus)
@@ -184,25 +173,14 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 	printWarningsOnDevfileChanges(ctx, watchParams)
 
-	startOptions := dev.StartOptions{
-		IgnorePaths:          watchParams.FileIgnores,
-		Debug:                watchParams.Debug,
-		BuildCommand:         watchParams.DevfileBuildCmd,
-		RunCommand:           watchParams.DevfileRunCmd,
-		RandomPorts:          watchParams.RandomPorts,
-		IgnoreLocalhost:      watchParams.IgnoreLocalhost,
-		ForwardLocalhost:     watchParams.ForwardLocalhost,
-		CustomForwardedPorts: watchParams.CustomForwardedPorts,
-		WatchFiles:           watchParams.WatchFiles,
-		Variables:            watchParams.Variables,
-	}
-	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
+	startOptions := watchParams.StartOptions
+	return o.reconcile(ctx, startOptions.Out, startOptions.ErrOut, startOptions, componentStatus)
 }
 
 func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchParameters) {
 	var warning string
 	currentDevfile := odocontext.GetDevfileObj(ctx)
-	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
+	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.StartOptions.Variables)
 	if err != nil {
 		warning = fmt.Sprintf("error while reading the Devfile. Please restart 'odo dev' if you made any changes to the Devfile. Error message is: %v", err)
 	} else {
@@ -227,6 +205,6 @@ func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchPa
 		}
 	}
 	if warning != "" {
-		log.Fwarning(parameters.Out, warning+"\n")
+		log.Fwarning(parameters.StartOptions.Out, warning+"\n")
 	}
 }

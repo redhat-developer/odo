@@ -105,18 +105,10 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
-		DevfileWatchHandler:  o.regenerateAdapterAndPush,
-		FileIgnores:          options.IgnorePaths,
-		Debug:                options.Debug,
-		DevfileBuildCmd:      options.BuildCommand,
-		DevfileRunCmd:        options.RunCommand,
-		Variables:            options.Variables,
-		RandomPorts:          options.RandomPorts,
-		CustomForwardedPorts: options.CustomForwardedPorts,
-		WatchFiles:           options.WatchFiles,
-		WatchCluster:         true,
-		ErrOut:               options.ErrOut,
-		PromptMessage:        promptMessage,
+		StartOptions:        options,
+		DevfileWatchHandler: o.regenerateAdapterAndPush,
+		WatchCluster:        true,
+		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(options.Out, watchParameters, ctx, componentStatus)
@@ -125,7 +117,7 @@ func (o *DevClient) Start(
 // RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod
 func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams common.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), watchParams.Variables)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), watchParams.StartOptions.Variables)
 	if err != nil {
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}

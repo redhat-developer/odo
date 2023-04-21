@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -59,44 +59,19 @@ func NewWatchClient(kubeClient kclient.ClientInterface) *WatchClient {
 
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
 type WatchParameters struct {
-	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
-	FileIgnores []string
+	StartOptions dev.StartOptions
+
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(context.Context, common.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
-	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
-	DevfileBuildCmd string
-	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
-	DevfileRunCmd string
-	// DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
-	DevfileDebugCmd string
-	// Debug indicates if the debug command should be started after sync, or the run command by default
-	Debug bool
 	// DebugPort indicates which debug port to use for pushing after sync
 	DebugPort int
-	// Variables override Devfile variables
-	Variables map[string]string
-	// RandomPorts is true to forward containers ports on local random ports
-	RandomPorts bool
-	// Optional: sCustomForwardedPorts configuration to be used to customize the port forwarding; if nil, we automatically select ports
-	CustomForwardedPorts []api.ForwardedPort
 
-	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.
-	// Applicable to Podman only.
-	IgnoreLocalhost bool
-	// WatchFiles indicates to watch for file changes and sync changes to the container
-	WatchFiles bool
-	// ForwardLocalhost indicates whether to try to make port-forwarding work with container apps listening on the loopback interface.
-	ForwardLocalhost bool
 	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
 	WatchCluster bool
-	// ErrOut is a Writer to output forwarded port information
-	Out io.Writer
-	// ErrOut is a Writer to output forwarded port information
-	ErrOut io.Writer
 	// PromptMessage
 	PromptMessage string
 }
@@ -119,11 +94,11 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		appName       = odocontext.GetApplication(ctx)
 	)
 
-	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, parameters.FileIgnores)
+	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, parameters.StartOptions.IgnorePaths)
 
 	var err error
-	if parameters.WatchFiles {
-		o.sourcesWatcher, err = getFullSourcesWatcher(path, parameters.FileIgnores)
+	if parameters.StartOptions.WatchFiles {
+		o.sourcesWatcher, err = getFullSourcesWatcher(path, parameters.StartOptions.IgnorePaths)
 		if err != nil {
 			return err
 		}
@@ -155,7 +130,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	if err != nil {
 		return err
 	}
-	if parameters.WatchFiles {
+	if parameters.StartOptions.WatchFiles {
 		var devfileFiles []string
 		devfileFiles, err = libdevfile.GetReferencedLocalFiles(*devfileObj)
 		if err != nil {
@@ -250,7 +225,7 @@ func (o *WatchClient) eventWatcher(
 			var changedFiles, deletedPaths []string
 			if !o.forceSync {
 				// first find the files that have changed (also includes the ones newly created) or deleted
-				changedFiles, deletedPaths = evaluateChangesHandler(events, path, parameters.FileIgnores, o.sourcesWatcher)
+				changedFiles, deletedPaths = evaluateChangesHandler(events, path, parameters.StartOptions.IgnorePaths, o.sourcesWatcher)
 				// process the changes and sync files with remote pod
 				if len(changedFiles) == 0 && len(deletedPaths) == 0 {
 					continue
@@ -488,7 +463,7 @@ func (o *WatchClient) processEvents(
 				fmt.Fprintf(out, "Updated Kubernetes config\n")
 			}
 		} else {
-			if parameters.WatchFiles {
+			if parameters.StartOptions.WatchFiles {
 				fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
 			} else {
 				return nil, err
@@ -501,7 +476,7 @@ func (o *WatchClient) processEvents(
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		PrintInfoMessage(out, path, parameters.WatchFiles, parameters.PromptMessage)
+		PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
 	}
 	return nil, nil
 }

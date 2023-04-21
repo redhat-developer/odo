@@ -12,6 +12,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
+	"github.com/redhat-developer/odo/pkg/dev"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 )
 
@@ -91,7 +92,11 @@ func Test_eventWatcher(t *testing.T) {
 		{
 			name: "Case 3: Delete file, no error",
 			args: args{
-				parameters: WatchParameters{FileIgnores: []string{"file1"}},
+				parameters: WatchParameters{
+					StartOptions: dev.StartOptions{
+						IgnorePaths: []string{"file1"},
+					},
+				},
 			},
 			wantOut:       "Pushing files...\n\nchangedFiles [] deletedPaths [file1 file2]\n",
 			wantErr:       true,
