@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/api"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"time"
 
-	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/redhat-developer/odo/pkg/api"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
@@ -59,14 +59,6 @@ func NewWatchClient(kubeClient kclient.ClientInterface) *WatchClient {
 
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
 type WatchParameters struct {
-	// Name of component that is to be watched
-	ComponentName string
-	// Name of application, the component is part of
-	ApplicationName string
-	// DevfilePath is the path of the devfile
-	DevfilePath string
-	// The path to the source of component(local or binary)
-	Path string
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
@@ -81,8 +73,6 @@ type WatchParameters struct {
 	DevfileRunCmd string
 	// DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
 	DevfileDebugCmd string
-	// InitialDevfileObj is used to compare the devfile between the very first run of odo dev and subsequent ones
-	InitialDevfileObj parser.DevfileObj
 	// Debug indicates if the debug command should be started after sync, or the run command by default
 	Debug bool
 	// DebugPort indicates which debug port to use for pushing after sync
@@ -121,11 +111,19 @@ type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores 
 type processEventsFunc func(ctx context.Context, changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
-	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		appName       = odocontext.GetApplication(ctx)
+	)
+
+	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, parameters.FileIgnores)
 
 	var err error
 	if parameters.WatchFiles {
-		o.sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
+		o.sourcesWatcher, err = getFullSourcesWatcher(path, parameters.FileIgnores)
 		if err != nil {
 			return err
 		}
@@ -138,7 +136,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	defer o.sourcesWatcher.Close()
 
 	if parameters.WatchCluster {
-		selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
+		selector := labels.GetSelector(componentName, appName, labels.ComponentDevMode, true)
 		o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
 		if err != nil {
 			return fmt.Errorf("error watching deployment: %v", err)
@@ -159,11 +157,11 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 	if parameters.WatchFiles {
 		var devfileFiles []string
-		devfileFiles, err = libdevfile.GetReferencedLocalFiles(parameters.InitialDevfileObj)
+		devfileFiles, err = libdevfile.GetReferencedLocalFiles(*devfileObj)
 		if err != nil {
 			return err
 		}
-		devfileFiles = append(devfileFiles, parameters.DevfilePath)
+		devfileFiles = append(devfileFiles, devfilePath)
 		for _, f := range devfileFiles {
 			err = o.devfileWatcher.Add(f)
 			if err != nil {
@@ -200,6 +198,13 @@ func (o *WatchClient) eventWatcher(
 	processEventsHandler processEventsFunc,
 	componentStatus ComponentStatus,
 ) error {
+
+	var (
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		appName       = odocontext.GetApplication(ctx)
+	)
 
 	expBackoff := NewExpBackoff()
 
@@ -245,7 +250,7 @@ func (o *WatchClient) eventWatcher(
 			var changedFiles, deletedPaths []string
 			if !o.forceSync {
 				// first find the files that have changed (also includes the ones newly created) or deleted
-				changedFiles, deletedPaths = evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, o.sourcesWatcher)
+				changedFiles, deletedPaths = evaluateChangesHandler(events, path, parameters.FileIgnores, o.sourcesWatcher)
 				// process the changes and sync files with remote pod
 				if len(changedFiles) == 0 && len(deletedPaths) == 0 {
 					continue
@@ -351,7 +356,7 @@ func (o *WatchClient) eventWatcher(
 			switch kevent := ev.Object.(type) {
 			case *corev1.Event:
 				podName := kevent.InvolvedObject.Name
-				selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
+				selector := labels.GetSelector(componentName, appName, labels.ComponentDevMode, true)
 				matching, err := o.kubeClient.IsPodNameMatchingSelector(ctx, podName, selector)
 				if err != nil {
 					return err
@@ -444,6 +449,11 @@ func (o *WatchClient) processEvents(
 	componentStatus *ComponentStatus,
 	backoff *ExpBackoff,
 ) (*time.Duration, error) {
+	var (
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+	)
+
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
@@ -453,7 +463,6 @@ func (o *WatchClient) processEvents(
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
 	pushParams := adapters.PushParameters{
-		Path:                     parameters.Path,
 		WatchFiles:               changedFiles,
 		WatchDeletedFiles:        deletedPaths,
 		IgnoredFiles:             parameters.FileIgnores,
@@ -498,7 +507,7 @@ func (o *WatchClient) processEvents(
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		PrintInfoMessage(out, parameters.Path, parameters.WatchFiles, parameters.PromptMessage)
+		PrintInfoMessage(out, path, parameters.WatchFiles, parameters.PromptMessage)
 	}
 	return nil, nil
 }

@@ -82,11 +82,8 @@ func (o *DevClient) Start(
 	options dev.StartOptions,
 ) error {
 	var (
-		appName       = odocontext.GetApplication(ctx)
-		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
-		devfilePath   = odocontext.GetDevfilePath(ctx)
-		path          = filepath.Dir(devfilePath)
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
 
 		componentStatus = watch.ComponentStatus{
 			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
@@ -101,11 +98,6 @@ func (o *DevClient) Start(
 	watch.PrintInfoMessage(out, path, options.WatchFiles, promptMessage)
 
 	watchParameters := watch.WatchParameters{
-		DevfilePath:          devfilePath,
-		Path:                 path,
-		ComponentName:        componentName,
-		ApplicationName:      appName,
-		InitialDevfileObj:    *devfileObj,
 		DevfileWatchHandler:  o.watchHandler,
 		FileIgnores:          options.IgnorePaths,
 		Debug:                options.Debug,

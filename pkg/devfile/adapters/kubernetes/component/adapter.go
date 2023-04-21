@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/port"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -58,18 +60,10 @@ type Adapter struct {
 	syncClient            sync.Client
 	execClient            exec.Client
 	configAutomountClient configAutomount.Client
+	fs                    filesystem.Filesystem // FS is the object used for building image component if present
 
-	AdapterContext
-	logger machineoutput.MachineEventLoggingClient
-}
-
-// AdapterContext is a construct that is common to all adapters
-type AdapterContext struct {
-	ComponentName string                // ComponentName is the odo component name, it is NOT related to any devfile components
-	Context       string                // Context is the given directory containing the source code and configs
-	AppName       string                // the application name associated to a component
-	Devfile       parser.DevfileObj     // Devfile is the object returned by the Devfile parser
-	FS            filesystem.Filesystem // FS is the object used for building image component if present
+	devfile parser.DevfileObj // Devfile is the object returned by the Devfile parser
+	logger  machineoutput.MachineEventLoggingClient
 }
 
 var _ ComponentAdapter = (*Adapter)(nil)
@@ -83,7 +77,8 @@ func NewKubernetesAdapter(
 	syncClient sync.Client,
 	execClient exec.Client,
 	configAutomountClient configAutomount.Client,
-	context AdapterContext,
+	fs filesystem.Filesystem,
+	devfile parser.DevfileObj,
 ) Adapter {
 	return Adapter{
 		kubeClient:            kubernetesClient,
@@ -93,8 +88,10 @@ func NewKubernetesAdapter(
 		syncClient:            syncClient,
 		execClient:            execClient,
 		configAutomountClient: configAutomountClient,
-		AdapterContext:        context,
-		logger:                machineoutput.NewMachineEventLoggingClient(),
+		fs:                    fs,
+		devfile:               devfile,
+
+		logger: machineoutput.NewMachineEventLoggingClient(),
 	}
 }
 
@@ -103,8 +100,15 @@ func NewKubernetesAdapter(
 // The componentStatus will be modified to reflect the status of the component when the function returns
 func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, componentStatus *watch.ComponentStatus) (err error) {
 
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+	)
+
 	// preliminary checks
-	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
+	err = dfutil.ValidateK8sResourceName("component name", componentName)
 	if err != nil {
 		return err
 	}
@@ -120,12 +124,12 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	klog.V(4).Infof("component state: %q\n", componentStatus.State)
-	err = a.buildPushAutoImageComponents(ctx, a.FS, a.Devfile, componentStatus)
+	err = a.buildPushAutoImageComponents(ctx, a.fs, a.devfile, componentStatus)
 	if err != nil {
 		return err
 	}
 
-	deployment, deploymentExists, err := a.getComponentDeployment()
+	deployment, deploymentExists, err := a.getComponentDeployment(ctx)
 	if err != nil {
 		return err
 	}
@@ -135,11 +139,11 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
-	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
-	labels := odolabels.GetLabels(a.ComponentName, a.AppName, runtime, odolabels.ComponentDevMode, false)
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.devfile.Data.GetMetadata())
+	labels := odolabels.GetLabels(componentName, appName, runtime, odolabels.ComponentDevMode, false)
 
 	var updated bool
-	deployment, updated, err = a.createOrUpdateComponent(deploymentExists, libdevfile.DevfileCommands{
+	deployment, updated, err = a.createOrUpdateComponent(ctx, deploymentExists, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
@@ -150,9 +154,9 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	ownerReference := generator.GetOwnerReference(deployment)
 
 	// Delete remote resources that are not present in the Devfile
-	selector := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false)
 
-	objectsToRemove, serviceBindingSecretsToRemove, err := a.getRemoteResourcesNotPresentInDevfile(selector)
+	objectsToRemove, serviceBindingSecretsToRemove, err := a.getRemoteResourcesNotPresentInDevfile(ctx, selector)
 	if err != nil {
 		return fmt.Errorf("unable to determine resources to delete: %w", err)
 	}
@@ -172,12 +176,12 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Create all the K8s components defined in the devfile
-	_, err = a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode, ownerReference)
+	_, err = a.pushDevfileKubernetesComponents(ctx, labels, odolabels.ComponentDevMode, ownerReference)
 	if err != nil {
 		return err
 	}
 
-	err = a.updatePVCsOwnerReferences(ownerReference)
+	err = a.updatePVCsOwnerReferences(ctx, ownerReference)
 	if err != nil {
 		return err
 	}
@@ -195,7 +199,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		return nil
 	}
 
-	injected, err := a.bindingClient.CheckServiceBindingsInjectionDone(a.ComponentName, a.AppName)
+	injected, err := a.bindingClient.CheckServiceBindingsInjectionDone(componentName, appName)
 	if err != nil {
 		return err
 	}
@@ -206,7 +210,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Check if endpoints changed in Devfile
-	portsToForward, err := libdevfile.GetDevfileContainerEndpointMapping(a.Devfile, parameters.Debug)
+	portsToForward, err := libdevfile.GetDevfileContainerEndpointMapping(a.devfile, parameters.Debug)
 	if err != nil {
 		return err
 	}
@@ -218,9 +222,9 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	// Now the Deployment has a Ready replica, we can get the Pod to work inside it
-	pod, err := a.kubeClient.GetPodUsingComponentName(a.ComponentName)
+	pod, err := a.kubeClient.GetPodUsingComponentName(componentName)
 	if err != nil {
-		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
+		return fmt.Errorf("unable to get pod for component %s: %w", componentName, err)
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
@@ -242,7 +246,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	compInfo := sync.ComponentInfo{
-		ComponentName: a.ComponentName,
+		ComponentName: componentName,
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
@@ -256,7 +260,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	}
 
 	syncParams := sync.SyncParameters{
-		Path:                     parameters.Path,
+		Path:                     path,
 		WatchFiles:               parameters.WatchFiles,
 		WatchDeletedFiles:        parameters.WatchDeletedFiles,
 		IgnoredFiles:             parameters.IgnoredFiles,
@@ -270,21 +274,21 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	execRequired, err := a.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
 		componentStatus.State = watch.StateReady
-		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
+		return fmt.Errorf("failed to sync to component with name %s: %w", componentName, err)
 	}
 	s.End(true)
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.Devfile) {
-		err = libdevfile.ExecPostStartEvents(ctx, a.Devfile, component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name, "Executing post-start command in container", parameters.Show))
+	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.devfile) {
+		err = libdevfile.ExecPostStartEvents(ctx, a.devfile, component.NewExecHandler(a.kubeClient, a.execClient, appName, componentName, pod.Name, "Executing post-start command in container", parameters.Show))
 		if err != nil {
 			return err
 		}
 	}
 	componentStatus.PostStartEventsDone = true
 
-	cmd, err := libdevfile.ValidateAndGetCommand(a.Devfile, cmdName, cmdKind)
+	cmd, err := libdevfile.ValidateAndGetCommand(a.devfile, cmdName, cmdKind)
 	if err != nil {
 		return err
 	}
@@ -296,13 +300,13 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 	var running bool
 	var isComposite bool
 	cmdHandler := runHandler{
-		fs:            a.FS,
+		fs:            a.fs,
 		execClient:    a.execClient,
 		kubeClient:    a.kubeClient,
-		appName:       a.AppName,
-		componentName: a.ComponentName,
-		devfile:       a.Devfile,
-		path:          parameters.Path,
+		appName:       appName,
+		componentName: componentName,
+		devfile:       a.devfile,
+		path:          path,
 		podName:       pod.GetName(),
 		ctx:           ctx,
 	}
@@ -330,9 +334,9 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(a.kubeClient, a.execClient, a.AppName, a.ComponentName, pod.Name,
+			execHandler := component.NewExecHandler(a.kubeClient, a.execClient, appName, componentName, pod.Name,
 				"Building your application in container", parameters.Show)
-			return libdevfile.Build(ctx, a.Devfile, parameters.DevfileBuildCmd, execHandler)
+			return libdevfile.Build(ctx, a.devfile, parameters.DevfileBuildCmd, execHandler)
 		}
 		if running {
 			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
@@ -345,14 +349,14 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 				return err
 			}
 		}
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, a.Devfile, cmdName, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, a.devfile, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err
 		}
 	}
 
 	if podChanged || portsChanged {
-		a.portForwardClient.StopPortForwarding(ctx, a.ComponentName)
+		a.portForwardClient.StopPortForwarding(ctx, componentName)
 	}
 
 	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
@@ -365,7 +369,7 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 		fmt.Fprintln(log.GetStdout())
 	}
 
-	err = a.portForwardClient.StartPortForwarding(ctx, a.Devfile, a.ComponentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
+	err = a.portForwardClient.StartPortForwarding(ctx, a.devfile, componentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
 	if err != nil {
 		return adapters.NewErrPortForward(err)
 	}
@@ -379,24 +383,30 @@ func (a Adapter) Push(ctx context.Context, parameters adapters.PushParameters, c
 // with the expected spec.
 // Returns the new deployment and if the generation of the deployment has been updated
 func (a *Adapter) createOrUpdateComponent(
+	ctx context.Context,
 	componentExists bool,
 	commands libdevfile.DevfileCommands,
 	deployment *appsv1.Deployment,
 ) (*appsv1.Deployment, bool, error) {
 
-	componentName := a.ComponentName
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+	)
 
-	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.devfile.Data.GetMetadata())
 
 	// Set the labels
-	labels := odolabels.GetLabels(componentName, a.AppName, runtime, odolabels.ComponentDevMode, true)
+	labels := odolabels.GetLabels(componentName, appName, runtime, odolabels.ComponentDevMode, true)
 
 	annotations := make(map[string]string)
-	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.devfile.Data.GetMetadata()))
 	odolabels.AddCommonAnnotations(annotations)
 	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
-	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(deployment, labels, annotations)
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(ctx, deployment, labels, annotations)
 	if err != nil {
 		return nil, false, err
 	}
@@ -405,7 +415,7 @@ func (a *Adapter) createOrUpdateComponent(
 	if err != nil {
 		return nil, false, err
 	}
-	podTemplateSpec, err := generator.GetPodTemplateSpec(a.Devfile, generator.PodTemplateParams{
+	podTemplateSpec, err := generator.GetPodTemplateSpec(a.devfile, generator.PodTemplateParams{
 		ObjectMeta:                 deploymentObjectMeta,
 		PodSecurityAdmissionPolicy: policy,
 	})
@@ -419,13 +429,13 @@ func (a *Adapter) createOrUpdateComponent(
 
 	initContainers := podTemplateSpec.Spec.InitContainers
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
 	if err != nil {
 		return nil, false, err
 	}
 
 	// Returns the volumes to add to the PodTemplate and adds volumeMounts to the containers and initContainers
-	volumes, err := a.buildVolumes(containers, initContainers)
+	volumes, err := a.buildVolumes(ctx, containers, initContainers)
 	if err != nil {
 		return nil, false, err
 	}
@@ -449,7 +459,7 @@ func (a *Adapter) createOrUpdateComponent(
 		originalGeneration = deployment.GetGeneration()
 	}
 
-	deployment, err = generator.GetDeployment(a.Devfile, deployParams)
+	deployment, err = generator.GetDeployment(a.devfile, deployParams)
 	if err != nil {
 		return nil, false, err
 	}
@@ -457,7 +467,7 @@ func (a *Adapter) createOrUpdateComponent(
 		deployment.Annotations = make(map[string]string)
 	}
 
-	if vcsUri := util.GetGitOriginPath(a.Context); vcsUri != "" {
+	if vcsUri := util.GetGitOriginPath(path); vcsUri != "" {
 		deployment.Annotations["app.openshift.io/vcs-uri"] = vcsUri
 	}
 
@@ -466,7 +476,7 @@ func (a *Adapter) createOrUpdateComponent(
 	serviceAnnotations["service.binding/backend_ip"] = "path={.spec.clusterIP}"
 	serviceAnnotations["service.binding/backend_port"] = "path={.spec.ports},elementType=sliceOfMaps,sourceKey=name,sourceValue=port"
 
-	serviceName, err := util.NamespaceKubernetesObjectWithTrim(componentName, a.AppName, 63)
+	serviceName, err := util.NamespaceKubernetesObjectWithTrim(componentName, appName, 63)
 	if err != nil {
 		return nil, false, err
 	}
@@ -475,7 +485,7 @@ func (a *Adapter) createOrUpdateComponent(
 		ObjectMeta:     serviceObjectMeta,
 		SelectorLabels: selectorLabels,
 	}
-	svc, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
+	svc, err := generator.GetService(a.devfile, serviceParams, parsercommon.DevfileOptions{})
 
 	if err != nil {
 		return nil, false, err
@@ -497,7 +507,7 @@ func (a *Adapter) createOrUpdateComponent(
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		ownerReference := generator.GetOwnerReference(deployment)
-		err = a.createOrUpdateServiceForComponent(svc, componentName, ownerReference)
+		err = a.createOrUpdateServiceForComponent(ctx, svc, ownerReference)
 		if err != nil {
 			return nil, false, err
 		}
@@ -539,31 +549,35 @@ func (a *Adapter) createOrUpdateComponent(
 // - (side effect on input parameters) adds volumeMounts to containers and initContainers for the PVCs and Ephemeral volumes
 // - (side effect on input parameters) adds volumeMounts for automounted volumes
 // => Returns the list of Volumes to add to the PodTemplate
-func (a *Adapter) buildVolumes(containers, initContainers []corev1.Container) ([]corev1.Volume, error) {
+func (a *Adapter) buildVolumes(ctx context.Context, containers, initContainers []corev1.Container) ([]corev1.Volume, error) {
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+	)
 
-	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.Devfile.Data.GetMetadata())
+	runtime := component.GetComponentRuntimeFromDevfileMetadata(a.devfile.Data.GetMetadata())
 
-	storageClient := storagepkg.NewClient(a.ComponentName, a.AppName, storagepkg.ClientOptions{
+	storageClient := storagepkg.NewClient(componentName, appName, storagepkg.ClientOptions{
 		Client:  a.kubeClient,
 		Runtime: runtime,
 	})
 
 	// Create the PVC for the project sources, if not ephemeral
-	err := storage.HandleOdoSourceStorage(a.kubeClient, storageClient, a.ComponentName, a.prefClient.GetEphemeralSourceVolume())
+	err := storage.HandleOdoSourceStorage(a.kubeClient, storageClient, componentName, a.prefClient.GetEphemeralSourceVolume())
 	if err != nil {
 		return nil, err
 	}
 
 	// Create PVCs for non-ephemeral Volumes defined in the Devfile
 	// and returns the Ephemeral volumes defined in the Devfile
-	ephemerals, err := storagepkg.Push(storageClient, a.Devfile)
+	ephemerals, err := storagepkg.Push(storageClient, a.devfile)
 	if err != nil {
 		return nil, err
 	}
 
 	// get all the PVCs from the cluster belonging to the component
 	// These PVCs have been created earlier with `storage.HandleOdoSourceStorage` and `storagepkg.Push`
-	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
 	if err != nil {
 		return nil, err
 	}
@@ -586,13 +600,13 @@ func (a *Adapter) buildVolumes(containers, initContainers []corev1.Container) ([
 	utils.AddOdoMandatoryVolume(containers)
 
 	// Get PVC volumes and Volume Mounts
-	pvcVolumes, err := storage.GetPersistentVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
+	pvcVolumes, err := storage.GetPersistentVolumesAndVolumeMounts(a.devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
 	if err != nil {
 		return nil, err
 	}
 	allVolumes = append(allVolumes, pvcVolumes...)
 
-	ephemeralVolumes, err := storage.GetEphemeralVolumesAndVolumeMounts(a.Devfile, containers, initContainers, ephemerals, parsercommon.DevfileOptions{})
+	ephemeralVolumes, err := storage.GetEphemeralVolumesAndVolumeMounts(a.devfile, containers, initContainers, ephemerals, parsercommon.DevfileOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -607,8 +621,12 @@ func (a *Adapter) buildVolumes(containers, initContainers []corev1.Container) ([
 	return allVolumes, nil
 }
 
-func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string, ownerReference metav1.OwnerReference) error {
-	oldSvc, err := a.kubeClient.GetOneService(a.ComponentName, a.AppName, true)
+func (a *Adapter) createOrUpdateServiceForComponent(ctx context.Context, svc *corev1.Service, ownerReference metav1.OwnerReference) error {
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+	)
+	oldSvc, err := a.kubeClient.GetOneService(componentName, appName, true)
 	originOwnerReferences := svc.OwnerReferences
 	if err != nil {
 		// no old service was found, create a new one
@@ -645,11 +663,15 @@ func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, compone
 
 // generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name, labels and annotations
 // if no deployment exists, it creates a new deployment name
-func (a Adapter) generateDeploymentObjectMeta(deployment *appsv1.Deployment, labels map[string]string, annotations map[string]string) (metav1.ObjectMeta, error) {
+func (a Adapter) generateDeploymentObjectMeta(ctx context.Context, deployment *appsv1.Deployment, labels map[string]string, annotations map[string]string) (metav1.ObjectMeta, error) {
+	var (
+		appName       = odocontext.GetApplication(ctx)
+		componentName = odocontext.GetComponentName(ctx)
+	)
 	if deployment != nil {
 		return generator.GetObjectMeta(deployment.Name, a.kubeClient.GetCurrentNamespace(), labels, annotations), nil
 	} else {
-		deploymentName, err := util.NamespaceKubernetesObject(a.ComponentName, a.AppName)
+		deploymentName, err := util.NamespaceKubernetesObject(componentName, appName)
 		if err != nil {
 			return metav1.ObjectMeta{}, err
 		}
@@ -660,7 +682,12 @@ func (a Adapter) generateDeploymentObjectMeta(deployment *appsv1.Deployment, lab
 // getRemoteResourcesNotPresentInDevfile compares the list of Devfile K8s component and remote K8s resources
 // and returns a list of the remote resources not present in the Devfile and in case the SBO is not installed, a list of service binding secrets that must be deleted;
 // it ignores the core components (such as deployments, svc, pods; all resources with `component:<something>` label)
-func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objectsToRemove, serviceBindingSecretsToRemove []unstructured.Unstructured, err error) {
+func (a Adapter) getRemoteResourcesNotPresentInDevfile(ctx context.Context, selector string) (objectsToRemove, serviceBindingSecretsToRemove []unstructured.Unstructured, err error) {
+	var (
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+	)
+
 	currentNamespace := a.kubeClient.GetCurrentNamespace()
 	allRemoteK8sResources, err := a.kubeClient.GetAllResourcesFromSelector(selector, currentNamespace)
 	if err != nil {
@@ -683,7 +710,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	}
 
 	var devfileK8sResources []devfilev1.Component
-	devfileK8sResources, err = libdevfile.GetK8sAndOcComponentsToPush(a.Devfile, true)
+	devfileK8sResources, err = libdevfile.GetK8sAndOcComponentsToPush(a.devfile, true)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to obtain resources from the Devfile: %w", err)
 	}
@@ -692,7 +719,7 @@ func (a Adapter) getRemoteResourcesNotPresentInDevfile(selector string) (objects
 	var devfileK8sResourcesUnstructured []unstructured.Unstructured
 	for _, devfileK := range devfileK8sResources {
 		var devfileKUnstructuredList []unstructured.Unstructured
-		devfileKUnstructuredList, err = libdevfile.GetK8sComponentAsUnstructuredList(a.Devfile, devfileK.Name, a.Context, devfilefs.DefaultFs{})
+		devfileKUnstructuredList, err = libdevfile.GetK8sComponentAsUnstructuredList(a.devfile, devfileK.Name, path, devfilefs.DefaultFs{})
 		if err != nil {
 			return nil, nil, fmt.Errorf("unable to read the resource: %w", err)
 		}

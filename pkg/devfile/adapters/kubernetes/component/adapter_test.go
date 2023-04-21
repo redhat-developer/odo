@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -23,6 +24,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
@@ -106,12 +108,6 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := AdapterContext{
-				ComponentName: testComponentName,
-				AppName:       testAppName,
-				Devfile:       devObj,
-			}
-
 			fkclient, fkclientset := kclient.FakeNew()
 
 			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -134,8 +130,12 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume().AnyTimes()
 			fakeConfigAutomount := configAutomount.NewMockClient(ctrl)
 			fakeConfigAutomount.EXPECT().GetAutomountingVolumes().AnyTimes()
-			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, adapterCtx)
-			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, libdevfile.DevfileCommands{}, nil)
+			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, nil, devObj)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithComponentName(ctx, "my-component")
+			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
+			_, _, err := componentAdapter.createOrUpdateComponent(ctx, tt.running, libdevfile.DevfileCommands{}, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -242,12 +242,12 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 
 			a := Adapter{
 				kubeClient: fakeClient,
-				AdapterContext: AdapterContext{
-					ComponentName: tt.fields.componentName,
-					AppName:       tt.fields.appName,
-				},
 			}
-			got, err := a.generateDeploymentObjectMeta(tt.fields.deployment, tt.args.labels, tt.args.annotations)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithComponentName(ctx, "nodejs")
+			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
+			got, err := a.generateDeploymentObjectMeta(ctx, tt.fields.deployment, tt.args.labels, tt.args.annotations)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
 				return

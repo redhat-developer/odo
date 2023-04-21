@@ -11,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/fsnotify/fsnotify"
+
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 )
 
 func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
@@ -113,6 +115,9 @@ func Test_eventWatcher(t *testing.T) {
 			fileWatcher, _ := fsnotify.NewWatcher()
 			var cancel context.CancelFunc
 			ctx, cancel := context.WithCancel(context.Background())
+			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
+			ctx = odocontext.WithApplication(ctx, "odo")
+			ctx = odocontext.WithComponentName(ctx, "my-component")
 			out := &bytes.Buffer{}
 
 			go func() {

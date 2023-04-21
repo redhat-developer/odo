@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/sync"
@@ -25,7 +25,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -86,10 +85,7 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Creating new adapter")
 
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
-		devfilePath   = odocontext.GetDevfilePath(ctx)
-		path          = filepath.Dir(devfilePath)
-		componentName = odocontext.GetComponentName(ctx)
+		devfileObj = odocontext.GetDevfileObj(ctx)
 	)
 
 	adapter := component.NewKubernetesAdapter(
@@ -100,16 +96,11 @@ func (o *DevClient) Start(
 		o.syncClient,
 		o.execClient,
 		o.configAutomountClient,
-		component.AdapterContext{
-			ComponentName: componentName,
-			Context:       path,
-			AppName:       odocontext.GetApplication(ctx),
-			Devfile:       *devfileObj,
-			FS:            o.filesystem,
-		})
+		o.filesystem,
+		*devfileObj,
+	)
 
 	pushParameters := adapters.PushParameters{
-		Path:                 path,
 		IgnoredFiles:         options.IgnorePaths,
 		Debug:                options.Debug,
 		DevfileBuildCmd:      options.BuildCommand,
@@ -130,13 +121,8 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
-		DevfilePath:          devfilePath,
-		Path:                 path,
-		ComponentName:        componentName,
-		ApplicationName:      odocontext.GetApplication(ctx),
 		DevfileWatchHandler:  o.regenerateAdapterAndPush,
 		FileIgnores:          options.IgnorePaths,
-		InitialDevfileObj:    *devfileObj,
 		Debug:                options.Debug,
 		DevfileBuildCmd:      options.BuildCommand,
 		DevfileRunCmd:        options.RunCommand,
@@ -183,12 +169,7 @@ func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.W
 		o.syncClient,
 		o.execClient,
 		o.configAutomountClient,
-		component.AdapterContext{
-			ComponentName: parameters.ComponentName,
-			Context:       parameters.Path,
-			AppName:       parameters.ApplicationName,
-			Devfile:       devObj,
-			FS:            o.filesystem,
-		},
+		o.filesystem,
+		devObj,
 	), nil
 }
