@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -20,11 +21,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/watch"
 
 	"k8s.io/klog"
-
-	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 const (
@@ -45,6 +44,13 @@ type DevClient struct {
 	execClient            exec.Client
 	deleteClient          _delete.Client
 	configAutomountClient configAutomount.Client
+
+	// deploymentExists is true when the deployment is already created when calling createComponents
+	deploymentExists bool
+	// portsChanged is true of ports have changed since the last call to createComponents
+	portsChanged bool
+	// portsToForward lists the port to forward during inner loop (TODO move port forward to createComponents)
+	portsToForward map[string][]devfilev1.Endpoint
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -100,9 +106,9 @@ func (o *DevClient) Start(
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	componentStatus := watch.ComponentStatus{
-		ImageComponentsAutoApplied: make(map[string]v1alpha2.ImageComponent),
+		ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
 	}
-	err := o.Push(ctx, pushParameters, &componentStatus)
+	err := o.reconcile(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -136,7 +142,7 @@ func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams com
 
 	pushParams.Devfile = devObj
 
-	err = o.Push(ctx, pushParams, componentStatus)
+	err = o.reconcile(ctx, pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
