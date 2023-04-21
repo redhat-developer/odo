@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
 
@@ -76,8 +75,6 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	ctx context.Context,
-	out io.Writer,
-	errOut io.Writer,
 	options dev.StartOptions,
 ) error {
 	var (
@@ -89,12 +86,12 @@ func (o *DevClient) Start(
 		}
 	)
 
-	err := o.reconcile(ctx, out, errOut, options, &componentStatus)
+	err := o.reconcile(ctx, options.Out, options.ErrOut, options, &componentStatus)
 	if err != nil {
 		return err
 	}
 
-	watch.PrintInfoMessage(out, path, options.WatchFiles, promptMessage)
+	watch.PrintInfoMessage(options.Out, path, options.WatchFiles, promptMessage)
 
 	watchParameters := watch.WatchParameters{
 		DevfileWatchHandler:  o.watchHandler,
@@ -109,12 +106,12 @@ func (o *DevClient) Start(
 		CustomForwardedPorts: options.CustomForwardedPorts,
 		WatchFiles:           options.WatchFiles,
 		WatchCluster:         false,
-		Out:                  out,
-		ErrOut:               errOut,
+		Out:                  options.Out,
+		ErrOut:               options.ErrOut,
 		PromptMessage:        promptMessage,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+	return o.watchClient.WatchAndPush(options.Out, watchParameters, ctx, componentStatus)
 }
 
 // syncFiles syncs the local source files in path into the pod's source volume

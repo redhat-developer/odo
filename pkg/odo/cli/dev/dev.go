@@ -238,8 +238,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	return o.clientset.DevClient.Start(
 		o.ctx,
-		o.out,
-		o.errOut,
 		dev.StartOptions{
 			IgnorePaths:          o.ignorePaths,
 			Debug:                o.debugFlag,
@@ -251,6 +249,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			ForwardLocalhost:     o.forwardLocalhostFlag,
 			Variables:            variables,
 			CustomForwardedPorts: o.forwardedPorts,
+			Out:                  o.out,
+			ErrOut:               o.errOut,
 		},
 	)
 }

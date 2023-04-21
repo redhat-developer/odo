@@ -3,7 +3,6 @@ package kubedev
 import (
 	"context"
 	"fmt"
-	"io"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
@@ -83,8 +82,6 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	ctx context.Context,
-	out io.Writer,
-	errOut io.Writer,
 	options dev.StartOptions,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
@@ -100,7 +97,7 @@ func (o *DevClient) Start(
 		DevfileRunCmd:        options.RunCommand,
 		RandomPorts:          options.RandomPorts,
 		CustomForwardedPorts: options.CustomForwardedPorts,
-		ErrOut:               errOut,
+		ErrOut:               options.ErrOut,
 		Devfile:              *devfileObj,
 	}
 
@@ -125,11 +122,11 @@ func (o *DevClient) Start(
 		CustomForwardedPorts: options.CustomForwardedPorts,
 		WatchFiles:           options.WatchFiles,
 		WatchCluster:         true,
-		ErrOut:               errOut,
+		ErrOut:               options.ErrOut,
 		PromptMessage:        promptMessage,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+	return o.watchClient.WatchAndPush(options.Out, watchParameters, ctx, componentStatus)
 }
 
 // RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod

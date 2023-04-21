@@ -2,8 +2,9 @@ package dev
 
 import (
 	"context"
-	"github.com/redhat-developer/odo/pkg/api"
 	"io"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 type StartOptions struct {
@@ -31,6 +32,9 @@ type StartOptions struct {
 	ForwardLocalhost bool
 	// Variables to override in the Devfile
 	Variables map[string]string
+
+	Out    io.Writer
+	ErrOut io.Writer
 }
 
 type Client interface {
@@ -39,8 +43,6 @@ type Client interface {
 	// It logs messages and errors to out and errOut.
 	Start(
 		ctx context.Context,
-		out io.Writer,
-		errOut io.Writer,
 		options StartOptions,
 	) error
 
