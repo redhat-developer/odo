@@ -88,9 +88,9 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 
 	var updated bool
 	deployment, updated, err = o.createOrUpdateComponent(ctx, parameters, o.deploymentExists, libdevfile.DevfileCommands{
-		BuildCmd: parameters.DevfileBuildCmd,
-		RunCmd:   parameters.DevfileRunCmd,
-		DebugCmd: parameters.DevfileDebugCmd,
+		BuildCmd: parameters.StartOptions.BuildCommand,
+		RunCmd:   parameters.StartOptions.RunCommand,
+		DebugCmd: parameters.StartOptions.DebugCommand,
 	}, deployment)
 	if err != nil {
 		return false, fmt.Errorf("unable to create or update component: %w", err)
@@ -154,7 +154,7 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 	}
 
 	// Check if endpoints changed in Devfile
-	portsToForward, err := libdevfile.GetDevfileContainerEndpointMapping(parameters.Devfile, parameters.Debug)
+	portsToForward, err := libdevfile.GetDevfileContainerEndpointMapping(parameters.Devfile, parameters.StartOptions.Debug)
 	if err != nil {
 		return false, err
 	}

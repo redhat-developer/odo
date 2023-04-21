@@ -62,17 +62,17 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	}
 
 	cmdKind := devfilev1.RunCommandGroupKind
-	cmdName := parameters.DevfileRunCmd
-	if parameters.Debug {
+	cmdName := parameters.StartOptions.RunCommand
+	if parameters.StartOptions.Debug {
 		cmdKind = devfilev1.DebugCommandGroupKind
-		cmdName = parameters.DevfileDebugCmd
+		cmdName = parameters.StartOptions.DebugCommand
 	}
 
 	syncParams := sync.SyncParameters{
 		Path:                     path,
 		WatchFiles:               parameters.WatchFiles,
 		WatchDeletedFiles:        parameters.WatchDeletedFiles,
-		IgnoredFiles:             parameters.IgnoredFiles,
+		IgnoredFiles:             parameters.StartOptions.IgnorePaths,
 		DevfileScanIndexForWatch: parameters.DevfileScanIndexForWatch,
 
 		CompInfo:  compInfo,
@@ -145,7 +145,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(o.kubernetesClient, o.execClient, appName, componentName, pod.Name,
 				"Building your application in container", parameters.Show)
-			return libdevfile.Build(ctx, parameters.Devfile, parameters.DevfileBuildCmd, execHandler)
+			return libdevfile.Build(ctx, parameters.Devfile, parameters.StartOptions.BuildCommand, execHandler)
 		}
 		if running {
 			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
@@ -178,7 +178,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		fmt.Fprintln(log.GetStdout())
 	}
 
-	err = o.portForwardClient.StartPortForwarding(ctx, parameters.Devfile, componentName, parameters.Debug, parameters.RandomPorts, log.GetStdout(), parameters.ErrOut, parameters.CustomForwardedPorts)
+	err = o.portForwardClient.StartPortForwarding(ctx, parameters.Devfile, componentName, parameters.StartOptions.Debug, parameters.StartOptions.RandomPorts, log.GetStdout(), parameters.StartOptions.ErrOut, parameters.StartOptions.CustomForwardedPorts)
 	if err != nil {
 		return common.NewErrPortForward(err)
 	}
@@ -189,13 +189,13 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 }
 
 func (o *DevClient) getPushDevfileCommands(parameters common.PushParameters) (map[devfilev1.CommandGroupKind]devfilev1.Command, error) {
-	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(parameters.Devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
+	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(parameters.Devfile, parameters.StartOptions.BuildCommand, parameters.StartOptions.RunCommand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
 
-	if parameters.Debug {
-		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(parameters.Devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
+	if parameters.StartOptions.Debug {
+		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(parameters.Devfile, parameters.StartOptions.DebugCommand, devfilev1.DebugCommandGroupKind)
 		if e != nil {
 			return nil, fmt.Errorf("debug command is not valid: %w", e)
 		}

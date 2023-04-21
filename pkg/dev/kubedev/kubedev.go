@@ -91,14 +91,7 @@ func (o *DevClient) Start(
 	)
 
 	pushParameters := common.PushParameters{
-		IgnoredFiles:         options.IgnorePaths,
-		Debug:                options.Debug,
-		DevfileBuildCmd:      options.BuildCommand,
-		DevfileRunCmd:        options.RunCommand,
-		RandomPorts:          options.RandomPorts,
-		CustomForwardedPorts: options.CustomForwardedPorts,
-		ErrOut:               options.ErrOut,
-		Devfile:              *devfileObj,
+		Devfile: *devfileObj,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")

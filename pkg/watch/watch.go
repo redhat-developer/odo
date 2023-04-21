@@ -463,17 +463,11 @@ func (o *WatchClient) processEvents(
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
 	pushParams := common.PushParameters{
+		// TODO StartOptions: parameters.StartOptions,
+
 		WatchFiles:               changedFiles,
 		WatchDeletedFiles:        deletedPaths,
-		IgnoredFiles:             parameters.FileIgnores,
-		DevfileBuildCmd:          parameters.DevfileBuildCmd,
-		DevfileRunCmd:            parameters.DevfileRunCmd,
-		DevfileDebugCmd:          parameters.DevfileDebugCmd,
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-		Debug:                    parameters.Debug,
-		RandomPorts:              parameters.RandomPorts,
-		CustomForwardedPorts:     parameters.CustomForwardedPorts,
-		ErrOut:                   parameters.ErrOut,
 	}
 	oldStatus := *componentStatus
 	err := parameters.DevfileWatchHandler(ctx, pushParams, parameters, componentStatus)
