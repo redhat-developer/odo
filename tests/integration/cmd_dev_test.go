@@ -915,12 +915,13 @@ ComponentSettings:
 					}
 					When("devfile has single endpoint", func() {
 						var (
-							LocalPort = helper.GetRandomFreePort()
+							LocalPort int
 						)
 						const (
 							ContainerPort = "3000"
 						)
 						BeforeEach(func() {
+							LocalPort = helper.GetCustomStartPort()
 							helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 							helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 						})
@@ -932,7 +933,7 @@ ComponentSettings:
 								var err error
 								opts := []string{}
 								if customPortForwarding {
-									opts = []string{fmt.Sprintf("--port-forward=%s:%s", LocalPort, ContainerPort)}
+									opts = []string{fmt.Sprintf("--port-forward=%d:%s", LocalPort, ContainerPort)}
 								}
 								if manual {
 									opts = append(opts, "--no-watch")
@@ -953,7 +954,7 @@ ComponentSettings:
 							It(fmt.Sprintf("should expose the endpoint on localhost (podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
 								url := fmt.Sprintf("http://%s", ports[ContainerPort])
 								if customPortForwarding {
-									Expect(url).To(ContainSubstring(LocalPort))
+									Expect(url).To(ContainSubstring(strconv.Itoa(LocalPort)))
 								}
 								resp, err := http.Get(url)
 								Expect(err).ToNot(HaveOccurred())
@@ -1010,7 +1011,7 @@ ComponentSettings:
 											Eventually(func(g Gomega) {
 												url := fmt.Sprintf("http://%s", ports[ContainerPort])
 												if customPortForwarding {
-													Expect(url).To(ContainSubstring(LocalPort))
+													Expect(url).To(ContainSubstring(strconv.Itoa(LocalPort)))
 												}
 												resp, err := http.Get(url)
 												g.Expect(err).ToNot(HaveOccurred())
@@ -1031,9 +1032,9 @@ ComponentSettings:
 
 					When("devfile has multiple endpoints", func() {
 						var (
-							LocalPort1 = helper.GetRandomFreePort()
-							LocalPort2 = helper.GetRandomFreePort()
-							LocalPort3 = helper.GetRandomFreePort()
+							LocalPort1 int
+							LocalPort2 int
+							LocalPort3 int
 						)
 						const (
 							// ContainerPort<N> are hard-coded from devfile-with-multiple-endpoints.yaml
@@ -1045,6 +1046,9 @@ ComponentSettings:
 							ContainerPort3 = "7890"
 						)
 						BeforeEach(func() {
+							LocalPort1 = helper.GetCustomStartPort()
+							LocalPort2 = LocalPort1 + 1
+							LocalPort3 = LocalPort1 + 2
 							helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
 							helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 						})
@@ -1055,7 +1059,7 @@ ComponentSettings:
 							BeforeEach(func() {
 								opts := []string{}
 								if customPortForwarding {
-									opts = []string{fmt.Sprintf("--port-forward=%s:%s", LocalPort1, ContainerPort1), fmt.Sprintf("--port-forward=%s:%s", LocalPort2, ContainerPort2), fmt.Sprintf("--port-forward=%s:%s", LocalPort3, ContainerPort3)}
+									opts = []string{fmt.Sprintf("--port-forward=%d:%s", LocalPort1, ContainerPort1), fmt.Sprintf("--port-forward=%d:%s", LocalPort2, ContainerPort2), fmt.Sprintf("--port-forward=%d:%s", LocalPort3, ContainerPort3)}
 								}
 								if manual {
 									opts = append(opts, "--no-watch")
@@ -1097,13 +1101,13 @@ ComponentSettings:
 									return string(body), nil
 								}
 								containerPorts := []string{ContainerPort1, ContainerPort2, ContainerPort3}
-								localPorts := []string{LocalPort1, LocalPort2, LocalPort3}
+								localPorts := []int{LocalPort1, LocalPort2, LocalPort3}
 
 								for i := range containerPorts {
 									containerPort := containerPorts[i]
 									localPort := localPorts[i]
 									By(fmt.Sprintf("exposing a port targeting container port %s", containerPort), func() {
-										r, err := getServerResponse(containerPort, localPort)
+										r, err := getServerResponse(containerPort, strconv.Itoa(localPort))
 										Expect(err).ShouldNot(HaveOccurred())
 										helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
 									})
@@ -1139,7 +1143,7 @@ ComponentSettings:
 									By(fmt.Sprintf("returning the right response when querying port forwarded for container port %s", containerPort),
 										func() {
 											Eventually(func(g Gomega) string {
-												r, err := getServerResponse(containerPort, localPort)
+												r, err := getServerResponse(containerPort, strconv.Itoa(localPort))
 												g.Expect(err).ShouldNot(HaveOccurred())
 												return r
 											}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))

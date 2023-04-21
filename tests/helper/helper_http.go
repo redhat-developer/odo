@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -50,10 +48,11 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 	Fail(fmt.Sprintf("Failed after %d retries. Content in %s doesn't include '%s'.", maxRetry, url, match))
 }
 
-var startPort int64 = 30000
-
-// GetRandomFreePort increases the counter of global variable startPort, and returns.
-func GetRandomFreePort() string {
-	atomic.AddInt64(&startPort, 1)
-	return strconv.FormatInt(startPort, 10)
+// GetCustomStartPort returns a port that can be used as starting value for custom port mapping.
+// Because of the way Ginkgo runs specs in parallel (by isolating them in different processes),
+// this function needs to be called in a Before* node or test spec.
+// It returns a starting value that aims at minimizing the probability of collisions.
+// Callers can then safely increment the returned value in their specs if needed.
+func GetCustomStartPort() int {
+	return 30000 + 100*GinkgoParallelProcess()
 }
