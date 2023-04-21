@@ -86,7 +86,7 @@ func (o *DevClient) Start(
 		}
 	)
 
-	err := o.reconcile(ctx, options.Out, options.ErrOut, options, &componentStatus)
+	err := o.reconcile(ctx, options, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (o *DevClient) Start(
 		PromptMessage:       promptMessage,
 	}
 
-	return o.watchClient.WatchAndPush(options.Out, watchParameters, ctx, componentStatus)
+	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)
 }
 
 // syncFiles syncs the local source files in path into the pod's source volume
@@ -170,17 +170,15 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 	return nil
 }
 
-func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
-	printWarningsOnDevfileChanges(ctx, watchParams)
-
-	startOptions := watchParams.StartOptions
-	return o.reconcile(ctx, startOptions.Out, startOptions.ErrOut, startOptions, componentStatus)
+func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
+	printWarningsOnDevfileChanges(ctx, pushParams.StartOptions)
+	return o.reconcile(ctx, pushParams.StartOptions, componentStatus)
 }
 
-func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchParameters) {
+func printWarningsOnDevfileChanges(ctx context.Context, options dev.StartOptions) {
 	var warning string
 	currentDevfile := odocontext.GetDevfileObj(ctx)
-	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.StartOptions.Variables)
+	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), options.Variables)
 	if err != nil {
 		warning = fmt.Sprintf("error while reading the Devfile. Please restart 'odo dev' if you made any changes to the Devfile. Error message is: %v", err)
 	} else {
@@ -205,6 +203,6 @@ func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchPa
 		}
 	}
 	if warning != "" {
-		log.Fwarning(parameters.StartOptions.Out, warning+"\n")
+		log.Fwarning(options.Out, warning+"\n")
 	}
 }

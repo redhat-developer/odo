@@ -112,13 +112,13 @@ func (o *DevClient) Start(
 		PromptMessage:       promptMessage,
 	}
 
-	return o.watchClient.WatchAndPush(options.Out, watchParameters, ctx, componentStatus)
+	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)
 }
 
 // RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod
-func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams common.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), watchParams.StartOptions.Variables)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables)
 	if err != nil {
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}

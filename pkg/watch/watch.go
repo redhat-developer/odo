@@ -64,7 +64,7 @@ type WatchParameters struct {
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(context.Context, common.PushParameters, WatchParameters, *ComponentStatus) error
+	DevfileWatchHandler func(context.Context, common.PushParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
 	// DebugPort indicates which debug port to use for pushing after sync
@@ -83,9 +83,9 @@ type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores 
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
 // It returns a Duration after which to recall in case of error
-type processEventsFunc func(ctx context.Context, changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
+type processEventsFunc func(ctx context.Context, parameters WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
-func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
+func (o *WatchClient) WatchAndPush(ctx context.Context, parameters WatchParameters, componentStatus ComponentStatus) error {
 	var (
 		devfileObj    = odocontext.GetDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
@@ -152,14 +152,14 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 			return err
 		}
 		if isForbidden {
-			log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+			log.Fwarning(parameters.StartOptions.Out, "Unable to watch Events resource, warning Events won't be displayed")
 		}
 	} else {
 		o.warningsWatcher = NewNoOpWatcher()
 	}
 
-	o.keyWatcher = getKeyWatcher(ctx, out)
-	return o.eventWatcher(ctx, parameters, out, evaluateFileChanges, o.processEvents, componentStatus)
+	o.keyWatcher = getKeyWatcher(ctx, parameters.StartOptions.Out)
+	return o.eventWatcher(ctx, parameters, evaluateFileChanges, o.processEvents, componentStatus)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
@@ -168,7 +168,6 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 func (o *WatchClient) eventWatcher(
 	ctx context.Context,
 	parameters WatchParameters,
-	out io.Writer,
 	evaluateChangesHandler evaluateChangesFunc,
 	processEventsHandler processEventsFunc,
 	componentStatus ComponentStatus,
@@ -179,6 +178,7 @@ func (o *WatchClient) eventWatcher(
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)
 		appName       = odocontext.GetApplication(ctx)
+		out           = parameters.StartOptions.Out
 	)
 
 	expBackoff := NewExpBackoff()
@@ -234,7 +234,7 @@ func (o *WatchClient) eventWatcher(
 
 			componentStatus.State = StateSyncOutdated
 			fmt.Fprintf(out, "Pushing files...\n\n")
-			retry, err := processEventsHandler(ctx, changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, changedFiles, deletedPaths, &componentStatus, expBackoff)
 			o.forceSync = false
 			if err != nil {
 				return err
@@ -272,7 +272,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-deployTimer.C:
-			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -288,7 +288,7 @@ func (o *WatchClient) eventWatcher(
 
 		case <-devfileTimer.C:
 			fmt.Fprintf(out, "Updating Component...\n\n")
-			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -300,7 +300,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-retryTimer.C:
-			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -418,15 +418,15 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 
 func (o *WatchClient) processEvents(
 	ctx context.Context,
-	changedFiles, deletedPaths []string,
 	parameters WatchParameters,
-	out io.Writer,
+	changedFiles, deletedPaths []string,
 	componentStatus *ComponentStatus,
 	backoff *ExpBackoff,
 ) (*time.Duration, error) {
 	var (
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
+		out         = parameters.StartOptions.Out
 	)
 
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
@@ -444,7 +444,7 @@ func (o *WatchClient) processEvents(
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 	}
 	oldStatus := *componentStatus
-	err := parameters.DevfileWatchHandler(ctx, pushParams, parameters, componentStatus)
+	err := parameters.DevfileWatchHandler(ctx, pushParams, componentStatus)
 	if err != nil {
 		if isFatal(err) {
 			return nil, err

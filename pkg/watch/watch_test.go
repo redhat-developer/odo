@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"testing"
 	"time"
 
@@ -43,8 +42,8 @@ func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []
 	return changedFiles, deletedPaths
 }
 
-func processEventsHandler(ctx context.Context, changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
-	fmt.Fprintf(out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
+func processEventsHandler(ctx context.Context, params WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
+	fmt.Fprintf(params.StartOptions.Out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
 	return nil, nil
 }
 
@@ -149,7 +148,9 @@ func Test_eventWatcher(t *testing.T) {
 				devfileWatcher:    fileWatcher,
 				keyWatcher:        make(chan byte),
 			}
-			err := o.eventWatcher(ctx, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, componentStatus)
+			tt.args.parameters.StartOptions.Out = out
+
+			err := o.eventWatcher(ctx, tt.args.parameters, evaluateChangesHandler, processEventsHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return
