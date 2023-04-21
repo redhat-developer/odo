@@ -11,6 +11,7 @@ import (
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -22,8 +23,6 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
@@ -46,8 +45,6 @@ type DevClient struct {
 	execClient            exec.Client
 	deleteClient          _delete.Client
 	configAutomountClient configAutomount.Client
-
-	adapter component.Adapter
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -64,17 +61,6 @@ func NewDevClient(
 	deleteClient _delete.Client,
 	configAutomountClient configAutomount.Client,
 ) *DevClient {
-	adapter := component.NewKubernetesAdapter(
-		kubernetesClient,
-		prefClient,
-		portForwardClient,
-		bindingClient,
-		syncClient,
-		execClient,
-		configAutomountClient,
-		filesystem,
-	)
-
 	return &DevClient{
 		kubernetesClient:      kubernetesClient,
 		prefClient:            prefClient,
@@ -86,7 +72,6 @@ func NewDevClient(
 		execClient:            execClient,
 		deleteClient:          deleteClient,
 		configAutomountClient: configAutomountClient,
-		adapter:               adapter,
 	}
 }
 
@@ -102,7 +87,7 @@ func (o *DevClient) Start(
 		devfileObj = odocontext.GetDevfileObj(ctx)
 	)
 
-	pushParameters := adapters.PushParameters{
+	pushParameters := common.PushParameters{
 		IgnoredFiles:         options.IgnorePaths,
 		Debug:                options.Debug,
 		DevfileBuildCmd:      options.BuildCommand,
@@ -117,7 +102,7 @@ func (o *DevClient) Start(
 	componentStatus := watch.ComponentStatus{
 		ImageComponentsAutoApplied: make(map[string]v1alpha2.ImageComponent),
 	}
-	err := o.adapter.Push(ctx, pushParameters, &componentStatus)
+	err := o.Push(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -142,7 +127,7 @@ func (o *DevClient) Start(
 }
 
 // RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod
-func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
+func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams common.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 
 	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), watchParams.Variables)
 	if err != nil {
@@ -151,7 +136,7 @@ func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams ada
 
 	pushParams.Devfile = devObj
 
-	err = o.adapter.Push(ctx, pushParams, componentStatus)
+	err = o.Push(ctx, pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}

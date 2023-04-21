@@ -1,4 +1,4 @@
-package component
+package kubedev
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/configAutomount"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil"
@@ -131,12 +131,12 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume().AnyTimes()
 			fakeConfigAutomount := configAutomount.NewMockClient(ctrl)
 			fakeConfigAutomount.EXPECT().GetAutomountingVolumes().AnyTimes()
-			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, nil)
+			client := NewDevClient(fkclient, fakePrefClient, nil, nil, nil, nil, nil, nil, nil, fakeConfigAutomount)
 			ctx := context.Background()
 			ctx = odocontext.WithApplication(ctx, "app")
 			ctx = odocontext.WithComponentName(ctx, "my-component")
 			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
-			_, _, err := componentAdapter.createOrUpdateComponent(ctx, adapters.PushParameters{
+			_, _, err := client.createOrUpdateComponent(ctx, common.PushParameters{
 				Devfile: devObj,
 			}, tt.running, libdevfile.DevfileCommands{}, nil)
 
@@ -243,8 +243,8 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			fakeClient, _ := kclient.FakeNew()
 			fakeClient.Namespace = "project-0"
 
-			a := Adapter{
-				kubeClient: fakeClient,
+			a := DevClient{
+				kubernetesClient: fakeClient,
 			}
 			ctx := context.Background()
 			ctx = odocontext.WithApplication(ctx, "app")
@@ -439,8 +439,8 @@ func TestAdapter_deleteRemoteResources(t *testing.T) {
 			if tt.fields.kubeClientCustomizer != nil {
 				tt.fields.kubeClientCustomizer(kubeClient)
 			}
-			a := Adapter{
-				kubeClient: kubeClient,
+			a := DevClient{
+				kubernetesClient: kubeClient,
 			}
 			if err := a.deleteRemoteResources(tt.args.objectsToRemove); (err != nil) != tt.wantErr {
 				t.Errorf("deleteRemoteResources() error = %v, wantErr %v", err, tt.wantErr)

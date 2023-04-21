@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -64,7 +64,7 @@ type WatchParameters struct {
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(context.Context, adapters.PushParameters, WatchParameters, *ComponentStatus) error
+	DevfileWatchHandler func(context.Context, common.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
@@ -462,7 +462,7 @@ func (o *WatchClient) processEvents(
 
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
-	pushParams := adapters.PushParameters{
+	pushParams := common.PushParameters{
 		WatchFiles:               changedFiles,
 		WatchDeletedFiles:        deletedPaths,
 		IgnoredFiles:             parameters.FileIgnores,
@@ -572,5 +572,5 @@ func PrintInfoMessage(out io.Writer, path string, watchFiles bool, promptMessage
 }
 
 func isFatal(err error) bool {
-	return errors.As(err, &adapters.ErrPortForward{})
+	return errors.As(err, &common.ErrPortForward{})
 }

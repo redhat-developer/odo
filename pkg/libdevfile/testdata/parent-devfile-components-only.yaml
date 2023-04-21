@@ -1,0 +1,15 @@
+components:
+- container:
+    endpoints:
+    - name: http
+      targetPort: 8080
+    image: quay.io/devfile/golang:latest
+    memoryLimit: 1024Mi
+    mountSources: true
+  name: runtime
+- kubernetes:
+    uri: "manifest.yaml"
+  name: kube-cmp
+metadata:
+  name: my-go-app
+schemaVersion: 2.1.0

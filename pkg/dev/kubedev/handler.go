@@ -1,4 +1,4 @@
-package component
+package kubedev
 
 import (
 	"context"

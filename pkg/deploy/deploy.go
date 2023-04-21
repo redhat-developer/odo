@@ -18,7 +18,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/configAutomount"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
+	"github.com/redhat-developer/odo/pkg/dev/kubedev/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
