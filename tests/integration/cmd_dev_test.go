@@ -643,6 +643,7 @@ ComponentSettings:
 						"/mnt/mount-path/secret",
 
 						"/etc/config/automount-access-mode-configmap",
+						"/etc/config/automount-access-mode-configmap-decimal",
 						"/etc/secret/automount-access-mode-secret",
 					} {
 						var output string
@@ -713,6 +714,10 @@ ComponentSettings:
 
 						"/etc/config/automount-access-mode-configmap/config0444": {
 							content:    "foo",
+							accessMode: "r--r--r--",
+						},
+						"/etc/config/automount-access-mode-configmap-decimal/config292": {
+							content:    "foo-decimal",
 							accessMode: "r--r--r--",
 						},
 						"/etc/secret/automount-access-mode-secret/secret0444": {

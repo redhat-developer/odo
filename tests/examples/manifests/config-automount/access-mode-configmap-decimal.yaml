@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automount-access-mode-configmap-decimal
+  labels:
+    devfile.io/auto-mount: "true"
+  annotations:
+    devfile.io/mount-access-mode: "292"
+data:
+  config292: foo-decimal
