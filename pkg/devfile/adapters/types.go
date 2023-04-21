@@ -1,12 +1,15 @@
 package adapters
 
 import (
-	"github.com/redhat-developer/odo/pkg/api"
 	"io"
+
+	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component
 type PushParameters struct {
+	Devfile                  parser.DevfileObj
 	WatchFiles               []string            // Optional: WatchFiles is the list of changed files detected by odo watch. If empty or nil, odo will check .odo/odo-file-index.json to determine changed files
 	WatchDeletedFiles        []string            // Optional: WatchDeletedFiles is the list of deleted files detected by odo watch. If empty or nil, odo will check .odo/odo-file-index.json to determine deleted files
 	IgnoredFiles             []string            // IgnoredFiles is the list of files to not push up to a component

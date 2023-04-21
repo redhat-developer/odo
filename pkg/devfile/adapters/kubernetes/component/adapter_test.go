@@ -14,13 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/configAutomount"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
-	"github.com/devfile/library/v2/pkg/testingutil"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -130,12 +131,14 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume().AnyTimes()
 			fakeConfigAutomount := configAutomount.NewMockClient(ctrl)
 			fakeConfigAutomount.EXPECT().GetAutomountingVolumes().AnyTimes()
-			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, nil, devObj)
+			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, nil)
 			ctx := context.Background()
 			ctx = odocontext.WithApplication(ctx, "app")
 			ctx = odocontext.WithComponentName(ctx, "my-component")
 			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
-			_, _, err := componentAdapter.createOrUpdateComponent(ctx, tt.running, libdevfile.DevfileCommands{}, nil)
+			_, _, err := componentAdapter.createOrUpdateComponent(ctx, adapters.PushParameters{
+				Devfile: devObj,
+			}, tt.running, libdevfile.DevfileCommands{}, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

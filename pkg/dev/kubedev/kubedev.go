@@ -46,6 +46,8 @@ type DevClient struct {
 	execClient            exec.Client
 	deleteClient          _delete.Client
 	configAutomountClient configAutomount.Client
+
+	adapter component.Adapter
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -62,6 +64,17 @@ func NewDevClient(
 	deleteClient _delete.Client,
 	configAutomountClient configAutomount.Client,
 ) *DevClient {
+	adapter := component.NewKubernetesAdapter(
+		kubernetesClient,
+		prefClient,
+		portForwardClient,
+		bindingClient,
+		syncClient,
+		execClient,
+		configAutomountClient,
+		filesystem,
+	)
+
 	return &DevClient{
 		kubernetesClient:      kubernetesClient,
 		prefClient:            prefClient,
@@ -73,6 +86,7 @@ func NewDevClient(
 		execClient:            execClient,
 		deleteClient:          deleteClient,
 		configAutomountClient: configAutomountClient,
+		adapter:               adapter,
 	}
 }
 
@@ -88,18 +102,6 @@ func (o *DevClient) Start(
 		devfileObj = odocontext.GetDevfileObj(ctx)
 	)
 
-	adapter := component.NewKubernetesAdapter(
-		o.kubernetesClient,
-		o.prefClient,
-		o.portForwardClient,
-		o.bindingClient,
-		o.syncClient,
-		o.execClient,
-		o.configAutomountClient,
-		o.filesystem,
-		*devfileObj,
-	)
-
 	pushParameters := adapters.PushParameters{
 		IgnoredFiles:         options.IgnorePaths,
 		Debug:                options.Debug,
@@ -108,13 +110,14 @@ func (o *DevClient) Start(
 		RandomPorts:          options.RandomPorts,
 		CustomForwardedPorts: options.CustomForwardedPorts,
 		ErrOut:               errOut,
+		Devfile:              *devfileObj,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	componentStatus := watch.ComponentStatus{
 		ImageComponentsAutoApplied: make(map[string]v1alpha2.ImageComponent),
 	}
-	err := adapter.Push(ctx, pushParameters, &componentStatus)
+	err := o.adapter.Push(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
@@ -138,38 +141,19 @@ func (o *DevClient) Start(
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
 }
 
-// RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
+// RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod
 func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
-	var adapter component.ComponentAdapter
 
-	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), watchParams.Variables)
 	if err != nil {
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
-	err = adapter.Push(ctx, pushParams, componentStatus)
+	pushParams.Devfile = devObj
+
+	err = o.adapter.Push(ctx, pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
-
 	return nil
-}
-
-func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (component.ComponentAdapter, error) {
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
-	if err != nil {
-		return nil, err
-	}
-
-	return component.NewKubernetesAdapter(
-		o.kubernetesClient,
-		o.prefClient,
-		o.portForwardClient,
-		o.bindingClient,
-		o.syncClient,
-		o.execClient,
-		o.configAutomountClient,
-		o.filesystem,
-		devObj,
-	), nil
 }

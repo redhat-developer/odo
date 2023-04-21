@@ -91,6 +91,7 @@ func (a *Adapter) buildPushAutoImageComponents(ctx context.Context, fs filesyste
 // adding the specified labels and ownerreference to them
 func (a *Adapter) pushDevfileKubernetesComponents(
 	ctx context.Context,
+	parameters adapters.PushParameters,
 	labels map[string]string,
 	mode string,
 	reference metav1.OwnerReference,
@@ -102,23 +103,23 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of ServiceBinding
-	k8sComponents, err := libdevfile.GetK8sAndOcComponentsToPush(a.devfile, false)
+	k8sComponents, err := libdevfile.GetK8sAndOcComponentsToPush(parameters.Devfile, false)
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = component.ValidateResourcesExist(a.kubeClient, a.devfile, k8sComponents, path)
+	err = component.ValidateResourcesExist(a.kubeClient, parameters.Devfile, k8sComponents, path)
 	if err != nil {
 		return nil, err
 	}
 
 	// Set the annotations for the component type
 	annotations := make(map[string]string)
-	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.devfile.Data.GetMetadata()))
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(parameters.Devfile.Data.GetMetadata()))
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.kubeClient, a.devfile, k8sComponents, labels, annotations, path, mode, reference)
+	err = service.PushKubernetesResources(a.kubeClient, parameters.Devfile, k8sComponents, labels, annotations, path, mode, reference)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Kubernetes resources associated with the component: %w", err)
 	}
@@ -126,13 +127,13 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 }
 
 func (a *Adapter) getPushDevfileCommands(parameters adapters.PushParameters) (map[devfilev1.CommandGroupKind]devfilev1.Command, error) {
-	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
+	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(parameters.Devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
 
 	if parameters.Debug {
-		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
+		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(parameters.Devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
 		if e != nil {
 			return nil, fmt.Errorf("debug command is not valid: %w", e)
 		}
