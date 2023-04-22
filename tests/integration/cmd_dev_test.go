@@ -643,6 +643,10 @@ ComponentSettings:
 						"/mnt/mount-path/pvc",
 						"/mnt/mount-path/configmap",
 						"/mnt/mount-path/secret",
+
+						"/etc/config/automount-access-mode-configmap",
+						"/etc/config/automount-access-mode-configmap-decimal",
+						"/etc/secret/automount-access-mode-secret",
 					} {
 						var output string
 						Eventually(func() bool {
@@ -654,25 +658,90 @@ ComponentSettings:
 					}
 
 					// Check files are present for configmap / secret
-					files := map[string]string{
-						"/etc/config/automount-default-configmap/foo1":  "bar1",
-						"/etc/config/automount-default-configmap/ping1": "pong1",
-						"/etc/secret/automount-default-secret/code1":    "1234",
-						"/etc/secret/automount-default-secret/secret1":  "PassWd1",
+					// and have expected access mode (by default 0644)
+					files := map[string]struct {
+						content    string
+						accessMode string
+					}{
+						"/etc/config/automount-default-configmap/foo1": {
+							content:    "bar1",
+							accessMode: "rw-r--r--",
+						},
+						"/etc/config/automount-default-configmap/ping1": {
+							content:    "pong1",
+							accessMode: "rw-r--r--",
+						},
+						"/etc/secret/automount-default-secret/code1": {
+							content:    "1234",
+							accessMode: "rw-r--r--",
+						},
+						"/etc/secret/automount-default-secret/secret1": {
+							content:    "PassWd1",
+							accessMode: "rw-r--r--",
+						},
 
-						"/mnt/mount-path/configmap/foo2":  "bar2",
-						"/mnt/mount-path/configmap/ping2": "pong2",
-						"/mnt/mount-path/secret/code2":    "2345",
-						"/mnt/mount-path/secret/secret2":  "PassWd2",
+						"/mnt/mount-path/configmap/foo2": {
+							content:    "bar2",
+							accessMode: "rw-r--r--",
+						},
+						"/mnt/mount-path/configmap/ping2": {
+							content:    "pong2",
+							accessMode: "rw-r--r--",
+						},
+						"/mnt/mount-path/secret/code2": {
+							content:    "2345",
+							accessMode: "rw-r--r--",
+						},
+						"/mnt/mount-path/secret/secret2": {
+							content:    "PassWd2",
+							accessMode: "rw-r--r--",
+						},
 
-						"/mnt/subpaths/foo5":    "bar5",
-						"/mnt/subpaths/ping5":   "pong5",
-						"/mnt/subpaths/code5":   "5678",
-						"/mnt/subpaths/secret5": "PassWd5",
+						"/mnt/subpaths/foo5": {
+							content:    "bar5",
+							accessMode: "rw-r--r--",
+						},
+						"/mnt/subpaths/ping5": {
+							content:    "pong5",
+							accessMode: "rw-r--r--",
+						},
+						"/mnt/subpaths/code5": {
+							content:    "5678",
+							accessMode: "rw-r--r--",
+						},
+						"/mnt/subpaths/secret5": {
+							content:    "PassWd5",
+							accessMode: "rw-r--r--",
+						},
+
+						"/etc/config/automount-access-mode-configmap/config0444": {
+							content:    "foo",
+							accessMode: "r--r--r--",
+						},
+						"/etc/config/automount-access-mode-configmap-decimal/config292": {
+							content:    "foo-decimal",
+							accessMode: "r--r--r--",
+						},
+						"/etc/secret/automount-access-mode-secret/secret0444": {
+							content:    "1234",
+							accessMode: "r--r--r--",
+						},
+						"/etc/config0444": {
+							content:    "foo",
+							accessMode: "r--r--r--",
+						},
+						"/etc/secret0444": {
+							content:    "5ecr3t",
+							accessMode: "r--r--r--",
+						},
 					}
-					for file, content := range files {
+					for file, desc := range files {
 						output, _ := component.Exec("runtime", []string{"cat", file}, pointer.Bool(true))
-						Expect(output).To(Equal(content))
+						Expect(output).To(Equal(desc.content))
+
+						// -L follows symlinks, to get the mode of the targeted file, as files reside on a ..data directory
+						output, _ = component.Exec("runtime", []string{"ls", "-lL", file}, pointer.Bool(true))
+						Expect(output).To(ContainSubstring(desc.accessMode))
 					}
 
 					envVars := map[string]string{

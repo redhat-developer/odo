@@ -7,6 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 )
 
 func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
@@ -93,6 +94,24 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 		annotationReadOnlyName: "true",
 	})
 
+	secretMountAccessMode := corev1.Secret{}
+	secretMountAccessMode.SetName("secretMountAccessMode")
+	secretMountAccessMode.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	secretMountAccessMode.SetAnnotations(map[string]string{
+		annotationMountAccessMode: "0400",
+	})
+
+	secretMountAccessModeInvalid := corev1.Secret{}
+	secretMountAccessModeInvalid.SetName("secretMountAccessModeInvalid")
+	secretMountAccessModeInvalid.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	secretMountAccessModeInvalid.SetAnnotations(map[string]string{
+		annotationMountAccessMode: "01444",
+	})
+
 	defaultCM1 := corev1.ConfigMap{}
 	defaultCM1.SetName("defaultCM1")
 	defaultCM1.SetLabels(map[string]string{
@@ -143,6 +162,24 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 	})
 	roCM.SetAnnotations(map[string]string{
 		annotationReadOnlyName: "true",
+	})
+
+	cmMountAccessMode := corev1.ConfigMap{}
+	cmMountAccessMode.SetName("cmMountAccessMode")
+	cmMountAccessMode.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	cmMountAccessMode.SetAnnotations(map[string]string{
+		annotationMountAccessMode: "0444",
+	})
+
+	cmMountAccessModeInvalid := corev1.ConfigMap{}
+	cmMountAccessModeInvalid.SetName("cmMountAccessModeInvalid")
+	cmMountAccessModeInvalid.SetLabels(map[string]string{
+		labelMountName: labelMountValue,
+	})
+	cmMountAccessModeInvalid.SetAnnotations(map[string]string{
+		annotationMountAccessMode: "01444",
 	})
 
 	type fields struct {
@@ -329,6 +366,63 @@ func TestKubernetesClient_GetAutomountingVolumes(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "Secret and ConfigMap with mount-access-mode annotations",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{secretMountAccessMode}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{cmMountAccessMode}, nil).AnyTimes()
+					return client
+				},
+			},
+			want: []AutomountInfo{
+				{
+					VolumeType:      VolumeTypeSecret,
+					VolumeName:      "secretMountAccessMode",
+					MountPath:       "/etc/secret/secretMountAccessMode",
+					MountAs:         MountAsFile,
+					MountAccessMode: pointer.Int32(0400),
+				},
+				{
+					VolumeType:      VolumeTypeConfigmap,
+					VolumeName:      "cmMountAccessMode",
+					MountPath:       "/etc/config/cmMountAccessMode",
+					MountAs:         MountAsFile,
+					MountAccessMode: pointer.Int32(0444),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Secret with invalid mount-access-mode annotation",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{secretMountAccessModeInvalid}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{}, nil).AnyTimes()
+					return client
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Configmap with invalid mount-access-mode annotation",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().ListPVCs(gomock.Any()).Return([]corev1.PersistentVolumeClaim{}, nil).AnyTimes()
+					client.EXPECT().ListSecrets(gomock.Any()).Return([]corev1.Secret{}, nil).AnyTimes()
+					client.EXPECT().ListConfigMaps(gomock.Any()).Return([]corev1.ConfigMap{cmMountAccessModeInvalid}, nil).AnyTimes()
+					return client
+				},
+			},
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "PVC, Secret and ConfigMap read-only",

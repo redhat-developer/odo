@@ -37,3 +37,4 @@ Mounting resources can be additionally configured via annotations:
 
 - `devfile.io/read-only`: for persistent volume claims, mount the resource as read-only
 
+- `devfile.io/mount-access-mode`: for  secret/configmap, can be used to configure file permissions on mounted files. The value can be in octal notation between `0000` and `0777` (for example `0400`), or in decimal notation between `0` and `511`. The default value is `0644` in octal (`420` in decimal)
