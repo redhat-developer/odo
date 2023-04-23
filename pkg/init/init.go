@@ -9,13 +9,12 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/v2/pkg/util"
-	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/init/backend"
@@ -284,11 +283,7 @@ func (o *InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[
 		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to download devfile: %w", err)
 	}
 
-	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{
-		Path:               devfilePath,
-		FlattenedDevfile:   pointer.Bool(false),
-		SetBooleanDefaults: pointer.Bool(false),
-	})
+	devfileObj, err := devfile.ParseAndValidateFromFile(devfilePath, true)
 	if err != nil {
 		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to parse devfile: %w", err)
 	}

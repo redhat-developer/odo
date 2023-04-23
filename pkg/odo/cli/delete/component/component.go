@@ -110,7 +110,7 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.name == "" {
-		devfileObj := odocontext.GetDevfileObj(ctx)
+		devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 		if devfileObj == nil {
 			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 		}
@@ -248,7 +248,7 @@ func printRemainingResources(ctx context.Context, remainingResources []unstructu
 // devfileObj in context must not be nil when this method is called
 func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstructured.Unstructured, error) {
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 		appName       = odocontext.GetApplication(ctx)
 

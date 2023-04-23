@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/devfile/library/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
@@ -24,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -492,8 +492,7 @@ func TestGatherName(t *testing.T) {
 				return nil, dir, err
 			}
 
-			var d parser.DevfileObj
-			d, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: dPath})
+			d, err := devfile.ParseAndValidateFromFile(dPath, false)
 			if err != nil {
 				return nil, dir, err
 			}

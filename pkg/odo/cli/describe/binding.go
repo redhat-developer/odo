@@ -53,7 +53,7 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
-		devfileObj := odocontext.GetDevfileObj(ctx)
+		devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 		if devfileObj == nil {
 			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 		}
@@ -95,7 +95,7 @@ func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{},
 func (o *BindingOptions) runWithoutName(ctx context.Context) ([]api.ServiceBinding, error) {
 	var (
 		workingDir = odocontext.GetWorkingDirectory(ctx)
-		devfileObj = odocontext.GetDevfileObj(ctx)
+		devfileObj = odocontext.GetEffectiveDevfileObj(ctx)
 	)
 
 	result, err := o.clientset.BindingClient.GetBindingsFromDevfile(*devfileObj, workingDir)

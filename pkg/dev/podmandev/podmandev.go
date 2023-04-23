@@ -95,7 +95,7 @@ func (o *DevClient) Start(
 // syncFiles syncs the local source files in path into the pod's source volume
 func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod *corev1.Pod, path string) (bool, error) {
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 	)
 
@@ -161,7 +161,7 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, true)
 	if err != nil {
 		return fmt.Errorf("unable to read devfile: %w", err)
 	}

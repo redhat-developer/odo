@@ -8,6 +8,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/binding/backend"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -44,7 +45,7 @@ func (o *RemoveBindingOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *RemoveBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	devfileObj := odocontext.GetDevfileObj(ctx)
+	devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
@@ -57,7 +58,13 @@ func (o *RemoveBindingOptions) Validate(ctx context.Context) (err error) {
 }
 
 func (o *RemoveBindingOptions) Run(ctx context.Context) error {
-	devfileObj := odocontext.GetDevfileObj(ctx)
+	// Update the raw Devfile only, so we do not break any relationship between parent-child for example
+	rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), false)
+	if err != nil {
+		return err
+	}
+	devfileObj := &rawDevfileObj
+
 	newDevfileObj, err := o.clientset.BindingClient.RemoveBinding(o.flags[backend.FLAG_NAME], *devfileObj)
 	if err != nil {
 		return err

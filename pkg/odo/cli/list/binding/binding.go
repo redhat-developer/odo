@@ -89,7 +89,7 @@ func (o *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interfac
 func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 	var (
 		workingDir = odocontext.GetWorkingDirectory(ctx)
-		devfileObj = odocontext.GetDevfileObj(ctx)
+		devfileObj = odocontext.GetEffectiveDevfileObj(ctx)
 	)
 	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(devfileObj, workingDir)
 	if err != nil {

@@ -254,7 +254,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 			return err
 		}
 		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
-		ctx = odocontext.WithDevfileObj(ctx, devfileObj)
+		ctx = odocontext.WithEffectiveDevfileObj(ctx, devfileObj)
 		ctx = odocontext.WithComponentName(ctx, componentName)
 	}
 

@@ -651,7 +651,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			ctx = odocontext.WithApplication(ctx, "app")
 			ctx = odocontext.WithWorkingDirectory(ctx, workingDir)
 			ctx = odocontext.WithComponentName(ctx, compName)
-			ctx = odocontext.WithDevfileObj(ctx, &info)
+			ctx = odocontext.WithEffectiveDevfileObj(ctx, &info)
 			remainingResources, err := o.deleteDevfileComponent(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)

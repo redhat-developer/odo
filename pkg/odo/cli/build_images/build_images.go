@@ -55,7 +55,7 @@ func (o *BuildImagesOptions) Complete(ctx context.Context, cmdline cmdline.Cmdli
 
 // Validate validates the LoginOptions based on completed values
 func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
-	devfileObj := odocontext.GetDevfileObj(ctx)
+	devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}

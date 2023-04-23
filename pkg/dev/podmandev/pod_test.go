@@ -1408,7 +1408,7 @@ func Test_createPodFromComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			devfileObj := tt.args.devfileObj()
-			ctx = odocontext.WithDevfileObj(ctx, &devfileObj)
+			ctx = odocontext.WithEffectiveDevfileObj(ctx, &devfileObj)
 			ctx = odocontext.WithApplication(ctx, tt.args.appName)
 			ctx = odocontext.WithComponentName(ctx, tt.args.componentName)
 			ctx = odocontext.WithWorkingDirectory(ctx, "/tmp/dir")

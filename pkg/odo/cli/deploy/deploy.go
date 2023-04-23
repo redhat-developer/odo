@@ -3,7 +3,9 @@ package deploy
 import (
 	"context"
 	"fmt"
+
 	dfutil "github.com/devfile/library/v2/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -60,7 +62,7 @@ func (o *DeployOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, a
 
 // Validate validates the DeployOptions based on completed values
 func (o *DeployOptions) Validate(ctx context.Context) error {
-	devfileObj := odocontext.GetDevfileObj(ctx)
+	devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}
@@ -75,7 +77,7 @@ func (o *DeployOptions) Validate(ctx context.Context) error {
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run(ctx context.Context) error {
 	var (
-		devfileObj  = odocontext.GetDevfileObj(ctx)
+		devfileObj  = odocontext.GetEffectiveDevfileObj(ctx)
 		devfileName = odocontext.GetComponentName(ctx)
 		namespace   = odocontext.GetNamespace(ctx)
 	)

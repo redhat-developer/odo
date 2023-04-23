@@ -5,6 +5,7 @@ import (
 
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/v2/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -27,7 +28,7 @@ func getDevfileInfo(workingDir string, variables map[string]string) (
 		}
 		// Parse devfile and validate
 		var devObj parser.DevfileObj
-		devObj, err = devfile.ParseAndValidateFromFileWithVariables(devfilePath, variables)
+		devObj, err = devfile.ParseAndValidateFromFileWithVariables(devfilePath, variables, true)
 		if err != nil {
 			return "", nil, "", fmt.Errorf("failed to parse the devfile %s: %w", devfilePath, err)
 		}

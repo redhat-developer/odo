@@ -10,11 +10,11 @@ import (
 	"k8s.io/klog"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -33,7 +33,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/version"
 
 	"k8s.io/kubectl/pkg/util/templates"
-	"k8s.io/utils/pointer"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -236,11 +235,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 
 		// in case the starter project contains a devfile, read it again
 		if containsDevfile {
-			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{
-				Path:               devfilePath,
-				FlattenedDevfile:   pointer.Bool(false),
-				SetBooleanDefaults: pointer.Bool(false),
-			})
+			devfileObj, err = devfile.ParseAndValidateFromFile(devfilePath, true)
 			if err != nil {
 				return parser.DevfileObj{}, "", "", nil, nil, err
 			}
