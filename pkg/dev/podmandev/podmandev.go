@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -78,28 +77,28 @@ func (o *DevClient) Start(
 	options dev.StartOptions,
 ) error {
 	var (
-		devfilePath = odocontext.GetDevfilePath(ctx)
-		path        = filepath.Dir(devfilePath)
-		devfileObj  = odocontext.GetDevfileObj(ctx)
+		//devfilePath = odocontext.GetDevfilePath(ctx)
+		//path        = filepath.Dir(devfilePath)
+		//devfileObj  = odocontext.GetDevfileObj(ctx)
 
 		componentStatus = watch.ComponentStatus{
 			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
 		}
 	)
 
-	pushParameters := common.PushParameters{
-		StartOptions: options,
-		Devfile:      *devfileObj,
-	}
+	//pushParameters := common.PushParameters{
+	//	StartOptions: options,
+	//	Devfile:      *devfileObj,
+	//}
 
-	klog.V(4).Infoln("Creating inner-loop resources for the component")
-	err := o.reconcile(ctx, pushParameters, &componentStatus)
-	if err != nil {
-		return err
-	}
-	klog.V(4).Infoln("Successfully created inner-loop resources")
+	//klog.V(4).Infoln("Creating inner-loop resources for the component")
+	//err := o.reconcile(ctx, pushParameters, &componentStatus)
+	//if err != nil {
+	//	return err
+	//}
+	//klog.V(4).Infoln("Successfully created inner-loop resources")
 
-	watch.PrintInfoMessage(options.Out, path, options.WatchFiles, promptMessage)
+	//watch.PrintInfoMessage(options.Out, path, options.WatchFiles, promptMessage)
 
 	watchParameters := watch.WatchParameters{
 		StartOptions:        options,
@@ -179,6 +178,7 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 }
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
+	pushParams.Devfile = *odocontext.GetDevfileObj(ctx) // TOO reload devfile from disk
 	printWarningsOnDevfileChanges(ctx, pushParams.StartOptions)
 	return o.reconcile(ctx, pushParams, componentStatus)
 }
