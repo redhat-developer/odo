@@ -88,6 +88,10 @@ func (o *DevClient) Start(
 
 	var (
 		devfileObj = odocontext.GetDevfileObj(ctx)
+
+		componentStatus = watch.ComponentStatus{
+			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
+		}
 	)
 
 	pushParameters := common.PushParameters{
@@ -96,9 +100,6 @@ func (o *DevClient) Start(
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
-	componentStatus := watch.ComponentStatus{
-		ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
-	}
 	err := o.reconcile(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
