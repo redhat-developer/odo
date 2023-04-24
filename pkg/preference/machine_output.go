@@ -57,6 +57,13 @@ func toPreferenceItems(prefInfo preferenceInfo) []api.PreferenceItem {
 			Type:        getType(prefInfo.GetEphemeral()),
 			Description: EphemeralSettingDescription,
 		},
+		{
+			Name:        ImageRegistrySetting,
+			Value:       settings.ImageRegistry,
+			Default:     "",
+			Type:        getType(prefInfo.GetImageRegistry()),
+			Description: ImageRegistrySettingDescription,
+		},
 	}
 }
 

@@ -107,6 +107,7 @@ func HumanReadableOutput(preferenceList api.PreferenceList, registryList []api.R
 	}
 	registryT.Render()
 }
+
 func showBlankIfNil(intf interface{}) interface{} {
 	imm := reflect.ValueOf(intf)
 

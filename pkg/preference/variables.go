@@ -38,6 +38,9 @@ const (
 	// RegistryCacheTimeSetting is human-readable description for the registrycachetime setting
 	RegistryCacheTimeSetting = "RegistryCacheTime"
 
+	// ImageRegistrySetting is the name of the setting controlling ImageRegistry
+	ImageRegistrySetting = "ImageRegistry"
+
 	// DefaultDevfileRegistryName is the name of default devfile registry
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
@@ -78,6 +81,8 @@ var EphemeralSettingDescription = fmt.Sprintf("If true, odo will create an empty
 // ConsentTelemetrySettingDescription adds a description for TelemetryConsentSetting
 var ConsentTelemetrySettingDescription = fmt.Sprintf("If true, odo will collect telemetry for the user's odo usage (Default: %t)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection", DefaultConsentTelemetrySetting)
 
+const ImageRegistrySettingDescription = "Image Registry to which relative image names in Devfile Image Components will be pushed to (Example: quay.io/my-user/)"
+
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
@@ -91,6 +96,7 @@ var (
 		RegistryCacheTimeSetting:  RegistryCacheTimeSettingDescription,
 		EphemeralSetting:          EphemeralSettingDescription,
 		ConsentTelemetrySetting:   ConsentTelemetrySettingDescription,
+		ImageRegistrySetting:      ImageRegistrySettingDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported

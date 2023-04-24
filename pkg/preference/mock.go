@@ -105,6 +105,20 @@ func (mr *MockClientMockRecorder) GetEphemeralSourceVolume() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEphemeralSourceVolume", reflect.TypeOf((*MockClient)(nil).GetEphemeralSourceVolume))
 }
 
+// GetImageRegistry mocks base method.
+func (m *MockClient) GetImageRegistry() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageRegistry")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetImageRegistry indicates an expected call of GetImageRegistry.
+func (mr *MockClientMockRecorder) GetImageRegistry() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageRegistry", reflect.TypeOf((*MockClient)(nil).GetImageRegistry))
+}
+
 // GetPushTimeout mocks base method.
 func (m *MockClient) GetPushTimeout() time.Duration {
 	m.ctrl.T.Helper()
