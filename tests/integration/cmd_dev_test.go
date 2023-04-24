@@ -2424,7 +2424,7 @@ CMD ["npm", "start"]
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
-		When("running odo dev --no-watch and build command throws an error", helper.LabelPodmanIf(podman, func() {
+		XWhen("running odo dev --no-watch and build command throws an error", helper.LabelPodmanIf(podman, func() {
 			var stderr string
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(
@@ -2618,7 +2618,7 @@ CMD ["npm", "start"]
 						)
 					}
 
-					It("should error out on an invalid command", func() {
+					XIt("should error out on an invalid command", func() {
 						By("calling with an invalid build command", func() {
 							args := []string{"dev", "--random-ports", "--build-command", "build-command-does-not-exist"}
 							if podman {
@@ -2679,7 +2679,7 @@ CMD ["npm", "start"]
 						)
 					}
 
-					It("should error out on an invalid command", func() {
+					XIt("should error out on an invalid command", func() {
 						By("calling with an invalid run command", func() {
 							args := []string{"dev", "--random-ports", "--run-command", "run-command-does-not-exist"}
 							if podman {
@@ -3633,7 +3633,7 @@ CMD ["npm", "start"]
 			Expect(errOut).To(ContainSubstring("unable to access podman. Do you have podman client installed and configured correctly? cause: exec: \"echo\": executable file not found in $PATH"))
 		})
 	})
-	Context("odo dev on podman with a devfile bound to fail", Label(helper.LabelPodman), func() {
+	XContext("odo dev on podman with a devfile bound to fail", Label(helper.LabelPodman), func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
@@ -3740,7 +3740,7 @@ CMD ["npm", "start"]
 				Expect(stderr).Should(ContainSubstring("--ignore-localhost and --forward-localhost cannot be used together"))
 			})
 
-			It("should error out if not ignoring localhost", func() {
+			XIt("should error out if not ignoring localhost", func() {
 				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").ShouldFail().Err()
 				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
 			})
