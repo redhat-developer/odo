@@ -1569,7 +1569,7 @@ ComponentSettings:
 		})
 
 		When("adding local files to gitignore and running odo dev", func() {
-			var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, stdOut, podName string
+			var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, newFilePath4, newFilePath5, stdOut, podName string
 			var session helper.DevSession
 			var devfileCmpName string
 			BeforeEach(func() {
@@ -1579,6 +1579,8 @@ ComponentSettings:
 				newDirPath = filepath.Join(commonVar.Context, "testdir")
 				newFilePath2 = filepath.Join(newDirPath, "foobar.txt")
 				newFilePath3 = filepath.Join(newDirPath, "baz.txt")
+				newFilePath4 = filepath.Join(newDirPath, "ignore.css")
+				newFilePath5 = filepath.Join(newDirPath, "main.css")
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
@@ -1598,7 +1600,15 @@ ComponentSettings:
 				if err := helper.CreateFileWithContent(newFilePath3, "hello world"); err != nil {
 					fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
 				}
-				if err := helper.CreateFileWithContent(gitignorePath, "foobar.txt"); err != nil {
+				if err := helper.CreateFileWithContent(newFilePath4, "div {}"); err != nil {
+					fmt.Printf("the %s file was not created, reason %v", newFilePath4, err.Error())
+				}
+				if err := helper.CreateFileWithContent(newFilePath5, "div {}"); err != nil {
+					fmt.Printf("the %s file was not created, reason %v", newFilePath5, err.Error())
+				}
+				if err := helper.CreateFileWithContent(gitignorePath, `foobar.txt
+*.css
+!main.css`); err != nil {
 					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
 				}
 				var err error
@@ -1617,6 +1627,8 @@ ComponentSettings:
 				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/testdir")
 				helper.MatchAllInOutput(stdOut, []string{"baz.txt"})
 				helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
+				helper.MatchAllInOutput(stdOut, []string{"main.css"})
+				helper.DontMatchAllInOutput(stdOut, []string{"ignore.css"})
 			}
 
 			It("should not sync ignored files to the container", func() {
