@@ -154,11 +154,11 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 	}
 
 	// Check if endpoints changed in Devfile
-	portsToForward, err := libdevfile.GetDevfileContainerEndpointMapping(parameters.Devfile, parameters.StartOptions.Debug)
+	o.portsToForward, err = libdevfile.GetDevfileContainerEndpointMapping(parameters.Devfile, parameters.StartOptions.Debug)
 	if err != nil {
 		return false, err
 	}
-	o.portsChanged = !reflect.DeepEqual(portsToForward, o.portForwardClient.GetForwardedPorts())
+	o.portsChanged = !reflect.DeepEqual(o.portsToForward, o.portForwardClient.GetForwardedPorts())
 
 	if componentStatus.State == watch.StateReady && !o.portsChanged {
 		// If the deployment is already in Ready State, no need to continue
