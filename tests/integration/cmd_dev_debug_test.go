@@ -48,7 +48,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					ports      map[string]string
 				)
 				var (
-					LocalPort, LocalDebugPort      int
+					LocalPort, LocalDebugPort int
 				)
 				const (
 					ContainerPort      = "3000"
