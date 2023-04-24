@@ -1,0 +1,20 @@
+commands:
+- exec:
+    commandLine: GOCACHE=${PROJECT_SOURCE}/.cache go build main.go
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: build
+- exec:
+    commandLine: ./main
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+schemaVersion: 2.1.0
+metadata:
+  name: parent

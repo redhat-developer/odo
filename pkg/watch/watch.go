@@ -159,6 +159,12 @@ func (o *WatchClient) WatchAndPush(ctx context.Context, parameters WatchParamete
 	}
 
 	o.keyWatcher = getKeyWatcher(ctx, parameters.StartOptions.Out)
+
+	_, err = o.processEvents(ctx, parameters, nil, nil, &componentStatus, NewExpBackoff())
+	if err != nil {
+		return err
+	}
+
 	return o.eventWatcher(ctx, parameters, evaluateFileChanges, o.processEvents, componentStatus)
 }
 
