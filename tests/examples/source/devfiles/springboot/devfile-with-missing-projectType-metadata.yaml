@@ -29,7 +29,7 @@ components:
       volumeMounts:
         - name: springbootpvc
           path: /data/cache/.m2
-      mountSources: false
+      mountSources: true
   - name: springbootpvc
     volume:
       ephemeral: true
