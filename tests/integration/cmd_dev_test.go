@@ -1032,9 +1032,7 @@ ComponentSettings:
 
 					When("devfile has multiple endpoints", func() {
 						var (
-							LocalPort1 int
-							LocalPort2 int
-							LocalPort3 int
+							LocalPort1, LocalPort2, LocalPort3 int
 						)
 						const (
 							// ContainerPort<N> are hard-coded from devfile-with-multiple-endpoints.yaml
