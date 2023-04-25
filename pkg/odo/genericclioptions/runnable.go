@@ -248,7 +248,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 
 		var devfilePath, componentName string
 		var devfileObj *parser.DevfileObj
-		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables)
+		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables, userConfig.GetImageRegistry())
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
 			return err

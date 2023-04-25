@@ -492,7 +492,7 @@ func TestGatherName(t *testing.T) {
 				return nil, dir, err
 			}
 
-			d, err := devfile.ParseAndValidateFromFile(dPath, false)
+			d, err := devfile.ParseAndValidateFromFile(dPath, "", false)
 			if err != nil {
 				return nil, dir, err
 			}

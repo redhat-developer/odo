@@ -51,13 +51,13 @@ func DeleteProject(projectName string) {
 
 // GetMetadataFromDevfile retrieves the metadata from devfile
 func GetMetadataFromDevfile(devfilePath string) devfilepkg.DevfileMetadata {
-	devObj, err := devfile.ParseAndValidateFromFile(devfilePath, true)
+	devObj, err := devfile.ParseAndValidateFromFile(devfilePath, "", true)
 	Expect(err).ToNot(HaveOccurred())
 	return devObj.Data.GetMetadata()
 }
 
 func GetDevfileComponents(devfilePath, componentName string) []v1alpha2.Component {
-	devObj, err := devfile.ParseAndValidateFromFile(devfilePath, true)
+	devObj, err := devfile.ParseAndValidateFromFile(devfilePath, "", true)
 	Expect(err).ToNot(HaveOccurred())
 	components, err := devObj.Data.GetComponents(common.DevfileOptions{
 		FilterByName: componentName,

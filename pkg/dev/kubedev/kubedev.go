@@ -106,7 +106,7 @@ func (o *DevClient) Start(
 // RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod
 func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, true)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, o.prefClient.GetImageRegistry(), true)
 	if err != nil {
 		return fmt.Errorf("unable to read devfile: %w", err)
 	}

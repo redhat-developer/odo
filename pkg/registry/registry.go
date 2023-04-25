@@ -438,7 +438,7 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	devfileYamlFile := location.DevfileFilenamesProvider(tmpFile)
 
 	// Parse and validate the file and return the devfile data
-	devfileObj, err := devfile.ParseAndValidateFromFile(path.Join(tmpFile, devfileYamlFile), true)
+	devfileObj, err := devfile.ParseAndValidateFromFile(path.Join(tmpFile, devfileYamlFile), "", true)
 	if err != nil {
 		return api.DevfileData{}, err
 	}

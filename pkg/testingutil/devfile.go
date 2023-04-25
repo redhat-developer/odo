@@ -143,7 +143,7 @@ func GetTestDevfileObjFromFile(fileName string) parser.DevfileObj {
 	// path to the devfile
 	devfilePath := filepath.Join(filepath.Dir(filename), "..", "..", "tests", "examples", filepath.Join("source", "devfiles", "nodejs", fileName))
 
-	devfileObj, err := devfile.ParseAndValidateFromFile(devfilePath, false)
+	devfileObj, err := devfile.ParseAndValidateFromFile(devfilePath, "", false)
 	if err != nil {
 		return parser.DevfileObj{}
 	}

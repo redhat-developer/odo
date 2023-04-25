@@ -2,6 +2,8 @@ package devfile
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/validation/variables"
@@ -14,13 +16,12 @@ import (
 )
 
 func parseRawDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
-	rawArgs := args
-	rawArgs.FlattenedDevfile = pointer.Bool(false)
-	rawArgs.ConvertKubernetesContentInUri = pointer.Bool(false)
-	rawArgs.ImageNamesAsSelector = nil
-	rawArgs.SetBooleanDefaults = pointer.Bool(false)
+	args.FlattenedDevfile = pointer.Bool(false)
+	args.ConvertKubernetesContentInUri = pointer.Bool(false)
+	args.ImageNamesAsSelector = nil
+	args.SetBooleanDefaults = pointer.Bool(false)
 
-	devfileObj, varWarnings, err := devfile.ParseDevfileAndValidate(rawArgs)
+	devfileObj, varWarnings, err := devfile.ParseDevfileAndValidate(args)
 	if err != nil {
 		return parser.DevfileObj{}, err
 	}
@@ -33,13 +34,18 @@ func parseRawDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 
 func parseEffectiveDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 	// Effective Devfile with everything resolved (e.g., parent flattened, K8s URIs inlined, ...)
-	effectiveArgs := args
-	effectiveArgs.FlattenedDevfile = pointer.Bool(true)
-	effectiveArgs.ConvertKubernetesContentInUri = pointer.Bool(true)
-	effectiveArgs.SetBooleanDefaults = pointer.Bool(false)
+	args.SetBooleanDefaults = pointer.Bool(false)
+	args.FlattenedDevfile = pointer.Bool(true)
+	args.ConvertKubernetesContentInUri = pointer.Bool(true)
+	if args.ImageNamesAsSelector != nil && args.ImageNamesAsSelector.Registry != "" {
+		// Tag should be a unique build identifier
+		args.ImageNamesAsSelector.Tag = strconv.Itoa(os.Getpid())
+	} else {
+		args.ImageNamesAsSelector = nil
+	}
 
 	var varWarnings variables.VariableWarning
-	devfileObj, varWarnings, err := devfile.ParseDevfileAndValidate(effectiveArgs)
+	devfileObj, varWarnings, err := devfile.ParseDevfileAndValidate(args)
 	if err != nil {
 		return parser.DevfileObj{}, err
 	}
@@ -58,9 +64,12 @@ func parseEffectiveDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 
 // ParseAndValidateFromFile reads, parses and validates  devfile from a file
 // if there are warning it logs them on stdout
-func ParseAndValidateFromFile(devfilePath string, wantEffective bool) (parser.DevfileObj, error) {
+func ParseAndValidateFromFile(devfilePath string, imageRegistry string, wantEffective bool) (parser.DevfileObj, error) {
 	parserArgs := parser.ParserArgs{
 		Path: devfilePath,
+		ImageNamesAsSelector: &parser.ImageSelectorArgs{
+			Registry: imageRegistry,
+		},
 	}
 	if wantEffective {
 		return parseEffectiveDevfile(parserArgs)
@@ -73,11 +82,13 @@ func ParseAndValidateFromFile(devfilePath string, wantEffective bool) (parser.De
 // If wantEffective is true, it returns a complete view of the Devfile, where everything is resolved.
 // For example, parent will be flattened in the child, and Kubernetes manifests referenced by URI will be inlined in the related components.
 // If there are warnings, it logs them on stdout.
-func ParseAndValidateFromFileWithVariables(devfilePath string, variables map[string]string, wantEffective bool) (parser.DevfileObj, error) {
+func ParseAndValidateFromFileWithVariables(devfilePath string, variables map[string]string, imageRegistry string, wantEffective bool) (parser.DevfileObj, error) {
 	parserArgs := parser.ParserArgs{
-		Path:               devfilePath,
-		ExternalVariables:  variables,
-		SetBooleanDefaults: pointer.Bool(false),
+		Path:              devfilePath,
+		ExternalVariables: variables,
+		ImageNamesAsSelector: &parser.ImageSelectorArgs{
+			Registry: imageRegistry,
+		},
 	}
 	if wantEffective {
 		return parseEffectiveDevfile(parserArgs)

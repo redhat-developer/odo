@@ -17,6 +17,7 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/portForward"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -36,6 +37,7 @@ type DevClient struct {
 	fs filesystem.Filesystem
 
 	podmanClient      podman.Client
+	prefClient        preference.Client
 	portForwardClient portForward.Client
 	syncClient        sync.Client
 	execClient        exec.Client
@@ -51,6 +53,7 @@ var _ dev.Client = (*DevClient)(nil)
 func NewDevClient(
 	fs filesystem.Filesystem,
 	podmanClient podman.Client,
+	prefClient preference.Client,
 	portForwardClient portForward.Client,
 	syncClient sync.Client,
 	execClient exec.Client,
@@ -60,6 +63,7 @@ func NewDevClient(
 	return &DevClient{
 		fs:                fs,
 		podmanClient:      podmanClient,
+		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
 		syncClient:        syncClient,
 		execClient:        execClient,
@@ -161,7 +165,7 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, true)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, o.prefClient.GetImageRegistry(), true)
 	if err != nil {
 		return fmt.Errorf("unable to read devfile: %w", err)
 	}

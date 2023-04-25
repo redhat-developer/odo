@@ -280,6 +280,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			dep.DevClient = podmandev.NewDevClient(
 				dep.FS,
 				dep.PodmanClient,
+				dep.PreferenceClient,
 				dep.PortForwardClient,
 				dep.SyncClient,
 				dep.ExecClient,

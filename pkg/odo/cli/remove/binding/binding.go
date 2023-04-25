@@ -59,7 +59,7 @@ func (o *RemoveBindingOptions) Validate(ctx context.Context) (err error) {
 
 func (o *RemoveBindingOptions) Run(ctx context.Context) error {
 	// Update the raw Devfile only, so we do not break any relationship between parent-child for example
-	rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), false)
+	rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), "", false)
 	if err != nil {
 		return err
 	}

@@ -81,7 +81,7 @@ func (o *AddBindingOptions) Run(ctx context.Context) error {
 	withDevfile := odoutil.CheckPathExists(location.DevfileLocation(odocontext.GetWorkingDirectory(ctx)))
 	var devfileObj *parser.DevfileObj
 	if withDevfile {
-		rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), false)
+		rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), "", false)
 		if err != nil {
 			return err
 		}
