@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/api"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"time"
 
-	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
@@ -59,54 +59,19 @@ func NewWatchClient(kubeClient kclient.ClientInterface) *WatchClient {
 
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
 type WatchParameters struct {
-	// Name of component that is to be watched
-	ComponentName string
-	// Name of application, the component is part of
-	ApplicationName string
-	// DevfilePath is the path of the devfile
-	DevfilePath string
-	// The path to the source of component(local or binary)
-	Path string
-	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
-	FileIgnores []string
+	StartOptions dev.StartOptions
+
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(context.Context, adapters.PushParameters, WatchParameters, *ComponentStatus) error
+	DevfileWatchHandler func(context.Context, common.PushParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
-	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
-	DevfileBuildCmd string
-	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
-	DevfileRunCmd string
-	// DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
-	DevfileDebugCmd string
-	// InitialDevfileObj is used to compare the devfile between the very first run of odo dev and subsequent ones
-	InitialDevfileObj parser.DevfileObj
-	// Debug indicates if the debug command should be started after sync, or the run command by default
-	Debug bool
 	// DebugPort indicates which debug port to use for pushing after sync
 	DebugPort int
-	// Variables override Devfile variables
-	Variables map[string]string
-	// RandomPorts is true to forward containers ports on local random ports
-	RandomPorts bool
-	// Optional: sCustomForwardedPorts configuration to be used to customize the port forwarding; if nil, we automatically select ports
-	CustomForwardedPorts []api.ForwardedPort
 
-	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.
-	// Applicable to Podman only.
-	IgnoreLocalhost bool
-	// WatchFiles indicates to watch for file changes and sync changes to the container
-	WatchFiles bool
-	// ForwardLocalhost indicates whether to try to make port-forwarding work with container apps listening on the loopback interface.
-	ForwardLocalhost bool
 	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
 	WatchCluster bool
-	// ErrOut is a Writer to output forwarded port information
-	Out io.Writer
-	// ErrOut is a Writer to output forwarded port information
-	ErrOut io.Writer
 	// PromptMessage
 	PromptMessage string
 }
@@ -118,14 +83,22 @@ type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores 
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
 // It returns a Duration after which to recall in case of error
-type processEventsFunc func(ctx context.Context, changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
+type processEventsFunc func(ctx context.Context, parameters WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
-func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
-	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
+func (o *WatchClient) WatchAndPush(ctx context.Context, parameters WatchParameters, componentStatus ComponentStatus) error {
+	var (
+		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		appName       = odocontext.GetApplication(ctx)
+	)
+
+	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", path, componentName, parameters.StartOptions.IgnorePaths)
 
 	var err error
-	if parameters.WatchFiles {
-		o.sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
+	if parameters.StartOptions.WatchFiles {
+		o.sourcesWatcher, err = getFullSourcesWatcher(path, parameters.StartOptions.IgnorePaths)
 		if err != nil {
 			return err
 		}
@@ -138,7 +111,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	defer o.sourcesWatcher.Close()
 
 	if parameters.WatchCluster {
-		selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
+		selector := labels.GetSelector(componentName, appName, labels.ComponentDevMode, true)
 		o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
 		if err != nil {
 			return fmt.Errorf("error watching deployment: %v", err)
@@ -157,13 +130,13 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	if err != nil {
 		return err
 	}
-	if parameters.WatchFiles {
+	if parameters.StartOptions.WatchFiles {
 		var devfileFiles []string
-		devfileFiles, err = libdevfile.GetReferencedLocalFiles(parameters.InitialDevfileObj)
+		devfileFiles, err = libdevfile.GetReferencedLocalFiles(*devfileObj)
 		if err != nil {
 			return err
 		}
-		devfileFiles = append(devfileFiles, parameters.DevfilePath)
+		devfileFiles = append(devfileFiles, devfilePath)
 		for _, f := range devfileFiles {
 			err = o.devfileWatcher.Add(f)
 			if err != nil {
@@ -179,14 +152,14 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 			return err
 		}
 		if isForbidden {
-			log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+			log.Fwarning(parameters.StartOptions.Out, "Unable to watch Events resource, warning Events won't be displayed")
 		}
 	} else {
 		o.warningsWatcher = NewNoOpWatcher()
 	}
 
-	o.keyWatcher = getKeyWatcher(ctx, out)
-	return o.eventWatcher(ctx, parameters, out, evaluateFileChanges, o.processEvents, componentStatus)
+	o.keyWatcher = getKeyWatcher(ctx, parameters.StartOptions.Out)
+	return o.eventWatcher(ctx, parameters, evaluateFileChanges, o.processEvents, componentStatus)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
@@ -195,11 +168,18 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 func (o *WatchClient) eventWatcher(
 	ctx context.Context,
 	parameters WatchParameters,
-	out io.Writer,
 	evaluateChangesHandler evaluateChangesFunc,
 	processEventsHandler processEventsFunc,
 	componentStatus ComponentStatus,
 ) error {
+
+	var (
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		path          = filepath.Dir(devfilePath)
+		componentName = odocontext.GetComponentName(ctx)
+		appName       = odocontext.GetApplication(ctx)
+		out           = parameters.StartOptions.Out
+	)
 
 	expBackoff := NewExpBackoff()
 
@@ -245,7 +225,7 @@ func (o *WatchClient) eventWatcher(
 			var changedFiles, deletedPaths []string
 			if !o.forceSync {
 				// first find the files that have changed (also includes the ones newly created) or deleted
-				changedFiles, deletedPaths = evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, o.sourcesWatcher)
+				changedFiles, deletedPaths = evaluateChangesHandler(events, path, parameters.StartOptions.IgnorePaths, o.sourcesWatcher)
 				// process the changes and sync files with remote pod
 				if len(changedFiles) == 0 && len(deletedPaths) == 0 {
 					continue
@@ -254,7 +234,7 @@ func (o *WatchClient) eventWatcher(
 
 			componentStatus.State = StateSyncOutdated
 			fmt.Fprintf(out, "Pushing files...\n\n")
-			retry, err := processEventsHandler(ctx, changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, changedFiles, deletedPaths, &componentStatus, expBackoff)
 			o.forceSync = false
 			if err != nil {
 				return err
@@ -292,7 +272,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-deployTimer.C:
-			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -308,7 +288,7 @@ func (o *WatchClient) eventWatcher(
 
 		case <-devfileTimer.C:
 			fmt.Fprintf(out, "Updating Component...\n\n")
-			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -320,7 +300,7 @@ func (o *WatchClient) eventWatcher(
 			}
 
 		case <-retryTimer.C:
-			retry, err := processEventsHandler(ctx, nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
@@ -351,7 +331,7 @@ func (o *WatchClient) eventWatcher(
 			switch kevent := ev.Object.(type) {
 			case *corev1.Event:
 				podName := kevent.InvolvedObject.Name
-				selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
+				selector := labels.GetSelector(componentName, appName, labels.ComponentDevMode, true)
 				matching, err := o.kubeClient.IsPodNameMatchingSelector(ctx, podName, selector)
 				if err != nil {
 					return err
@@ -438,12 +418,17 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 
 func (o *WatchClient) processEvents(
 	ctx context.Context,
-	changedFiles, deletedPaths []string,
 	parameters WatchParameters,
-	out io.Writer,
+	changedFiles, deletedPaths []string,
 	componentStatus *ComponentStatus,
 	backoff *ExpBackoff,
 ) (*time.Duration, error) {
+	var (
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
+		out         = parameters.StartOptions.Out
+	)
+
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
@@ -452,22 +437,14 @@ func (o *WatchClient) processEvents(
 
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
-	pushParams := adapters.PushParameters{
-		Path:                     parameters.Path,
+	pushParams := common.PushParameters{
+		StartOptions:             parameters.StartOptions,
 		WatchFiles:               changedFiles,
 		WatchDeletedFiles:        deletedPaths,
-		IgnoredFiles:             parameters.FileIgnores,
-		DevfileBuildCmd:          parameters.DevfileBuildCmd,
-		DevfileRunCmd:            parameters.DevfileRunCmd,
-		DevfileDebugCmd:          parameters.DevfileDebugCmd,
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-		Debug:                    parameters.Debug,
-		RandomPorts:              parameters.RandomPorts,
-		CustomForwardedPorts:     parameters.CustomForwardedPorts,
-		ErrOut:                   parameters.ErrOut,
 	}
 	oldStatus := *componentStatus
-	err := parameters.DevfileWatchHandler(ctx, pushParams, parameters, componentStatus)
+	err := parameters.DevfileWatchHandler(ctx, pushParams, componentStatus)
 	if err != nil {
 		if isFatal(err) {
 			return nil, err
@@ -485,7 +462,7 @@ func (o *WatchClient) processEvents(
 				fmt.Fprintf(out, "Updated Kubernetes config\n")
 			}
 		} else {
-			if parameters.WatchFiles {
+			if parameters.StartOptions.WatchFiles {
 				fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
 			} else {
 				return nil, err
@@ -498,7 +475,7 @@ func (o *WatchClient) processEvents(
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		PrintInfoMessage(out, parameters.Path, parameters.WatchFiles, parameters.PromptMessage)
+		PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
 	}
 	return nil, nil
 }
@@ -563,5 +540,5 @@ func PrintInfoMessage(out io.Writer, path string, watchFiles bool, promptMessage
 }
 
 func isFatal(err error) bool {
-	return errors.As(err, &adapters.ErrPortForward{})
+	return errors.As(err, &common.ErrPortForward{})
 }

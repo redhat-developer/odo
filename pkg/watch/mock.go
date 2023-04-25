@@ -6,7 +6,6 @@ package watch
 
 import (
 	context "context"
-	io "io"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -36,15 +35,15 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // WatchAndPush mocks base method.
-func (m *MockClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
+func (m *MockClient) WatchAndPush(ctx context.Context, parameters WatchParameters, componentStatus ComponentStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WatchAndPush", out, parameters, ctx, componentStatus)
+	ret := m.ctrl.Call(m, "WatchAndPush", ctx, parameters, componentStatus)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WatchAndPush indicates an expected call of WatchAndPush.
-func (mr *MockClientMockRecorder) WatchAndPush(out, parameters, ctx, componentStatus interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) WatchAndPush(ctx, parameters, componentStatus interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAndPush", reflect.TypeOf((*MockClient)(nil).WatchAndPush), out, parameters, ctx, componentStatus)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAndPush", reflect.TypeOf((*MockClient)(nil).WatchAndPush), ctx, parameters, componentStatus)
 }

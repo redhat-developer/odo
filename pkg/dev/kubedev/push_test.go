@@ -1,34 +1,35 @@
-package component
+package kubedev
 
 import (
+	"context"
 	"errors"
 	"testing"
 
-	"github.com/devfile/library/v2/pkg/devfile/generator"
-	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/redhat-developer/odo/pkg/configAutomount"
-	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/v2/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
-	"github.com/devfile/library/v2/pkg/testingutil"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 
+	"github.com/redhat-developer/odo/pkg/configAutomount"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/preference"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -84,7 +85,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
 				odolabels.SetProjectType(deployment.Annotations, string(tt.componentType))
-				comp = testingutil.GetFakeContainerComponent("component")
+				comp = odoTestingUtil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: func() data.DevfileData {
@@ -104,12 +105,6 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					}
 					return devfileData
 				}(),
-			}
-
-			adapterCtx := AdapterContext{
-				ComponentName: testComponentName,
-				AppName:       testAppName,
-				Devfile:       devObj,
 			}
 
 			fkclient, fkclientset := kclient.FakeNew()
@@ -134,8 +129,14 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume().AnyTimes()
 			fakeConfigAutomount := configAutomount.NewMockClient(ctrl)
 			fakeConfigAutomount.EXPECT().GetAutomountingVolumes().AnyTimes()
-			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, nil, nil, fakeConfigAutomount, adapterCtx)
-			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, libdevfile.DevfileCommands{}, nil)
+			client := NewDevClient(fkclient, fakePrefClient, nil, nil, nil, nil, nil, nil, nil, fakeConfigAutomount)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithComponentName(ctx, "my-component")
+			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
+			_, _, err := client.createOrUpdateComponent(ctx, common.PushParameters{
+				Devfile: devObj,
+			}, tt.running, libdevfile.DevfileCommands{}, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -240,14 +241,14 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			fakeClient, _ := kclient.FakeNew()
 			fakeClient.Namespace = "project-0"
 
-			a := Adapter{
-				kubeClient: fakeClient,
-				AdapterContext: AdapterContext{
-					ComponentName: tt.fields.componentName,
-					AppName:       tt.fields.appName,
-				},
+			a := DevClient{
+				kubernetesClient: fakeClient,
 			}
-			got, err := a.generateDeploymentObjectMeta(tt.fields.deployment, tt.args.labels, tt.args.annotations)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithComponentName(ctx, "nodejs")
+			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
+			got, err := a.generateDeploymentObjectMeta(ctx, tt.fields.deployment, tt.args.labels, tt.args.annotations)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -436,8 +437,8 @@ func TestAdapter_deleteRemoteResources(t *testing.T) {
 			if tt.fields.kubeClientCustomizer != nil {
 				tt.fields.kubeClientCustomizer(kubeClient)
 			}
-			a := Adapter{
-				kubeClient: kubeClient,
+			a := DevClient{
+				kubernetesClient: kubeClient,
 			}
 			if err := a.deleteRemoteResources(tt.args.objectsToRemove); (err != nil) != tt.wantErr {
 				t.Errorf("deleteRemoteResources() error = %v, wantErr %v", err, tt.wantErr)

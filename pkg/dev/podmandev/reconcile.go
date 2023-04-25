@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,7 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -32,8 +31,6 @@ import (
 
 func (o *DevClient) reconcile(
 	ctx context.Context,
-	out io.Writer,
-	errOut io.Writer,
 	options dev.StartOptions,
 	componentStatus *watch.ComponentStatus,
 ) error {
@@ -130,7 +127,7 @@ func (o *DevClient) reconcile(
 	if err != nil {
 		log.Warningf("Port forwarding might not work correctly: %v", err)
 		log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
-		fmt.Fprintln(out)
+		fmt.Fprintln(options.Out)
 	}
 
 	// By default, Podman will not forward to container applications listening on the loopback interface.
@@ -143,15 +140,15 @@ func (o *DevClient) reconcile(
 
 	if options.ForwardLocalhost {
 		// Port-forwarding is enabled by executing dedicated socat commands
-		err = o.portForwardClient.StartPortForwarding(ctx, *devfileObj, componentName, options.Debug, options.RandomPorts, out, errOut, fwPorts)
+		err = o.portForwardClient.StartPortForwarding(ctx, *devfileObj, componentName, options.Debug, options.RandomPorts, options.Out, options.ErrOut, fwPorts)
 		if err != nil {
-			return adapters.NewErrPortForward(err)
+			return common.NewErrPortForward(err)
 		}
 	} // else port-forwarding is done via the main container ports in the pod spec
 
 	for _, fwPort := range fwPorts {
 		s := fmt.Sprintf("Forwarding from %s:%d -> %d", fwPort.LocalAddress, fwPort.LocalPort, fwPort.ContainerPort)
-		fmt.Fprintf(out, " -  %s", log.SboldColor(color.FgGreen, s))
+		fmt.Fprintf(options.Out, " -  %s", log.SboldColor(color.FgGreen, s))
 	}
 	err = o.stateClient.SetForwardedPorts(ctx, fwPorts)
 	if err != nil {

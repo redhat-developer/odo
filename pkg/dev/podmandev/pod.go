@@ -14,7 +14,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
+	"github.com/redhat-developer/odo/pkg/dev/kubedev/utils"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"

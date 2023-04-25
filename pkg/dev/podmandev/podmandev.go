@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -77,53 +75,32 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	ctx context.Context,
-	out io.Writer,
-	errOut io.Writer,
 	options dev.StartOptions,
 ) error {
 	var (
-		appName       = odocontext.GetApplication(ctx)
-		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
-		devfilePath   = odocontext.GetDevfilePath(ctx)
-		path          = filepath.Dir(devfilePath)
+		devfilePath = odocontext.GetDevfilePath(ctx)
+		path        = filepath.Dir(devfilePath)
 
 		componentStatus = watch.ComponentStatus{
 			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
 		}
 	)
 
-	err := o.reconcile(ctx, out, errOut, options, &componentStatus)
+	err := o.reconcile(ctx, options, &componentStatus)
 	if err != nil {
 		return err
 	}
 
-	watch.PrintInfoMessage(out, path, options.WatchFiles, promptMessage)
+	watch.PrintInfoMessage(options.Out, path, options.WatchFiles, promptMessage)
 
 	watchParameters := watch.WatchParameters{
-		DevfilePath:          devfilePath,
-		Path:                 path,
-		ComponentName:        componentName,
-		ApplicationName:      appName,
-		InitialDevfileObj:    *devfileObj,
-		DevfileWatchHandler:  o.watchHandler,
-		FileIgnores:          options.IgnorePaths,
-		Debug:                options.Debug,
-		DevfileBuildCmd:      options.BuildCommand,
-		DevfileRunCmd:        options.RunCommand,
-		Variables:            options.Variables,
-		RandomPorts:          options.RandomPorts,
-		IgnoreLocalhost:      options.IgnoreLocalhost,
-		ForwardLocalhost:     options.ForwardLocalhost,
-		CustomForwardedPorts: options.CustomForwardedPorts,
-		WatchFiles:           options.WatchFiles,
-		WatchCluster:         false,
-		Out:                  out,
-		ErrOut:               errOut,
-		PromptMessage:        promptMessage,
+		StartOptions:        options,
+		DevfileWatchHandler: o.watchHandler,
+		WatchCluster:        false,
+		PromptMessage:       promptMessage,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)
 }
 
 // syncFiles syncs the local source files in path into the pod's source volume
@@ -165,7 +142,7 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 
 		CompInfo:  compInfo,
 		ForcePush: true,
-		Files:     adapters.GetSyncFilesFromAttributes(devfileCmd),
+		Files:     common.GetSyncFilesFromAttributes(devfileCmd),
 	}
 	execRequired, err := o.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
@@ -193,28 +170,15 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 	return nil
 }
 
-func (o *DevClient) watchHandler(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
-	printWarningsOnDevfileChanges(ctx, watchParams)
-
-	startOptions := dev.StartOptions{
-		IgnorePaths:          watchParams.FileIgnores,
-		Debug:                watchParams.Debug,
-		BuildCommand:         watchParams.DevfileBuildCmd,
-		RunCommand:           watchParams.DevfileRunCmd,
-		RandomPorts:          watchParams.RandomPorts,
-		IgnoreLocalhost:      watchParams.IgnoreLocalhost,
-		ForwardLocalhost:     watchParams.ForwardLocalhost,
-		CustomForwardedPorts: watchParams.CustomForwardedPorts,
-		WatchFiles:           watchParams.WatchFiles,
-		Variables:            watchParams.Variables,
-	}
-	return o.reconcile(ctx, watchParams.Out, watchParams.ErrOut, startOptions, componentStatus)
+func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
+	printWarningsOnDevfileChanges(ctx, pushParams.StartOptions)
+	return o.reconcile(ctx, pushParams.StartOptions, componentStatus)
 }
 
-func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchParameters) {
+func printWarningsOnDevfileChanges(ctx context.Context, options dev.StartOptions) {
 	var warning string
 	currentDevfile := odocontext.GetDevfileObj(ctx)
-	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
+	newDevfile, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), options.Variables)
 	if err != nil {
 		warning = fmt.Sprintf("error while reading the Devfile. Please restart 'odo dev' if you made any changes to the Devfile. Error message is: %v", err)
 	} else {
@@ -239,6 +203,6 @@ func printWarningsOnDevfileChanges(ctx context.Context, parameters watch.WatchPa
 		}
 	}
 	if warning != "" {
-		log.Fwarning(parameters.Out, warning+"\n")
+		log.Fwarning(options.Out, warning+"\n")
 	}
 }

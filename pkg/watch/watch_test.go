@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/redhat-developer/odo/pkg/dev"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 )
 
 func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
@@ -40,8 +42,8 @@ func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []
 	return changedFiles, deletedPaths
 }
 
-func processEventsHandler(ctx context.Context, changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
-	fmt.Fprintf(out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
+func processEventsHandler(ctx context.Context, params WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
+	fmt.Fprintf(params.StartOptions.Out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
 	return nil, nil
 }
 
@@ -89,7 +91,11 @@ func Test_eventWatcher(t *testing.T) {
 		{
 			name: "Case 3: Delete file, no error",
 			args: args{
-				parameters: WatchParameters{FileIgnores: []string{"file1"}},
+				parameters: WatchParameters{
+					StartOptions: dev.StartOptions{
+						IgnorePaths: []string{"file1"},
+					},
+				},
 			},
 			wantOut:       "Pushing files...\n\nchangedFiles [] deletedPaths [file1 file2]\n",
 			wantErr:       true,
@@ -113,6 +119,9 @@ func Test_eventWatcher(t *testing.T) {
 			fileWatcher, _ := fsnotify.NewWatcher()
 			var cancel context.CancelFunc
 			ctx, cancel := context.WithCancel(context.Background())
+			ctx = odocontext.WithDevfilePath(ctx, "/path/to/devfile")
+			ctx = odocontext.WithApplication(ctx, "odo")
+			ctx = odocontext.WithComponentName(ctx, "my-component")
 			out := &bytes.Buffer{}
 
 			go func() {
@@ -139,7 +148,9 @@ func Test_eventWatcher(t *testing.T) {
 				devfileWatcher:    fileWatcher,
 				keyWatcher:        make(chan byte),
 			}
-			err := o.eventWatcher(ctx, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, componentStatus)
+			tt.args.parameters.StartOptions.Out = out
+
+			err := o.eventWatcher(ctx, tt.args.parameters, evaluateChangesHandler, processEventsHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

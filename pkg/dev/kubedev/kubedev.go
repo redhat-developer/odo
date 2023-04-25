@@ -3,30 +3,26 @@ package kubedev
 import (
 	"context"
 	"fmt"
-	"io"
-	"path/filepath"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 	"github.com/redhat-developer/odo/pkg/binding"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/watch"
 
 	"k8s.io/klog"
-
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
-	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 const (
@@ -47,6 +43,13 @@ type DevClient struct {
 	execClient            exec.Client
 	deleteClient          _delete.Client
 	configAutomountClient configAutomount.Client
+
+	// deploymentExists is true when the deployment is already created when calling createComponents
+	deploymentExists bool
+	// portsChanged is true of ports have changed since the last call to createComponents
+	portsChanged bool
+	// portsToForward lists the port to forward during inner loop (TODO move port forward to createComponents)
+	portsToForward map[string][]devfilev1.Endpoint
 }
 
 var _ dev.Client = (*DevClient)(nil)
@@ -79,116 +82,52 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	ctx context.Context,
-	out io.Writer,
-	errOut io.Writer,
 	options dev.StartOptions,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
 
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
-		devfilePath   = odocontext.GetDevfilePath(ctx)
-		path          = filepath.Dir(devfilePath)
-		componentName = odocontext.GetComponentName(ctx)
+		devfileObj = odocontext.GetDevfileObj(ctx)
 	)
 
-	adapter := component.NewKubernetesAdapter(
-		o.kubernetesClient,
-		o.prefClient,
-		o.portForwardClient,
-		o.bindingClient,
-		o.syncClient,
-		o.execClient,
-		o.configAutomountClient,
-		component.AdapterContext{
-			ComponentName: componentName,
-			Context:       path,
-			AppName:       odocontext.GetApplication(ctx),
-			Devfile:       *devfileObj,
-			FS:            o.filesystem,
-		})
-
-	pushParameters := adapters.PushParameters{
-		Path:                 path,
-		IgnoredFiles:         options.IgnorePaths,
-		Debug:                options.Debug,
-		DevfileBuildCmd:      options.BuildCommand,
-		DevfileRunCmd:        options.RunCommand,
-		RandomPorts:          options.RandomPorts,
-		CustomForwardedPorts: options.CustomForwardedPorts,
-		ErrOut:               errOut,
+	pushParameters := common.PushParameters{
+		StartOptions: options,
+		Devfile:      *devfileObj,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	componentStatus := watch.ComponentStatus{
-		ImageComponentsAutoApplied: make(map[string]v1alpha2.ImageComponent),
+		ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
 	}
-	err := adapter.Push(ctx, pushParameters, &componentStatus)
+	err := o.reconcile(ctx, pushParameters, &componentStatus)
 	if err != nil {
 		return err
 	}
 	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
-		DevfilePath:          devfilePath,
-		Path:                 path,
-		ComponentName:        componentName,
-		ApplicationName:      odocontext.GetApplication(ctx),
-		DevfileWatchHandler:  o.regenerateAdapterAndPush,
-		FileIgnores:          options.IgnorePaths,
-		InitialDevfileObj:    *devfileObj,
-		Debug:                options.Debug,
-		DevfileBuildCmd:      options.BuildCommand,
-		DevfileRunCmd:        options.RunCommand,
-		Variables:            options.Variables,
-		RandomPorts:          options.RandomPorts,
-		CustomForwardedPorts: options.CustomForwardedPorts,
-		WatchFiles:           options.WatchFiles,
-		WatchCluster:         true,
-		ErrOut:               errOut,
-		PromptMessage:        promptMessage,
+		StartOptions:        options,
+		DevfileWatchHandler: o.regenerateAdapterAndPush,
+		WatchCluster:        true,
+		PromptMessage:       promptMessage,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
+	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)
 }
 
-// RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
-	var adapter component.ComponentAdapter
+// RegenerateAdapterAndPush get the new devfile and pushes the files to remote pod
+func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables)
 	if err != nil {
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
-	err = adapter.Push(ctx, pushParams, componentStatus)
+	pushParams.Devfile = devObj
+
+	err = o.reconcile(ctx, pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
-
 	return nil
-}
-
-func (o *DevClient) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (component.ComponentAdapter, error) {
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
-	if err != nil {
-		return nil, err
-	}
-
-	return component.NewKubernetesAdapter(
-		o.kubernetesClient,
-		o.prefClient,
-		o.portForwardClient,
-		o.bindingClient,
-		o.syncClient,
-		o.execClient,
-		o.configAutomountClient,
-		component.AdapterContext{
-			ComponentName: parameters.ComponentName,
-			Context:       parameters.Path,
-			AppName:       parameters.ApplicationName,
-			Devfile:       devObj,
-			FS:            o.filesystem,
-		},
-	), nil
 }

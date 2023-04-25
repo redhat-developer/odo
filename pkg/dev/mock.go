@@ -50,15 +50,15 @@ func (mr *MockClientMockRecorder) CleanupResources(ctx, out interface{}) *gomock
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(ctx context.Context, out, errOut io.Writer, options StartOptions) error {
+func (m *MockClient) Start(ctx context.Context, options StartOptions) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", ctx, out, errOut, options)
+	ret := m.ctrl.Call(m, "Start", ctx, options)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(ctx, out, errOut, options interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Start(ctx, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), ctx, out, errOut, options)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), ctx, options)
 }
