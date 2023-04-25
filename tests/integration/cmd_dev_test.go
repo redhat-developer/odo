@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -1038,23 +1039,32 @@ ComponentSettings:
 								var stdout string
 								var stderr string
 								BeforeEach(func() {
-									src := "memoryLimit: 1024Mi"
-									dst := "memoryLimit: 1023Mi"
-									helper.ReplaceString("devfile.yaml", src, dst)
 									if manual {
 										if os.Getenv("SKIP_KEY_PRESS") == "true" {
 											Skip("This is a unix-terminal specific scenario, skipping")
 										}
-
+									}
+									var (
+										wg          sync.WaitGroup
+										err         error
+										stdoutBytes []byte
+										stderrBytes []byte
+									)
+									wg.Add(1)
+									go func() {
+										defer wg.Done()
+										stdoutBytes, stderrBytes, ports, err = devSession.WaitSync()
+										Expect(err).Should(Succeed())
+										stdout = string(stdoutBytes)
+										stderr = string(stderrBytes)
+									}()
+									src := "memoryLimit: 1024Mi"
+									dst := "memoryLimit: 1023Mi"
+									helper.ReplaceString("devfile.yaml", src, dst)
+									if manual {
 										devSession.PressKey('p')
 									}
-									var err error
-									var stdoutBytes []byte
-									var stderrBytes []byte
-									stdoutBytes, stderrBytes, ports, err = devSession.WaitSync()
-									Expect(err).Should(Succeed())
-									stdout = string(stdoutBytes)
-									stderr = string(stderrBytes)
+									wg.Wait()
 								})
 
 								It(fmt.Sprintf("should react on the Devfile modification (podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
