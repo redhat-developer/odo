@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"k8s.io/utils/pointer"
@@ -47,8 +48,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					ports      map[string]string
 				)
 				var (
-					LocalPort      = helper.GetRandomFreePort()
-					LocalDebugPort = helper.GetRandomFreePort()
+					LocalPort, LocalDebugPort int
 				)
 				const (
 					ContainerPort      = "3000"
@@ -56,7 +56,9 @@ var _ = Describe("odo dev debug command tests", func() {
 				)
 
 				BeforeEach(func() {
-					opts := []string{"--debug", fmt.Sprintf("--port-forward=%s:%s", LocalPort, ContainerPort), fmt.Sprintf("--port-forward=%s:%s", LocalDebugPort, ContainerDebugPort)}
+					LocalPort = helper.GetCustomStartPort()
+					LocalDebugPort = LocalPort + 1
+					opts := []string{"--debug", fmt.Sprintf("--port-forward=%d:%s", LocalPort, ContainerPort), fmt.Sprintf("--port-forward=%d:%s", LocalDebugPort, ContainerDebugPort)}
 					if podman {
 						opts = append(opts, "--forward-localhost")
 					}
@@ -82,7 +84,7 @@ var _ = Describe("odo dev debug command tests", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 						// We are just using this to validate if nodejs agent is listening on the other side
 						url := fmt.Sprintf("http://%s", ports[ContainerDebugPort])
-						Expect(url).To(ContainSubstring(LocalDebugPort))
+						Expect(url).To(ContainSubstring(strconv.Itoa(LocalDebugPort)))
 
 						helper.HttpWaitForWithStatus(url, "WebSockets request was expected", 12, 5, 400)
 					})
