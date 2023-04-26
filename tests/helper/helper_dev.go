@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"time"
@@ -112,6 +113,7 @@ type DevSession struct {
 	session *gexec.Session
 	stopped bool
 	console *expect.Console
+	address string
 }
 
 type DevSessionOpts struct {
@@ -121,6 +123,7 @@ type DevSessionOpts struct {
 	TimeoutInSeconds int
 	NoRandomPorts    bool
 	NoWatch          bool
+	CustomAddress    string
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -143,6 +146,9 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 	if options.NoWatch {
 		args = append(args, "--no-watch")
 	}
+	if options.CustomAddress != "" {
+		args = append(args, "--address", options.CustomAddress)
+	}
 	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)
 	cmd.Cmd.Stdin = c.Tty()
@@ -158,6 +164,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 	result := DevSession{
 		session: session,
 		console: c,
+		address: options.CustomAddress,
 	}
 	outContents := session.Out.Contents()
 	errContents := session.Err.Contents()
@@ -169,7 +176,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 	if err != nil {
 		return DevSession{}, nil, nil, nil, err
 	}
-	return result, outContents, errContents, getPorts(string(outContents)), nil
+	return result, outContents, errContents, getPorts(string(outContents), options.CustomAddress), nil
 
 }
 
@@ -246,7 +253,7 @@ func (o DevSession) GetInfo() ([]byte, []byte, map[string]string, error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return outContents, errContents, getPorts(string(outContents)), nil
+	return outContents, errContents, getPorts(string(outContents), o.address), nil
 }
 
 func (o DevSession) CheckNotSynced(timeout time.Duration) {
@@ -283,6 +290,9 @@ func WaitForDevModeToContain(options DevSessionOpts, substring string, stopSessi
 	if options.RunOnPodman {
 		args = append(args, "--platform", "podman")
 	}
+	if options.CustomAddress != "" {
+		args = append(args, "--address", options.CustomAddress)
+	}
 	session := Cmd("odo", args...).AddEnv(options.EnvVars...).Runner().session
 	if checkErrOut {
 		WaitForErroutToContain(substring, 360, 10, session)
@@ -291,6 +301,7 @@ func WaitForDevModeToContain(options DevSessionOpts, substring string, stopSessi
 	}
 	result := DevSession{
 		session: session,
+		address: options.CustomAddress,
 	}
 	if stopSessionAfter {
 		defer func() {
@@ -315,9 +326,12 @@ func WaitForDevModeToContain(options DevSessionOpts, substring string, stopSessi
 // getPorts returns a map of ports redirected depending on the information in s
 //
 //	`- Forwarding from 127.0.0.1:20001 -> 3000` will return { "3000": "127.0.0.1:20001" }
-func getPorts(s string) map[string]string {
+func getPorts(s, address string) map[string]string {
+	if address == "" {
+		address = "127.0.0.1"
+	}
 	result := map[string]string{}
-	re := regexp.MustCompile("(127.0.0.1:[0-9]+) -> ([0-9]+)")
+	re := regexp.MustCompile(fmt.Sprintf("(%s:[0-9]+) -> ([0-9]+)", address))
 	matches := re.FindAllStringSubmatch(s, -1)
 	for _, match := range matches {
 		result[match[2]] = match[1]
