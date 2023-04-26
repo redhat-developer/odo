@@ -126,7 +126,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				})
 				Expect(err).To(BeNil())
 				Expect(output).To(ContainSubstring("odo init --name my-nodejs-app --devfile nodejs --devfile-registry DefaultDevfileRegistry --devfile-version 2.1.1 --starter nodejs-starter"))
-				Expect(output).To(ContainSubstring("Your new component 'nodejs-starter' is ready in the current directory."))
+				Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
