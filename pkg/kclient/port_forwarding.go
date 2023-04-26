@@ -9,7 +9,10 @@ import (
 	"k8s.io/client-go/transport/spdy"
 )
 
-func (c *Client) SetupPortForwarding(pod *corev1.Pod, portPairs []string, out io.Writer, errOut io.Writer, stopChan chan struct{}) error {
+func (c *Client) SetupPortForwarding(pod *corev1.Pod, portPairs []string, out io.Writer, errOut io.Writer, stopChan chan struct{}, address string) error {
+	if address == "" {
+		address = "localhost"
+	}
 	transport, upgrader, err := spdy.RoundTripperFor(c.GetClientConfig())
 	if err != nil {
 		return err
@@ -20,7 +23,7 @@ func (c *Client) SetupPortForwarding(pod *corev1.Pod, portPairs []string, out io
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
 	// passing nil for readyChan because it's eventually being closed if it's not nil
 	// passing nil for out because we only care for error, not for output messages; we want to print our own messages
-	fw, err := portforward.New(dialer, portPairs, stopChan, nil, out, errOut)
+	fw, err := portforward.NewOnAddresses(dialer, []string{address}, portPairs, stopChan, nil, out, errOut)
 	if err != nil {
 		return err
 	}

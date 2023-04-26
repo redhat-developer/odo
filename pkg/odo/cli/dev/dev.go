@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	netutils "k8s.io/utils/net"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -68,6 +69,7 @@ type DevOptions struct {
 	ignoreLocalhostFlag  bool
 	forwardLocalhostFlag bool
 	portForwardFlag      []string
+	addressFlag          string
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -166,7 +168,12 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		}
 		return err
 	}
-
+	// Validate the custom address and return an error (if any) early on, if we do not validate here, it will only throw an error at the stage of port forwarding.
+	if o.addressFlag != "" {
+		if err := validateCustomAddress(o.addressFlag); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -249,6 +256,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			ForwardLocalhost:     o.forwardLocalhostFlag,
 			Variables:            variables,
 			CustomForwardedPorts: o.forwardedPorts,
+			CustomAddress:        o.addressFlag,
 			Out:                  o.out,
 			ErrOut:               o.errOut,
 		},
@@ -299,8 +307,8 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().BoolVar(&o.forwardLocalhostFlag, "forward-localhost", false,
 		"Whether to enable port-forwarding if app is listening on the container loopback interface. Applicable only if platform is podman.")
 	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
-		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT. Currently, it is applicable only if platform is cluster.")
-
+		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
+	devCmd.Flags().StringVar(&o.addressFlag, "address", "", "Define custom address for port forwarding.")
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
@@ -423,4 +431,16 @@ func parsePortForwardFlag(portForwardFlag []string) (forwardedPorts []api.Forwar
 		forwardedPorts = append(forwardedPorts, portF)
 	}
 	return forwardedPorts, nil
+}
+
+// validateCustomAddress validates if the provided ip address is valid;
+// it uses the same checks as defined by func parseAddresses() in "k8s.io/client-go/tools/portforward"
+func validateCustomAddress(address string) error {
+	if address == "localhost" {
+		return nil
+	}
+	if netutils.ParseIPSloppy(address).To4() != nil || netutils.ParseIPSloppy(address) != nil {
+		return nil
+	}
+	return fmt.Errorf("%s is an invalid ip address", address)
 }

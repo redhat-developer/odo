@@ -1398,17 +1398,17 @@ func (mr *MockClientInterfaceMockRecorder) SetNamespace(ns interface{}) *gomock.
 }
 
 // SetupPortForwarding mocks base method.
-func (m *MockClientInterface) SetupPortForwarding(pod *v12.Pod, portPairs []string, out, errOut io.Writer, stopChan chan struct{}) error {
+func (m *MockClientInterface) SetupPortForwarding(pod *v12.Pod, portPairs []string, out, errOut io.Writer, stopChan chan struct{}, address string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetupPortForwarding", pod, portPairs, out, errOut, stopChan)
+	ret := m.ctrl.Call(m, "SetupPortForwarding", pod, portPairs, out, errOut, stopChan, address)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetupPortForwarding indicates an expected call of SetupPortForwarding.
-func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, out, errOut, stopChan interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, out, errOut, stopChan, address interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupPortForwarding", reflect.TypeOf((*MockClientInterface)(nil).SetupPortForwarding), pod, portPairs, out, errOut, stopChan)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupPortForwarding", reflect.TypeOf((*MockClientInterface)(nil).SetupPortForwarding), pod, portPairs, out, errOut, stopChan, address)
 }
 
 // TryWithBlockOwnerDeletion mocks base method.

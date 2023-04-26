@@ -781,9 +781,12 @@ func SafeGetBool(b *bool) bool {
 	return *b
 }
 
-// IsPortFree checks if the port on localhost is free to use
-func IsPortFree(port int) bool {
-	address := fmt.Sprintf("0.0.0.0:%d", port)
+// IsPortFree checks if the port on a given address is free to use
+func IsPortFree(port int, localAddress string) bool {
+	if localAddress == "" {
+		localAddress = "localhost"
+	}
+	address := fmt.Sprintf("%s:%d", localAddress, port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return false
@@ -795,7 +798,8 @@ func IsPortFree(port int) bool {
 // NextFreePort returns the next free port on system, starting at start
 // end finishing at end.
 // If no port is found in the range [start, end], 0 is returned
-func NextFreePort(start, end int, usedPorts []int) (int, error) {
+func NextFreePort(start, end int, usedPorts []int, address string) (int, error) {
+
 	port := start
 	for {
 		for _, usedPort := range usedPorts {
@@ -803,7 +807,7 @@ func NextFreePort(start, end int, usedPorts []int) (int, error) {
 				return port, nil
 			}
 		}
-		if IsPortFree(port) {
+		if IsPortFree(port, address) {
 			return port, nil
 		}
 		port++

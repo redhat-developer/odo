@@ -180,7 +180,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		fmt.Fprintln(log.GetStdout())
 	}
 
-	err = o.portForwardClient.StartPortForwarding(ctx, parameters.Devfile, componentName, parameters.StartOptions.Debug, parameters.StartOptions.RandomPorts, log.GetStdout(), parameters.StartOptions.ErrOut, parameters.StartOptions.CustomForwardedPorts)
+	err = o.portForwardClient.StartPortForwarding(ctx, parameters.Devfile, componentName, parameters.StartOptions.Debug, parameters.StartOptions.RandomPorts, log.GetStdout(), parameters.StartOptions.ErrOut, parameters.StartOptions.CustomForwardedPorts, parameters.StartOptions.CustomAddress)
 	if err != nil {
 		return common.NewErrPortForward(err)
 	}

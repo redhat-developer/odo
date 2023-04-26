@@ -140,6 +140,7 @@ func Test_createPodFromComponent(t *testing.T) {
 		debugCommand         string
 		forwardLocalhost     bool
 		customForwardedPorts []api.ForwardedPort
+		customAddress        string
 	}
 	tests := []struct {
 		name        string
@@ -1289,6 +1290,88 @@ func Test_createPodFromComponent(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "basic component + application endpoint + debug endpoint + container ports known - with debug / using customAddress",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "http",
+						TargetPort: 20001,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug",
+						TargetPort: 20002,
+					})
+					cmp.Container.Endpoints = append(cmp.Container.Endpoints, v1alpha2.Endpoint{
+						Name:       "debug-1",
+						TargetPort: 5858,
+					})
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+				debug:         true,
+				customAddress: "192.168.0.1",
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "http",
+					ContainerPort: 20001,
+					HostPort:      20003,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug",
+					ContainerPort: 20002,
+					HostPort:      20004,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
+					Name:          "debug-1",
+					ContainerPort: 5858,
+					HostPort:      20005,
+					Protocol:      corev1.ProtocolTCP,
+				})
+				return pod
+			},
+			wantFwPorts: []api.ForwardedPort{
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "http",
+					LocalAddress:  "192.168.0.1",
+					LocalPort:     20003,
+					ContainerPort: 20001,
+					IsDebug:       false,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug",
+					LocalAddress:  "192.168.0.1",
+					LocalPort:     20004,
+					ContainerPort: 20002,
+					IsDebug:       true,
+				},
+				{
+					Platform:      "podman",
+					ContainerName: "mycomponent",
+					PortName:      "debug-1",
+					LocalAddress:  "192.168.0.1",
+					LocalPort:     20005,
+					ContainerPort: 5858,
+					IsDebug:       true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1308,6 +1391,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				false,
 				tt.args.customForwardedPorts,
 				[]int{20001, 20002, 20003, 20004, 20005},
+				tt.args.customAddress,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)

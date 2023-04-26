@@ -285,3 +285,72 @@ func Test_parsePortForwardFlag(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateCustomAddress(t *testing.T) {
+	type args struct {
+		address string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "--address=localhost",
+			args: args{
+				address: "localhost",
+			},
+			wantErr: false,
+		},
+		{
+			name: "--address is a valid IPv4",
+			args: args{
+				address: "192.168.0.1",
+			},
+			wantErr: false,
+		},
+		{
+			name: "--address=0.0.0.0",
+			args: args{
+				address: "0.0.0.0",
+			},
+			wantErr: false,
+		},
+		{
+			name: "--address is a valid IPv6 address",
+			args: args{
+				address: "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789",
+			},
+			wantErr: false,
+		},
+		{
+			name: "--address=::1",
+			args: args{
+				address: "::1",
+			},
+			wantErr: false,
+		},
+		{
+			name: "--address is not a valid address",
+			args: args{
+				address: "e9:9e:06:ee:8c:4c",
+			},
+			wantErr: true,
+		},
+		{
+			name: "--address=something",
+			args: args{
+				address: "something",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateCustomAddress(tt.args.address); (err != nil) != tt.wantErr {
+				t.Errorf("validateCustomAddress() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
