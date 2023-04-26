@@ -81,6 +81,52 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
+			FIt("should allow for personalizing configurations", func() {
+				command := []string{"odo", "init"}
+				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+					helper.ExpectString(ctx, "Select language")
+					helper.SendLine(ctx, "Javascript")
+
+					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "Node.js")
+
+					helper.ExpectString(ctx, "Select version")
+					helper.SendLine(ctx, "nodejs:2.1.1")
+
+					helper.ExpectString(ctx, "? Select container for which you want to change configuration?")
+					helper.SendLine(ctx, "runtime")
+
+					helper.ExpectString(ctx, "? What configuration do you want change?")
+					helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
+
+					helper.ExpectString(ctx, "? What configuration do you want change?")
+					helper.SendLine(ctx, "Add new environment variable")
+
+					helper.ExpectString(ctx, "? Enter new environment variable name: ")
+					helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
+
+					helper.ExpectString(ctx, "? Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
+					helper.SendLine(ctx, "5858")
+
+					helper.ExpectString(ctx, "? What configuration do you want change?")
+					helper.SendLine(ctx, "NOTHING - configuration is correct")
+
+					helper.ExpectString(ctx, "? Select container for which you want to change configuration? ")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "? Enter component name:")
+					helper.SendLine(ctx, "nodejs-starter")
+
+					helper.ExpectString(ctx, "Your new component 'nodejs-starter' is ready in the current directory.")
+
+				})
+				Expect(err).To(BeNil())
+				Expect(output).To(ContainSubstring("odo init --name nodejs-starter --devfile nodejs --devfile-registry StagingDevfileRegistry --devfile-version 2.1.1"))
+				Expect(output).To(ContainSubstring("Your new component 'nodejs-starter' is ready in the current directory."))
+				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+			})
+
 			It("should ask to re-enter the component name when an invalid value is passed", func() {
 				command := []string{"odo", "init"}
 				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
