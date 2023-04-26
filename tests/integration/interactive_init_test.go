@@ -81,7 +81,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
-			FIt("should allow for personalizing configurations", func() {
+			It("should allow for personalizing configurations", func() {
 				command := []string{"odo", "init"}
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
