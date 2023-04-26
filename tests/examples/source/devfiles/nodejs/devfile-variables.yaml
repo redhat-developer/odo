@@ -1,10 +1,29 @@
-schemaVersion: 2.1.0
+schemaVersion: 2.2.0
 metadata:
   name: nodejs
 variables:
   VARIABLE_TEST: FOO
   VALUE_TEST: bar
+  VARIABLE_CONTAINER_IMAGE_1: "my-image-1:1.2.3-rc4"
+  VARIABLE_CONTAINER_IMAGE_2: "my-image-2:2.3.4-alpha5"
+
 components:
+  - name: my-image-1
+    image:
+      autoBuild: false
+      imageName: "{{ VARIABLE_CONTAINER_IMAGE_1 }}"
+      dockerfile:
+        buildContext: ${PROJECT_SOURCE}
+        uri: ./Dockerfile
+
+  - name: my-image-2
+    image:
+      autoBuild: false
+      imageName: "{{ VARIABLE_CONTAINER_IMAGE_2 }}"
+      dockerfile:
+        buildContext: ${PROJECT_SOURCE}
+        uri: ./Dockerfile
+
   - name: runtime
     container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
