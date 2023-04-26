@@ -29,12 +29,12 @@ var _ = Describe("doc command reference odo delete namespace", func() {
 	Context("To delete a namespace resource", func() {
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "namespace", "odo-dev").ShouldRun()
+			helper.Cmd("odo", "create", "namespace", "odo-dev").ShouldPass()
 
 		})
 
 		AfterEach(func() {
-			commonVar.CliRunner.DeleteNamespaceProject("odo-dev", false)
+			commonVar.CliRunner.DeleteNamespaceProject("odo-dev", true)
 		})
 
 		It("Deletes a namespace resource for a kubernetes cluster", func() {
