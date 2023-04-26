@@ -14,6 +14,9 @@ import (
 )
 
 func GenerateAndSetContainersConf(dir string) {
+	if os.Getenv("PODMAN_USE_NAMESPACES") == "false" {
+		return
+	}
 	ns := GetProjectName()
 	containersConfPath := filepath.Join(dir, "containers.conf")
 	err := CreateFileWithContent(containersConfPath, fmt.Sprintf(`
