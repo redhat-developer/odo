@@ -89,16 +89,16 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "Javascript")
 
 					helper.ExpectString(ctx, "Select project type")
-					helper.SendLine(ctx, "Node.js")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "nodejs:2.1.1")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "? Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "runtime")
 
-					helper.ExpectString(ctx, "? What configuration do you want change?")
-					helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
+					//helper.ExpectString(ctx, "? What configuration do you want change?")
+					//helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
 
 					helper.ExpectString(ctx, "? What configuration do you want change?")
 					helper.SendLine(ctx, "Add new environment variable")
@@ -107,7 +107,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
 
 					helper.ExpectString(ctx, "? Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
-					helper.SendLine(ctx, "5858")
+					helper.SendLine(ctx, "8000")
 
 					helper.ExpectString(ctx, "? What configuration do you want change?")
 					helper.SendLine(ctx, "NOTHING - configuration is correct")
@@ -115,14 +115,17 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "? Select container for which you want to change configuration? ")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "? Enter component name:")
+					helper.ExpectString(ctx, "? Which starter project do you want to use?")
 					helper.SendLine(ctx, "nodejs-starter")
 
-					helper.ExpectString(ctx, "Your new component 'nodejs-starter' is ready in the current directory.")
+					helper.ExpectString(ctx, "? Enter component name:")
+					helper.SendLine(ctx, "my-nodejs-app")
+
+					helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
 
 				})
 				Expect(err).To(BeNil())
-				Expect(output).To(ContainSubstring("odo init --name nodejs-starter --devfile nodejs --devfile-registry StagingDevfileRegistry --devfile-version 2.1.1"))
+				Expect(output).To(ContainSubstring("odo init --name my-nodejs-app --devfile nodejs --devfile-registry DefaultDevfileRegistry --devfile-version 2.1.1 --starter nodejs-starter"))
 				Expect(output).To(ContainSubstring("Your new component 'nodejs-starter' is ready in the current directory."))
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
