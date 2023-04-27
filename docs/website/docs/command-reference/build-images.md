@@ -64,6 +64,13 @@ Successfully tagged quay.io/user/myimage:latest
 ```
 </details>
 
-
 ### Faking the image build
 You can also fake the image build by exporting `PODMAN_CMD=echo` or `DOCKER_CMD=echo` to your environment. Read [environment variables controlling `odo` behaviour](../overview/configure.md#environment-variables-controlling-odo-behavior) for more information.
+
+## Substituting variables
+
+The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you
+can override the values for variables from the command line when running `odo build-images`, using the `--var` and `--var-file` options.
+
+See [Substituting variables in `odo` dev](dev.md#substituting-variables) for more information.
+
