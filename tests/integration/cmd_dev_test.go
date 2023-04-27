@@ -978,9 +978,9 @@ ComponentSettings:
 				})
 				for _, customAddress := range []bool{true, false} {
 					customAddress := customAddress
-					var LocalAddress string
+					var localAddress string
 					if customAddress {
-						LocalAddress = "0.0.0.0"
+						localAddress = "0.0.0.0"
 					}
 					for _, customPortForwarding := range []bool{true, false} {
 						customPortForwarding := customPortForwarding
@@ -990,13 +990,13 @@ ComponentSettings:
 						}
 						When("devfile has single endpoint", func() {
 							var (
-								LocalPort int
+								localPort int
 							)
 							const (
-								ContainerPort = "3000"
+								containerPort = "3000"
 							)
 							BeforeEach(func() {
-								LocalPort = helper.GetCustomStartPort()
+								localPort = helper.GetCustomStartPort()
 								helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 								helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 							})
@@ -1008,7 +1008,7 @@ ComponentSettings:
 									var err error
 									opts := []string{}
 									if customPortForwarding {
-										opts = []string{fmt.Sprintf("--port-forward=%d:%s", LocalPort, ContainerPort)}
+										opts = []string{fmt.Sprintf("--port-forward=%d:%s", localPort, containerPort)}
 									}
 									if manual {
 										opts = append(opts, "--no-watch")
@@ -1017,7 +1017,7 @@ ComponentSettings:
 										CmdlineArgs:   opts,
 										NoRandomPorts: NoRandomPorts,
 										RunOnPodman:   podman,
-										CustomAddress: LocalAddress,
+										CustomAddress: localAddress,
 									})
 									Expect(err).ToNot(HaveOccurred())
 
@@ -1029,9 +1029,9 @@ ComponentSettings:
 								})
 
 								It(fmt.Sprintf("should expose the endpoint on localhost (podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
-									url := fmt.Sprintf("http://%s", ports[ContainerPort])
+									url := fmt.Sprintf("http://%s", ports[containerPort])
 									if customPortForwarding {
-										Expect(url).To(ContainSubstring(strconv.Itoa(LocalPort)))
+										Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
 									}
 									resp, err := http.Get(url)
 									Expect(err).ToNot(HaveOccurred())
@@ -1095,12 +1095,12 @@ ComponentSettings:
 
 											By("exposing the endpoint", func() {
 												Eventually(func(g Gomega) {
-													url := fmt.Sprintf("http://%s", ports[ContainerPort])
+													url := fmt.Sprintf("http://%s", ports[containerPort])
 													if customPortForwarding {
-														Expect(url).To(ContainSubstring(strconv.Itoa(LocalPort)))
+														Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
 													}
 													if customAddress {
-														Expect(url).To(ContainSubstring(LocalAddress))
+														Expect(url).To(ContainSubstring(localAddress))
 													}
 													resp, err := http.Get(url)
 													g.Expect(err).ToNot(HaveOccurred())
@@ -1121,21 +1121,21 @@ ComponentSettings:
 
 						When("devfile has multiple endpoints", func() {
 							var (
-								LocalPort1, LocalPort2, LocalPort3 int
+								localPort1, localPort2, localPort3 int
 							)
 							const (
 								// ContainerPort<N> are hard-coded from devfile-with-multiple-endpoints.yaml
 								// Note 1:	Debug endpoints will not be exposed for this instance, so we do not add custom mapping for them.
 								// Note 2: We add custom mapping for all the endpoints so that none of them are assigned random ports from the 20001-30001 range;
 								// Note 2(contd.): this is to avoid a race condition where a test running in parallel is also assigned similar ranged port the one here, and we fail to access either of them.
-								ContainerPort1 = "3000"
-								ContainerPort2 = "4567"
-								ContainerPort3 = "7890"
+								containerPort1 = "3000"
+								containerPort2 = "4567"
+								containerPort3 = "7890"
 							)
 							BeforeEach(func() {
-								LocalPort1 = helper.GetCustomStartPort()
-								LocalPort2 = LocalPort1 + 1
-								LocalPort3 = LocalPort1 + 2
+								localPort1 = helper.GetCustomStartPort()
+								localPort2 = localPort1 + 1
+								localPort3 = localPort1 + 2
 								helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
 								helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 							})
@@ -1146,7 +1146,7 @@ ComponentSettings:
 								BeforeEach(func() {
 									opts := []string{}
 									if customPortForwarding {
-										opts = []string{fmt.Sprintf("--port-forward=%d:%s", LocalPort1, ContainerPort1), fmt.Sprintf("--port-forward=%d:%s", LocalPort2, ContainerPort2), fmt.Sprintf("--port-forward=%d:%s", LocalPort3, ContainerPort3)}
+										opts = []string{fmt.Sprintf("--port-forward=%d:%s", localPort1, containerPort1), fmt.Sprintf("--port-forward=%d:%s", localPort2, containerPort2), fmt.Sprintf("--port-forward=%d:%s", localPort3, containerPort3)}
 									}
 									if manual {
 										opts = append(opts, "--no-watch")
@@ -1156,7 +1156,7 @@ ComponentSettings:
 										CmdlineArgs:   opts,
 										NoRandomPorts: NoRandomPorts,
 										RunOnPodman:   podman,
-										CustomAddress: LocalAddress,
+										CustomAddress: localAddress,
 									})
 									Expect(err).ToNot(HaveOccurred())
 								})
@@ -1180,7 +1180,7 @@ ComponentSettings:
 											Expect(url).To(ContainSubstring(localPort))
 										}
 										if customAddress {
-											Expect(url).To(ContainSubstring(LocalAddress))
+											Expect(url).To(ContainSubstring(localAddress))
 										}
 										resp, err := http.Get(url)
 										if err != nil {
@@ -1191,8 +1191,8 @@ ComponentSettings:
 										body, _ := io.ReadAll(resp.Body)
 										return string(body), nil
 									}
-									containerPorts := []string{ContainerPort1, ContainerPort2, ContainerPort3}
-									localPorts := []int{LocalPort1, LocalPort2, LocalPort3}
+									containerPorts := []string{containerPort1, containerPort2, containerPort3}
+									localPorts := []int{localPort1, localPort2, localPort3}
 
 									for i := range containerPorts {
 										containerPort := containerPorts[i]
