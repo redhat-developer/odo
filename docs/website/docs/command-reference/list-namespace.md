@@ -16,18 +16,9 @@ odo list namespace
 <details>
 <summary>Example</summary>
 
-```console
-$ odo list namespace
-ACTIVE     NAME
-*          default
-           kube-node-lease
-           kube-public
-           kube-system
-           mynamespace
-           myproject
-           olm
-           operators
-```
+import ListNamespace  from './docs-mdx/list-namespace/list_namespace.mdx';
+
+<ListNamespace />
 </details>
 
 
@@ -40,18 +31,9 @@ odo list project
 <details>
 <summary>Example</summary>
 
-```console
-$ odo list project
-ACTIVE     NAME
-*          default
-           kube-node-lease
-           kube-public
-           kube-system
-           mynamespace
-           myproject
-           olm
-           operators
-```
+import ListProject  from './docs-mdx/list-namespace/list_project.mdx';
+
+<ListProject />
 </details>
 
 

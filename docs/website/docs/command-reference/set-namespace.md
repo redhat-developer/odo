@@ -13,10 +13,9 @@ odo set namespace <namespace>
 <details>
 <summary>Example</summary>
 
-```console
-$ odo set namespace mynamespace
- ✓  Current active namespace set to "mynamespace"
-```
+import SetNamespace  from './docs-mdx/set-namespace/set_namespace.mdx';
+
+<SetNamespace />
 </details>
 
 Optionally, you can also use `project` as an alias to `namespace`.
@@ -29,10 +28,9 @@ odo set project <project>
 <details>
 <summary>Example</summary>
 
-```console
-$ odo set project myproject
-  ✓  Current active project set to "myproject"
-```
+import SetProject  from './docs-mdx/set-namespace/set_project.mdx';
+
+<SetProject />
 </details>
 
 :::tip

@@ -12,11 +12,9 @@ odo delete namespace <name> [--wait] [--force]
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo delete namespace mynamespace
-? Are you sure you want to delete namespace "mynamespace"? Yes
- ✓  Namespace "mynamespace" will be deleted asynchronously
-```
+import DeleteNamespace  from './docs-mdx/delete-namespace/delete_namespace.mdx';
+
+<DeleteNamespace />
 </details>
 
 Optionally, you can also use `project` as an alias to `namespace`.
@@ -28,11 +26,9 @@ odo delete project <name> [--wait] [--force]
 <details>
 <summary>Example</summary>
 
-```shell
-$ odo delete project myproject
-? Are you sure you want to delete project "myproject"? Yes
-✓  Project "myproject" will be deleted asynchronously
-```
+import DeleteProject  from './docs-mdx/delete-namespace/delete_project.mdx';
+
+<DeleteProject />
 </details>
 
 
