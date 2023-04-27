@@ -9,6 +9,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -82,6 +83,7 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 
 	util.SetCommandGroup(buildImagesCmd, util.MainGroup)
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	commonflags.UseVariablesFlags(buildImagesCmd)
 	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
 	clientset.Add(buildImagesCmd, clientset.FILESYSTEM)
 

@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -323,5 +324,66 @@ CMD ["npm", "start"]
 				}
 			})
 		})
+	})
+
+	When("using a Devfile with variable image names", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"),
+				helper.DevfileMetadataNameSetter(cmpName))
+		})
+
+		checkOutput := func(stdout string, images []string, push bool) {
+			var matchers []types.GomegaMatcher
+			for _, img := range images {
+				msg := "Building"
+				if push {
+					msg += " & Pushing"
+				}
+				matchers = append(matchers, ContainSubstring("%s Image: %s", msg, img))
+				matchers = append(matchers, ContainSubstring("build -t %s -f %s %s", img, filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
+				if push {
+					matchers = append(matchers, ContainSubstring("push %s", img))
+				}
+			}
+			Expect(stdout).Should(SatisfyAll(matchers...))
+		}
+
+		for _, push := range []bool{false, true} {
+			push := push
+			initialArgs := []string{"build-images"}
+			if push {
+				initialArgs = append(initialArgs, "--push")
+			}
+			It(fmt.Sprintf("should build images with default variable values (push=%v)", push), func() {
+				args := initialArgs
+				stdout := helper.Cmd("odo", args...).AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				checkOutput(stdout, []string{"my-image-1:1.2.3-rc4", "my-image-2:2.3.4-alpha5"}, push)
+			})
+
+			It(fmt.Sprintf("should build images with --var (push=%v)", push), func() {
+				args := initialArgs
+				args = append(args, "--var", "VARIABLE_CONTAINER_IMAGE_2=my-image-2-overridden:next")
+				stdout := helper.Cmd("odo", args...).
+					AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				checkOutput(stdout, []string{"my-image-1:1.2.3-rc4", "my-image-2-overridden:next"}, push)
+			})
+
+			It(fmt.Sprintf("should build images with --var-file (push=%v)", push), func() {
+				var varFilename = filepath.Join(commonVar.Context, "vars.txt")
+				err := helper.CreateFileWithContent(varFilename, `VARIABLE_CONTAINER_IMAGE_1=my-image-1-overridden-from-file:next
+VARIABLE_CONTAINER_IMAGE_2=my-image-2-overridden-from-file:next
+`)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				args := initialArgs
+				args = append(args, "--var-file", varFilename)
+				stdout := helper.Cmd("odo", args...).
+					AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				checkOutput(stdout, []string{"my-image-1-overridden-from-file:next", "my-image-2-overridden-from-file:next"}, push)
+			})
+		}
 	})
 })
