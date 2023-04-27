@@ -784,7 +784,7 @@ func SafeGetBool(b *bool) bool {
 // IsPortFree checks if the port on a given address is free to use
 func IsPortFree(port int, localAddress string) bool {
 	if localAddress == "" {
-		localAddress = "localhost"
+		localAddress = "127.0.0.1"
 	}
 	address := fmt.Sprintf("%s:%d", localAddress, port)
 	listener, err := net.Listen("tcp", address)
