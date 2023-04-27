@@ -113,7 +113,7 @@ func createPodFromComponent(
 		return nil, nil, err
 	}
 
-	containers = addHostPorts(withHelperContainer, containers, fwPorts)
+	containers = addHostPorts(withHelperContainer, containers, fwPorts, customAddress)
 
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
@@ -143,7 +143,10 @@ func createPodFromComponent(
 	return &pod, fwPorts, nil
 }
 
-func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPorts []api.ForwardedPort) []corev1.Container {
+func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPorts []api.ForwardedPort, customAddress string) []corev1.Container {
+	if customAddress == "" {
+		customAddress = "127.0.0.1"
+	}
 	if withHelperContainer {
 		// A side helper container is added and will be responsible for redirecting the traffic,
 		// so it can work even if the application is listening on the container loopback interface.
@@ -165,6 +168,7 @@ func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPor
 				Name:          fwPort.PortName,
 				ContainerPort: int32(fwPort.LocalPort),
 				HostPort:      int32(fwPort.LocalPort),
+				HostIP:        customAddress,
 			})
 		}
 		containers = append(containers, pfHelperContainer)
@@ -177,6 +181,7 @@ func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPor
 				for _, fwPort := range fwPorts {
 					if containers[i].Name == fwPort.ContainerName && int(p.ContainerPort) == fwPort.ContainerPort {
 						p.HostPort = int32(fwPort.LocalPort)
+						p.HostIP = customAddress
 						containerPorts = append(containerPorts, p)
 						break
 					}
