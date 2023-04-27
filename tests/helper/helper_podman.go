@@ -7,13 +7,27 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/podman"
 )
 
+func getBooleanValueFromEnvVar(envvar string, defaultValue bool) bool {
+	strVal := os.Getenv("PODMAN_USE_NAMESPACES")
+	boolValue, err := strconv.ParseBool(strVal)
+	if err != nil {
+		return defaultValue
+	}
+	return boolValue
+}
+
 func GenerateAndSetContainersConf(dir string) {
+	useNamespaces := getBooleanValueFromEnvVar("PODMAN_USE_NAMESPACES", true)
+	if !useNamespaces {
+		return
+	}
 	ns := GetProjectName()
 	containersConfPath := filepath.Join(dir, "containers.conf")
 	err := CreateFileWithContent(containersConfPath, fmt.Sprintf(`
