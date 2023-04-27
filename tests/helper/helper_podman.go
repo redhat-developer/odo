@@ -16,9 +16,6 @@ import (
 
 func getBooleanValueFromEnvVar(envvar string, defaultValue bool) bool {
 	strVal := os.Getenv("PODMAN_USE_NAMESPACES")
-	if strVal == "" {
-		return defaultValue
-	}
 	boolValue, err := strconv.ParseBool(strVal)
 	if err != nil {
 		return defaultValue
