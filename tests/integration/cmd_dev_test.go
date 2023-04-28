@@ -938,6 +938,108 @@ ComponentSettings:
 
 	for _, podman := range []bool{true, false} {
 		podman := podman
+		Context(fmt.Sprintf("multiple dev sessions with different project are running on same platform (podman=%v), same port", podman), helper.LabelPodmanIf(podman, func() {
+			const (
+				nodejsContainerPort = "3000"
+				goContainerPort     = "8080"
+				// Note: While running this test on macOS, ensure the addresses are open for request
+				// Note(contd.): Refer: https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x#458877
+				nodejsCustomAddress = "127.0.10.3"
+				goCustomAddress     = "127.0.10.1"
+			)
+			var (
+				nodejsProject, goProject       string
+				nodejsDevSession, goDevSession helper.DevSession
+				nodejsPorts, goPorts           map[string]string
+				nodejsLocalPort                = helper.GetCustomStartPort()
+				goLocalPort                    = nodejsLocalPort + 1
+
+				nodejsURL = fmt.Sprintf("%s:%d", nodejsCustomAddress, nodejsLocalPort)
+				goURL     = fmt.Sprintf("%s:%d", goCustomAddress, goLocalPort)
+			)
+			BeforeEach(func() {
+				nodejsProject = helper.CreateNewContext()
+				goProject = helper.CreateNewContext()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), nodejsProject)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(nodejsProject, "devfile.yaml"))
+				helper.CopyExample(filepath.Join("source", "go"), goProject)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"), filepath.Join(goProject, "devfile.yaml"))
+			})
+			AfterEach(func() {
+				helper.DeleteDir(nodejsProject)
+				helper.DeleteDir(goProject)
+			})
+			When("odo dev session is run for nodejs component", func() {
+				BeforeEach(func() {
+					helper.Chdir(nodejsProject)
+					var err error
+					nodejsDevSession, _, _, nodejsPorts, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs:      []string{"--port-forward", fmt.Sprintf("%d:%s", nodejsLocalPort, nodejsContainerPort)},
+						RunOnPodman:      podman,
+						TimeoutInSeconds: 0,
+						NoRandomPorts:    true,
+						CustomAddress:    nodejsCustomAddress,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					nodejsDevSession.Stop()
+					nodejsDevSession.WaitEnd()
+				})
+				When("odo dev session is run for go project on the same port but different address", func() {
+					BeforeEach(func() {
+						helper.Chdir(goProject)
+						var err error
+						goDevSession, _, _, goPorts, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs:      []string{"--port-forward", fmt.Sprintf("%d:%s", goLocalPort, goContainerPort)},
+							RunOnPodman:      podman,
+							TimeoutInSeconds: 0,
+							NoRandomPorts:    true,
+							CustomAddress:    goCustomAddress,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						goDevSession.Stop()
+						goDevSession.WaitEnd()
+					})
+					It("should be able to run both the sessions", func() {
+						Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
+						Expect(goPorts[goContainerPort]).To(BeEquivalentTo(goURL))
+						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", nodejsURL), "Hello from Node.js Starter Application!", 1, 0, 200)
+						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", goURL), "Hello, !", 1, 0, 200)
+					})
+					When("go and nodejs files are modified", func() {
+						BeforeEach(func() {
+							var wg sync.WaitGroup
+							wg.Add(2)
+							go func() {
+								defer wg.Done()
+								_, _, _, err := nodejsDevSession.WaitSync()
+								Expect(err).ToNot(HaveOccurred())
+							}()
+							go func() {
+								defer wg.Done()
+								_, _, _, err := goDevSession.WaitSync()
+								Expect(err).ToNot(HaveOccurred())
+							}()
+							helper.ReplaceString(filepath.Join(goProject, "main.go"), "Hello, %s!", "H3110, %s!")
+							helper.ReplaceString(filepath.Join(nodejsProject, "server.js"), "Hello from Node.js", "H3110 from Node.js")
+							wg.Wait()
+						})
+						It("should be possible to access both the projects on same address and port", func() {
+							Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
+							Expect(goPorts[goContainerPort]).To(BeEquivalentTo(goURL))
+							helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", nodejsURL), "H3110 from Node.js Starter Application!", 1, 0, 200)
+							helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", goURL), "H3110, !", 1, 0, 200)
+						})
+					})
+				})
+			})
+		}))
+	}
+	for _, podman := range []bool{true, false} {
+		podman := podman
 		Context("port-forwarding for the component", helper.LabelPodmanIf(podman, func() {
 			for _, manual := range []bool{true, false} {
 				manual := manual

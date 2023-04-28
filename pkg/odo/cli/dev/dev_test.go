@@ -1,17 +1,26 @@
 package dev
 
 import (
+	"fmt"
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/redhat-developer/odo/pkg/api"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
 func Test_validatePortForwardFlagData(t *testing.T) {
+	type serverCloser interface {
+		Close()
+	}
 	type args struct {
 		forwardedPorts           []api.ForwardedPort
 		containerEndpointMapping map[string][]v1alpha2.Endpoint
+		address                  string
+		setupServerFunc          func(address string) (serverCloser, error)
 	}
 	tests := []struct {
 		name           string
@@ -160,10 +169,45 @@ func Test_validatePortForwardFlagData(t *testing.T) {
 			wantErr:        true,
 			wantErrStrings: []string{"container port 3000 does not match any endpoints of container \"runtime\" in the devfile", "multiple container components (runtime, tools) found with same container port 5858 in the devfile, port forwarding must be defined with format <localPort>:<containerName>:<containerPort>", "container \"invisible\" not found in the devfile", "local port 9000 is used more than once, please use unique local ports"},
 		},
+		{
+			name: "local port is busy",
+			args: args{
+				forwardedPorts: []api.ForwardedPort{
+					{LocalPort: 9000, ContainerPort: 9000},
+				},
+				containerEndpointMapping: map[string][]v1alpha2.Endpoint{
+					"runtime": {{TargetPort: 9000}},
+				},
+				setupServerFunc: func(address string) (serverCloser, error) {
+					l, err := net.Listen("tcp", fmt.Sprintf("%s:9000", address))
+					if err != nil {
+						return nil, err
+					}
+					s := &httptest.Server{
+						Listener: l,
+						Config:   &http.Server{},
+					}
+					s.Start()
+
+					return s, nil
+				},
+				address: "localhost",
+			},
+			wantErr:        true,
+			wantErrStrings: []string{"local port 9000 is already in use on address localhost"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			errStrings, err := validatePortForwardFlagData(tt.args.forwardedPorts, tt.args.containerEndpointMapping)
+			if tt.args.setupServerFunc != nil {
+				sCloser, err := tt.args.setupServerFunc(tt.args.address)
+				if err != nil {
+					t.Errorf("failed to setup server: %s", err.Error())
+					return
+				}
+				defer sCloser.Close()
+			}
+			errStrings, err := validatePortForwardFlagData(tt.args.forwardedPorts, tt.args.containerEndpointMapping, tt.args.address)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validatePortForwardFlagData() error = %v, wantErr %v", err, tt.wantErr)
 				return

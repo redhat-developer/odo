@@ -146,7 +146,12 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 	if o.randomPortsFlag && o.portForwardFlag != nil {
 		return errors.New("--random-ports and --port-forward cannot be used together")
 	}
-
+	// Validate the custom address and return an error (if any) early on, if we do not validate here, it will only throw an error at the stage of port forwarding.
+	if o.addressFlag != "" {
+		if err := validateCustomAddress(o.addressFlag); err != nil {
+			return err
+		}
+	}
 	if o.portForwardFlag != nil {
 		containerEndpointMapping, err := libdevfile.GetDevfileContainerEndpointMapping(devfileObj, true)
 		if err != nil {
@@ -159,7 +164,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		}
 		o.forwardedPorts = forwardedPorts
 
-		errStrings, err := validatePortForwardFlagData(forwardedPorts, containerEndpointMapping)
+		errStrings, err := validatePortForwardFlagData(forwardedPorts, containerEndpointMapping, o.addressFlag)
 		if len(errStrings) != 0 {
 			log.Error("There are following issues with values provided by --port-forward flag:")
 			for _, errStr := range errStrings {
@@ -168,12 +173,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		}
 		return err
 	}
-	// Validate the custom address and return an error (if any) early on, if we do not validate here, it will only throw an error at the stage of port forwarding.
-	if o.addressFlag != "" {
-		if err := validateCustomAddress(o.addressFlag); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -335,7 +335,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 // 1. Every container port defined by the flag is present in the devfile
 // 2. Every local port defined by the flag is unique
 // 3. If multiple containers have the same container port, the validation fails and asks the user to provide container names
-func validatePortForwardFlagData(forwardedPorts []api.ForwardedPort, containerEndpointMapping map[string][]v1alpha2.Endpoint) ([]string, error) {
+func validatePortForwardFlagData(forwardedPorts []api.ForwardedPort, containerEndpointMapping map[string][]v1alpha2.Endpoint, address string) ([]string, error) {
 	var errors []string
 	// Validate that local ports present in forwardedPorts are unique
 	var localPorts = make(map[int]struct{})
@@ -357,7 +357,9 @@ func validatePortForwardFlagData(forwardedPorts []api.ForwardedPort, containerEn
 			portContainerMapping[endpoint.TargetPort] = append(portContainerMapping[endpoint.TargetPort], container)
 		}
 	}
-
+	if address == "" {
+		address = "127.0.0.1"
+	}
 	// 	Check that all container ports are valid and present in the Devfile
 portLoop:
 	for _, fPort := range forwardedPorts {
@@ -396,6 +398,12 @@ portLoop:
 			errors = append(errors, fmt.Sprintf("container port %d not found in the devfile container endpoints", fPort.ContainerPort))
 		}
 	}
+	for _, fPort := range forwardedPorts {
+		if !util.IsPortFree(fPort.LocalPort, address) {
+			errors = append(errors, fmt.Sprintf("local port %d is already in use on address %s", fPort.LocalPort, address))
+		}
+	}
+
 	if len(errors) != 0 {
 		return errors, fmt.Errorf("values for --port-forward flag are invalid")
 	}
