@@ -438,11 +438,8 @@ func (o *WatchClient) processEvents(
 				fmt.Fprintf(out, "Updated Kubernetes config\n")
 			}
 		} else {
-			if parameters.StartOptions.WatchFiles {
-				fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-			} else {
-				return err
-			}
+			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+			PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
 		}
 		return nil
 	}

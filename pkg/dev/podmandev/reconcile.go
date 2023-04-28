@@ -55,6 +55,7 @@ func (o *DevClient) reconcile(
 		return err
 	}
 	o.deployedPod = pod
+	componentStatus.State = watch.StateReady
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {

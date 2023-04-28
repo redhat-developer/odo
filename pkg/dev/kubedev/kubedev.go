@@ -108,7 +108,7 @@ func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams com
 
 	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables)
 	if err != nil {
-		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
+		return fmt.Errorf("unable to read devfile: %w", err)
 	}
 
 	pushParams.Devfile = devObj
