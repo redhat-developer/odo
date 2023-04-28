@@ -260,7 +260,7 @@ func (o *WatchClient) eventWatcher(
 		case ev := <-o.deploymentWatcher.ResultChan():
 			switch obj := ev.Object.(type) {
 			case *appsv1.Deployment:
-				klog.V(0).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, generation: %d, pods: %d\n",
+				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, generation: %d, pods: %d\n",
 					ev.Type, obj.GetName(), obj.GetResourceVersion(), obj.GetGeneration(), obj.Status.ReadyReplicas)
 				if obj.GetGeneration() > o.deploymentGeneration || obj.Status.ReadyReplicas != o.readyReplicas {
 					o.deploymentGeneration = obj.GetGeneration()
