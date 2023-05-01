@@ -311,6 +311,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					ContainerPort: 8080,
 					HostPort:      20001,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -352,6 +353,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 20001,
 					HostPort:      20001,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -397,6 +399,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					ContainerPort: 8080,
 					HostPort:      20001,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -442,6 +445,7 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 20001,
 					HostPort:      20001,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -488,12 +492,14 @@ func Test_createPodFromComponent(t *testing.T) {
 					ContainerPort: 8080,
 					HostPort:      20001,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 5858,
 					HostPort:      20002,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -549,11 +555,13 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 20001,
 					HostPort:      20001,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 20002,
 					HostPort:      20002,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -690,18 +698,21 @@ func Test_createPodFromComponent(t *testing.T) {
 					ContainerPort: 20001,
 					HostPort:      20003,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 20002,
 					HostPort:      20004,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug-1",
 					ContainerPort: 5858,
 					HostPort:      20005,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -770,16 +781,19 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 20003,
 					HostPort:      20003,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 20004,
 					HostPort:      20004,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "debug-1",
 					ContainerPort: 20005,
 					HostPort:      20005,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -852,12 +866,14 @@ func Test_createPodFromComponent(t *testing.T) {
 					ContainerPort: 20001,
 					HostPort:      20002,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "http-1",
 					ContainerPort: 8080,
 					HostPort:      20003,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -921,11 +937,13 @@ func Test_createPodFromComponent(t *testing.T) {
 					Name:          "http",
 					ContainerPort: 20002,
 					HostPort:      20002,
+					HostIP:        "127.0.0.1",
 				})
 				pod.Spec.Containers[1].Ports = append(pod.Spec.Containers[1].Ports, corev1.ContainerPort{
 					Name:          "http-1",
 					ContainerPort: 20003,
 					HostPort:      20003,
+					HostIP:        "127.0.0.1",
 				})
 				return pod
 			},
@@ -1003,12 +1021,14 @@ func Test_createPodFromComponent(t *testing.T) {
 						ContainerPort: 8080,
 						HostPort:      8080,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 					{
 						Name:          "debug",
 						ContainerPort: 5858,
 						HostPort:      20001,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 				}
 				container2 := pod.Spec.Containers[0].DeepCopy()
@@ -1019,6 +1039,7 @@ func Test_createPodFromComponent(t *testing.T) {
 						ContainerPort: 5000,
 						HostPort:      20002,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 				}
 				pod.Spec.Containers = append(pod.Spec.Containers, *container2)
@@ -1110,11 +1131,13 @@ func Test_createPodFromComponent(t *testing.T) {
 						ContainerPort: 8080,
 						HostPort:      8080,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					}, {
 						Name:          "debug",
 						ContainerPort: 5858,
 						HostPort:      20001,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 				}
 				container2 := pod.Spec.Containers[0].DeepCopy()
@@ -1125,6 +1148,7 @@ func Test_createPodFromComponent(t *testing.T) {
 						ContainerPort: 5000,
 						HostPort:      5000,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 				}
 				pod.Spec.Containers = append(pod.Spec.Containers, *container2)
@@ -1224,12 +1248,14 @@ func Test_createPodFromComponent(t *testing.T) {
 						ContainerPort: 8080,
 						HostPort:      20001,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 					{
 						Name:          "debug",
 						ContainerPort: 5858,
 						HostPort:      20003,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 				}
 				container2 := pod.Spec.Containers[0].DeepCopy()
@@ -1240,12 +1266,14 @@ func Test_createPodFromComponent(t *testing.T) {
 						ContainerPort: 9000,
 						HostPort:      20002,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 					{
 						Name:          "http-5000",
 						ContainerPort: 5000,
 						HostPort:      5000,
 						Protocol:      corev1.ProtocolTCP,
+						HostIP:        "127.0.0.1",
 					},
 				}
 				pod.Spec.Containers = append(pod.Spec.Containers, *container2)
@@ -1327,18 +1355,21 @@ func Test_createPodFromComponent(t *testing.T) {
 					ContainerPort: 20001,
 					HostPort:      20003,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "192.168.0.1",
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug",
 					ContainerPort: 20002,
 					HostPort:      20004,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "192.168.0.1",
 				})
 				pod.Spec.Containers[0].Ports = append(pod.Spec.Containers[0].Ports, corev1.ContainerPort{
 					Name:          "debug-1",
 					ContainerPort: 5858,
 					HostPort:      20005,
 					Protocol:      corev1.ProtocolTCP,
+					HostIP:        "192.168.0.1",
 				})
 				return pod
 			},
