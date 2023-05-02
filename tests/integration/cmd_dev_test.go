@@ -985,6 +985,7 @@ ComponentSettings:
 				AfterEach(func() {
 					nodejsDevSession.Stop()
 					nodejsDevSession.WaitEnd()
+					helper.Chdir(commonVar.Context)
 				})
 				When("odo dev session is run for go project on the same port but different address", func() {
 					BeforeEach(func() {
@@ -1002,6 +1003,7 @@ ComponentSettings:
 					AfterEach(func() {
 						goDevSession.Stop()
 						goDevSession.WaitEnd()
+						helper.Chdir(commonVar.Context)
 					})
 					It("should be able to run both the sessions", func() {
 						Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
