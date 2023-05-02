@@ -221,8 +221,8 @@ func (o *WatchClient) eventWatcher(
 
 		case <-sourcesTimer.C:
 			// timer has fired
-			if !componentCanSyncFile(componentStatus.State) {
-				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.State)
+			if !componentCanSyncFile(componentStatus.GetState()) {
+				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.GetState())
 				continue
 			}
 
@@ -236,7 +236,7 @@ func (o *WatchClient) eventWatcher(
 				}
 			}
 
-			componentStatus.State = StateSyncOutdated
+			componentStatus.SetState(StateSyncOutdated)
 			fmt.Fprintf(out, "Pushing files...\n\n")
 			err := processEventsHandler(ctx, parameters, changedFiles, deletedPaths, &componentStatus)
 			o.forceSync = false
@@ -244,7 +244,7 @@ func (o *WatchClient) eventWatcher(
 				return err
 			}
 			// empty the events to receive new events
-			if componentStatus.State == StateReady {
+			if componentStatus.GetState() == StateReady {
 				events = []fsnotify.Event{} // empty the events slice to capture new events
 			}
 
@@ -443,7 +443,7 @@ func (o *WatchClient) processEvents(
 		}
 		return nil
 	}
-	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
+	if oldStatus.GetState() != StateReady && componentStatus.GetState() == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
 		PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)

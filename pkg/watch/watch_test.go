@@ -136,9 +136,8 @@ func Test_eventWatcher(t *testing.T) {
 				cancel()
 			}()
 
-			componentStatus := ComponentStatus{
-				State: StateReady,
-			}
+			componentStatus := ComponentStatus{}
+			componentStatus.SetState(StateReady)
 
 			o := WatchClient{
 				sourcesWatcher:    watcher,

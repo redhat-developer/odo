@@ -55,7 +55,7 @@ func (o *DevClient) reconcile(
 		return err
 	}
 	o.deployedPod = pod
-	componentStatus.State = watch.StateReady
+	componentStatus.SetState(watch.StateReady)
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
@@ -157,7 +157,7 @@ func (o *DevClient) reconcile(
 		return err
 	}
 
-	componentStatus.State = watch.StateReady
+	componentStatus.SetState(watch.StateReady)
 	return nil
 }
 
