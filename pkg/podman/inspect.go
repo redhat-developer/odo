@@ -24,7 +24,7 @@ type PodInspectData struct {
 }
 
 func (o *PodmanCli) PodInspect(podname string) (PodInspectData, error) {
-	cmd := exec.Command(o.podmanCmd, "pod", "inspect", podname, "--format", "json")
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunExtraArgs, "pod", "inspect", podname, "--format", "json")...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {

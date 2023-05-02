@@ -389,6 +389,133 @@ $ odo dev --platform podman
 ```
 </details>
 
+
+### Passing extra args to Podman or Docker when building images
+
+If the Devfile contains an `Image` component that is set to be [automatically created](../development/devfile.md#how-odo-determines-components-that-are-applied-automatically),
+or explicitly referenced in another command execution chain), `odo` will leverage Podman or Docker to build this Image and push it.
+
+Similarly to how [`odo build-images`](build-images.md#passing-extra-args-to-podman-or-docker) works, you can set the [`ODO_IMAGE_BUILD_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
+which is a comma-separated list of extra arguments to pass to Podman or Docker when building images.
+See [this section](build-images.md#passing-extra-args-to-podman-or-docker) for further details.
+
+```shell
+ODO_IMAGE_BUILD_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo dev
+```
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64,--build-arg=MY_ARG=my_value' odo dev
+
+  __                                                                                                                                                                                           
+ /  \__     Developing using the "my-nodejs-app" Devfile                                                                                                                                
+ \__/  \    Namespace: default                                                                                                                                                                 
+ /  \__/    odo version: v3.10.0                                                                                                                                                               
+ \__/                                                                                                                                                                                          
+                                                                                                  
+ ⚠  You are using "default" namespace, odo may not work as expected in the default namespace.                                                         
+ ⚠  You may set a new namespace by running `odo create namespace <name>`, or set an existing one by running `odo set namespace <name>`
+
+↪ Building Image: localhost:5000/nodejs-odo-example
+ •  Building image locally  ...
+[1/2] STEP 1/4: FROM registry.access.redhat.com/ubi8/nodejs-14:latest
+[1/2] STEP 2/4: RUN echo XXX $MY_ARG
+--> Using cache cbd3ef1317b96dbef4c9ab3646df49d3770831516c3b5c9f1e15687d67bc8803
+--> cbd3ef1317b9
+[1/2] STEP 3/4: COPY package*.json ./
+--> Using cache de4a08bf2632ef49339beeda4ba50eb6e8a9b7524ffd5717fdcc372c15003b61
+--> de4a08bf2632
+[1/2] STEP 4/4: RUN npm install --production
+--> Using cache 5a37e2783e140582da7ac4e241790e6e2052826c07f46cc0053801f4580e728c
+--> 5a37e2783e14
+[2/2] STEP 1/6: FROM registry.access.redhat.com/ubi8/nodejs-14-minimal:latest
+[2/2] STEP 2/6: COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
+--> Using cache 8779f5d3753baec5961b5ae017d8246b2674eb70f3c5607e4060f6b38e07c182
+--> 8779f5d3753b
+[2/2] STEP 3/6: COPY . /opt/app-root/src
+--> 6ea250968b12
+[2/2] STEP 4/6: ENV NODE_ENV production
+--> 0bf4dd6605e9
+[2/2] STEP 5/6: ENV PORT 3000
+--> deea4247dd08
+[2/2] STEP 6/6: CMD ["npm", "start"]
+[2/2] COMMIT localhost:5000/nodejs-odo-example
+--> eebc7c012506
+Successfully tagged localhost:5000/nodejs-odo-example:latest
+eebc7c01250682bf4e1e9544de1434d5edb90a51cf2d3e96f0faab354918bedb
+ ✓  Building image locally [3s]
+ •  Pushing image to container registry  ...
+Getting image source signatures
+Copying blob 4577dc5a9258 skipped: already exists  
+Copying blob 6c30129af541 skipped: already exists  
+Copying blob e48a40635da9 skipped: already exists  
+Copying blob 1a5c88cd67e6 skipped: already exists  
+Copying config a4bda6ab2b done  
+Writing manifest to image destination
+Storing signatures
+ ✓  Pushing image to container registry [137ms]
+ •  Waiting for Kubernetes resources  ...
+ ⚠  Pod is Pending
+ ✓  Pod is Running
+ ✓  Syncing files into the container [204ms]
+ ✓  Building your application in container (command: install) [15s]
+ •  Executing the application (command: run)  ...
+ ✓  Waiting for the application to be ready [1s]
+ -  Forwarding from 127.0.0.1:20001 -> 3000
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /path/to/project/nodejs
+
+ Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
+
+```
+</details>
+
+
+### Passing extra args to Podman when developing on Podman
+
+When [running on Podman](#running-on-podman), you can set the [`ODO_CONTAINER_RUN_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
+which is a comma-separated list of extra arguments to pass to Podman when running any Podman command other than building `Imaage` components (use [`ODO_IMAGE_BUILD_ARGS`](#passing-extra-args-to-podman-or-docker-when-building-images) instead).
+
+```shell
+ODO_CONTAINER_RUN_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo dev
+```
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ ODO_CONTAINER_RUN_ARGS='--storage-driver=overlay,--ssh=native' odo dev --platform=podman     
+  __
+ /  \__     Developing using the "my-nodejs-app" Devfile
+ \__/  \    Platform: podman
+ /  \__/    odo version: v3.10.0
+ \__/
+
+↪ Running on podman in Dev mode
+ ✓  Deploying pod [2s]
+ ✓  Building your application in container (command: install) [10s]
+ •  Executing the application (command: run)  ...
+ ✓  Waiting for the application to be ready [1s]
+ -  Forwarding from 127.0.0.1:20001 -> 3000
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /path/to/project/nodejs
+
+ Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from podman
+     [p] - Manually apply local changes to the application on podman
+
+```
+</details>
+
+
 ## Devfile (Advanced Usage)
 
 ### Devfile Overview

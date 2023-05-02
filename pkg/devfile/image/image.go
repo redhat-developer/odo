@@ -109,6 +109,7 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 func selectBackend(ctx context.Context) (Backend, error) {
 
 	podmanCmd := envcontext.GetEnvConfig(ctx).PodmanCmd
+	buildExtraArgs := envcontext.GetEnvConfig(ctx).OdoImageBuildArgs
 	if _, err := lookPathCmd(podmanCmd); err == nil {
 
 		// Podman does NOT build x86 images on Apple Silicon / M1 and we must *WARN* the user that this will not work.
@@ -125,12 +126,12 @@ func selectBackend(ctx context.Context) (Backend, error) {
 			log.Warning("WARNING: Building images on Apple Silicon / M1 is not (yet) supported natively on Podman")
 			log.Warning("There is however a temporary workaround: https://github.com/containers/podman/discussions/12899")
 		}
-		return NewDockerCompatibleBackend(podmanCmd), nil
+		return NewDockerCompatibleBackend(podmanCmd, buildExtraArgs), nil
 	}
 
 	dockerCmd := envcontext.GetEnvConfig(ctx).DockerCmd
 	if _, err := lookPathCmd(dockerCmd); err == nil {
-		return NewDockerCompatibleBackend(dockerCmd), nil
+		return NewDockerCompatibleBackend(dockerCmd, buildExtraArgs), nil
 	}
 	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 	return nil, errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")

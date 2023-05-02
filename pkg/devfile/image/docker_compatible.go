@@ -19,13 +19,17 @@ import (
 
 // DockerCompatibleBackend uses a CLI compatible with the docker CLI (at least docker itself and podman)
 type DockerCompatibleBackend struct {
-	name string
+	name                string
+	imageBuildExtraArgs []string
 }
 
 var _ Backend = (*DockerCompatibleBackend)(nil)
 
-func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
-	return &DockerCompatibleBackend{name: name}
+func NewDockerCompatibleBackend(name string, imageBuildExtraArgs []string) *DockerCompatibleBackend {
+	return &DockerCompatibleBackend{
+		name:                name,
+		imageBuildExtraArgs: imageBuildExtraArgs,
+	}
 }
 
 // Build an image, as defined in devfile, using a Docker compatible CLI
@@ -57,7 +61,7 @@ func (o *DockerCompatibleBackend) Build(fs filesystem.Filesystem, image *devfile
 		return err
 	}
 
-	shellCmd := getShellCommand(o.name, image, devfilePath, dockerfile)
+	shellCmd := getShellCommand(o.name, o.imageBuildExtraArgs, image, devfilePath, dockerfile)
 	klog.V(4).Infof("Running command: %v", shellCmd)
 	for i, cmd := range shellCmd {
 		shellCmd[i] = os.ExpandEnv(cmd)
@@ -117,7 +121,7 @@ func resolveAndDownloadDockerfile(fs filesystem.Filesystem, uri string) (string,
 
 // getShellCommand creates the docker compatible build command from detected backend,
 // container image and devfile path
-func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
+func getShellCommand(cmdName string, extraArgs []string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
 	var shellCmd []string
 	imageName := image.ImageName
 	dockerfile := dockerfilePath
@@ -128,18 +132,12 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 	if buildpath == "" {
 		buildpath = devfilePath
 	}
-	args := image.Dockerfile.Args
-	shellCmd = []string{
-		cmdName,
-		"build",
-		"-t",
-		imageName,
-		"-f",
-		dockerfile,
-		buildpath,
-	}
-	if len(args) > 0 {
-		shellCmd = append(shellCmd, args...)
+	shellCmd = []string{cmdName, "build"}
+	shellCmd = append(shellCmd, extraArgs...)
+	shellCmd = append(shellCmd, "-t", imageName, "-f", dockerfile, buildpath)
+
+	if len(image.Dockerfile.Args) != 0 {
+		shellCmd = append(shellCmd, image.Dockerfile.Args...)
 	}
 	return shellCmd
 }

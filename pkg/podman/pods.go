@@ -6,10 +6,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/platform"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/platform"
 )
 
 // GetPodsMatchingSelector returns all pods matching the given label selector.
@@ -103,7 +104,7 @@ func (o *PodmanCli) getPodsFromSelector(selector string) ([]ListPodsReport, erro
 	for _, s := range selectorAsList {
 		args = append(args, "--filter=label="+s)
 	}
-	cmd := exec.Command(o.podmanCmd, args...)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunExtraArgs, args...)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {
