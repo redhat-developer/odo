@@ -308,7 +308,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Whether to enable port-forwarding if app is listening on the container loopback interface. Applicable only if platform is podman.")
 	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
-	devCmd.Flags().StringVar(&o.addressFlag, "address", "", "Define custom address for port forwarding.")
+	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
