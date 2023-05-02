@@ -246,8 +246,9 @@ odo dev --var USER=john --var-file config.vars
 
 
 ### Using custom port mapping for port forwarding
-To define a custom port mapping for port forwarding with the help of `--port-forward` flag. This feature is supported on both podman and cluster.
-This feature can be helpful when you want to provide a consistent and predictable port numbers and avoid being assigned a random port number every time `odo dev` is run.
+Custom local ports can be passed for port forwarding with the help of the `--port-forward` flag. This feature is supported on both podman and cluster.
+
+This feature can be helpful when you want to provide consistent and predictable port numbers and avoid being assigned a potentially different port number every time `odo dev` is run.
 
 Supported formats for this flag include:
 1. `<LOCAL_PORT>:<CONTAINER_PORT>`
@@ -298,7 +299,7 @@ $ odo dev --port-forward 3000:runtime:3000 --port-forward 5000:5858 --debug
 ```
 </details>
 
-Note that `--random-port` flag cannot be used with `--port-forward` flag.
+Note that `--random-ports` flag cannot be used with `--port-forward` flag.
 
 ### Using custom address for port forwarding
 A custom address can be passed for port forwarding with the help of `--address` flag. This feature is supported on both podman and cluster.
@@ -344,11 +345,8 @@ $ odo dev --address 127.0.10.3
 </details>
 
 :::note
-If you are on macOS, you may not be able to run 2 podman sessions in parallel without defining a custom port mapping or custom address.
-By default, we use 127.0.0.1 address, so if 1 session is already using port 20001, the second session might also end up with port 20001 because macOS seems to think of it as a free port.
-To avoid such situation, you can consider using a custom address or custom port mapping for both the dev sessions.
+If you are on macOS and using a Cluster platform, you may not be able to run multiple Dev sessions in parallel on address 0.0.0.0 without defining a custom port mapping, or using a different or default address.
 
-But, also note that if you use 0.0.0.0 address for both the dev sessions, it may not give the same problem when running on a cluster.
 For more information, see the following issues:
 1. [Cannot start 2 different Dev sessions on Podman due to conflicting host ports](https://github.com/redhat-developer/odo/issues/6612)
 2. [[MacOS] Cannot run 2 dev sessions simultaneously on cluster](https://github.com/redhat-developer/odo/issues/6744)

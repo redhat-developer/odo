@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -942,8 +943,6 @@ ComponentSettings:
 			const (
 				nodejsContainerPort = "3000"
 				goContainerPort     = "8080"
-				// Note: While running this test on macOS, ensure the addresses are open for request
-				// Note(contd.): Refer: https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x#458877
 				nodejsCustomAddress = "127.0.10.3"
 				goCustomAddress     = "127.0.10.1"
 			)
@@ -958,6 +957,9 @@ ComponentSettings:
 				goURL     = fmt.Sprintf("%s:%d", goCustomAddress, goLocalPort)
 			)
 			BeforeEach(func() {
+				if runtime.GOOS == "darwin" {
+					Skip("cannot run this test out of the box on macOS because the test uses a custom address in the range 127.0.0/8 and for macOS we need to ensure the addresses are open for request before using them; Ref: https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x#458877")
+				}
 				nodejsProject = helper.CreateNewContext()
 				goProject = helper.CreateNewContext()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), nodejsProject)
