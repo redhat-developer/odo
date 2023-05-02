@@ -8,7 +8,7 @@ slug: using-helm-with-odo
 ---
 
 This blog will show how odo can now be used with tools such as Helm, Kustomize, etc. for the [outerloop](/docs/introduction/#what-is-inner-loop-and-outer-loop) development cycle.
-
+<!--truncate-->
 :::note
 
 This blog is an extension of [an earlier blog](./2022-06-30-binding-database-service-without-sbo.md) which focuses on the [innerloop](/docs/introduction/#what-is-inner-loop-and-outer-loop) development cycle.
