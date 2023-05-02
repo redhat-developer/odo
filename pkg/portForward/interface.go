@@ -25,6 +25,7 @@ type Client interface {
 		out io.Writer,
 		errOut io.Writer,
 		definedPorts []api.ForwardedPort,
+		customAddress string,
 	) error
 
 	// StopPortForwarding stops the port forwarding for the specified component.

@@ -2742,7 +2742,8 @@ func TestIsPortFree(t *testing.T) {
 	}
 	type args struct {
 		port         int
-		portProvider func() (int, serverCloser, error)
+		portProvider func(address string) (int, serverCloser, error)
+		address      string
 	}
 	type test struct {
 		name string
@@ -2763,7 +2764,7 @@ func TestIsPortFree(t *testing.T) {
 		{
 			name: "random port bound on 127.0.0.1",
 			args: args{
-				portProvider: func() (int, serverCloser, error) {
+				portProvider: func(address string) (int, serverCloser, error) {
 					s := httptest.NewServer(nil)
 					_, p, err := net.SplitHostPort(strings.TrimPrefix(s.URL, "http://"))
 					if err != nil {
@@ -2781,7 +2782,7 @@ func TestIsPortFree(t *testing.T) {
 		{
 			name: "random port bound on 127.0.0.1 and checking 0 as input",
 			args: args{
-				portProvider: func() (int, serverCloser, error) {
+				portProvider: func(address string) (int, serverCloser, error) {
 					s := httptest.NewServer(nil)
 					return 0, s, nil
 				},
@@ -2791,9 +2792,9 @@ func TestIsPortFree(t *testing.T) {
 		{
 			name: "random port bound on 0.0.0.0 and checking 0 as input",
 			args: args{
-				portProvider: func() (int, serverCloser, error) {
+				portProvider: func(address string) (int, serverCloser, error) {
 					// Intentionally not using httptest.Server, which listens to 127.0.0.1
-					l, err := net.Listen("tcp", "0.0.0.0:0")
+					l, err := net.Listen("tcp", fmt.Sprintf("%s:0", address))
 					if err != nil {
 						return 0, nil, err
 					}
@@ -2805,15 +2806,16 @@ func TestIsPortFree(t *testing.T) {
 
 					return 0, s, nil
 				},
+				address: "0.0.0.0",
 			},
 			want: true,
 		},
 		{
 			name: "random port bound on 0.0.0.0",
 			args: args{
-				portProvider: func() (int, serverCloser, error) {
+				portProvider: func(address string) (int, serverCloser, error) {
 					// Intentionally not using httptest.Server, which listens to 127.0.0.1
-					l, err := net.Listen("tcp", "0.0.0.0:0")
+					l, err := net.Listen("tcp", fmt.Sprintf("%s:0", address))
 					if err != nil {
 						return 0, nil, err
 					}
@@ -2833,6 +2835,7 @@ func TestIsPortFree(t *testing.T) {
 					}
 					return port, s, nil
 				},
+				address: "0.0.0.0",
 			},
 			want: false,
 		},
@@ -2844,7 +2847,7 @@ func TestIsPortFree(t *testing.T) {
 			var s serverCloser
 			var err error
 			if tt.args.portProvider != nil {
-				port, s, err = tt.args.portProvider()
+				port, s, err = tt.args.portProvider(tt.args.address)
 				if s != nil {
 					defer s.Close()
 				}
@@ -2854,7 +2857,7 @@ func TestIsPortFree(t *testing.T) {
 				}
 			}
 
-			if got := IsPortFree(port); got != tt.want {
+			if got := IsPortFree(port, tt.args.address); got != tt.want {
 				t.Errorf("IsPortFree() = %v, want %v", got, tt.want)
 			}
 		})

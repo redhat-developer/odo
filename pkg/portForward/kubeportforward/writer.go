@@ -23,27 +23,32 @@ type PortWriter struct {
 	end    chan bool
 	len    int
 	// mapping indicates the list of endpoints open by containers
-	mapping map[string][]v1alpha2.Endpoint
-	fwPorts []api.ForwardedPort
+	mapping       map[string][]v1alpha2.Endpoint
+	fwPorts       []api.ForwardedPort
+	customAddress string
 }
 
 // NewPortWriter creates a writer that will write the content in buffer,
 // and Wait will return after strings "Forwarding from 127.0.0.1:" has been written "len" times
-func NewPortWriter(buffer io.Writer, len int, mapping map[string][]v1alpha2.Endpoint) *PortWriter {
+func NewPortWriter(buffer io.Writer, len int, mapping map[string][]v1alpha2.Endpoint, customAddress string) *PortWriter {
 	return &PortWriter{
-		buffer:  buffer,
-		len:     len,
-		end:     make(chan bool),
-		mapping: mapping,
+		buffer:        buffer,
+		len:           len,
+		end:           make(chan bool),
+		mapping:       mapping,
+		customAddress: customAddress,
 	}
 }
 
 func (o *PortWriter) Write(buf []byte) (n int, err error) {
 
+	if o.customAddress == "" {
+		o.customAddress = "127.0.0.1"
+	}
 	s := string(buf)
-	if strings.HasPrefix(s, "Forwarding from 127.0.0.1") {
+	if strings.HasPrefix(s, fmt.Sprintf("Forwarding from %s", o.customAddress)) {
 
-		fwPort, err := getForwardedPort(o.mapping, s)
+		fwPort, err := getForwardedPort(o.mapping, s, o.customAddress)
 		if err == nil {
 			o.fwPorts = append(o.fwPorts, fwPort)
 		} else {
@@ -68,8 +73,11 @@ func (o *PortWriter) GetForwardedPorts() []api.ForwardedPort {
 	return o.fwPorts
 }
 
-func getForwardedPort(mapping map[string][]v1alpha2.Endpoint, s string) (api.ForwardedPort, error) {
-	regex := regexp.MustCompile(`Forwarding from 127.0.0.1:([0-9]+) -> ([0-9]+)`)
+func getForwardedPort(mapping map[string][]v1alpha2.Endpoint, s string, address string) (api.ForwardedPort, error) {
+	if address == "" {
+		address = "127.0.0.1"
+	}
+	regex := regexp.MustCompile(fmt.Sprintf(`Forwarding from %s:([0-9]+) -> ([0-9]+)`, address))
 	matches := regex.FindStringSubmatch(s)
 	if len(matches) < 3 {
 		return api.ForwardedPort{}, errors.New("unable to analyze port forwarding string")
@@ -83,7 +91,7 @@ func getForwardedPort(mapping map[string][]v1alpha2.Endpoint, s string) (api.For
 		return api.ForwardedPort{}, err
 	}
 	fp := api.ForwardedPort{
-		LocalAddress:  "127.0.0.1",
+		LocalAddress:  address,
 		LocalPort:     localPort,
 		ContainerPort: remotePort,
 	}

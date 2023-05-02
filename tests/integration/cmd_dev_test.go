@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -938,6 +939,111 @@ ComponentSettings:
 
 	for _, podman := range []bool{true, false} {
 		podman := podman
+		Context(fmt.Sprintf("multiple dev sessions with different project are running on same platform (podman=%v), same port", podman), helper.LabelPodmanIf(podman, func() {
+			const (
+				nodejsContainerPort = "3000"
+				goContainerPort     = "8080"
+				nodejsCustomAddress = "127.0.10.3"
+				goCustomAddress     = "127.0.10.1"
+			)
+			var (
+				nodejsProject, goProject       string
+				nodejsDevSession, goDevSession helper.DevSession
+				nodejsPorts, goPorts           map[string]string
+				nodejsLocalPort                = helper.GetCustomStartPort()
+				goLocalPort                    = nodejsLocalPort + 1
+
+				nodejsURL = fmt.Sprintf("%s:%d", nodejsCustomAddress, nodejsLocalPort)
+				goURL     = fmt.Sprintf("%s:%d", goCustomAddress, goLocalPort)
+			)
+			BeforeEach(func() {
+				if runtime.GOOS == "darwin" {
+					Skip("cannot run this test out of the box on macOS because the test uses a custom address in the range 127.0.0/8 and for macOS we need to ensure the addresses are open for request before using them; Ref: https://superuser.com/questions/458875/how-do-you-get-loopback-addresses-other-than-127-0-0-1-to-work-on-os-x#458877")
+				}
+				nodejsProject = helper.CreateNewContext()
+				goProject = helper.CreateNewContext()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), nodejsProject)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(nodejsProject, "devfile.yaml"))
+				helper.CopyExample(filepath.Join("source", "go"), goProject)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"), filepath.Join(goProject, "devfile.yaml"))
+			})
+			AfterEach(func() {
+				helper.DeleteDir(nodejsProject)
+				helper.DeleteDir(goProject)
+			})
+			When("odo dev session is run for nodejs component", func() {
+				BeforeEach(func() {
+					helper.Chdir(nodejsProject)
+					var err error
+					nodejsDevSession, _, _, nodejsPorts, err = helper.StartDevMode(helper.DevSessionOpts{
+						CmdlineArgs:      []string{"--port-forward", fmt.Sprintf("%d:%s", nodejsLocalPort, nodejsContainerPort)},
+						RunOnPodman:      podman,
+						TimeoutInSeconds: 0,
+						NoRandomPorts:    true,
+						CustomAddress:    nodejsCustomAddress,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					nodejsDevSession.Stop()
+					nodejsDevSession.WaitEnd()
+					helper.Chdir(commonVar.Context)
+				})
+				When("odo dev session is run for go project on the same port but different address", func() {
+					BeforeEach(func() {
+						helper.Chdir(goProject)
+						var err error
+						goDevSession, _, _, goPorts, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs:      []string{"--port-forward", fmt.Sprintf("%d:%s", goLocalPort, goContainerPort)},
+							RunOnPodman:      podman,
+							TimeoutInSeconds: 0,
+							NoRandomPorts:    true,
+							CustomAddress:    goCustomAddress,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+					AfterEach(func() {
+						goDevSession.Stop()
+						goDevSession.WaitEnd()
+						helper.Chdir(commonVar.Context)
+					})
+					It("should be able to run both the sessions", func() {
+						Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
+						Expect(goPorts[goContainerPort]).To(BeEquivalentTo(goURL))
+						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", nodejsURL), "Hello from Node.js Starter Application!", 1, 0, 200)
+						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", goURL), "Hello, !", 1, 0, 200)
+					})
+					When("go and nodejs files are modified", func() {
+						BeforeEach(func() {
+							var wg sync.WaitGroup
+							wg.Add(2)
+							go func() {
+								defer wg.Done()
+								_, _, _, err := nodejsDevSession.WaitSync()
+								Expect(err).ToNot(HaveOccurred())
+							}()
+							go func() {
+								defer wg.Done()
+								_, _, _, err := goDevSession.WaitSync()
+								Expect(err).ToNot(HaveOccurred())
+							}()
+							helper.ReplaceString(filepath.Join(goProject, "main.go"), "Hello, %s!", "H3110, %s!")
+							helper.ReplaceString(filepath.Join(nodejsProject, "server.js"), "Hello from Node.js", "H3110 from Node.js")
+							wg.Wait()
+						})
+						It("should be possible to access both the projects on same address and port", func() {
+							Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
+							Expect(goPorts[goContainerPort]).To(BeEquivalentTo(goURL))
+							helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", nodejsURL), "H3110 from Node.js Starter Application!", 1, 0, 200)
+							helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", goURL), "H3110, !", 1, 0, 200)
+						})
+					})
+				})
+			})
+		}))
+	}
+	for _, podman := range []bool{true, false} {
+		podman := podman
 		Context("port-forwarding for the component", helper.LabelPodmanIf(podman, func() {
 			for _, manual := range []bool{true, false} {
 				manual := manual
@@ -976,261 +1082,276 @@ ComponentSettings:
 						})
 					})
 				})
-
-				for _, customPortForwarding := range []bool{true, false} {
-					customPortForwarding := customPortForwarding
-					var NoRandomPorts bool
-					if customPortForwarding {
-						NoRandomPorts = true
+				for _, customAddress := range []bool{true, false} {
+					customAddress := customAddress
+					var localAddress string
+					if customAddress {
+						localAddress = "0.0.0.0"
 					}
-					When("devfile has single endpoint", func() {
-						var (
-							LocalPort int
-						)
-						const (
-							ContainerPort = "3000"
-						)
-						BeforeEach(func() {
-							LocalPort = helper.GetCustomStartPort()
-							helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-							helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+					for _, customPortForwarding := range []bool{true, false} {
+						customPortForwarding := customPortForwarding
+						var NoRandomPorts bool
+						if customPortForwarding {
+							NoRandomPorts = true
+						}
+						When("devfile has single endpoint", func() {
+							var (
+								localPort int
+							)
+							const (
+								containerPort = "3000"
+							)
+							BeforeEach(func() {
+								localPort = helper.GetCustomStartPort()
+								helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+								helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+							})
+
+							When("running odo dev", func() {
+								var devSession helper.DevSession
+								var ports map[string]string
+								BeforeEach(func() {
+									var err error
+									opts := []string{}
+									if customPortForwarding {
+										opts = []string{fmt.Sprintf("--port-forward=%d:%s", localPort, containerPort)}
+									}
+									if manual {
+										opts = append(opts, "--no-watch")
+									}
+									devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+										CmdlineArgs:   opts,
+										NoRandomPorts: NoRandomPorts,
+										RunOnPodman:   podman,
+										CustomAddress: localAddress,
+									})
+									Expect(err).ToNot(HaveOccurred())
+
+								})
+
+								AfterEach(func() {
+									devSession.Stop()
+									devSession.WaitEnd()
+								})
+
+								It(fmt.Sprintf("should expose the endpoint on localhost (podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
+									url := fmt.Sprintf("http://%s", ports[containerPort])
+									if customPortForwarding {
+										Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
+									}
+									resp, err := http.Get(url)
+									Expect(err).ToNot(HaveOccurred())
+									defer resp.Body.Close()
+
+									body, _ := io.ReadAll(resp.Body)
+									helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+									Expect(err).ToNot(HaveOccurred())
+								})
+
+								When("modifying memoryLimit for container in Devfile", func() {
+									var stdout string
+									var stderr string
+									BeforeEach(func() {
+										if manual {
+											if os.Getenv("SKIP_KEY_PRESS") == "true" {
+												Skip("This is a unix-terminal specific scenario, skipping")
+											}
+										}
+										var (
+											wg          sync.WaitGroup
+											err         error
+											stdoutBytes []byte
+											stderrBytes []byte
+										)
+										wg.Add(1)
+										go func() {
+											defer wg.Done()
+											stdoutBytes, stderrBytes, ports, err = devSession.WaitSync()
+											Expect(err).Should(Succeed())
+											stdout = string(stdoutBytes)
+											stderr = string(stderrBytes)
+										}()
+										src := "memoryLimit: 1024Mi"
+										dst := "memoryLimit: 1023Mi"
+										helper.ReplaceString("devfile.yaml", src, dst)
+										if manual {
+											devSession.PressKey('p')
+										}
+										wg.Wait()
+									})
+
+									It(fmt.Sprintf("should react on the Devfile modification (podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
+										if podman {
+											By("warning users that odo dev needs to be restarted", func() {
+												Expect(stdout).To(ContainSubstring(
+													"Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."))
+											})
+										} else {
+											By("not warning users that odo dev needs to be restarted", func() {
+												warning := "Please restart 'odo dev'"
+												Expect(stdout).ShouldNot(ContainSubstring(warning))
+												Expect(stderr).ShouldNot(ContainSubstring(warning))
+											})
+											By("updating the pod", func() {
+												podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+												bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
+												output := string(bufferOutput)
+												Expect(output).To(ContainSubstring("1023Mi"))
+											})
+
+											By("exposing the endpoint", func() {
+												Eventually(func(g Gomega) {
+													url := fmt.Sprintf("http://%s", ports[containerPort])
+													if customPortForwarding {
+														Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
+													}
+													if customAddress {
+														Expect(url).To(ContainSubstring(localAddress))
+													}
+													resp, err := http.Get(url)
+													g.Expect(err).ToNot(HaveOccurred())
+													defer resp.Body.Close()
+
+													body, _ := io.ReadAll(resp.Body)
+													for _, i := range []string{"Hello from Node.js Starter Application!"} {
+														g.Expect(string(body)).To(ContainSubstring(i))
+													}
+													g.Expect(err).ToNot(HaveOccurred())
+												}).WithPolling(1 * time.Second).WithTimeout(20 * time.Second).Should(Succeed())
+											})
+										}
+									})
+								})
+							})
 						})
 
-						When("running odo dev", func() {
-							var devSession helper.DevSession
-							var ports map[string]string
+						When("devfile has multiple endpoints", func() {
+							var (
+								localPort1, localPort2, localPort3 int
+							)
+							const (
+								// ContainerPort<N> are hard-coded from devfile-with-multiple-endpoints.yaml
+								// Note 1:	Debug endpoints will not be exposed for this instance, so we do not add custom mapping for them.
+								// Note 2: We add custom mapping for all the endpoints so that none of them are assigned random ports from the 20001-30001 range;
+								// Note 2(contd.): this is to avoid a race condition where a test running in parallel is also assigned similar ranged port the one here, and we fail to access either of them.
+								containerPort1 = "3000"
+								containerPort2 = "4567"
+								containerPort3 = "7890"
+							)
 							BeforeEach(func() {
-								var err error
-								opts := []string{}
-								if customPortForwarding {
-									opts = []string{fmt.Sprintf("--port-forward=%d:%s", LocalPort, ContainerPort)}
-								}
-								if manual {
-									opts = append(opts, "--no-watch")
-								}
-								devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
-									CmdlineArgs:   opts,
-									NoRandomPorts: NoRandomPorts,
-									RunOnPodman:   podman,
-								})
-								Expect(err).ToNot(HaveOccurred())
+								localPort1 = helper.GetCustomStartPort()
+								localPort2 = localPort1 + 1
+								localPort3 = localPort1 + 2
+								helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+								helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 							})
 
-							AfterEach(func() {
-								devSession.Stop()
-								devSession.WaitEnd()
-							})
-
-							It(fmt.Sprintf("should expose the endpoint on localhost (podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
-								url := fmt.Sprintf("http://%s", ports[ContainerPort])
-								if customPortForwarding {
-									Expect(url).To(ContainSubstring(strconv.Itoa(LocalPort)))
-								}
-								resp, err := http.Get(url)
-								Expect(err).ToNot(HaveOccurred())
-								defer resp.Body.Close()
-
-								body, _ := io.ReadAll(resp.Body)
-								helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-								Expect(err).ToNot(HaveOccurred())
-							})
-
-							When("modifying memoryLimit for container in Devfile", func() {
-								var stdout string
-								var stderr string
+							When("running odo dev", func() {
+								var devSession helper.DevSession
+								var ports map[string]string
 								BeforeEach(func() {
+									opts := []string{}
+									if customPortForwarding {
+										opts = []string{fmt.Sprintf("--port-forward=%d:%s", localPort1, containerPort1), fmt.Sprintf("--port-forward=%d:%s", localPort2, containerPort2), fmt.Sprintf("--port-forward=%d:%s", localPort3, containerPort3)}
+									}
+									if manual {
+										opts = append(opts, "--no-watch")
+									}
+									var err error
+									devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+										CmdlineArgs:   opts,
+										NoRandomPorts: NoRandomPorts,
+										RunOnPodman:   podman,
+										CustomAddress: localAddress,
+									})
+									Expect(err).ToNot(HaveOccurred())
+								})
+
+								AfterEach(func() {
+									devSession.Stop()
+									devSession.WaitEnd()
+								})
+
+								It(fmt.Sprintf("should expose all endpoints on localhost regardless of exposure(podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
+									By("not exposing debug endpoints", func() {
+										for _, p := range []int{5005, 5006} {
+											_, found := ports[strconv.Itoa(p)]
+											Expect(found).To(BeFalse(), fmt.Sprintf("debug port %d should not be forwarded", p))
+										}
+									})
+
+									getServerResponse := func(containerPort, localPort string) (string, error) {
+										url := fmt.Sprintf("http://%s", ports[containerPort])
+										if customPortForwarding {
+											Expect(url).To(ContainSubstring(localPort))
+										}
+										if customAddress {
+											Expect(url).To(ContainSubstring(localAddress))
+										}
+										resp, err := http.Get(url)
+										if err != nil {
+											return "", err
+										}
+										defer resp.Body.Close()
+
+										body, _ := io.ReadAll(resp.Body)
+										return string(body), nil
+									}
+									containerPorts := []string{containerPort1, containerPort2, containerPort3}
+									localPorts := []int{localPort1, localPort2, localPort3}
+
+									for i := range containerPorts {
+										containerPort := containerPorts[i]
+										localPort := localPorts[i]
+										By(fmt.Sprintf("exposing a port targeting container port %s", containerPort), func() {
+											r, err := getServerResponse(containerPort, strconv.Itoa(localPort))
+											Expect(err).ShouldNot(HaveOccurred())
+											helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
+										})
+									}
+
+									helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
+
 									if manual {
 										if os.Getenv("SKIP_KEY_PRESS") == "true" {
 											Skip("This is a unix-terminal specific scenario, skipping")
 										}
-									}
-									var (
-										wg          sync.WaitGroup
-										err         error
-										stdoutBytes []byte
-										stderrBytes []byte
-									)
-									wg.Add(1)
-									go func() {
-										defer wg.Done()
-										stdoutBytes, stderrBytes, ports, err = devSession.WaitSync()
-										Expect(err).Should(Succeed())
-										stdout = string(stdoutBytes)
-										stderr = string(stderrBytes)
-									}()
-									src := "memoryLimit: 1024Mi"
-									dst := "memoryLimit: 1023Mi"
-									helper.ReplaceString("devfile.yaml", src, dst)
-									if manual {
+
 										devSession.PressKey('p')
 									}
-									wg.Wait()
-								})
 
-								It(fmt.Sprintf("should react on the Devfile modification (podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
-									if podman {
-										By("warning users that odo dev needs to be restarted", func() {
-											Expect(stdout).To(ContainSubstring(
-												"Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."))
-										})
-									} else {
-										By("not warning users that odo dev needs to be restarted", func() {
-											warning := "Please restart 'odo dev'"
-											Expect(stdout).ShouldNot(ContainSubstring(warning))
-											Expect(stderr).ShouldNot(ContainSubstring(warning))
-										})
-										By("updating the pod", func() {
-											podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-											bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
-											output := string(bufferOutput)
-											Expect(output).To(ContainSubstring("1023Mi"))
-										})
+									var stdout, stderr []byte
+									var err error
+									stdout, stderr, _, err = devSession.WaitSync()
+									Expect(err).Should(Succeed())
 
-										By("exposing the endpoint", func() {
-											Eventually(func(g Gomega) {
-												url := fmt.Sprintf("http://%s", ports[ContainerPort])
-												if customPortForwarding {
-													Expect(url).To(ContainSubstring(strconv.Itoa(LocalPort)))
-												}
-												resp, err := http.Get(url)
-												g.Expect(err).ToNot(HaveOccurred())
-												defer resp.Body.Close()
-
-												body, _ := io.ReadAll(resp.Body)
-												for _, i := range []string{"Hello from Node.js Starter Application!"} {
-													g.Expect(string(body)).To(ContainSubstring(i))
-												}
-												g.Expect(err).ToNot(HaveOccurred())
-											}).WithPolling(1 * time.Second).WithTimeout(20 * time.Second).Should(Succeed())
-										})
-									}
-								})
-							})
-						})
-					})
-
-					When("devfile has multiple endpoints", func() {
-						var (
-							LocalPort1, LocalPort2, LocalPort3 int
-						)
-						const (
-							// ContainerPort<N> are hard-coded from devfile-with-multiple-endpoints.yaml
-							// Note 1:	Debug endpoints will not be exposed for this instance, so we do not add custom mapping for them.
-							// Note 2: We add custom mapping for all the endpoints so that none of them are assigned random ports from the 20001-30001 range;
-							// Note 2(contd.): this is to avoid a race condition where a test running in parallel is also assigned similar ranged port the one here, and we fail to access either of them.
-							ContainerPort1 = "3000"
-							ContainerPort2 = "4567"
-							ContainerPort3 = "7890"
-						)
-						BeforeEach(func() {
-							LocalPort1 = helper.GetCustomStartPort()
-							LocalPort2 = LocalPort1 + 1
-							LocalPort3 = LocalPort1 + 2
-							helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-							helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
-						})
-
-						When("running odo dev", func() {
-							var devSession helper.DevSession
-							var ports map[string]string
-							BeforeEach(func() {
-								opts := []string{}
-								if customPortForwarding {
-									opts = []string{fmt.Sprintf("--port-forward=%d:%s", LocalPort1, ContainerPort1), fmt.Sprintf("--port-forward=%d:%s", LocalPort2, ContainerPort2), fmt.Sprintf("--port-forward=%d:%s", LocalPort3, ContainerPort3)}
-								}
-								if manual {
-									opts = append(opts, "--no-watch")
-								}
-								var err error
-								devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
-									CmdlineArgs:   opts,
-									NoRandomPorts: NoRandomPorts,
-									RunOnPodman:   podman,
-								})
-								Expect(err).ToNot(HaveOccurred())
-							})
-
-							AfterEach(func() {
-								devSession.Stop()
-								devSession.WaitEnd()
-							})
-
-							It(fmt.Sprintf("should expose all endpoints on localhost regardless of exposure(podman=%v, manual=%v, customPortForwarding=%v)", podman, manual, customPortForwarding), func() {
-								By("not exposing debug endpoints", func() {
-									for _, p := range []int{5005, 5006} {
-										_, found := ports[strconv.Itoa(p)]
-										Expect(found).To(BeFalse(), fmt.Sprintf("debug port %d should not be forwarded", p))
-									}
-								})
-
-								getServerResponse := func(containerPort, localPort string) (string, error) {
-									url := fmt.Sprintf("http://%s", ports[containerPort])
-									if customPortForwarding {
-										Expect(url).To(ContainSubstring(localPort))
-									}
-									resp, err := http.Get(url)
-									if err != nil {
-										return "", err
-									}
-									defer resp.Body.Close()
-
-									body, _ := io.ReadAll(resp.Body)
-									return string(body), nil
-								}
-								containerPorts := []string{ContainerPort1, ContainerPort2, ContainerPort3}
-								localPorts := []int{LocalPort1, LocalPort2, LocalPort3}
-
-								for i := range containerPorts {
-									containerPort := containerPorts[i]
-									localPort := localPorts[i]
-									By(fmt.Sprintf("exposing a port targeting container port %s", containerPort), func() {
-										r, err := getServerResponse(containerPort, strconv.Itoa(localPort))
-										Expect(err).ShouldNot(HaveOccurred())
-										helper.MatchAllInOutput(r, []string{"Hello from Node.js Starter Application!"})
+									By("not warning users that odo dev needs to be restarted because the Devfile has not changed", func() {
+										warning := "Please restart 'odo dev'"
+										if podman {
+											warning = "Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."
+										}
+										Expect(stdout).ShouldNot(ContainSubstring(warning))
+										Expect(stderr).ShouldNot(ContainSubstring(warning))
 									})
-								}
 
-								helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
-
-								if manual {
-									if os.Getenv("SKIP_KEY_PRESS") == "true" {
-										Skip("This is a unix-terminal specific scenario, skipping")
+									for i := range containerPorts {
+										containerPort := containerPorts[i]
+										localPort := localPorts[i]
+										By(fmt.Sprintf("returning the right response when querying port forwarded for container port %s", containerPort),
+											func() {
+												Eventually(func(g Gomega) string {
+													r, err := getServerResponse(containerPort, strconv.Itoa(localPort))
+													g.Expect(err).ShouldNot(HaveOccurred())
+													return r
+												}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
+											})
 									}
-
-									devSession.PressKey('p')
-								}
-
-								var stdout, stderr []byte
-								var err error
-								stdout, stderr, _, err = devSession.WaitSync()
-								Expect(err).Should(Succeed())
-
-								By("not warning users that odo dev needs to be restarted because the Devfile has not changed", func() {
-									warning := "Please restart 'odo dev'"
-									if podman {
-										warning = "Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."
-									}
-									Expect(stdout).ShouldNot(ContainSubstring(warning))
-									Expect(stderr).ShouldNot(ContainSubstring(warning))
 								})
-
-								for i := range containerPorts {
-									containerPort := containerPorts[i]
-									localPort := localPorts[i]
-									By(fmt.Sprintf("returning the right response when querying port forwarded for container port %s", containerPort),
-										func() {
-											Eventually(func(g Gomega) string {
-												r, err := getServerResponse(containerPort, strconv.Itoa(localPort))
-												g.Expect(err).ShouldNot(HaveOccurred())
-												return r
-											}, 180, 10).Should(Equal("H3110 from Node.js Starter Application!"))
-										})
-								}
 							})
+
 						})
 
-					})
-
+					}
 				}
 			}
 		}))

@@ -50,7 +50,7 @@ func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Cli
 	}
 }
 
-func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.DevfileObj, componentName string, debug bool, randomPorts bool, out io.Writer, errOut io.Writer, definedPorts []api.ForwardedPort) error {
+func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.DevfileObj, componentName string, debug bool, randomPorts bool, out io.Writer, errOut io.Writer, definedPorts []api.ForwardedPort, customAddress string) error {
 	if randomPorts && len(definedPorts) != 0 {
 		return errors.New("cannot use randomPorts and custom definePorts together")
 	}
@@ -75,11 +75,11 @@ func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.De
 
 	var portPairs map[string][]string
 	if len(definedPorts) != 0 {
-		portPairs = getCustomPortPairs(definedPorts, ceMapping)
+		portPairs = getCustomPortPairs(definedPorts, ceMapping, customAddress)
 	} else if randomPorts {
 		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
 	} else {
-		portPairs = portPairsFromContainerEndpoints(ceMapping)
+		portPairs = portPairsFromContainerEndpoints(ceMapping, customAddress)
 	}
 	var portPairsSlice []string
 	for _, v1 := range portPairs {
@@ -111,7 +111,7 @@ func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.De
 		backo := watch.NewExpBackoff()
 		for {
 			o.finishedChan = make(chan struct{}, 1)
-			portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
+			portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping, customAddress)
 
 			go func() {
 				portsBuf.Wait()
@@ -122,7 +122,7 @@ func (o *PFClient) StartPortForwarding(ctx context.Context, devFileObj parser.De
 				devstateChan <- err
 			}()
 
-			err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan)
+			err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan, customAddress)
 			if err != nil {
 				fmt.Fprintf(errOut, "Failed to setup port-forwarding: %v\n", err)
 				d := backo.Delay()
@@ -171,7 +171,7 @@ func (o *PFClient) GetForwardedPorts() map[string][]v1alpha2.Endpoint {
 
 // getCustomPortPairs assigns custom port on localhost to a container port if provided by the definedPorts config,
 // if not, it assigns a port starting from 20001 as done in portPairsFromContainerEndpoints
-func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][]v1alpha2.Endpoint) map[string][]string {
+func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][]v1alpha2.Endpoint, address string) map[string][]string {
 	portPairs := make(map[string][]string)
 	usedPorts := make(map[int]struct{})
 	for _, dPort := range definedPorts {
@@ -210,7 +210,7 @@ func getCustomPortPairs(definedPorts []api.ForwardedPort, ceMapping map[string][
 			if freePort == 0 {
 				for {
 					var err error
-					freePort, err = util.NextFreePort(startPort, endPort, nil)
+					freePort, err = util.NextFreePort(startPort, endPort, nil, address)
 					if err != nil {
 						klog.Infof("%s", err)
 						continue
@@ -250,13 +250,13 @@ func randomPortPairsFromContainerEndpoints(ceMap map[string][]v1alpha2.Endpoint)
 // portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
 // it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
 // "container1": {"20001:3000", "20002:3001"}
-func portPairsFromContainerEndpoints(ceMap map[string][]v1alpha2.Endpoint) map[string][]string {
+func portPairsFromContainerEndpoints(ceMap map[string][]v1alpha2.Endpoint, address string) map[string][]string {
 	portPairs := make(map[string][]string)
 	startPort := 20001
 	endPort := startPort + 10000
 	for name, ports := range ceMap {
 		for _, p := range ports {
-			freePort, err := util.NextFreePort(startPort, endPort, nil)
+			freePort, err := util.NextFreePort(startPort, endPort, nil, address)
 			if err != nil {
 				klog.Infof("%s", err)
 				continue

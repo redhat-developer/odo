@@ -244,6 +244,114 @@ The following command will override the `USER` Devfile variable with the `john` 
 odo dev --var USER=john --var-file config.vars
 ```
 
+
+### Using custom port mapping for port forwarding
+Custom local ports can be passed for port forwarding with the help of the `--port-forward` flag. This feature is supported on both podman and cluster.
+
+This feature can be helpful when you want to provide consistent and predictable port numbers and avoid being assigned a potentially different port number every time `odo dev` is run.
+
+Supported formats for this flag include:
+1. `<LOCAL_PORT>:<CONTAINER_PORT>`
+2. `<LOCAL_PORT>:<CONTAINER_NAME>:<CONTAINER_PORT>` - This format is necessary when multiple container components of a Devfile have the same port number.
+
+The flag accepts a stringArray, so `--port-forward` flag can be defined multiple times.
+
+If a custom port mapping is not defined for a port, `odo` will assign a free port in the range of 20001-30001.
+
+```shell
+odo dev --port-forward <LOCAL_PORT_1>:<CONTAINER_PORT_1> --port-forward <LOCAL_PORT_2>:<CONTAINER_NAME>:<CONTAINER_PORT_2>
+```
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo dev --port-forward 3000:runtime:3000 --port-forward 5000:5858 --debug
+  __
+ /  \__     Developing using the "my-nodejs-app" Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.9.0
+ \__/
+
+ ⚠  You are using "default" namespace, odo may not work as expected in the default namespace.
+ ⚠  You may set a new namespace by running `odo create namespace <name>`, or set an existing one by running `odo set namespace <name>`
+
+↪ Running on the cluster in Dev mode
+ •  Waiting for Kubernetes resources  ...
+ ⚠  Pod is Pending
+ ✓  Pod is Running
+ ✓  Syncing files into the container [152ms]
+ ✓  Building your application in container (command: install) [27s]
+ •  Executing the application (command: debug)  ...
+ ✓  Waiting for the application to be ready [1s]
+ -  Forwarding from 127.0.0.1:8000 -> 3000
+
+ -  Forwarding from 127.0.0.1:5000 -> 5858
+
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /tmp/nodejs-debug-2
+
+ Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
+```
+</details>
+
+Note that `--random-ports` flag cannot be used with `--port-forward` flag.
+
+### Using custom address for port forwarding
+A custom address can be passed for port forwarding with the help of `--address` flag. This feature is supported on both podman and cluster.
+The default value is 127.0.0.1.
+
+```shell
+odo dev --address <IP_ADDRESS>
+```
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo dev --address 127.0.10.3
+  __
+ /  \__     Developing using the "my-nodejs-app" Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.9.0
+ \__/
+
+ ⚠  You are using "default" namespace, odo may not work as expected in the default namespace.
+ ⚠  You may set a new namespace by running `odo create namespace <name>`, or set an existing one by running `odo set namespace <name>`
+
+↪ Running on the cluster in Dev mode
+ •  Waiting for Kubernetes resources  ...
+ ⚠  Pod is Pending
+ ✓  Pod is Running
+ ✓  Syncing files into the container [123ms]
+ ✓  Building your application in container (command: install) [15s]
+ •  Executing the application (command: run)  ...
+ ✓  Waiting for the application to be ready [1s]
+ -  Forwarding from 127.0.10.3:20001 -> 3000
+
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /tmp/nodejs-debug-2
+
+ Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
+```
+</details>
+
+:::note
+If you are on macOS and using a Cluster platform, you may not be able to run multiple Dev sessions in parallel on address 0.0.0.0 without defining a custom port mapping, or using a different or default address.
+
+For more information, see the following issues:
+1. [Cannot start 2 different Dev sessions on Podman due to conflicting host ports](https://github.com/redhat-developer/odo/issues/6612)
+2. [[MacOS] Cannot run 2 dev sessions simultaneously on cluster](https://github.com/redhat-developer/odo/issues/6744)
+:::
+
 ### Running on Podman
 
 Instead of deploying the container into a Kubernetes cluster, `odo dev` can leverage the podman installation on your system to deploy the container.

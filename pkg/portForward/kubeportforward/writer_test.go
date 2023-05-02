@@ -13,6 +13,7 @@ func Test_getForwardedPort(t *testing.T) {
 	type args struct {
 		mapping map[string][]v1alpha2.Endpoint
 		s       string
+		address string
 	}
 	tests := []struct {
 		name    string
@@ -39,6 +40,32 @@ func Test_getForwardedPort(t *testing.T) {
 				ContainerName: "container1",
 				PortName:      "port-11",
 				LocalAddress:  "127.0.0.1",
+				IsDebug:       false,
+				LocalPort:     40407,
+				ContainerPort: 3000,
+			},
+			wantErr: false,
+		},
+		{
+			name: "find port in container and use custom address",
+			args: args{
+				mapping: map[string][]v1alpha2.Endpoint{
+					"container1": {
+						v1alpha2.Endpoint{Name: "port-11", TargetPort: 3000},
+						v1alpha2.Endpoint{Name: "debug-11", TargetPort: 4200},
+					},
+					"container2": {
+						v1alpha2.Endpoint{Name: "port-21", TargetPort: 80},
+						v1alpha2.Endpoint{Name: "port-22", TargetPort: 8080},
+					},
+				},
+				s:       "Forwarding from 192.168.0.1:40407 -> 3000",
+				address: "192.168.0.1",
+			},
+			want: api.ForwardedPort{
+				ContainerName: "container1",
+				PortName:      "port-11",
+				LocalAddress:  "192.168.0.1",
 				IsDebug:       false,
 				LocalPort:     40407,
 				ContainerPort: 3000,
@@ -91,7 +118,7 @@ func Test_getForwardedPort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getForwardedPort(tt.args.mapping, tt.args.s)
+			got, err := getForwardedPort(tt.args.mapping, tt.args.s, tt.args.address)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getForwardedPort() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -45,6 +45,7 @@ func (o *PFClient) StartPortForwarding(
 	out io.Writer,
 	errOut io.Writer,
 	definedPorts []api.ForwardedPort,
+	customAddress string,
 ) error {
 	var appliedPorts []api.ForwardedPort
 	for port := range o.appliedPorts {

@@ -72,7 +72,7 @@ func Test_getCompleteCustomPortPairs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPortPairs := getCustomPortPairs(tt.args.definedPorts, tt.args.ceMapping)
+			gotPortPairs := getCustomPortPairs(tt.args.definedPorts, tt.args.ceMapping, "")
 			if diff := cmp.Diff(gotPortPairs, tt.wantPortPairs); diff != "" {
 				t.Errorf("getCompleteCustomPortPairs() (got vs want) diff = %v", diff)
 			}

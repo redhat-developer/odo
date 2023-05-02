@@ -42,6 +42,7 @@ func createPodFromComponent(
 	randomPorts bool,
 	customForwardedPorts []api.ForwardedPort,
 	usedPorts []int,
+	customAddress string,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	var (
 		appName       = odocontext.GetApplication(ctx)
@@ -60,7 +61,7 @@ func createPodFromComponent(
 	}
 
 	var fwPorts []api.ForwardedPort
-	fwPorts, err = getPortMapping(*devfileObj, debug, randomPorts, usedPorts, customForwardedPorts)
+	fwPorts, err = getPortMapping(*devfileObj, debug, randomPorts, usedPorts, customForwardedPorts, customAddress)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,7 +113,7 @@ func createPodFromComponent(
 		return nil, nil, err
 	}
 
-	containers = addHostPorts(withHelperContainer, containers, fwPorts)
+	containers = addHostPorts(withHelperContainer, containers, fwPorts, customAddress)
 
 	pod := corev1.Pod{
 		Spec: corev1.PodSpec{
@@ -142,7 +143,10 @@ func createPodFromComponent(
 	return &pod, fwPorts, nil
 }
 
-func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPorts []api.ForwardedPort) []corev1.Container {
+func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPorts []api.ForwardedPort, customAddress string) []corev1.Container {
+	if customAddress == "" {
+		customAddress = "127.0.0.1"
+	}
 	if withHelperContainer {
 		// A side helper container is added and will be responsible for redirecting the traffic,
 		// so it can work even if the application is listening on the container loopback interface.
@@ -164,6 +168,7 @@ func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPor
 				Name:          fwPort.PortName,
 				ContainerPort: int32(fwPort.LocalPort),
 				HostPort:      int32(fwPort.LocalPort),
+				HostIP:        customAddress,
 			})
 		}
 		containers = append(containers, pfHelperContainer)
@@ -176,6 +181,7 @@ func addHostPorts(withHelperContainer bool, containers []corev1.Container, fwPor
 				for _, fwPort := range fwPorts {
 					if containers[i].Name == fwPort.ContainerName && int(p.ContainerPort) == fwPort.ContainerPort {
 						p.HostPort = int32(fwPort.LocalPort)
+						p.HostIP = customAddress
 						containerPorts = append(containerPorts, p)
 						break
 					}
@@ -191,7 +197,10 @@ func getVolumeName(volume string, componentName string, appName string) string {
 	return volume + "-" + componentName + "-" + appName
 }
 
-func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, usedPorts []int, definedPorts []api.ForwardedPort) ([]api.ForwardedPort, error) {
+func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, usedPorts []int, definedPorts []api.ForwardedPort, address string) ([]api.ForwardedPort, error) {
+	if address == "" {
+		address = "127.0.0.1"
+	}
 	containerComponents, err := devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
 	})
@@ -268,7 +277,7 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 				freePort = getCustomLocalPort(ep.TargetPort, containerName)
 				if freePort == 0 {
 					for {
-						freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+						freePort, err = util.NextFreePort(startPort, endPort, usedPorts, address)
 						if err != nil {
 							klog.Infof("%s", err)
 							continue
@@ -290,7 +299,7 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 					rand.Seed(time.Now().UnixNano()) // #nosec
 					for {
 						freePort = rand.Intn(endPort-startPort+1) + startPort // #nosec
-						if !isPortUsedInContainer(freePort) && util.IsPortFree(freePort) {
+						if !isPortUsedInContainer(freePort) && util.IsPortFree(freePort, address) {
 							break
 						}
 						time.Sleep(100 * time.Millisecond)
@@ -298,7 +307,7 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 				}
 			} else {
 				for {
-					freePort, err = util.NextFreePort(startPort, endPort, usedPorts)
+					freePort, err = util.NextFreePort(startPort, endPort, usedPorts, address)
 					if err != nil {
 						klog.Infof("%s", err)
 						continue epLoop
@@ -316,7 +325,7 @@ func getPortMapping(devfileObj parser.DevfileObj, debug bool, randomPorts bool, 
 				PortName:      portName,
 				IsDebug:       isDebugPort,
 				ContainerName: containerName,
-				LocalAddress:  "127.0.0.1",
+				LocalAddress:  address,
 				LocalPort:     freePort,
 				ContainerPort: ep.TargetPort,
 				Exposure:      string(ep.Exposure),

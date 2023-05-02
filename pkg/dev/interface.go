@@ -22,6 +22,8 @@ type StartOptions struct {
 	RandomPorts bool
 	// CustomForwardedPorts define custom ports for port forwarding
 	CustomForwardedPorts []api.ForwardedPort
+	// CustomAddress defines a custom local address for port forwarding; default value is 127.0.0.1
+	CustomAddress string
 	// if WatchFiles is set, files changes will trigger a new sync to the container
 	WatchFiles bool
 	// IgnoreLocalhost indicates whether to proceed with port-forwarding regardless of any container ports being bound to the container loopback interface.

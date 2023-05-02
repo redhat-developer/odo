@@ -142,7 +142,7 @@ func (o *DevClient) reconcile(
 
 	if options.ForwardLocalhost {
 		// Port-forwarding is enabled by executing dedicated socat commands
-		err = o.portForwardClient.StartPortForwarding(ctx, devfileObj, componentName, options.Debug, options.RandomPorts, options.Out, options.ErrOut, fwPorts)
+		err = o.portForwardClient.StartPortForwarding(ctx, devfileObj, componentName, options.Debug, options.RandomPorts, options.Out, options.ErrOut, fwPorts, options.CustomAddress)
 		if err != nil {
 			return common.NewErrPortForward(err)
 		}
@@ -209,6 +209,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.RandomPorts,
 		options.CustomForwardedPorts,
 		o.usedPorts,
+		options.CustomAddress,
 	)
 	if err != nil {
 		return nil, nil, err

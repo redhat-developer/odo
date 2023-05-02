@@ -78,7 +78,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 				It("should connect to relevant custom ports forwarded", func() {
 					By("connecting to the application port", func() {
-						helper.HttpWaitForWithStatus("http://"+ports[ContainerPort], "Hello from Node.js Starter Application!", 12, 5, 200)
+						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", ports[ContainerPort]), "Hello from Node.js Starter Application!", 12, 5, 200)
 					})
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
