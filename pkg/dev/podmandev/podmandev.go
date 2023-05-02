@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -77,21 +76,15 @@ func (o *DevClient) Start(
 	ctx context.Context,
 	options dev.StartOptions,
 ) error {
-	var (
-		devfilePath = odocontext.GetDevfilePath(ctx)
-		path        = filepath.Dir(devfilePath)
+	klog.V(4).Infoln("Creating new adapter")
 
+	var (
 		componentStatus = watch.ComponentStatus{
 			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
 		}
 	)
 
-	err := o.reconcile(ctx, options, &componentStatus)
-	if err != nil {
-		return err
-	}
-
-	watch.PrintInfoMessage(options.Out, path, options.WatchFiles, promptMessage)
+	klog.V(4).Infoln("Creating inner-loop resources for the component")
 
 	watchParameters := watch.WatchParameters{
 		StartOptions:        options,
@@ -171,8 +164,9 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 }
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
+	pushParams.Devfile = *odocontext.GetDevfileObj(ctx) // TOO reload devfile from disk
 	printWarningsOnDevfileChanges(ctx, pushParams.StartOptions)
-	return o.reconcile(ctx, pushParams.StartOptions, componentStatus)
+	return o.reconcile(ctx, pushParams, componentStatus)
 }
 
 func printWarningsOnDevfileChanges(ctx context.Context, options dev.StartOptions) {

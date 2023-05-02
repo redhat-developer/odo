@@ -2447,31 +2447,48 @@ CMD ["npm", "start"]
 	}
 
 	for _, podman := range []bool{false, true} {
-		podman := podman
-		When("running odo dev --no-watch and build command throws an error", helper.LabelPodmanIf(podman, func() {
-			var stderr string
-			BeforeEach(func() {
-				helper.CopyExampleDevFile(
-					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
-					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
-				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
-				args := []string{"dev", "--no-watch", "--random-ports"}
-				if podman {
-					args = append(args, "--platform", "podman")
-				}
-				cmd := helper.Cmd("odo", args...)
-				stderr = cmd.ShouldFail().Err()
-			})
+		for _, noWatch := range []bool{false, true} {
+			podman := podman
+			noWatch := noWatch
+			noWatchFlag := ""
+			if noWatch {
+				noWatchFlag = " --no-watch"
+			}
+			title := fmt.Sprintf("running odo dev%s and build command throws an error", noWatchFlag)
+			When(title, helper.LabelPodmanIf(podman, func() {
+				var session helper.DevSession
+				var stdout, stderr []byte
+				BeforeEach(func() {
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						helper.DevfileMetadataNameSetter(cmpName))
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
 
-			It("should error out with some log", func() {
-				helper.MatchAllInOutput(stderr, []string{
-					"unable to exec command",
-					"Usage: npm <command>",
-					"Did you mean one of these?",
+					var err error
+					session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+						NoWatch:     noWatch,
+					})
+					Expect(err).ToNot(HaveOccurred())
 				})
-			})
-		}))
+
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should error out with some log", func() {
+					helper.MatchAllInOutput(string(stdout), []string{
+						"unable to exec command",
+					})
+					helper.MatchAllInOutput(string(stderr), []string{
+						"Usage: npm <command>",
+						"Did you mean one of these?",
+					})
+				})
+			}))
+		}
 	}
 
 	for _, podman := range []bool{false, true} {
@@ -2644,24 +2661,33 @@ CMD ["npm", "start"]
 
 					It("should error out on an invalid command", func() {
 						By("calling with an invalid build command", func() {
-							args := []string{"dev", "--random-ports", "--build-command", "build-command-does-not-exist"}
-							if podman {
-								args = append(args, "--platform", "podman")
-							}
-							cmd := helper.Cmd("odo", args...)
-							output := cmd.ShouldFail().Err()
-							Expect(output).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
+
+							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+								RunOnPodman: podman,
+								CmdlineArgs: []string{"--build-command", "build-command-does-not-exist"},
+							})
+							Expect(err).ToNot(HaveOccurred())
+							defer func() {
+								session.Stop()
+								session.WaitEnd()
+							}()
+
+							Expect(string(stdout)).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
 						})
 
 						By("calling with a command of another kind (not build)", func() {
 							// devrun is a valid run command, not a build command
-							args := []string{"dev", "--random-ports", "--build-command", "devrun"}
-							if podman {
-								args = append(args, "--platform", "podman")
-							}
-							cmd := helper.Cmd("odo", args...)
-							output := cmd.ShouldFail().Err()
-							Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
+							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+								RunOnPodman: podman,
+								CmdlineArgs: []string{"--build-command", "devrun"},
+							})
+							Expect(err).ToNot(HaveOccurred())
+							defer func() {
+								session.Stop()
+								session.WaitEnd()
+							}()
+
+							Expect(string(stdout)).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 						})
 					})
 
@@ -2705,24 +2731,32 @@ CMD ["npm", "start"]
 
 					It("should error out on an invalid command", func() {
 						By("calling with an invalid run command", func() {
-							args := []string{"dev", "--random-ports", "--run-command", "run-command-does-not-exist"}
-							if podman {
-								args = append(args, "--platform", "podman")
-							}
-							cmd := helper.Cmd("odo", args...)
-							output := cmd.ShouldFail().Err()
-							Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
+							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+								RunOnPodman: podman,
+								CmdlineArgs: []string{"--run-command", "run-command-does-not-exist"},
+							})
+							Expect(err).ToNot(HaveOccurred())
+							defer func() {
+								session.Stop()
+								session.WaitEnd()
+							}()
+
+							Expect(string(stdout)).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
 						})
 
 						By("calling with a command of another kind (not run)", func() {
 							// devbuild is a valid build command, not a run command
-							args := []string{"dev", "--random-ports", "--run-command", "devbuild"}
-							if podman {
-								args = append(args, "--platform", "podman")
-							}
-							cmd := helper.Cmd("odo", args...)
-							output := cmd.ShouldFail().Err()
-							Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
+							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+								RunOnPodman: podman,
+								CmdlineArgs: []string{"--run-command", "devbuild"},
+							})
+							Expect(err).ToNot(HaveOccurred())
+							defer func() {
+								session.Stop()
+								session.WaitEnd()
+							}()
+
+							Expect(string(stdout)).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
 						})
 					})
 
@@ -3665,11 +3699,17 @@ CMD ["npm", "start"]
 				helper.DevfileMetadataNameSetter(cmpName))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "registry.access.redhat.com/ubi8/nodejs", "registry.access.redhat.com/ubi8/nose")
 		})
-		It("should fail with an error and cleanup resources", func() {
-			errContents := helper.Cmd("odo", "dev", "--platform=podman").ShouldFail().Err()
-			helper.MatchAllInOutput(errContents, []string{"Complete Podman output", "registry.access.redhat.com/ubi8/nose", "Repo not found"})
-			component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-			component.ExpectIsNotDeployed()
+		It("should fail with an error", func() {
+			session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+				RunOnPodman: true,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			defer func() {
+				session.Stop()
+				session.WaitEnd()
+			}()
+
+			helper.MatchAllInOutput(string(stdout), []string{"Complete Podman output", "registry.access.redhat.com/ubi8/nose", "Repo not found"})
 		})
 	})
 
@@ -3765,7 +3805,14 @@ CMD ["npm", "start"]
 			})
 
 			It("should error out if not ignoring localhost", func() {
-				stderr := helper.Cmd("odo", "dev", "--random-ports", "--platform", "podman").ShouldFail().Err()
+				session, _, stderr, _, err := helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: true,
+				})
+				Expect(err).ToNot(HaveOccurred())
+				defer func() {
+					session.Stop()
+					session.WaitEnd()
+				}()
 				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
 			})
 

@@ -15,7 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/sync"
@@ -87,23 +86,12 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Creating new adapter")
 
 	var (
-		devfileObj = odocontext.GetDevfileObj(ctx)
+		componentStatus = watch.ComponentStatus{
+			ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
+		}
 	)
 
-	pushParameters := common.PushParameters{
-		StartOptions: options,
-		Devfile:      *devfileObj,
-	}
-
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
-	componentStatus := watch.ComponentStatus{
-		ImageComponentsAutoApplied: make(map[string]devfilev1.ImageComponent),
-	}
-	err := o.reconcile(ctx, pushParameters, &componentStatus)
-	if err != nil {
-		return err
-	}
-	klog.V(4).Infoln("Successfully created inner-loop resources")
 
 	watchParameters := watch.WatchParameters{
 		StartOptions:        options,
@@ -120,7 +108,7 @@ func (o *DevClient) regenerateAdapterAndPush(ctx context.Context, pushParams com
 
 	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables)
 	if err != nil {
-		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
+		return fmt.Errorf("unable to read devfile: %w", err)
 	}
 
 	pushParams.Devfile = devObj

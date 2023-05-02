@@ -47,6 +47,10 @@ type WatchClient struct {
 
 	// true to force sync, used when manual sync
 	forceSync bool
+
+	// deploymentGeneration indicates the generation of the latest observed Deployment
+	deploymentGeneration int64
+	readyReplicas        int32
 }
 
 var _ Client = (*WatchClient)(nil)
@@ -83,7 +87,7 @@ type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores 
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
 // It returns a Duration after which to recall in case of error
-type processEventsFunc func(ctx context.Context, parameters WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
+type processEventsFunc func(ctx context.Context, parameters WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus) error
 
 func (o *WatchClient) WatchAndPush(ctx context.Context, parameters WatchParameters, componentStatus ComponentStatus) error {
 	var (
@@ -159,6 +163,12 @@ func (o *WatchClient) WatchAndPush(ctx context.Context, parameters WatchParamete
 	}
 
 	o.keyWatcher = getKeyWatcher(ctx, parameters.StartOptions.Out)
+
+	err = o.processEvents(ctx, parameters, nil, nil, &componentStatus)
+	if err != nil {
+		return err
+	}
+
 	return o.eventWatcher(ctx, parameters, evaluateFileChanges, o.processEvents, componentStatus)
 }
 
@@ -181,8 +191,6 @@ func (o *WatchClient) eventWatcher(
 		out           = parameters.StartOptions.Out
 	)
 
-	expBackoff := NewExpBackoff()
-
 	var events []fsnotify.Event
 
 	// sourcesTimer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
@@ -202,10 +210,6 @@ func (o *WatchClient) eventWatcher(
 	deployTimer := time.NewTimer(time.Millisecond)
 	<-deployTimer.C
 
-	// retryTimer is a timer used to retry later a sync that has failed
-	retryTimer := time.NewTimer(time.Millisecond)
-	<-retryTimer.C
-
 	podsPhases := NewPodPhases()
 
 	for {
@@ -217,8 +221,8 @@ func (o *WatchClient) eventWatcher(
 
 		case <-sourcesTimer.C:
 			// timer has fired
-			if !componentCanSyncFile(componentStatus.State) {
-				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.State)
+			if !componentCanSyncFile(componentStatus.GetState()) {
+				klog.V(4).Infof("State of component is %q, don't sync sources", componentStatus.GetState())
 				continue
 			}
 
@@ -232,23 +236,16 @@ func (o *WatchClient) eventWatcher(
 				}
 			}
 
-			componentStatus.State = StateSyncOutdated
+			componentStatus.SetState(StateSyncOutdated)
 			fmt.Fprintf(out, "Pushing files...\n\n")
-			retry, err := processEventsHandler(ctx, parameters, changedFiles, deletedPaths, &componentStatus, expBackoff)
+			err := processEventsHandler(ctx, parameters, changedFiles, deletedPaths, &componentStatus)
 			o.forceSync = false
 			if err != nil {
 				return err
 			}
 			// empty the events to receive new events
-			if componentStatus.State == StateReady {
+			if componentStatus.GetState() == StateReady {
 				events = []fsnotify.Event{} // empty the events slice to capture new events
-			}
-
-			if retry != nil {
-				retryTimer.Reset(*retry)
-			} else {
-				retryTimer.Reset(time.Millisecond)
-				<-retryTimer.C
 			}
 
 		case watchErr := <-o.sourcesWatcher.Errors:
@@ -263,24 +260,22 @@ func (o *WatchClient) eventWatcher(
 		case ev := <-o.deploymentWatcher.ResultChan():
 			switch obj := ev.Object.(type) {
 			case *appsv1.Deployment:
-				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
-					ev.Type, obj.GetName(), obj.GetResourceVersion(), obj.Status.ReadyReplicas)
-				deployTimer.Reset(300 * time.Millisecond)
+				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, generation: %d, pods: %d\n",
+					ev.Type, obj.GetName(), obj.GetResourceVersion(), obj.GetGeneration(), obj.Status.ReadyReplicas)
+				if obj.GetGeneration() > o.deploymentGeneration || obj.Status.ReadyReplicas != o.readyReplicas {
+					o.deploymentGeneration = obj.GetGeneration()
+					o.readyReplicas = obj.Status.ReadyReplicas
+					deployTimer.Reset(300 * time.Millisecond)
+				}
 
 			case *metav1.Status:
 				klog.V(4).Infof("Status: %+v\n", obj)
 			}
 
 		case <-deployTimer.C:
-			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
+			err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus)
 			if err != nil {
 				return err
-			}
-			if retry != nil {
-				retryTimer.Reset(*retry)
-			} else {
-				retryTimer.Reset(time.Millisecond)
-				<-retryTimer.C
 			}
 
 		case <-o.devfileWatcher.Events:
@@ -288,27 +283,9 @@ func (o *WatchClient) eventWatcher(
 
 		case <-devfileTimer.C:
 			fmt.Fprintf(out, "Updating Component...\n\n")
-			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
+			err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus)
 			if err != nil {
 				return err
-			}
-			if retry != nil {
-				retryTimer.Reset(*retry)
-			} else {
-				retryTimer.Reset(time.Millisecond)
-				<-retryTimer.C
-			}
-
-		case <-retryTimer.C:
-			retry, err := processEventsHandler(ctx, parameters, nil, nil, &componentStatus, expBackoff)
-			if err != nil {
-				return err
-			}
-			if retry != nil {
-				retryTimer.Reset(*retry)
-			} else {
-				retryTimer.Reset(time.Millisecond)
-				<-retryTimer.C
 			}
 
 		case ev := <-o.podWatcher.ResultChan():
@@ -421,8 +398,7 @@ func (o *WatchClient) processEvents(
 	parameters WatchParameters,
 	changedFiles, deletedPaths []string,
 	componentStatus *ComponentStatus,
-	backoff *ExpBackoff,
-) (*time.Duration, error) {
+) error {
 	var (
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
@@ -447,7 +423,7 @@ func (o *WatchClient) processEvents(
 	err := parameters.DevfileWatchHandler(ctx, pushParams, componentStatus)
 	if err != nil {
 		if isFatal(err) {
-			return nil, err
+			return err
 		}
 		klog.V(4).Infof("Error from Push: %v", err)
 		// Log and output, but intentionally not exiting on error here.
@@ -462,22 +438,17 @@ func (o *WatchClient) processEvents(
 				fmt.Fprintf(out, "Updated Kubernetes config\n")
 			}
 		} else {
-			if parameters.StartOptions.WatchFiles {
-				fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-			} else {
-				return nil, err
-			}
+			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+			PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
 		}
-		wait := backoff.Delay()
-		return &wait, nil
+		return nil
 	}
-	backoff.Reset()
-	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
+	if oldStatus.GetState() != StateReady && componentStatus.GetState() == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
 		PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
 	}
-	return nil, nil
+	return nil
 }
 
 func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {

@@ -31,20 +31,21 @@ import (
 
 func (o *DevClient) reconcile(
 	ctx context.Context,
-	options dev.StartOptions,
+	parameters common.PushParameters,
 	componentStatus *watch.ComponentStatus,
 ) error {
 	var (
 		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
+		options       = parameters.StartOptions
+		devfileObj    = parameters.Devfile
 	)
 
-	o.warnAboutK8sComponents(*devfileObj)
+	o.warnAboutK8sComponents(devfileObj)
 
-	err := o.buildPushAutoImageComponents(ctx, *devfileObj)
+	err := o.buildPushAutoImageComponents(ctx, devfileObj)
 	if err != nil {
 		return err
 	}
@@ -54,6 +55,7 @@ func (o *DevClient) reconcile(
 		return err
 	}
 	o.deployedPod = pod
+	componentStatus.SetState(watch.StateReady)
 
 	execRequired, err := o.syncFiles(ctx, options, pod, path)
 	if err != nil {
@@ -62,7 +64,7 @@ func (o *DevClient) reconcile(
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(*devfileObj) {
+	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(devfileObj) {
 		execHandler := component.NewExecHandler(
 			o.podmanClient,
 			o.execClient,
@@ -72,7 +74,7 @@ func (o *DevClient) reconcile(
 			"Executing post-start command in container",
 			false, /* TODO */
 		)
-		err = libdevfile.ExecPostStartEvents(ctx, *devfileObj, execHandler)
+		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
 			return err
 		}
@@ -90,7 +92,7 @@ func (o *DevClient) reconcile(
 				"Building your application in container",
 				false, /* TODO */
 			)
-			return libdevfile.Build(ctx, *devfileObj, options.BuildCommand, execHandler)
+			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}
 		err = doExecuteBuildCommand()
 		if err != nil {
@@ -113,7 +115,7 @@ func (o *DevClient) reconcile(
 			appName:         appName,
 			componentName:   componentName,
 		}
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, *devfileObj, cmdName, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err
 		}
@@ -140,7 +142,7 @@ func (o *DevClient) reconcile(
 
 	if options.ForwardLocalhost {
 		// Port-forwarding is enabled by executing dedicated socat commands
-		err = o.portForwardClient.StartPortForwarding(ctx, *devfileObj, componentName, options.Debug, options.RandomPorts, options.Out, options.ErrOut, fwPorts)
+		err = o.portForwardClient.StartPortForwarding(ctx, devfileObj, componentName, options.Debug, options.RandomPorts, options.Out, options.ErrOut, fwPorts)
 		if err != nil {
 			return common.NewErrPortForward(err)
 		}
@@ -155,7 +157,7 @@ func (o *DevClient) reconcile(
 		return err
 	}
 
-	componentStatus.State = watch.StateReady
+	componentStatus.SetState(watch.StateReady)
 	return nil
 }
 

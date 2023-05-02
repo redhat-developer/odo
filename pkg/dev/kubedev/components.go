@@ -61,12 +61,12 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 		return false, err
 	}
 
-	if componentStatus.State == watch.StateSyncOutdated {
+	if componentStatus.GetState() == watch.StateSyncOutdated {
 		// Clear the cache of image components already applied, hence forcing image components to be reapplied.
 		componentStatus.ImageComponentsAutoApplied = make(map[string]devfilev1.ImageComponent)
 	}
 
-	klog.V(4).Infof("component state: %q\n", componentStatus.State)
+	klog.V(4).Infof("component state: %q\n", componentStatus.GetState())
 	err = o.buildPushAutoImageComponents(ctx, o.filesystem, parameters.Devfile, componentStatus)
 	if err != nil {
 		return false, err
@@ -78,7 +78,7 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 		return false, err
 	}
 
-	if componentStatus.State != watch.StateWaitDeployment && componentStatus.State != watch.StateReady {
+	if componentStatus.GetState() != watch.StateWaitDeployment && componentStatus.GetState() != watch.StateReady {
 		log.SpinnerNoSpin("Waiting for Kubernetes resources")
 	}
 
@@ -132,14 +132,14 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 
 	if updated {
 		klog.V(4).Infof("Deployment has been updated to generation %d. Waiting new event...\n", deployment.GetGeneration())
-		componentStatus.State = watch.StateWaitDeployment
+		componentStatus.SetState(watch.StateWaitDeployment)
 		return false, nil
 	}
 
 	numberReplicas := deployment.Status.ReadyReplicas
 	if numberReplicas != 1 {
 		klog.V(4).Infof("Deployment has %d ready replicas. Waiting new event...\n", numberReplicas)
-		componentStatus.State = watch.StateWaitDeployment
+		componentStatus.SetState(watch.StateWaitDeployment)
 		return false, nil
 	}
 
@@ -160,7 +160,7 @@ func (o *DevClient) createComponents(ctx context.Context, parameters common.Push
 	}
 	o.portsChanged = !reflect.DeepEqual(o.portsToForward, o.portForwardClient.GetForwardedPorts())
 
-	if componentStatus.State == watch.StateReady && !o.portsChanged {
+	if componentStatus.GetState() == watch.StateReady && !o.portsChanged {
 		// If the deployment is already in Ready State, no need to continue
 		return false, nil
 	}

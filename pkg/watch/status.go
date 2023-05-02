@@ -1,6 +1,9 @@
 package watch
 
-import "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+import (
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/klog"
+)
 
 type State string
 
@@ -16,7 +19,7 @@ const (
 )
 
 type ComponentStatus struct {
-	State               State
+	state               State
 	PostStartEventsDone bool
 	// RunExecuted is set to true when the run command has been executed
 	// Used for HotReload capability
@@ -25,6 +28,15 @@ type ComponentStatus struct {
 	// ImageComponentsAutoApplied is a cache of all image components that have been auto-applied.
 	// This map allows to avoid applying them too many times upon state changes in the cluster for example.
 	ImageComponentsAutoApplied map[string]v1alpha2.ImageComponent
+}
+
+func (o *ComponentStatus) SetState(s State) {
+	klog.V(4).Infof("setting inner loop State %q", s)
+	o.state = s
+}
+
+func (o *ComponentStatus) GetState() State {
+	return o.state
 }
 
 func componentCanSyncFile(state State) bool {

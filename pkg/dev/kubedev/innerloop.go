@@ -51,7 +51,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
 
-	podChanged := componentStatus.State == watch.StateWaitDeployment
+	podChanged := componentStatus.GetState() == watch.StateWaitDeployment
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	compInfo := sync.ComponentInfo{
@@ -82,7 +82,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 
 	execRequired, err := o.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
-		componentStatus.State = watch.StateReady
+		componentStatus.SetState(watch.StateReady)
 		return fmt.Errorf("failed to sync to component with name %s: %w", componentName, err)
 	}
 	s.End(true)
@@ -150,11 +150,13 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		if running {
 			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
 				if err = doExecuteBuildCommand(); err != nil {
+					componentStatus.SetState(watch.StateReady)
 					return err
 				}
 			}
 		} else {
 			if err = doExecuteBuildCommand(); err != nil {
+				componentStatus.SetState(watch.StateReady)
 				return err
 			}
 		}
@@ -184,7 +186,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	}
 	componentStatus.EndpointsForwarded = o.portForwardClient.GetForwardedPorts()
 
-	componentStatus.State = watch.StateReady
+	componentStatus.SetState(watch.StateReady)
 	return nil
 }
 

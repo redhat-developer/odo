@@ -42,9 +42,9 @@ func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []
 	return changedFiles, deletedPaths
 }
 
-func processEventsHandler(ctx context.Context, params WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
+func processEventsHandler(ctx context.Context, params WatchParameters, changedFiles, deletedPaths []string, componentStatus *ComponentStatus) error {
 	fmt.Fprintf(params.StartOptions.Out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
-	return nil, nil
+	return nil
 }
 
 type fakeWatcher struct{}
@@ -136,9 +136,8 @@ func Test_eventWatcher(t *testing.T) {
 				cancel()
 			}()
 
-			componentStatus := ComponentStatus{
-				State: StateReady,
-			}
+			componentStatus := ComponentStatus{}
+			componentStatus.SetState(StateReady)
 
 			o := WatchClient{
 				sourcesWatcher:    watcher,
