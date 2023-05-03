@@ -44,16 +44,48 @@ var _ = Describe("odo devfile build-images command tests", func() {
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-outerloop.yaml")).ShouldPass()
 					helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
 				})
-				It("should run odo build-images without push", func() {
-					stdout := helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-					Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-				})
 
-				It("should run odo build-images --push", func() {
-					stdout := helper.Cmd("odo", "build-images", "--push").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-					Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-					Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
-				})
+				for _, tt := range []struct {
+					name          string
+					args          []string
+					env           []string
+					shouldPass    bool
+					checkOutputFn func(stdout, stderr string)
+				}{
+					{
+						name:       "should run odo build-images without push",
+						shouldPass: true,
+						checkOutputFn: func(stdout, stderr string) {
+							Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+						},
+					},
+					{
+						name:       "should run odo build-images --push",
+						args:       []string{"--push"},
+						shouldPass: true,
+						checkOutputFn: func(stdout, stderr string) {
+							Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+							Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+						},
+					},
+				} {
+					tt := tt
+					It(tt.name, func() {
+						args := []string{"build-images"}
+						args = append(args, tt.args...)
+						env := []string{"PODMAN_CMD=echo"}
+						env = append(env, tt.env...)
+
+						cmd := helper.Cmd("odo", args...).AddEnv(env...)
+						if tt.shouldPass {
+							cmd = cmd.ShouldPass()
+						} else {
+							cmd = cmd.ShouldFail()
+						}
+						stdout, stderr := cmd.OutAndErr()
+						tt.checkOutputFn(stdout, stderr)
+					})
+				}
 			})
 
 			When("using a devfile.yaml with no Image component", func() {
