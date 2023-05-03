@@ -16,7 +16,6 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/port"
 	"github.com/redhat-developer/odo/pkg/sync"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	"k8s.io/klog"
@@ -90,7 +89,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(parameters.Devfile) {
-		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, component.NewExecHandler(o.kubernetesClient, o.execClient, appName, componentName, pod.Name, "Executing post-start command in container", parameters.Show))
+		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, component.NewExecHandler(o.kubernetesClient, o.execClient, appName, componentName, pod.Name, "Executing post-start command in container", parameters.Show, false))
 		if err != nil {
 			return err
 		}
@@ -98,11 +97,6 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	componentStatus.PostStartEventsDone = true
 
 	cmd, err := libdevfile.ValidateAndGetCommand(parameters.Devfile, cmdName, cmdKind)
-	if err != nil {
-		return err
-	}
-
-	buildCmd, err := libdevfile.ValidateAndGetCommand(parameters.Devfile, parameters.StartOptions.BuildCommand, devfilev1.BuildCommandGroupKind)
 	if err != nil {
 		return err
 	}
@@ -149,22 +143,14 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(o.kubernetesClient, o.execClient, appName, componentName, pod.Name,
-				"Building your application in container", parameters.Show)
+				"Building your application in container", parameters.Show, running)
 			return libdevfile.Build(ctx, parameters.Devfile, parameters.StartOptions.BuildCommand, execHandler)
 		}
-		if running {
-			if buildCmd.Exec == nil || !util.SafeGetBool(buildCmd.Exec.HotReloadCapable) {
-				if err = doExecuteBuildCommand(); err != nil {
-					componentStatus.SetState(watch.StateReady)
-					return err
-				}
-			}
-		} else {
-			if err = doExecuteBuildCommand(); err != nil {
-				componentStatus.SetState(watch.StateReady)
-				return err
-			}
+		if err = doExecuteBuildCommand(); err != nil {
+			componentStatus.SetState(watch.StateReady)
+			return err
 		}
+
 		err = libdevfile.ExecuteCommandByNameAndKind(ctx, parameters.Devfile, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {
 			return err

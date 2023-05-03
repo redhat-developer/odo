@@ -22,7 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/port"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	corev1 "k8s.io/api/core/v1"
@@ -74,6 +73,7 @@ func (o *DevClient) reconcile(
 			pod.Name,
 			"Executing post-start command in container",
 			false, /* TODO */
+			false,
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -92,21 +92,14 @@ func (o *DevClient) reconcile(
 				pod.Name,
 				"Building your application in container",
 				false, /* TODO */
+				componentStatus.RunExecuted,
 			)
 			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}
 
-		var buildCmd devfilev1.Command
-		buildCmd, err = libdevfile.ValidateAndGetCommand(parameters.Devfile, parameters.StartOptions.BuildCommand, devfilev1.BuildCommandGroupKind)
+		err = doExecuteBuildCommand()
 		if err != nil {
 			return err
-		}
-
-		if !componentStatus.RunExecuted || !util.SafeGetBool(buildCmd.Exec.HotReloadCapable) {
-			err = doExecuteBuildCommand()
-			if err != nil {
-				return err
-			}
 		}
 
 		cmdKind := devfilev1.RunCommandGroupKind
