@@ -18,9 +18,9 @@ type Configuration struct {
 	TelemetryCaller               string   `env:"TELEMETRY_CALLER,default="`
 	OdoExperimentalMode           bool     `env:"ODO_EXPERIMENTAL_MODE,default=false"`
 	PushImages                    bool     `env:"ODO_PUSH_IMAGES,default=true"`
-	OdoContainerBackendGlobalArgs []string `env:"ODO_CONTAINER_BACKEND_GLOBAL_ARGS,noinit"`
-	OdoImageBuildArgs             []string `env:"ODO_IMAGE_BUILD_ARGS,noinit"`
-	OdoContainerRunArgs           []string `env:"ODO_CONTAINER_RUN_ARGS,noinit"`
+	OdoContainerBackendGlobalArgs []string `env:"ODO_CONTAINER_BACKEND_GLOBAL_ARGS,noinit,delimiter=;"`
+	OdoImageBuildArgs             []string `env:"ODO_IMAGE_BUILD_ARGS,noinit,delimiter=;"`
+	OdoContainerRunArgs           []string `env:"ODO_CONTAINER_RUN_ARGS,noinit,delimiter=;"`
 }
 
 // GetConfiguration initializes a Configuration for odo by using the system environment.

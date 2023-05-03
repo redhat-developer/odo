@@ -67,20 +67,20 @@ Successfully tagged quay.io/user/myimage:latest
 ### Passing extra args to Podman or Docker
 
 You can set the [`ODO_IMAGE_BUILD_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
-which is a comma-separated list of extra arguments to pass to Podman or Docker when building images.
+which is a semicolon-separated list of extra arguments to pass to Podman or Docker when building images.
 
 A typical use case for this is to build images for a platform different from the one `odo` is running on.
 For example, building images on Mac with Apple Silicon, with the intent to use them on a cluster supporting a different architecture or operating system.
 
 ```shell
-ODO_IMAGE_BUILD_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo build-images
+ODO_IMAGE_BUILD_ARGS='arg1=value1;arg2=value2;...;argN=valueN' odo build-images
 ```
 
 <details>
 <summary>Example</summary>
 
 ```shell
-$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64,--build-arg=MY_ARG=my_value' odo build-images
+$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64;--build-arg=MY_ARG=my_value' odo build-images
 
 ↪ Building Image: localhost:5000/nodejs-odo-example
  •  Building image locally  ...

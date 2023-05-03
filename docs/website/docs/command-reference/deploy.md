@@ -145,18 +145,18 @@ Your Devfile has been successfully deployed
 ### Passing extra args to Podman or Docker when building images
 
 Similarly to how [`odo build-images`](build-images.md#passing-extra-args-to-podman-or-docker) works, you can set the [`ODO_IMAGE_BUILD_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
-which is a comma-separated list of extra arguments to pass to Podman or Docker when building images.
+which is a semicolon-separated list of extra arguments to pass to Podman or Docker when building images.
 See [this section](build-images.md#passing-extra-args-to-podman-or-docker) for further details.
 
 ```shell
-ODO_IMAGE_BUILD_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo deploy
+ODO_IMAGE_BUILD_ARGS='arg1=value1;arg2=value2;...;argN=valueN' odo deploy
 ```
 
 <details>
 <summary>Example</summary>
 
 ```shell
-$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64,--build-arg=MY_ARG=my_value' odo deploy
+$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64;--build-arg=MY_ARG=my_value' odo deploy
 
   __                                                                                                                                                                                           
  /  \__     Running the application in Deploy mode using my-nodejs-app Devfile                                                                                                          

@@ -76,7 +76,7 @@ var _ = Describe("odo devfile build-images command tests", func() {
 						name: "should pass extra args to Podman",
 						env: []string{
 							"PODMAN_CMD=echo",
-							"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64,--build-arg=MY_ARG=my_value",
+							"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64;--build-arg=MY_ARG=my_value",
 						},
 						shouldPass: true,
 						checkOutputFn: func(stdout, stderr string) {
@@ -89,7 +89,7 @@ var _ = Describe("odo devfile build-images command tests", func() {
 						env: []string{
 							"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
 							"DOCKER_CMD=echo",
-							"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64,--build-arg=MY_ARG=my_value",
+							"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64;--build-arg=MY_ARG=my_value",
 						},
 						shouldPass: true,
 						checkOutputFn: func(stdout, stderr string) {
@@ -151,7 +151,7 @@ var _ = Describe("odo devfile build-images command tests", func() {
 				It("should be able pass extra flags to Podman/Docker build command", func() {
 					stdout := helper.Cmd("odo", "build-images").AddEnv(
 						"PODMAN_CMD=echo",
-						"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64,--build-arg=MY_ARG=my_value",
+						"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64;--build-arg=MY_ARG=my_value",
 					).ShouldPass().Out()
 					Expect(stdout).To(ContainSubstring("build --platform=linux/amd64 --build-arg=MY_ARG=my_value -t myimage -f %s %s --unknown-flag value",
 						filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))

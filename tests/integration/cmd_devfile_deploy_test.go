@@ -136,7 +136,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					BeforeEach(func() {
 						env := []string{"PODMAN_CMD=echo"}
 						if len(tt.imageBuildExtraArgs) != 0 {
-							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ","))
+							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ";"))
 						}
 						stdout = helper.Cmd("odo", "deploy").AddEnv(env...).ShouldPass().Out()
 					})

@@ -396,18 +396,18 @@ If the Devfile contains an `Image` component that is set to be [automatically cr
 or explicitly referenced in another command execution chain), `odo` will leverage Podman or Docker to build this Image and push it.
 
 Similarly to how [`odo build-images`](build-images.md#passing-extra-args-to-podman-or-docker) works, you can set the [`ODO_IMAGE_BUILD_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
-which is a comma-separated list of extra arguments to pass to Podman or Docker when building images.
+which is a semicolon-separated list of extra arguments to pass to Podman or Docker when building images.
 See [this section](build-images.md#passing-extra-args-to-podman-or-docker) for further details.
 
 ```shell
-ODO_IMAGE_BUILD_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo dev
+ODO_IMAGE_BUILD_ARGS='arg1=value1;arg2=value2;...;argN=valueN' odo dev
 ```
 
 <details>
 <summary>Example</summary>
 
 ```shell
-$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64,--build-arg=MY_ARG=my_value' odo dev
+$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64;--build-arg=MY_ARG=my_value' odo dev
 
   __                                                                                                                                                                                           
  /  \__     Developing using the "my-nodejs-app" Devfile                                                                                                                                
@@ -480,13 +480,13 @@ Storing signatures
 ### Passing extra args to Podman when developing on Podman
 
 When [running on Podman](#running-on-podman), you can set the [`ODO_CONTAINER_RUN_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
-which is a comma-separated list of options to pass to Podman when creating the development session Pod.
+which is a semicolon-separated list of options to pass to Podman when creating the development session Pod.
 
 You can also set the [`ODO_CONTAINER_BACKEND_GLOBAL_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior) to pass [global options](https://docs.podman.io/en/latest/markdown/podman.1.html#global-options) to all `podman` commands executed by `odo` (including the commands used for building and pushing images).
 
 ```shell
-ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--globalArg1=val1,--globalArg2=val2,...,--globalArgN=valN' \
-ODO_CONTAINER_RUN_ARGS='--arg1=value1,--arg2=value2,...,--argN=valueN' \
+ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--globalArg1=val1;--globalArg2=val2;...;--globalArgN=valN' \
+ODO_CONTAINER_RUN_ARGS='--arg1=value1;--arg2=value2;...;--argN=valueN' \
   odo dev --platform=podman
 ```
 
@@ -494,8 +494,8 @@ ODO_CONTAINER_RUN_ARGS='--arg1=value1,--arg2=value2,...,--argN=valueN' \
 <summary>Example</summary>
 
 ```shell
-$ ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--root=/tmp/podman/root,--storage-driver=overlay' \
-  ODO_CONTAINER_RUN_ARGS='--configmap=cm-foo.yml,--network=none' \
+$ ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--root=/tmp/podman/root;--storage-driver=overlay' \
+  ODO_CONTAINER_RUN_ARGS='--configmap=cm-foo.yml;--quiet' \
   odo dev --platform=podman     
   __
  /  \__     Developing using the "my-nodejs-app" Devfile

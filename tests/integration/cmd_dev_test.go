@@ -2177,14 +2177,14 @@ ComponentSettings:
 							env = append(env, "PODMAN_CMD=echo")
 						}
 						if len(tt.containerBackendGlobalExtraArgs) != 0 {
-							env = append(env, "ODO_CONTAINER_BACKEND_GLOBAL_ARGS="+strings.Join(tt.containerBackendGlobalExtraArgs, ","))
+							env = append(env, "ODO_CONTAINER_BACKEND_GLOBAL_ARGS="+strings.Join(tt.containerBackendGlobalExtraArgs, ";"))
 						}
 						if len(tt.imageBuildExtraArgs) != 0 {
-							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ","))
+							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ";"))
 						}
 						var cmdLineArgs []string
 						if len(tt.containerRunExtraArgs) != 0 {
-							env = append(env, "ODO_CONTAINER_RUN_ARGS="+strings.Join(tt.containerRunExtraArgs, ","))
+							env = append(env, "ODO_CONTAINER_RUN_ARGS="+strings.Join(tt.containerRunExtraArgs, ";"))
 						}
 						if podman {
 							// Increasing verbosity to check that extra args are being passed to the "podman" commands
