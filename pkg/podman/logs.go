@@ -19,7 +19,7 @@ func (o *PodmanCli) GetPodLogs(podName, containerName string, followLog bool) (i
 	}
 	args = append(args, podName)
 
-	cmd := exec.Command(o.podmanCmd, append(o.containerRunExtraArgs, args...)...)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, args...)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 
 	out, _ := cmd.StdoutPipe()

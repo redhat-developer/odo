@@ -20,14 +20,16 @@ import (
 // DockerCompatibleBackend uses a CLI compatible with the docker CLI (at least docker itself and podman)
 type DockerCompatibleBackend struct {
 	name                string
+	globalExtraArgs     []string
 	imageBuildExtraArgs []string
 }
 
 var _ Backend = (*DockerCompatibleBackend)(nil)
 
-func NewDockerCompatibleBackend(name string, imageBuildExtraArgs []string) *DockerCompatibleBackend {
+func NewDockerCompatibleBackend(name string, globalExtraArgs, imageBuildExtraArgs []string) *DockerCompatibleBackend {
 	return &DockerCompatibleBackend{
 		name:                name,
+		globalExtraArgs:     globalExtraArgs,
 		imageBuildExtraArgs: imageBuildExtraArgs,
 	}
 }
@@ -61,7 +63,7 @@ func (o *DockerCompatibleBackend) Build(fs filesystem.Filesystem, image *devfile
 		return err
 	}
 
-	shellCmd := getShellCommand(o.name, o.imageBuildExtraArgs, image, devfilePath, dockerfile)
+	shellCmd := getShellCommand(o.name, o.globalExtraArgs, o.imageBuildExtraArgs, image, devfilePath, dockerfile)
 	klog.V(4).Infof("Running command: %v", shellCmd)
 	for i, cmd := range shellCmd {
 		shellCmd[i] = os.ExpandEnv(cmd)
@@ -121,8 +123,7 @@ func resolveAndDownloadDockerfile(fs filesystem.Filesystem, uri string) (string,
 
 // getShellCommand creates the docker compatible build command from detected backend,
 // container image and devfile path
-func getShellCommand(cmdName string, extraArgs []string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
-	var shellCmd []string
+func getShellCommand(cmdName string, globalExtraArgs []string, buildExtraArgs []string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
 	imageName := image.ImageName
 	dockerfile := dockerfilePath
 	if !filepath.IsAbs(dockerfile) {
@@ -132,8 +133,13 @@ func getShellCommand(cmdName string, extraArgs []string, image *devfile.ImageCom
 	if buildpath == "" {
 		buildpath = devfilePath
 	}
-	shellCmd = []string{cmdName, "build"}
-	shellCmd = append(shellCmd, extraArgs...)
+
+	// +7 because of the other args
+	shellCmd := make([]string, 0, len(globalExtraArgs)+len(buildExtraArgs)+len(image.Dockerfile.Args)+7)
+	shellCmd = append(shellCmd, cmdName)
+	shellCmd = append(shellCmd, globalExtraArgs...)
+	shellCmd = append(shellCmd, "build")
+	shellCmd = append(shellCmd, buildExtraArgs...)
 	shellCmd = append(shellCmd, "-t", imageName, "-f", dockerfile, buildpath)
 
 	if len(image.Dockerfile.Args) != 0 {

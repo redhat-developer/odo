@@ -2121,9 +2121,10 @@ ComponentSettings:
 		})
 
 		for _, tt := range []struct {
-			name                  string
-			imageBuildExtraArgs   []string
-			containerRunExtraArgs []string
+			name                            string
+			containerBackendGlobalExtraArgs []string
+			imageBuildExtraArgs             []string
+			containerRunExtraArgs           []string
 		}{
 			{
 				name: "odo dev is running",
@@ -2136,10 +2137,16 @@ ComponentSettings:
 				},
 			},
 			{
+				name: "odo dev is running with container backend global extra args",
+				containerBackendGlobalExtraArgs: []string{
+					"--log-level=error",
+				},
+			},
+			{
 				name: "odo dev is running with container run extra args",
 				containerRunExtraArgs: []string{
-					"--storage-driver=overlay",
-					"--ssh=native",
+					"--quiet",
+					"--tls-verify=false",
 				},
 			},
 			{
@@ -2148,9 +2155,12 @@ ComponentSettings:
 					"--platform=linux/amd64",
 					"--build-arg=MY_ARG=my_value",
 				},
+				containerBackendGlobalExtraArgs: []string{
+					"--log-level=panic",
+				},
 				containerRunExtraArgs: []string{
-					"--storage-driver=overlay",
-					"--ssh=native",
+					"--quiet",
+					"--tls-verify=false",
 				},
 			},
 		} {
@@ -2165,6 +2175,9 @@ ComponentSettings:
 							env = append(env, "ODO_PUSH_IMAGES=false")
 						} else {
 							env = append(env, "PODMAN_CMD=echo")
+						}
+						if len(tt.containerBackendGlobalExtraArgs) != 0 {
+							env = append(env, "ODO_CONTAINER_BACKEND_GLOBAL_ARGS="+strings.Join(tt.containerBackendGlobalExtraArgs, ","))
 						}
 						if len(tt.imageBuildExtraArgs) != 0 {
 							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ","))
@@ -2193,12 +2206,18 @@ ComponentSettings:
 							Expect(string(out)).To(ContainSubstring(openshiftDeploymentName))
 						}
 						checkImageBuilt := func() {
-							substring := fmt.Sprintf("build -t quay.io/unknown-account/myimage -f %s %s",
-								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
-							if len(tt.imageBuildExtraArgs) != 0 {
-								substring = fmt.Sprintf("build %s -t quay.io/unknown-account/myimage -f %s %s",
-									strings.Join(tt.imageBuildExtraArgs, " "), filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
+							var substring string
+							if len(tt.containerBackendGlobalExtraArgs) != 0 {
+								substring = strings.Join(tt.containerBackendGlobalExtraArgs, " ") + " "
 							}
+							substring += "build "
+							if len(tt.imageBuildExtraArgs) != 0 {
+								substring += strings.Join(tt.imageBuildExtraArgs, " ") + " "
+							}
+
+							substring += fmt.Sprintf("-t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
+
 							if podman {
 								Expect(string(sessionErr)).To(ContainSubstring(substring))
 							} else {
@@ -2219,10 +2238,18 @@ ComponentSettings:
 							checkImageBuilt()
 						})
 
-						if podman && len(tt.containerRunExtraArgs) != 0 {
+						if podman {
+							expected := "podman "
+							if len(tt.containerBackendGlobalExtraArgs) != 0 {
+								expected += fmt.Sprintf("%s ", strings.Join(tt.containerBackendGlobalExtraArgs, " "))
+							}
+							expected += "play kube "
+							if len(tt.containerRunExtraArgs) != 0 {
+								expected += fmt.Sprintf("%s ", strings.Join(tt.containerRunExtraArgs, " "))
+							}
+							expected += "-"
 							By("checking that extra args are passed to the podman play kube command", func() {
-								Expect(string(sessionErr)).Should(ContainSubstring("podman %s play kube -",
-									strings.Join(tt.containerRunExtraArgs, " ")))
+								Expect(string(sessionErr)).Should(ContainSubstring(expected))
 							})
 						}
 

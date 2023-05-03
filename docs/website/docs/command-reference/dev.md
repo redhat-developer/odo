@@ -480,17 +480,23 @@ Storing signatures
 ### Passing extra args to Podman when developing on Podman
 
 When [running on Podman](#running-on-podman), you can set the [`ODO_CONTAINER_RUN_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
-which is a comma-separated list of global arguments to pass to Podman when running any Podman command other than building `Imaage` components (use [`ODO_IMAGE_BUILD_ARGS`](#passing-extra-args-to-podman-or-docker-when-building-images) instead).
+which is a comma-separated list of options to pass to Podman when creating the development session Pod.
+
+You can also set the [`ODO_CONTAINER_BACKEND_GLOBAL_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior) to pass [global options](https://docs.podman.io/en/latest/markdown/podman.1.html#global-options) to all `podman` commands executed by `odo` (including the commands used for building and pushing images).
 
 ```shell
-ODO_CONTAINER_RUN_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo dev
+ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--globalArg1=val1,--globalArg2=val2,...,--globalArgN=valN' \
+ODO_CONTAINER_RUN_ARGS='--arg1=value1,--arg2=value2,...,--argN=valueN' \
+  odo dev --platform=podman
 ```
 
 <details>
 <summary>Example</summary>
 
 ```shell
-$ ODO_CONTAINER_RUN_ARGS='--storage-driver=overlay,--ssh=native' odo dev --platform=podman     
+$ ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--root=/tmp/podman/root,--storage-driver=overlay' \
+  ODO_CONTAINER_RUN_ARGS='--configmap=cm-foo.yml,--network=none' \
+  odo dev --platform=podman     
   __
  /  \__     Developing using the "my-nodejs-app" Devfile
  \__/  \    Platform: podman

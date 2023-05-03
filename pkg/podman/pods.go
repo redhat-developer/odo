@@ -104,7 +104,7 @@ func (o *PodmanCli) getPodsFromSelector(selector string) ([]ListPodsReport, erro
 	for _, s := range selectorAsList {
 		args = append(args, "--filter=label="+s)
 	}
-	cmd := exec.Command(o.podmanCmd, append(o.containerRunExtraArgs, args...)...)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, args...)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {

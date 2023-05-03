@@ -20,7 +20,7 @@ type ListPodsReport struct {
 }
 
 func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
-	cmd := exec.Command(o.podmanCmd, append(o.containerRunExtraArgs, "pod", "ps", "--format", "json", "--filter", "status=running")...)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "pod", "ps", "--format", "json", "--filter", "status=running")...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {
