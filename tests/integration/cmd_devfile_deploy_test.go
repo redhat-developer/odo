@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	. "github.com/onsi/ginkgo/v2"
@@ -114,45 +115,71 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					helper.DevfileMetadataNameSetter(cmpName))
 			})
 
-			When("running odo deploy", func() {
-				var stdout string
-				BeforeEach(func() {
-					stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-				})
-				It("should succeed", func() {
-					By("building and pushing image to registry", func() {
-						Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " +
-							filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-						Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
-					})
-					By("deploying a deployment with the built image", func() {
-						out := commonVar.CliRunner.Run("get", "deployment", deploymentName, "-n",
-							commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
-						Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
-					})
-				})
-
-				It("should run odo dev successfully", func() {
-					session, _, _, _, err := helper.StartDevMode(helper.DevSessionOpts{})
-					Expect(err).ToNot(HaveOccurred())
-					session.Kill()
-					session.WaitEnd()
-				})
-
-				When("running and stopping odo dev", func() {
+			for _, tt := range []struct {
+				name                string
+				imageBuildExtraArgs []string
+			}{
+				{
+					name: "running odo deploy",
+				},
+				{
+					name: "running odo deploy with image build extra args",
+					imageBuildExtraArgs: []string{
+						"--platform=linux/amd64",
+						"--build-arg=MY_ARG=my_value",
+					},
+				},
+			} {
+				tt := tt
+				When(tt.name, func() {
+					var stdout string
 					BeforeEach(func() {
+						env := []string{"PODMAN_CMD=echo"}
+						if len(tt.imageBuildExtraArgs) != 0 {
+							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ","))
+						}
+						stdout = helper.Cmd("odo", "deploy").AddEnv(env...).ShouldPass().Out()
+					})
+					It("should succeed", func() {
+						By("building and pushing image to registry", func() {
+							substring := fmt.Sprintf("build -t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
+							if len(tt.imageBuildExtraArgs) != 0 {
+								substring = fmt.Sprintf("build %s -t quay.io/unknown-account/myimage -f %s %s",
+									strings.Join(tt.imageBuildExtraArgs, " "), filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
+							}
+							Expect(stdout).To(ContainSubstring(substring))
+							Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+						})
+						By("deploying a deployment with the built image", func() {
+							out := commonVar.CliRunner.Run("get", "deployment", deploymentName, "-n",
+								commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
+							Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
+						})
+					})
+
+					It("should run odo dev successfully", func() {
 						session, _, _, _, err := helper.StartDevMode(helper.DevSessionOpts{})
-						Expect(err).ShouldNot(HaveOccurred())
-						session.Stop()
+						Expect(err).ToNot(HaveOccurred())
+						session.Kill()
 						session.WaitEnd()
 					})
 
-					It("should not delete the resources created with odo deploy", func() {
-						output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-						Expect(string(output)).To(ContainSubstring(deploymentName))
+					When("running and stopping odo dev", func() {
+						BeforeEach(func() {
+							session, _, _, _, err := helper.StartDevMode(helper.DevSessionOpts{})
+							Expect(err).ShouldNot(HaveOccurred())
+							session.Stop()
+							session.WaitEnd()
+						})
+
+						It("should not delete the resources created with odo deploy", func() {
+							output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
+							Expect(string(output)).To(ContainSubstring(deploymentName))
+						})
 					})
 				})
-			})
+			}
 
 			When("an env.yaml file contains a non-current Project", func() {
 				BeforeEach(func() {
