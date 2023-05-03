@@ -480,7 +480,7 @@ Storing signatures
 ### Passing extra args to Podman when developing on Podman
 
 When [running on Podman](#running-on-podman), you can set the [`ODO_CONTAINER_RUN_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
-which is a comma-separated list of extra arguments to pass to Podman when running any Podman command other than building `Imaage` components (use [`ODO_IMAGE_BUILD_ARGS`](#passing-extra-args-to-podman-or-docker-when-building-images) instead).
+which is a comma-separated list of global arguments to pass to Podman when running any Podman command other than building `Imaage` components (use [`ODO_IMAGE_BUILD_ARGS`](#passing-extra-args-to-podman-or-docker-when-building-images) instead).
 
 ```shell
 ODO_CONTAINER_RUN_ARGS='arg1=value1,arg2=value2,...,argN=valueN' odo dev
