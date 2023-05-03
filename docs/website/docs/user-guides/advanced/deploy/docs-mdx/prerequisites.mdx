@@ -54,6 +54,9 @@ Your container image build must match the same architecture as the cluster you a
 
 For example: you will have to cross-build a AMD64 image on a Mac M1 (ARM64) in order to deploy to a AMD64 cluster.
 
+`odo` allows you to do so via the [`ODO_IMAGE_BUILD_ARGS` environment variable](/overview/configure.md#environment-variables-controlling-odo-behavior),
+which is a comma-separated list of extra arguments to pass to Podman or Docker when building images.
+
 Choose your deployment architecture:
 
 <Tabs
@@ -67,7 +70,7 @@ values={[
 <TabItem value="linuxamd64">
 
 ```console
-export DOCKER_DEFAULT_PLATFORM=linux/amd64  
+export ODO_IMAGE_BUILD_ARGS="--platform=linux/amd64"
 ```
 
 </TabItem>
@@ -75,7 +78,7 @@ export DOCKER_DEFAULT_PLATFORM=linux/amd64
 <TabItem value="linuxarm64">
 
 ```console
-export DOCKER_DEFAULT_PLATFORM=linux/arm64  
+export ODO_IMAGE_BUILD_ARGS="--platform=linux/arm64"
 ```
 
 </TabItem>
@@ -83,7 +86,7 @@ export DOCKER_DEFAULT_PLATFORM=linux/arm64
 <TabItem value="windowsamd64">
 
 ```console
-export DOCKER_DEFAULT_PLATFORM=windows/amd64  
+export ODO_IMAGE_BUILD_ARGS="--platform=windows/amd64"
 ```
 
 </TabItem>
