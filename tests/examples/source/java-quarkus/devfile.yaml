@@ -5,6 +5,14 @@ commands:
     workingDir: ${PROJECT_SOURCE}
   id: init-compile
 - exec:
+    commandLine: echo Build command
+    component: tools
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: build
+- exec:
     commandLine: mvn -Dmaven.repo.local=/home/user/.m2/repository quarkus:dev -Dquarkus.http.host=0.0.0.0
       -Djava.util.logging.manager=org.jboss.logmanager.LogManager
     component: tools

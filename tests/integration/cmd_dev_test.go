@@ -3452,10 +3452,11 @@ CMD ["npm", "start"]
 
 	for _, podman := range []bool{true, false} {
 		podman := podman
-		When("a hotReload capable project is used with odo dev", helper.LabelPodmanIf(podman, func() {
+		When("a hotReload capable Run command is used with odo dev", helper.LabelPodmanIf(podman, func() {
 			var devSession helper.DevSession
 			var stdout []byte
 			var executeRunCommand = "Executing the application (command: dev-run)"
+			var executeBuildCommand = "Building your application"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "java-quarkus"), commonVar.Context)
 				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(cmpName)})
@@ -3472,7 +3473,8 @@ CMD ["npm", "start"]
 				devSession.WaitEnd()
 			})
 
-			It("should execute the run command", func() {
+			It("should execute the build and run commands", func() {
+				Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
 				Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
 			})
 
@@ -3485,6 +3487,48 @@ CMD ["npm", "start"]
 				})
 
 				It("should not re-execute the run command", func() {
+					Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
+					Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
+				})
+			})
+		}))
+
+		When("hotReload capable Build and Run commands are used with odo dev", helper.LabelPodmanIf(podman, func() {
+			var devSession helper.DevSession
+			var stdout []byte
+			var executeRunCommand = "Executing the application (command: run)"
+			var executeBuildCommand = "Building your application"
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "angular"), commonVar.Context)
+				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(cmpName)})
+				var err error
+				devSession, stdout, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				// We stop the process so the process does not remain after the end of the tests
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			It("should execute the build and run commands", func() {
+				Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
+				Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
+			})
+
+			When("a source file is modified", func() {
+				BeforeEach(func() {
+					helper.ReplaceString(filepath.Join(commonVar.Context, "src", "index.html"), "DevfileStackNodejsAngular", "Devfile Stack Nodejs Angular")
+					var err error
+					stdout, _, _, err = devSession.WaitSync()
+					Expect(err).Should(Succeed(), stdout)
+				})
+
+				It("should not re-execute the run command", func() {
+					Expect(string(stdout)).ToNot(ContainSubstring(executeBuildCommand))
 					Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
 				})
 			})
