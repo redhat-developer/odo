@@ -37,9 +37,9 @@ The "loop" is cancelled once the user inputs Ctrl+C.
 
 #### Hot Reloading
 
-`hotReloadCapable` is a special boolean within `exec` that allows you to specify if a framework is "hot reloadable".
+`hotReloadCapable` is a special boolean within an `exec` command that allows you to specify if a command is "hot reloadable".
 
-If set to `true`, the container won't be restarted as the framework will handle file changes on its own.
+If set to `true`, the command won't be restarted as the framework will handle file changes on its own.
 
 #### Full Example
 

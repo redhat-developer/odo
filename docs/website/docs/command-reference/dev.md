@@ -61,8 +61,10 @@ won't be applied immediately, but the next time the user presses the `p` key.
 Depending on the local changes, different events can occur on the cluster:
 
 - if source files are modified, they are pushed to the container running the application, and:
+  - if the `build` command is marked as `HotReloadCapable`, the application is responsible for building the applicaiton with the new changes
+  - if the `build` command is not marked as `HotReloadCapable`, the `build` command is executed again
   - if the `run` command is marked as `HotReloadCapable`, the application is responsible for applying the new changes
-  - if the `run` command is not marked as `HotReloadCapable`, the application is stopped, then restarted by odo using the `build` and `run` commands again.
+  - if the `run` command is not marked as `HotReloadCapable`, the application is stopped, then restarted by odo using the `run` command again.
 - if the Devfile is modified, the deployment of the application is modified with the new changes. In some circumstances, this may
   cause the restart of the container running the application and therefore the application itself.
 
