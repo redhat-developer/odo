@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -19,7 +20,11 @@ func NewRegistry(url string) Registry {
 }
 
 func (o Registry) GetIndex() ([]api.DevfileStack, error) {
-	resp, err := http.Get(o.url + "/v2index")
+	url, err := url.JoinPath(o.url, "v2index")
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
