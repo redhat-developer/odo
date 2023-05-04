@@ -7,9 +7,9 @@ variables:
 components:
   - container:
       endpoints:
-        - name: http-3000
-          targetPort: 3000
-        - name: tcp-5858
+        - name: http-8080
+          targetPort: 8080
+        - name: debug
           targetPort: 5858
       env:
       - name: DEBUG_PORT_PROJECT

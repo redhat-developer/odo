@@ -22,7 +22,7 @@ func (o *PodmanCli) ExecCMDInContainer(ctx context.Context, containerName, podNa
 	args = append(args, name)
 	args = append(args, cmd...)
 
-	command := exec.CommandContext(ctx, o.podmanCmd, args...)
+	command := exec.CommandContext(ctx, o.podmanCmd, append(o.containerRunGlobalExtraArgs, args...)...)
 	klog.V(3).Infof("executing %v", command.Args)
 	command.Stdin = stdin
 

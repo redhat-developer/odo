@@ -17,7 +17,9 @@ import (
 )
 
 type PodmanCli struct {
-	podmanCmd string
+	podmanCmd                   string
+	containerRunGlobalExtraArgs []string
+	containerRunExtraArgs       []string
 }
 
 var _ Client = (*PodmanCli)(nil)
@@ -27,7 +29,9 @@ var _ platform.Client = (*PodmanCli)(nil)
 func NewPodmanCli(ctx context.Context) (*PodmanCli, error) {
 	// Check if podman is available in the system
 	cli := &PodmanCli{
-		podmanCmd: envcontext.GetEnvConfig(ctx).PodmanCmd,
+		podmanCmd:                   envcontext.GetEnvConfig(ctx).PodmanCmd,
+		containerRunGlobalExtraArgs: envcontext.GetEnvConfig(ctx).OdoContainerBackendGlobalArgs,
+		containerRunExtraArgs:       envcontext.GetEnvConfig(ctx).OdoContainerRunArgs,
 	}
 	version, err := cli.Version()
 	if err != nil {
@@ -50,7 +54,14 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		},
 	)
 
-	cmd := exec.Command(o.podmanCmd, "play", "kube", "-")
+	// +3 because of "play kube -"
+	args := make([]string, 0, len(o.containerRunGlobalExtraArgs)+len(o.containerRunExtraArgs)+3)
+	args = append(args, o.containerRunGlobalExtraArgs...)
+	args = append(args, "play", "kube")
+	args = append(args, o.containerRunExtraArgs...)
+	args = append(args, "-")
+
+	cmd := exec.Command(o.podmanCmd, args...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -110,7 +121,7 @@ func (o *PodmanCli) KubeGenerate(name string) (*corev1.Pod, error) {
 		},
 	)
 
-	cmd := exec.Command(o.podmanCmd, "generate", "kube", name)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "generate", "kube", name)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	resultBytes, err := cmd.Output()
 	if err != nil {
@@ -128,7 +139,7 @@ func (o *PodmanCli) KubeGenerate(name string) (*corev1.Pod, error) {
 }
 
 func (o *PodmanCli) PodStop(podname string) error {
-	cmd := exec.Command(o.podmanCmd, "pod", "stop", podname)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "pod", "stop", podname)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {
@@ -142,7 +153,7 @@ func (o *PodmanCli) PodStop(podname string) error {
 }
 
 func (o *PodmanCli) PodRm(podname string) error {
-	cmd := exec.Command(o.podmanCmd, "pod", "rm", podname)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "pod", "rm", podname)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {
@@ -156,7 +167,7 @@ func (o *PodmanCli) PodRm(podname string) error {
 }
 
 func (o *PodmanCli) PodLs() (map[string]bool, error) {
-	cmd := exec.Command(o.podmanCmd, "pod", "list", "--format", "{{.Name}}", "--noheading")
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "pod", "list", "--format", "{{.Name}}", "--noheading")...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {
@@ -169,7 +180,7 @@ func (o *PodmanCli) PodLs() (map[string]bool, error) {
 }
 
 func (o *PodmanCli) VolumeRm(volumeName string) error {
-	cmd := exec.Command(o.podmanCmd, "volume", "rm", volumeName)
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "volume", "rm", volumeName)...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {
@@ -183,7 +194,7 @@ func (o *PodmanCli) VolumeRm(volumeName string) error {
 }
 
 func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
-	cmd := exec.Command(o.podmanCmd, "volume", "ls", "--format", "{{.Name}}", "--noheading")
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "volume", "ls", "--format", "{{.Name}}", "--noheading")...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {

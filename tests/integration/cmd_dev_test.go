@@ -2106,79 +2106,191 @@ ComponentSettings:
 		const (
 			k8sDeploymentName       = "my-k8s-component"
 			openshiftDeploymentName = "my-openshift-component"
-			DEVFILEPORT             = "3000"
+			DEVFILEPORT             = "8080"
 		)
 		var session helper.DevSession
 		var sessionOut, sessionErr []byte
 		var err error
 		var ports map[string]string
+
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
 				helper.DevfileMetadataNameSetter(cmpName))
 		})
-		When("odo dev is running", func() {
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				session, sessionOut, sessionErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
-					EnvVars: []string{"PODMAN_CMD=echo"},
-				})
-				Expect(err).ToNot(HaveOccurred())
-			})
-			It("should execute the composite apply commands successfully", func() {
-				checkDeploymentsExist := func() {
-					out := commonVar.CliRunner.Run("get", "deployments", k8sDeploymentName).Out.Contents()
-					Expect(string(out)).To(ContainSubstring(k8sDeploymentName))
-					out = commonVar.CliRunner.Run("get", "deployments", openshiftDeploymentName).Out.Contents()
-					Expect(string(out)).To(ContainSubstring(openshiftDeploymentName))
-				}
-				checkImageBuilt := func() {
-					Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-					Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
-				}
-				checkEndpointAccessible := func(message []string) {
-					url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
-					resp, e := http.Get(url)
-					Expect(e).ToNot(HaveOccurred())
-					defer resp.Body.Close()
 
-					body, _ := io.ReadAll(resp.Body)
-					helper.MatchAllInOutput(string(body), message)
-				}
-				By("checking is the image was successfully built", func() {
-					checkImageBuilt()
-				})
+		for _, tt := range []struct {
+			name                            string
+			containerBackendGlobalExtraArgs []string
+			imageBuildExtraArgs             []string
+			containerRunExtraArgs           []string
+		}{
+			{
+				name: "odo dev is running",
+			},
+			{
+				name: "odo dev is running with image build extra args",
+				imageBuildExtraArgs: []string{
+					"--platform=linux/amd64",
+					"--build-arg=MY_ARG=my_value",
+				},
+			},
+			{
+				name: "odo dev is running with container backend global extra args",
+				containerBackendGlobalExtraArgs: []string{
+					"--log-level=error",
+				},
+			},
+			{
+				name: "odo dev is running with container run extra args",
+				containerRunExtraArgs: []string{
+					"--quiet",
+					"--tls-verify=false",
+				},
+			},
+			{
+				name: "odo dev is running with both image build and container run extra args",
+				imageBuildExtraArgs: []string{
+					"--platform=linux/amd64",
+					"--build-arg=MY_ARG=my_value",
+				},
+				containerBackendGlobalExtraArgs: []string{
+					"--log-level=panic",
+				},
+				containerRunExtraArgs: []string{
+					"--quiet",
+					"--tls-verify=false",
+				},
+			},
+		} {
+			tt := tt
+			for _, podman := range []bool{false, true} {
+				podman := podman
+				When(tt.name, helper.LabelPodmanIf(podman, func() {
+					BeforeEach(func() {
+						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+						var env []string
+						if podman {
+							env = append(env, "ODO_PUSH_IMAGES=false")
+						} else {
+							env = append(env, "PODMAN_CMD=echo")
+						}
+						if len(tt.containerBackendGlobalExtraArgs) != 0 {
+							env = append(env, "ODO_CONTAINER_BACKEND_GLOBAL_ARGS="+strings.Join(tt.containerBackendGlobalExtraArgs, ";"))
+						}
+						if len(tt.imageBuildExtraArgs) != 0 {
+							env = append(env, "ODO_IMAGE_BUILD_ARGS="+strings.Join(tt.imageBuildExtraArgs, ";"))
+						}
+						var cmdLineArgs []string
+						if len(tt.containerRunExtraArgs) != 0 {
+							env = append(env, "ODO_CONTAINER_RUN_ARGS="+strings.Join(tt.containerRunExtraArgs, ";"))
+						}
+						if podman {
+							// Increasing verbosity to check that extra args are being passed to the "podman" commands
+							cmdLineArgs = append(cmdLineArgs, "-v=4")
+						}
+						session, sessionOut, sessionErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+							EnvVars:     env,
+							CmdlineArgs: cmdLineArgs,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
 
-				By("checking the endpoint accessibility", func() {
-					checkEndpointAccessible([]string{"Hello from Node.js Starter Application!"})
-				})
+					It("should execute the composite apply commands successfully", func() {
+						checkDeploymentsExist := func() {
+							out := commonVar.CliRunner.Run("get", "deployments", k8sDeploymentName).Out.Contents()
+							Expect(string(out)).To(ContainSubstring(k8sDeploymentName))
+							out = commonVar.CliRunner.Run("get", "deployments", openshiftDeploymentName).Out.Contents()
+							Expect(string(out)).To(ContainSubstring(openshiftDeploymentName))
+						}
+						checkImageBuilt := func() {
+							var substring string
+							if len(tt.containerBackendGlobalExtraArgs) != 0 {
+								substring = strings.Join(tt.containerBackendGlobalExtraArgs, " ") + " "
+							}
+							substring += "build "
+							if len(tt.imageBuildExtraArgs) != 0 {
+								substring += strings.Join(tt.imageBuildExtraArgs, " ") + " "
+							}
 
-				By("checking the deployment was created successfully", func() {
-					checkDeploymentsExist()
-				})
-				By("ensuring multiple deployments exist for selector error is not occurred", func() {
-					Expect(string(sessionErr)).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
-				})
-				By("checking odo dev watches correctly", func() {
-					// making changes to the project again
-					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
-					_, _, _, err = session.WaitSync()
-					Expect(err).ToNot(HaveOccurred())
-					checkDeploymentsExist()
-					checkImageBuilt()
-					checkEndpointAccessible([]string{"Hello from the new Node.js Starter Application!"})
-				})
+							substring += fmt.Sprintf("-t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
 
-				By("cleaning up the resources on ending the session", func() {
-					session.Stop()
-					session.WaitEnd()
-					out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
-					Expect(string(out)).ToNot(ContainSubstring(k8sDeploymentName))
-					Expect(string(out)).ToNot(ContainSubstring(openshiftDeploymentName))
-				})
-			})
-		})
+							if podman {
+								Expect(string(sessionErr)).To(ContainSubstring(substring))
+							} else {
+								Expect(string(sessionOut)).To(ContainSubstring(substring))
+								Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+							}
+						}
+						checkEndpointAccessible := func(message []string) {
+							url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
+							resp, e := http.Get(url)
+							Expect(e).ToNot(HaveOccurred())
+							defer resp.Body.Close()
+
+							body, _ := io.ReadAll(resp.Body)
+							helper.MatchAllInOutput(string(body), message)
+						}
+						By("checking is the image was successfully built", func() {
+							checkImageBuilt()
+						})
+
+						if podman {
+							expected := "podman "
+							if len(tt.containerBackendGlobalExtraArgs) != 0 {
+								expected += fmt.Sprintf("%s ", strings.Join(tt.containerBackendGlobalExtraArgs, " "))
+							}
+							expected += "play kube "
+							if len(tt.containerRunExtraArgs) != 0 {
+								expected += fmt.Sprintf("%s ", strings.Join(tt.containerRunExtraArgs, " "))
+							}
+							expected += "-"
+							By("checking that extra args are passed to the podman play kube command", func() {
+								Expect(string(sessionErr)).Should(ContainSubstring(expected))
+							})
+						}
+
+						By("checking the endpoint accessibility", func() {
+							checkEndpointAccessible([]string{"Hello world from node.js!"})
+						})
+
+						if !podman {
+							By("checking the deployment was created successfully", func() {
+								checkDeploymentsExist()
+							})
+							By("ensuring multiple deployments exist for selector error is not occurred", func() {
+								Expect(string(sessionErr)).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
+							})
+						}
+
+						By("checking odo dev watches correctly", func() {
+							// making changes to the project again
+							helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "world from node.js", "from the new Node.js Starter Application")
+							_, _, _, err = session.WaitSync()
+							Expect(err).ToNot(HaveOccurred())
+							if !podman {
+								checkDeploymentsExist()
+							}
+							checkImageBuilt()
+							checkEndpointAccessible([]string{"Hello from the new Node.js Starter Application!"})
+						})
+
+						By("cleaning up the resources on ending the session", func() {
+							session.Stop()
+							session.WaitEnd()
+							if !podman {
+								out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
+								Expect(string(out)).ToNot(ContainSubstring(k8sDeploymentName))
+								Expect(string(out)).ToNot(ContainSubstring(openshiftDeploymentName))
+							}
+						})
+					})
+				}))
+			}
+		}
 
 		Context("the devfile contains an image component that uses a remote Dockerfile", func() {
 			BeforeEach(func() {

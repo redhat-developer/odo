@@ -27,7 +27,7 @@ If the `--push` flag is passed to the command, the images will be pushed to thei
 
 ## Running the command
 ### Pre-requisites
-* Login to an image registry(quay.io, hub.docker.com, etc)
+* Login to an image registry ([quay.io](https://docs.quay.io/guides/login.html), [hub.docker.com](https://hub.docker.com/), etc)
 * Dockerfile
 
 ```shell
@@ -61,6 +61,56 @@ COMMIT quay.io/user/myimage
 Successfully tagged quay.io/user/myimage:latest
 58c0731e9a110e8dbb2dbe4bdb55a15bdbbce1b78e121d350e23de79f33c3dde
  ✓  Building image locally [2s]
+```
+</details>
+
+### Passing extra args to Podman or Docker
+
+You can set the [`ODO_IMAGE_BUILD_ARGS` environment variable](../overview/configure.md#environment-variables-controlling-odo-behavior),
+which is a semicolon-separated list of extra arguments to pass to Podman or Docker when building images.
+
+A typical use case for this is to build images for a platform different from the one `odo` is running on.
+For example, building images on Mac with Apple Silicon, with the intent to use them on a cluster supporting a different architecture or operating system.
+
+```shell
+ODO_IMAGE_BUILD_ARGS='arg1=value1;arg2=value2;...;argN=valueN' odo build-images
+```
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ ODO_IMAGE_BUILD_ARGS='--platform=linux/amd64;--build-arg=MY_ARG=my_value' odo build-images
+
+↪ Building Image: localhost:5000/nodejs-odo-example
+ •  Building image locally  ...
+[1/2] STEP 1/4: FROM registry.access.redhat.com/ubi8/nodejs-14:latest
+[1/2] STEP 2/4: RUN echo XXX $MY_ARG
+--> Using cache cbd3ef1317b96dbef4c9ab3646df49d3770831516c3b5c9f1e15687d67bc8803
+--> cbd3ef1317b9
+[1/2] STEP 3/4: COPY package*.json ./
+--> Using cache de4a08bf2632ef49339beeda4ba50eb6e8a9b7524ffd5717fdcc372c15003b61
+--> de4a08bf2632
+[1/2] STEP 4/4: RUN npm install --production
+--> Using cache 5a37e2783e140582da7ac4e241790e6e2052826c07f46cc0053801f4580e728c
+--> 5a37e2783e14
+[2/2] STEP 1/6: FROM registry.access.redhat.com/ubi8/nodejs-14-minimal:latest
+[2/2] STEP 2/6: COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
+--> Using cache 8779f5d3753baec5961b5ae017d8246b2674eb70f3c5607e4060f6b38e07c182
+--> 8779f5d3753b
+[2/2] STEP 3/6: COPY . /opt/app-root/src
+--> 6ea250968b12
+[2/2] STEP 4/6: ENV NODE_ENV production
+--> 0bf4dd6605e9
+[2/2] STEP 5/6: ENV PORT 3000
+--> deea4247dd08
+[2/2] STEP 6/6: CMD ["npm", "start"]
+[2/2] COMMIT localhost:5000/nodejs-odo-example
+--> eebc7c012506
+Successfully tagged localhost:5000/nodejs-odo-example:latest
+eebc7c01250682bf4e1e9544de1434d5edb90a51cf2d3e96f0faab354918bedb
+ ✓  Building image locally [4s]
+
 ```
 </details>
 

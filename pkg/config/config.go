@@ -7,17 +7,20 @@ import (
 )
 
 type Configuration struct {
-	DevfileProxy          *string `env:"DEVFILE_PROXY,noinit"`
-	DockerCmd             string  `env:"DOCKER_CMD,default=docker"`
-	Globalodoconfig       *string `env:"GLOBALODOCONFIG,noinit"`
-	OdoDebugTelemetryFile *string `env:"ODO_DEBUG_TELEMETRY_FILE,noinit"`
-	OdoDisableTelemetry   *bool   `env:"ODO_DISABLE_TELEMETRY,noinit"`
-	OdoLogLevel           *int    `env:"ODO_LOG_LEVEL,noinit"`
-	OdoTrackingConsent    *string `env:"ODO_TRACKING_CONSENT,noinit"`
-	PodmanCmd             string  `env:"PODMAN_CMD,default=podman"`
-	TelemetryCaller       string  `env:"TELEMETRY_CALLER,default="`
-	OdoExperimentalMode   bool    `env:"ODO_EXPERIMENTAL_MODE,default=false"`
-	PushImages            bool    `env:"ODO_PUSH_IMAGES,default=true"`
+	DevfileProxy                  *string  `env:"DEVFILE_PROXY,noinit"`
+	DockerCmd                     string   `env:"DOCKER_CMD,default=docker"`
+	Globalodoconfig               *string  `env:"GLOBALODOCONFIG,noinit"`
+	OdoDebugTelemetryFile         *string  `env:"ODO_DEBUG_TELEMETRY_FILE,noinit"`
+	OdoDisableTelemetry           *bool    `env:"ODO_DISABLE_TELEMETRY,noinit"`
+	OdoLogLevel                   *int     `env:"ODO_LOG_LEVEL,noinit"`
+	OdoTrackingConsent            *string  `env:"ODO_TRACKING_CONSENT,noinit"`
+	PodmanCmd                     string   `env:"PODMAN_CMD,default=podman"`
+	TelemetryCaller               string   `env:"TELEMETRY_CALLER,default="`
+	OdoExperimentalMode           bool     `env:"ODO_EXPERIMENTAL_MODE,default=false"`
+	PushImages                    bool     `env:"ODO_PUSH_IMAGES,default=true"`
+	OdoContainerBackendGlobalArgs []string `env:"ODO_CONTAINER_BACKEND_GLOBAL_ARGS,noinit,delimiter=;"`
+	OdoImageBuildArgs             []string `env:"ODO_IMAGE_BUILD_ARGS,noinit,delimiter=;"`
+	OdoContainerRunArgs           []string `env:"ODO_CONTAINER_RUN_ARGS,noinit,delimiter=;"`
 }
 
 // GetConfiguration initializes a Configuration for odo by using the system environment.

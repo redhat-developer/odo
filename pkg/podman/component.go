@@ -6,10 +6,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
-	"k8s.io/klog"
 )
 
 // ListPodsReport contains the result of the `podman pod ps --format json` command
@@ -19,7 +20,7 @@ type ListPodsReport struct {
 }
 
 func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
-	cmd := exec.Command(o.podmanCmd, "pod", "ps", "--format", "json", "--filter", "status=running")
+	cmd := exec.Command(o.podmanCmd, append(o.containerRunGlobalExtraArgs, "pod", "ps", "--format", "json", "--filter", "status=running")...)
 	klog.V(3).Infof("executing %v", cmd.Args)
 	out, err := cmd.Output()
 	if err != nil {

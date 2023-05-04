@@ -44,16 +44,77 @@ var _ = Describe("odo devfile build-images command tests", func() {
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-outerloop.yaml")).ShouldPass()
 					helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
 				})
-				It("should run odo build-images without push", func() {
-					stdout := helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-					Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-				})
 
-				It("should run odo build-images --push", func() {
-					stdout := helper.Cmd("odo", "build-images", "--push").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-					Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-					Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
-				})
+				for _, tt := range []struct {
+					name          string
+					args          []string
+					env           []string
+					shouldPass    bool
+					checkOutputFn func(stdout, stderr string)
+				}{
+					{
+						name:       "should run odo build-images without push",
+						env:        []string{"PODMAN_CMD=echo"},
+						shouldPass: true,
+						checkOutputFn: func(stdout, stderr string) {
+							Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
+						},
+					},
+					{
+						name:       "should run odo build-images --push",
+						args:       []string{"--push"},
+						env:        []string{"PODMAN_CMD=echo"},
+						shouldPass: true,
+						checkOutputFn: func(stdout, stderr string) {
+							Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
+							Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+						},
+					},
+					{
+						name: "should pass extra args to Podman",
+						env: []string{
+							"PODMAN_CMD=echo",
+							"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64;--build-arg=MY_ARG=my_value",
+						},
+						shouldPass: true,
+						checkOutputFn: func(stdout, stderr string) {
+							Expect(stdout).To(ContainSubstring("build --platform=linux/amd64 --build-arg=MY_ARG=my_value -t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
+						},
+					},
+					{
+						name: "should pass extra args to Docker",
+						env: []string{
+							"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+							"DOCKER_CMD=echo",
+							"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64;--build-arg=MY_ARG=my_value",
+						},
+						shouldPass: true,
+						checkOutputFn: func(stdout, stderr string) {
+							Expect(stdout).To(ContainSubstring("build --platform=linux/amd64 --build-arg=MY_ARG=my_value -t quay.io/unknown-account/myimage -f %s %s",
+								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
+						},
+					},
+				} {
+					tt := tt
+					It(tt.name, func() {
+						args := []string{"build-images"}
+						args = append(args, tt.args...)
+						env := []string{"PODMAN_CMD=echo"}
+						env = append(env, tt.env...)
+
+						cmd := helper.Cmd("odo", args...).AddEnv(env...)
+						if tt.shouldPass {
+							cmd = cmd.ShouldPass()
+						} else {
+							cmd = cmd.ShouldFail()
+						}
+						stdout, stderr := cmd.OutAndErr()
+						tt.checkOutputFn(stdout, stderr)
+					})
+				}
 			})
 
 			When("using a devfile.yaml with no Image component", func() {
@@ -83,7 +144,17 @@ var _ = Describe("odo devfile build-images command tests", func() {
 
 				It("should use args to build image when running odo build-images", func() {
 					stdout := helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-					Expect(stdout).To(ContainSubstring("--unknown-flag value"))
+					Expect(stdout).To(ContainSubstring("build -t myimage -f %s %s --unknown-flag value",
+						filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
+				})
+
+				It("should be able pass extra flags to Podman/Docker build command", func() {
+					stdout := helper.Cmd("odo", "build-images").AddEnv(
+						"PODMAN_CMD=echo",
+						"ODO_IMAGE_BUILD_ARGS=--platform=linux/amd64;--build-arg=MY_ARG=my_value",
+					).ShouldPass().Out()
+					Expect(stdout).To(ContainSubstring("build --platform=linux/amd64 --build-arg=MY_ARG=my_value -t myimage -f %s %s --unknown-flag value",
+						filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context))
 				})
 
 			})
