@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 
 	"github.com/redhat-developer/odo/pkg/config"
@@ -158,17 +159,23 @@ var _ = Describe("odo devfile init command tests", func() {
 				})
 
 				for _, ctx := range []struct {
-					title, devfileVersion, requiredVersion string
+					title, devfileVersion string
+					checkVersion          func(metadataVersion string)
 				}{
 					{
-						title:           "to download the latest version",
-						devfileVersion:  "latest",
-						requiredVersion: "2.0.0",
+						title:          "to download the latest version",
+						devfileVersion: "latest",
+						checkVersion: func(metadataVersion string) {
+							Expect(metadataVersion).To(BeNumerically(">=", "2.0.0"))
+						},
 					},
 					{
-						title:           "to download a specific version",
-						devfileVersion:  "1.0.2",
-						requiredVersion: "1.0.2",
+						title:          "to download a specific version",
+						devfileVersion: "1.0.2",
+						checkVersion: func(metadataVersion string) {
+							Expect(metadataVersion).To(BeNumerically("==", "1.0.2"))
+
+						},
 					},
 				} {
 					ctx := ctx
@@ -184,7 +191,7 @@ var _ = Describe("odo devfile init command tests", func() {
 							files := helper.ListFilesInDir(commonVar.Context)
 							Expect(files).To(ContainElements("devfile.yaml"))
 							metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
-							Expect(metadata.Version).To(BeEquivalentTo(ctx.requiredVersion))
+							ctx.checkVersion(metadata.Version)
 						})
 					})
 
@@ -197,7 +204,7 @@ var _ = Describe("odo devfile init command tests", func() {
 						It("should show the requested devfile version", func() {
 							stdout := res.Out()
 							Expect(helper.IsJSON(stdout)).To(BeTrue())
-							helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.version", ctx.requiredVersion)
+							ctx.checkVersion(gjson.Get(stdout, "devfileData.devfile.metadata.version").String())
 						})
 					})
 				}
