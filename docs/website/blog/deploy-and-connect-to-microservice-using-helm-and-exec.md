@@ -7,7 +7,7 @@ tags: []
 slug: using-helm-with-odo
 ---
 
-This blog will show how odo can now be used with tools such as Helm, Kustomize, etc. for the [outerloop](/docs/introduction/#what-is-inner-loop-and-outer-loop) development cycle.
+This blog will show how `odo` can now be used with tools such as [Helm](https://helm.sh/), [Kustomize](https://kustomize.io/), etc. for the [outerloop](/docs/introduction/#what-is-inner-loop-and-outer-loop) development cycle.
 <!--truncate-->
 :::note
 
@@ -108,7 +108,7 @@ To use an external tool such as helm or kustomize, we need to ensure 2 things:
 ```yaml
 - id: deploy-db
   exec:
-    commandLine: helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update && helm install mongodb bitnami/mongodb
+    commandLine: helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update && helm upgrade --install mongodb bitnami/mongodb
     component: deploy-db
 ```
 
@@ -155,7 +155,7 @@ We will first add the component referenced by `deploy-db` command.
 
 The image used by this container component contains the Helm binary that we can use to deploy the helm chart.
 
-The component is using a `pod-overrides` attribute that will override the service account used by the pod to deploy the helm chart to use the service account (`my-go-app`) we define in this Devfile.
+The component is using a [`pod-overrides` attribute](https://devfile.io/docs/2.2.0/overriding-pod-and-container-attributes#pod-overrides) that will override the service account used by the pod to deploy the helm chart to use the service account (`my-go-app`) we define in this Devfile.
 If we do not do this, the pod will use the `default` service account that does not have the required permissions.
 
 We will now add the remaining components.
@@ -225,25 +225,25 @@ We will now add the remaining components.
           spec:
             containers:
               - name: {{RESOURCE_NAME}}
- image: {{CONTAINER_IMAGE}}
- ports:
-   - name: http
- containerPort: {{CONTAINER_PORT}}
- protocol: TCP
- env:
- - name: username
-   value: {{USERNAME}}
- - name: host
-   value: {{HOST}}
- - name: password
-   valueFrom:
- secretKeyRef:
- name: mongodb
- key: mongodb-root-password
- resources:
-   limits:
- memory: "1024Mi"
- cpu: "500m"
+                image: {{CONTAINER_IMAGE}}
+                ports:
+                  - name: http
+                    containerPort: {{CONTAINER_PORT}}
+                    protocol: TCP
+                env:
+                - name: username
+                  value: {{USERNAME}}
+                - name: host
+                  value: {{HOST}}
+                - name: password
+                  valueFrom:
+                    secretKeyRef:
+                      name: mongodb
+                      key: mongodb-root-password
+                resources:
+                  limits:
+                    memory: "1024Mi"
+                    cpu: "500m"
 # This will create a Service so your Deployment is accessible.
 # Depending on your cluster, you may modify this code so it's a
 # NodePort, ClusterIP or a LoadBalancer service.
@@ -275,13 +275,13 @@ We will now add the remaining components.
           - host: "{{DOMAIN_NAME}}"
             http:
               paths:
- - path: "/"
-   pathType: Prefix
-   backend:
- service:
- name: {{RESOURCE_NAME}}
- port:
-   number: {{CONTAINER_PORT}}
+              - path: "/"
+                pathType: Prefix
+                backend:
+                  service:
+                    name: {{RESOURCE_NAME}}
+                    port:
+                      number: {{CONTAINER_PORT}}
 ```
 
 ### Add the `variables`
@@ -342,7 +342,7 @@ commands:
   # highlight-start
 - id: deploy-db
   exec:
-    commandLine: helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update && helm install mongodb bitnami/mongodb
+    commandLine: helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update && helm upgrade --install mongodb bitnami/mongodb
     component: deploy-db
 - id: k8s-serviceaccount-for-helm
   apply:
@@ -358,9 +358,9 @@ commands:
 - id: deploy
   composite:
     commands:
-      - k8s-sa
-      - k8s-role
-      - k8s-rolebinding
+      - k8s-serviceaccount-for-helm
+      - k8s-role-for-helm
+      - k8s-rolebinding-for-helm
       - deploy-db
       - build-image
       - k8s-deployment
@@ -468,25 +468,25 @@ components:
           spec:
             containers:
               - name: {{RESOURCE_NAME}}
- image: {{CONTAINER_IMAGE}}
- ports:
-   - name: http
- containerPort: {{CONTAINER_PORT}}
- protocol: TCP
- env:
- - name: username
-   value: {{USERNAME}}
- - name: host
-   value: {{HOST}}
- - name: password
-   valueFrom:
- secretKeyRef:
- name: mongodb
- key: mongodb-root-password
- resources:
-   limits:
- memory: "1024Mi"
- cpu: "500m"
+                image: {{CONTAINER_IMAGE}}
+                ports:
+                  - name: http
+                    containerPort: {{CONTAINER_PORT}}
+                    protocol: TCP
+                env:
+                - name: username
+                  value: {{USERNAME}}
+                - name: host
+                  value: {{HOST}}
+                - name: password
+                  valueFrom:
+                    secretKeyRef:
+                      name: mongodb
+                      key: mongodb-root-password
+                resources:
+                  limits:
+                    memory: "1024Mi"
+                    cpu: "500m"
 # This will create a Service so your Deployment is accessible.
 # Depending on your cluster, you may modify this code so it's a
 # NodePort, ClusterIP or a LoadBalancer service.
@@ -518,13 +518,13 @@ components:
           - host: "{{DOMAIN_NAME}}"
             http:
               paths:
- - path: "/"
-   pathType: Prefix
-   backend:
- service:
- name: {{RESOURCE_NAME}}
- port:
-   number: {{CONTAINER_PORT}}
+              - path: "/"
+                pathType: Prefix
+                backend:
+                  service:
+                    name: {{RESOURCE_NAME}}
+                    port:
+                      number: {{CONTAINER_PORT}}
   # highlight-end
 metadata:
   description:
@@ -568,14 +568,14 @@ variables:
 ## 5. Deploy
 Now that the Devfile is ready, we can simply run `odo deploy`.
 ```shell
-odo deploy
+odo deploy --var CONTAINER_IMAGE=quay.io/<username>/go-odo-example
 ```
 
 <details>
 <summary>Sample output</summary>
 
 ```shell
-$ odo deploy
+$ odo deploy --var CONTAINER_IMAGE=quay.io/pvala18/go-odo-example
  __
  /  \__     Running the application in Deploy mode using my-go-app Devfile
  \__/  \    Namespace: restapi-mongodb
