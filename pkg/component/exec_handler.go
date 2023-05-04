@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/klog"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/exec"
@@ -58,6 +59,7 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 
 func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
 	if o.componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
+		klog.V(2).Infof("command is hot-reload capable, not executing %q again", command.Id)
 		return nil
 	}
 
