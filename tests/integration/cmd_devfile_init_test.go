@@ -159,11 +159,12 @@ var _ = Describe("odo devfile init command tests", func() {
 
 				for _, ctx := range []struct {
 					title, devfileVersion, requiredVersion string
+					gotLatest                              bool
 				}{
 					{
-						title:           "to download the latest version",
-						devfileVersion:  "latest",
-						requiredVersion: "2.0.0",
+						title:          "to download the latest version",
+						devfileVersion: "latest",
+						gotLatest:      true,
 					},
 					{
 						title:           "to download a specific version",
@@ -184,7 +185,17 @@ var _ = Describe("odo devfile init command tests", func() {
 							files := helper.ListFilesInDir(commonVar.Context)
 							Expect(files).To(ContainElements("devfile.yaml"))
 							metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
-							Expect(metadata.Version).To(BeEquivalentTo(ctx.requiredVersion))
+							if ctx.requiredVersion != "" {
+								Expect(metadata.Version).To(BeEquivalentTo(ctx.requiredVersion))
+							}
+							if ctx.gotLatest {
+								reg := helper.NewRegistry(helper.GetDevfileRegistryURL())
+								stack, err := reg.GetStack(devfileName)
+								Expect(err).ToNot(HaveOccurred())
+								Expect(len(stack.Versions)).ToNot(BeZero())
+								lastVersion := stack.Versions[0]
+								Expect(metadata.Version).To(BeEquivalentTo(lastVersion.Version))
+							}
 						})
 					})
 
@@ -197,7 +208,17 @@ var _ = Describe("odo devfile init command tests", func() {
 						It("should show the requested devfile version", func() {
 							stdout := res.Out()
 							Expect(helper.IsJSON(stdout)).To(BeTrue())
-							helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.version", ctx.requiredVersion)
+							if ctx.requiredVersion != "" {
+								helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.version", ctx.requiredVersion)
+							}
+							if ctx.gotLatest {
+								reg := helper.NewRegistry(helper.GetDevfileRegistryURL())
+								stack, err := reg.GetStack(devfileName)
+								Expect(err).ToNot(HaveOccurred())
+								Expect(len(stack.Versions)).ToNot(BeZero())
+								lastVersion := stack.Versions[0]
+								helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.version", lastVersion.Version)
+							}
 						})
 					})
 				}
