@@ -73,6 +73,7 @@ func (o *DevClient) reconcile(
 			pod.Name,
 			"Executing post-start command in container",
 			false, /* TODO */
+			false,
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -91,9 +92,11 @@ func (o *DevClient) reconcile(
 				pod.Name,
 				"Building your application in container",
 				false, /* TODO */
+				componentStatus.RunExecuted,
 			)
 			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}
+
 		err = doExecuteBuildCommand()
 		if err != nil {
 			return err

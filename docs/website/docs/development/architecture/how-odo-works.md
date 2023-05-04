@@ -21,9 +21,9 @@ In a nutshell, when running [`odo dev`](../../command-reference/dev):
    If the local Devfile is modified, `odo` may need to change the resources it previously created, which might result in recreating the running containers.
    Note that synchronization and push to the cluster can also be triggered on demand by pressing `p` at any time.
    See [the command reference on `odo dev`](../../command-reference/dev#applying-local-changes-to-the-application-on-the-cluster) for more details.
-6. `odo` **optionally restarts the running application** if the command is not marked as `hotReloadCapable` in the Devfile.
-   If the command is marked as `hotReloadCapable`, the application is supposed to handle source code changes on its own; so `odo` does not restart the application.
-   Otherwise, `odo` restarts the running application by stopping the process started previously, then executes the command again in the container.
+6. `odo` **optionally rebuilds and restarts the running application** if the commands are not marked as `hotReloadCapable` in the Devfile.
+   If the Build of Run command is marked as `hotReloadCapable`, the application is supposed to handle source code changes on its own; so `odo` does not run this command again.
+   Otherwise, `odo` rebuilds the application then restarts the running application by stopping the process started previously, then executes the command again in the container.
    Again, it maintains a connection to that process as long as it is running in the container.
 7. `odo` then **sets up port-forwarding** for each endpoint declared in the Devfile, and reports the local port in its output.
 8. When `odo dev` is stopped via `Ctrl+C`, it **deletes all the resources created previously** and stops port-forwarding and code synchronization.

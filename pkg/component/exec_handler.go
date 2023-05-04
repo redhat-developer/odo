@@ -6,6 +6,8 @@ import (
 	"io"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -16,28 +18,30 @@ import (
 )
 
 type execHandler struct {
-	platformClient platform.Client
-	execClient     exec.Client
-	appName        string
-	componentName  string
-	podName        string
-	msg            string
-	show           bool
+	platformClient  platform.Client
+	execClient      exec.Client
+	appName         string
+	componentName   string
+	podName         string
+	msg             string
+	show            bool
+	componentExists bool
 }
 
 var _ libdevfile.Handler = (*execHandler)(nil)
 
 const ShellExecutable string = "/bin/sh"
 
-func NewExecHandler(platformClient platform.Client, execClient exec.Client, appName, cmpName, podName, msg string, show bool) *execHandler {
+func NewExecHandler(platformClient platform.Client, execClient exec.Client, appName, cmpName, podName, msg string, show bool, componentExists bool) *execHandler {
 	return &execHandler{
-		platformClient: platformClient,
-		execClient:     execClient,
-		appName:        appName,
-		componentName:  cmpName,
-		podName:        podName,
-		msg:            msg,
-		show:           show,
+		platformClient:  platformClient,
+		execClient:      execClient,
+		appName:         appName,
+		componentName:   cmpName,
+		podName:         podName,
+		msg:             msg,
+		show:            show,
+		componentExists: componentExists,
 	}
 }
 
@@ -54,6 +58,11 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 }
 
 func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
+	if o.componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
+		klog.V(2).Infof("command is hot-reload capable, not executing %q again", command.Id)
+		return nil
+	}
+
 	msg := o.msg
 	if msg == "" {
 		msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)

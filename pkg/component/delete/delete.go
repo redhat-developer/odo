@@ -216,7 +216,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
-	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, component.NewExecHandler(do.kubeClient, do.execClient, appName, componentName, pod.Name, "Executing pre-stop command in container", false))
+	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, component.NewExecHandler(do.kubeClient, do.execClient, appName, componentName, pod.Name, "Executing pre-stop command in container", false, false))
 	if err != nil {
 		klog.V(4).Infof("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
 	}
