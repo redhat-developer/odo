@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 
 	"github.com/redhat-developer/odo/pkg/config"
@@ -157,24 +158,34 @@ var _ = Describe("odo devfile init command tests", func() {
 					})
 				})
 
+				const (
+					devfileName = "go"
+				)
 				for _, ctx := range []struct {
 					title, devfileVersion, requiredVersion string
+					checkVersion                           func(metadataVersion string)
 				}{
 					{
-						title:           "to download the latest version",
-						devfileVersion:  "latest",
-						requiredVersion: "2.0.0",
+						title:          "to download the latest version",
+						devfileVersion: "latest",
+						checkVersion: func(metadataVersion string) {
+							reg := helper.NewRegistry(helper.GetDevfileRegistryURL())
+							stack, err := reg.GetStack(devfileName)
+							Expect(err).ToNot(HaveOccurred())
+							Expect(len(stack.Versions)).ToNot(BeZero())
+							lastVersion := stack.Versions[0]
+							Expect(metadataVersion).To(BeEquivalentTo(lastVersion.Version))
+						},
 					},
 					{
-						title:           "to download a specific version",
-						devfileVersion:  "1.0.2",
-						requiredVersion: "1.0.2",
+						title:          "to download a specific version",
+						devfileVersion: "1.0.2",
+						checkVersion: func(metadataVersion string) {
+							Expect(metadataVersion).To(BeEquivalentTo("1.0.2"))
+						},
 					},
 				} {
 					ctx := ctx
-					const (
-						devfileName = "go"
-					)
 					When(fmt.Sprintf("using --devfile-version flag %s", ctx.title), func() {
 						BeforeEach(func() {
 							helper.Cmd("odo", "init", "--name", "aname", "--devfile", devfileName, "--devfile-version", ctx.devfileVersion).ShouldPass()
@@ -184,7 +195,7 @@ var _ = Describe("odo devfile init command tests", func() {
 							files := helper.ListFilesInDir(commonVar.Context)
 							Expect(files).To(ContainElements("devfile.yaml"))
 							metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
-							Expect(metadata.Version).To(BeEquivalentTo(ctx.requiredVersion))
+							ctx.checkVersion(metadata.Version)
 						})
 					})
 
@@ -197,7 +208,7 @@ var _ = Describe("odo devfile init command tests", func() {
 						It("should show the requested devfile version", func() {
 							stdout := res.Out()
 							Expect(helper.IsJSON(stdout)).To(BeTrue())
-							helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.version", ctx.requiredVersion)
+							ctx.checkVersion(gjson.Get(stdout, "devfileData.devfile.metadata.version").String())
 						})
 					})
 				}
