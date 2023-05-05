@@ -98,13 +98,25 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "runtime")
 
 					helper.ExpectString(ctx, "? What configuration do you want change?")
+					helper.SendLine(ctx, "Add new port")
+
+					helper.ExpectString(ctx, "? Enter port number:")
+					helper.SendLine(ctx, "3000")
+
+					helper.ExpectString(ctx, "? What configuration do you want change?")
+					helper.SendLine(ctx, "Delete port \"3000\"")
+
+					helper.ExpectString(ctx, "? What configuration do you want change?")
 					helper.SendLine(ctx, "Add new environment variable")
 
 					helper.ExpectString(ctx, "? Enter new environment variable name: ")
 					helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
 
 					helper.ExpectString(ctx, "? Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
-					helper.SendLine(ctx, "8000")
+					helper.SendLine(ctx, "5858")
+
+					helper.ExpectString(ctx, "? What configuration do you want change?")
+					helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
 
 					helper.ExpectString(ctx, "? What configuration do you want change?")
 					helper.SendLine(ctx, "NOTHING - configuration is correct")
