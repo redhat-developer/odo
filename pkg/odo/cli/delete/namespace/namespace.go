@@ -78,6 +78,14 @@ func (do *DeleteOptions) Validate(ctx context.Context) (err error) {
 
 // Run contains the logic for the 'odo delete namespace' command
 func (do *DeleteOptions) Run(ctx context.Context) error {
+	log.Infof("Searching %s to delete, please wait...", do.commandName)
+	exists, err := do.clientset.ProjectClient.Exists(do.namespaceName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("No %s named %q found", do.commandName, do.namespaceName)
+	}
 	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %s %q?", do.commandName, do.namespaceName)) {
 		// Create the "spinner"
 		s := &log.Status{}
