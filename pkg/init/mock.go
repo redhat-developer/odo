@@ -54,11 +54,12 @@ func (mr *MockClientMockRecorder) DownloadDevfile(ctx, devfileLocation, destDir 
 }
 
 // DownloadStarterProject mocks base method.
-func (m *MockClient) DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error {
+func (m *MockClient) DownloadStarterProject(project *v1alpha2.StarterProject, dest string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadStarterProject", project, dest)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DownloadStarterProject indicates an expected call of DownloadStarterProject.

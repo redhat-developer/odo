@@ -226,15 +226,16 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 	}
 
 	if starterInfo != nil {
+		var containsDevfile bool
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, workingDir)
+		containsDevfile, err = o.clientset.InitClient.DownloadStarterProject(starterInfo, workingDir)
 		if err != nil {
 			return parser.DevfileObj{}, "", "", nil, nil, fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
 		}
 		starterDownloaded = true
 
 		// in case the starter project contains a devfile, read it again
-		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
+		if containsDevfile {
 			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{
 				Path:               devfilePath,
 				FlattenedDevfile:   pointer.Bool(false),

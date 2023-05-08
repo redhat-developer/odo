@@ -13,7 +13,7 @@ import (
 type Client interface {
 	PullStackFromRegistry(registry string, stack string, destDir string, options library.RegistryOptions) error
 	DownloadFileInMemory(params dfutil.HTTPRequestParams) ([]byte, error)
-	DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error
+	DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) (bool, error)
 	GetDevfileRegistries(registryName string) ([]api.Registry, error)
 	ListDevfileStacks(ctx context.Context, registryName, devfileFlag, filterFlag string, detailsFlag bool, withDevfileContent bool) (DevfileStackList, error)
 }

@@ -54,11 +54,12 @@ func (mr *MockClientMockRecorder) DownloadFileInMemory(params interface{}) *gomo
 }
 
 // DownloadStarterProject mocks base method.
-func (m *MockClient) DownloadStarterProject(starterProject *v1alpha2.StarterProject, decryptedToken, contextDir string, verbose bool) error {
+func (m *MockClient) DownloadStarterProject(starterProject *v1alpha2.StarterProject, decryptedToken, contextDir string, verbose bool) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadStarterProject", starterProject, decryptedToken, contextDir, verbose)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DownloadStarterProject indicates an expected call of DownloadStarterProject.

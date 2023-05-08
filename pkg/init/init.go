@@ -221,15 +221,15 @@ func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[s
 	return backend.SelectStarterProject(devfile, flags)
 }
 
-func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, dest string) error {
+func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, dest string) (containsDevfile bool, err error) {
 	downloadSpinner := log.Spinnerf("Downloading starter project %q", starter.Name)
-	err := o.registryClient.DownloadStarterProject(starter, "", dest, false)
+	containsDevfile, err = o.registryClient.DownloadStarterProject(starter, "", dest, false)
 	if err != nil {
 		downloadSpinner.End(false)
-		return err
+		return containsDevfile, err
 	}
 	downloadSpinner.End(true)
-	return nil
+	return containsDevfile, nil
 }
 
 // PersonalizeName calls PersonalizeName methods of the adequate backend

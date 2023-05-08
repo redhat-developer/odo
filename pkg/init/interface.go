@@ -49,7 +49,7 @@ type Client interface {
 
 	// DownloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
 	// WARNING: This will first remove all the content of dest.
-	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error
+	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) (bool, error)
 
 	// PersonalizeName returns the customized Devfile Metadata Name.
 	// Depending on the flags, it may return a name set interactively or not.
