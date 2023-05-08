@@ -101,7 +101,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, "Add new port")
 
 					helper.ExpectString(ctx, "? Enter port number:")
-					helper.SendLine(ctx, "3000")
+					helper.SendLine(ctx, "5000")
 
 					helper.ExpectString(ctx, "? What configuration do you want change?")
 					helper.SendLine(ctx, "Delete port \"3000\"")
