@@ -213,6 +213,8 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(output).To(ContainSubstring("odo init --name %s --devfile %s --devfile-registry DefaultDevfileRegistry --devfile-version %s --starter %s", componentName, devfileName, devfileVersion, starter))
 				Expect(output).To(ContainSubstring("Your new component 'my-go-app' is ready in the current directory"))
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+				helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "5000")
+				helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
 			})
 
 			It("should download correct devfile", func() {
