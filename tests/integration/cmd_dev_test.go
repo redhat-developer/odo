@@ -1148,7 +1148,7 @@ ComponentSettings:
 									Expect(err).ToNot(HaveOccurred())
 								})
 
-								When("modifying memoryLimit for container in Devfile", func() {
+								When("modifying name for container in Devfile", func() {
 									var stdout string
 									var stderr string
 									BeforeEach(func() {
@@ -1171,8 +1171,8 @@ ComponentSettings:
 											stdout = string(stdoutBytes)
 											stderr = string(stderrBytes)
 										}()
-										src := "memoryLimit: 1024Mi"
-										dst := "memoryLimit: 1023Mi"
+										src := "runtime"
+										dst := "other"
 										helper.ReplaceString("devfile.yaml", src, dst)
 										if manual {
 											devSession.PressKey('p')
@@ -1181,45 +1181,38 @@ ComponentSettings:
 									})
 
 									It(fmt.Sprintf("should react on the Devfile modification (podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
-										if podman {
-											By("warning users that odo dev needs to be restarted", func() {
-												Expect(stdout).To(ContainSubstring(
-													"Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."))
-											})
-										} else {
-											By("not warning users that odo dev needs to be restarted", func() {
-												warning := "Please restart 'odo dev'"
-												Expect(stdout).ShouldNot(ContainSubstring(warning))
-												Expect(stderr).ShouldNot(ContainSubstring(warning))
-											})
-											By("updating the pod", func() {
-												podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-												bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
-												output := string(bufferOutput)
-												Expect(output).To(ContainSubstring("1023Mi"))
-											})
+										By("not warning users that odo dev needs to be restarted", func() {
+											warning := "Please restart 'odo dev'"
+											Expect(stdout).ShouldNot(ContainSubstring(warning))
+											Expect(stderr).ShouldNot(ContainSubstring(warning))
+										})
+										By("updating the pod", func() {
+											component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+											podDef := component.GetPodDef()
+											containerName := podDef.Spec.Containers[0].Name
+											Expect(containerName).To(ContainSubstring("other"))
+										})
 
-											By("exposing the endpoint", func() {
-												Eventually(func(g Gomega) {
-													url := fmt.Sprintf("http://%s", ports[containerPort])
-													if customPortForwarding {
-														Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
-													}
-													if customAddress {
-														Expect(url).To(ContainSubstring(localAddress))
-													}
-													resp, err := http.Get(url)
-													g.Expect(err).ToNot(HaveOccurred())
-													defer resp.Body.Close()
+										By("exposing the endpoint", func() {
+											Eventually(func(g Gomega) {
+												url := fmt.Sprintf("http://%s", ports[containerPort])
+												if customPortForwarding {
+													Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
+												}
+												if customAddress {
+													Expect(url).To(ContainSubstring(localAddress))
+												}
+												resp, err := http.Get(url)
+												g.Expect(err).ToNot(HaveOccurred())
+												defer resp.Body.Close()
 
-													body, _ := io.ReadAll(resp.Body)
-													for _, i := range []string{"Hello from Node.js Starter Application!"} {
-														g.Expect(string(body)).To(ContainSubstring(i))
-													}
-													g.Expect(err).ToNot(HaveOccurred())
-												}).WithPolling(1 * time.Second).WithTimeout(20 * time.Second).Should(Succeed())
-											})
-										}
+												body, _ := io.ReadAll(resp.Body)
+												for _, i := range []string{"Hello from Node.js Starter Application!"} {
+													g.Expect(string(body)).To(ContainSubstring(i))
+												}
+												g.Expect(err).ToNot(HaveOccurred())
+											}).WithPolling(1 * time.Second).WithTimeout(20 * time.Second).Should(Succeed())
+										})
 									})
 								})
 							})
@@ -1327,9 +1320,6 @@ ComponentSettings:
 
 									By("not warning users that odo dev needs to be restarted because the Devfile has not changed", func() {
 										warning := "Please restart 'odo dev'"
-										if podman {
-											warning = "Detected changes in the Devfile, but this is not supported yet on Podman. Please restart 'odo dev' for such changes to be applied."
-										}
 										Expect(stdout).ShouldNot(ContainSubstring(warning))
 										Expect(stderr).ShouldNot(ContainSubstring(warning))
 									})
