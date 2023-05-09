@@ -1423,6 +1423,7 @@ func Test_createPodFromComponent(t *testing.T) {
 				tt.args.customForwardedPorts,
 				[]int{20001, 20002, 20003, 20004, 20005},
 				tt.args.customAddress,
+				devfileObj,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createPodFromComponent() error = %v, wantErr %v", err, tt.wantErr)
