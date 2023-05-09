@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/log"
 	"strconv"
 	"strings"
 
@@ -35,6 +36,8 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 
 // SelectDevfile calls thz Alizer to detect the devfile and asks for confirmation to the user
 func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DetectionResult, err error) {
+	spinner := log.Spinnerf("Determining a Devfile for the current directory")
+	defer spinner.End(err == nil)
 	selected, defaultVersion, registry, err := o.alizerClient.DetectFramework(ctx, dir)
 	if err != nil {
 		return nil, err

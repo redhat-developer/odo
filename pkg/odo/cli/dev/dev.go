@@ -264,6 +264,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 }
 
 func (o *DevOptions) HandleSignal() error {
+	if o.cancel == nil {
+		klog.V(1).Infof("Returning since the cancel is nil; it must be user interrupt while running preInit.")
+		return nil
+	}
 	o.cancel()
 	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
 	// wait for the cleanup to finish and let the main thread finish instead of signal handler go routine from runnable
