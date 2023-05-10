@@ -109,7 +109,10 @@ echo "$@"
 			devSession, _, stderrBytes, _, err = helper.StartDevMode(helper.DevSessionOpts{
 				RunOnPodman: false,
 				CmdlineArgs: []string{"-v", "3"},
-				EnvVars:     []string{"PODMAN_CMD=" + delayer},
+				EnvVars: []string{
+					"PODMAN_CMD=" + delayer,
+					"PODMAN_CMD_INIT_TIMEOUT=1s",
+				},
 			})
 			Expect(err).ShouldNot(HaveOccurred())
 			defer devSession.Kill()
