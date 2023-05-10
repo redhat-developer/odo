@@ -33,7 +33,7 @@ func NewPodmanCli(ctx context.Context) (*PodmanCli, error) {
 		containerRunGlobalExtraArgs: envcontext.GetEnvConfig(ctx).OdoContainerBackendGlobalArgs,
 		containerRunExtraArgs:       envcontext.GetEnvConfig(ctx).OdoContainerRunArgs,
 	}
-	version, err := cli.Version()
+	version, err := cli.Version(ctx)
 	if err != nil {
 		return nil, err
 	}

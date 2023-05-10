@@ -150,7 +150,7 @@ func setPlatformCluster(ctx context.Context, client kclient.ClientInterface) {
 
 func setPlatformPodman(ctx context.Context, client podman.Client) {
 	setContextProperty(ctx, Platform, "podman")
-	version, err := client.Version()
+	version, err := client.Version(ctx)
 	if err != nil {
 		klog.V(3).Info(fmt.Errorf("unable to get podman version: %w", err))
 		return
