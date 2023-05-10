@@ -30,10 +30,10 @@ type SystemVersionReport struct {
 // Version returns the version of the Podman client.
 func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 	// Because Version is used at the very beginning of odo, when resolving and injecting dependencies (for commands that might require the Podman client),
-	// it is expected to return in a timely manny (hence this timeout of 1 second).
+	// it is expected to return in a timely manner (hence this configurable timeout).
 	// This is to avoid situations like the one described in https://github.com/redhat-developer/odo/issues/6575
-	// (where a podman that takes too long to respond affects the "odo dev" command, even if the user did not intend to use the Podman platform).
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 1*time.Second)
+	// (where a podman CLI that takes too long to respond affects the "odo dev" command, even if the user did not intend to use the Podman platform).
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, o.podmanCmdInitTimeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctxWithTimeout, o.podmanCmd, "version", "--format", "json")
@@ -84,7 +84,7 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 		if ctxErr != nil {
 			msg := "error"
 			if errors.Is(ctxErr, context.DeadlineExceeded) {
-				msg = "timeout"
+				msg = fmt.Sprintf("timeout (%s)", o.podmanCmdInitTimeout.Round(time.Second).String())
 			}
 			wErr = fmt.Errorf("%s while waiting for Podman version: %s: %w", msg, ctxErr, wErr)
 		}

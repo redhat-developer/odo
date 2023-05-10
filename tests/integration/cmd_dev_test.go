@@ -114,7 +114,7 @@ echo "$@"
 			Expect(err).ShouldNot(HaveOccurred())
 			defer devSession.Kill()
 
-			Expect(string(stderrBytes)).Should(ContainSubstring("timeout while waiting for Podman version"))
+			Expect(string(stderrBytes)).Should(MatchRegexp("timeout \\([^()]+\\) while waiting for Podman version"))
 		})
 
 		When("using a default namespace", func() {
