@@ -13,6 +13,7 @@ package clientset
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
@@ -182,6 +183,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
 				return nil, err
 			}
+			klog.V(3).Infof("no Kubernetes client initialized: %v", err)
 			dep.KubernetesClient = nil
 		}
 
@@ -193,6 +195,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 			if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
 				return nil, podman.NewPodmanNotFoundError(err)
 			}
+			klog.V(3).Infof("no Podman client initialized: %v", err)
 			dep.PodmanClient = nil
 		}
 	}
