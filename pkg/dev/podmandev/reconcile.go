@@ -50,7 +50,7 @@ func (o *DevClient) reconcile(
 		return err
 	}
 
-	pod, fwPorts, err := o.deployPod(ctx, options)
+	pod, fwPorts, err := o.deployPod(ctx, options, devfileObj)
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj
 }
 
 // deployPod deploys the component as a Pod in podman
-func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*corev1.Pod, []api.ForwardedPort, error) {
+func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions, devfileObj parser.DevfileObj) (*corev1.Pod, []api.ForwardedPort, error) {
 
 	spinner := log.Spinner("Deploying pod")
 	defer spinner.End(false)
@@ -213,6 +213,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		options.CustomForwardedPorts,
 		o.usedPorts,
 		options.CustomAddress,
+		devfileObj,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -223,6 +224,14 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions) (*c
 		klog.V(4).Info("pod is already deployed as required")
 		spinner.End(true)
 		return o.deployedPod, fwPorts, nil
+	}
+
+	// Delete previous volumes and pod, if running
+	if o.deployedPod != nil {
+		err = o.podmanClient.CleanupPodResources(o.deployedPod)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	err = o.checkVolumesFree(pod)

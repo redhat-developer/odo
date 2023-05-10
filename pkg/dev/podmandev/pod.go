@@ -43,15 +43,15 @@ func createPodFromComponent(
 	customForwardedPorts []api.ForwardedPort,
 	usedPorts []int,
 	customAddress string,
+	devfileObj parser.DevfileObj,
 ) (*corev1.Pod, []api.ForwardedPort, error) {
 	var (
 		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
 		workingDir    = odocontext.GetWorkingDirectory(ctx)
 	)
 
-	podTemplate, err := generator.GetPodTemplateSpec(*devfileObj, generator.PodTemplateParams{})
+	podTemplate, err := generator.GetPodTemplateSpec(devfileObj, generator.PodTemplateParams{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -61,7 +61,7 @@ func createPodFromComponent(
 	}
 
 	var fwPorts []api.ForwardedPort
-	fwPorts, err = getPortMapping(*devfileObj, debug, randomPorts, usedPorts, customForwardedPorts, customAddress)
+	fwPorts, err = getPortMapping(devfileObj, debug, randomPorts, usedPorts, customForwardedPorts, customAddress)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,7 +88,7 @@ func createPodFromComponent(
 		},
 	}
 
-	devfileVolumes, err := storage.ListStorage(*devfileObj)
+	devfileVolumes, err := storage.ListStorage(devfileObj)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -108,7 +108,7 @@ func createPodFromComponent(
 		}
 	}
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(*devfileObj, containers, buildCommand, runCommand, debugCommand)
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(devfileObj, containers, buildCommand, runCommand, debugCommand)
 	if err != nil {
 		return nil, nil, err
 	}
