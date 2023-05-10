@@ -228,15 +228,15 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions, dev
 
 	// Delete previous volumes and pod, if running
 	if o.deployedPod != nil {
-		err = o.podmanClient.CleanupPodResources(o.deployedPod)
+		err = o.podmanClient.CleanupPodResources(o.deployedPod, false)
 		if err != nil {
 			return nil, nil, err
 		}
-	}
-
-	err = o.checkVolumesFree(pod)
-	if err != nil {
-		return nil, nil, err
+	} else {
+		err = o.checkVolumesFree(pod)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	err = o.podmanClient.PlayKube(pod)

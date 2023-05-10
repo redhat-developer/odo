@@ -206,7 +206,7 @@ func (o *PodmanCli) VolumeLs() (map[string]bool, error) {
 	return SplitLinesAsSet(string(out)), nil
 }
 
-func (o *PodmanCli) CleanupPodResources(pod *corev1.Pod) error {
+func (o *PodmanCli) CleanupPodResources(pod *corev1.Pod, cleanupVolumes bool) error {
 	err := o.PodStop(pod.GetName())
 	if err != nil {
 		return err
@@ -214,6 +214,10 @@ func (o *PodmanCli) CleanupPodResources(pod *corev1.Pod) error {
 	err = o.PodRm(pod.GetName())
 	if err != nil {
 		return err
+	}
+
+	if !cleanupVolumes {
+		return nil
 	}
 
 	for _, volume := range pod.Spec.Volumes {

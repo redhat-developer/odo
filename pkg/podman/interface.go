@@ -32,7 +32,7 @@ type Client interface {
 	VolumeRm(volumeName string) error
 
 	// CleanupPodResources stops and removes a pod and its associated resources (volumes)
-	CleanupPodResources(pod *corev1.Pod) error
+	CleanupPodResources(pod *corev1.Pod, cleanVolumes bool) error
 
 	ListAllComponents() ([]api.ComponentAbstract, error)
 

@@ -199,7 +199,7 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 		if len(podmanResources) > 0 {
 			spinner := log.Spinnerf("Deleting resources from podman")
 			for _, pod := range podmanResources {
-				err = o.clientset.PodmanClient.CleanupPodResources(pod)
+				err = o.clientset.PodmanClient.CleanupPodResources(pod, true)
 				if err != nil {
 					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
@@ -359,7 +359,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 				_ = isPodmanInnerLoopDeployed
 			}
 			for _, pod := range podmanPods {
-				err = o.clientset.PodmanClient.CleanupPodResources(pod)
+				err = o.clientset.PodmanClient.CleanupPodResources(pod, true)
 				if err != nil {
 					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
