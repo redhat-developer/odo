@@ -50,10 +50,6 @@ Podman is natively not able to port-forward to programs listening on localhost. 
 - you can change your application to listen on `0.0.0.0`. This will be necessary for the ports giving access to the application or, in Production, this port would not be available (this port will most probably be exposed through an Ingress or a Route in Production, and these methods need the port to be bound to `0.0.0.0`),
 - you can keep the port bound to `localhost`. This is the best choice for the Debug port, to restrict access to this Debug port. In this case, you can use the flag `--forward-localhost` when running `odo dev` on Podman. This way, you keep the Debug port secure on cluster.
 
-## Pod not updated when Devfile changes
-
-When running `odo dev` on cluster, if you make changes to the Devfile affecting the definition of the deployed Pod (for example the memory or CPU requests or limits), the Pod will be recreated with its new definition. This behaviour is not supported yet for Podman.
-
 ## Pre-Stop events not supported
 
 Pre-Stop events defined in the Devfile are not triggered when running `odo dev` on Podman.

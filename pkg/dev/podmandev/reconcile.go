@@ -226,7 +226,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions, dev
 		return o.deployedPod, fwPorts, nil
 	}
 
-	// Delete previous volumes and pod, if running
+	// Delete previous pod, if running
 	if o.deployedPod != nil {
 		err = o.podmanClient.CleanupPodResources(o.deployedPod, false)
 		if err != nil {
