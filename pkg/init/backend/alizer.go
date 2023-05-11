@@ -58,6 +58,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 			if err != nil {
 				return nil, err
 			}
+			spinner.End(true)
 			appPortsAsString := make([]string, 0, len(appPorts))
 			for _, p := range appPorts {
 				appPortsAsString = append(appPortsAsString, strconv.Itoa(p))
