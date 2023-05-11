@@ -800,7 +800,7 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 				t.Errorf("DownloadStarterProject() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
-			if tt.wantContainsDevfile && !gotContainsDevfile {
+			if tt.wantContainsDevfile != gotContainsDevfile {
 				t.Errorf("DownloadStarterProject() containsDevfile = %v, want = %v", gotContainsDevfile, tt.wantContainsDevfile)
 				return
 			}
