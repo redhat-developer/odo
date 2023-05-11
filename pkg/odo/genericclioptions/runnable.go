@@ -91,6 +91,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 			cmd.SilenceErrors = true
 			cmd.SilenceUsage = true
 		}
+		cancelFunc()
 	}()
 
 	userConfig, _ := preference.NewClient(ctx)
