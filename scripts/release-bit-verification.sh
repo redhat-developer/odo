@@ -73,6 +73,6 @@ git clone $REPO_URL odo && cd $WORKING_DIR/odo && git checkout "v$VERSION"
 make test-e2e
 
 # Cleanup
-rm -rf /tmp/odo /tmp/usr
+rm -rf "$WORKING_DIR"
 
 
