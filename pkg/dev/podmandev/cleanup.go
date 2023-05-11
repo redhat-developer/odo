@@ -11,5 +11,5 @@ func (o *DevClient) CleanupResources(ctx context.Context, out io.Writer) error {
 	if o.deployedPod == nil {
 		return nil
 	}
-	return o.podmanClient.CleanupPodResources(o.deployedPod)
+	return o.podmanClient.CleanupPodResources(o.deployedPod, true)
 }

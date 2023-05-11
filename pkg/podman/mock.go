@@ -39,17 +39,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CleanupPodResources mocks base method.
-func (m *MockClient) CleanupPodResources(pod *v1.Pod) error {
+func (m *MockClient) CleanupPodResources(pod *v1.Pod, cleanVolumes bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CleanupPodResources", pod)
+	ret := m.ctrl.Call(m, "CleanupPodResources", pod, cleanVolumes)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CleanupPodResources indicates an expected call of CleanupPodResources.
-func (mr *MockClientMockRecorder) CleanupPodResources(pod interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CleanupPodResources(pod, cleanVolumes interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupPodResources", reflect.TypeOf((*MockClient)(nil).CleanupPodResources), pod)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupPodResources", reflect.TypeOf((*MockClient)(nil).CleanupPodResources), pod, cleanVolumes)
 }
 
 // ExecCMDInContainer mocks base method.

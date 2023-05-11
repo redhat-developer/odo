@@ -211,7 +211,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
 					client := podman.NewMockClient(ctrl)
-					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					client.EXPECT().CleanupPodResources(&pod1, true).Times(1)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -233,7 +233,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
 					client := podman.NewMockClient(ctrl)
-					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					client.EXPECT().CleanupPodResources(&pod1, true).Times(1)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -255,7 +255,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
 					client := podman.NewMockClient(ctrl)
-					client.EXPECT().CleanupPodResources(&pod1).Times(0)
+					client.EXPECT().CleanupPodResources(&pod1, true).Times(0)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -278,7 +278,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
 					client := podman.NewMockClient(ctrl)
-					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					client.EXPECT().CleanupPodResources(&pod1, true).Times(1)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -309,7 +309,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
 					client := podman.NewMockClient(ctrl)
-					client.EXPECT().CleanupPodResources(&pod1).Times(1)
+					client.EXPECT().CleanupPodResources(&pod1, true).Times(1)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -344,7 +344,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				podmanClient: func(ctrl *gomock.Controller) podman.Client {
 					client := podman.NewMockClient(ctrl)
-					client.EXPECT().CleanupPodResources(&pod1).Times(0)
+					client.EXPECT().CleanupPodResources(&pod1, true).Times(0)
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
