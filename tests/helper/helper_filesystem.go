@@ -238,8 +238,15 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 // path is the path to the required file
 // fileContent is the content to be written to the given file
 func CreateFileWithContent(path string, fileContent string) error {
+	return CreateFileWithContentAndPerm(path, fileContent, 0600)
+}
+
+// CreateFileWithContentAndPerm creates a file at the given path using the given file permissions, and writes the given content.
+// path is the path to the required file
+// fileContent is the content to be written to the given file
+func CreateFileWithContentAndPerm(path string, fileContent string, perm os.FileMode) error {
 	// create and open file if not exists
-	var file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
+	var file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, perm)
 	if err != nil {
 		return err
 	}

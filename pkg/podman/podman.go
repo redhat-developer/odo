@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/platform"
@@ -18,6 +19,7 @@ import (
 
 type PodmanCli struct {
 	podmanCmd                   string
+	podmanCmdInitTimeout        time.Duration
 	containerRunGlobalExtraArgs []string
 	containerRunExtraArgs       []string
 }
@@ -30,10 +32,11 @@ func NewPodmanCli(ctx context.Context) (*PodmanCli, error) {
 	// Check if podman is available in the system
 	cli := &PodmanCli{
 		podmanCmd:                   envcontext.GetEnvConfig(ctx).PodmanCmd,
+		podmanCmdInitTimeout:        envcontext.GetEnvConfig(ctx).PodmanCmdInitTimeout,
 		containerRunGlobalExtraArgs: envcontext.GetEnvConfig(ctx).OdoContainerBackendGlobalArgs,
 		containerRunExtraArgs:       envcontext.GetEnvConfig(ctx).OdoContainerRunArgs,
 	}
-	version, err := cli.Version()
+	version, err := cli.Version(ctx)
 	if err != nil {
 		return nil, err
 	}

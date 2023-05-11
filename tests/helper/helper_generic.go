@@ -214,6 +214,18 @@ func CommonBeforeEach() CommonVar {
 		os.Setenv("KUBECONFIG", kubeconfig.Name())
 
 		if NeedsPodman(specLabels) {
+			originalPodmanCmdInitTimeout, present := os.LookupEnv("PODMAN_CMD_INIT_TIMEOUT")
+			DeferCleanup(func() {
+				var resetErr error
+				if present {
+					resetErr = os.Setenv("PODMAN_CMD_INIT_TIMEOUT", originalPodmanCmdInitTimeout)
+				} else {
+					resetErr = os.Unsetenv("PODMAN_CMD_INIT_TIMEOUT")
+				}
+				Expect(resetErr).ShouldNot(HaveOccurred())
+			})
+			Expect(os.Setenv("PODMAN_CMD_INIT_TIMEOUT", "10s")).ShouldNot(HaveOccurred())
+
 			// Generate a dedicated containers.conf with a specific namespace
 			GenerateAndSetContainersConf(commonVar.ConfigDir)
 		}

@@ -3,8 +3,10 @@ package integration
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -80,6 +82,44 @@ var _ = Describe("odo dev command tests", func() {
 			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo").ShouldFail().Err()
 			Expect(errOut).To(ContainSubstring("unable to access podman"))
 		})
+
+		It("should start on cluster even if Podman client takes long to initialize", func() {
+			if runtime.GOOS == "windows" {
+				Skip("skipped on Windows as it requires Unix permissions")
+			}
+			_, err := os.Stat("/bin/bash")
+			if errors.Is(err, fs.ErrNotExist) {
+				Skip("skipped because bash executable not found")
+			}
+
+			// odo dev on cluster should not wait for the Podman client to initialize properly, if this client takes very long.
+			// See https://github.com/redhat-developer/odo/issues/6575.
+			// StartDevMode will time out if Podman client takes too long to initialize.
+			delayer := filepath.Join(commonVar.Context, "podman-cmd-delayer")
+			err = helper.CreateFileWithContentAndPerm(delayer, `#!/bin/bash
+
+echo Delaying command execution... >&2
+sleep 7200
+echo "$@"
+`, 0755)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			var devSession helper.DevSession
+			var stderrBytes []byte
+			devSession, _, stderrBytes, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				RunOnPodman: false,
+				CmdlineArgs: []string{"-v", "3"},
+				EnvVars: []string{
+					"PODMAN_CMD=" + delayer,
+					"PODMAN_CMD_INIT_TIMEOUT=1s",
+				},
+			})
+			Expect(err).ShouldNot(HaveOccurred())
+			defer devSession.Kill()
+
+			Expect(string(stderrBytes)).Should(MatchRegexp("timeout \\([^()]+\\) while waiting for Podman version"))
+		})
+
 		When("using a default namespace", func() {
 			BeforeEach(func() {
 				commonVar.CliRunner.SetProject("default")

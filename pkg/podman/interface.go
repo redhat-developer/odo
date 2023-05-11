@@ -1,6 +1,8 @@
 package podman
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -36,5 +38,5 @@ type Client interface {
 
 	ListAllComponents() ([]api.ComponentAbstract, error)
 
-	Version() (SystemVersionReport, error)
+	Version(ctx context.Context) (SystemVersionReport, error)
 }

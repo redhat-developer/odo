@@ -229,18 +229,18 @@ func (mr *MockClientMockRecorder) PodStop(podname interface{}) *gomock.Call {
 }
 
 // Version mocks base method.
-func (m *MockClient) Version() (SystemVersionReport, error) {
+func (m *MockClient) Version(ctx context.Context) (SystemVersionReport, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Version")
+	ret := m.ctrl.Call(m, "Version", ctx)
 	ret0, _ := ret[0].(SystemVersionReport)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Version indicates an expected call of Version.
-func (mr *MockClientMockRecorder) Version() *gomock.Call {
+func (mr *MockClientMockRecorder) Version(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockClient)(nil).Version))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockClient)(nil).Version), ctx)
 }
 
 // VolumeLs mocks base method.
