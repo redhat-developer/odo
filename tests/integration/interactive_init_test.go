@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -81,67 +82,79 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
-			It("should allow for personalizing configurations", func() {
-				command := []string{"odo", "init"}
-				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
-
-					helper.ExpectString(ctx, "Select language")
-					helper.SendLine(ctx, "Javascript")
-
-					helper.ExpectString(ctx, "Select project type")
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-					helper.ExpectString(ctx, "runtime")
-					helper.SendLine(ctx, "runtime")
-
-					helper.ExpectString(ctx, "What configuration do you want change")
-					helper.SendLine(ctx, "Add new port")
-
-					helper.ExpectString(ctx, "Enter port number:")
-					helper.SendLine(ctx, "5000")
-
-					helper.ExpectString(ctx, "What configuration do you want change")
-					helper.SendLine(ctx, "Delete port \"3000\"")
-
-					helper.ExpectString(ctx, "What configuration do you want change")
-					helper.SendLine(ctx, "Add new environment variable")
-
-					helper.ExpectString(ctx, "Enter new environment variable name: ")
-					helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
-
-					helper.ExpectString(ctx, "Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
-					helper.SendLine(ctx, "5858")
-
-					helper.ExpectString(ctx, "What configuration do you want change")
-					helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
-
-					helper.ExpectString(ctx, "What configuration do you want change")
-					helper.SendLine(ctx, "NOTHING - configuration is correct")
-
-					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Which starter project do you want to use")
-					helper.SendLine(ctx, "nodejs-starter")
-
-					helper.ExpectString(ctx, "Enter component name:")
-					helper.SendLine(ctx, "my-nodejs-app")
-
-					helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
-
+			Context("personalizing Devfile configuration", func() {
+				var hasMultipleVersions bool
+				BeforeEach(func() {
+					out := helper.Cmd("odo", "registry", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
+					// Version pattern has always been in the form of X.X.X
+					vMatch := regexp.MustCompile(`(\d.\d.\d)`)
+					if matches := vMatch.FindAll([]byte(out), -1); len(matches) > 1 {
+						hasMultipleVersions = true
+					}
 				})
-				Expect(err).To(BeNil())
-				Expect(output).To(ContainSubstring("odo init --name my-nodejs-app --devfile nodejs --devfile-registry DefaultDevfileRegistry --devfile-version 2.1.1 --starter nodejs-starter"))
-				Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
-				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
-				helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "5000")
-				helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
-				helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "DEBUG_PROJECT_PORT")
-				helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "DEBUG_PORT")
+				It("should allow for personalizing configurations", func() {
+					command := []string{"odo", "init"}
+					output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+						helper.ExpectString(ctx, "Select language")
+						helper.SendLine(ctx, "Javascript")
+
+						helper.ExpectString(ctx, "Select project type")
+						helper.SendLine(ctx, "")
+
+						if hasMultipleVersions {
+							helper.ExpectString(ctx, "Select version")
+							helper.SendLine(ctx, "")
+						}
+
+						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+						helper.ExpectString(ctx, "runtime")
+						helper.SendLine(ctx, "runtime")
+
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Add new port")
+
+						helper.ExpectString(ctx, "Enter port number:")
+						helper.SendLine(ctx, "5000")
+
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Delete port \"3000\"")
+
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Add new environment variable")
+
+						helper.ExpectString(ctx, "Enter new environment variable name: ")
+						helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
+
+						helper.ExpectString(ctx, "Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
+						helper.SendLine(ctx, "5858")
+
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
+
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "NOTHING - configuration is correct")
+
+						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+						helper.SendLine(ctx, "")
+
+						helper.ExpectString(ctx, "Which starter project do you want to use")
+						helper.SendLine(ctx, "nodejs-starter")
+
+						helper.ExpectString(ctx, "Enter component name:")
+						helper.SendLine(ctx, "my-nodejs-app")
+
+						helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
+
+					})
+					Expect(err).To(BeNil())
+					Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
+					Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+					helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "5000")
+					helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
+					helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "DEBUG_PROJECT_PORT")
+					helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "DEBUG_PORT")
+				})
 			})
 
 			It("should ask to re-enter the component name when an invalid value is passed", func() {
