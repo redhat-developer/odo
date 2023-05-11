@@ -21,6 +21,7 @@ jobs:
     - name: pre-config
       run: |
         echo "${{ secrets.NFSKEY }}" > ./ssh_key
+        chmod 600 ./ssh_key
     - name: update name from Stageing to production
       run: |
         sed -i 's/odo-stage/odo-tests/g' scripts/ansible/Cluster/vars.yml

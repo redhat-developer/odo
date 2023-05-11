@@ -22,6 +22,7 @@ jobs:
     - name: pre-config
       run: |
         echo "${{ secrets.NFSKEY }}" > ./ssh_key
+        chmod 600 ./ssh_key
     - name: Create Stageing Cluster
       uses: dawidd6/action-ansible-playbook@v2
       env:
