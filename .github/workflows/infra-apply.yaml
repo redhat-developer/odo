@@ -1,0 +1,36 @@
+name: Infra update
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/ansible
+      - '!scripts/ansible/Cluster/kubernetes-cluster/manual-changes/Readme.md'
+      - '!scripts/ansible/Cluster/openshift-cluster/manual-changes/Readme.md'
+      - '!scripts/ansible/Cluster/NFS-vm/manual-changes/Readme.md'
+      - '!scripts/ansible/Cluster/windows-openshift-cluster/manual-changes/Readme.md'
+
+jobs:
+  kubernetes-infra-stage-test:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+          
+    - name: pre-config
+      run: |
+        echo "${{ secrets.NFSKEY }}" > ./ssh_key
+        chmod 600 ./ssh_key
+    - name: update name from Stageing to production
+      run: |
+        sed -i 's/odo-stage/odo-tests/g' scripts/ansible/Cluster/vars.yml
+    - name: Create Stageing Cluster
+      uses: dawidd6/action-ansible-playbook@v2
+      env:
+        IC_API_KEY: ${{ secrets.IC_API_KEY }}
+        IC_REGION: 'eu-de'
+        SSHKEY: './ssh_key'
+      with:
+        playbook: scripts/ansible/create-infra.yaml
+        requirements: scripts/ansible/requirements.yaml

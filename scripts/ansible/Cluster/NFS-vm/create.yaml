@@ -1,5 +1,5 @@
 ---
-- name: Create OpenShift Cluster on IBM Cloud
+- name: Create NFS vsi for Clusters on IBM Cloud
   hosts: localhost
   collections:
    - ibm.cloudcollection
@@ -86,16 +86,17 @@
         image_dict: "{{ images_list.resource.images |
                         items2dict(key_name='name', value_name='id') }}"
 
-    - name: Configure SSH Key
-      ibm_is_ssh_key:
-        name: "ansible-ssh-key"
-        public_key: "{{ ssh_public_key }}"
-      register: ssh_key_create_output
+# uncomment if "automation-key" is deleted and re run the playbook to create sshkey
+    # - name: Configure SSH Key
+    #   ibm_is_ssh_key:
+    #     name: "{{ name_prefix }}-key"
+    #     public_key: "{{ ssh_public_key }}"
+    #   register: ssh_key_create_output
 
-    - name: Save SSH Key as fact
-      set_fact:
-        cacheable: True
-        ssh_key: "{{ ssh_key_create_output.resource }}"
+    # - name: Save SSH Key id as fact
+    #   set_fact:
+    #     cacheable: True
+    #     ssh_key_id: "{{ ssh_key_create_output.resource.id }}"
 
     - name: Configure VSI for NFS server
       ibm_is_instance:
@@ -105,7 +106,7 @@
         profile: "bx2-2x8"
         image: "{{ image_dict[nfs_image] }}"
         keys:
-            - "{{ ssh_key.id }}"
+            - "{{ ssh_key_id }}"
         primary_network_interface:
           - subnet: "{{ subnet.id }}"
         zone: "{{ cluster_zone }}"
@@ -129,62 +130,22 @@
         cacheable: True
         nfsip: "{{ nfsip_create_output.resource }}"
 
+    - name: get ssh_key from enviroment variable
+      set_fact:
+        cacheable: True
+        ssh_login_key: "'{{ lookup('ansible.builtin.env', 'SSHKEY') }}'"
+
     - name: Add NFS to Ansible inventory
       add_host:
         name: "{{ nfsip.address }}"
         ansible_user: root
         groups: new_vsi
-        ansible_ssh_extra_args: -o StrictHostKeyChecking=no
-
-    - name: Configure Cloud Object Storage
-      ibm_resource_instance:
-        name: "{{ name_prefix }}-cos"
-        resource_group_id: "{{ rg.id }}"
-        service: "cloud-object-storage"
-        plan: "standard"
-        location: "global"
-        state: available
-      register: cos_create_output
-
-    - name: Save Cloud ObjectStorage Subnet as fact
-      set_fact:
-        cacheable: True
-        cos: "{{ cos_create_output.resource }}"
-      when: cos_create_output.rc==0
-
-    - name: Configure cluster
-      ibm_container_vpc_cluster:
-        name: "{{ name_prefix }}-cluster"
-        resource_group_id: "{{ rg.id }}"
-        kube_version: "{{ kube_version }}"
-        flavor: "{{ node_flavor }}"
-        worker_count: "{{ workers }}"
-        vpc_id: "{{ vpc.id }}"
-        cos_instance_crn: "{{ cos.crn }}"
-        zones: 
-        - {
-          subnet_id: "{{ subnet.id }}",
-          name: "{{ cluster_zone }}"
-        }
-        state: available
-      register: cluster_create_output
-
-    - name: Save Cluster as fact
-      set_fact:
-        cacheable: True
-        cluster: "{{ cluster_create_output.resource }}"
-      when: cluster_create_output.rc==0
-
-    - local_action:
-        module: copy 
-        content: "{{ cluster.id }}"
-        dest: "{{ cluster_id_file }}"
+        ansible_ssh_extra_args: -o StrictHostKeyChecking=no -i {{ ssh_login_key  }}
 
     - local_action:
         module: copy 
         content: "{{ nfs.primary_network_interface[0].primary_ipv4_address }}"
         dest: "{{ nfs_ip_file }}"
-
 
 - name: Check Ansible connection to new NFS server
   hosts: new_vsi

@@ -1,0 +1,7 @@
+---
+- name: Delete Infrastructure on IBM Cloud
+  hosts: localhost
+
+- name: Play to delete Clusters
+  ansible.builtin.import_playbook: ./Cluster/delete-clusters.yaml
+

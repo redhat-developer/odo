@@ -1,0 +1,52 @@
+name: odo-infra-stage-test
+on:
+  push:
+    paths:
+      - scripts/ansible
+      - '!scripts/ansible/Cluster/kubernetes-cluster/manual-changes/Readme.md'
+      - '!scripts/ansible/Cluster/openshift-cluster/manual-changes/Readme.md'
+      - '!scripts/ansible/Cluster/NFS-vm/manual-changes/Readme.md'
+      - '!scripts/ansible/Cluster/windows-openshift-cluster/manual-changes/Readme.md'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  kubernetes-infra-stage-test:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: pre-config
+      run: |
+        echo "${{ secrets.NFSKEY }}" > ./ssh_key
+        chmod 600 ./ssh_key
+    - name: Create Stageing Cluster
+      uses: dawidd6/action-ansible-playbook@v2
+      env:
+        IC_API_KEY: ${{ secrets.IC_API_KEY }}
+        IC_REGION: 'eu-de'
+        SSHKEY: './ssh_key'
+      with:
+        playbook: scripts/ansible/create-infra.yaml
+        requirements: scripts/ansible/requirements.yaml
+
+    - name: login to the three cluster 
+      env:
+        IC_API_KEY: ${{ secrets.IC_API_KEY }}
+        IC_REGION: 'eu-de'
+      run: |
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        ibmcloud login --apikey $IC_API_KEY  -r $IC_REGION
+        ibmcloud plugin install ks
+        CLUSTER=`ibmcloud ks cluster get -c odo-test-kubernetes-cluster --output json `
+        ID=$(echo $CLUSTER | jq -r '.id')
+        ibmcloud ks cluster config --cluster $ID --admin
+        CLUSTER=`ibmcloud ks cluster get -c odo-test-kubernetes-cluster --output json `
+        ID=$(echo $CLUSTER | jq -r '.id')
+        ibmcloud ks cluster config --cluster $ID --admin
+        CLUSTER=`ibmcloud ks cluster get -c odo-test-kubernetes-cluster --output json `
+        ID=$(echo $CLUSTER | jq -r '.id')
+        ibmcloud ks cluster config --cluster $ID --admin

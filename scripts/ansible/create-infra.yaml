@@ -1,0 +1,7 @@
+---
+- name: Create Infrastructure on IBM Cloud
+  hosts: localhost
+
+- name: Play to create Clusters
+  ansible.builtin.import_playbook: ./Cluster/create-clusters.yaml
+

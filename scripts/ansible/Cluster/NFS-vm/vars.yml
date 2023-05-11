@@ -1,0 +1,6 @@
+---
+total_ipv4_address_count: 256
+nfs_ip_file: /tmp/nfs_ip_ibmcloud
+ssh_public_key: AAAAB3NzaC1yc2EAAAADAQABAAABAQDO/TwSo9O3qT3wwZ0vH2HNlhhjyIlp6/MGZuEJOJFTw0eJa7nFzOmX4XcLZjj6nruaRQlTKpX5IlIaY+OKg8xDj/StxIyRkHHmhRoqkYty22480MTXzr5aCj1ABk3x0TTs0M3g7h+Xn/QttKIrPudic6U/+8gzwNLwiXKgecPb4nRW9lM44QudxXXZw3DPLg4r7qW0Vyhm5VGNGQHiZ8MAf+8GTf6KPi4XunBjpTKPGf2NMpXMU7U1+TJn+l1g3aRnhc+DphV86C0ELL7PAYHcXvo6AmWPCBbA7eNwz3/OiQI0rNwgb4YmS+MS4YZjSgWnUSk9dUD7bxDH9ID7WpS1
+nfs_image: ibm-ubuntu-20-04-2-minimal-amd64-1
+ssh_key_id: r010-257716c0-8094-4ade-86ea-3147f7248b23  # if this key is deleted from console uncomment and run the script to create a key from ssh_public_key
