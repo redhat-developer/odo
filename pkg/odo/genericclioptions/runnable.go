@@ -52,7 +52,7 @@ type Runnable interface {
 }
 
 type SignalHandler interface {
-	HandleSignal() error
+	HandleSignal(ctx context.Context, cancelFunc context.CancelFunc) error
 }
 
 type Cleanuper interface {
@@ -81,9 +81,9 @@ const (
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	var (
-		err       error
-		startTime = time.Now()
-		ctx       = cmd.Context()
+		err             error
+		startTime       = time.Now()
+		ctx, cancelFunc = context.WithCancel(cmd.Context())
 	)
 
 	defer func() {
@@ -174,7 +174,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignal os.Signal) {
 		err = fmt.Errorf("user interrupted the command execution: %w", terminal.InterruptErr)
 		if handler, ok := o.(SignalHandler); ok {
-			err = handler.HandleSignal()
+			err = handler.HandleSignal(ctx, cancelFunc)
 			if err != nil {
 				log.Errorf("error handling interrupt signal : %v", err)
 			}
