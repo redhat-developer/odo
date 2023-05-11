@@ -18,7 +18,7 @@ shout() {
 # Check SHASUM for all the binary files and there should be no difference
 
 #For erroring out in case of error
-set -e
+set -eo pipefail
 
 # Create a Temp directory
 WORKING_DIR=$(mktemp -d)
