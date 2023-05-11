@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"sync"
 	"time"
 
 	"k8s.io/klog"
@@ -55,8 +56,12 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 		return SystemVersionReport{}, err
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(3)
+
 	var result SystemVersionReport
 	go func() {
+		defer wg.Done()
 		// Reading from the pipe is a blocking call, hence this goroutine.
 		// The goroutine will exit after the pipe is closed or the command exits;
 		// these will be triggered by cmd.Wait() either after the timeout expires or the command finished.
@@ -68,6 +73,7 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 
 	var stderr string
 	go func() {
+		defer wg.Done()
 		var buf bytes.Buffer
 		_, rErr := buf.ReadFrom(stderrPipe)
 		if rErr != nil {
@@ -76,9 +82,18 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 		stderr = buf.String()
 	}()
 
-	// Wait will block until the timeout expires or the command exits. It will then close all resources associated with cmd,
-	// including the stdout and stderr pipes above, which will in turn terminate the goroutines spawned above.
-	wErr := cmd.Wait()
+	var wErr error
+	go func() {
+		defer wg.Done()
+		// cmd.Wait() will block until the timeout expires or the program started by cmd exits.
+		// It will then close all resources associated with cmd,
+		// including the stdout and stderr pipes above, which will in turn terminate the goroutines spawned above.
+		wErr = cmd.Wait()
+	}()
+
+	// Wait until all we are sure all previous goroutines are done
+	wg.Wait()
+
 	if wErr != nil {
 		ctxErr := ctxWithTimeout.Err()
 		if ctxErr != nil {
