@@ -666,11 +666,12 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 		verbose        bool
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []string
-		wantErr bool
+		name                string
+		fields              fields
+		args                args
+		want                []string
+		wantContainsDevfile bool
+		wantErr             bool
 	}{
 		// TODO: Add test cases.
 		{
@@ -690,8 +691,9 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 					},
 				},
 			},
-			want:    []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someFile.txt"},
-			wantErr: false,
+			want:                []string{"devfile.yaml", "docker", filepath.Join("docker", "Dockerfile"), "README.md", "main.go", "go.mod", "someFile.txt"},
+			wantErr:             false,
+			wantContainsDevfile: true,
 		},
 		{
 			name: "Starter project has conflicting files",
@@ -793,8 +795,13 @@ func TestRegistryClient_DownloadStarterProject(t *testing.T) {
 				preferenceClient: tt.fields.preferenceClient,
 				kubeClient:       tt.fields.kubeClient,
 			}
-			if err := o.DownloadStarterProject(tt.args.starterProject, tt.args.decryptedToken, tt.args.contextDir, tt.args.verbose); (err != nil) != tt.wantErr {
-				t.Errorf("DownloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
+			gotContainsDevfile, gotErr := o.DownloadStarterProject(tt.args.starterProject, tt.args.decryptedToken, tt.args.contextDir, tt.args.verbose)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("DownloadStarterProject() error = %v, wantErr %v", gotErr, tt.wantErr)
+				return
+			}
+			if tt.wantContainsDevfile != gotContainsDevfile {
+				t.Errorf("DownloadStarterProject() containsDevfile = %v, want = %v", gotContainsDevfile, tt.wantContainsDevfile)
 				return
 			}
 			var got []string

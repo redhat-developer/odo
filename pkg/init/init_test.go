@@ -349,7 +349,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 			o := &InitClient{
 				registryClient: tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadStarterProject(&tt.args.project, "dest"); (err != nil) != tt.wantErr {
+			if _, err := o.DownloadStarterProject(&tt.args.project, "dest"); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
