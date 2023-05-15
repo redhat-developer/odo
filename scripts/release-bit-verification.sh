@@ -11,14 +11,15 @@
 #
 # Example: ./release-bit-verification.sh ~/Downloads/odo-redistributable-2.4.3-1.el8.x86_64.rpm
 #
+#For erroring out in case of error
+set -eo pipefail
 
 shout() {
     echo "--------------------------------$1------------------------------------------"
 }
 # Check SHASUM for all the binary files and there should be no difference
 
-#For erroring out in case of error
-set -eo pipefail
+
 
 # Create a Temp directory
 WORKING_DIR=$(mktemp -d)
