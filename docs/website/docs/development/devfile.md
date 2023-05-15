@@ -313,6 +313,182 @@ is invoked, that is, in this example, when the `run` or `deploy` commands are in
 
 Because the `kubernetes` component `k8s-deploybydefault-false-and-not-referenced` has `deployByDefault` set to `false` and is not referenced by any `apply` commands, it will never be applied.
 
+### How `odo` handles image names
+
+When the Devfile contains an Image Component with a relative `imageName` field, `odo` treats this field as an image name selector;
+it will scan the whole Devfile and automatically replace matching image names with a unique value that will be pushed to a user-defined registry.
+This replacement is done in matching Container components and manifests referenced in Kubernetes/OpenShift components.
+
+An image is said to match a relative image name if they both have the same name, regardless of their registry, tag, or digest.
+
+At the moment, `odo` only performs replacement in the manifests of the following core Kubernetes resources:
+- [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/)
+- [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
+- [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
+- [Pod](https://kubernetes.io/docs/concepts/workloads/pods/)
+- [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)
+- [ReplicationController](https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/)
+- [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+
+Replacement is done only if the user has set the `ImageRegistry` preference, which can be done via the `odo preference set ImageRegistry` command.
+See the [Configuration](../overview/configure.md#configuring-global-settings) page for more details.
+
+<details>
+<summary>Example</summary>
+
+```shell
+$ odo preference set ImageRegistry quay.io/$USER
+ ✓  Value of 'imageregistry' preference was set to 'quay.io/user'
+ ```
+
+</details>
+
+In this case, `odo` will automatically build relative Image components and push them to the specified registry path defined in the Preferences,
+using a dynamic image tag so that the images built and pushed can be unique across executions of `odo`.
+
+As an example, given the following Devfile excerpt (simplified to use only Kubernetes components, but the same behavior applies to OpenShift ones),
+and provided the `ImageRegistry` preference has been set (say to `quay.io/user`):
+
+```yaml
+schemaVersion: 2.2.0
+
+metadata:
+  name: my-app
+  version: 1.0.0
+
+components:
+  - image:
+      imageName: "my-relative-image:1.2.3-my-tag"
+    name: relative-image
+
+  - image:
+      imageName: "registry.access.redhat.com/ubi8/nodejs-16"
+    name: absolute-image
+
+  - container:
+      # [some-registry/]my-relative-image[:tag][@digest] will all match
+      # 'my-relative-image' defined in the `relative-image' component.
+      image: "my-relative-image"
+    name: cont1
+
+  - container:
+      # Left as is: it does not match the relative 'my-relative-image' image name,
+      # and there is no other image component with a relative image name matching this.
+      image: "my-relative-image2"
+    name: not-matching-cont
+
+  - name: k8s-uri
+    kubernetes:
+      # Resources referenced via URIs will be resolved and inlined at runtime,
+      # so that replacement logic can also be applied on those manifests.
+      uri: kubernetes/k8s.yaml
+
+  - name: k8s-inlined
+    kubernetes:
+      inlined: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: my-job
+        spec:
+          template:
+            metadata:
+              name: my-job-app
+            spec:
+              containers:
+                # Matches the imageName field of the 'relative-image' Image Component
+                # => it will be replaced dynamically regardless of the registry, tag or digest.
+                - image: "quay.io/my-relative-image@sha256:26c68657ccce2cb0a3"
+                  name: my-main-cont1
+                - image: "my-relative-image2"
+                  name: my-main-cont2
+              initContainers:
+                - image: "registry.access.redhat.com/ubi8/nodejs-16"
+                  name: my-init-cont1
+```
+
+Because the `relative-image` Image component uses a relative image (`my-relative-image:1.2.3-my-tag`), this image will automatically be built and pushed
+by `odo` to an image named as follows: `<ImageRegistry>/<DevfileName>-<ImageName>:<SomeUniqueId>`,
+where `<SomeUniqueId>` is a dynamic tag different for each `odo dev` session.
+So the resulting image in the example above would be: `quay.io/user/my-app-my-relative-image:3295110`
+
+This new value will then be replaced in the following matching components and manifests:
+- `cont1` container component
+- the image name of `my-main-cont1` in the Job definition of the `k8s-inlined` Kubernetes component
+- any matching image names in the manifests referenced by URIs in the `k8s-uri` Kubernetes component
+
+For reference, the resulting Devfile built and used by `odo dev` would look like this:
+
+<details>
+<summary>Example</summary>
+
+```yaml
+schemaVersion: 2.2.0
+
+metadata:
+  name: my-app
+  version: 1.0.0
+
+components:
+  - image:
+      # highlight-next-line
+      imageName: "quay.io/user/my-app-my-relative-image:3295110"
+    name: relative-image
+
+  - image:
+      # Left unchanged: Absolute image names are not used as selectors.
+      imageName: "registry.access.redhat.com/ubi8/nodejs-16"
+    name: absolute-image
+
+  - container:
+      # highlight-next-line
+      image: "quay.io/user/my-app-my-relative-image:3295110"
+    name: cont1
+
+  - container:
+      # highlight-start
+      # Left as is: it does not match the relative 'my-relative-image' image name,
+      # and there is no other image component with a relative image name matching this.
+      # highlight-end
+      image: "my-relative-image2"
+    name: not-matching-cont
+
+  - name: k8s-uri
+    kubernetes:
+      # Resources referenced via URIs will be resolved and inlined at runtime,
+      # so that replacement logic can also be applied on those manifests.
+      uri: kubernetes/k8s.yaml
+
+  - name: k8s-inlined
+    kubernetes:
+      inlined: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: my-job
+        spec:
+          template:
+            metadata:
+              name: my-job-app
+            spec:
+              containers:
+                # highlight-next-line
+                - image: "quay.io/user/my-app-my-relative-image:3295110"
+                  name: my-main-cont1
+                # highlight-next-line
+                # Not replaced because it does not match 'my-relative-image'.
+                - image: "my-relative-image2"
+                  name: my-main-cont2
+              initContainers:
+                # highlight-next-line
+                # Not replaced because it does not match 'my-relative-image'.
+                - image: "registry.access.redhat.com/ubi8/nodejs-16:latest"
+                  name: my-init-cont1
+```
+
+</details>
+
 ## File Reference
 
 This file reference outlines the **major** components of the Devfile API Reference using *snippets* and *examples*.
