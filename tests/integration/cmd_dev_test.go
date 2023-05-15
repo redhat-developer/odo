@@ -115,7 +115,10 @@ echo "$@"
 				},
 			})
 			Expect(err).ShouldNot(HaveOccurred())
-			defer devSession.Kill()
+			defer func() {
+				devSession.Kill()
+				devSession.WaitEnd()
+			}()
 
 			Expect(string(stderrBytes)).Should(MatchRegexp("timeout \\([^()]+\\) while waiting for Podman version"))
 		})
