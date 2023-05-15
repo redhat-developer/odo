@@ -99,7 +99,7 @@ var _ = Describe("odo dev command tests", func() {
 			err = helper.CreateFileWithContentAndPerm(delayer, `#!/bin/bash
 
 echo Delaying command execution... >&2
-sleep 7200
+sleep 10
 echo "$@"
 `, 0755)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -115,7 +115,10 @@ echo "$@"
 				},
 			})
 			Expect(err).ShouldNot(HaveOccurred())
-			defer devSession.Kill()
+			defer func() {
+				devSession.Kill()
+				devSession.WaitEnd()
+			}()
 
 			Expect(string(stderrBytes)).Should(MatchRegexp("timeout \\([^()]+\\) while waiting for Podman version"))
 		})
