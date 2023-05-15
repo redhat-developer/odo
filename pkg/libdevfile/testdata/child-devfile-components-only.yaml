@@ -2,7 +2,7 @@ schemaVersion: 2.1.0
 metadata:
   name: child
 parent:
-  uri: "parent/parent-devfile-commands-only.yaml"
+  uri: "parent/commands-only/parent-devfile-commands-only.yaml"
 components:
 - container:
     endpoints:

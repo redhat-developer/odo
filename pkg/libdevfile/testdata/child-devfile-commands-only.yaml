@@ -2,7 +2,7 @@ schemaVersion: 2.1.0
 metadata:
   name: child
 parent:
-  uri: parent/parent-devfile-components-only.yaml
+  uri: parent/components-only/parent-devfile-components-only.yaml
 commands:
 - exec:
     commandLine: GOCACHE=${PROJECT_SOURCE}/.cache go build main.go
