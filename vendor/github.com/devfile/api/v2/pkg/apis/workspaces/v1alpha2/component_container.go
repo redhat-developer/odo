@@ -94,10 +94,7 @@ func (in *Container) GetMountSources() bool {
 	if in.MountSources != nil {
 		return *in.MountSources
 	} else {
-		if in.GetDedicatedPod() {
-			return false
-		}
-		return true
+		return !in.GetDedicatedPod()
 	}
 }
 

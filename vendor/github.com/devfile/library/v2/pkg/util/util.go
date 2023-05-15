@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright 2022-2023 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
+	"github.com/devfile/library/v2/pkg/git"
+	gitpkg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -41,11 +44,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
-
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/fatih/color"
-	gitpkg "github.com/go-git/go-git/v5"
 	"github.com/gobwas/glob"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
@@ -56,6 +56,10 @@ import (
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog"
 )
+
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 
 const (
 	HTTPRequestResponseTimeout   = 30 * time.Second           // HTTPRequestTimeout configures timeout of all HTTP requests
@@ -881,6 +885,15 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 	return remote
 }
 
+// IsGitProviderRepo checks if the url matches a repo from a supported git provider
+func IsGitProviderRepo(url string) bool {
+	if strings.Contains(url, git.RawGitHubHost) || strings.Contains(url, git.GitHubHost) ||
+		strings.Contains(url, git.GitLabHost) || strings.Contains(url, git.BitbucketHost) {
+		return true
+	}
+	return false
+}
+
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
 // takes an absolute path prefixed with file:// and extracts it to a destination.
 // pathToUnzip specifies the path within the zip folder to extract
@@ -1083,15 +1096,45 @@ func DownloadFileInMemory(url string) ([]byte, error) {
 
 // DownloadInMemory uses HTTPRequestParams to download the file and return bytes
 func DownloadInMemory(params HTTPRequestParams) ([]byte, error) {
-
 	var httpClient = &http.Client{Transport: &http.Transport{
 		ResponseHeaderTimeout: HTTPRequestResponseTimeout,
 	}, Timeout: HTTPRequestResponseTimeout}
 
-	url := params.URL
+	var g git.GitUrl
+	var err error
+
+	if IsGitProviderRepo(params.URL) {
+		g, err = git.NewGitUrlWithURL(params.URL)
+		if err != nil {
+			return nil, errors.Errorf("failed to parse git repo. error: %v", err)
+		}
+	}
+
+	return downloadInMemoryWithClient(params, httpClient, g)
+}
+
+func downloadInMemoryWithClient(params HTTPRequestParams, httpClient HTTPClient, g git.GitUrl) ([]byte, error) {
+	var url string
+	url = params.URL
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if IsGitProviderRepo(url) {
+		url = g.GitRawFileAPI()
+		req, err = http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		if !g.IsPublic(params.Timeout) {
+			// check that the token is valid before adding to the header
+			err = g.SetToken(params.Token, params.Timeout)
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", params.Token))
+		}
 	}
 
 	//add the telemetry client name in the header
@@ -1187,6 +1230,7 @@ func ValidateFile(filePath string) error {
 }
 
 // GetGitUrlComponentsFromRaw converts a raw GitHub file link to a map of the url components
+// Deprecated: in favor of the method git.ParseGitUrl() with the devfile/library/v2/pkg/git package
 func GetGitUrlComponentsFromRaw(rawGitURL string) (map[string]string, error) {
 	var urlComponents map[string]string
 
@@ -1219,6 +1263,7 @@ func GetGitUrlComponentsFromRaw(rawGitURL string) (map[string]string, error) {
 }
 
 // CloneGitRepo clones a GitHub repo to a destination directory
+// Deprecated: in favor of the method git.CloneGitRepo() with the devfile/library/v2/pkg/git package
 func CloneGitRepo(gitUrlComponents map[string]string, destDir string) error {
 	gitUrl := fmt.Sprintf("https://github.com/%s/%s.git", gitUrlComponents["username"], gitUrlComponents["project"])
 	branch := fmt.Sprintf("refs/heads/%s", gitUrlComponents["branch"])

@@ -25,7 +25,7 @@ type PluginOverrides struct {
 	Commands []CommandPluginOverride `json:"commands,omitempty" patchStrategy:"merge" patchMergeKey:"id"`
 }
 
-//+k8s:openapi-gen=true
+// +k8s:openapi-gen=true
 type ComponentPluginOverride struct {
 
 	// Mandatory name that allows referencing the component
@@ -206,8 +206,11 @@ type ExecCommandPluginOverride struct {
 	Env []EnvVarPluginOverride `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// +optional
-	// Whether the command is capable to reload itself when source code changes.
-	// If set to `true` the command won't be restarted and it is expected to handle file changes on its own.
+	// Specify whether the command is restarted or not when the source code changes.
+	// If set to `true` the command won't be restarted.
+	// A *hotReloadCapable* `run` or `debug` command is expected to handle file changes on its own and won't be restarted.
+	// A *hotReloadCapable* `build` command is expected to be executed only once and won't be executed again.
+	// This field is taken into account only for commands `build`, `run` and `debug` with `isDefault` set to `true`.
 	//
 	// Default value is `false`
 	HotReloadCapable *bool `json:"hotReloadCapable,omitempty"`

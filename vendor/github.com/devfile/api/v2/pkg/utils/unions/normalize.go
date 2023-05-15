@@ -16,7 +16,7 @@ func (n *normalizer) Struct(s reflect.Value) error {
 		if addr.CanInterface() {
 			i := addr.Interface()
 			if u, ok := i.(dw.Union); ok {
-				u.Normalize()
+				_ = u.Normalize()
 			}
 		}
 	}

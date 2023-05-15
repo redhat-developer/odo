@@ -149,8 +149,8 @@ func ValidateComponents(components []v1alpha2.Component) (returnedErr error) {
 					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(err, component.Attributes))
 				}
 			}
-
-			err := validateEndpoints(component.Openshift.Endpoints, processedEndPointPort, processedEndPointName)
+			currentComponentEndPointPort := make(map[int]bool)
+			err := validateDuplicatedName(component.Openshift.Endpoints, processedEndPointName, currentComponentEndPointPort)
 			if len(err) > 0 {
 				for _, endpointErr := range err {
 					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(endpointErr, component.Attributes))
@@ -163,7 +163,8 @@ func ValidateComponents(components []v1alpha2.Component) (returnedErr error) {
 					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(err, component.Attributes))
 				}
 			}
-			err := validateEndpoints(component.Kubernetes.Endpoints, processedEndPointPort, processedEndPointName)
+			currentComponentEndPointPort := make(map[int]bool)
+			err := validateDuplicatedName(component.Kubernetes.Endpoints, processedEndPointName, currentComponentEndPointPort)
 			if len(err) > 0 {
 				for _, endpointErr := range err {
 					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(endpointErr, component.Attributes))

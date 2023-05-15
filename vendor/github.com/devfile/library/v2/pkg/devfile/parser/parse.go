@@ -19,21 +19,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/devfile/library/v2/pkg/git"
+	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/attributes"
-	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-
-	"reflect"
-
 	devfileCtx "github.com/devfile/library/v2/pkg/devfile/parser/context"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/v2/pkg/util"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
@@ -45,6 +45,57 @@ import (
 	versionpkg "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 )
+
+// downloadGitRepoResources is exposed as a global variable for the purpose of running mock tests
+var downloadGitRepoResources = func(url string, destDir string, httpTimeout *int, token string) error {
+	var returnedErr error
+
+	gitUrl, err := git.NewGitUrlWithURL(url)
+	if err != nil {
+		return err
+	}
+
+	if gitUrl.IsGitProviderRepo() {
+		if !gitUrl.IsFile || gitUrl.Revision == "" || !strings.Contains(gitUrl.Path, OutputDevfileYamlPath) {
+			return fmt.Errorf("error getting devfile from url: failed to retrieve %s", url)
+		}
+
+		stackDir, err := os.MkdirTemp("", fmt.Sprintf("git-resources"))
+		if err != nil {
+			return fmt.Errorf("failed to create dir: %s, error: %v", stackDir, err)
+		}
+
+		defer func(path string) {
+			err := os.RemoveAll(path)
+			if err != nil {
+				returnedErr = multierror.Append(returnedErr, err)
+			}
+		}(stackDir)
+
+		if !gitUrl.IsPublic(httpTimeout) {
+			err = gitUrl.SetToken(token, httpTimeout)
+			if err != nil {
+				returnedErr = multierror.Append(returnedErr, err)
+				return returnedErr
+			}
+		}
+
+		err = gitUrl.CloneGitRepo(stackDir)
+		if err != nil {
+			returnedErr = multierror.Append(returnedErr, err)
+			return returnedErr
+		}
+
+		dir := path.Dir(path.Join(stackDir, gitUrl.Path))
+		err = git.CopyAllDirFiles(dir, destDir)
+		if err != nil {
+			returnedErr = multierror.Append(returnedErr, err)
+			return returnedErr
+		}
+	}
+
+	return nil
+}
 
 // ParseDevfile func validates the devfile integrity.
 // Creates devfile context and runtime objects
@@ -97,6 +148,8 @@ type ParserArgs struct {
 	// RegistryURLs is a list of registry hosts which parser should pull parent devfile from.
 	// If registryUrl is defined in devfile, this list will be ignored.
 	RegistryURLs []string
+	// Token is a GitHub, GitLab, or Bitbucket personal access token used with a private git repo URL
+	Token string
 	// DefaultNamespace is the default namespace to use
 	// If namespace is defined under devfile's parent kubernetes object, this namespace will be ignored.
 	DefaultNamespace string
@@ -111,11 +164,39 @@ type ParserArgs struct {
 	// SetBooleanDefaults sets the boolean properties to their default values after a devfile been parsed.
 	// The value is true by default.  Clients can set this to false if they want to set the boolean properties themselves
 	SetBooleanDefaults *bool
+	// ImageNamesAsSelector sets the information that will be used to handle image names as selectors when parsing the Devfile.
+	// Not setting this field or setting it to nil disables the logic of handling image names as selectors.
+	ImageNamesAsSelector *ImageSelectorArgs
+}
+
+// ImageSelectorArgs defines the structure to leverage for using image names as selectors after parsing the Devfile.
+// The fields defined here will be used together to compute the final image names that will be built and pushed,
+// and replaced in all matching Image, Container or Kubernetes/OpenShift components.
+//
+// For Kubernetes/OpenShift components, replacement is done only in core Kubernetes resources
+// (CronJob, DaemonSet, Deployment, Job, Pod, ReplicaSet, ReplicationController, StatefulSet) that are *inlined* in those components.
+// Resources referenced via URIs will not be resolved. So you may want to also set ConvertKubernetesContentInUri to true in the parser args.
+//
+// For example, if Registry is set to "<local-registry>/<user-org>" and Tag is set to "some-dynamic-unique-tag",
+// all container and Kubernetes/OpenShift components matching a relative image name (say "my-image-name") of an Image component
+// will be replaced in the resulting Devfile by: "<local-registry>/<user-org>/<devfile-name>-my-image-name:some-dynamic-unique-tag".
+type ImageSelectorArgs struct {
+	// Registry is the registry base path under which images matching selectors will be built and pushed to. Required.
+	//
+	// Example: <local-registry>/<user-org>
+	Registry string
+	// Tag represents a tag identifier under which images matching selectors will be built and pushed to.
+	// This should ideally be set to a unique identifier for each run of the caller tool.
+	Tag string
 }
 
 // ParseDevfile func populates the devfile data, parses and validates the devfile integrity.
 // Creates devfile context and runtime objects
 func ParseDevfile(args ParserArgs) (d DevfileObj, err error) {
+	if args.ImageNamesAsSelector != nil && strings.TrimSpace(args.ImageNamesAsSelector.Registry) == "" {
+		return DevfileObj{}, errors.New("registry is mandatory when setting ImageNamesAsSelector in the parser args")
+	}
+
 	if args.Data != nil {
 		d.Ctx, err = devfileCtx.NewByteContentDevfileCtx(args.Data)
 		if err != nil {
@@ -127,6 +208,10 @@ func ParseDevfile(args ParserArgs) (d DevfileObj, err error) {
 		d.Ctx = devfileCtx.NewURLDevfileCtx(args.URL)
 	} else {
 		return d, errors.Wrap(err, "the devfile source is not provided")
+	}
+
+	if args.Token != "" {
+		d.Ctx.SetToken(args.Token)
 	}
 
 	tool := resolverTools{
@@ -431,44 +516,22 @@ func parseFromURI(importReference v1.ImportReference, curDevfileCtx devfileCtx.D
 			return DevfileObj{}, fmt.Errorf("failed to resolve parent uri, devfile context is missing absolute url and path to devfile. %s", resolveImportReference(importReference))
 		}
 
+		token := curDevfileCtx.GetToken()
 		d.Ctx = devfileCtx.NewURLDevfileCtx(newUri)
-		if strings.Contains(newUri, "raw.githubusercontent.com") {
-			urlComponents, err := util.GetGitUrlComponentsFromRaw(newUri)
-			if err != nil {
-				return DevfileObj{}, err
-			}
-			destDir := path.Dir(curDevfileCtx.GetAbsPath())
-			err = getResourcesFromGit(urlComponents, destDir)
-			if err != nil {
-				return DevfileObj{}, err
-			}
+		if token != "" {
+			d.Ctx.SetToken(token)
+		}
+
+		destDir := path.Dir(curDevfileCtx.GetAbsPath())
+		err = downloadGitRepoResources(newUri, destDir, tool.httpTimeout, token)
+		if err != nil {
+			return DevfileObj{}, err
 		}
 	}
 	importReference.Uri = newUri
 	newResolveCtx := resolveCtx.appendNode(importReference)
 
 	return populateAndParseDevfile(d, newResolveCtx, tool, true)
-}
-
-func getResourcesFromGit(gitUrlComponents map[string]string, destDir string) error {
-	stackDir, err := ioutil.TempDir(os.TempDir(), fmt.Sprintf("git-resources"))
-	if err != nil {
-		return fmt.Errorf("failed to create dir: %s, error: %v", stackDir, err)
-	}
-	defer os.RemoveAll(stackDir)
-
-	err = util.CloneGitRepo(gitUrlComponents, stackDir)
-	if err != nil {
-		return err
-	}
-
-	dir := path.Dir(path.Join(stackDir, gitUrlComponents["file"]))
-	err = util.CopyAllDirFiles(dir, destDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func parseFromRegistry(importReference v1.ImportReference, resolveCtx *resolutionContextTree, tool resolverTools) (d DevfileObj, err error) {
@@ -839,6 +902,9 @@ func getKubernetesDefinitionFromUri(uri string, d devfileCtx.DevfileCtx) ([]byte
 			newUri = uri
 		}
 		params := util.HTTPRequestParams{URL: newUri}
+		if d.GetToken() != "" {
+			params.Token = d.GetToken()
+		}
 		data, err = util.DownloadInMemory(params)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error getting kubernetes resources definition information")

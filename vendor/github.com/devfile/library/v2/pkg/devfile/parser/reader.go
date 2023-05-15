@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright 2022-2023 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -121,7 +121,11 @@ func ParseKubernetesYaml(values []interface{}) (KubernetesResources, error) {
 			return KubernetesResources{}, err
 		}
 
-		kubernetesMap := value.(map[string]interface{})
+		var kubernetesMap map[string]interface{}
+		err = k8yaml.Unmarshal(byteData, &kubernetesMap)
+		if err != nil {
+			return KubernetesResources{}, err
+		}
 		kind := kubernetesMap["kind"]
 
 		switch kind {

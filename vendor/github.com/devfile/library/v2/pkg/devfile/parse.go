@@ -109,6 +109,15 @@ func ParseDevfileAndValidate(args parser.ParserArgs) (d parser.DevfileObj, varWa
 		varWarning = variables.ValidateAndReplaceGlobalVariable(d.Data.GetDevfileWorkspaceSpec())
 	}
 
+	// Use image names as selectors after variable substitution,
+	// as users might be using variables for image names.
+	if args.ImageNamesAsSelector != nil && args.ImageNamesAsSelector.Registry != "" {
+		err = replaceImageNames(&d, args.ImageNamesAsSelector.Registry, args.ImageNamesAsSelector.Tag)
+		if err != nil {
+			return d, varWarning, err
+		}
+	}
+
 	// generic validation on devfile content
 	err = validate.ValidateDevfileData(d.Data)
 	if err != nil {

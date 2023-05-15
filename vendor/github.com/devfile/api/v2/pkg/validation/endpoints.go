@@ -10,6 +10,14 @@ import "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 func validateEndpoints(endpoints []v1alpha2.Endpoint, processedEndPointPort map[int]bool, processedEndPointName map[string]bool) (errList []error) {
 	currentComponentEndPointPort := make(map[int]bool)
 
+	errList = validateDuplicatedName(endpoints, processedEndPointName, currentComponentEndPointPort)
+	portErrorList := validateDuplicatedPort(processedEndPointPort, currentComponentEndPointPort)
+	errList = append(errList, portErrorList...)
+
+	return errList
+}
+
+func validateDuplicatedName(endpoints []v1alpha2.Endpoint, processedEndPointName map[string]bool, currentComponentEndPointPort map[int]bool) (errList []error) {
 	for _, endPoint := range endpoints {
 		if _, ok := processedEndPointName[endPoint.Name]; ok {
 			errList = append(errList, &InvalidEndpointError{name: endPoint.Name})
@@ -17,13 +25,15 @@ func validateEndpoints(endpoints []v1alpha2.Endpoint, processedEndPointPort map[
 		processedEndPointName[endPoint.Name] = true
 		currentComponentEndPointPort[endPoint.TargetPort] = true
 	}
+	return errList
+}
 
+func validateDuplicatedPort(processedEndPointPort map[int]bool, currentComponentEndPointPort map[int]bool) (errList []error) {
 	for targetPort := range currentComponentEndPointPort {
 		if _, ok := processedEndPointPort[targetPort]; ok {
 			errList = append(errList, &InvalidEndpointError{port: targetPort})
 		}
 		processedEndPointPort[targetPort] = true
 	}
-
 	return errList
 }
