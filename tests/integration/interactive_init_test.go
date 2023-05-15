@@ -123,7 +123,7 @@ var _ = Describe("odo init interactive command tests", func() {
 						helper.ExpectString(ctx, "What configuration do you want change")
 						helper.SendLine(ctx, "Add new environment variable")
 
-						helper.ExpectString(ctx, "Enter new environment variable name: ")
+						helper.ExpectString(ctx, "Enter new environment variable name:")
 						helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
 
 						helper.ExpectString(ctx, "Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
