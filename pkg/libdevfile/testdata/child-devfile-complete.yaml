@@ -31,4 +31,4 @@ metadata:
   name: my-go-app
 schemaVersion: 2.1.0
 parent:
-  uri: parent/parent-devfile-empty.yaml
+  uri: parent/empty/parent-devfile-empty.yaml

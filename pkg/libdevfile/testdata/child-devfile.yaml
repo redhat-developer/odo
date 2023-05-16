@@ -2,4 +2,4 @@ schemaVersion: 2.1.0
 metadata:
   name: child
 parent:
-  uri: "parent/parent-devfile.yaml"
+  uri: "parent/complete/parent-devfile.yaml"

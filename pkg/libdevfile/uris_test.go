@@ -294,7 +294,7 @@ func TestGetReferencedLocalFiles(t *testing.T) {
 			},
 			wantResult: []string{
 				"manifest.yaml", // TODO should be parent/manifest.yaml (see https://github.com/devfile/api/issues/904)
-				"parent/parent-devfile.yaml",
+				"parent/complete/parent-devfile.yaml",
 			},
 			wantErr: false,
 		},
@@ -311,7 +311,7 @@ func TestGetReferencedLocalFiles(t *testing.T) {
 			},
 			wantResult: []string{
 				"manifest.yaml", // TODO should be parent/manifest.yaml (see https://github.com/devfile/api/issues/904)
-				"parent/parent-devfile-commands-only.yaml",
+				"parent/commands-only/parent-devfile-commands-only.yaml",
 			},
 			wantErr: false,
 		},
@@ -328,7 +328,7 @@ func TestGetReferencedLocalFiles(t *testing.T) {
 			},
 			wantResult: []string{
 				"manifest.yaml", // TODO should be parent/manifest.yaml (see https://github.com/devfile/api/issues/904)
-				"parent/parent-devfile-components-only.yaml",
+				"parent/components-only/parent-devfile-components-only.yaml",
 			},
 			wantErr: false,
 		},
