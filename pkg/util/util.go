@@ -492,7 +492,12 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 // TODO(feloy) sync with devfile library?
 func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName string, numberOfLastLines int) (err error) {
 
-	defer rd.Close()
+	defer func() {
+		cErr := rd.Close()
+		if err == nil {
+			err = cErr
+		}
+	}()
 
 	// Copy to stdout (in yellow)
 	color.Set(color.FgYellow)
@@ -529,14 +534,15 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 	} else {
 		reader := bufio.NewReader(rd)
 		var lines []string
+		var line string
 		for {
-			line, err := reader.ReadString('\n')
+			line, err = reader.ReadString('\n')
 			if err != nil {
 				if err != io.EOF {
 					return err
-				} else {
-					break
 				}
+				err = nil
+				break
 			}
 
 			lines = append(lines, line)
@@ -548,13 +554,13 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 		}
 
 		for i := index; i < len(lines); i++ {
-			_, err := fmt.Fprintf(writer, lines[i])
+			_, err = fmt.Fprintf(writer, lines[i])
 			if err != nil {
 				return err
 			}
 		}
 	}
-	return
+	return err
 
 }
 

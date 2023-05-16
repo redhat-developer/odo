@@ -34,7 +34,11 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 			time.Sleep(time.Duration(interval) * time.Second)
 			continue
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if cErr := resp.Body.Close(); cErr != nil {
+				fmt.Fprintf(GinkgoWriter, "[warn] error closing response body: %v\n", cErr)
+			}
+		}()
 		if resp.StatusCode == expectedCode {
 			body, _ = io.ReadAll(resp.Body)
 			if strings.Contains(string(body), match) {

@@ -27,8 +27,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/ginkgo/v2 v2.6.0
-	github.com/onsi/gomega v1.24.1
+	github.com/onsi/ginkgo/v2 v2.8.0
+	github.com/onsi/gomega v1.26.0
 	github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68
 	github.com/openshift/client-go v0.0.0-20220603133046-984ee5ebedcf
 	github.com/openshift/oc v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1
@@ -39,7 +39,7 @@ require (
 	github.com/redhat-developer/alizer/go v0.0.0-20230331140053-a1115da45e0c
 	github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
-	github.com/securego/gosec/v2 v2.14.0
+	github.com/securego/gosec/v2 v2.15.0
 	github.com/segmentio/backo-go v1.0.1-0.20200129164019-23eae7c10bd3
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/afero v1.6.0
@@ -190,7 +190,7 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.4.0 // indirect
+	golang.org/x/tools v0.5.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21 // indirect
