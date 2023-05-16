@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -96,6 +97,9 @@ func (o *InitClient) SelectDevfile(ctx context.Context, flags map[string]string,
 		if backend == o.alizerBackend {
 			// Fallback to the Interactive Mode if Alizer could not determine the Devfile.
 			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, terminal.InterruptErr) {
+					return nil, err
+				}
 				log.Warningf("Could not determine a Devfile based on the files in the current directory: %v", err)
 			}
 			return o.interactiveBackend.SelectDevfile(ctx, flags, fs, dir)
