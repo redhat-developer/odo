@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
+	. "github.com/onsi/ginkgo/v2"
+
 	"github.com/redhat-developer/odo/pkg/api"
 )
 
@@ -28,7 +30,11 @@ func (o Registry) GetIndex() ([]api.DevfileStack, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cErr := resp.Body.Close(); cErr != nil {
+			fmt.Fprintf(GinkgoWriter, "[warn] error closing response body: %v\n", cErr)
+		}
+	}()
 
 	var target []api.DevfileStack
 	err = json.NewDecoder(resp.Body).Decode(&target)
