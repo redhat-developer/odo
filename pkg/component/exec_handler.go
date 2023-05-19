@@ -52,7 +52,11 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 	return nil
 }
 
-func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
+func (o *execHandler) ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error {
+	return nil
+}
+
+func (o *execHandler) ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error {
 	return ExecuteTerminatingCommand(ctx, o.execClient, o.platformClient, command, o.componentExists, o.podName, o.appName, o.componentName, o.msg, o.show)
 }
 

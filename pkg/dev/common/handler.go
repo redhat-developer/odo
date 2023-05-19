@@ -63,8 +63,12 @@ func (a *RunHandler) ApplyOpenShift(openshift devfilev1.Component) error {
 	}
 }
 
-func (a *RunHandler) Execute(ctx context.Context, command devfilev1.Command) error {
+func (a *RunHandler) ExecuteNonTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
 	return component.ExecuteRunCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName)
+}
+
+func (a *RunHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
+	return nil
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running

@@ -24,7 +24,8 @@ type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
 	ApplyKubernetes(kubernetes v1alpha2.Component) error
 	ApplyOpenShift(openshift v1alpha2.Component) error
-	Execute(ctx context.Context, command v1alpha2.Command) error
+	ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
+	ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
 }
 
 // Deploy executes the default deploy command of the devfile.

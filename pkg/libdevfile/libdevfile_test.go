@@ -508,9 +508,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 			},
@@ -528,9 +528,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(1)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(1)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 			},
@@ -548,9 +548,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 				cmdName: "my-explicit-non-default-build-command",
@@ -570,9 +570,9 @@ func TestBuild(t *testing.T) {
 				},
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(1)
-					h.EXPECT().Execute(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(1)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
 					return h
 				},
 				cmdName: "my-explicit-non-default-build-command",
