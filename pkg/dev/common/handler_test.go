@@ -194,8 +194,8 @@ func TestApplyKubernetes(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{kubernetesDeploy})
-				devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandKubernetes})
+				_ = devfileData.AddComponents([]v1alpha2.Component{kubernetesDeploy})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandKubernetes})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,
@@ -225,8 +225,8 @@ func TestApplyKubernetes(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{kubernetesDeploy})
-				devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandKubernetes})
+				_ = devfileData.AddComponents([]v1alpha2.Component{kubernetesDeploy})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandKubernetes})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,
@@ -311,8 +311,8 @@ func TestApplyOpenshift(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{openshiftDeploy})
-				devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandOpenshift})
+				_ = devfileData.AddComponents([]v1alpha2.Component{openshiftDeploy})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandOpenshift})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,
@@ -342,8 +342,8 @@ func TestApplyOpenshift(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{openshiftDeploy})
-				devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandOpenshift})
+				_ = devfileData.AddComponents([]v1alpha2.Component{openshiftDeploy})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandOpenshift})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,
@@ -432,8 +432,8 @@ func TestApplyImage(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{imageDeploy})
-				devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandImage})
+				_ = devfileData.AddComponents([]v1alpha2.Component{imageDeploy})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandImage})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,
@@ -464,8 +464,8 @@ func TestApplyImage(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{imageDeploy})
-				devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandImage})
+				_ = devfileData.AddComponents([]v1alpha2.Component{imageDeploy})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultDeployCommandImage})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,
@@ -568,8 +568,8 @@ func TestExecute(t *testing.T) {
 					t.Error(err)
 				}
 				devfileData.SetSchemaVersion("2.1.0")
-				devfileData.AddComponents([]v1alpha2.Component{container1})
-				devfileData.AddCommands([]v1alpha2.Command{defaultBuildCommand})
+				_ = devfileData.AddComponents([]v1alpha2.Component{container1})
+				_ = devfileData.AddCommands([]v1alpha2.Command{defaultBuildCommand})
 
 				devfileObj := parser.DevfileObj{
 					Data: devfileData,

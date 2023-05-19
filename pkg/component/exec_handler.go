@@ -2,17 +2,12 @@ package component
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"k8s.io/klog"
-	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -58,43 +53,7 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 }
 
 func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
-	if o.componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
-		klog.V(2).Infof("command is hot-reload capable, not executing %q again", command.Id)
-		return nil
-	}
-
-	msg := o.msg
-	if msg == "" {
-		msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)
-	} else {
-		msg += " (command: " + command.Id + ")"
-	}
-	spinner := log.Spinner(msg)
-	defer spinner.End(false)
-
-	logger := machineoutput.NewMachineEventLoggingClient()
-	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
-
-	cmdline := getCmdline(command)
-	_, _, err := o.execClient.ExecuteCommand(ctx, cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
-
-	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
-
-	spinner.End(err == nil)
-	if err != nil {
-		rd, errLog := Log(o.platformClient, o.componentName, o.appName, false, command)
-		if errLog != nil {
-			return fmt.Errorf("unable to log error %v: %w", err, errLog)
-		}
-
-		// Use GetStderr in order to make sure that colour output is correct
-		// on non-TTY terminals
-		errLog = util.DisplayLog(false, rd, log.GetStderr(), o.componentName, -1)
-		if errLog != nil {
-			return fmt.Errorf("unable to log error %v: %w", err, errLog)
-		}
-	}
-	return err
+	return ExecuteTerminatingCommand(ctx, o.execClient, o.platformClient, command, o.componentExists, o.podName, o.appName, o.componentName, o.msg, o.show)
 }
 
 func getCmdline(command v1alpha2.Command) []string {
