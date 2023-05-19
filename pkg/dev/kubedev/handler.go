@@ -23,6 +23,7 @@ type runHandler struct {
 	componentName   string
 	devfile         parser.DevfileObj
 	kubeClient      kclient.ClientInterface
+	imageBackend    image.Backend
 	path            string
 	componentExists bool
 	podName         string
@@ -33,7 +34,7 @@ type runHandler struct {
 var _ libdevfile.Handler = (*runHandler)(nil)
 
 func (a *runHandler) ApplyImage(img devfilev1.Component) error {
-	return image.BuildPushSpecificImage(a.ctx, a.fs, img, true)
+	return image.BuildPushSpecificImage(a.ctx, a.imageBackend, a.fs, img, true)
 }
 
 func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {

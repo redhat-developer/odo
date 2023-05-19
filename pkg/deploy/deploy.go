@@ -55,9 +55,13 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		appName       = odocontext.GetApplication(ctx)
 	)
 
-	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, o.configAutomountClient, appName, componentName)
+	backend, err := image.SelectBackend(ctx)
+	if err != nil {
+		return err
+	}
+	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, o.configAutomountClient, backend, appName, componentName)
 
-	err := o.buildPushAutoImageComponents(handler, *devfileObj)
+	err = o.buildPushAutoImageComponents(handler, *devfileObj)
 	if err != nil {
 		return err
 	}
@@ -115,13 +119,14 @@ type deployHandler struct {
 	path                  string
 	kubeClient            kclient.ClientInterface
 	configAutomountClient configAutomount.Client
+	imageBackend          image.Backend
 	appName               string
 	componentName         string
 }
 
 var _ libdevfile.Handler = (*deployHandler)(nil)
 
-func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, configAutomountClient configAutomount.Client, appName string, componentName string) *deployHandler {
+func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, configAutomountClient configAutomount.Client, imageBackend image.Backend, appName string, componentName string) *deployHandler {
 	return &deployHandler{
 		ctx:                   ctx,
 		fs:                    fs,
@@ -129,6 +134,7 @@ func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj 
 		path:                  path,
 		kubeClient:            kubeClient,
 		configAutomountClient: configAutomountClient,
+		imageBackend:          imageBackend,
 		appName:               appName,
 		componentName:         componentName,
 	}
@@ -136,7 +142,7 @@ func newDeployHandler(ctx context.Context, fs filesystem.Filesystem, devfileObj 
 
 // ApplyImage builds and pushes the OCI image to be used on Kubernetes
 func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
-	return image.BuildPushSpecificImage(o.ctx, o.fs, img, true)
+	return image.BuildPushSpecificImage(o.ctx, o.imageBackend, o.fs, img, true)
 }
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file

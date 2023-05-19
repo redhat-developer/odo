@@ -218,7 +218,7 @@ func TestSelectBackend(t *testing.T) {
 			defer func() { lookPathCmd = exec.LookPath }()
 			ctx := context.Background()
 			ctx = envcontext.WithEnvConfig(ctx, tt.envConfig)
-			backend, err := selectBackend(ctx)
+			backend, err := SelectBackend(ctx)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("%s: Error result wanted %v, got %v", tt.name, tt.wantErr, err != nil)
 			}

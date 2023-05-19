@@ -182,7 +182,11 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, fs filesys
 			klog.V(1).Infof("Skipping image component %q; already applied and not changed", c.Name)
 			continue
 		}
-		err = image.BuildPushSpecificImage(ctx, fs, c, true)
+		backend, err := image.SelectBackend(ctx)
+		if err != nil {
+			return err
+		}
+		err = image.BuildPushSpecificImage(ctx, backend, fs, c, true)
 		if err != nil {
 			return err
 		}

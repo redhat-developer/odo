@@ -11,6 +11,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev/common"
+	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -107,10 +108,16 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	}
 	var running bool
 	var isComposite bool
+
+	backend, err := image.SelectBackend(ctx)
+	if err != nil {
+		return err
+	}
 	cmdHandler := runHandler{
 		fs:            o.filesystem,
 		execClient:    o.execClient,
 		kubeClient:    o.kubernetesClient,
+		imageBackend:  backend,
 		appName:       appName,
 		componentName: componentName,
 		devfile:       parameters.Devfile,

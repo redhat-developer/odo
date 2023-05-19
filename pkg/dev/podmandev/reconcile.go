@@ -108,11 +108,16 @@ func (o *DevClient) reconcile(
 			cmdKind = devfilev1.DebugCommandGroupKind
 			cmdName = options.DebugCommand
 		}
+		backend, err := image.SelectBackend(ctx)
+		if err != nil {
+			return err
+		}
 		cmdHandler := commandHandler{
 			ctx:             ctx,
 			fs:              o.fs,
 			execClient:      o.execClient,
 			platformClient:  o.podmanClient,
+			imageBackend:    backend,
 			componentExists: componentStatus.RunExecuted,
 			podName:         pod.Name,
 			appName:         appName,
@@ -187,8 +192,12 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj
 		return err
 	}
 
+	backend, err := image.SelectBackend(ctx)
+	if err != nil {
+		return err
+	}
 	for _, c := range components {
-		err = image.BuildPushSpecificImage(ctx, o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
+		err = image.BuildPushSpecificImage(ctx, backend, o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
 		if err != nil {
 			return err
 		}

@@ -21,6 +21,7 @@ type commandHandler struct {
 	fs              filesystem.Filesystem
 	execClient      exec.Client
 	platformClient  platform.Client
+	imageBackend    image.Backend
 	componentExists bool
 	podName         string
 	appName         string
@@ -30,7 +31,7 @@ type commandHandler struct {
 var _ libdevfile.Handler = (*commandHandler)(nil)
 
 func (a commandHandler) ApplyImage(img devfilev1.Component) error {
-	return image.BuildPushSpecificImage(a.ctx, a.fs, img, envcontext.GetEnvConfig(a.ctx).PushImages)
+	return image.BuildPushSpecificImage(a.ctx, a.imageBackend, a.fs, img, envcontext.GetEnvConfig(a.ctx).PushImages)
 }
 
 func (a commandHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {

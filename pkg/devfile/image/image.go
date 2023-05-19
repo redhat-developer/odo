@@ -32,17 +32,12 @@ var lookPathCmd = exec.LookPath
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, push bool) error {
+func BuildPushImages(ctx context.Context, backend Backend, fs filesystem.Filesystem, push bool) error {
 	var (
 		devfileObj  = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
 	)
-
-	backend, err := selectBackend(ctx)
-	if err != nil {
-		return err
-	}
 
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: devfile.ImageComponentType},
@@ -65,15 +60,11 @@ func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, push bool) e
 
 // BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(ctx context.Context, fs filesystem.Filesystem, component devfile.Component, push bool) error {
+func BuildPushSpecificImage(ctx context.Context, backend Backend, fs filesystem.Filesystem, component devfile.Component, push bool) error {
 	var (
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
 	)
-	backend, err := selectBackend(ctx)
-	if err != nil {
-		return err
-	}
 	return buildPushImage(backend, fs, component.Image, path, push)
 }
 
@@ -103,10 +94,10 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 	return nil
 }
 
-// selectBackend selects the container backend to use for building and pushing images
+// SelectBackend selects the container backend to use for building and pushing images
 // It will detect podman and docker CLIs (in this order),
 // or return an error if none are present locally
-func selectBackend(ctx context.Context) (Backend, error) {
+func SelectBackend(ctx context.Context) (Backend, error) {
 
 	podmanCmd := envcontext.GetEnvConfig(ctx).PodmanCmd
 	globalExtraArgs := envcontext.GetEnvConfig(ctx).OdoContainerBackendGlobalArgs
