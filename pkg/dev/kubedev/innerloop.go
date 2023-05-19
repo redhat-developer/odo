@@ -109,15 +109,11 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	var running bool
 	var isComposite bool
 
-	backend, err := image.SelectBackend(ctx)
-	if err != nil {
-		return err
-	}
 	cmdHandler := RunHandler{
 		FS:             o.filesystem,
 		ExecClient:     o.execClient,
 		PlatformClient: o.kubernetesClient,
-		ImageBackend:   backend,
+		ImageBackend:   image.SelectBackend(ctx),
 		AppName:        appName,
 		ComponentName:  componentName,
 		Devfile:        parameters.Devfile,

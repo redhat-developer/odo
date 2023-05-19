@@ -55,13 +55,9 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		appName       = odocontext.GetApplication(ctx)
 	)
 
-	backend, err := image.SelectBackend(ctx)
-	if err != nil {
-		return err
-	}
-	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, o.configAutomountClient, backend, appName, componentName)
+	handler := newDeployHandler(ctx, o.fs, *devfileObj, path, o.kubeClient, o.configAutomountClient, image.SelectBackend(ctx), appName, componentName)
 
-	err = o.buildPushAutoImageComponents(handler, *devfileObj)
+	err := o.buildPushAutoImageComponents(handler, *devfileObj)
 	if err != nil {
 		return err
 	}

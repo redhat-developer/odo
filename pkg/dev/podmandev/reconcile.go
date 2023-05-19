@@ -109,17 +109,12 @@ func (o *DevClient) reconcile(
 			cmdKind = devfilev1.DebugCommandGroupKind
 			cmdName = options.DebugCommand
 		}
-		var backend image.Backend
-		backend, err = image.SelectBackend(ctx)
-		if err != nil {
-			return err
-		}
 		cmdHandler := kubedev.RunHandler{
 			Ctx:             ctx,
 			FS:              o.fs,
 			ExecClient:      o.execClient,
 			PlatformClient:  o.podmanClient,
-			ImageBackend:    backend,
+			ImageBackend:    image.SelectBackend(ctx),
 			ComponentExists: componentStatus.RunExecuted,
 			PodName:         pod.Name,
 			AppName:         appName,
@@ -194,12 +189,8 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj
 		return err
 	}
 
-	backend, err := image.SelectBackend(ctx)
-	if err != nil {
-		return err
-	}
 	for _, c := range components {
-		err = image.BuildPushSpecificImage(ctx, backend, o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
+		err = image.BuildPushSpecificImage(ctx, image.SelectBackend(ctx), o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
 		if err != nil {
 			return err
 		}
