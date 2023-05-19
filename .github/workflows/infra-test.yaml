@@ -1,15 +1,11 @@
 name: odo-infra-stage-test
 on:
-  push:
-    paths:
-      - scripts/ansible
-      - '!scripts/ansible/Cluster/kubernetes-cluster/manual-changes/Readme.md'
-      - '!scripts/ansible/Cluster/openshift-cluster/manual-changes/Readme.md'
-      - '!scripts/ansible/Cluster/NFS-vm/manual-changes/Readme.md'
-      - '!scripts/ansible/Cluster/windows-openshift-cluster/manual-changes/Readme.md'
   pull_request:
     branches:
       - main
+    paths:
+      - 'scripts/ansible/**'
+      - '!scripts/ansible/**/*.md'
 
 jobs:
   kubernetes-infra-stage-test:
