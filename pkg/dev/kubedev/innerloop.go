@@ -109,7 +109,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	var running bool
 	var isComposite bool
 
-	cmdHandler := RunHandler{
+	cmdHandler := common.RunHandler{
 		FS:             o.filesystem,
 		ExecClient:     o.execClient,
 		PlatformClient: o.kubernetesClient,

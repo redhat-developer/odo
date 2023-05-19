@@ -17,7 +17,6 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
-	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -109,7 +108,7 @@ func (o *DevClient) reconcile(
 			cmdKind = devfilev1.DebugCommandGroupKind
 			cmdName = options.DebugCommand
 		}
-		cmdHandler := kubedev.RunHandler{
+		cmdHandler := common.RunHandler{
 			Ctx:             ctx,
 			FS:              o.fs,
 			ExecClient:      o.execClient,
