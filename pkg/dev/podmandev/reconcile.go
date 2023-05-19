@@ -17,6 +17,7 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
+	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -108,20 +109,21 @@ func (o *DevClient) reconcile(
 			cmdKind = devfilev1.DebugCommandGroupKind
 			cmdName = options.DebugCommand
 		}
-		backend, err := image.SelectBackend(ctx)
+		var backend image.Backend
+		backend, err = image.SelectBackend(ctx)
 		if err != nil {
 			return err
 		}
-		cmdHandler := commandHandler{
-			ctx:             ctx,
-			fs:              o.fs,
-			execClient:      o.execClient,
-			platformClient:  o.podmanClient,
-			imageBackend:    backend,
-			componentExists: componentStatus.RunExecuted,
-			podName:         pod.Name,
-			appName:         appName,
-			componentName:   componentName,
+		cmdHandler := kubedev.RunHandler{
+			Ctx:             ctx,
+			FS:              o.fs,
+			ExecClient:      o.execClient,
+			PlatformClient:  o.podmanClient,
+			ImageBackend:    backend,
+			ComponentExists: componentStatus.RunExecuted,
+			PodName:         pod.Name,
+			AppName:         appName,
+			ComponentName:   componentName,
 		}
 		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, &cmdHandler, false)
 		if err != nil {

@@ -113,17 +113,17 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	if err != nil {
 		return err
 	}
-	cmdHandler := runHandler{
-		fs:            o.filesystem,
-		execClient:    o.execClient,
-		kubeClient:    o.kubernetesClient,
-		imageBackend:  backend,
-		appName:       appName,
-		componentName: componentName,
-		devfile:       parameters.Devfile,
-		path:          path,
-		podName:       pod.GetName(),
-		ctx:           ctx,
+	cmdHandler := RunHandler{
+		FS:             o.filesystem,
+		ExecClient:     o.execClient,
+		PlatformClient: o.kubernetesClient,
+		ImageBackend:   backend,
+		AppName:        appName,
+		ComponentName:  componentName,
+		Devfile:        parameters.Devfile,
+		Path:           path,
+		PodName:        pod.GetName(),
+		Ctx:            ctx,
 	}
 
 	if commandType == devfilev1.ExecCommandType {
@@ -140,7 +140,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			commandType, cmd.Id)
 	}
 
-	cmdHandler.componentExists = running || isComposite
+	cmdHandler.ComponentExists = running || isComposite
 
 	klog.V(4).Infof("running=%v, execRequired=%v",
 		running, execRequired)

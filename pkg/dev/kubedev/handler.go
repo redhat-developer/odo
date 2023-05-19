@@ -5,54 +5,71 @@ import (
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
-type runHandler struct {
-	fs              filesystem.Filesystem
-	execClient      exec.Client
-	appName         string
-	componentName   string
-	devfile         parser.DevfileObj
-	kubeClient      kclient.ClientInterface
-	imageBackend    image.Backend
-	path            string
-	componentExists bool
-	podName         string
+type RunHandler struct {
+	FS              filesystem.Filesystem
+	ExecClient      exec.Client
+	AppName         string
+	ComponentName   string
+	Devfile         parser.DevfileObj
+	PlatformClient  platform.Client
+	ImageBackend    image.Backend
+	Path            string
+	ComponentExists bool
+	PodName         string
 
-	ctx context.Context
+	Ctx context.Context
 }
 
-var _ libdevfile.Handler = (*runHandler)(nil)
+var _ libdevfile.Handler = (*RunHandler)(nil)
 
-func (a *runHandler) ApplyImage(img devfilev1.Component) error {
-	return image.BuildPushSpecificImage(a.ctx, a.imageBackend, a.fs, img, true)
+func (a *RunHandler) ApplyImage(img devfilev1.Component) error {
+	return image.BuildPushSpecificImage(a.Ctx, a.ImageBackend, a.FS, img, envcontext.GetEnvConfig(a.Ctx).PushImages)
 }
 
-func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
-	return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, kubernetes, a.kubeClient, a.path)
+func (a *RunHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
+	switch platform := a.PlatformClient.(type) {
+	case kclient.ClientInterface:
+		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.ComponentName, a.Devfile, kubernetes, platform, a.Path)
+	default:
+		klog.V(4).Info("apply kubernetes commands are not implemented on podman")
+		log.Warningf("Apply Kubernetes components are not supported on Podman. Skipping: %v.", kubernetes.Name)
+		return nil
+	}
 }
 
-func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component) error {
-	return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, openshift, a.kubeClient, a.path)
+func (a *RunHandler) ApplyOpenShift(openshift devfilev1.Component) error {
+	switch platform := a.PlatformClient.(type) {
+	case kclient.ClientInterface:
+		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.ComponentName, a.Devfile, openshift, platform, a.Path)
+	default:
+		klog.V(4).Info("apply OpenShift commands are not implemented on podman")
+		log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)
+		return nil
+	}
 }
 
-func (a *runHandler) Execute(ctx context.Context, command devfilev1.Command) error {
-	return component.ExecuteRunCommand(ctx, a.execClient, a.kubeClient, command, a.componentExists, a.podName, a.appName, a.componentName)
-
+func (a *RunHandler) Execute(ctx context.Context, command devfilev1.Command) error {
+	return component.ExecuteRunCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName)
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running
-func (a *runHandler) IsRemoteProcessForCommandRunning(ctx context.Context, command devfilev1.Command, podName string) (bool, error) {
-	remoteProcess, err := remotecmd.NewKubeExecProcessHandler(a.execClient).GetProcessInfoForCommand(ctx, remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
+func (a *RunHandler) IsRemoteProcessForCommandRunning(ctx context.Context, command devfilev1.Command, podName string) (bool, error) {
+	remoteProcess, err := remotecmd.NewKubeExecProcessHandler(a.ExecClient).GetProcessInfoForCommand(ctx, remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return false, err
 	}
