@@ -70,23 +70,16 @@ func UpdateDevfileContent(path string, handlers []DevfileUpdater) {
 		return
 	}
 
-	var err error
-	d := ParseDevfileFromPath(path)
-	for _, h := range handlers {
-		err = h(&d)
-		Expect(err).NotTo(HaveOccurred())
-	}
-	err = d.WriteYamlDevfile()
-	Expect(err).NotTo(HaveOccurred())
-}
-
-// ParseDevfileFromPath parses the file at the specified path and returns a Devfile object.
-func ParseDevfileFromPath(path string) parser.DevfileObj {
 	d, err := parser.ParseDevfile(parser.ParserArgs{
 		Path:               path,
 		FlattenedDevfile:   pointer.Bool(false),
 		SetBooleanDefaults: pointer.Bool(false),
 	})
 	Expect(err).NotTo(HaveOccurred())
-	return d
+	for _, h := range handlers {
+		err = h(&d)
+		Expect(err).NotTo(HaveOccurred())
+	}
+	err = d.WriteYamlDevfile()
+	Expect(err).NotTo(HaveOccurred())
 }

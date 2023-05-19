@@ -3,17 +3,13 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
-	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v2"
 
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
@@ -381,73 +377,30 @@ var _ = Describe("odo devfile init command tests", func() {
 			})
 
 			When("devfile contains parent URI", func() {
-				var childDevfile string
-				var originalDevfileContent string
+				var originalKeyList []string
+				var srcDevfile string
 
 				BeforeEach(func() {
-					// An issue from the Devfile library causes the parent to not be resolved properly:
-					//  ✗  unable to parse devfile: failed to populateAndParseDevfile: url path to directory or file should contain 'tree' or 'blob'.
-					//
-					// Even after using a URL with 'tree'or 'blob', the parser still does not pass.
-					// This workaround downloads the parent manually and references it via the local filesystem.
-					srcDir := helper.CreateNewContext()
-					DeferCleanup(func() {
-						helper.DeleteDir(srcDir)
-					})
-					parentDevfile := filepath.Join(commonVar.Context, "parent-devfile.yaml")
-					f, err := os.Create(parentDevfile)
-					Expect(err).ShouldNot(HaveOccurred())
-					resp, err := http.Get("https://github.com/OpenLiberty/application-stack/releases/download/maven-0.7.0/devfile.yaml")
-					Expect(err).ShouldNot(HaveOccurred())
-					defer resp.Body.Close()
-					_, err = io.Copy(f, resp.Body)
-					Expect(err).ShouldNot(HaveOccurred())
-					childDevfile = filepath.Join(srcDir, "devfile-child.yaml")
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), childDevfile)
-					helper.ReplaceString(childDevfile, "https://github.com/OpenLiberty/application-stack/releases/download/maven-0.7.0/devfile.yaml", "parent-devfile.yaml")
-
-					b, err := os.ReadFile(childDevfile)
+					var err error
+					srcDevfile = helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-parent.yaml")
+					originalDevfileContent, err := os.ReadFile(srcDevfile)
 					Expect(err).To(BeNil())
-					originalDevfileContent = string(b)
-
-					helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", childDevfile).ShouldPass()
+					var content map[string]interface{}
+					Expect(yaml.Unmarshal(originalDevfileContent, &content)).To(BeNil())
+					for k := range content {
+						originalKeyList = append(originalKeyList, k)
+					}
 				})
 
-				It("should create an effective Devfile", func() {
-					devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
-
-					By("not replacing the original Devfile", func() {
-						// Re-read the original Devfile
-						originalB, err := os.ReadFile(childDevfile)
-						Expect(err).To(BeNil())
-						originalDevfileContentReread := string(originalB)
-						diff := cmp.Diff(originalDevfileContentReread, originalDevfileContent)
-						Expect(diff).Should(BeEmpty())
-					})
-
-					By("creating a different Devfile", func() {
-						b, err := os.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
-						Expect(err).To(BeNil())
-						devfileContent := string(b)
-						Expect(devfileContent).ShouldNot(BeEquivalentTo(originalDevfileContent))
-					})
-
-					By("creating a Devfile with no reference to the parent other than via attributes", func() {
-						d := helper.ParseDevfileFromPath(devfilePath)
-						containerComp, err := d.Data.GetComponents(common.DevfileOptions{
-							ComponentOptions: common.ComponentOptions{
-								ComponentType: v1alpha2.ContainerComponentType,
-							},
-						})
-						Expect(err).ShouldNot(HaveOccurred())
-						// It should not have any reference to the parent
-						Expect(d.Data.GetParent()).Should(BeNil(), "Generated devfile should be effective with no 'parent' key")
-						Expect(containerComp).Should(HaveLen(1))
-						cAttrMap := containerComp[0].Attributes.Strings(&err)
-						Expect(err).ShouldNot(HaveOccurred())
-						Expect(cAttrMap).ShouldNot(BeEmpty())
-						Expect(cAttrMap["api.devfile.io/imported-from"]).Should(ContainSubstring("parent-devfile.yaml"))
-					})
+				It("should not replace the original devfile", func() {
+					helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", srcDevfile).ShouldPass()
+					devfileContent, err := os.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+					Expect(err).To(BeNil())
+					var content map[string]interface{}
+					Expect(yaml.Unmarshal(devfileContent, &content)).To(BeNil())
+					for k := range content {
+						Expect(k).To(BeElementOf(originalKeyList))
+					}
 				})
 			})
 
