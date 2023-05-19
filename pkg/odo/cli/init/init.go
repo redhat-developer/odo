@@ -235,7 +235,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 
 		// in case the starter project contains a devfile, read it again
 		if containsDevfile {
-			devfileObj, err = devfile.ParseAndValidateFromFile(devfilePath, "", true)
+			devfileObj, err = devfile.ParseAndValidateFromFile(devfilePath, "", false)
 			if err != nil {
 				return parser.DevfileObj{}, "", "", nil, nil, err
 			}

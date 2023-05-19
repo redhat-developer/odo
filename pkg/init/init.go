@@ -283,7 +283,7 @@ func (o *InitClient) SelectAndPersonalizeDevfile(ctx context.Context, flags map[
 		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to download devfile: %w", err)
 	}
 
-	devfileObj, err := devfile.ParseAndValidateFromFile(devfilePath, "", true)
+	devfileObj, err := devfile.ParseAndValidateFromFile(devfilePath, "", false)
 	if err != nil {
 		return parser.DevfileObj{}, "", nil, fmt.Errorf("unable to parse devfile: %w", err)
 	}
