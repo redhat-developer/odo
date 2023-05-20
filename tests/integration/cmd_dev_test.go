@@ -1007,9 +1007,15 @@ ComponentSettings:
 				nodejsProject = helper.CreateNewContext()
 				goProject = helper.CreateNewContext()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), nodejsProject)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(nodejsProject, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					filepath.Join(nodejsProject, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName+"-nodejs"),
+				)
 				helper.CopyExample(filepath.Join("source", "go"), goProject)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"), filepath.Join(goProject, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"),
+					filepath.Join(goProject, "devfile.yaml"),
+					helper.DevfileMetadataNameSetter(cmpName+"-go"),
+				)
 			})
 			AfterEach(func() {
 				helper.DeleteDir(nodejsProject)
