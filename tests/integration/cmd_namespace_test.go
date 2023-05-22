@@ -149,7 +149,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 					helper.Chdir(commonVar.Context)
 
 					// Bootstrap the component with a .odo/env/env.yaml file

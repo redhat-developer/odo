@@ -491,7 +491,7 @@ var _ = Describe("odo describe component command tests", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
 						path.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(componentName))
+						componentName)
 					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 				})
 				It(fmt.Sprintf("should show the %s in odo describe component output", ctx.title), func() {

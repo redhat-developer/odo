@@ -104,7 +104,7 @@ var _ = Describe("odo list with devfile", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
 				path.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(componentName))
+				componentName)
 			helper.Chdir(commonVar.Context)
 		})
 
