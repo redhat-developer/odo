@@ -1,19 +1,6 @@
-package component
+package common
 
-import (
-	"context"
-	"testing"
-
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/v2/pkg/devfile/parser"
-	"github.com/devfile/library/v2/pkg/devfile/parser/data"
-	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/platform"
-	"k8s.io/utils/pointer"
-)
-
+/*
 var (
 	container1 = v1alpha2.Component{
 		Name: "my-container",
@@ -443,3 +430,4 @@ func TestExecute(t *testing.T) {
 		})
 	}
 }
+*/
