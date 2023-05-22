@@ -13,7 +13,6 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/component"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
@@ -65,15 +64,17 @@ func (o *DevClient) reconcile(
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(devfileObj) {
-		execHandler := component.NewExecHandler(
+		execHandler := common.NewRunHandler(
 			o.podmanClient,
 			o.execClient,
 			appName,
 			componentName,
 			pod.Name,
-			"Executing post-start command in container",
-			false, /* TODO */
 			false,
+			"Executing post-start command in container",
+
+			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
+			nil, nil, nil, parser.DevfileObj{}, "",
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -84,15 +85,17 @@ func (o *DevClient) reconcile(
 
 	if execRequired {
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(
+			execHandler := common.NewRunHandler(
 				o.podmanClient,
 				o.execClient,
 				appName,
 				componentName,
 				pod.Name,
+				false,
 				"Building your application in container",
-				false, /* TODO */
-				componentStatus.RunExecuted,
+
+				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
+				nil, nil, nil, parser.DevfileObj{}, "",
 			)
 			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}

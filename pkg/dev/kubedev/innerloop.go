@@ -7,9 +7,9 @@ import (
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -89,8 +89,20 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
+	handler := common.NewRunHandler(
+		o.kubernetesClient,
+		o.execClient,
+		appName,
+		componentName,
+		pod.Name,
+		false,
+		"Executing post-start command in container",
+
+		// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
+		nil, nil, nil, parser.DevfileObj{}, "",
+	)
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(parameters.Devfile) {
-		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, component.NewExecHandler(o.kubernetesClient, o.execClient, appName, componentName, pod.Name, "Executing post-start command in container", parameters.Show, false))
+		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, handler)
 		if err != nil {
 			return err
 		}
@@ -145,8 +157,18 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(o.kubernetesClient, o.execClient, appName, componentName, pod.Name,
-				"Building your application in container", parameters.Show, running)
+			execHandler := common.NewRunHandler(
+				o.kubernetesClient,
+				o.execClient,
+				appName,
+				componentName,
+				pod.Name,
+				running,
+				"Building your application in container",
+
+				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
+				nil, nil, nil, parser.DevfileObj{}, "",
+			)
 			return libdevfile.Build(ctx, parameters.Devfile, parameters.StartOptions.BuildCommand, execHandler)
 		}
 		if err = doExecuteBuildCommand(); err != nil {

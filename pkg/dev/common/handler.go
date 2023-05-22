@@ -33,9 +33,45 @@ type RunHandler struct {
 	PodName         string
 
 	Ctx context.Context
+	Msg string
 }
 
 var _ libdevfile.Handler = (*RunHandler)(nil)
+
+func NewRunHandler(
+	platformClient platform.Client,
+	execClient exec.Client,
+	appName string,
+	componentName string,
+	podName string,
+	componentExists bool,
+	msg string,
+
+	// For building images
+	fs filesystem.Filesystem,
+	imageBackend image.Backend,
+	ctx context.Context,
+
+	// For apply Kubernetes / Openshift
+	devfile parser.DevfileObj,
+	path string,
+
+) *RunHandler {
+	return &RunHandler{
+		FS:              fs,
+		ExecClient:      execClient,
+		AppName:         appName,
+		ComponentName:   componentName,
+		Devfile:         devfile,
+		PlatformClient:  platformClient,
+		ImageBackend:    imageBackend,
+		Path:            path,
+		ComponentExists: componentExists,
+		PodName:         podName,
+		Ctx:             ctx,
+		Msg:             msg,
+	}
+}
 
 func (a *RunHandler) ApplyImage(img devfilev1.Component) error {
 	return image.BuildPushSpecificImage(a.Ctx, a.ImageBackend, a.FS, img, envcontext.GetEnvConfig(a.Ctx).PushImages)
@@ -68,8 +104,7 @@ func (a *RunHandler) ExecuteNonTerminatingCommand(ctx context.Context, command d
 }
 
 func (a *RunHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
-	panic("handler: ExecuteRunCommand in ExecuteTerminatingCommand")
-	//return component.ExecuteRunCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName)
+	return component.ExecuteTerminatingCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName, a.Msg, false)
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running
