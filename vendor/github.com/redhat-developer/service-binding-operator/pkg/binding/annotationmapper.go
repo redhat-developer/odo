@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/pkg/errors"
 )
 
 type UnstructuredResourceReader func(namespace string, name string) (*unstructured.Unstructured, error)
@@ -28,6 +26,7 @@ type modelKey string
 
 const (
 	pathModelKey                    modelKey = "path"
+	optionalKey                     modelKey = "optional"
 	objectTypeModelKey              modelKey = "objectType"
 	sourceKeyModelKey               modelKey = "sourceKey"
 	sourceValueModelKey             modelKey = "sourceValue"
@@ -92,7 +91,7 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 
 	mod, err := newModel(m.value)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not create binding model for annotation key %s and value %s", m.name, m.value)
+		return nil, fmt.Errorf("could not create binding model for annotation key %s and value %s: %w", m.name, m.value, err)
 	}
 
 	switch {
@@ -101,7 +100,8 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 			outputName: outputName,
 			value:      mod.value,
 			definition: definition{
-				path: mod.path,
+				path:     mod.path,
+				optional: mod.optional,
 			},
 		}, nil
 
@@ -111,7 +111,8 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 			objectType:            mod.objectType,
 			outputName:            outputName,
 			definition: definition{
-				path: mod.path,
+				path:     mod.path,
+				optional: mod.optional,
 			},
 			sourceKey: mod.sourceKey,
 		}, nil
@@ -122,7 +123,8 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 			objectType:            mod.objectType,
 			outputName:            outputName,
 			definition: definition{
-				path: mod.path,
+				path:     mod.path,
+				optional: mod.optional,
 			},
 			sourceValue: mod.sourceValue,
 		}, nil
@@ -131,7 +133,8 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 		return &stringOfMapDefinition{
 			outputName: outputName,
 			definition: definition{
-				path: mod.path,
+				path:     mod.path,
+				optional: mod.optional,
 			},
 		}, nil
 
@@ -139,7 +142,8 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 		return &sliceOfMapsFromPathDefinition{
 			outputName: outputName,
 			definition: definition{
-				path: mod.path,
+				path:     mod.path,
+				optional: mod.optional,
 			},
 			sourceKey:   mod.sourceKey,
 			sourceValue: mod.sourceValue,
@@ -149,7 +153,8 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 		return &sliceOfStringsFromPathDefinition{
 			outputName: outputName,
 			definition: definition{
-				path: mod.path,
+				path:     mod.path,
+				optional: mod.optional,
 			},
 			sourceValue: mod.sourceValue,
 		}, nil

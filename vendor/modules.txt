@@ -725,11 +725,12 @@ github.com/redhat-developer/alizer/go/pkg/apis/recognizer
 github.com/redhat-developer/alizer/go/pkg/schema
 github.com/redhat-developer/alizer/go/pkg/utils
 github.com/redhat-developer/alizer/go/pkg/utils/langfiles
-# github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
-## explicit; go 1.15
+# github.com/redhat-developer/service-binding-operator v1.3.4
+## explicit; go 1.17
 github.com/redhat-developer/service-binding-operator/apis
 github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1
 github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3
+github.com/redhat-developer/service-binding-operator/apis/spec/v1beta1
 github.com/redhat-developer/service-binding-operator/pkg/binding
 github.com/redhat-developer/service-binding-operator/pkg/binding/registry
 github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes

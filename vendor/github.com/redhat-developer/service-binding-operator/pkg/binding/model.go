@@ -13,6 +13,7 @@ type model struct {
 	sourceKey   string
 	sourceValue string
 	value       string
+	optional    bool
 }
 
 func (m *model) isStringElementType() bool {
@@ -39,7 +40,7 @@ func (m *model) hasDataField() bool {
 	return m.objectType == secretObjectType || m.objectType == configMapObjectType
 }
 
-var keys = []modelKey{pathModelKey, objectTypeModelKey, elementTypeModelKey, sourceKeyModelKey, sourceValueModelKey}
+var keys = []modelKey{pathModelKey, optionalKey, objectTypeModelKey, elementTypeModelKey, sourceKeyModelKey, sourceValueModelKey}
 
 func newModel(annotationValue string) (*model, error) {
 
@@ -78,6 +79,14 @@ func newModel(annotationValue string) (*model, error) {
 		// default string object type should be set
 		if objType = objectType(rawObjectType); objType == emptyObjectType {
 			objType = stringObjectType
+		}
+	}
+
+	optional := false
+	optionalString, found := raw[optionalKey]
+	if found {
+		if optionalString == "true" {
+			optional = true
 		}
 	}
 
@@ -125,5 +134,6 @@ func newModel(annotationValue string) (*model, error) {
 		objectType:  objType,
 		sourceValue: sourceValue,
 		sourceKey:   sourceKey,
+		optional:    optional,
 	}, nil
 }

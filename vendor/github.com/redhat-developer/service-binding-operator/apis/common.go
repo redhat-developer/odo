@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -40,9 +40,7 @@ func MaybeRemoveFinalizer(obj Object) bool {
 }
 
 type Object interface {
-	runtime.Object
-	GetFinalizers() []string
-	SetFinalizers([]string)
+	client.Object
 	HasDeletionTimestamp() bool
 	StatusConditions() []metav1.Condition
 	GetSpec() interface{}

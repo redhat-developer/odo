@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -39,6 +40,7 @@ const (
 type Definition interface {
 	Apply(u *unstructured.Unstructured) (Value, error)
 	GetPath() string
+	NonExistingOptional(Value) bool
 }
 
 type DefinitionBuilder interface {
@@ -46,7 +48,8 @@ type DefinitionBuilder interface {
 }
 
 type definition struct {
-	path string
+	path     string
+	optional bool
 }
 
 func (d *definition) GetPath() string {
@@ -61,6 +64,13 @@ type stringDefinition struct {
 
 var _ Definition = (*stringDefinition)(nil)
 
+func (d *stringDefinition) NonExistingOptional(v Value) bool {
+	if d.optional && v.Get() == nil {
+		return true
+	}
+	return false
+}
+
 func (d *stringDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	if d.outputName == "" {
 		return nil, fmt.Errorf("cannot use generic service.binding annotation for string elements, need to specify binding key like service.binding/foo")
@@ -74,6 +84,9 @@ func (d *stringDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	}
 	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
+		if d.optional {
+			return &value{}, nil
+		}
 		return nil, err
 	}
 
@@ -98,6 +111,14 @@ type stringFromDataFieldDefinition struct {
 
 var _ Definition = (*stringFromDataFieldDefinition)(nil)
 
+func (d *stringFromDataFieldDefinition) NonExistingOptional(v Value) bool {
+	if d.optional && v.Get() == nil {
+		return true
+	}
+	return false
+
+}
+
 func (d *stringFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	if d.secretConfigMapReader == nil {
 		return nil, errors.New("kubeClient required for this functionality")
@@ -105,6 +126,9 @@ func (d *stringFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Val
 
 	res, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
+		if d.optional {
+			return &value{}, nil
+		}
 		return nil, err
 	}
 
@@ -154,6 +178,13 @@ type mapFromDataFieldDefinition struct {
 
 var _ Definition = (*mapFromDataFieldDefinition)(nil)
 
+func (d *mapFromDataFieldDefinition) NonExistingOptional(v Value) bool {
+	if d.optional && v.Get() == nil {
+		return true
+	}
+	return false
+}
+
 func (d *mapFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	if d.secretConfigMapReader == nil {
 		return nil, errors.New("kubeClient required for this functionality")
@@ -161,6 +192,9 @@ func (d *mapFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value,
 
 	res, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
+		if d.optional {
+			return &value{}, nil
+		}
 		return nil, err
 	}
 	if len(res) != 1 {
@@ -220,9 +254,19 @@ type stringOfMapDefinition struct {
 
 var _ Definition = (*stringOfMapDefinition)(nil)
 
+func (d *stringOfMapDefinition) NonExistingOptional(v Value) bool {
+	if d.optional && v.Get() == nil {
+		return true
+	}
+	return false
+}
+
 func (d *stringOfMapDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
+		if d.optional {
+			return &value{}, nil
+		}
 		return nil, err
 	}
 	if len(val) != 1 {
@@ -253,9 +297,19 @@ type sliceOfMapsFromPathDefinition struct {
 
 var _ Definition = (*sliceOfMapsFromPathDefinition)(nil)
 
+func (d *sliceOfMapsFromPathDefinition) NonExistingOptional(v Value) bool {
+	if d.optional && v.Get() == nil {
+		return true
+	}
+	return false
+}
+
 func (d *sliceOfMapsFromPathDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
+		if d.optional {
+			return &value{}, nil
+		}
 		return nil, err
 	}
 
@@ -296,9 +350,19 @@ type sliceOfStringsFromPathDefinition struct {
 
 var _ Definition = (*sliceOfStringsFromPathDefinition)(nil)
 
+func (d *sliceOfStringsFromPathDefinition) NonExistingOptional(v Value) bool {
+	if d.optional && v.Get() == nil {
+		return true
+	}
+	return false
+}
+
 func (d *sliceOfStringsFromPathDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
+		if d.optional {
+			return &value{}, nil
+		}
 		return nil, err
 	}
 	var res []interface{}

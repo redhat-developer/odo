@@ -3,14 +3,16 @@ package context
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/redhat-developer/service-binding-operator/apis"
-	"github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	"github.com/redhat-developer/service-binding-operator/apis/spec/v1beta1"
 	"github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
 	"github.com/redhat-developer/service-binding-operator/pkg/converter"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context/service"
-	"k8s.io/api/authentication/v1"
+	"golang.org/x/time/rate"
+	v1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -18,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	authv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/client-go/util/workqueue"
 )
 
 var _ pipeline.Context = &specImpl{}
@@ -28,7 +31,7 @@ var SpecProvider = func(client dynamic.Interface, subjectAccessReviewClient auth
 		typeLookup: typeLookup,
 		get: func(binding interface{}) (pipeline.Context, error) {
 			switch sb := binding.(type) {
-			case *v1alpha3.ServiceBinding:
+			case *v1beta1.ServiceBinding:
 				if sb.Generation != 0 {
 					sb.Status.ObservedGeneration = sb.Generation
 				}
@@ -46,7 +49,7 @@ var SpecProvider = func(client dynamic.Interface, subjectAccessReviewClient auth
 							return sb.Status.Binding.Name
 						},
 						setStatusSecretName: func(name string) {
-							sb.Status.Binding = &v1alpha3.ServiceBindingSecretReference{Name: name}
+							sb.Status.Binding = &v1beta1.ServiceBindingSecretReference{Name: name}
 						},
 						unstructuredBinding: func() (*unstructured.Unstructured, error) {
 							return converter.ToUnstructured(sb)
@@ -58,12 +61,18 @@ var SpecProvider = func(client dynamic.Interface, subjectAccessReviewClient auth
 							return sb.AsOwnerReference()
 						},
 						groupVersionResource: func() schema.GroupVersionResource {
-							return v1alpha3.GroupVersionResource
+							return v1beta1.GroupVersionResource
 						},
 						requester: func() *v1.UserInfo {
 							return apis.Requester(sb.ObjectMeta)
 						},
 						serviceBuilder: service.NewBuilder(typeLookup).WithClient(client),
+						labelSelectionRateLimiter: workqueue.NewMaxOfRateLimiter(
+							workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 2*time.Minute),
+							&workqueue.BucketRateLimiter{
+								Limiter: rate.NewLimiter(rate.Limit(10), 100),
+							},
+						),
 					},
 					serviceBinding: sb,
 				}
@@ -82,7 +91,7 @@ var SpecProvider = func(client dynamic.Interface, subjectAccessReviewClient auth
 
 type specImpl struct {
 	impl
-	serviceBinding *v1alpha3.ServiceBinding
+	serviceBinding *v1beta1.ServiceBinding
 }
 
 func (i *specImpl) BindingName() string {
@@ -125,9 +134,7 @@ func (i *specImpl) Services() ([]pipeline.Service, error) {
 		i.services = append(i.services, s)
 	}
 	services := make([]pipeline.Service, len(i.services))
-	for idx := 0; idx < len(i.services); idx++ {
-		services[idx] = i.services[idx]
-	}
+	copy(services, i.services)
 	return services, nil
 
 }
@@ -139,6 +146,12 @@ func (i *specImpl) Applications() ([]pipeline.Application, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		mappingTemplate, err := i.WorkloadResourceTemplate(gvr, "")
+		if err != nil {
+			return nil, err
+		}
+
 		if i.serviceBinding.Spec.Workload.Name != "" {
 			if !i.canPerform(gvr, ref.Name, i.serviceBinding.Namespace, "get") {
 				return nil, fmt.Errorf("cannot read application %s in namespace %s", ref.Name, i.serviceBinding.Namespace)
@@ -150,9 +163,15 @@ func (i *specImpl) Applications() ([]pipeline.Application, error) {
 			if err != nil {
 				return nil, emptyApplicationsErr{err}
 			}
-			i.applications = append(i.applications, &application{gvr: gvr, persistedResource: u, bindableContainerNames: sets.NewString(i.serviceBinding.Spec.Workload.Containers...)})
+
+			i.applications = append(i.applications, &application{
+				gvr:                    gvr,
+				persistedResource:      u,
+				bindableContainerNames: sets.NewString(i.serviceBinding.Spec.Workload.Containers...),
+				resourceMapping:        *mappingTemplate,
+			})
 		}
-		if i.serviceBinding.Spec.Workload.Selector != nil && i.serviceBinding.Spec.Workload.Selector.MatchLabels != nil {
+		if i.HasLabelSelector() {
 			matchLabels := i.serviceBinding.Spec.Workload.Selector.MatchLabels
 			opts := metav1.ListOptions{
 				LabelSelector: labels.Set(matchLabels).String(),
@@ -176,17 +195,14 @@ func (i *specImpl) Applications() ([]pipeline.Application, error) {
 					return nil, fmt.Errorf("cannot update application resource %s in namespace %s", name, i.serviceBinding.Namespace)
 				}
 
-				i.applications = append(i.applications, &application{gvr: gvr, persistedResource: &(objList.Items[index]), bindableContainerNames: sets.NewString(i.serviceBinding.Spec.Workload.Containers...)})
+				i.applications = append(i.applications, &application{gvr: gvr, persistedResource: &(objList.Items[index]), bindableContainerNames: sets.NewString(i.serviceBinding.Spec.Workload.Containers...), resourceMapping: *mappingTemplate})
 			}
 		}
 	}
 
 	result := make([]pipeline.Application, len(i.applications))
-	for l, a := range i.applications {
-		result[l] = a
-	}
+	copy(result, i.applications)
 	return result, nil
-
 }
 
 func (s *specImpl) BindAsFiles() bool {
@@ -199,4 +215,8 @@ func (s *specImpl) NamingTemplate() string {
 
 func (s *specImpl) Mappings() map[string]string {
 	return make(map[string]string)
+}
+
+func (i *specImpl) HasLabelSelector() bool {
+	return i.serviceBinding != nil && i.serviceBinding.Spec.Workload.Selector != nil
 }

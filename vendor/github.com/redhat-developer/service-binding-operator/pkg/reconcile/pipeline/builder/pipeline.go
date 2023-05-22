@@ -2,6 +2,8 @@ package builder
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/collect"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/mapping"
@@ -16,7 +18,7 @@ type impl struct {
 	handlers    []pipeline.Handler
 }
 
-func (i *impl) Process(binding interface{}) (retry bool, err error) {
+func (i *impl) Process(binding interface{}) (retry bool, delay time.Duration, err error) {
 	defer func() {
 		if perr := recover(); perr != nil {
 			retry = true
@@ -25,7 +27,7 @@ func (i *impl) Process(binding interface{}) (retry bool, err error) {
 	}()
 	ctx, err := i.ctxProvider.Get(binding)
 	if err != nil {
-		return false, err
+		return false, time.Duration(0), err
 	}
 	var status pipeline.FlowStatus
 	for _, h := range i.handlers {
@@ -37,9 +39,9 @@ func (i *impl) Process(binding interface{}) (retry bool, err error) {
 	}
 	err = ctx.Close()
 	if err != nil {
-		return true, err
+		return true, time.Duration(0), err
 	}
-	return status.Retry, status.Err
+	return status.Retry, status.Delay, status.Err
 }
 
 type builder struct {

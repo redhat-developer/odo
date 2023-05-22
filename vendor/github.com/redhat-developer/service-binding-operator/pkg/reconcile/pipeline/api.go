@@ -2,12 +2,15 @@ package pipeline
 
 import (
 	"fmt"
+	"time"
+
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"
 	"github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 //go:generate mockgen -destination=mocks/mocks_pipeline.go -package=mocks . Context,Service,CRD,Application,ContextProvider,Handler
@@ -19,7 +22,22 @@ type Pipeline interface {
 	// Returns true if processing should be repeated
 	// and optional error if occurred
 	// important: even if error occurred it might not be needed to retry processing
-	Process(binding interface{}) (bool, error)
+	Process(binding interface{}) (bool, time.Duration, error)
+}
+
+// A container-like object.  EnvFrom is optional; all other fields are required.
+type MetaContainer struct {
+	Name        string
+	Env         []string
+	EnvFrom     []string
+	VolumeMount []string
+	Data        map[string]interface{}
+}
+
+type MetaPodSpec struct {
+	Containers []MetaContainer
+	Volume     []string
+	Data       map[string]interface{}
 }
 
 // A pipeline stage
@@ -32,6 +50,7 @@ type FlowStatus struct {
 	Retry bool
 	Stop  bool
 	Err   error
+	Delay time.Duration
 }
 
 type HasResource interface {
@@ -74,16 +93,21 @@ type Application interface {
 	// Application resource
 	HasResource
 
-	// dot-separated path inside the application resource locating container resources
-	// the returned value follows foo.bar.bla convention
-	// it cannot be empty
-	ContainersPath() string
-
 	// optional dot-separated path inside the application resource locating field where intermediate binding secret ref should be injected
 	// the returns value follows foo.bar.bla convention, but it can be empty
 	SecretPath() string
 
-	BindableContainers() ([]map[string]interface{}, error)
+	// Returns a container-like interface.
+	BindablePods() (*MetaPodSpec, error)
+
+	// A flag indicating if changes have been propogated
+	IsUpdated() bool
+
+	// GroupVersionResource of the application
+	GroupVersionResource() schema.GroupVersionResource
+
+	// Use a different mapping
+	SetMapping(WorkloadMapping)
 }
 
 type CRDDescription olmv1alpha1.CRDDescription
@@ -95,9 +119,6 @@ type CRD interface {
 	HasResource
 
 	Bindable
-
-	// optional Descriptor attached to ClusterServiceVersion resource
-	Descriptor() (*CRDDescription, error)
 }
 
 // Pipeline context passed to each handler
@@ -145,6 +166,10 @@ type Context interface {
 	// The current processing stops and context gets closed
 	RetryProcessing(reason error)
 
+	// Indicates that the binding should be retried with a delay.  The context will determine the
+	// appropriate delay to add.  This will close the context, and is similar to RetryProcessing
+	DelayReprocessing(reason error)
+
 	// Indicates that en error has occurred while processing the binding
 	Error(err error)
 
@@ -155,6 +180,9 @@ type Context interface {
 	// Returns error if occurrs
 	Close() error
 
+	// Persists the secret containing binding data into the cluster.
+	PersistSecret() error
+
 	// Sets context condition
 	SetCondition(condition *metav1.Condition)
 
@@ -162,6 +190,11 @@ type Context interface {
 	kubernetes.SecretReader
 
 	FlowStatus() FlowStatus
+
+	WorkloadResourceTemplate(gvr *schema.GroupVersionResource, containerPath string) (*WorkloadMapping, error)
+
+	// Is this service binding getting its workloads from a label selector?
+	HasLabelSelector() bool
 }
 
 // Provides context for a given service binding

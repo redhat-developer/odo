@@ -2,23 +2,21 @@ package service
 
 import (
 	"context"
-	e "errors"
+	"reflect"
+	"strings"
 
-	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding/registry"
 	"github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 
-	"reflect"
-
 	"github.com/redhat-developer/service-binding-operator/pkg/util"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/util/jsonpath"
 )
 
 var _ pipeline.Service = &service{}
@@ -237,68 +235,49 @@ func (c *customResourceDefinition) kind() string {
 	return ""
 }
 
-func (c *customResourceDefinition) IsBindable() (bool, error) {
-	descriptor, err := c.Descriptor()
+// getValuesByJSONPath returns values from the given map matching the provided JSONPath
+// 'path' argument takes JSONPath expressions enclosed by curly braces {}
+// see https://kubernetes.io/docs/reference/kubectl/jsonpath/ for more details
+// It returns zero or more filtered values back,
+// or error if the jsonpath is invalid or it cannot be applied on the given map
+func getValuesByJSONPath(obj map[string]interface{}, path string) ([]reflect.Value, error) {
+	j := jsonpath.New("")
+	err := j.Parse(path)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
+	result, err := j.FindResults(obj)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 1 {
+		w := strings.Builder{}
+		for i := range result {
+			if err := j.PrintResults(&w, result[i]); err != nil {
+				return nil, err
+			}
+		}
+		return []reflect.Value{reflect.ValueOf(w.String())}, nil
+	}
+	return result[0], nil
+}
+
+func (c *customResourceDefinition) IsBindable() (bool, error) {
+
+	value, err := getValuesByJSONPath(c.resource.Object, "{..schema.openAPIV3Schema.properties.status.properties.binding.properties.name.type}")
+	if err == nil && len(value) > 0 && value[0].Interface().(string) == "string" {
+		return true, nil
+	}
+
 	annotations := make(map[string]string)
-	if descriptor != nil {
-		util.MergeMaps(annotations, descriptor.BindingAnnotations())
-	}
 	util.MergeMaps(annotations, c.resource.GetAnnotations())
 	if len(annotations) == 0 {
 		return false, nil
 	}
-	val, found := annotations[binding.ProvisionedServiceAnnotationKey]
-	if found && val == "true" {
-		return true, nil
-	}
-
 	for k := range annotations {
 		if ok, err := binding.IsServiceBindingAnnotation(k); ok && err == nil {
 			return true, nil
 		}
 	}
 	return false, nil
-}
-
-func (c *customResourceDefinition) Descriptor() (*pipeline.CRDDescription, error) {
-	csvs, err := c.client.Resource(olmv1alpha1.SchemeGroupVersion.WithResource("clusterserviceversions")).Namespace(c.ns).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	if len(csvs.Items) == 0 {
-		return nil, nil
-	}
-	for _, csv := range csvs.Items {
-		ownedPath := []string{"spec", "customresourcedefinitions", "owned"}
-
-		ownedCRDs, exists, err := unstructured.NestedSlice(csv.Object, ownedPath...)
-		if err != nil {
-			return nil, err
-		}
-		if !exists {
-			continue
-		}
-
-		for _, crd := range ownedCRDs {
-			crdDesciption := &pipeline.CRDDescription{}
-			data, ok := crd.(map[string]interface{})
-			if !ok {
-				return nil, e.New("cannot cast to map")
-			}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(data, crdDesciption)
-			if err != nil {
-				return nil, err
-			}
-			if crdDesciption.Name == c.resource.GetName() && crdDesciption.Kind == c.kind() && crdDesciption.Version == c.serviceGVR.Version {
-				return crdDesciption, nil
-			}
-		}
-	}
-	return nil, nil
 }

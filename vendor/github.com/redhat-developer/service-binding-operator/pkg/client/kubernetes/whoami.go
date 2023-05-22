@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	authenticationapi "k8s.io/api/authentication/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -11,6 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -23,7 +23,7 @@ type tokenRetriever struct {
 	token        string
 }
 
-//RoundTrip gets token
+// RoundTrip gets token
 func (t *tokenRetriever) RoundTrip(req *http.Request) (*http.Response, error) {
 	header := req.Header.Get("authorization")
 	switch {
@@ -55,7 +55,7 @@ func WhoAmI(config *rest.Config) (string, error) {
 	// from vendor/k8s.io/client-go/transport/round_trippers.go:HTTPWrappersForConfig function, tokenauth has preference over basicauth
 	if transportConfig.HasTokenAuth() {
 		if config.BearerTokenFile != "" {
-			d, err := ioutil.ReadFile(config.BearerTokenFile)
+			d, err := os.ReadFile(config.BearerTokenFile)
 			if err != nil {
 				return "", err
 			}

@@ -34,27 +34,38 @@ func ToUnstructuredAsGVK(
 // Additionally the function gives an indication if specified resource is found or error if the found slice does not contain resources of the given type
 func NestedResources(obj interface{}, resource map[string]interface{}, path ...string) ([]map[string]interface{}, bool, error) {
 	val, found, err := unstructured.NestedFieldNoCopy(resource, path...)
-	if err != nil {
-		return nil, false, err
+	if err != nil || !found {
+		return nil, found, err
 	}
-	if !found {
-		return nil, found, nil
+	valSliceOfMaps, ok := val.([]map[string]interface{})
+	if ok {
+		var containers []map[string]interface{}
+		for _, item := range valSliceOfMaps {
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(item, obj)
+			if err != nil {
+				return nil, true, err
+			}
+			containers = append(containers, item)
+		}
+		return containers, true, nil
 	}
+
 	valSlice, ok := val.([]interface{})
-	if !ok {
-		return nil, true, errors.New("not a slice")
-	}
-	var containers []map[string]interface{}
-	for _, item := range valSlice {
-		u, ok := item.(map[string]interface{})
-		if !ok {
-			return nil, true, errors.New("not a map")
+	if ok {
+		var containers []map[string]interface{}
+		for _, item := range valSlice {
+			u, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, true, errors.New("not a map")
+			}
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, obj)
+			if err != nil {
+				return nil, true, err
+			}
+			containers = append(containers, u)
 		}
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, obj)
-		if err != nil {
-			return nil, true, err
-		}
-		containers = append(containers, u)
+		return containers, true, nil
 	}
-	return containers, true, nil
+
+	return nil, true, errors.New("not a slice")
 }

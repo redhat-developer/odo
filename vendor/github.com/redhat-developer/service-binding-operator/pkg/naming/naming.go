@@ -11,7 +11,7 @@ var TemplateError = errors.New("please check the namingStrategy template provide
 
 var templateFunctions = map[string]interface{}{
 	"upper": strings.ToUpper,
-	"title": strings.Title,
+	"title": strings.Title, //nolint
 	"lower": strings.ToLower,
 }
 

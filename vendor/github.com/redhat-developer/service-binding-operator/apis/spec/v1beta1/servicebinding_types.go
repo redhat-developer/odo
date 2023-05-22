@@ -1,23 +1,25 @@
 /*
-Copyright 2021.
+ * Copyright 2020 Original Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package v1alpha3
+package v1beta1
 
 import (
+	"errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ServiceBindingWorkloadReference defines a subset of corev1.ObjectReference with extensions
@@ -66,8 +68,6 @@ type EnvMapping struct {
 // ServiceBindingSpec defines the desired state of ServiceBinding
 type ServiceBindingSpec struct {
 	// Name is the name of the service as projected into the workload container.  Defaults to .metadata.name.
-	// +kubebuilder:validation:Pattern=`^[a-z0-9\-\.]*$`
-	// +kubebuilder:validation:MaxLength=253
 	Name string `json:"name,omitempty"`
 	// Type is the type of the service as projected into the workload container
 	Type string `json:"type,omitempty"`
@@ -80,6 +80,14 @@ type ServiceBindingSpec struct {
 	// Env is the collection of mappings from Secret entries to environment variables
 	Env []EnvMapping `json:"env,omitempty"`
 }
+
+// These are valid conditions of ServiceBinding.
+const (
+	// ServiceBindingReady means the ServiceBinding has projected the ProvisionedService
+	// secret and the Workload is ready to start. It does not indicate the condition
+	// of either the Service or the Workload resources referenced.
+	ServiceBindingConditionReady = "Ready"
+)
 
 // ServiceBindingStatus defines the observed state of ServiceBinding
 type ServiceBindingStatus struct {
@@ -96,7 +104,7 @@ type ServiceBindingStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
-// +kubebuilder:deprecatedversion
+// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
@@ -125,6 +133,37 @@ func init() {
 	SchemeBuilder.Register(&ServiceBinding{}, &ServiceBindingList{})
 }
 
+func (ref *ServiceBindingServiceReference) GroupVersionResource() (*schema.GroupVersionResource, error) {
+	return nil, errors.New("Resource undefined")
+}
+
+func (ref *ServiceBindingServiceReference) GroupVersionKind() (*schema.GroupVersionKind, error) {
+	typeMeta := &metav1.TypeMeta{Kind: ref.Kind, APIVersion: ref.APIVersion}
+	gvk := typeMeta.GroupVersionKind()
+	return &gvk, nil
+}
+
+func (ref *ServiceBindingWorkloadReference) GroupVersionResource() (*schema.GroupVersionResource, error) {
+	return nil, errors.New("Resource undefined")
+}
+
+func (ref *ServiceBindingWorkloadReference) GroupVersionKind() (*schema.GroupVersionKind, error) {
+	typeMeta := &metav1.TypeMeta{Kind: ref.Kind, APIVersion: ref.APIVersion}
+	gvk := typeMeta.GroupVersionKind()
+	return &gvk, nil
+}
+
+func (sb *ServiceBinding) AsOwnerReference() metav1.OwnerReference {
+	var ownerRefController bool = true
+	return metav1.OwnerReference{
+		Name:       sb.Name,
+		UID:        sb.UID,
+		Kind:       sb.Kind,
+		APIVersion: sb.APIVersion,
+		Controller: &ownerRefController,
+	}
+}
+
 func (sb *ServiceBinding) HasDeletionTimestamp() bool {
 	return !sb.DeletionTimestamp.IsZero()
 }
@@ -134,5 +173,5 @@ func (r *ServiceBinding) StatusConditions() []metav1.Condition {
 }
 
 func (sb *ServiceBinding) GetSpec() interface{} {
-	return &sb.Spec
+	return sb.Spec
 }
