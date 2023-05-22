@@ -26,8 +26,8 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 # Check login user name for debugging purpose
 oc whoami
 
-# Integration tests
-make test-integration || error=true
+# Cluster related Integration tests
+make test-integration-cluster || error=true
 
 # E2e tests
 make test-e2e || error=true

@@ -27,8 +27,8 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 # Check login user name for debugging purpose
 oc whoami
 
-# Operatorhub integration tests
-make test-integration
+# Cluster related integration tests
+make test-integration-cluster
 make test-e2e
 
 oc logout
