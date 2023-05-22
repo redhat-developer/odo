@@ -29,8 +29,8 @@ else
    TEST_EXEC_NODES := 4
 endif
 
-# Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
-SLOW_SPEC_THRESHOLD := 120s
+# After this time, Ginkgo will emit progress reports, so we can get visibility into long-running tests.
+POLL_PROGRESS_INTERVAL := 120s
 
 # Env variable GINKGO_TEST_ARGS is used to get control over enabling ginkgo test flags against each test target run.
 # For example:
@@ -53,7 +53,7 @@ else
    PODMAN_EXEC_NODES := 1
 endif
 
-GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --slow-spec-threshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT) --no-color
+GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --poll-progress-after=$(POLL_PROGRESS_INTERVAL) -timeout $(TIMEOUT) --no-color
 
 # Flags to run one test per core.
 GINKGO_FLAGS_AUTO = $(GINKGO_FLAGS_ALL) -p
