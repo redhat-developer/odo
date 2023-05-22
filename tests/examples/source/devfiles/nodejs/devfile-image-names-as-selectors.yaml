@@ -1,0 +1,158 @@
+schemaVersion: 2.2.0
+
+metadata:
+  name: my-image-name-as-selector
+  version: 1.0.0
+
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/nodejs-ex.git
+  name: nodejs-starter
+
+variables:
+  # Relative image name, which should be handled as a selector
+  CONTAINER_IMAGE_RELATIVE: "nodejs-devtools"
+  # Relative image name not matching relative image above and not built by an image component => should not be replaced
+  CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP: "nodejs-devtools007"
+  # Absolute image name, which should not be handled as a selector
+  CONTAINER_IMAGE_ABSOLUTE: "ttl.sh/odo-dev-node:1h"
+  # Absolute image name not matching relative image above => should not be replaced
+  CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE: "ttl.sh/nodejs-devtools2:1h"
+
+commands:
+  - exec:
+      commandLine: npm install
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+
+  - exec:
+      commandLine: npm run start
+      component: runtime
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        isDefault: true
+        kind: run
+    id: start
+  - exec:
+      commandLine: npm run debug
+      component: runtime
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        isDefault: true
+        kind: debug
+    id: debug
+
+  - composite:
+      # Just to automatically apply components with autoBuild=true, deployByDefault=true or not referenced
+      commands: []
+      group:
+        isDefault: true
+        kind: deploy
+    id: deploy
+
+components:
+  - image:
+      autoBuild: true
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_RELATIVE }}:1.2.3-my-tag"
+    name: relative-image
+
+  - image:
+      autoBuild: true
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+    name: absolute-image
+
+  - image:
+      autoBuild: true
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+    name: absolute-image-not-matching-relative
+
+  - container:
+      command: [ 'tail' ]
+      args: [ '-f', '/dev/null' ]
+      endpoints:
+        - name: "8080-tcp"
+          targetPort: 8080
+        - name: "debug"
+          targetPort: 5858
+          exposure: none
+      env:
+        - name: DEBUG_PORT_PROJECT
+          value: "5858"
+      image: registry.access.redhat.com/ubi8/nodejs-16:latest
+#      # Relative image matches the imageName field of the 'relative-image' Image Component => it will be replaced dynamically regardless of the registry, tag or digest
+#      image: "quay.io/{{ CONTAINER_IMAGE_RELATIVE }}@sha256:26c68657ccce2cb0a31b330cb0be2b5e108d467f641c62e13ab40cbec258c68d"
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+
+  - name: k8s-uri
+    kubernetes:
+      deployByDefault: true
+      uri: kubernetes/devfile-image-names-as-selectors/k8s.yaml
+
+  - name: ocp-inlined
+    openshift:
+      deployByDefault: true
+      inlined: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: my-ocp-job
+        spec:
+          template:
+            metadata:
+              name: my-app
+            spec:
+              restartPolicy: Never
+              containers:
+                # Relative image matches the imageName field of the 'relative-image' Image Component
+                # => it will be replaced dynamically regardless of the registry, tag or digest
+                - image: "quay.io/{{ CONTAINER_IMAGE_RELATIVE }}@sha256:26c68657ccce2cb0a31b330cb0be2b5e108d467f641c62e13ab40cbec258c68d"
+                  name: my-main-cont1
+                - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+                  name: my-main-cont2
+              initContainers:
+                - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+                  name: my-init-cont1
+                - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+                  name: my-init-cont2
+
+        ---
+        apiVersion: batch/v1
+        kind: CronJob
+        metadata:
+          name: my-ocp-cron-job
+        spec:
+          concurrencyPolicy: Forbid
+          schedule: '*/1 * * * *'
+          jobTemplate:
+            spec:
+              template:
+                metadata:
+                  name: my-app
+                spec:
+                  restartPolicy: Never
+                  containers:
+                  - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+                    name: my-main-cont1
+                  - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+                    name: my-main-cont2
+                  initContainers:
+                  - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+                    name: my-init-cont1
+                  - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+                    name: my-init-cont2

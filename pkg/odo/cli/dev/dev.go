@@ -112,7 +112,7 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 }
 
 func (o *DevOptions) Validate(ctx context.Context) error {
-	devfileObj := *odocontext.GetDevfileObj(ctx)
+	devfileObj := *odocontext.GetEffectiveDevfileObj(ctx)
 	if !o.debugFlag && !libdevfile.HasRunCommand(devfileObj.Data) {
 		return clierrors.NewNoCommandInDevfileError("run")
 	}
@@ -179,7 +179,7 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj    = odocontext.GetDevfileObj(ctx)
+		devFileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)

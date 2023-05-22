@@ -113,7 +113,7 @@ func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, e
 
 func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err error) {
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 
 		kubeClient   = lo.clientset.KubernetesClient

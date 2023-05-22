@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-k8s-pod
+spec:
+  containers:
+    - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+      name: my-main-cont1
+    - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+      name: my-main-cont2
+  initContainers:
+    - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+      name: my-init-cont1
+    - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+      name: my-init-cont2
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: my-app
+  name: my-k8s-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+          name: my-main-cont1
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+          name: my-main-cont2
+      initContainers:
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+          name: my-init-cont1
+        - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+          name: my-init-cont2
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: my-app
+  name: my-k8s-daemonset
+spec:
+  selector:
+    matchLabels:
+      name: my-app
+  template:
+    metadata:
+      labels:
+        creationTimestamp: ""
+        name: my-app
+    spec:
+      containers:
+        - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+          name: my-main-cont1
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+          name: my-main-cont2
+      initContainers:
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+          name: my-init-cont1
+        - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+          name: my-init-cont2
+
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  labels:
+    app: my-app
+  name: my-k8s-replicaset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+          name: my-main-cont1
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+          name: my-main-cont2
+      initContainers:
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+          name: my-init-cont1
+        - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+          name: my-init-cont2
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: my-k8s-replicationcontroller
+spec:
+  replicas: 3
+  selector:
+    app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+      name: my-app
+    spec:
+      containers:
+        - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+          name: my-main-cont1
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+          name: my-main-cont2
+      initContainers:
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+          name: my-init-cont1
+        - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+          name: my-init-cont2
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-k8s-statefulset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  serviceName: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - image: "{{ CONTAINER_IMAGE_RELATIVE }}"
+          name: my-main-cont1
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE_NOT_MATCHING_RELATIVE }}"
+          name: my-main-cont2
+      initContainers:
+        - image: "{{ CONTAINER_IMAGE_ABSOLUTE }}"
+          name: my-init-cont1
+        - image: "{{ CONTAINER_IMAGE_RELATIVE_NOT_MATCHING_AND_NOT_USED_IN_IMAGE_COMP }}"
+          name: my-init-cont2
+
+# TODO(rm3l): test with some Custom Resources as well. Bug odo if comment is laced after last ---
+
+---

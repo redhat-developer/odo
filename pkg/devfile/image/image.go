@@ -34,7 +34,7 @@ var lookPathCmd = exec.LookPath
 // If push is true, also push the images to their registries
 func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, push bool) error {
 	var (
-		devfileObj  = odocontext.GetDevfileObj(ctx)
+		devfileObj  = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
 	)

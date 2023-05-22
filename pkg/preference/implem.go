@@ -46,6 +46,10 @@ type odoSettings struct {
 
 	// ConsentTelemetry if true collects telemetry for odo
 	ConsentTelemetry *bool `yaml:"ConsentTelemetry,omitempty"`
+
+	// ImageRegistry is the image registry to which relative image names in Devfile Image Components will be pushed to.
+	// This will also serve as the base path for replacing matching images in other components like Container and Kubernetes/OpenShift ones.
+	ImageRegistry *string `yaml:"ImageRegistry,omitempty"`
 }
 
 // Registry includes the registry metadata
@@ -306,6 +310,9 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 				return fmt.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.ConsentTelemetry = &val
+
+		case "imageregistry":
+			c.OdoSettings.ImageRegistry = &value
 		}
 	} else {
 		return fmt.Errorf("unknown parameter : %q is not a parameter in odo preference, run `odo preference -h` to see list of available parameters", parameter)
@@ -372,6 +379,12 @@ func (c *preferenceInfo) GetPushTimeout() time.Duration {
 // GetRegistryCacheTime gets the value set by RegistryCacheTime
 func (c *preferenceInfo) GetRegistryCacheTime() time.Duration {
 	return kpointer.DurationDeref(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
+}
+
+// GetImageRegistry returns the value of ImageRegistry from the preferences
+// and, if absent, then returns default empty string.
+func (c *preferenceInfo) GetImageRegistry() string {
+	return kpointer.StringDeref(c.OdoSettings.ImageRegistry, "")
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from preferences

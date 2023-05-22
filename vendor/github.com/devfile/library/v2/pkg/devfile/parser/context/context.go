@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright 2022-2023 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,13 +45,16 @@ type DevfileCtx struct {
 	// devfile json schema
 	jsonSchema string
 
-	//url path of the devfile
+	// url path of the devfile
 	url string
+
+	// token is a personal access token used with a private git repo URL
+	token string
 
 	// filesystem for devfile
 	fs filesystem.Filesystem
 
-	// devfile kubernetes components has been coverted from uri to inlined in memory
+	// devfile kubernetes components has been converted from uri to inlined in memory
 	convertUriToInlined bool
 }
 
@@ -148,6 +151,16 @@ func (d *DevfileCtx) GetAbsPath() string {
 // GetURL func returns current devfile absolute URL address
 func (d *DevfileCtx) GetURL() string {
 	return d.url
+}
+
+// GetToken func returns current devfile token
+func (d *DevfileCtx) GetToken() string {
+	return d.token
+}
+
+// SetToken sets the token for the devfile
+func (d *DevfileCtx) SetToken(token string) {
+	d.token = token
 }
 
 // SetAbsPath sets absolute file path for devfile

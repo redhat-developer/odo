@@ -84,7 +84,7 @@ func (o *LogsOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ [
 		return errors.New("this command cannot run in an empty directory, run the command in a directory containing source code or initialize using 'odo init'")
 	}
 
-	devfileObj := odocontext.GetDevfileObj(ctx)
+	devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 	if devfileObj == nil {
 		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 	}

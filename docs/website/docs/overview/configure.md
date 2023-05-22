@@ -64,6 +64,7 @@ Preference parameters:
  PARAMETER           VALUE
  ConsentTelemetry    true
  Ephemeral           true
+ ImageRegistry       quay.io/user
  PushTimeout
  RegistryCacheTime
  Timeout
@@ -113,15 +114,15 @@ Unsetting a preference key sets it to an empty value in the preference file. `od
 
 ### Preference Key Table
 
-| Preference         | Description                                                              | Default     |
-| ------------------ |--------------------------------------------------------------------------| ----------- |
-| UpdateNotification | Control whether a notification to update `odo` is shown                    | True        |
-| Timeout            | Timeout for Kubernetes server connection check                           | 1 second    |
-| PushTimeout        | Timeout for waiting for a component to start                             | 240 seconds |
-| RegistryCacheTime  | Duration for which `odo` will cache information from the Devfile registry  | 4 Minutes   |
-| Ephemeral          | Control whether `odo` should create a emptyDir volume to store source code | False       |
-| ConsentTelemetry   | Control whether `odo` can collect telemetry for the user's `odo` usage       | False       |
-
+| Preference         | Description                                                                                                                                                                                           | Default     |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| UpdateNotification | Control whether a notification to update `odo` is shown                                                                                                                                               | True        |
+| Timeout            | Timeout for Kubernetes server connection check                                                                                                                                                        | 1 second    |
+| PushTimeout        | Timeout for waiting for a component to start                                                                                                                                                          | 240 seconds |
+| RegistryCacheTime  | Duration for which `odo` will cache information from the Devfile registry                                                                                                                             | 4 Minutes   |
+| Ephemeral          | Control whether `odo` should create a emptyDir volume to store source code                                                                                                                            | False       |
+| ConsentTelemetry   | Control whether `odo` can collect telemetry for the user's `odo` usage                                                                                                                                | False       |
+| ImageRegistry      | The container image registry where relative image names will be automatically pushed to. See [How `odo` handles image names](../development/devfile.md#how-odo-handles-image-names) for more details. |             |
 
 ## Managing Devfile registries
 

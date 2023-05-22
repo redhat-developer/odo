@@ -7,21 +7,21 @@ import (
 )
 
 type (
-	applicationKeyType   struct{}
-	cwdKeyType           struct{}
-	pidKeyType           struct{}
-	devfilePathKeyType   struct{}
-	devfileObjKeyType    struct{}
-	componentNameKeyType struct{}
+	applicationKeyType         struct{}
+	cwdKeyType                 struct{}
+	pidKeyType                 struct{}
+	devfilePathKeyType         struct{}
+	effectiveDevfileObjKeyType struct{}
+	componentNameKeyType       struct{}
 )
 
 var (
-	applicationKey   applicationKeyType
-	cwdKey           cwdKeyType
-	pidKey           pidKeyType
-	devfilePathKey   devfilePathKeyType
-	devfileObjKey    devfileObjKeyType
-	componentNameKey componentNameKeyType
+	applicationKey         applicationKeyType
+	cwdKey                 cwdKeyType
+	pidKey                 pidKeyType
+	devfilePathKey         devfilePathKeyType
+	effectiveDevfileObjKey effectiveDevfileObjKeyType
+	componentNameKey       componentNameKeyType
 )
 
 // WithApplication sets the value of the application in ctx
@@ -94,22 +94,22 @@ func GetDevfilePath(ctx context.Context) string {
 	panic("this should not happen, either the original context is not passed or WithDevfilePath is not called as it should. Check that FILESYSTEM dependency is added to the command")
 }
 
-// WithDevfileObj sets the value of the devfile object in ctx
-// This function must be called before using GetDevfileObj
-func WithDevfileObj(ctx context.Context, val *parser.DevfileObj) context.Context {
-	return context.WithValue(ctx, devfileObjKey, val)
+// WithEffectiveDevfileObj sets the value of the devfile object in ctx
+// This function must be called before using GetEffectiveDevfileObj
+func WithEffectiveDevfileObj(ctx context.Context, val *parser.DevfileObj) context.Context {
+	return context.WithValue(ctx, effectiveDevfileObjKey, val)
 }
 
-// GetDevfileObj gets the devfile object value in ctx
+// GetEffectiveDevfileObj gets the effective Devfile object value in ctx
 // This function will panic if the context does not contain the value
 // Use this function only with a context obtained from Complete/Validate/Run/... methods of Runnable interface
 // and only if the runnable have added the FILESYSTEM dependency to its clientset
-func GetDevfileObj(ctx context.Context) *parser.DevfileObj {
-	value := ctx.Value(devfileObjKey)
+func GetEffectiveDevfileObj(ctx context.Context) *parser.DevfileObj {
+	value := ctx.Value(effectiveDevfileObjKey)
 	if cast, ok := value.(*parser.DevfileObj); ok {
 		return cast
 	}
-	panic("this should not happen, either the original context is not passed or WithDevfileObj is not called as it should. Check that FILESYSTEM dependency is added to the command")
+	panic("this should not happen, either the original context is not passed or WithEffectiveDevfileObj is not called as it should. Check that FILESYSTEM dependency is added to the command")
 }
 
 // WithComponentName sets the name of the component in ctx

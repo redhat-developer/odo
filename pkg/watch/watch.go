@@ -91,7 +91,7 @@ type processEventsFunc func(ctx context.Context, parameters WatchParameters, cha
 
 func (o *WatchClient) WatchAndPush(ctx context.Context, parameters WatchParameters, componentStatus ComponentStatus) error {
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)

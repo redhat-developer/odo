@@ -17,6 +17,7 @@ type Client interface {
 	GetEphemeralSourceVolume() bool
 	GetConsentTelemetry() bool
 	GetRegistryCacheTime() time.Duration
+	GetImageRegistry() string
 	RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) error
 
 	UpdateNotification() *bool

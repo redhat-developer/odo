@@ -34,7 +34,7 @@ func visitUnion(union interface{}, visitor interface{}) (err error) {
 }
 
 func simplifyUnion(union Union, visitorType reflect.Type) {
-	normalizeUnion(union, visitorType)
+	_ = normalizeUnion(union, visitorType)
 	*union.discriminator() = ""
 }
 

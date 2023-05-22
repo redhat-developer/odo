@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright 2022-2023 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,6 +69,9 @@ func (d *DevfileCtx) SetDevfileContent() error {
 	if d.url != "" {
 		// set the client identifier for telemetry
 		params := util.HTTPRequestParams{URL: d.url, TelemetryClientName: util.TelemetryClientName}
+		if d.token != "" {
+			params.Token = d.token
+		}
 		data, err = util.DownloadInMemory(params)
 		if err != nil {
 			return errors.Wrap(err, "error getting devfile info from url")

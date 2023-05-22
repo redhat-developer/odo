@@ -71,7 +71,7 @@ func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 		if platform == commonflags.PlatformCluster && len(o.namespaceFlag) > 0 {
 			return errors.New("--namespace can be used only with --name")
 		}
-		devfileObj := odocontext.GetDevfileObj(ctx)
+		devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 		if devfileObj == nil {
 			return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
 		}
@@ -210,7 +210,7 @@ func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name stri
 // describeDevfileComponent describes the component defined by the devfile in the current directory
 func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result api.Component, devfile *parser.DevfileObj, err error) {
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 	)

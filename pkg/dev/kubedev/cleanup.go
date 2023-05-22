@@ -14,7 +14,7 @@ import (
 func (o *DevClient) CleanupResources(ctx context.Context, out io.Writer) error {
 	var (
 		componentName = odocontext.GetComponentName(ctx)
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 	)
 	fmt.Fprintln(out, "Cleaning resources, please wait")
 	appname := odocontext.GetApplication(ctx)

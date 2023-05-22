@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -4543,5 +4544,228 @@ CMD ["npm", "start"]
 			})
 
 		}))
+	}
+
+	for _, podman := range []bool{false, true} {
+		podman := podman
+		Context("image names as selectors", helper.LabelPodmanIf(podman, func() {
+
+			When("starting with a Devfile with relative and absolute image names and Kubernetes resources", func() {
+
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+					helper.CopyExample(
+						filepath.Join("source", "devfiles", "nodejs", "kubernetes", "devfile-image-names-as-selectors"),
+						filepath.Join(commonVar.Context, "kubernetes", "devfile-image-names-as-selectors"))
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-image-names-as-selectors.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						helper.DevfileMetadataNameSetter(cmpName))
+				})
+
+				When("adding a local registry for images", func() {
+
+					const imageRegistry = "ttl.sh"
+
+					BeforeEach(func() {
+						helper.Cmd("odo", "preference", "set", "ImageRegistry", imageRegistry, "--force").ShouldPass()
+					})
+
+					AfterEach(func() {
+						helper.Cmd("odo", "preference", "unset", "ImageRegistry", "--force").ShouldPass()
+					})
+
+					extractContainerNameImageMapFn := func(resourceType, resourceName, jsonPath string) map[string]string {
+						result := make(map[string]string)
+						data := commonVar.CliRunner.Run("-n", commonVar.Project, "get", resourceType, resourceName,
+							"-o", fmt.Sprintf("jsonpath=%s", jsonPath)).Out.Contents()
+						scanner := bufio.NewScanner(bytes.NewReader(data))
+						for scanner.Scan() {
+							l := scanner.Text()
+							name, image, found := strings.Cut(l, " ")
+							if !found {
+								continue
+							}
+							result[name] = image
+						}
+						return result
+					}
+
+					When("running odo dev", func() {
+						var devSession helper.DevSession
+						var stdout string
+
+						BeforeEach(func() {
+							var env []string
+							if podman {
+								env = append(env, "ODO_PUSH_IMAGES=false")
+							} else {
+								env = append(env, "PODMAN_CMD=echo")
+							}
+							var outB []byte
+							var err error
+							devSession, outB, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+								RunOnPodman: podman,
+								EnvVars:     env,
+							})
+							Expect(err).ShouldNot(HaveOccurred())
+							stdout = string(outB)
+						})
+
+						AfterEach(func() {
+							devSession.Stop()
+							if podman {
+								devSession.WaitEnd()
+							}
+						})
+
+						It("should treat relative image names as selectors", func() {
+							imageMessagePrefix := "Building & Pushing Image"
+							if podman {
+								imageMessagePrefix = "Building Image"
+							}
+
+							lines, err := helper.ExtractLines(stdout)
+							Expect(err).ShouldNot(HaveOccurred())
+
+							var replacementImageName string
+							var imagesProcessed []string
+							re := regexp.MustCompile(fmt.Sprintf(`(?:%s):\s*([^\n]+)`, imageMessagePrefix))
+							replaceImageRe := regexp.MustCompile(fmt.Sprintf("%s/%s-nodejs-devtools:[^\n]+", imageRegistry, cmpName))
+							for _, l := range lines {
+								matches := re.FindStringSubmatch(l)
+								if len(matches) > 1 {
+									img := matches[1]
+									imagesProcessed = append(imagesProcessed, img)
+									if replaceImageRe.MatchString(img) {
+										replacementImageName = img
+									}
+								}
+							}
+
+							By("building and optionally pushing relative image components", func() {
+								Expect(replacementImageName).ShouldNot(BeEmpty(), "could not find image matching regexp %v", replaceImageRe)
+								Expect(imagesProcessed).Should(ContainElement(
+									MatchRegexp(fmt.Sprintf("%s/%s-nodejs-devtools:[^\n]+", imageRegistry, cmpName))))
+							})
+
+							By("building and optionally pushing absolute image components with no replacement", func() {
+								for _, img := range []string{"ttl.sh/odo-dev-node:1h", "ttl.sh/nodejs-devtools2:1h"} {
+									Expect(imagesProcessed).Should(ContainElement(img))
+								}
+							})
+
+							if !podman {
+								// On Podman, `odo dev` just warns if there are any Kubernetes/OpenShift components at the moment. But this is already tested elsewhere
+								// and not useful to test here.
+								// But we should definitely test it if we plan on supporting more K8s resources from those components.
+
+								type resourceData struct {
+									containers     map[string]string
+									initContainers map[string]string
+								}
+
+								k8sResourcesDeployed := map[string]resourceData{
+									"CronJob": {
+										containers: extractContainerNameImageMapFn("CronJob", "my-ocp-cron-job",
+											"{range .spec.jobTemplate.spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("CronJob", "my-ocp-cron-job",
+											"{range .spec.jobTemplate.spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"DaemonSet": {
+										containers: extractContainerNameImageMapFn("DaemonSet", "my-k8s-daemonset",
+											"{range .spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("DaemonSet", "my-k8s-daemonset",
+											"{range .spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"Deployment": {
+										containers: extractContainerNameImageMapFn("Deployment", "my-k8s-deployment",
+											"{range .spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("Deployment", "my-k8s-deployment",
+											"{range .spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"Job": {
+										containers: extractContainerNameImageMapFn("Job", "my-ocp-job",
+											"{range .spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("Job", "my-ocp-job",
+											"{range .spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"Pod": {
+										containers: extractContainerNameImageMapFn("Pod", "my-k8s-pod",
+											"{range .spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("Pod", "my-k8s-pod",
+											"{range .spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"ReplicaSet": {
+										containers: extractContainerNameImageMapFn("ReplicaSet", "my-k8s-replicaset",
+											"{range .spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("ReplicaSet", "my-k8s-replicaset",
+											"{range .spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"ReplicationController": {
+										containers: extractContainerNameImageMapFn("ReplicationController", "my-k8s-replicationcontroller",
+											"{range .spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("ReplicationController", "my-k8s-replicationcontroller",
+											"{range .spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+									"StatefulSet": {
+										containers: extractContainerNameImageMapFn("StatefulSet", "my-k8s-statefulset",
+											"{range .spec.template.spec.containers[*]}{.name} {.image}{\"\\n\"}{end}"),
+										initContainers: extractContainerNameImageMapFn("StatefulSet", "my-k8s-statefulset",
+											"{range .spec.template.spec.initContainers[*]}{.name} {.image}{\"\\n\"}{end}"),
+									},
+								}
+
+								By("replacing matching image names in core Kubernetes components", func() {
+									const mainCont1 = "my-main-cont1"
+									for resType, data := range k8sResourcesDeployed {
+										Expect(data.containers[mainCont1]).Should(
+											Equal(replacementImageName),
+											func() string {
+												return fmt.Sprintf(
+													"unexpected image for container %q in %q deployed from K8s or OCP component. All resources: %v",
+													mainCont1, resType, k8sResourcesDeployed)
+											})
+									}
+								})
+
+								By("not replacing non-matching or absolute image names in core Kubernetes resources", func() {
+									const (
+										mainCont2 = "my-main-cont2"
+										initCont1 = "my-init-cont1"
+										initCont2 = "my-init-cont2"
+									)
+									for resType, data := range k8sResourcesDeployed {
+										Expect(data.containers[mainCont2]).Should(
+											Equal("ttl.sh/nodejs-devtools2:1h"),
+											func() string {
+												return fmt.Sprintf(
+													"unexpected image for container %q in %q deployed from K8s or OCP component. All resources: %v",
+													mainCont2, resType, k8sResourcesDeployed)
+											})
+										Expect(data.initContainers[initCont1]).Should(
+											Equal("ttl.sh/odo-dev-node:1h"),
+											func() string {
+												return fmt.Sprintf(
+													"unexpected image for init container %q in %q deployed from K8s or OCP component. All resources: %v",
+													initCont1, resType, k8sResourcesDeployed)
+											})
+										Expect(data.initContainers[initCont2]).Should(
+											Equal("nodejs-devtools007"),
+											func() string {
+												return fmt.Sprintf(
+													"unexpected image for init container %q in %q deployed from K8s or OCP component. All resources: %v",
+													initCont1, resType, k8sResourcesDeployed)
+											})
+									}
+								})
+							}
+						})
+					})
+
+				})
+
+			})
+		}))
+
 	}
 })

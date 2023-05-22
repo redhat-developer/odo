@@ -48,7 +48,7 @@ func NewDeployClient(kubeClient kclient.ClientInterface, configAutomountClient c
 
 func (o *DeployClient) Deploy(ctx context.Context) error {
 	var (
-		devfileObj    = odocontext.GetDevfileObj(ctx)
+		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
 		componentName = odocontext.GetComponentName(ctx)

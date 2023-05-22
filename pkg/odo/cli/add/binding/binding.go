@@ -12,11 +12,14 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
 	"github.com/redhat-developer/odo/pkg/binding/backend"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	odoutil "github.com/redhat-developer/odo/pkg/util"
 )
 
 // BindingRecommendedCommandName is the recommended binding sub-command name
@@ -68,14 +71,23 @@ func (o *AddBindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdlin
 }
 
 func (o *AddBindingOptions) Validate(ctx context.Context) (err error) {
-	devfileObj := odocontext.GetDevfileObj(ctx)
+	devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
 	withDevfile := devfileObj != nil
 	return o.clientset.BindingClient.ValidateAddBinding(o.flags, withDevfile)
 }
 
 func (o *AddBindingOptions) Run(ctx context.Context) error {
-	devfileObj := odocontext.GetDevfileObj(ctx)
-	withDevfile := devfileObj != nil
+	// Update the raw Devfile only, so we do not break any relationship between parent-child for example
+	withDevfile := odoutil.CheckPathExists(location.DevfileLocation(odocontext.GetWorkingDirectory(ctx)))
+	var devfileObj *parser.DevfileObj
+	if withDevfile {
+		rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), "", false)
+		if err != nil {
+			return err
+		}
+		devfileObj = &rawDevfileObj
+	}
+
 	ns, err := o.clientset.BindingClient.SelectNamespace(o.flags)
 	if err != nil {
 		return err
