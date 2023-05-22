@@ -53,7 +53,8 @@ func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
 }
 
 func (o *execHandler) ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error {
-	return nil
+	panic("exec_handler: ExecuteTerminatingCommand in ExecuteNonTerminatingCommand")
+	//return ExecuteTerminatingCommand(ctx, o.execClient, o.platformClient, command, o.componentExists, o.podName, o.appName, o.componentName, o.msg, o.show)
 }
 
 func (o *execHandler) ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error {

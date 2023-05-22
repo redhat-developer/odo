@@ -68,7 +68,7 @@ func (a *RunHandler) ExecuteNonTerminatingCommand(ctx context.Context, command d
 }
 
 func (a *RunHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
-	return nil
+	return component.ExecuteRunCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName)
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running
