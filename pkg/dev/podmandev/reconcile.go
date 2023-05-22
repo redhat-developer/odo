@@ -272,7 +272,7 @@ func (o *DevClient) handleLoopbackPorts(ctx context.Context, options dev.StartOp
 
 	loopbackPorts, err := port.DetectRemotePortsBoundOnLoopback(ctx, o.execClient, pod.Name, pod.Spec.Containers[0].Name, fwPorts)
 	if err != nil {
-		return fmt.Errorf("unable to detect container ports bound on the loopback interface: %w", err)
+		log.Warningf("unable to detect container ports bound on the loopback interface: %v", err)
 	}
 
 	if len(loopbackPorts) == 0 {
