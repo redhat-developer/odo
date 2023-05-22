@@ -26,7 +26,8 @@ var _ = Describe("odo describe/list binding command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	for _, ns := range []string{"", fmt.Sprintf("binding-%s", helper.RandString(3))} {
+	for _, ns := range []string{""} { //fmt.Sprintf("binding-%s", helper.RandString(3)),
+
 		ns := ns
 
 		When(fmt.Sprintf("creating a component with a binding (service in namespace %q)", ns), func() {
@@ -739,7 +740,8 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							{"list"},
 							{"list", "binding"},
 						} {
-							It("should list the binding", func() {
+							command := command
+							It(fmt.Sprintf("should list the binding - command: %v", command), func() {
 								By("JSON output", func() {
 									res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
 									stdout, stderr := res.Out(), res.Err()

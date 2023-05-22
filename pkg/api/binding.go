@@ -1,6 +1,6 @@
 package api
 
-// ServiceBinding describes a service binding, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
+// ServiceBinding describes a service binding, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1beta1
 type ServiceBinding struct {
 	Name   string                `json:"name"`
 	Spec   ServiceBindingSpec    `json:"spec"`

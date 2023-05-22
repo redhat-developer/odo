@@ -8,7 +8,7 @@ import (
 
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1beta1"
 
 	"github.com/redhat-developer/odo/pkg/project"
 
@@ -114,7 +114,7 @@ func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstru
 }
 
 // GetBindingsFromDevfile returns all ServiceBinding resources declared as Kubernertes component from a Devfile
-// from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
+// from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1beta1
 // The function also returns status information of the binding in the cluster, if accessible, or a warning if the cluster is not accessible
 func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
 	result := []api.ServiceBinding{}
@@ -193,7 +193,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 }
 
 // GetBindingFromCluster returns the ServiceBinding resource with the given name
-// from the cluster, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
+// from the cluster, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1beta1
 func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, error) {
 	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err == nil {
@@ -273,7 +273,7 @@ func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingSt
 }
 
 // getStatusFromSpec returns status information from a ServiceBinding in the cluster
-// from group servicebinding.io/v1alpha3
+// from group servicebinding.io/v1beta1
 func (o *BindingClient) getStatusFromSpec(name string) (*api.ServiceBindingStatus, error) {
 	specSB, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err != nil {

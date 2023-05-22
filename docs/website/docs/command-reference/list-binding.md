@@ -9,7 +9,7 @@ in the Devfile of the current directory.
 This command supports the service bindings added with the command `odo add binding`, and bindings added manually
 to the Devfile, using a `ServiceBinding` resource from one of these apiVersion:
 - `binding.operators.coreos.com/v1alpha1`
-- `servicebinding.io/v1alpha3`
+- `servicebinding.io/v1beta1`
 
 The name of the service binding is prefixed with `*` when the service binding is declared in the Devfile present in the current directory.
 

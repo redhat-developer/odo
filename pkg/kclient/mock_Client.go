@@ -16,7 +16,7 @@ import (
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	api "github.com/redhat-developer/odo/pkg/api"
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	v1beta1 "github.com/redhat-developer/service-binding-operator/apis/spec/v1beta1"
 	v10 "k8s.io/api/apps/v1"
 	v11 "k8s.io/api/batch/v1"
 	v12 "k8s.io/api/core/v1"
@@ -969,10 +969,10 @@ func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{})
 }
 
 // GetSpecServiceBinding mocks base method.
-func (m *MockClientInterface) GetSpecServiceBinding(name string) (v1alpha3.ServiceBinding, error) {
+func (m *MockClientInterface) GetSpecServiceBinding(name string) (v1beta1.ServiceBinding, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSpecServiceBinding", name)
-	ret0, _ := ret[0].(v1alpha3.ServiceBinding)
+	ret0, _ := ret[0].(v1beta1.ServiceBinding)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1239,10 +1239,10 @@ func (mr *MockClientInterfaceMockRecorder) ListSecrets(labelSelector interface{}
 }
 
 // ListServiceBindingsFromAllGroups mocks base method.
-func (m *MockClientInterface) ListServiceBindingsFromAllGroups() ([]v1alpha3.ServiceBinding, []v1alpha10.ServiceBinding, error) {
+func (m *MockClientInterface) ListServiceBindingsFromAllGroups() ([]v1beta1.ServiceBinding, []v1alpha10.ServiceBinding, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListServiceBindingsFromAllGroups")
-	ret0, _ := ret[0].([]v1alpha3.ServiceBinding)
+	ret0, _ := ret[0].([]v1beta1.ServiceBinding)
 	ret1, _ := ret[1].([]v1alpha10.ServiceBinding)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

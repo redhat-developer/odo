@@ -6,7 +6,7 @@ title: odo describe binding
 
 This command supports the service bindings added with the command `odo add binding` and bindings added manually to the Devfile, using a `ServiceBinding` resource from one of these apiVersion:
 - `binding.operators.coreos.com/v1alpha1`
-- `servicebinding.io/v1alpha3`
+- `servicebinding.io/v1beta1`
 
 ## Running the Command
 
@@ -21,7 +21,7 @@ This command returns information extracted from the Devfile and, if possible, fr
 The command lists the Kubernetes resources declared in the Devfile as a Kubernetes component,
 with the kind `ServiceBinding` and one of these apiVersion:
 - `binding.operators.coreos.com/v1alpha1`
-- `servicebinding.io/v1alpha3`
+- `servicebinding.io/v1beta1`
 
 For each of these resources, the following information is displayed:
 - the resource name,
@@ -136,6 +136,6 @@ The command extracts information from the cluster.
 
 The command searches for a resource in the current namespace with the given name, the kind `ServiceBinding` and one of these apiVersion:
 - `binding.operators.coreos.com/v1alpha1`
-- `servicebinding.io/v1alpha3`
+- `servicebinding.io/v1beta1`
 
 If a resource is found, it displays information about the service binding and the variables that can be used from the component.

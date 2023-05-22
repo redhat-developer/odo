@@ -27,7 +27,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/platform"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1beta1"
 )
 
 type ClientInterface interface {

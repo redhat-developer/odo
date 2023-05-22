@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	appsv1 "k8s.io/api/apps/v1"
@@ -75,8 +76,9 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, u unstructured.Uns
 	if err != nil {
 		return err
 	}
-
-	_, err = processingPipeline.Process(&serviceBinding)
+	var delay time.Duration
+	_, delay, err = processingPipeline.Process(&serviceBinding)
+	klog.V(1).Infof("Binding the service, delay: %v", delay)
 	if err != nil {
 		if kerrors.IsForbidden(err) {
 			// due to https://github.com/redhat-developer/service-binding-operator/issues/1003
@@ -156,7 +158,9 @@ func UnbindWithLibrary(kubeClient kclient.ClientInterface, secretToUnbind unstru
 	}
 	// use the library to perform unbinding;
 	// this will remove all the envvars, volume/secret mounts done on the deployment to bind it to the service
-	_, err = processingPipeline.Process(&newServiceBinding)
+	var delay time.Duration
+	_, delay, err = processingPipeline.Process(&newServiceBinding)
+	klog.V(1).Infof("Unbinding the service; delay: %v", delay)
 	return err
 }
 

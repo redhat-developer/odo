@@ -7,7 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1beta1"
 
 	ocappsv1 "github.com/openshift/api/apps/v1"
 
@@ -179,7 +179,7 @@ func (c Client) GetBindingServiceBinding(name string) (bindingApi.ServiceBinding
 	return result, nil
 }
 
-// GetSpecServiceBinding returns a ServiceBinding from group servicebinding.io/v1alpha3
+// GetSpecServiceBinding returns a ServiceBinding from group servicebinding.io/v1beta1
 func (c Client) GetSpecServiceBinding(name string) (specApi.ServiceBinding, error) {
 	if c.DynamicClient == nil {
 		return specApi.ServiceBinding{}, nil
@@ -200,7 +200,7 @@ func (c Client) GetSpecServiceBinding(name string) (specApi.ServiceBinding, erro
 
 // ListServiceBindingsFromAllGroups returns the list of ServiceBindings in the cluster
 // in the current namespace.
-// The first list on the result contains ServiceBinding resources from group servicebinding.io/v1alpha3
+// The first list on the result contains ServiceBinding resources from group servicebinding.io/v1beta1
 // the second list contains ServiceBinding resources from group binding.operators.coreos.com/v1alpha1
 func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error) {
 	if c.DynamicClient == nil {
@@ -281,7 +281,7 @@ func APIServiceBindingFromBinding(
 }
 
 // APIServiceBindingFromSpec returns a common api.ServiceBinding structure
-// from a ServiceBinding.servicebinding.io/v1alpha3
+// from a ServiceBinding.servicebinding.io/v1beta1
 func APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding {
 
 	service := spec.Spec.Service

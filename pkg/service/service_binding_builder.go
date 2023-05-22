@@ -104,18 +104,10 @@ func BindingDefinitions(ctx pipeline.Context) {
 				return
 			} else {
 				log.Warning("Skipping the check for CRD, user does not have access")
-				//continue
+				// continue
 			}
 		}
 		if crd != nil {
-			descr, err := crd.Descriptor()
-			if err != nil {
-				requestRetry(ctx, collect.ErrorReadingDescriptorReason, err)
-				return
-			}
-			if descr != nil {
-				util.MergeMaps(anns, descr.BindingAnnotations())
-			}
 			util.MergeMaps(anns, crd.Resource().GetAnnotations())
 		}
 
