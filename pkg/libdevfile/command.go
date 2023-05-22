@@ -13,7 +13,7 @@ import (
 
 type command interface {
 	CheckValidity() error
-	Execute(ctx context.Context, handler Handler) error
+	Execute(ctx context.Context, handler Handler, parentGroup *v1alpha2.CommandGroup) error
 }
 
 // newCommand returns a command implementation, depending on the type of the command

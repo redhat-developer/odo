@@ -485,6 +485,19 @@ func TestBuild(t *testing.T) {
 		CommandLine: "build my-app",
 		Component:   containerComp.Name,
 	})
+
+	nonDefaultRunCommand := generator.GetExecCommand(generator.ExecCommandParams{
+		Kind:        v1alpha2.RunCommandGroupKind,
+		Id:          "my-non-default-run-command",
+		CommandLine: "run my-app",
+		Component:   containerComp.Name,
+	})
+	defaultBuildCommandComposite := generator.GetCompositeCommand(generator.CompositeCommandParams{
+		Kind:      v1alpha2.BuildCommandGroupKind,
+		Id:        "my-default-build-command-composite",
+		IsDefault: pointer.Bool(true),
+		Commands:  []string{"my-non-default-run-command"},
+	})
 	type args struct {
 		devfileObj func() parser.DevfileObj
 		handler    func(ctrl *gomock.Controller) Handler
@@ -576,6 +589,26 @@ func TestBuild(t *testing.T) {
 					return h
 				},
 				cmdName: "my-explicit-non-default-build-command",
+			},
+		},
+		{
+			name: "with default composite command",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					dData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = dData.AddCommands([]v1alpha2.Command{defaultBuildCommandComposite, nonDefaultRunCommand})
+					_ = dData.AddComponents([]v1alpha2.Component{containerComp})
+					return parser.DevfileObj{
+						Data: dData,
+					}
+				},
+				handler: func(ctrl *gomock.Controller) Handler {
+					h := NewMockHandler(ctrl)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultRunCommand)).Times(1)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().ExecuteTerminatingCommand(gomock.Any(), gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					return h
+				},
 			},
 		},
 	} {

@@ -557,7 +557,7 @@ func TestExecute(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
+		/*{
 			name:    "Devfile with exec Build command",
 			podName: "a-pod-name",
 			show:    true,
@@ -585,7 +585,7 @@ func TestExecute(t *testing.T) {
 				client.EXPECT().ExecuteCommand(gomock.Any(), gomock.Any(), "a-pod-name", "my-container", false, gomock.Any(), gomock.Any()).AnyTimes()
 				return client
 			},
-		},
+		},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

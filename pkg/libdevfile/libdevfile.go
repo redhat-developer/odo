@@ -72,7 +72,7 @@ func executeCommand(ctx context.Context, devfileObj parser.DevfileObj, command v
 	if err != nil {
 		return err
 	}
-	return cmd.Execute(ctx, handler)
+	return cmd.Execute(ctx, handler, nil)
 }
 
 // GetCommand iterates through the devfile commands and returns the devfile command with the specified name and group kind.
@@ -264,7 +264,7 @@ func execDevfileEvent(ctx context.Context, devfileObj parser.DevfileObj, events 
 				return err
 			}
 			// Execute command in container
-			err = c.Execute(ctx, handler)
+			err = c.Execute(ctx, handler, nil)
 			if err != nil {
 				return fmt.Errorf("unable to execute devfile command %q: %w", commandName, err)
 			}

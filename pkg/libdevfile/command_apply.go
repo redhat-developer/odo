@@ -28,7 +28,7 @@ func (o *applyCommand) CheckValidity() error {
 	return nil
 }
 
-func (o *applyCommand) Execute(ctx context.Context, handler Handler) error {
+func (o *applyCommand) Execute(ctx context.Context, handler Handler, parentGroup *v1alpha2.CommandGroup) error {
 	devfileComponents, err := o.devfileObj.Data.GetComponents(common.DevfileOptions{
 		FilterByName: o.command.Apply.Component,
 	})
