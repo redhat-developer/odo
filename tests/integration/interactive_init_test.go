@@ -113,27 +113,25 @@ var _ = Describe("odo init interactive command tests", func() {
 
 						helper.ExpectString(ctx, "What configuration do you want change")
 						helper.SendLine(ctx, "Add new port")
-
 						helper.ExpectString(ctx, "Enter port number:")
 						helper.SendLine(ctx, "5000")
+
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Add new environment variable")
+						helper.ExpectString(ctx, "Enter new environment variable name:")
+						helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
+						helper.ExpectString(ctx, "Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
+						helper.SendLine(ctx, "5858")
 
 						helper.ExpectString(ctx, "What configuration do you want change")
 						helper.SendLine(ctx, "Delete port \"3000\"")
 
 						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "Add new environment variable")
-
-						helper.ExpectString(ctx, "Enter new environment variable name:")
-						helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
-
-						helper.ExpectString(ctx, "Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
-						helper.SendLine(ctx, "5858")
-
-						helper.ExpectString(ctx, "What configuration do you want change")
 						helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
 
 						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "NOTHING - configuration is correct")
+						// Default option is NOTHING - configuration is correct
+						helper.SendLine(ctx, "")
 
 						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 						helper.SendLine(ctx, "")
