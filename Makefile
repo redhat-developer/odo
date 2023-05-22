@@ -53,7 +53,7 @@ else
    PODMAN_EXEC_NODES := 1
 endif
 
-GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --poll-progress-after=$(POLL_PROGRESS_INTERVAL) -timeout $(TIMEOUT) --no-color
+GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --poll-progress-after=$(POLL_PROGRESS_INTERVAL) --poll-progress-interval=$(POLL_PROGRESS_INTERVAL) -timeout $(TIMEOUT) --no-color
 
 # Flags to run one test per core.
 GINKGO_FLAGS_AUTO = $(GINKGO_FLAGS_ALL) -p
