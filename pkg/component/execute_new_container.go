@@ -55,7 +55,7 @@ func ExecuteInNewContainer(
 	}
 
 	podTemplateSpec.Spec.Containers[0].Command = []string{"/bin/sh"}
-	podTemplateSpec.Spec.Containers[0].Args = getCmdline(command)
+	podTemplateSpec.Spec.Containers[0].Args = getJobCmdline(command)
 
 	volumes, err := storage.GetAutomountVolumes(configAutomountClient, podTemplateSpec.Spec.Containers, podTemplateSpec.Spec.InitContainers)
 	if err != nil {
@@ -157,4 +157,24 @@ func ExecuteInNewContainer(
 	}
 
 	return err
+}
+
+func getJobCmdline(command v1alpha2.Command) []string {
+	// deal with environment variables
+	var cmdLine string
+	setEnvVariable := util.GetCommandStringFromEnvs(command.Exec.Env)
+
+	if setEnvVariable == "" {
+		cmdLine = command.Exec.CommandLine
+	} else {
+		cmdLine = setEnvVariable + " && " + command.Exec.CommandLine
+	}
+	var args []string
+	if command.Exec.WorkingDir != "" {
+		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
+		args = []string{"-c", "cd " + command.Exec.WorkingDir + " && " + cmdLine}
+	} else {
+		args = []string{"-c", cmdLine}
+	}
+	return args
 }
