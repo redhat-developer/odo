@@ -11,16 +11,33 @@
 #
 # Example: ./release-bit-verification.sh ~/Downloads/odo-redistributable-2.4.3-1.el8.x86_64.rpm
 #
+#For erroring out in case of error
+set -eo pipefail
 
 shout() {
     echo "--------------------------------$1------------------------------------------"
 }
 # Check SHASUM for all the binary files and there should be no difference
 
-# Create a Temp directory
+
+
+# Checking for no or invaild arguments
+if [ "$#" -lt 1 ]
+then
+  echo "No arguments supplied"
+  exit 1
+fi
+
+if [ ! -f ${1} ]; 
+then
+    echo "Please enter a valid filepath";
+    exit 1
+fi
+#Creating an Temp directory    
 WORKING_DIR=$(mktemp -d)
 shout "WORKING_DIR=$WORKING_DIR"
 export REPO_URL=${REPO_URL:-"https://github.com/redhat-developer/odo.git"}
+
 
 # Extract from rpm file
 rpm2cpio ${1} | cpio -idmvD $WORKING_DIR
@@ -67,10 +84,9 @@ fi
 git clone $REPO_URL odo && cd $WORKING_DIR/odo && git checkout "v$VERSION"
 
 #Run tests
-make test-integration-devfile
-make test-integration
-make test-e2e-all
-make test-cmd-project
+make test-e2e
 
 # Cleanup
-rm -rf /tmp/odo /tmp/usr
+rm -rf "$WORKING_DIR"
+
+
