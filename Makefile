@@ -151,10 +151,6 @@ cross: ## compile for multiple platforms
 generate-cli-structure:
 	go run cmd/cli-doc/cli-doc.go structure
 
-.PHONY: generate-cli-reference
-generate-cli-reference:
-	go run cmd/cli-doc/cli-doc.go reference > docs/cli-reference.adoc
-
 # run make cross before this!
 .PHONY: prepare-release
 prepare-release: cross ## create gzipped binaries in ./dist/release/ for uploading to GitHub release page
@@ -232,3 +228,10 @@ test-e2e:
 .PHONY: test-doc-automation
 test-doc-automation:
 	$(RUN_GINKGO) $(GINKGO_FLAGS_ONE) --junit-report="test-doc-automation.xml"  tests/documentation/...
+
+
+# Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; this will only generate interfaces
+# Actual implementation must be done inside pkg/apiserver-impl
+.PHONY: generate-apiserver
+generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen
+	openapi-generator generate -i ododevapispec.yaml -g go-server -o pkg/apiserver-gen --additional-properties=outputAsLibrary=true,onlyInterfaces=true
