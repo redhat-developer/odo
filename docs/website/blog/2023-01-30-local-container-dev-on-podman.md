@@ -3,6 +3,7 @@ title: Local container development with Podman and odo
 author: Armel Soro
 author_url: https://github.com/rm3l
 author_image_url: https://github.com/rm3l.png
+image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: ["local", "container", "development", "podman", "container-dev"]
 slug: local-container-development-with-podman-and-odo
 ---

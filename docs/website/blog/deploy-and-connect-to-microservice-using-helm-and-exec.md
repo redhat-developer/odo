@@ -3,6 +3,7 @@ title: Using Helm with odo
 author: Parthvi Vala
 author_url: https://github.com/valaparthvi
 author_image_url: https://github.com/valaparthvi.png
+image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: []
 slug: using-helm-with-odo
 ---

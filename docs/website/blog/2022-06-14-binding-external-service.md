@@ -3,6 +3,7 @@ title: Binding an external service with odo v3
 author: Philippe Martin
 author_url: https://github.com/feloy
 author_image_url: https://github.com/feloy.png
+image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: ["binding"]
 slug: binding-external-service-with-odo-v3
 ---
