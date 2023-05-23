@@ -28,14 +28,14 @@ then
   exit 1
 fi
 
-if [ -f ${1} ]; 
+if [ ! -f ${1} ]; 
 then
+    echo "Please enter a valid filepath";
+    exit 1
+else
     WORKING_DIR=$(mktemp -d)
     shout "WORKING_DIR=$WORKING_DIR"
     export REPO_URL=${REPO_URL:-"https://github.com/redhat-developer/odo.git"}
-else
-    echo "Please enter a valid filepath";
-    exit 1
 fi
 
 # Extract from rpm file
