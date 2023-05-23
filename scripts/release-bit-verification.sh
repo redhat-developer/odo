@@ -21,7 +21,7 @@ shout() {
 
 
 
-# Create a Temp directory
+# Checking for no or invaild arguments
 if [ "$#" -lt 1 ]
 then
   echo "No arguments supplied"
@@ -32,11 +32,12 @@ if [ ! -f ${1} ];
 then
     echo "Please enter a valid filepath";
     exit 1
-else
-    WORKING_DIR=$(mktemp -d)
-    shout "WORKING_DIR=$WORKING_DIR"
-    export REPO_URL=${REPO_URL:-"https://github.com/redhat-developer/odo.git"}
 fi
+#Creating an Temp directory    
+WORKING_DIR=$(mktemp -d)
+shout "WORKING_DIR=$WORKING_DIR"
+export REPO_URL=${REPO_URL:-"https://github.com/redhat-developer/odo.git"}
+
 
 # Extract from rpm file
 rpm2cpio ${1} | cpio -idmvD $WORKING_DIR
