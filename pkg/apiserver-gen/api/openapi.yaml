@@ -1,0 +1,184 @@
+openapi: 3.0.2
+info:
+  description: API interface for 'odo dev'
+  title: odo dev
+  version: "0.1"
+servers:
+- url: /
+paths:
+  /instance:
+    delete:
+      description: Stop this 'odo dev' instance
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                message: "'odo dev' instance with pid: 42 is shuting down."
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+          description: '''odo dev'' instance will shutdown.'
+    get:
+      description: Get information about the this 'odo dev' instance.
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                componentDirectory: /Users/user/Documents/myproject
+                pid: 42
+              schema:
+                $ref: '#/components/schemas/_instance_get_200_response'
+          description: Information about the this 'odo dev' instance.
+  /component:
+    get:
+      description: Get the Information about the component controlled by this 'odo
+        dev' instance.
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                devfilePath: /home/tomas/Code/odo-examples/java-maven/devfile.yaml
+                devfileData:
+                  devfile:
+                    schemaVersion: 2.1.0
+                    metadata:
+                      name: demo
+                      version: 1.1.1
+                      displayName: Maven Java
+                      description: Upstream Maven and OpenJDK 11
+                      tags:
+                      - Java
+                      - Maven
+                      icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg
+                      projectType: Maven
+                      language: Java
+                    components:
+                    - name: tools
+                      container:
+                        image: quay.io/eclipse/che-java11-maven:next
+                        env:
+                        - name: DEBUG_PORT
+                          value: "5858"
+                        volumeMounts:
+                        - name: m2
+                          path: /home/user/.m2
+                        memoryLimit: 512Mi
+                        mountSources: true
+                        dedicatedPod: false
+                        endpoints:
+                        - name: http-maven
+                          targetPort: 8080
+                          secure: false
+                    - name: m2
+                      volume:
+                        ephemeral: false
+                    starterProjects:
+                    - name: springbootproject
+                      git:
+                        remotes:
+                          origin: https://github.com/odo-devfiles/springboot-ex.git
+                    commands:
+                    - id: mvn-package
+                      exec:
+                        group:
+                          kind: build
+                          isDefault: true
+                        commandLine: mvn -Dmaven.repo.local=/home/user/.m2/repository
+                          package
+                        component: tools
+                        workingDir: "${PROJECT_SOURCE}"
+                        hotReloadCapable: false
+                    - id: run
+                      exec:
+                        group:
+                          kind: run
+                          isDefault: true
+                        commandLine: java -jar target/*.jar
+                        component: tools
+                        workingDir: "${PROJECT_SOURCE}"
+                        hotReloadCapable: false
+                    - id: debug
+                      exec:
+                        group:
+                          kind: debug
+                          isDefault: true
+                        commandLine: "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n\
+                          \ -jar target/*.jar"
+                        component: tools
+                        workingDir: "${PROJECT_SOURCE}"
+                        hotReloadCapable: false
+                  supportedOdoFeatures:
+                    dev: true
+                    deploy: false
+                    debug: true
+                runningIn:
+                  deploy: false
+                  dev: true
+                managedBy: odo
+              schema:
+                $ref: '#/components/schemas/_component_get_200_response'
+          description: Information about the component.
+  /component/command:
+    post:
+      description: Instruct 'odo dev' to perform given command on the component
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_component_command_post_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                message: push was successfully executed
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+          description: command was successfully executed
+components:
+  schemas:
+    GeneralSuccess:
+      example:
+        message: message
+      properties:
+        message:
+          type: string
+      type: object
+    GeneralError:
+      properties:
+        message:
+          type: string
+      type: object
+    _instance_get_200_response:
+      example:
+        componentDirectory: componentDirectory
+        pid: 0
+      properties:
+        componentDirectory:
+          description: Directory on which this 'odo dev' instance is running
+          type: string
+        pid:
+          description: PID of the this 'odo dev' instance.
+          type: integer
+      type: object
+    _component_get_200_response:
+      example:
+        component: "{}"
+      properties:
+        component:
+          description: Description of the component. This is the same as output of
+            'odo describe component -o json'
+          type: object
+      type: object
+    _component_command_post_request:
+      example:
+        action: push
+      properties:
+        name:
+          description: Name of the command that should be executed
+          enum:
+          - push
+          type: string
+      type: object
