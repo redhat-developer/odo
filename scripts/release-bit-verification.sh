@@ -28,9 +28,9 @@ then
   exit 1
 fi
 
-WORKING_DIR=$(mktemp -d)
 if [ -f ${1} ]; 
 then
+    WORKING_DIR=$(mktemp -d)
     shout "WORKING_DIR=$WORKING_DIR"
     export REPO_URL=${REPO_URL:-"https://github.com/redhat-developer/odo.git"}
 else
