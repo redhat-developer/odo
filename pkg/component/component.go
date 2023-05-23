@@ -538,3 +538,11 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName, appNa
 
 	return ings, routes, nil
 }
+
+func GetContainersNames(pod *corev1.Pod) []string {
+	result := make([]string, 0, len(pod.Spec.Containers))
+	for _, container := range pod.Spec.Containers {
+		result = append(result, container.Name)
+	}
+	return result
+}

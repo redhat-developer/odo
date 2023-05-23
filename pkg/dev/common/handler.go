@@ -106,11 +106,17 @@ func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component) error {
 }
 
 func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
-	return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName)
+	if isContainerRunning(command.Exec.Component, a.containersRunning) {
+		return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName)
+	}
+	panic("container not running")
 }
 
 func (a *runHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
-	return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName, a.msg, false)
+	if isContainerRunning(command.Exec.Component, a.containersRunning) {
+		return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName, a.msg, false)
+	}
+	panic("container not running")
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running
@@ -121,4 +127,13 @@ func (a *runHandler) IsRemoteProcessForCommandRunning(ctx context.Context, comma
 	}
 
 	return remoteProcess.Status == remotecmd.Running, nil
+}
+
+func isContainerRunning(container string, containers []string) bool {
+	for _, cnt := range containers {
+		if container == cnt {
+			return true
+		}
+	}
+	return false
 }

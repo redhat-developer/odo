@@ -10,6 +10,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -97,7 +98,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			componentName,
 			pod.Name,
 			false,
-			[]string{}, // TODO
+			component.GetContainersNames(pod),
 			"Executing post-start command in container",
 
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
@@ -129,7 +130,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		componentName,
 		pod.GetName(),
 		false,
-		[]string{}, // TODO
+		component.GetContainersNames(pod),
 		"",
 
 		o.filesystem,
@@ -169,7 +170,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 				componentName,
 				pod.Name,
 				running,
-				[]string{}, // TODO
+				component.GetContainersNames(pod),
 				"Building your application in container",
 
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands

@@ -13,6 +13,7 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/component"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
@@ -71,7 +72,7 @@ func (o *DevClient) reconcile(
 			componentName,
 			pod.Name,
 			false,
-			[]string{}, // TODO
+			component.GetContainersNames(pod),
 			"Executing post-start command in container",
 
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
@@ -93,7 +94,7 @@ func (o *DevClient) reconcile(
 				componentName,
 				pod.Name,
 				false,
-				[]string{}, // TODO
+				component.GetContainersNames(pod),
 				"Building your application in container",
 
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
@@ -121,7 +122,7 @@ func (o *DevClient) reconcile(
 			componentName,
 			pod.Name,
 			componentStatus.RunExecuted,
-			[]string{}, // TODO
+			component.GetContainersNames(pod),
 			"",
 
 			o.fs,
