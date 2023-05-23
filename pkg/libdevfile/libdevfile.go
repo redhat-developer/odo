@@ -22,8 +22,8 @@ const DebugEndpointNamePrefix = "debug"
 
 type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
-	ApplyKubernetes(kubernetes v1alpha2.Component) error
-	ApplyOpenShift(openshift v1alpha2.Component) error
+	ApplyKubernetes(kubernetes v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
+	ApplyOpenShift(openshift v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
 	ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
 	ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
 }

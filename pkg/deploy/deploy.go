@@ -93,7 +93,7 @@ func (o *DeployClient) applyAutoK8sOrOcComponents(handler libdevfile.Handler, de
 	}
 
 	for _, c := range components {
-		var f func(component2 v1alpha2.Component) error
+		var f func(component2 v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
 		if c.Kubernetes != nil {
 			f = handler.ApplyKubernetes
 		} else if c.Openshift != nil {
@@ -102,7 +102,7 @@ func (o *DeployClient) applyAutoK8sOrOcComponents(handler libdevfile.Handler, de
 		if f == nil {
 			continue
 		}
-		if err = f(c); err != nil {
+		if err = f(c, v1alpha2.DeployCommandGroupKind); err != nil {
 			return err
 		}
 	}

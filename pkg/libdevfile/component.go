@@ -8,7 +8,7 @@ import (
 
 type component interface {
 	CheckValidity() error
-	Apply(handler Handler) error
+	Apply(handler Handler, kind v1alpha2.CommandGroupKind) error
 }
 
 // newComponent creates a concrete component, based on its type

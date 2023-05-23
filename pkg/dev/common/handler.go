@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"k8s.io/klog"
@@ -87,10 +88,14 @@ func (a *runHandler) ApplyImage(img devfilev1.Component) error {
 	return image.BuildPushSpecificImage(a.ctx, a.imageBackend, a.fs, img, envcontext.GetEnvConfig(a.ctx).PushImages)
 }
 
-func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
+func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component, kind v1alpha2.CommandGroupKind) error {
+	mode := odolabels.ComponentDevMode
+	if kind == v1alpha2.DeployCommandGroupKind {
+		mode = odolabels.ComponentDeployMode
+	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, kubernetes, platform, a.path)
+		return component.ApplyKubernetes(mode, a.appName, a.componentName, a.devfile, kubernetes, platform, a.path)
 	default:
 		klog.V(4).Info("apply kubernetes commands are not implemented on podman")
 		log.Warningf("Apply Kubernetes components are not supported on Podman. Skipping: %v.", kubernetes.Name)
@@ -98,10 +103,14 @@ func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
 	}
 }
 
-func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component) error {
+func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component, kind v1alpha2.CommandGroupKind) error {
+	mode := odolabels.ComponentDevMode
+	if kind == v1alpha2.DeployCommandGroupKind {
+		mode = odolabels.ComponentDeployMode
+	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, openshift, platform, a.path)
+		return component.ApplyKubernetes(mode, a.appName, a.componentName, a.devfile, openshift, platform, a.path)
 	default:
 		klog.V(4).Info("apply OpenShift commands are not implemented on podman")
 		log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)

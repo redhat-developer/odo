@@ -49,5 +49,9 @@ func (o *applyCommand) Execute(ctx context.Context, handler Handler, parentGroup
 		return err
 	}
 
-	return component.Apply(handler)
+	var kind v1alpha2.CommandGroupKind
+	if parentGroup != nil {
+		kind = parentGroup.Kind
+	}
+	return component.Apply(handler, kind)
 }
