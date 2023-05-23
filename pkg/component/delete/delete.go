@@ -15,6 +15,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -29,9 +30,10 @@ import (
 )
 
 type DeleteComponentClient struct {
-	kubeClient   kclient.ClientInterface
-	podmanClient podman.Client
-	execClient   exec.Client
+	kubeClient            kclient.ClientInterface
+	podmanClient          podman.Client
+	execClient            exec.Client
+	configAutomountClient configAutomount.Client
 }
 
 var _ Client = (*DeleteComponentClient)(nil)
@@ -40,11 +42,13 @@ func NewDeleteComponentClient(
 	kubeClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	execClient exec.Client,
+	configAutomountClient configAutomount.Client,
 ) *DeleteComponentClient {
 	return &DeleteComponentClient{
-		kubeClient:   kubeClient,
-		podmanClient: podmanClient,
-		execClient:   execClient,
+		kubeClient:            kubeClient,
+		podmanClient:          podmanClient,
+		execClient:            execClient,
+		configAutomountClient: configAutomountClient,
 	}
 }
 
@@ -220,6 +224,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 	handler := common.NewRunHandler(
 		do.kubeClient,
 		do.execClient,
+		do.configAutomountClient,
 		appName,
 		componentName,
 		pod.Name,

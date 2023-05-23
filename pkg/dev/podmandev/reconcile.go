@@ -68,6 +68,7 @@ func (o *DevClient) reconcile(
 		execHandler := common.NewRunHandler(
 			o.podmanClient,
 			o.execClient,
+			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 			appName,
 			componentName,
 			pod.Name,
@@ -90,6 +91,7 @@ func (o *DevClient) reconcile(
 			execHandler := common.NewRunHandler(
 				o.podmanClient,
 				o.execClient,
+				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 				appName,
 				componentName,
 				pod.Name,
@@ -118,6 +120,7 @@ func (o *DevClient) reconcile(
 		cmdHandler := common.NewRunHandler(
 			o.podmanClient,
 			o.execClient,
+			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 			appName,
 			componentName,
 			pod.Name,

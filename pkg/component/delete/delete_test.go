@@ -160,7 +160,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, nil, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
 			ctx := odocontext.WithApplication(context.TODO(), "app")
 			got, err := do.ListClusterResourcesToDelete(ctx, tt.args.componentName, tt.args.namespace, tt.args.mode)
 			if (err != nil) != tt.wantErr {
@@ -277,7 +277,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, nil, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
 			got := do.DeleteResources(tt.args.resources, false)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("DeleteComponentClient.DeleteResources() mismatch (-want +got):\n%s", diff)
@@ -750,7 +750,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, nil, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
 			if err := do.ExecutePreStopEvents(context.Background(), tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}

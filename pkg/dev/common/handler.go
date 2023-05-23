@@ -9,6 +9,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -21,14 +22,15 @@ import (
 )
 
 type runHandler struct {
-	platformClient    platform.Client
-	execClient        exec.Client
-	appName           string
-	componentName     string
-	podName           string
-	ComponentExists   bool
-	containersRunning []string
-	msg               string
+	platformClient        platform.Client
+	execClient            exec.Client
+	configAutomountClient configAutomount.Client
+	appName               string
+	componentName         string
+	podName               string
+	ComponentExists       bool
+	containersRunning     []string
+	msg                   string
 
 	fs           filesystem.Filesystem
 	imageBackend image.Backend
@@ -43,6 +45,7 @@ var _ libdevfile.Handler = (*runHandler)(nil)
 func NewRunHandler(
 	platformClient platform.Client,
 	execClient exec.Client,
+	configAutomountClient configAutomount.Client,
 	appName string,
 	componentName string,
 	podName string,
@@ -61,14 +64,15 @@ func NewRunHandler(
 
 ) *runHandler {
 	return &runHandler{
-		platformClient:    platformClient,
-		execClient:        execClient,
-		appName:           appName,
-		componentName:     componentName,
-		podName:           podName,
-		ComponentExists:   componentExists,
-		containersRunning: containersRunning,
-		msg:               msg,
+		platformClient:        platformClient,
+		execClient:            execClient,
+		configAutomountClient: configAutomountClient,
+		appName:               appName,
+		componentName:         componentName,
+		podName:               podName,
+		ComponentExists:       componentExists,
+		containersRunning:     containersRunning,
+		msg:                   msg,
 
 		fs:           fs,
 		imageBackend: imageBackend,
@@ -109,14 +113,28 @@ func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command d
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
 		return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName)
 	}
-	panic("container not running")
+	switch platform := a.platformClient.(type) {
+	case kclient.ClientInterface:
+		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, a.componentName, a.appName, command)
+	default:
+		klog.V(4).Info("executing a command in a new container is not implemented on podman")
+		log.Warningf("executing a command in a new container is not implemented on podman. Skipping: %v.", command.Id)
+		return nil
+	}
 }
 
 func (a *runHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
 		return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName, a.msg, false)
 	}
-	panic("container not running")
+	switch platform := a.platformClient.(type) {
+	case kclient.ClientInterface:
+		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, a.componentName, a.appName, command)
+	default:
+		klog.V(4).Info("executing a command in a new container is not implemented on podman")
+		log.Warningf("executing a command in a new container is not implemented on podman. Skipping: %v.", command.Id)
+		return nil
+	}
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running

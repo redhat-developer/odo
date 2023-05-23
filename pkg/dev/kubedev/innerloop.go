@@ -94,6 +94,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		handler := common.NewRunHandler(
 			o.kubernetesClient,
 			o.execClient,
+			o.configAutomountClient,
 			appName,
 			componentName,
 			pod.Name,
@@ -126,6 +127,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	cmdHandler := common.NewRunHandler(
 		o.kubernetesClient,
 		o.execClient,
+		o.configAutomountClient,
 		appName,
 		componentName,
 		pod.GetName(),
@@ -166,6 +168,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			execHandler := common.NewRunHandler(
 				o.kubernetesClient,
 				o.execClient,
+				o.configAutomountClient,
 				appName,
 				componentName,
 				pod.Name,
