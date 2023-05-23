@@ -32,6 +32,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 		When(fmt.Sprintf("creating a component with a binding (service in namespace %q)", ns), func() {
 			cmpName := "my-nodejs-app"
 			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml")).ShouldPass()
 				if ns != "" {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"),
@@ -645,6 +646,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 			When(fmt.Sprintf("%s (service in namespace %q)", ctx.title, ns), func() {
 				cmpName := "my-nodejs-app"
 				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", ctx.devfile).ShouldPass()
 				})
 
@@ -739,7 +741,8 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							{"list"},
 							{"list", "binding"},
 						} {
-							It("should list the binding", func() {
+							command := command
+							It(fmt.Sprintf("should list the binding - command: %v", command), func() {
 								By("JSON output", func() {
 									res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
 									stdout, stderr := res.Out(), res.Err()
@@ -775,7 +778,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 								})
 							})
 
-							When("changing the current namespace", func() {
+							When(fmt.Sprintf("changing the current namespace - command: %v", command), func() {
 								BeforeEach(func() {
 									commonVar.CliRunner.SetProject("default")
 								})
