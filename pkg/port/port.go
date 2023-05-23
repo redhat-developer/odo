@@ -102,7 +102,7 @@ func GetConnections(ctx context.Context, execClient exec.Client, podName string,
 		remotecmd.ShellExecutable, "-c",
 		// /proc/net/{tc,ud}p6 files might be missing if IPv6 is disabled in the host networking stack.
 		// Actually /proc/net/{tc,ud}p* files might be totally missing if network stats are disabled.
-		"for f in tcp udp tcp6 udp6; do cat /proc/net/$f || true; done",
+		"cat /proc/net/tcp /proc/net/udp /proc/net/tcp6 /proc/net/udp6 || true",
 	}
 	stdout, _, err := execClient.ExecuteCommand(ctx, cmd, podName, containerName, false, nil, nil)
 	if err != nil {

@@ -22,7 +22,7 @@ const (
 
 var cmd = []string{
 	remotecmd.ShellExecutable, "-c",
-	"for f in tcp udp tcp6 udp6; do cat /proc/net/$f || true; done",
+	"cat /proc/net/tcp /proc/net/udp /proc/net/tcp6 /proc/net/udp6 || true",
 }
 
 const aggregatedContentFromProcNetFiles = `
