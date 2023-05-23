@@ -100,7 +100,9 @@ func GetListeningConnections(ctx context.Context, execClient exec.Client, podNam
 func GetConnections(ctx context.Context, execClient exec.Client, podName string, containerName string, statePredicate func(state int) bool) ([]Connection, error) {
 	cmd := []string{
 		remotecmd.ShellExecutable, "-c",
-		"cat /proc/net/tcp /proc/net/udp /proc/net/tcp6 /proc/net/udp6",
+		// /proc/net/{tc,ud}p6 files might be missing if IPv6 is disabled in the host networking stack.
+		// Actually /proc/net/{tc,ud}p* files might be totally missing if network stats are disabled.
+		"cat /proc/net/tcp /proc/net/udp /proc/net/tcp6 /proc/net/udp6 || true",
 	}
 	stdout, _, err := execClient.ExecuteCommand(ctx, cmd, podName, containerName, false, nil, nil)
 	if err != nil {
