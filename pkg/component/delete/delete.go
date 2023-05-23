@@ -223,6 +223,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 		componentName,
 		pod.Name,
 		false,
+		[]string{}, // TODO
 		"Executing pre-stop command in container",
 
 		// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events

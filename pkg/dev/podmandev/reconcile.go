@@ -71,6 +71,7 @@ func (o *DevClient) reconcile(
 			componentName,
 			pod.Name,
 			false,
+			[]string{}, // TODO
 			"Executing post-start command in container",
 
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
@@ -92,6 +93,7 @@ func (o *DevClient) reconcile(
 				componentName,
 				pod.Name,
 				false,
+				[]string{}, // TODO
 				"Building your application in container",
 
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
@@ -111,18 +113,25 @@ func (o *DevClient) reconcile(
 			cmdKind = devfilev1.DebugCommandGroupKind
 			cmdName = options.DebugCommand
 		}
-		cmdHandler := common.RunHandler{
-			Ctx:             ctx,
-			FS:              o.fs,
-			ExecClient:      o.execClient,
-			PlatformClient:  o.podmanClient,
-			ImageBackend:    image.SelectBackend(ctx),
-			ComponentExists: componentStatus.RunExecuted,
-			PodName:         pod.Name,
-			AppName:         appName,
-			ComponentName:   componentName,
-		}
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, &cmdHandler, false)
+
+		cmdHandler := common.NewRunHandler(
+			o.podmanClient,
+			o.execClient,
+			appName,
+			componentName,
+			pod.Name,
+			componentStatus.RunExecuted,
+			[]string{}, // TODO
+			"",
+
+			o.fs,
+			image.SelectBackend(ctx),
+			ctx,
+
+			// TODO(feloy) set to deploy Kubernetes/Openshift components
+			parser.DevfileObj{}, "",
+		)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
 		if err != nil {
 			return err
 		}

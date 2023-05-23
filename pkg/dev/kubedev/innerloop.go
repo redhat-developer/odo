@@ -87,21 +87,22 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	}
 	s.End(true)
 
-	// PostStart events from the devfile will only be executed when the component
-	// didn't previously exist
-	handler := common.NewRunHandler(
-		o.kubernetesClient,
-		o.execClient,
-		appName,
-		componentName,
-		pod.Name,
-		false,
-		"Executing post-start command in container",
-
-		// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-		nil, nil, nil, parser.DevfileObj{}, "",
-	)
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(parameters.Devfile) {
+		// PostStart events from the devfile will only be executed when the component
+		// didn't previously exist
+		handler := common.NewRunHandler(
+			o.kubernetesClient,
+			o.execClient,
+			appName,
+			componentName,
+			pod.Name,
+			false,
+			[]string{}, // TODO
+			"Executing post-start command in container",
+
+			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
+			nil, nil, nil, parser.DevfileObj{}, "",
+		)
 		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, handler)
 		if err != nil {
 			return err
@@ -121,18 +122,22 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	var running bool
 	var isComposite bool
 
-	cmdHandler := common.RunHandler{
-		FS:             o.filesystem,
-		ExecClient:     o.execClient,
-		PlatformClient: o.kubernetesClient,
-		ImageBackend:   image.SelectBackend(ctx),
-		AppName:        appName,
-		ComponentName:  componentName,
-		Devfile:        parameters.Devfile,
-		Path:           path,
-		PodName:        pod.GetName(),
-		Ctx:            ctx,
-	}
+	cmdHandler := common.NewRunHandler(
+		o.kubernetesClient,
+		o.execClient,
+		appName,
+		componentName,
+		pod.GetName(),
+		false,
+		[]string{}, // TODO
+		"",
+
+		o.filesystem,
+		image.SelectBackend(ctx),
+		ctx,
+		parameters.Devfile,
+		path,
+	)
 
 	if commandType == devfilev1.ExecCommandType {
 		running, err = cmdHandler.IsRemoteProcessForCommandRunning(ctx, cmd, pod.Name)
@@ -164,6 +169,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 				componentName,
 				pod.Name,
 				running,
+				[]string{}, // TODO
 				"Building your application in container",
 
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
@@ -176,7 +182,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			return err
 		}
 
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, parameters.Devfile, cmdName, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, parameters.Devfile, cmdName, cmdKind, cmdHandler, false)
 		if err != nil {
 			return err
 		}

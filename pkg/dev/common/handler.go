@@ -20,23 +20,25 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
-type RunHandler struct {
-	FS              filesystem.Filesystem
-	ExecClient      exec.Client
-	AppName         string
-	ComponentName   string
-	Devfile         parser.DevfileObj
-	PlatformClient  platform.Client
-	ImageBackend    image.Backend
-	Path            string
-	ComponentExists bool
-	PodName         string
+type runHandler struct {
+	platformClient    platform.Client
+	execClient        exec.Client
+	appName           string
+	componentName     string
+	podName           string
+	ComponentExists   bool
+	containersRunning []string
+	msg               string
 
-	Ctx context.Context
-	Msg string
+	fs           filesystem.Filesystem
+	imageBackend image.Backend
+	ctx          context.Context
+
+	devfile parser.DevfileObj
+	path    string
 }
 
-var _ libdevfile.Handler = (*RunHandler)(nil)
+var _ libdevfile.Handler = (*runHandler)(nil)
 
 func NewRunHandler(
 	platformClient platform.Client,
@@ -45,6 +47,7 @@ func NewRunHandler(
 	componentName string,
 	podName string,
 	componentExists bool,
+	containersRunning []string,
 	msg string,
 
 	// For building images
@@ -56,31 +59,34 @@ func NewRunHandler(
 	devfile parser.DevfileObj,
 	path string,
 
-) *RunHandler {
-	return &RunHandler{
-		FS:              fs,
-		ExecClient:      execClient,
-		AppName:         appName,
-		ComponentName:   componentName,
-		Devfile:         devfile,
-		PlatformClient:  platformClient,
-		ImageBackend:    imageBackend,
-		Path:            path,
-		ComponentExists: componentExists,
-		PodName:         podName,
-		Ctx:             ctx,
-		Msg:             msg,
+) *runHandler {
+	return &runHandler{
+		platformClient:    platformClient,
+		execClient:        execClient,
+		appName:           appName,
+		componentName:     componentName,
+		podName:           podName,
+		ComponentExists:   componentExists,
+		containersRunning: containersRunning,
+		msg:               msg,
+
+		fs:           fs,
+		imageBackend: imageBackend,
+		ctx:          ctx,
+
+		devfile: devfile,
+		path:    path,
 	}
 }
 
-func (a *RunHandler) ApplyImage(img devfilev1.Component) error {
-	return image.BuildPushSpecificImage(a.Ctx, a.ImageBackend, a.FS, img, envcontext.GetEnvConfig(a.Ctx).PushImages)
+func (a *runHandler) ApplyImage(img devfilev1.Component) error {
+	return image.BuildPushSpecificImage(a.ctx, a.imageBackend, a.fs, img, envcontext.GetEnvConfig(a.ctx).PushImages)
 }
 
-func (a *RunHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
-	switch platform := a.PlatformClient.(type) {
+func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
+	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.ComponentName, a.Devfile, kubernetes, platform, a.Path)
+		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, kubernetes, platform, a.path)
 	default:
 		klog.V(4).Info("apply kubernetes commands are not implemented on podman")
 		log.Warningf("Apply Kubernetes components are not supported on Podman. Skipping: %v.", kubernetes.Name)
@@ -88,10 +94,10 @@ func (a *RunHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
 	}
 }
 
-func (a *RunHandler) ApplyOpenShift(openshift devfilev1.Component) error {
-	switch platform := a.PlatformClient.(type) {
+func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component) error {
+	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.ComponentName, a.Devfile, openshift, platform, a.Path)
+		return component.ApplyKubernetes(odolabels.ComponentDevMode, a.appName, a.componentName, a.devfile, openshift, platform, a.path)
 	default:
 		klog.V(4).Info("apply OpenShift commands are not implemented on podman")
 		log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)
@@ -99,17 +105,17 @@ func (a *RunHandler) ApplyOpenShift(openshift devfilev1.Component) error {
 	}
 }
 
-func (a *RunHandler) ExecuteNonTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
-	return component.ExecuteRunCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName)
+func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
+	return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName)
 }
 
-func (a *RunHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
-	return component.ExecuteTerminatingCommand(ctx, a.ExecClient, a.PlatformClient, command, a.ComponentExists, a.PodName, a.AppName, a.ComponentName, a.Msg, false)
+func (a *runHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
+	return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName, a.msg, false)
 }
 
 // IsRemoteProcessForCommandRunning returns true if the command is running
-func (a *RunHandler) IsRemoteProcessForCommandRunning(ctx context.Context, command devfilev1.Command, podName string) (bool, error) {
-	remoteProcess, err := remotecmd.NewKubeExecProcessHandler(a.ExecClient).GetProcessInfoForCommand(ctx, remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
+func (a *runHandler) IsRemoteProcessForCommandRunning(ctx context.Context, command devfilev1.Command, podName string) (bool, error) {
+	remoteProcess, err := remotecmd.NewKubeExecProcessHandler(a.execClient).GetProcessInfoForCommand(ctx, remotecmd.CommandDefinition{Id: command.Id}, podName, command.Exec.Component)
 	if err != nil {
 		return false, err
 	}

@@ -248,11 +248,11 @@ func TestApplyKubernetes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			cmdHandler := &RunHandler{
-				FS:             filesystem.NewFakeFs(),
-				ExecClient:     tt.execClient(ctrl),
-				PlatformClient: tt.platformClient(ctrl),
-				Devfile:        tt.devfileObj(),
+			cmdHandler := &runHandler{
+				fs:             filesystem.NewFakeFs(),
+				execClient:     tt.execClient(ctrl),
+				platformClient: tt.platformClient(ctrl),
+				devfile:        tt.devfileObj(),
 			}
 			ctx := context.Background()
 			err := libdevfile.Deploy(ctx, tt.devfileObj(), cmdHandler)
@@ -364,11 +364,11 @@ func TestApplyOpenshift(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			cmdHandler := &RunHandler{
-				FS:             filesystem.NewFakeFs(),
-				ExecClient:     tt.execClient(ctrl),
-				PlatformClient: tt.platformClient(ctrl),
-				Devfile:        tt.devfileObj(),
+			cmdHandler := &runHandler{
+				fs:             filesystem.NewFakeFs(),
+				execClient:     tt.execClient(ctrl),
+				platformClient: tt.platformClient(ctrl),
+				devfile:        tt.devfileObj(),
 			}
 			ctx := context.Background()
 			err := libdevfile.Deploy(ctx, tt.devfileObj(), cmdHandler)
@@ -501,13 +501,13 @@ func TestApplyImage(t *testing.T) {
 			ctx = envcontext.WithEnvConfig(ctx, *envConfig)
 			ctx = odocontext.WithDevfilePath(ctx, "/devfile.yaml")
 			ctrl := gomock.NewController(t)
-			cmdHandler := &RunHandler{
-				Ctx:            ctx,
-				FS:             filesystem.NewFakeFs(),
-				ExecClient:     tt.execClient(ctrl),
-				PlatformClient: tt.platformClient(ctrl),
-				ImageBackend:   tt.imageBackend(ctrl),
-				Devfile:        tt.devfileObj(),
+			cmdHandler := &runHandler{
+				ctx:            ctx,
+				fs:             filesystem.NewFakeFs(),
+				execClient:     tt.execClient(ctrl),
+				platformClient: tt.platformClient(ctrl),
+				imageBackend:   tt.imageBackend(ctrl),
+				devfile:        tt.devfileObj(),
 			}
 			err = libdevfile.Deploy(ctx, tt.devfileObj(), cmdHandler)
 			if (err != nil) != tt.wantErr {
@@ -590,14 +590,14 @@ func TestExecute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			cmdHandler := &RunHandler{
-				FS:             filesystem.NewFakeFs(),
-				ExecClient:     tt.execClient(ctrl),
-				PlatformClient: tt.platformClient(ctrl),
-				Devfile:        tt.devfileObj(),
-				PodName:        tt.podName,
-				AppName:        tt.appName,
-				ComponentName:  tt.componentName,
+			cmdHandler := &runHandler{
+				fs:             filesystem.NewFakeFs(),
+				execClient:     tt.execClient(ctrl),
+				platformClient: tt.platformClient(ctrl),
+				devfile:        tt.devfileObj(),
+				podName:        tt.podName,
+				appName:        tt.appName,
+				componentName:  tt.componentName,
 			}
 			ctx := context.Background()
 			err := libdevfile.Build(ctx, tt.devfileObj(), "", cmdHandler)
