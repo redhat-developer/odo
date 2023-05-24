@@ -3,6 +3,7 @@ title: odo ${TAG_NAME} Released
 author: $GITHUB_ACTOR
 author_url: https://github.com/$GITHUB_ACTOR
 author_image_url: https://github.com/$GITHUB_ACTOR.png
+image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: ["release"]
 slug: odo-${TAG_NAME}
 ---

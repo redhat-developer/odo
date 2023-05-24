@@ -3,6 +3,7 @@ title: Binding to a database service without the Service Binding Operator
 author: Parthvi Vala
 author_url: https://github.com/valaparthvi
 author_image_url: https://github.com/valaparthvi.png
+image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: ["binding"]
 slug: binding-database-service-without-sbo
 ---

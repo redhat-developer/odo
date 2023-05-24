@@ -4,6 +4,7 @@ author: Armel Soro
 author_url: https://github.com/rm3l
 author_image_url: https://github.com/rm3l.png
 tags: ["devfile-registry", "registry", "registry-operator"]
+image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 slug: deploying-and-using-in-cluster-devfile-registry
 ---
 
