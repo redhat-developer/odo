@@ -16,13 +16,12 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
-
-	"github.com/redhat-developer/odo/pkg/version"
 
 	"gopkg.in/AlecAivazis/survey.v1"
 
@@ -158,17 +157,17 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 	}
 
 	// We can dereference as there is a default value defined for this config field
-	err = scontext.SetCaller(cmd.Context(), envConfig.TelemetryCaller)
+	err = scontext.SetCaller(ctx, envConfig.TelemetryCaller)
 	if err != nil {
 		klog.V(3).Infof("error handling caller property for telemetry: %v", err)
 		err = nil
 	}
 
-	scontext.SetFlags(cmd.Context(), cmd.Flags())
+	scontext.SetFlags(ctx, cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
 	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, envConfig))
 
-	scontext.SetExperimentalMode(cmd.Context(), envConfig.OdoExperimentalMode)
+	scontext.SetExperimentalMode(ctx, envConfig.OdoExperimentalMode)
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
@@ -180,7 +179,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 				log.Errorf("error handling interrupt signal : %v", err)
 			}
 		}
-		scontext.SetSignal(cmd.Context(), receivedSignal)
+		scontext.SetSignal(ctx, receivedSignal)
 		startTelemetry(cmd, err, startTime)
 	})
 
