@@ -157,9 +157,10 @@ func TestHandler(t *testing.T) {
 		show            bool
 		componentExists bool
 
-		devfileObjDeploy func() parser.DevfileObj
-		devfileObjBuild  func() parser.DevfileObj
-		devfileObjRun    func() parser.DevfileObj
+		devfileObjDeploy    func() parser.DevfileObj
+		devfileObjBuild     func() parser.DevfileObj
+		devfileObjRun       func() parser.DevfileObj
+		DevfileObjPostStart func() parser.DevfileObj
 
 		platformClient        func(ctrl *gomock.Controller) platform.Client
 		execClient            func(ctrl *gomock.Controller) exec.Client
@@ -169,7 +170,7 @@ func TestHandler(t *testing.T) {
 		wantErr               bool
 	}{
 		{
-			name: "Devfile with Apply Kubernetes command with Deploy kind on cluster",
+			name: "Devfile with Apply Kubernetes command on cluster",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -224,6 +225,28 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					kubernetesComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyKubernetes,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyKubernetes.Id},
+					},
+				})
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 
@@ -246,7 +269,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Devfile with Apply Kubernetes command with Deploy kind on podman",
+			name: "Devfile with Apply Kubernetes command on podman",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -301,6 +324,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					kubernetesComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyKubernetes,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyKubernetes.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := podman.NewMockClient(ctrl)
 				// Nothing, as this is not implemented on podman
@@ -321,7 +367,7 @@ func TestHandler(t *testing.T) {
 		},
 
 		{
-			name: "Devfile with Apply Openshift command with Deploy kind on cluster",
+			name: "Devfile with Apply Openshift command on cluster",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -369,6 +415,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyOpenshift, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					openshiftComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyOpenshift,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyOpenshift.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -399,7 +468,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Devfile with Apply Openshift command with Deploy kind on podman",
+			name: "Devfile with Apply Openshift command on podman",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -454,6 +523,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					openshiftComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyOpenshift,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyOpenshift.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := podman.NewMockClient(ctrl)
 				// Nothing, as this is not implemented on podman
@@ -474,7 +566,7 @@ func TestHandler(t *testing.T) {
 		},
 
 		{
-			name: "Devfile with Apply Image command with Deploy kind on cluster",
+			name: "Devfile with Apply Image command on cluster",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -522,6 +614,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyImage.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -549,7 +664,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Devfile with Apply Image command with Deploy kind on podman",
+			name: "Devfile with Apply Image command on podman",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -597,6 +712,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyImage.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -626,7 +764,7 @@ func TestHandler(t *testing.T) {
 		},
 
 		{
-			name: "Devfile with Apply Image command with Deploy kind on cluster and push disabled",
+			name: "Devfile with Apply Image command on cluster and push disabled",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -674,6 +812,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyImage.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -703,7 +864,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Devfile with Apply Image command with Deploy kind on podman and push disabled",
+			name: "Devfile with Apply Image command on podman and push disabled",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -751,6 +912,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{applyImage.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -781,7 +965,7 @@ func TestHandler(t *testing.T) {
 		},
 
 		{
-			name: "Devfile with Exec on Container command with Deploy kind on cluster",
+			name: "Devfile with Exec on Container command on cluster",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -829,6 +1013,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(execOnContainer, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					containerComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					execOnContainer,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{execOnContainer.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -862,7 +1069,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Devfile with Exec on Container command with Deploy kind on podman",
+			name: "Devfile with Exec on Container command on podman",
 			devfileObjDeploy: func() parser.DevfileObj {
 				devfileData, err := data.NewDevfileData("2.1.0")
 				if err != nil {
@@ -910,6 +1117,29 @@ func TestHandler(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(execOnContainer, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPostStart: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					containerComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					execOnContainer,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PostStart: []string{execOnContainer.Id},
+					},
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -1011,6 +1241,32 @@ func TestHandler(t *testing.T) {
 					devfile:               devfileObj,
 				}
 				err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, "", v1alpha2.RunCommandGroupKind, cmdHandler, false)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Err expected %v, got %v", tt.wantErr, err)
+				}
+			}
+			{
+				ctrl := gomock.NewController(t)
+				ctx := context.Background()
+				ctx = odocontext.WithDevfilePath(ctx, "/devfile.yaml")
+				ctx = odocontext.WithApplication(ctx, appName)
+				ctx = odocontext.WithComponentName(ctx, componentName)
+				envConfig, err := config.GetConfigurationWith(envconfig.MapLookuper(tt.env))
+				if err != nil {
+					t.Error("error reading config")
+				}
+				ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+				devfileObj := tt.DevfileObjPostStart()
+				cmdHandler := &runHandler{
+					ctx:                   ctx,
+					fs:                    filesystem.NewFakeFs(),
+					execClient:            tt.execClient(ctrl),
+					platformClient:        tt.platformClient(ctrl),
+					configAutomountClient: tt.configAutomountClient(ctrl),
+					imageBackend:          tt.imageBackend(ctrl),
+					devfile:               devfileObj,
+				}
+				err = libdevfile.ExecPostStartEvents(ctx, devfileObj, cmdHandler)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("Err expected %v, got %v", tt.wantErr, err)
 				}
