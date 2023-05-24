@@ -145,7 +145,7 @@ func CommandWithKind(command v1alpha2.Command, kind v1alpha2.CommandGroupKind, i
 	return command
 }
 
-func TestDeploy(t *testing.T) {
+func TestHandler(t *testing.T) {
 
 	appName := "app"
 	componentName := "componentName"
@@ -159,6 +159,7 @@ func TestDeploy(t *testing.T) {
 
 		devfileObjDeploy func() parser.DevfileObj
 		devfileObjBuild  func() parser.DevfileObj
+		devfileObjRun    func() parser.DevfileObj
 
 		platformClient        func(ctrl *gomock.Controller) platform.Client
 		execClient            func(ctrl *gomock.Controller) exec.Client
@@ -198,6 +199,24 @@ func TestDeploy(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyKubernetes, v1alpha2.BuildCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					kubernetesComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyKubernetes, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -264,6 +283,24 @@ func TestDeploy(t *testing.T) {
 				}
 				return devfileObj
 			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					kubernetesComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyKubernetes, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := podman.NewMockClient(ctrl)
 				// Nothing, as this is not implemented on podman
@@ -314,6 +351,24 @@ func TestDeploy(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyOpenshift, v1alpha2.BuildCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					openshiftComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyOpenshift, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -381,6 +436,24 @@ func TestDeploy(t *testing.T) {
 				}
 				return devfileObj
 			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					openshiftComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyOpenshift, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := podman.NewMockClient(ctrl)
 				// Nothing, as this is not implemented on podman
@@ -438,6 +511,24 @@ func TestDeploy(t *testing.T) {
 				}
 				return devfileObj
 			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 				return client
@@ -488,6 +579,24 @@ func TestDeploy(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyImage, v1alpha2.BuildCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -554,6 +663,24 @@ func TestDeploy(t *testing.T) {
 				}
 				return devfileObj
 			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 				return client
@@ -606,6 +733,24 @@ func TestDeploy(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(applyImage, v1alpha2.BuildCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(applyImage, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -673,6 +818,24 @@ func TestDeploy(t *testing.T) {
 				}
 				return devfileObj
 			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					containerComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(execOnContainer, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 				client.EXPECT().GetCurrentNamespacePolicy()
@@ -729,6 +892,24 @@ func TestDeploy(t *testing.T) {
 				})
 				_ = devfileData.AddCommands([]v1alpha2.Command{
 					CommandWithKind(execOnContainer, v1alpha2.BuildCommandGroupKind, pointer.Bool(true)),
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			devfileObjRun: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					containerComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					CommandWithKind(execOnContainer, v1alpha2.RunCommandGroupKind, pointer.Bool(true)),
 				})
 
 				devfileObj := parser.DevfileObj{
@@ -804,6 +985,32 @@ func TestDeploy(t *testing.T) {
 					devfile:               devfileObj,
 				}
 				err = libdevfile.Build(ctx, devfileObj, "", cmdHandler)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Err expected %v, got %v", tt.wantErr, err)
+				}
+			}
+			{
+				ctrl := gomock.NewController(t)
+				ctx := context.Background()
+				ctx = odocontext.WithDevfilePath(ctx, "/devfile.yaml")
+				ctx = odocontext.WithApplication(ctx, appName)
+				ctx = odocontext.WithComponentName(ctx, componentName)
+				envConfig, err := config.GetConfigurationWith(envconfig.MapLookuper(tt.env))
+				if err != nil {
+					t.Error("error reading config")
+				}
+				ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+				devfileObj := tt.devfileObjRun()
+				cmdHandler := &runHandler{
+					ctx:                   ctx,
+					fs:                    filesystem.NewFakeFs(),
+					execClient:            tt.execClient(ctrl),
+					platformClient:        tt.platformClient(ctrl),
+					configAutomountClient: tt.configAutomountClient(ctrl),
+					imageBackend:          tt.imageBackend(ctrl),
+					devfile:               devfileObj,
+				}
+				err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, "", v1alpha2.RunCommandGroupKind, cmdHandler, false)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("Err expected %v, got %v", tt.wantErr, err)
 				}
