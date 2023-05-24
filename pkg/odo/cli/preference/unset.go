@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -83,6 +84,8 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 	}
 
 	log.Successf("Value of '%s' preference was removed from preferences. Its default value will be used.", o.paramName)
+
+	scontext.SetPreferenceParameter(ctx, o.paramName, nil)
 	return nil
 
 }

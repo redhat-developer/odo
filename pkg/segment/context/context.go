@@ -3,7 +3,9 @@ package context
 import (
 	"context"
 	"fmt"
+	"hash/adler32"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +36,8 @@ const (
 	Flags                   = "flags"
 	Platform                = "platform"
 	PlatformVersion         = "platformVersion"
+	PreferenceParameter     = "parameter"
+	PreferenceValue         = "value"
 )
 
 const (
@@ -41,6 +45,10 @@ const (
 	IntelliJ = "intellij"
 	JBoss    = "jboss"
 )
+
+// By default, all values are anomized.
+// Add the (case-insensitive) preference parameter name here to have the corresponding value sent verbatim to telemetry.
+var clearTextPreferenceParams = []string{}
 
 type contextKey struct{}
 
@@ -226,6 +234,34 @@ func SetCaller(ctx context.Context, caller string) error {
 	}
 	setContextProperty(ctx, Caller, s)
 	return err
+}
+
+// SetPreferenceParameter tracks the preferences options usage, by recording both the parameter name and value.
+// By default, values are anonymized. Only parameters explicitly declared in the 'clearTextPreferenceParams' list will be recorded verbatim.
+// Setting value to nil means that the parameter has been unset in the preferences; so the value will not be recorded.
+func SetPreferenceParameter(ctx context.Context, param string, value *string) {
+	setContextProperty(ctx, PreferenceParameter, param)
+
+	if value == nil {
+		return
+	}
+
+	isClearTextParam := func() bool {
+		for _, clearTextParam := range clearTextPreferenceParams {
+			if strings.EqualFold(param, clearTextParam) {
+				return true
+			}
+		}
+		return false
+	}
+
+	recordedValue := *value
+	if !isClearTextParam() {
+		// adler32 for fast (and short) checksum computation, while minimizing the probability of collisions (which are not that important here).
+		// We just want to make sure that the same value returns the same anonymized string, while making it hard to guess the original string.
+		recordedValue = strconv.FormatUint(uint64(adler32.Checksum([]byte(recordedValue))), 16)
+	}
+	setContextProperty(ctx, PreferenceValue, recordedValue)
 }
 
 // GetPreviousTelemetryStatus gets the telemetry status that was seen before a command is run
