@@ -9,6 +9,7 @@ However, there are workarounds to fix this storage permission issue.
 1. [Use ephemeral volumes.](#use-ephemeral-volumes)
 2. [Define a location with access to read/write the files.](#define-a-location-with-access-to-readwrite-the-files)
 3. Use a root user for the container image
+4. Assign `fsGroup` to Security Context.
 
 ## Use Ephemeral volumes
 This workaround can be useful if you do not need to mount any additional persistent volumes.
