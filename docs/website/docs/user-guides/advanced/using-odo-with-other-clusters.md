@@ -1,108 +1,322 @@
 ---
-title: Using odo on GKE/AKS/EKS
+title: Troubleshoot Storage Permission issues on GKE/AKS/EKS cluster
 sidebar_position: 9
 ---
-Deploying an application on a GKE/AKS/EKS cluster does not always work out of the box, often due to storage related permission issues.
-Depending on the way storage provisioner is set up for the cluster and user set by the container image, it may not always be possible to write anywhere inside the container, hence syncing files or creating new files may not be possible.
 
-However, there are workarounds to fix this storage permission issue.
-1. [Use ephemeral volumes.](#use-ephemeral-volumes)
-2. [Define a location with access to read/write the files.](#define-a-location-with-access-to-readwrite-the-files)
-3. Use a root user for the container image
-4. Assign `fsGroup` to Security Context.
+Using odo to run an application on a GKE/AKS/EKS cluster does not always work out of the box, especially while using Devfiles from the [Devfile Registry](https://registry.devfile.io); users often encounter issues while syncing local files into the container due to insufficient permissions on mounted volumes.
 
-## Use Ephemeral volumes
-This workaround can be useful if you do not need to mount any additional persistent volumes.
-To use ephemeral volumes, set `Ephemeral` preference to false:
+<details>
+<summary>For example, while running a Java Maven application using a <code>java-maven</code> devfile on an Amazon Elastic Kubernetes Service, a sample error may look like this.</summary>
+
 ```shell
-odo preference set Ephemeral false -f
+$ odo dev
+  __
+ /  \__     Developing using the "java-springboot-starter" Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.6.0
+ \__/
+
+↪ Running on the cluster in Dev mode
+ •  Waiting for Kubernetes resources  ...
+ ✓  Added storage m2 to component
+ ⚠  Pod is Pending
+ ✓  Pod is Running
+ ◑  Syncing files into the container ✗  Command 'tar xf - -C /projects --no-same-owner' in container failed.
+
+ ✗  stdout:
+
+ ✗  stderr: tar: src: Cannot mkdir: Permission denied
+tar: src/main/resources/application.properties: Cannot open: No such file or directory
+tar: HELP.md: Cannot open: Permission denied
+tar: mvnw: Cannot open: Permission denied
+tar: devfile.yaml: Cannot open: Permission denied
+tar: mvnw.cmd: Cannot open: Permission denied
+tar: pom.xml: Cannot open: Permission denied
+tar: src: Cannot mkdir: Permission denied
+tar: src/main/java/com/example/demo/DemoApplication.java: Cannot open: No such file or directory
+tar: .gitignore: Cannot open: Permission denied
+tar: src: Cannot mkdir: Permission denied
+tar: src/test/java/com/example/demo/DemoApplicationTests.java: Cannot open: No such file or directory
+tar: Exiting with failure status due to previous errors
+
+
+ ✗  err: error while streaming command: command terminated with exit code 2
+
+ ✗  Syncing files into the container [610ms]
+Error occurred on Push - watch command was unable to push component: failed to sync to component with name java-springboot-starter: failed to sync to component with name java-springboot-starter: unable push files to pod: error while streaming command: command terminated with exit code 2
+
+ ◐  Syncing files into the container ✗  Command 'tar xf - -C /projects --no-same-owner' in container failed.
+
+ ✗  stdout:
+
+ ✗  stderr: tar: src: Cannot mkdir: Permission denied
+tar: src/main/resources/application.properties: Cannot open: No such file or directory
+tar: src: Cannot mkdir: Permission denied
+tar: src/test/java/com/example/demo/DemoApplicationTests.java: Cannot open: No such file or directory
+tar: devfile.yaml: Cannot open: Permission denied
+tar: src: Cannot mkdir: Permission denied
+tar: src/main/java/com/example/demo/DemoApplication.java: Cannot open: No such file or directory
+tar: pom.xml: Cannot open: Permission denied
+tar: .gitignore: Cannot open: Permission denied
+tar: mvnw.cmd: Cannot open: Permission denied
+tar: HELP.md: Cannot open: Permission denied
+tar: mvnw: Cannot open: Permission denied
+tar: Exiting with failure status due to previous errors
+
+
+ ✗  err: error while streaming command: command terminated with exit code 2
 ```
 
-## Define a location with access to read/write the files
-Use `sourceMapping` to mount source to a directory where the user has read/write permissions.
-If the user defined by the container image is root, they should not have any problem
-By default, if you mention a relative path, for e.g. `sourceMapping: go-app` it mounts the sources to $HOME/go-app; $HOME will be defined by the image. This will also assign $PROJECT_SOURCE to sourceMapping value.
-Ensure that any extra volume mount is also done in the location where the non-root user has write permission. Can consider using `${HOME}/${PROJECT_SOURCE}` location for `.m2` for example.
+</details>
 
-For the majority of the images from registry.access.redhat.com, all of them are configured to use non-root user.
-[//]: # (https://catalog.redhat.com/software/containers/ubi8/openjdk-11/5dd6a4b45a13461646f677f4?container-tabs=dockerfile)
+<details>
+<summary>Or, while running a Go application with <code>go</code> devfile on an Azure Kubernetes Service may end up in an error like this.</summary>
 
-Depending on the storage provisioner, these users may of may not have access to write to directories other than their $HOME.
+```shell
+$ odo dev
+  __
+ /  \__     Developing using the "places" Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.10.0
+ \__/
 
-TODO: Compare the dir permissions on GKE and docker desktop for $HOME, /, $PROJECT_SOURCE. See what group/user are set for each.
+ ⚠  You are using "default" namespace, odo may not work as expected in the default namespace.
+ ⚠  You may set a new namespace by running `odo create namespace <name>`, or set an existing one by running `odo set namespace <name>`
 
-[//]: # (Test odo on AKS with low cpu/memory B2ms or the lowest one)
+↪ Running on the cluster in Dev mode
+ •  Waiting for Kubernetes resources  ...
+ ⚠  Pod is Pending
+ ✓  Pod is Running
+ ◐  Syncing files into the container ✗  Command 'tar xf - -C /projects --no-same-owner' in container failed.
 
-## Example: Deploying a Go application on a GKE/AKS/EKS cluster
+ ✗  stdout:
 
-### Pre-requisite:
-1. Login to your GKE/AKS/EKS cluster.
-2. [Initialize the application with `odo init`](../quickstart/go#step-2-initializing-your-application-odo-init).
+ ✗  stderr: tar: main.go: Cannot open: Permission denied
+tar: .gitignore: Cannot open: Permission denied
+tar: README.md: Cannot open: Permission denied
+tar: devfile.yaml: Cannot open: Permission denied
+tar: go.mod: Cannot open: Permission denied
+tar: Exiting with failure status due to previous errors
 
-### Modify the Devfile
+
+ ✗  err: error while streaming command: command terminated with exit code 2
+
+ ✗  Syncing files into the container [4s]
+Error occurred on Push - watch command was unable to push component: failed to sync to component with name places: failed to sync to component with name places: unable push files to pod: error while streaming command: command terminated with exit code 2
+
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /tmp/go-app
+
+ Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually apply local changes to the application on the cluster
+^CCleaning resources, please wait
+ ✗  Dev mode interrupted by user
+```
+
+</details>
+
+Various factors are responsible for this:
+* Storage Provisioner used for the cluster
+* User set by the container image
+* Location on the container where the files are to be synced
+* Using Ephemeral vs Non-Ephemeral Volumes
+
+Users may encounter storage related permissions issues even while working on a standard Kubernetes or OpenShift cluster.
+
+This guide will discuss some workarounds that can be used to fix these issues.
+
+### Using Ephemeral Volumes
+This is the simplest way to overcome this issue. There are 2 parts to this solution:
+1. Set `odo` preference `Ephemeral` to _true_.
+
+   ```shell
+    odo preference set Ephemeral true -f
+    ```
+2. If the Devfile contains a `volume` component, then set its `ephemeral` property to `true`.
+   The above configuration will use the [`emptyDir` Ephemeral volumes](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) instead of creating Persistent Volumes to mount the source files; it also ensures the current user can read/write to the directories.
+
+### Define custom location to mount volumes and project source
+All the Devfiles provided by the [Devfile Registry](https://registry.devfile.io) use container image set a non-root user, which is why we see these permission related issues; we usually do not see this for a root user.
+
+When a user does not have access to all the locations in a system, we need to provide a way to use a location where the user can read/write. There are 2 parts to this solution as well:
+1. Set `sourceMapping` of the Devfile `container` component to a location where the user has read/write access.
+2. If a Devfile `volume` component is defined, then ensure that the `.volumeMounts.path` of the Devfile container component where the volume will be mount is in a location where the user has read/write access.
+
+<details>
+<summary>Example <code>java-maven</code> Devfile with custom <code>sourceMapping</code> and volume mount location.</summary>
+
 ```yaml showLineNumbers
 commands:
 - exec:
-    commandLine: go build main.go
-    component: runtime
-    env:
-    - name: GOPATH
-      #      highlight-next-line
-      value: ${HOME}/${PROJECT_SOURCE}/.go
-    - name: GOCACHE
-      #      highlight-next-line
-      value: ${HOME}/${PROJECT_SOURCE}/.cache
+#    highlight-next-line
+    commandLine: mvn -Dmaven.repo.local=${HOME}/.m2/repository package        # <---- This is to ensure the correct m2 location is used
+    component: tools
     group:
       isDefault: true
       kind: build
     workingDir: ${PROJECT_SOURCE}
-  id: build
+  id: mvn-package
 - exec:
-    commandLine: ./main
-    component: runtime
+    commandLine: java -jar target/*.jar
+    component: tools
     group:
       isDefault: true
       kind: run
     workingDir: ${PROJECT_SOURCE}
   id: run
+- exec:
+    commandLine: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n
+      -jar target/*.jar
+    component: tools
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: ${PROJECT_SOURCE}
+  id: debug
 components:
 - container:
-    args:
+    command:
     - tail
     - -f
     - /dev/null
     endpoints:
-    - name: http-go
+    - name: http-maven
       targetPort: 8080
-    image: registry.access.redhat.com/ubi9/go-toolset:latest
-    memoryLimit: 1024Mi
+    - exposure: none
+      name: debug
+      targetPort: 5858
+    env:
+    - name: DEBUG_PORT
+      value: "5858"
+    image: registry.access.redhat.com/ubi8/openjdk-11:latest
+    memoryLimit: 512Mi
     mountSources: true
-    #      highlight-next-line
-    sourceMapping: go-app
-  name: runtime
+    #    highlight-next-line
+    sourceMapping: java-maven-app         # <---- This will mount sources to <WORKDIR>/java-maven-app directory
+    volumeMounts:
+    - name: m2
+      #    highlight-next-line
+      path: .m2                           # <---- This will mount the volume to <WORKDIR>/.m2 directory
+  name: tools
+- name: m2
+  volume: {}
 metadata:
-  description: Go is an open source programming language that makes it easy to build
-    simple, reliable, and efficient software.
-  displayName: Go Runtime
-  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
-  language: Go
-  name: places
-  projectType: Go
-  provider: Red Hat
+  description: Java application based on Maven 3.6 and OpenJDK 11
+  displayName: Maven Java
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg
+  language: Java
+  name: jmaven-app
+  projectType: Maven
   tags:
-  - Go
-  version: 1.0.2
+  - Java
+  - Maven
+  version: 1.2.0
 schemaVersion: 2.1.0
 starterProjects:
-- description: A Go project with a simple HTTP server
-  git:
-    checkoutFrom:
-      revision: main
+- git:
     remotes:
-      origin: https://github.com/devfile-samples/devfile-stack-go.git
-  name: go-starter
+      origin: https://github.com/odo-devfiles/springboot-ex.git
+  name: springbootproject
 ```
-We add `sourceMapping` to container component "runtime". This will mount the source files on $HOME/go-app directory where the non-root user set by container image has RW permission.
-If the `sourceMapping` is not defined, `odo` will attempt to mount the source files in `/projects` directory.
+</details>
 
-Read more about Project Sources in [How odo works](/docs/development/architecture/how-odo-works#project-sources).
+In the example above, we set `sourceMapping` to `java-maven-app`. Since the path provided is a relative one, this will sync all the files to `$HOME/java-maven-app`. If an absolute path was provided, it would use the path as it is.
+
+We have also provided a relative path for `volumeMounts.path`, so the volume will be mounted to `${HOME}/.m2` location.
+While using relative paths, the user must ensure to update all the usages of this location within the devfile. For example, we have modified the Devfile `build` command _mvn-package_ to use the `${HOME}/.m2/repository` location.
+
+
+### Setting `fsGroup` to the PodSecurityContext
+By setting `fsGroup` in the PodSecurityContext, all processes of the container are also made part of the supplementary group ID set in the field. The owner for volume mount location and any files created in that volume will be Group ID set in the field. This solution is quite common when looking for permission related issues on a mounted volume, [example](https://stackoverflow.com/questions/50156124/kubernetes-nfs-persistent-volumes-permission-denied#50187723).
+
+This solution can be implemented by setting a `pod-overrides` attribute to the Devfile `container` component.
+
+<details>
+<summary>Example <code>java-maven</code> Devfile with a <code>fsGroup</code> set in PodSecurityContext.</summary>
+
+```yaml showLineNumbers
+commands:
+- exec:
+    commandLine: mvn -Dmaven.repo.local=/home/user/.m2/repository package
+    component: tools
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: mvn-package
+- exec:
+    commandLine: java -jar target/*.jar
+    component: tools
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+- exec:
+    commandLine: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n
+      -jar target/*.jar
+    component: tools
+    group:
+      isDefault: true
+      kind: debug
+    workingDir: ${PROJECT_SOURCE}
+  id: debug
+components:
+- container:
+    command:
+    - tail
+    - -f
+    - /dev/null
+    endpoints:
+    - name: http-maven
+      targetPort: 8080
+    - exposure: none
+      name: debug
+      targetPort: 5858
+    env:
+    - name: DEBUG_PORT
+      value: "5858"
+    image: registry.access.redhat.com/ubi8/openjdk-11:latest
+    memoryLimit: 512Mi
+    mountSources: true
+    volumeMounts:
+    - name: m2
+      path: /home/user/.m2
+  name: tools
+#  highlight-start
+  attributes:
+    pod-overrides:
+      spec:
+        securityContext:
+          fsGroup: 2000
+#  highlight-end
+- name: m2
+  volume: {}
+metadata:
+  description: Java application based on Maven 3.6 and OpenJDK 11
+  displayName: Maven Java
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg
+  language: Java
+  name: jmaven-app
+  projectType: Maven
+  tags:
+  - Java
+  - Maven
+  version: 1.2.0
+schemaVersion: 2.1.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/springboot-ex.git
+  name: springbootproject
+```
+</details>
+
+
+But this solution may not always be feasible, especially while dealing with large filesystems.
+>Be cautious with the use of fsGroup. The changing of group ownership of an entire volume can cause pod startup delays for slow and/or large filesystems. It can also be detrimental to other processes that share the same volume if their processes do not have access permissions to the new GID. For this reason, some providers for shared file systems such as NFS do not implement this functionality. These settings also do not affect ephemeral volumes.
+>
+> Read these articles by [Synk](https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/) and [Google Cloud](https://cloud.google.com/kubernetes-engine/docs/troubleshooting/troubleshooting-gke-storage#mounting_a_volume_stops_responding_due_to_the_fsgroup_setting) to learn more about it.
