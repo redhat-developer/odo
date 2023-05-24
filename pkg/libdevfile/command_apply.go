@@ -50,6 +50,9 @@ func (o *applyCommand) Execute(ctx context.Context, handler Handler, parentGroup
 	}
 
 	var kind v1alpha2.CommandGroupKind
+	if o.command.Apply.Group != nil {
+		kind = o.command.Apply.Group.Kind
+	}
 	if parentGroup != nil {
 		kind = parentGroup.Kind
 	}

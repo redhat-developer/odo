@@ -95,29 +95,14 @@ func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component, kind v1alph
 	case kclient.ClientInterface:
 		return ApplyKubernetes(mode, appName, componentName, a.devfile, kubernetes, platform, a.path)
 	default:
-		klog.V(4).Info("apply kubernetes commands are not implemented on podman")
-		log.Warningf("Apply Kubernetes components are not supported on Podman. Skipping: %v.", kubernetes.Name)
+		klog.V(4).Info("apply kubernetes/Openshift commands are not implemented on podman")
+		log.Warningf("Apply Kubernetes/Openshift components are not supported on Podman. Skipping: %v.", kubernetes.Name)
 		return nil
 	}
 }
 
 func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component, kind v1alpha2.CommandGroupKind) error {
-	var (
-		componentName = odocontext.GetComponentName(a.ctx)
-		appName       = odocontext.GetApplication(a.ctx)
-	)
-	mode := odolabels.ComponentDevMode
-	if kind == v1alpha2.DeployCommandGroupKind {
-		mode = odolabels.ComponentDeployMode
-	}
-	switch platform := a.platformClient.(type) {
-	case kclient.ClientInterface:
-		return ApplyKubernetes(mode, appName, componentName, a.devfile, openshift, platform, a.path)
-	default:
-		klog.V(4).Info("apply OpenShift commands are not implemented on podman")
-		log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)
-		return nil
-	}
+	return a.ApplyKubernetes(openshift, kind)
 }
 
 func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
