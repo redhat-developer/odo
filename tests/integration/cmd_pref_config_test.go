@@ -9,6 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/tidwall/gjson"
 
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
+	segmentContext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -198,6 +201,68 @@ OdoSettings:
 					helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "-f").ShouldPass()
 					output := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
 					Expect(output).ToNot(ContainSubstring(promptMessageSubString))
+				})
+			})
+
+			When("Telemetry is enabled in preferences", func() {
+				BeforeEach(func() {
+					prefClient := helper.EnableTelemetryDebug()
+					err := prefClient.SetConfiguration(preference.ConsentTelemetrySetting, "true")
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(os.Unsetenv(segment.TrackingConsentEnv)).NotTo(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+
+				When("setting ConsentTelemetry to false", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "--force").ShouldPass()
+					})
+
+					// https://github.com/redhat-developer/odo/issues/6790
+					It("should record the odo-preference-set command in telemetry", func() {
+						td := helper.GetTelemetryDebugData()
+						Expect(td.Event).To(ContainSubstring("odo preference set"))
+						Expect(td.Properties.Success).To(BeTrue())
+						Expect(td.Properties.Error).To(BeEmpty())
+						Expect(td.Properties.ErrorType).To(BeEmpty())
+						Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(Equal("force"))
+						Expect(td.Properties.CmdProperties[segmentContext.PreviousTelemetryStatus]).To(BeTrue())
+						Expect(td.Properties.CmdProperties[segmentContext.TelemetryStatus]).To(BeFalse())
+					})
+				})
+			})
+
+			When("Telemetry is disabled in preferences", func() {
+				BeforeEach(func() {
+					prefClient := helper.EnableTelemetryDebug()
+					err := prefClient.SetConfiguration(preference.ConsentTelemetrySetting, "false")
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(os.Unsetenv(segment.TrackingConsentEnv)).NotTo(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+
+				When("setting ConsentTelemetry to true", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "true", "--force").ShouldPass()
+					})
+
+					// https://github.com/redhat-developer/odo/issues/6790
+					It("should record the odo-preference-set command in telemetry", func() {
+						td := helper.GetTelemetryDebugData()
+						Expect(td.Event).To(ContainSubstring("odo preference set"))
+						Expect(td.Properties.Success).To(BeTrue())
+						Expect(td.Properties.Error).To(BeEmpty())
+						Expect(td.Properties.ErrorType).To(BeEmpty())
+						Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(Equal("force"))
+						Expect(td.Properties.CmdProperties[segmentContext.PreviousTelemetryStatus]).To(BeFalse())
+						Expect(td.Properties.CmdProperties[segmentContext.TelemetryStatus]).To(BeTrue())
+					})
 				})
 			})
 		})

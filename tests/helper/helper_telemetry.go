@@ -24,7 +24,7 @@ func setDebugTelemetryFile(value string) error {
 
 // EnableTelemetryDebug creates a temp file to use for debugging telemetry.
 // it also sets up envs and cfg for the same
-func EnableTelemetryDebug() {
+func EnableTelemetryDebug() preference.Client {
 	Expect(os.Setenv(segment.TrackingConsentEnv, "yes")).NotTo(HaveOccurred())
 
 	ctx := context.Background()
@@ -39,6 +39,8 @@ func EnableTelemetryDebug() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(setDebugTelemetryFile(tempFile.Name())).NotTo(HaveOccurred())
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
+
+	return cfg
 }
 
 func GetDebugTelemetryFile() string {
