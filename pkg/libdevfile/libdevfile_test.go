@@ -419,8 +419,8 @@ func TestDeploy(t *testing.T) {
 				handler: func(ctrl *gomock.Controller) Handler {
 					h := NewMockHandler(ctrl)
 					h.EXPECT().ApplyImage(imageComponent)
-					h.EXPECT().ApplyKubernetes(deploymentComponent)
-					h.EXPECT().ApplyKubernetes(serviceComponent)
+					h.EXPECT().ApplyKubernetes(deploymentComponent, v1alpha2.DeployCommandGroupKind)
+					h.EXPECT().ApplyKubernetes(serviceComponent, v1alpha2.DeployCommandGroupKind)
 					return h
 				},
 			},

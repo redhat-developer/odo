@@ -50,31 +50,31 @@ func (mr *MockHandlerMockRecorder) ApplyImage(image interface{}) *gomock.Call {
 }
 
 // ApplyKubernetes mocks base method.
-func (m *MockHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
+func (m *MockHandler) ApplyKubernetes(kubernetes v1alpha2.Component, kind v1alpha2.CommandGroupKind) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyKubernetes", kubernetes)
+	ret := m.ctrl.Call(m, "ApplyKubernetes", kubernetes, kind)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ApplyKubernetes indicates an expected call of ApplyKubernetes.
-func (mr *MockHandlerMockRecorder) ApplyKubernetes(kubernetes interface{}) *gomock.Call {
+func (mr *MockHandlerMockRecorder) ApplyKubernetes(kubernetes, kind interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyKubernetes", reflect.TypeOf((*MockHandler)(nil).ApplyKubernetes), kubernetes)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyKubernetes", reflect.TypeOf((*MockHandler)(nil).ApplyKubernetes), kubernetes, kind)
 }
 
 // ApplyOpenShift mocks base method.
-func (m *MockHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
+func (m *MockHandler) ApplyOpenShift(openshift v1alpha2.Component, kind v1alpha2.CommandGroupKind) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyOpenShift", openshift)
+	ret := m.ctrl.Call(m, "ApplyOpenShift", openshift, kind)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ApplyOpenShift indicates an expected call of ApplyOpenShift.
-func (mr *MockHandlerMockRecorder) ApplyOpenShift(openshift interface{}) *gomock.Call {
+func (mr *MockHandlerMockRecorder) ApplyOpenShift(openshift, kind interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyOpenShift", reflect.TypeOf((*MockHandler)(nil).ApplyOpenShift), openshift)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyOpenShift", reflect.TypeOf((*MockHandler)(nil).ApplyOpenShift), openshift, kind)
 }
 
 // ExecuteNonTerminatingCommand mocks base method.
