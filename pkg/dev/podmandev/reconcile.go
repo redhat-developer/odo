@@ -64,7 +64,7 @@ func (o *DevClient) reconcile(
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(devfileObj) {
-		execHandler := common.NewRunHandler(
+		execHandler := component.NewRunHandler(
 			ctx,
 			o.podmanClient,
 			o.execClient,
@@ -86,7 +86,7 @@ func (o *DevClient) reconcile(
 
 	if execRequired {
 		doExecuteBuildCommand := func() error {
-			execHandler := common.NewRunHandler(
+			execHandler := component.NewRunHandler(
 				ctx,
 				o.podmanClient,
 				o.execClient,
@@ -114,7 +114,7 @@ func (o *DevClient) reconcile(
 			cmdName = options.DebugCommand
 		}
 
-		cmdHandler := common.NewRunHandler(
+		cmdHandler := component.NewRunHandler(
 			ctx,
 			o.podmanClient,
 			o.execClient,

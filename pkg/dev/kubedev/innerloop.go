@@ -90,7 +90,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(parameters.Devfile) {
 		// PostStart events from the devfile will only be executed when the component
 		// didn't previously exist
-		handler := common.NewRunHandler(
+		handler := component.NewRunHandler(
 			ctx,
 			o.kubernetesClient,
 			o.execClient,
@@ -122,7 +122,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	var running bool
 	var isComposite bool
 
-	cmdHandler := common.NewRunHandler(
+	cmdHandler := component.NewRunHandler(
 		ctx,
 		o.kubernetesClient,
 		o.execClient,
@@ -161,7 +161,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
-			execHandler := common.NewRunHandler(
+			execHandler := component.NewRunHandler(
 				ctx,
 				o.kubernetesClient,
 				o.execClient,

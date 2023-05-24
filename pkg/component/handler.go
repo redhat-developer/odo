@@ -1,4 +1,4 @@
-package common
+package component
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
@@ -94,7 +93,7 @@ func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component, kind v1alph
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(mode, appName, componentName, a.devfile, kubernetes, platform, a.path)
+		return ApplyKubernetes(mode, appName, componentName, a.devfile, kubernetes, platform, a.path)
 	default:
 		klog.V(4).Info("apply kubernetes commands are not implemented on podman")
 		log.Warningf("Apply Kubernetes components are not supported on Podman. Skipping: %v.", kubernetes.Name)
@@ -113,7 +112,7 @@ func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component, kind v1alpha2
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(mode, appName, componentName, a.devfile, openshift, platform, a.path)
+		return ApplyKubernetes(mode, appName, componentName, a.devfile, openshift, platform, a.path)
 	default:
 		klog.V(4).Info("apply OpenShift commands are not implemented on podman")
 		log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)
@@ -127,11 +126,11 @@ func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command d
 		appName       = odocontext.GetApplication(a.ctx)
 	)
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
-		return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName)
+		return ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName)
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, componentName, appName, command)
+		return ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, componentName, appName, command)
 	default:
 		klog.V(4).Info("executing a command in a new container is not implemented on podman")
 		log.Warningf("executing a command in a new container is not implemented on podman. Skipping: %v.", command.Id)
@@ -145,11 +144,11 @@ func (a *runHandler) ExecuteTerminatingCommand(ctx context.Context, command devf
 		appName       = odocontext.GetApplication(a.ctx)
 	)
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
-		return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName, a.msg, false)
+		return ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName, a.msg, false)
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, componentName, appName, command)
+		return ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, componentName, appName, command)
 	default:
 		klog.V(4).Info("executing a command in a new container is not implemented on podman")
 		log.Warningf("executing a command in a new container is not implemented on podman. Skipping: %v.", command.Id)

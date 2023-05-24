@@ -16,7 +16,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/configAutomount"
-	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -221,7 +220,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
-	handler := common.NewRunHandler(
+	handler := component.NewRunHandler(
 		ctx,
 		do.kubeClient,
 		do.execClient,

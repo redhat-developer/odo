@@ -7,8 +7,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/configAutomount"
-	"github.com/redhat-developer/odo/pkg/dev/common"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -39,7 +39,7 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		path        = filepath.Dir(devfilePath)
 	)
 
-	handler := common.NewRunHandler(
+	handler := component.NewRunHandler(
 		ctx,
 		o.kubeClient,
 		nil,
