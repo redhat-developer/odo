@@ -161,6 +161,7 @@ func TestHandler(t *testing.T) {
 		devfileObjBuild     func() parser.DevfileObj
 		devfileObjRun       func() parser.DevfileObj
 		DevfileObjPostStart func() parser.DevfileObj
+		DevfileObjPreStop   func() parser.DevfileObj
 
 		platformClient        func(ctrl *gomock.Controller) platform.Client
 		execClient            func(ctrl *gomock.Controller) exec.Client
@@ -240,6 +241,28 @@ func TestHandler(t *testing.T) {
 				_ = devfileData.AddEvents(v1alpha2.Events{
 					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 						PostStart: []string{applyKubernetes.Id},
+					},
+				})
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					kubernetesComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyKubernetes,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyKubernetes.Id},
 					},
 				})
 				devfileObj := parser.DevfileObj{
@@ -347,6 +370,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					kubernetesComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyKubernetes,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyKubernetes.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := podman.NewMockClient(ctrl)
 				// Nothing, as this is not implemented on podman
@@ -437,6 +483,29 @@ func TestHandler(t *testing.T) {
 				_ = devfileData.AddEvents(v1alpha2.Events{
 					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 						PostStart: []string{applyOpenshift.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					openshiftComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyOpenshift,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyOpenshift.Id},
 					},
 				})
 
@@ -546,6 +615,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					openshiftComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyOpenshift,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyOpenshift.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := podman.NewMockClient(ctrl)
 				// Nothing, as this is not implemented on podman
@@ -644,6 +736,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyImage.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 				return client
@@ -734,6 +849,29 @@ func TestHandler(t *testing.T) {
 				_ = devfileData.AddEvents(v1alpha2.Events{
 					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 						PostStart: []string{applyImage.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyImage.Id},
 					},
 				})
 
@@ -842,6 +980,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyImage.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 				return client
@@ -934,6 +1095,29 @@ func TestHandler(t *testing.T) {
 				_ = devfileData.AddEvents(v1alpha2.Events{
 					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 						PostStart: []string{applyImage.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					imageComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					applyImage,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{applyImage.Id},
 					},
 				})
 
@@ -1043,6 +1227,29 @@ func TestHandler(t *testing.T) {
 				}
 				return devfileObj
 			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					containerComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					execOnContainer,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{execOnContainer.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
 			platformClient: func(ctrl *gomock.Controller) platform.Client {
 				client := kclient.NewMockClientInterface(ctrl)
 				client.EXPECT().GetCurrentNamespacePolicy()
@@ -1139,6 +1346,29 @@ func TestHandler(t *testing.T) {
 				_ = devfileData.AddEvents(v1alpha2.Events{
 					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
 						PostStart: []string{execOnContainer.Id},
+					},
+				})
+
+				devfileObj := parser.DevfileObj{
+					Data: devfileData,
+				}
+				return devfileObj
+			},
+			DevfileObjPreStop: func() parser.DevfileObj {
+				devfileData, err := data.NewDevfileData("2.1.0")
+				if err != nil {
+					t.Error(err)
+				}
+				devfileData.SetSchemaVersion("2.1.0")
+				_ = devfileData.AddComponents([]v1alpha2.Component{
+					containerComponent,
+				})
+				_ = devfileData.AddCommands([]v1alpha2.Command{
+					execOnContainer,
+				})
+				_ = devfileData.AddEvents(v1alpha2.Events{
+					DevWorkspaceEvents: v1alpha2.DevWorkspaceEvents{
+						PreStop: []string{execOnContainer.Id},
 					},
 				})
 
@@ -1267,6 +1497,32 @@ func TestHandler(t *testing.T) {
 					devfile:               devfileObj,
 				}
 				err = libdevfile.ExecPostStartEvents(ctx, devfileObj, cmdHandler)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Err expected %v, got %v", tt.wantErr, err)
+				}
+			}
+			{
+				ctrl := gomock.NewController(t)
+				ctx := context.Background()
+				ctx = odocontext.WithDevfilePath(ctx, "/devfile.yaml")
+				ctx = odocontext.WithApplication(ctx, appName)
+				ctx = odocontext.WithComponentName(ctx, componentName)
+				envConfig, err := config.GetConfigurationWith(envconfig.MapLookuper(tt.env))
+				if err != nil {
+					t.Error("error reading config")
+				}
+				ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+				devfileObj := tt.DevfileObjPreStop()
+				cmdHandler := &runHandler{
+					ctx:                   ctx,
+					fs:                    filesystem.NewFakeFs(),
+					execClient:            tt.execClient(ctrl),
+					platformClient:        tt.platformClient(ctrl),
+					configAutomountClient: tt.configAutomountClient(ctrl),
+					imageBackend:          tt.imageBackend(ctrl),
+					devfile:               devfileObj,
+				}
+				err = libdevfile.ExecPreStopEvents(ctx, devfileObj, cmdHandler)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("Err expected %v, got %v", tt.wantErr, err)
 				}
