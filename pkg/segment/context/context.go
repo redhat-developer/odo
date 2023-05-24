@@ -20,19 +20,20 @@ import (
 )
 
 const (
-	Caller           = "caller"
-	ComponentType    = "componentType"
-	ClusterType      = "clusterType"
-	TelemetryStatus  = "isTelemetryEnabled"
-	DevfileName      = "devfileName"
-	Language         = "language"
-	ProjectType      = "projectType"
-	NOTFOUND         = "not-found"
-	InteractiveMode  = "interactive"
-	ExperimentalMode = "experimental"
-	Flags            = "flags"
-	Platform         = "platform"
-	PlatformVersion  = "platformVersion"
+	Caller                  = "caller"
+	ComponentType           = "componentType"
+	ClusterType             = "clusterType"
+	PreviousTelemetryStatus = "wasTelemetryEnabled"
+	TelemetryStatus         = "isTelemetryEnabled"
+	DevfileName             = "devfileName"
+	Language                = "language"
+	ProjectType             = "projectType"
+	NOTFOUND                = "not-found"
+	InteractiveMode         = "interactive"
+	ExperimentalMode        = "experimental"
+	Flags                   = "flags"
+	Platform                = "platform"
+	PlatformVersion         = "platformVersion"
 )
 
 const (
@@ -158,7 +159,12 @@ func setPlatformPodman(ctx context.Context, client podman.Client) {
 	setContextProperty(ctx, PlatformVersion, version.Client.Version)
 }
 
-// SetTelemetryStatus sets telemetry status before a command is run
+// SetPreviousTelemetryStatus sets telemetry status before a command is run
+func SetPreviousTelemetryStatus(ctx context.Context, isEnabled bool) {
+	setContextProperty(ctx, PreviousTelemetryStatus, isEnabled)
+}
+
+// SetTelemetryStatus sets telemetry status after a command is run
 func SetTelemetryStatus(ctx context.Context, isEnabled bool) {
 	setContextProperty(ctx, TelemetryStatus, isEnabled)
 }
@@ -222,7 +228,16 @@ func SetCaller(ctx context.Context, caller string) error {
 	return err
 }
 
-// GetTelemetryStatus gets the telemetry status that is set before a command is run
+// GetPreviousTelemetryStatus gets the telemetry status that was seen before a command is run
+func GetPreviousTelemetryStatus(ctx context.Context) bool {
+	wasEnabled, ok := GetContextProperties(ctx)[PreviousTelemetryStatus]
+	if ok {
+		return wasEnabled.(bool)
+	}
+	return false
+}
+
+// GetTelemetryStatus gets the current telemetry status that is set after a command is run
 func GetTelemetryStatus(ctx context.Context) bool {
 	isEnabled, ok := GetContextProperties(ctx)[TelemetryStatus]
 	if ok {

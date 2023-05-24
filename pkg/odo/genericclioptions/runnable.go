@@ -165,7 +165,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 
 	scontext.SetFlags(ctx, cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, envConfig))
+	scontext.SetPreviousTelemetryStatus(ctx, segment.IsTelemetryEnabled(userConfig, envConfig))
 
 	scontext.SetExperimentalMode(ctx, envConfig.OdoExperimentalMode)
 
