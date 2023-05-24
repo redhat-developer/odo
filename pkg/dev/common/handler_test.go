@@ -248,13 +248,16 @@ func TestApplyKubernetes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, tt.appName)
+			ctx = odocontext.WithComponentName(ctx, tt.componentName)
 			cmdHandler := &runHandler{
+				ctx:            ctx,
 				fs:             filesystem.NewFakeFs(),
 				execClient:     tt.execClient(ctrl),
 				platformClient: tt.platformClient(ctrl),
 				devfile:        tt.devfileObj(),
 			}
-			ctx := context.Background()
 			err := libdevfile.Deploy(ctx, tt.devfileObj(), cmdHandler)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Err expected %v, got %v", tt.wantErr, err)
@@ -364,13 +367,16 @@ func TestApplyOpenshift(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, tt.appName)
+			ctx = odocontext.WithComponentName(ctx, tt.componentName)
 			cmdHandler := &runHandler{
+				ctx:            ctx,
 				fs:             filesystem.NewFakeFs(),
 				execClient:     tt.execClient(ctrl),
 				platformClient: tt.platformClient(ctrl),
 				devfile:        tt.devfileObj(),
 			}
-			ctx := context.Background()
 			err := libdevfile.Deploy(ctx, tt.devfileObj(), cmdHandler)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Err expected %v, got %v", tt.wantErr, err)
@@ -500,6 +506,8 @@ func TestApplyImage(t *testing.T) {
 			}
 			ctx = envcontext.WithEnvConfig(ctx, *envConfig)
 			ctx = odocontext.WithDevfilePath(ctx, "/devfile.yaml")
+			ctx = odocontext.WithApplication(ctx, tt.appName)
+			ctx = odocontext.WithComponentName(ctx, tt.componentName)
 			ctrl := gomock.NewController(t)
 			cmdHandler := &runHandler{
 				ctx:            ctx,
@@ -522,8 +530,6 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name            string
 		devfileObj      func() parser.DevfileObj
-		appName         string
-		componentName   string
 		podName         string
 		msg             string
 		show            bool
@@ -590,16 +596,17 @@ func TestExecute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, "app")
+			ctx = odocontext.WithComponentName(ctx, "componentName")
 			cmdHandler := &runHandler{
+				ctx:            ctx,
 				fs:             filesystem.NewFakeFs(),
 				execClient:     tt.execClient(ctrl),
 				platformClient: tt.platformClient(ctrl),
 				devfile:        tt.devfileObj(),
 				podName:        tt.podName,
-				appName:        tt.appName,
-				componentName:  tt.componentName,
 			}
-			ctx := context.Background()
 			err := libdevfile.Build(ctx, tt.devfileObj(), "", cmdHandler)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Err expected %v, got %v", tt.wantErr, err)

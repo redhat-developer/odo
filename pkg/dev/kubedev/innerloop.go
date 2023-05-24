@@ -25,7 +25,6 @@ import (
 
 func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParameters, componentStatus *watch.ComponentStatus) error {
 	var (
-		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
@@ -92,18 +91,17 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		// PostStart events from the devfile will only be executed when the component
 		// didn't previously exist
 		handler := common.NewRunHandler(
+			ctx,
 			o.kubernetesClient,
 			o.execClient,
 			o.configAutomountClient,
-			appName,
-			componentName,
 			pod.Name,
 			false,
 			component.GetContainersNames(pod),
 			"Executing post-start command in container",
 
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-			nil, nil, nil, parser.DevfileObj{}, "",
+			nil, nil, parser.DevfileObj{}, "",
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, handler)
 		if err != nil {
@@ -125,11 +123,10 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	var isComposite bool
 
 	cmdHandler := common.NewRunHandler(
+		ctx,
 		o.kubernetesClient,
 		o.execClient,
 		o.configAutomountClient,
-		appName,
-		componentName,
 		pod.GetName(),
 		false,
 		component.GetContainersNames(pod),
@@ -137,7 +134,6 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 
 		o.filesystem,
 		image.SelectBackend(ctx),
-		ctx,
 		parameters.Devfile,
 		path,
 	)
@@ -166,18 +162,17 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
 			execHandler := common.NewRunHandler(
+				ctx,
 				o.kubernetesClient,
 				o.execClient,
 				o.configAutomountClient,
-				appName,
-				componentName,
 				pod.Name,
 				running,
 				component.GetContainersNames(pod),
 				"Building your application in container",
 
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-				nil, nil, nil, parser.DevfileObj{}, "",
+				nil, nil, parser.DevfileObj{}, "",
 			)
 			return libdevfile.Build(ctx, parameters.Devfile, parameters.StartOptions.BuildCommand, execHandler)
 		}

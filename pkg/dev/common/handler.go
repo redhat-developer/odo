@@ -17,17 +17,17 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type runHandler struct {
+	ctx                   context.Context
 	platformClient        platform.Client
 	execClient            exec.Client
 	configAutomountClient configAutomount.Client
-	appName               string
-	componentName         string
 	podName               string
 	ComponentExists       bool
 	containersRunning     []string
@@ -35,7 +35,6 @@ type runHandler struct {
 
 	fs           filesystem.Filesystem
 	imageBackend image.Backend
-	ctx          context.Context
 
 	devfile parser.DevfileObj
 	path    string
@@ -44,11 +43,10 @@ type runHandler struct {
 var _ libdevfile.Handler = (*runHandler)(nil)
 
 func NewRunHandler(
+	ctx context.Context,
 	platformClient platform.Client,
 	execClient exec.Client,
 	configAutomountClient configAutomount.Client,
-	appName string,
-	componentName string,
 	podName string,
 	componentExists bool,
 	containersRunning []string,
@@ -57,7 +55,6 @@ func NewRunHandler(
 	// For building images
 	fs filesystem.Filesystem,
 	imageBackend image.Backend,
-	ctx context.Context,
 
 	// For apply Kubernetes / Openshift
 	devfile parser.DevfileObj,
@@ -65,11 +62,10 @@ func NewRunHandler(
 
 ) *runHandler {
 	return &runHandler{
+		ctx:                   ctx,
 		platformClient:        platformClient,
 		execClient:            execClient,
 		configAutomountClient: configAutomountClient,
-		appName:               appName,
-		componentName:         componentName,
 		podName:               podName,
 		ComponentExists:       componentExists,
 		containersRunning:     containersRunning,
@@ -77,7 +73,6 @@ func NewRunHandler(
 
 		fs:           fs,
 		imageBackend: imageBackend,
-		ctx:          ctx,
 
 		devfile: devfile,
 		path:    path,
@@ -89,13 +84,17 @@ func (a *runHandler) ApplyImage(img devfilev1.Component) error {
 }
 
 func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component, kind v1alpha2.CommandGroupKind) error {
+	var (
+		componentName = odocontext.GetComponentName(a.ctx)
+		appName       = odocontext.GetApplication(a.ctx)
+	)
 	mode := odolabels.ComponentDevMode
 	if kind == v1alpha2.DeployCommandGroupKind {
 		mode = odolabels.ComponentDeployMode
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(mode, a.appName, a.componentName, a.devfile, kubernetes, platform, a.path)
+		return component.ApplyKubernetes(mode, appName, componentName, a.devfile, kubernetes, platform, a.path)
 	default:
 		klog.V(4).Info("apply kubernetes commands are not implemented on podman")
 		log.Warningf("Apply Kubernetes components are not supported on Podman. Skipping: %v.", kubernetes.Name)
@@ -104,13 +103,17 @@ func (a *runHandler) ApplyKubernetes(kubernetes devfilev1.Component, kind v1alph
 }
 
 func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component, kind v1alpha2.CommandGroupKind) error {
+	var (
+		componentName = odocontext.GetComponentName(a.ctx)
+		appName       = odocontext.GetApplication(a.ctx)
+	)
 	mode := odolabels.ComponentDevMode
 	if kind == v1alpha2.DeployCommandGroupKind {
 		mode = odolabels.ComponentDeployMode
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ApplyKubernetes(mode, a.appName, a.componentName, a.devfile, openshift, platform, a.path)
+		return component.ApplyKubernetes(mode, appName, componentName, a.devfile, openshift, platform, a.path)
 	default:
 		klog.V(4).Info("apply OpenShift commands are not implemented on podman")
 		log.Warningf("Apply OpenShift components are not supported on Podman. Skipping: %v.", openshift.Name)
@@ -119,12 +122,16 @@ func (a *runHandler) ApplyOpenShift(openshift devfilev1.Component, kind v1alpha2
 }
 
 func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
+	var (
+		componentName = odocontext.GetComponentName(a.ctx)
+		appName       = odocontext.GetApplication(a.ctx)
+	)
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
-		return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName)
+		return component.ExecuteRunCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName)
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, a.componentName, a.appName, command)
+		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, componentName, appName, command)
 	default:
 		klog.V(4).Info("executing a command in a new container is not implemented on podman")
 		log.Warningf("executing a command in a new container is not implemented on podman. Skipping: %v.", command.Id)
@@ -133,12 +140,16 @@ func (a *runHandler) ExecuteNonTerminatingCommand(ctx context.Context, command d
 }
 
 func (a *runHandler) ExecuteTerminatingCommand(ctx context.Context, command devfilev1.Command) error {
+	var (
+		componentName = odocontext.GetComponentName(a.ctx)
+		appName       = odocontext.GetApplication(a.ctx)
+	)
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
-		return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, a.appName, a.componentName, a.msg, false)
+		return component.ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName, a.msg, false)
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:
-		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, a.componentName, a.appName, command)
+		return component.ExecuteInNewContainer(ctx, platform, a.configAutomountClient, a.devfile, componentName, appName, command)
 	default:
 		klog.V(4).Info("executing a command in a new container is not implemented on podman")
 		log.Warningf("executing a command in a new container is not implemented on podman. Skipping: %v.", command.Id)

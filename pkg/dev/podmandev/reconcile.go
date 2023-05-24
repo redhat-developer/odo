@@ -35,7 +35,6 @@ func (o *DevClient) reconcile(
 	componentStatus *watch.ComponentStatus,
 ) error {
 	var (
-		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
@@ -66,18 +65,17 @@ func (o *DevClient) reconcile(
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(devfileObj) {
 		execHandler := common.NewRunHandler(
+			ctx,
 			o.podmanClient,
 			o.execClient,
 			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-			appName,
-			componentName,
 			pod.Name,
 			false,
 			component.GetContainersNames(pod),
 			"Executing post-start command in container",
 
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-			nil, nil, nil, parser.DevfileObj{}, "",
+			nil, nil, parser.DevfileObj{}, "",
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -89,18 +87,17 @@ func (o *DevClient) reconcile(
 	if execRequired {
 		doExecuteBuildCommand := func() error {
 			execHandler := common.NewRunHandler(
+				ctx,
 				o.podmanClient,
 				o.execClient,
 				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-				appName,
-				componentName,
 				pod.Name,
 				false,
 				component.GetContainersNames(pod),
 				"Building your application in container",
 
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
-				nil, nil, nil, parser.DevfileObj{}, "",
+				nil, nil, parser.DevfileObj{}, "",
 			)
 			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}
@@ -118,11 +115,10 @@ func (o *DevClient) reconcile(
 		}
 
 		cmdHandler := common.NewRunHandler(
+			ctx,
 			o.podmanClient,
 			o.execClient,
 			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-			appName,
-			componentName,
 			pod.Name,
 			componentStatus.RunExecuted,
 			component.GetContainersNames(pod),
@@ -130,7 +126,6 @@ func (o *DevClient) reconcile(
 
 			o.fs,
 			image.SelectBackend(ctx),
-			ctx,
 
 			// TODO(feloy) set to deploy Kubernetes/Openshift components
 			parser.DevfileObj{}, "",

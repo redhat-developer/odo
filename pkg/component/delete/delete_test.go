@@ -751,7 +751,10 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
 			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
-			if err := do.ExecutePreStopEvents(context.Background(), tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, appName)
+			ctx = odocontext.WithComponentName(ctx, componentName)
+			if err := do.ExecutePreStopEvents(ctx, tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

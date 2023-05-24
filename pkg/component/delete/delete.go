@@ -222,18 +222,17 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
 	handler := common.NewRunHandler(
+		ctx,
 		do.kubeClient,
 		do.execClient,
 		do.configAutomountClient,
-		appName,
-		componentName,
 		pod.Name,
 		false,
 		component.GetContainersNames(pod),
 		"Executing pre-stop command in container",
 
 		// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
-		nil, nil, nil, parser.DevfileObj{}, "",
+		nil, nil, parser.DevfileObj{}, "",
 	)
 	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, handler)
 	if err != nil {
