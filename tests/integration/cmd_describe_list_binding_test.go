@@ -93,7 +93,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				{"list"},
 			} {
 				command := command
-				It(fmt.Sprintf("should list the binding without running odo dev (%v)", command), func() {
+				It(fmt.Sprintf("should list the binding without running odo dev (%s)", command), func() {
 					By("JSON output", func() {
 						res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
 						stdout, stderr := res.Out(), res.Err()
@@ -158,7 +158,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 			assertDescribeNamedJsonOutput          func(stdout, stderr string, name string)
 			assertDescribeNamedHumanReadableOutput func(stdout, stderr string, name string)
 			assertListJsonOutput                   func(devfile bool, stdout, stderr string)
-			assertListHumanReadableOutput          func(devfile bool, stdout, stderr string)
+			assertListHumanReadableOutput          func(devfile bool, stdout, stderr string, command []string)
 		}{
 			{
 				title:                "creating a component with a binding as files",
@@ -270,9 +270,14 @@ var _ = Describe("odo describe/list binding command tests", func() {
 
 					helper.JsonPathContentIs(stdout, "bindings.1.name", "my-nodejs-app-cluster-sample-ocp")
 				},
-				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string, command []string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					if len(command) == 1 {
+						Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing resources from the namespace %q", commonVar.Project)))
+						lines = lines[6:]
+					} else {
+						Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					}
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -402,9 +407,14 @@ var _ = Describe("odo describe/list binding command tests", func() {
 					helper.JsonPathContentIs(stdout, "bindings.1.name", "my-nodejs-app-cluster-sample-ocp")
 
 				},
-				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string, command []string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					if len(command) == 1 {
+						Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing resources from the namespace %q", commonVar.Project)))
+						lines = lines[6:]
+					} else {
+						Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					}
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -514,9 +524,14 @@ var _ = Describe("odo describe/list binding command tests", func() {
 
 					helper.JsonPathContentIs(stdout, "bindings.1.name", "my-nodejs-app-cluster-sample-ocp")
 				},
-				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string, command []string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					if len(command) == 1 {
+						Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing resources from the namespace %q", commonVar.Project)))
+						lines = lines[6:]
+					} else {
+						Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					}
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -623,9 +638,14 @@ var _ = Describe("odo describe/list binding command tests", func() {
 
 					helper.JsonPathContentIs(stdout, "bindings.1.name", "my-nodejs-app-cluster-sample-ocp")
 				},
-				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				assertListHumanReadableOutput: func(devfile bool, stdout, stderr string, command []string) {
 					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					if len(command) == 1 {
+						Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing resources from the namespace %q", commonVar.Project)))
+						lines = lines[6:]
+					} else {
+						Expect(lines[0]).To(ContainSubstring("Listing ServiceBindings"))
+					}
 					if devfile {
 						Expect(lines[3]).To(ContainSubstring("* "))
 					} else {
@@ -754,7 +774,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 									res := helper.Cmd("odo", command...).ShouldPass()
 									stdout, stderr := res.Out(), res.Err()
 									if ctx.assertListHumanReadableOutput != nil {
-										ctx.assertListHumanReadableOutput(true, stdout, stderr)
+										ctx.assertListHumanReadableOutput(true, stdout, stderr, command)
 									}
 								})
 
@@ -773,12 +793,12 @@ var _ = Describe("odo describe/list binding command tests", func() {
 									res := helper.Cmd("odo", command...).ShouldPass()
 									stdout, stderr := res.Out(), res.Err()
 									if ctx.assertListHumanReadableOutput != nil {
-										ctx.assertListHumanReadableOutput(false, stdout, stderr)
+										ctx.assertListHumanReadableOutput(false, stdout, stderr, command)
 									}
 								})
 							})
 
-							When(fmt.Sprintf("changing the current namespace - command: %v", command), func() {
+							When("changing the current namespace", func() {
 								BeforeEach(func() {
 									commonVar.CliRunner.SetProject("default")
 								})
@@ -787,7 +807,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 									commonVar.CliRunner.SetProject(commonVar.Project)
 								})
 
-								It("should list the binding with --namespace flag", func() {
+								It(fmt.Sprintf("should list the binding with --namespace flag - command: %s", command), func() {
 									By("JSON output from another directory", func() {
 										err := os.Chdir("/")
 										Expect(err).ToNot(HaveOccurred())
@@ -803,7 +823,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 										res := helper.Cmd("odo", append(command, "--namespace", commonVar.Project)...).ShouldPass()
 										stdout, stderr := res.Out(), res.Err()
 										if ctx.assertListHumanReadableOutput != nil {
-											ctx.assertListHumanReadableOutput(false, stdout, stderr)
+											ctx.assertListHumanReadableOutput(false, stdout, stderr, command)
 										}
 									})
 								})
