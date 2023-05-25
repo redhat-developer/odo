@@ -92,7 +92,7 @@ func (o *DevClient) reconcile(
 				o.execClient,
 				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 				pod.Name,
-				false,
+				componentStatus.RunExecuted,
 				component.GetContainersNames(pod),
 				"Building your application in container",
 
