@@ -50,12 +50,12 @@ import (
 var downloadGitRepoResources = func(url string, destDir string, httpTimeout *int, token string) error {
 	var returnedErr error
 
-	gitUrl, err := git.NewGitUrlWithURL(url)
-	if err != nil {
-		return err
-	}
+	if util.IsGitProviderRepo(url) {
+		gitUrl, err := git.NewGitUrlWithURL(url)
+		if err != nil {
+			return err
+		}
 
-	if gitUrl.IsGitProviderRepo() {
 		if !gitUrl.IsFile || gitUrl.Revision == "" || !strings.Contains(gitUrl.Path, OutputDevfileYamlPath) {
 			return fmt.Errorf("error getting devfile from url: failed to retrieve %s", url)
 		}
