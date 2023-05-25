@@ -47,9 +47,8 @@ func ExtractK8sAndOcComponentsFromOutputOnPodman(out string) []string {
 	// Example lines to match:
 	// ⚠ Kubernetes components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced, k8s-deploybydefault-true-and-not-referenced.
 	// ⚠ OpenShift components are not supported on Podman. Skipping: ocp-deploybydefault-true-and-referenced.
-	// ⚠  Apply OpenShift components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced.
-	// ⚠  Apply OpenShift components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced.
-	re := regexp.MustCompile(`(?:Kubernetes|OpenShift) components are not supported on Podman\.\s*Skipping:\s*([^\n]+)\.`)
+	// ⚠  Apply Kubernetes/Openshift components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced.
+	re := regexp.MustCompile(`(?:Kubernetes|OpenShift|Kubernetes/Openshift) components are not supported on Podman\.\s*Skipping:\s*([^\n]+)\.`)
 	for _, l := range lines {
 		matches := re.FindStringSubmatch(l)
 		if len(matches) > 1 {

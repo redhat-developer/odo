@@ -3583,7 +3583,7 @@ CMD ["npm", "start"]
 		})
 		It("should show warning about being unable to create the resource when running odo dev on podman", func() {
 			Expect(string(errContents)).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
-			Expect(string(errContents)).To(ContainSubstring("Apply Kubernetes components are not supported on Podman. Skipping: "))
+			Expect(string(errContents)).To(ContainSubstring("Apply Kubernetes/Openshift components are not supported on Podman. Skipping: "))
 			helper.MatchAllInOutput(string(errContents), []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource"})
 		})
 
