@@ -46,9 +46,15 @@ const (
 	JBoss    = "jboss"
 )
 
-// By default, all values are anomized.
 // Add the (case-insensitive) preference parameter name here to have the corresponding value sent verbatim to telemetry.
-var clearTextPreferenceParams = []string{}
+var clearTextPreferenceParams = []string{
+	"ConsentTelemetry",
+	"Ephemeral",
+	"PushTimeout",
+	"RegistryCacheTime",
+	"Timeout",
+	"UpdateNotification",
+}
 
 type contextKey struct{}
 
