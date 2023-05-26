@@ -1,9 +1,9 @@
 ---
-title: Troubleshoot Storage Permission issues on GKE/AKS/EKS cluster
+title: Troubleshoot Storage Permission issues on managed cloud providers clusters
 sidebar_position: 9
 ---
 
-Using odo to run an application on a GKE/AKS/EKS cluster does not always work out of the box, especially while using Devfiles from the [Devfile Registry](https://registry.devfile.io); users often encounter issues while syncing local files into the container due to insufficient permissions on mounted volumes.
+Using `odo` to run an application on a managed [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine), [Azure Kubernetes Service (AKS)](https://azure.microsoft.com/en-us/products/kubernetes-service), or [Amazon Elatic Kubernetes Service (EKS)](https://aws.amazon.com/eks/) cluster does not always work out of the box, especially while using Devfiles from the [Devfile Registry](https://registry.devfile.io); users often encounter issues while syncing local files into the container due to insufficient permissions on mounted volumes.
 
 <details>
 <summary>For example, while running a Java Maven application using a <code>java-maven</code> devfile on an Amazon Elastic Kubernetes Service, a sample error may look like this.</summary>
@@ -136,14 +136,15 @@ This is the simplest way to overcome this issue. There are 2 parts to this solut
     odo preference set Ephemeral true -f
     ```
 2. If the Devfile contains a `volume` component, then set its `ephemeral` property to `true`.
+
    The above configuration will use the [`emptyDir` Ephemeral volumes](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) instead of creating Persistent Volumes to mount the source files; it also ensures the current user can read/write to the directories.
 
 ### Define custom location to mount volumes and project source
-All the Devfiles provided by the [Devfile Registry](https://registry.devfile.io) use container image set a non-root user, which is why we see these permission related issues; we usually do not see this for a root user.
+Most of the Devfiles provided by the [Devfile Registry](https://registry.devfile.io) use container images with a non-root user, which is why we see these permission related issues; we usually do not see this for a root user.
 
 When a user does not have access to all the locations in a system, we need to provide a way to use a location where the user can read/write. There are 2 parts to this solution as well:
 1. Set `sourceMapping` of the Devfile `container` component to a location where the user has read/write access.
-2. If a Devfile `volume` component is defined, then ensure that the `.volumeMounts.path` of the Devfile container component where the volume will be mount is in a location where the user has read/write access.
+2. If a Devfile `volume` component is defined, then ensure that the `.volumeMounts.path` of the Devfile container component where the volume will be mounted is in a location where the user has read/write access.
 
 <details>
 <summary>Example <code>java-maven</code> Devfile with custom <code>sourceMapping</code> and volume mount location.</summary>
@@ -232,7 +233,7 @@ While using relative paths, the user must ensure to update all the usages of thi
 ### Setting `fsGroup` to the PodSecurityContext
 By setting `fsGroup` in the PodSecurityContext, all processes of the container are also made part of the supplementary group ID set in the field. The owner for volume mount location and any files created in that volume will be Group ID set in the field. This solution is quite common when looking for permission related issues on a mounted volume, [example](https://stackoverflow.com/questions/50156124/kubernetes-nfs-persistent-volumes-permission-denied#50187723).
 
-This solution can be implemented by setting a `pod-overrides` attribute to the Devfile `container` component.
+This solution can be implemented by setting a [`pod-overrides`](https://devfile.io/docs/2.2.0/overriding-pod-and-container-attributes#pod-overrides) attribute to the Devfile `container` component.
 
 <details>
 <summary>Example <code>java-maven</code> Devfile with a <code>fsGroup</code> set in PodSecurityContext.</summary>
