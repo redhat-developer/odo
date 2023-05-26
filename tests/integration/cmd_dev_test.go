@@ -898,7 +898,7 @@ ComponentSettings:
 						helper.CopyExampleDevFile(
 							filepath.Join("source", "devfiles", "nodejs", devfile.devfileName),
 							filepath.Join(commonVar.Context, "devfile.yaml"),
-							helper.DevfileMetadataNameSetter(cmpName))
+							cmpName)
 						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
 							EnvVars: devfile.envvars,
 						})
@@ -960,7 +960,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				devSession, out, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).To(BeNil())
 			})
@@ -1007,9 +1007,15 @@ ComponentSettings:
 				nodejsProject = helper.CreateNewContext()
 				goProject = helper.CreateNewContext()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), nodejsProject)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(nodejsProject, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					filepath.Join(nodejsProject, "devfile.yaml"),
+					cmpName+"-nodejs",
+				)
 				helper.CopyExample(filepath.Join("source", "go"), goProject)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"), filepath.Join(goProject, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"),
+					filepath.Join(goProject, "devfile.yaml"),
+					cmpName+"-go",
+				)
 			})
 			AfterEach(func() {
 				helper.DeleteDir(nodejsProject)
@@ -1417,7 +1423,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1533,7 +1539,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-single-env.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1559,7 +1565,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-multiple-envs.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1585,7 +1591,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-env-with-space.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1616,7 +1622,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1688,7 +1694,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1752,7 +1758,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1845,7 +1851,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1887,7 +1893,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1924,7 +1930,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1959,7 +1965,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1994,7 +2000,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -2027,7 +2033,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -2105,7 +2111,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -2151,7 +2157,7 @@ ComponentSettings:
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 		})
 
 		for _, tt := range []struct {
@@ -2439,7 +2445,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -2472,7 +2478,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -2504,7 +2510,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -2538,7 +2544,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
@@ -2600,7 +2606,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
@@ -2665,7 +2671,7 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 			})
 
 			It("should not correctly execute PreStart commands", func() {
@@ -2691,7 +2697,7 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
 				var err error
 				session, _, initErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
@@ -2729,7 +2735,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
 
 					var err error
@@ -2907,7 +2913,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-alternative-commands.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
@@ -3210,7 +3216,7 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				var err error
 				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
@@ -3230,7 +3236,10 @@ CMD ["npm", "start"]
 				When("Update the devfile.yaml, and waiting synchronization", func() {
 
 					BeforeEach(func() {
-						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+						helper.CopyExampleDevFile(
+							filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"),
+							filepath.Join(commonVar.Context, "devfile.yaml"),
+							cmpName)
 						var err error
 						_, _, _, err = session.WaitSync()
 						Expect(err).ToNot(HaveOccurred())
@@ -3369,7 +3378,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -3515,11 +3524,11 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-child.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-parent.yaml"),
 					filepath.Join(commonVar.Context, "devfile-parent.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName+"-parent")
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
@@ -3568,7 +3577,7 @@ CMD ["npm", "start"]
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName),
+				cmpName,
 			)
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), imgName, customImgName)
 			var err error
@@ -3689,6 +3698,7 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-no-metadata-name.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName,
 					helper.DevfileMetadataNameRemover)
 			})
 
@@ -3905,7 +3915,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", t.devfile),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 				})
 
 				When("running odo dev", func() {
@@ -3975,7 +3985,10 @@ CMD ["npm", "start"]
 		Context("Devfile contains pod-overrides and container-overrides attributes", helper.LabelPodmanIf(ctx.podman, func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
 			})
 			It("should override the content in the pod it creates for the component on the cluster", func() {
 				err := helper.RunDevMode(helper.DevSessionOpts{
@@ -3995,7 +4008,7 @@ CMD ["npm", "start"]
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 		})
 		It("should fail to run odo dev", func() {
 			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo").ShouldFail().Err()
@@ -4007,7 +4020,7 @@ CMD ["npm", "start"]
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "registry.access.redhat.com/ubi8/nodejs", "registry.access.redhat.com/ubi8/nose")
 		})
 		It("should fail with an error", func() {
@@ -4030,7 +4043,7 @@ CMD ["npm", "start"]
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-endpoint-on-loopback"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-endpoint-on-loopback.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 		})
 
 		haveHttpResponse := func(status int, body string) types.GomegaMatcher {
@@ -4288,7 +4301,7 @@ CMD ["npm", "start"]
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 			})
 
 			When("running odo dev with some components not referenced in the Devfile", func() {
@@ -4559,7 +4572,7 @@ CMD ["npm", "start"]
 						filepath.Join(commonVar.Context, "kubernetes", "devfile-image-names-as-selectors"))
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-image-names-as-selectors.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 				})
 
 				When("adding a local registry for images", func() {

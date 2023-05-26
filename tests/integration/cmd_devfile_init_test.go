@@ -77,7 +77,8 @@ var _ = Describe("odo devfile init command tests", func() {
 				By("running odo init in a directory containing a devfile.yaml", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"),
-						filepath.Join(commonVar.Context, "devfile.yaml"))
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						"")
 					defer os.Remove(filepath.Join(commonVar.Context, "devfile.yaml"))
 					err := helper.Cmd("odo", "init").ShouldFail().Err()
 					Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
@@ -86,7 +87,8 @@ var _ = Describe("odo devfile init command tests", func() {
 				By("running odo init in a directory containing a .devfile.yaml", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"),
-						filepath.Join(commonVar.Context, ".devfile.yaml"))
+						filepath.Join(commonVar.Context, ".devfile.yaml"),
+						"")
 					defer helper.DeleteFile(filepath.Join(commonVar.Context, ".devfile.yaml"))
 					err := helper.Cmd("odo", "init").ShouldFail().Err()
 					Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
@@ -218,7 +220,8 @@ var _ = Describe("odo devfile init command tests", func() {
 					BeforeEach(func() {
 						newContext = helper.CreateNewContext()
 						newDevfilePath := filepath.Join(newContext, "devfile.yaml")
-						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), newDevfilePath)
+						helper.CopyExampleDevFile(
+							filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), newDevfilePath, "")
 						helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", newDevfilePath).ShouldPass()
 					})
 					AfterEach(func() {
@@ -343,7 +346,7 @@ var _ = Describe("odo devfile init command tests", func() {
 					var out string
 
 					BeforeEach(func() {
-						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), devfilePath)
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), devfilePath, "")
 						out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
 					})
 
@@ -361,7 +364,7 @@ var _ = Describe("odo devfile init command tests", func() {
 					var out string
 
 					BeforeEach(func() {
-						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), devfilePath)
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), devfilePath, "")
 						out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
 					})
 

@@ -205,7 +205,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
@@ -284,7 +284,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 			session, sessionOut, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
 				EnvVars:     []string{"PODMAN_CMD=echo"},
 				CmdlineArgs: []string{"--debug"},
@@ -371,7 +371,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
@@ -469,7 +469,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 				})
 
 				When("running odo dev with some components not referenced in the Devfile", func() {

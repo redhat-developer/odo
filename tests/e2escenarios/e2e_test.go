@@ -140,7 +140,7 @@ var _ = Describe("E2E Test", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
 				path.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(componentName))
+				componentName)
 
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
@@ -269,7 +269,7 @@ var _ = Describe("E2E Test", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "springboot", "devfile-deploy.yaml"),
 				path.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(componentName))
+				componentName)
 
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))

@@ -104,7 +104,7 @@ var _ = Describe("odo delete command tests", func() {
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					path.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				if withDotOdoDir {
 					helper.MakeDir(filepath.Join(commonVar.Context, util.DotOdoDirectory))
 				}
@@ -735,7 +735,7 @@ var _ = Describe("odo delete command tests", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-exec.yaml"),
 				path.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), `image: registry.access.redhat.com/ubi8/nodejs-14:latest`, `image: registry.access.redhat.com/ubi8/nodejs-does-not-exist-14:latest`)
 			// We terminate after 5 seconds because the job should have been created by then and is bound to fail.
 			helper.Cmd("odo", "deploy").WithTerminate(5, nil).ShouldRun()

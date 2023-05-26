@@ -141,9 +141,9 @@ func GetExamplePath(args ...string) string {
 }
 
 // CopyExampleDevFile copies an example devfile from tests/examples/source/devfiles/<componentName>/devfile.yaml into targetDst.
-// The Devfile updaters allow to perform operations against the target Devfile, like updating the component name (via DevfileMetadataNameSetter) or
-// removing the component name (via DevfileMetadataNameRemover).
-func CopyExampleDevFile(devfilePath, targetDst string, devfileUpdaters ...DevfileUpdater) {
+// If newName is not empty, it will replace the component name in the target Devfile.
+// The Devfile updaters allow to perform operations against the target Devfile, like removing the component name (via DevfileMetadataNameRemover).
+func CopyExampleDevFile(devfilePath, targetDst string, newName string, updaters ...DevfileUpdater) {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
 	// path to the examples directory
@@ -155,9 +155,13 @@ func CopyExampleDevFile(devfilePath, targetDst string, devfileUpdaters ...Devfil
 
 	err = dfutil.CopyFile(src, targetDst, info)
 	Expect(err).NotTo(HaveOccurred())
-	if len(devfileUpdaters) != 0 {
-		UpdateDevfileContent(targetDst, devfileUpdaters)
+
+	var devfileUpdaters []DevfileUpdater
+	if newName != "" {
+		devfileUpdaters = append(devfileUpdaters, DevfileMetadataNameSetter(newName))
 	}
+	devfileUpdaters = append(devfileUpdaters, updaters...)
+	UpdateDevfileContent(targetDst, devfileUpdaters)
 }
 
 // FileShouldContainSubstring check if file contains subString
