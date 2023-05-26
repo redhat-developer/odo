@@ -78,6 +78,10 @@ func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, ar
 	} else if lo.clientset.KubernetesClient != nil {
 		lo.namespaceFilter = odocontext.GetNamespace(ctx)
 	}
+	// Set the namespace; this ensures we fetch resources from the given namespace
+	if lo.clientset.KubernetesClient != nil {
+		lo.clientset.KubernetesClient.SetNamespace(lo.namespaceFilter)
+	}
 
 	return nil
 }
