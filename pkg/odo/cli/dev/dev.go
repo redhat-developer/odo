@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -207,6 +208,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	}
 
+	// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
+	apiserver_impl.StartServer(ctx, o.cancel)
 	// check for .gitignore file and add odo-file-index.json to .gitignore.
 	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
 	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).
