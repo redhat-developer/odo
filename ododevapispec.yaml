@@ -3,6 +3,8 @@ info:
   title: odo dev
   version: '0.1'
   description: API interface for 'odo dev'
+servers:
+  - url: /api/v1
 paths:
   /instance:
     get:

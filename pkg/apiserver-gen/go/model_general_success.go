@@ -10,7 +10,6 @@
 package openapi
 
 type GeneralSuccess struct {
-
 	Message string `json:"message,omitempty"`
 }
 

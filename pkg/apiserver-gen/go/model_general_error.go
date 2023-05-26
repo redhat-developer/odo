@@ -10,7 +10,6 @@
 package openapi
 
 type GeneralError struct {
-
 	Message string `json:"message,omitempty"`
 }
 

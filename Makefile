@@ -233,5 +233,5 @@ test-doc-automation:
 # Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; this will only generate interfaces
 # Actual implementation must be done inside pkg/apiserver-impl
 .PHONY: generate-apiserver
-generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen
-	openapi-generator generate -i ododevapispec.yaml -g go-server -o pkg/apiserver-gen --additional-properties=outputAsLibrary=true,onlyInterfaces=true
+generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; also go fmt the files
+	openapi-generator generate -i ododevapispec.yaml -g go-server -o pkg/apiserver-gen --additional-properties=outputAsLibrary=true,onlyInterfaces=true && echo "Formatting generated files:" && go fmt ./pkg/apiserver-gen/...

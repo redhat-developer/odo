@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
 	"io"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/spf13/cobra"
@@ -71,6 +72,8 @@ type DevOptions struct {
 	portForwardFlag      []string
 	addressFlag          string
 	noCommandsFlag       bool
+	apiServerFlag        bool
+	apiServerPortFlag    int
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -174,6 +177,12 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
+	if o.apiServerFlag && o.apiServerPortFlag != 0 {
+		if !util.IsPortFree(o.apiServerPortFlag, "") {
+			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPortFlag)
+		}
+	}
+
 	return nil
 }
 
@@ -208,8 +217,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	}
 
-	// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
-	apiserver_impl.StartServer(ctx, o.cancel)
 	// check for .gitignore file and add odo-file-index.json to .gitignore.
 	// In case the .gitignore was created by odo, it is purposely not reported as candidate for deletion (via a call to files.ReportLocalFileGeneratedByOdo)
 	// because a .gitignore file is more likely to be modified by the user afterward (for another usage).
@@ -243,6 +250,11 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	if err != nil {
 		err = fmt.Errorf("unable to save state file: %w", err)
 		return err
+	}
+
+	if o.apiServerFlag {
+		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
+		apiserver_impl.StartServer(ctx, o.cancel, o.apiServerPortFlag, o.clientset.StateClient)
 	}
 
 	return o.clientset.DevClient.Start(
@@ -313,6 +325,8 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
 	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
+	devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", false, "Start the API Server; this is an experimental feature")
+	devCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server; this flag should be used in combination with --api-server flag.")
 
 	clientset.Add(devCmd,
 		clientset.BINDING,

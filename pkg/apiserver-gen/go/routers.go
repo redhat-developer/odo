@@ -23,9 +23,9 @@ import (
 
 // A Route defines the parameters for an api endpoint
 type Route struct {
-	Name		string
-	Method	  string
-	Pattern	 string
+	Name        string
+	Method      string
+	Pattern     string
 	HandlerFunc http.HandlerFunc
 }
 
@@ -124,7 +124,9 @@ func readFileHeaderToTempFile(fileHeader *multipart.FileHeader) (*os.File, error
 		return nil, err
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	file.Write(fileBytes)
 

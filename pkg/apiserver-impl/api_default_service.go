@@ -18,7 +18,7 @@ func NewDefaultApiService() openapi.DefaultApiServicer {
 	return &DefaultApiService{}
 }
 
-// ComponentCommandPost - 
+// ComponentCommandPost -
 func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentCommandPostRequest openapi.ComponentCommandPostRequest) (openapi.ImplResponse, error) {
 	// TODO - update ComponentCommandPost with the required logic for this service method.
 	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
@@ -29,7 +29,7 @@ func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentC
 	return openapi.Response(http.StatusNotImplemented, nil), errors.New("ComponentCommandPost method not implemented")
 }
 
-// ComponentGet - 
+// ComponentGet -
 func (s *DefaultApiService) ComponentGet(ctx context.Context) (openapi.ImplResponse, error) {
 	// TODO - update ComponentGet with the required logic for this service method.
 	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
@@ -40,7 +40,7 @@ func (s *DefaultApiService) ComponentGet(ctx context.Context) (openapi.ImplRespo
 	return openapi.Response(http.StatusNotImplemented, nil), errors.New("ComponentGet method not implemented")
 }
 
-// InstanceDelete - 
+// InstanceDelete -
 func (s *DefaultApiService) InstanceDelete(ctx context.Context) (openapi.ImplResponse, error) {
 	// TODO - update InstanceDelete with the required logic for this service method.
 	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
@@ -51,7 +51,7 @@ func (s *DefaultApiService) InstanceDelete(ctx context.Context) (openapi.ImplRes
 	return openapi.Response(http.StatusNotImplemented, nil), errors.New("InstanceDelete method not implemented")
 }
 
-// InstanceGet - 
+// InstanceGet -
 func (s *DefaultApiService) InstanceGet(ctx context.Context) (openapi.ImplResponse, error) {
 	// TODO - update InstanceGet with the required logic for this service method.
 	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.

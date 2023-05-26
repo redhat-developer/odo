@@ -92,6 +92,17 @@ func (o *State) SaveExit(ctx context.Context) error {
 	return o.saveCommonIfOwner(pid)
 }
 
+func (o *State) SetAPIServerPort(ctx context.Context, port int) error {
+	var (
+		pid      = odocontext.GetPID(ctx)
+		platform = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
+	)
+
+	o.content.APIServerPort = port
+	o.content.Platform = platform
+	return o.save(ctx, pid)
+}
+
 // save writes the content structure in json format in file
 func (o *State) save(ctx context.Context, pid int) error {
 
