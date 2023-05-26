@@ -99,3 +99,7 @@ $mockgen -source=pkg/podman/interface.go \
 $mockgen -source=pkg/configAutomount/interface.go \
     -package configAutomount \
     -destination pkg/configAutomount/mock.go
+
+$mockgen -source=pkg/platform/interface.go \
+    -package platform \
+    -destination pkg/platform/mock.go

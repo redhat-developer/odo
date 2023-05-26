@@ -40,7 +40,7 @@ func (o *compositeCommand) CheckValidity() error {
 }
 
 // Execute loops over each command and executes them serially
-func (o *compositeCommand) Execute(ctx context.Context, handler Handler) error {
+func (o *compositeCommand) Execute(ctx context.Context, handler Handler, parentGroup *v1alpha2.CommandGroup) error {
 	allCommands, err := allCommandsMap(o.devfileObj)
 	if err != nil {
 		return err
@@ -50,7 +50,10 @@ func (o *compositeCommand) Execute(ctx context.Context, handler Handler) error {
 		if err != nil {
 			return err
 		}
-		err = cmd.Execute(ctx, handler)
+		if parentGroup == nil {
+			parentGroup = o.command.Composite.Group
+		}
+		err = cmd.Execute(ctx, handler, parentGroup)
 		if err != nil {
 			return err
 		}

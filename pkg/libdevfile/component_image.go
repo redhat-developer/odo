@@ -25,7 +25,7 @@ func (e *imageComponent) CheckValidity() error {
 	return nil
 }
 
-func (e *imageComponent) Apply(handler Handler) error {
+func (e *imageComponent) Apply(handler Handler, kind v1alpha2.CommandGroupKind) error {
 	return handler.ApplyImage(e.component)
 }
 

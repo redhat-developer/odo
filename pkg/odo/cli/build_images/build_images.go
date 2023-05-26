@@ -64,7 +64,7 @@ func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
 
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
-	return image.BuildPushImages(ctx, o.clientset.FS, o.pushFlag)
+	return image.BuildPushImages(ctx, image.SelectBackend(ctx), o.clientset.FS, o.pushFlag)
 }
 
 // NewCmdBuildImages implements the odo command

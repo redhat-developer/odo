@@ -22,9 +22,10 @@ const DebugEndpointNamePrefix = "debug"
 
 type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
-	ApplyKubernetes(kubernetes v1alpha2.Component) error
-	ApplyOpenShift(openshift v1alpha2.Component) error
-	Execute(ctx context.Context, command v1alpha2.Command) error
+	ApplyKubernetes(kubernetes v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
+	ApplyOpenShift(openshift v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
+	ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
+	ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
 }
 
 // Deploy executes the default deploy command of the devfile.
@@ -71,7 +72,7 @@ func executeCommand(ctx context.Context, devfileObj parser.DevfileObj, command v
 	if err != nil {
 		return err
 	}
-	return cmd.Execute(ctx, handler)
+	return cmd.Execute(ctx, handler, nil)
 }
 
 // GetCommand iterates through the devfile commands and returns the devfile command with the specified name and group kind.
@@ -263,7 +264,7 @@ func execDevfileEvent(ctx context.Context, devfileObj parser.DevfileObj, events 
 				return err
 			}
 			// Execute command in container
-			err = c.Execute(ctx, handler)
+			err = c.Execute(ctx, handler, nil)
 			if err != nil {
 				return fmt.Errorf("unable to execute devfile command %q: %w", commandName, err)
 			}

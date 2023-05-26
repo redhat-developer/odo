@@ -15,6 +15,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -28,9 +29,10 @@ import (
 )
 
 type DeleteComponentClient struct {
-	kubeClient   kclient.ClientInterface
-	podmanClient podman.Client
-	execClient   exec.Client
+	kubeClient            kclient.ClientInterface
+	podmanClient          podman.Client
+	execClient            exec.Client
+	configAutomountClient configAutomount.Client
 }
 
 var _ Client = (*DeleteComponentClient)(nil)
@@ -39,11 +41,13 @@ func NewDeleteComponentClient(
 	kubeClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	execClient exec.Client,
+	configAutomountClient configAutomount.Client,
 ) *DeleteComponentClient {
 	return &DeleteComponentClient{
-		kubeClient:   kubeClient,
-		podmanClient: podmanClient,
-		execClient:   execClient,
+		kubeClient:            kubeClient,
+		podmanClient:          podmanClient,
+		execClient:            execClient,
+		configAutomountClient: configAutomountClient,
 	}
 }
 
@@ -216,7 +220,20 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
-	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, component.NewExecHandler(do.kubeClient, do.execClient, appName, componentName, pod.Name, "Executing pre-stop command in container", false, false))
+	handler := component.NewRunHandler(
+		ctx,
+		do.kubeClient,
+		do.execClient,
+		do.configAutomountClient,
+		pod.Name,
+		false,
+		component.GetContainersNames(pod),
+		"Executing pre-stop command in container",
+
+		// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
+		nil, nil, parser.DevfileObj{}, "",
+	)
+	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, handler)
 	if err != nil {
 		klog.V(4).Infof("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
 	}

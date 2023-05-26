@@ -28,6 +28,26 @@ func (o *execCommand) CheckValidity() error {
 	return nil
 }
 
-func (o *execCommand) Execute(ctx context.Context, handler Handler) error {
-	return handler.Execute(ctx, o.command)
+func (o *execCommand) Execute(ctx context.Context, handler Handler, parentGroup *v1alpha2.CommandGroup) error {
+	if o.isTerminating(parentGroup) {
+		return handler.ExecuteTerminatingCommand(ctx, o.command)
+	}
+	return handler.ExecuteNonTerminatingCommand(ctx, o.command)
+}
+
+// isTerminating returns true if not Run or Debug command
+func (o *execCommand) isTerminating(parentGroup *v1alpha2.CommandGroup) bool {
+	if parentGroup != nil {
+		kind := parentGroup.Kind
+		return isTerminatingKind(kind)
+	}
+	if o.command.Exec.Group == nil {
+		return true
+	}
+	kind := o.command.Exec.Group.Kind
+	return isTerminatingKind(kind)
+}
+
+func isTerminatingKind(kind v1alpha2.CommandGroupKind) bool {
+	return kind != v1alpha2.RunCommandGroupKind && kind != v1alpha2.DebugCommandGroupKind
 }

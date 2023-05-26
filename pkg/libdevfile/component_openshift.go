@@ -24,6 +24,6 @@ func (e *openshiftComponent) CheckValidity() error {
 	return nil
 }
 
-func (e *openshiftComponent) Apply(handler Handler) error {
-	return handler.ApplyOpenShift(e.component)
+func (e *openshiftComponent) Apply(handler Handler, kind v1alpha2.CommandGroupKind) error {
+	return handler.ApplyOpenShift(e.component, kind)
 }

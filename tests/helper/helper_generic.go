@@ -224,7 +224,7 @@ func CommonBeforeEach() CommonVar {
 				}
 				Expect(resetErr).ShouldNot(HaveOccurred())
 			})
-			Expect(os.Setenv("PODMAN_CMD_INIT_TIMEOUT", "10s")).ShouldNot(HaveOccurred())
+			Expect(os.Setenv("PODMAN_CMD_INIT_TIMEOUT", "30s")).ShouldNot(HaveOccurred())
 
 			// Generate a dedicated containers.conf with a specific namespace
 			GenerateAndSetContainersConf(commonVar.ConfigDir)

@@ -6,64 +6,25 @@ import (
 	"io"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"k8s.io/klog"
-	"k8s.io/utils/pointer"
-
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/redhat-developer/odo/pkg/exec"
-	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/util"
+	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 )
-
-type execHandler struct {
-	platformClient  platform.Client
-	execClient      exec.Client
-	appName         string
-	componentName   string
-	podName         string
-	msg             string
-	show            bool
-	componentExists bool
-}
-
-var _ libdevfile.Handler = (*execHandler)(nil)
 
 const ShellExecutable string = "/bin/sh"
 
-func NewExecHandler(platformClient platform.Client, execClient exec.Client, appName, cmpName, podName, msg string, show bool, componentExists bool) *execHandler {
-	return &execHandler{
-		platformClient:  platformClient,
-		execClient:      execClient,
-		appName:         appName,
-		componentName:   cmpName,
-		podName:         podName,
-		msg:             msg,
-		show:            show,
-		componentExists: componentExists,
-	}
-}
+func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, platformClient platform.Client, command devfilev1.Command, componentExists bool, podName string, appName string, componentName string, msg string, show bool) error {
 
-func (o *execHandler) ApplyImage(image v1alpha2.Component) error {
-	return nil
-}
-
-func (o *execHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-	return nil
-}
-
-func (o *execHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
-	return nil
-}
-
-func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
-	if o.componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
+	if componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
 		klog.V(2).Infof("command is hot-reload capable, not executing %q again", command.Id)
 		return nil
 	}
 
-	msg := o.msg
 	if msg == "" {
 		msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)
 	} else {
@@ -76,20 +37,20 @@ func (o *execHandler) Execute(ctx context.Context, command v1alpha2.Command) err
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
 	cmdline := getCmdline(command)
-	_, _, err := o.execClient.ExecuteCommand(ctx, cmdline, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
+	_, _, err := execClient.ExecuteCommand(ctx, cmdline, podName, command.Exec.Component, show, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
 	spinner.End(err == nil)
 	if err != nil {
-		rd, errLog := Log(o.platformClient, o.componentName, o.appName, false, command)
+		rd, errLog := Log(platformClient, componentName, appName, false, command)
 		if errLog != nil {
 			return fmt.Errorf("unable to log error %v: %w", err, errLog)
 		}
 
 		// Use GetStderr in order to make sure that colour output is correct
 		// on non-TTY terminals
-		errLog = util.DisplayLog(false, rd, log.GetStderr(), o.componentName, -1)
+		errLog = util.DisplayLog(false, rd, log.GetStderr(), componentName, -1)
 		if errLog != nil {
 			return fmt.Errorf("unable to log error %v: %w", err, errLog)
 		}

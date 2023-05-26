@@ -35,7 +35,6 @@ func (o *DevClient) reconcile(
 	componentStatus *watch.ComponentStatus,
 ) error {
 	var (
-		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
@@ -65,15 +64,18 @@ func (o *DevClient) reconcile(
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(devfileObj) {
-		execHandler := component.NewExecHandler(
+		execHandler := component.NewRunHandler(
+			ctx,
 			o.podmanClient,
 			o.execClient,
-			appName,
-			componentName,
+			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 			pod.Name,
-			"Executing post-start command in container",
-			false, /* TODO */
 			false,
+			component.GetContainersNames(pod),
+			"Executing post-start command in container",
+
+			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
+			nil, nil, parser.DevfileObj{}, "",
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -84,15 +86,18 @@ func (o *DevClient) reconcile(
 
 	if execRequired {
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(
+			execHandler := component.NewRunHandler(
+				ctx,
 				o.podmanClient,
 				o.execClient,
-				appName,
-				componentName,
+				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 				pod.Name,
-				"Building your application in container",
-				false, /* TODO */
 				componentStatus.RunExecuted,
+				component.GetContainersNames(pod),
+				"Building your application in container",
+
+				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
+				nil, nil, parser.DevfileObj{}, "",
 			)
 			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}
@@ -108,17 +113,24 @@ func (o *DevClient) reconcile(
 			cmdKind = devfilev1.DebugCommandGroupKind
 			cmdName = options.DebugCommand
 		}
-		cmdHandler := commandHandler{
-			ctx:             ctx,
-			fs:              o.fs,
-			execClient:      o.execClient,
-			platformClient:  o.podmanClient,
-			componentExists: componentStatus.RunExecuted,
-			podName:         pod.Name,
-			appName:         appName,
-			componentName:   componentName,
-		}
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, &cmdHandler, false)
+
+		cmdHandler := component.NewRunHandler(
+			ctx,
+			o.podmanClient,
+			o.execClient,
+			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
+			pod.Name,
+			componentStatus.RunExecuted,
+			component.GetContainersNames(pod),
+			"",
+
+			o.fs,
+			image.SelectBackend(ctx),
+
+			// TODO(feloy) set to deploy Kubernetes/Openshift components
+			parser.DevfileObj{}, "",
+		)
+		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
 		if err != nil {
 			return err
 		}
@@ -188,7 +200,7 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj
 	}
 
 	for _, c := range components {
-		err = image.BuildPushSpecificImage(ctx, o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
+		err = image.BuildPushSpecificImage(ctx, image.SelectBackend(ctx), o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
 		if err != nil {
 			return err
 		}

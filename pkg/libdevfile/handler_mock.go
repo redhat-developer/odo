@@ -50,43 +50,57 @@ func (mr *MockHandlerMockRecorder) ApplyImage(image interface{}) *gomock.Call {
 }
 
 // ApplyKubernetes mocks base method.
-func (m *MockHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
+func (m *MockHandler) ApplyKubernetes(kubernetes v1alpha2.Component, kind v1alpha2.CommandGroupKind) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyKubernetes", kubernetes)
+	ret := m.ctrl.Call(m, "ApplyKubernetes", kubernetes, kind)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ApplyKubernetes indicates an expected call of ApplyKubernetes.
-func (mr *MockHandlerMockRecorder) ApplyKubernetes(kubernetes interface{}) *gomock.Call {
+func (mr *MockHandlerMockRecorder) ApplyKubernetes(kubernetes, kind interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyKubernetes", reflect.TypeOf((*MockHandler)(nil).ApplyKubernetes), kubernetes)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyKubernetes", reflect.TypeOf((*MockHandler)(nil).ApplyKubernetes), kubernetes, kind)
 }
 
 // ApplyOpenShift mocks base method.
-func (m *MockHandler) ApplyOpenShift(openshift v1alpha2.Component) error {
+func (m *MockHandler) ApplyOpenShift(openshift v1alpha2.Component, kind v1alpha2.CommandGroupKind) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyOpenShift", openshift)
+	ret := m.ctrl.Call(m, "ApplyOpenShift", openshift, kind)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ApplyOpenShift indicates an expected call of ApplyOpenShift.
-func (mr *MockHandlerMockRecorder) ApplyOpenShift(openshift interface{}) *gomock.Call {
+func (mr *MockHandlerMockRecorder) ApplyOpenShift(openshift, kind interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyOpenShift", reflect.TypeOf((*MockHandler)(nil).ApplyOpenShift), openshift)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyOpenShift", reflect.TypeOf((*MockHandler)(nil).ApplyOpenShift), openshift, kind)
 }
 
-// Execute mocks base method.
-func (m *MockHandler) Execute(ctx context.Context, command v1alpha2.Command) error {
+// ExecuteNonTerminatingCommand mocks base method.
+func (m *MockHandler) ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", ctx, command)
+	ret := m.ctrl.Call(m, "ExecuteNonTerminatingCommand", ctx, command)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Execute indicates an expected call of Execute.
-func (mr *MockHandlerMockRecorder) Execute(ctx, command interface{}) *gomock.Call {
+// ExecuteNonTerminatingCommand indicates an expected call of ExecuteNonTerminatingCommand.
+func (mr *MockHandlerMockRecorder) ExecuteNonTerminatingCommand(ctx, command interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockHandler)(nil).Execute), ctx, command)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteNonTerminatingCommand", reflect.TypeOf((*MockHandler)(nil).ExecuteNonTerminatingCommand), ctx, command)
+}
+
+// ExecuteTerminatingCommand mocks base method.
+func (m *MockHandler) ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecuteTerminatingCommand", ctx, command)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecuteTerminatingCommand indicates an expected call of ExecuteTerminatingCommand.
+func (mr *MockHandlerMockRecorder) ExecuteTerminatingCommand(ctx, command interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteTerminatingCommand", reflect.TypeOf((*MockHandler)(nil).ExecuteTerminatingCommand), ctx, command)
 }

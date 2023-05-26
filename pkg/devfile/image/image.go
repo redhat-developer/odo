@@ -32,16 +32,17 @@ var lookPathCmd = exec.LookPath
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, push bool) error {
+func BuildPushImages(ctx context.Context, backend Backend, fs filesystem.Filesystem, push bool) error {
 	var (
 		devfileObj  = odocontext.GetEffectiveDevfileObj(ctx)
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
 	)
 
-	backend, err := selectBackend(ctx)
-	if err != nil {
-		return err
+	if backend == nil {
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")
+		//revive:enable:error-strings
 	}
 
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
@@ -65,15 +66,18 @@ func BuildPushImages(ctx context.Context, fs filesystem.Filesystem, push bool) e
 
 // BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(ctx context.Context, fs filesystem.Filesystem, component devfile.Component, push bool) error {
+func BuildPushSpecificImage(ctx context.Context, backend Backend, fs filesystem.Filesystem, component devfile.Component, push bool) error {
 	var (
 		devfilePath = odocontext.GetDevfilePath(ctx)
 		path        = filepath.Dir(devfilePath)
 	)
-	backend, err := selectBackend(ctx)
-	if err != nil {
-		return err
+
+	if backend == nil {
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")
+		//revive:enable:error-strings
 	}
+
 	return buildPushImage(backend, fs, component.Image, path, push)
 }
 
@@ -103,10 +107,10 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 	return nil
 }
 
-// selectBackend selects the container backend to use for building and pushing images
+// SelectBackend selects the container backend to use for building and pushing images
 // It will detect podman and docker CLIs (in this order),
-// or return an error if none are present locally
-func selectBackend(ctx context.Context) (Backend, error) {
+// or return nil if none are present locally
+func SelectBackend(ctx context.Context) Backend {
 
 	podmanCmd := envcontext.GetEnvConfig(ctx).PodmanCmd
 	globalExtraArgs := envcontext.GetEnvConfig(ctx).OdoContainerBackendGlobalArgs
@@ -127,14 +131,12 @@ func selectBackend(ctx context.Context) (Backend, error) {
 			log.Warning("WARNING: Building images on Apple Silicon / M1 is not (yet) supported natively on Podman")
 			log.Warning("There is however a temporary workaround: https://github.com/containers/podman/discussions/12899")
 		}
-		return NewDockerCompatibleBackend(podmanCmd, globalExtraArgs, buildExtraArgs), nil
+		return NewDockerCompatibleBackend(podmanCmd, globalExtraArgs, buildExtraArgs)
 	}
 
 	dockerCmd := envcontext.GetEnvConfig(ctx).DockerCmd
 	if _, err := lookPathCmd(dockerCmd); err == nil {
-		return NewDockerCompatibleBackend(dockerCmd, globalExtraArgs, buildExtraArgs), nil
+		return NewDockerCompatibleBackend(dockerCmd, globalExtraArgs, buildExtraArgs)
 	}
-	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
-	return nil, errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")
-	//revive:enable:error-strings
+	return nil
 }

@@ -25,8 +25,8 @@ func (e *kubernetesComponent) CheckValidity() error {
 	return nil
 }
 
-func (e *kubernetesComponent) Apply(handler Handler) error {
-	return handler.ApplyKubernetes(e.component)
+func (e *kubernetesComponent) Apply(handler Handler, kind v1alpha2.CommandGroupKind) error {
+	return handler.ApplyKubernetes(e.component, kind)
 }
 
 // GetK8sAndOcComponentsToPush returns the list of Kubernetes and OpenShift components to push,
