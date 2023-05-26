@@ -109,7 +109,7 @@ func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.Im
 
 // SelectBackend selects the container backend to use for building and pushing images
 // It will detect podman and docker CLIs (in this order),
-// or return an error if none are present locally
+// or return nil if none are present locally
 func SelectBackend(ctx context.Context) Backend {
 
 	podmanCmd := envcontext.GetEnvConfig(ctx).PodmanCmd
