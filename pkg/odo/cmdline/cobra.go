@@ -59,7 +59,7 @@ func (o *Cobra) GetWorkingDirectory() (string, error) {
 	return dfutil.GetAbsPath(".")
 }
 
-// FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
+// FlagValue retrieves the value of the specified flag if it is set for the given command
 func (o *Cobra) FlagValue(flagName string) (string, error) {
 	return o.cmd.Flags().GetString(flagName)
 }

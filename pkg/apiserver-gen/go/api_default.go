@@ -14,12 +14,12 @@ import (
 	"net/http"
 	"strings"
 
-	// "github.com/gorilla/mux"
+	_ "github.com/gorilla/mux"
 )
 
 // DefaultApiController binds http requests to an api service and writes the service results to the http response
 type DefaultApiController struct {
-	service DefaultApiServicer
+	service      DefaultApiServicer
 	errorHandler ErrorHandler
 }
 
@@ -49,35 +49,35 @@ func NewDefaultApiController(s DefaultApiServicer, opts ...DefaultApiOption) Rou
 
 // Routes returns all the api routes for the DefaultApiController
 func (c *DefaultApiController) Routes() Routes {
-	return Routes{ 
+	return Routes{
 		{
 			"ComponentCommandPost",
 			strings.ToUpper("Post"),
-			"/component/command",
+			"/api/v1/component/command",
 			c.ComponentCommandPost,
 		},
 		{
 			"ComponentGet",
 			strings.ToUpper("Get"),
-			"/component",
+			"/api/v1/component",
 			c.ComponentGet,
 		},
 		{
 			"InstanceDelete",
 			strings.ToUpper("Delete"),
-			"/instance",
+			"/api/v1/instance",
 			c.InstanceDelete,
 		},
 		{
 			"InstanceGet",
 			strings.ToUpper("Get"),
-			"/instance",
+			"/api/v1/instance",
 			c.InstanceGet,
 		},
 	}
 }
 
-// ComponentCommandPost - 
+// ComponentCommandPost -
 func (c *DefaultApiController) ComponentCommandPost(w http.ResponseWriter, r *http.Request) {
 	componentCommandPostRequestParam := ComponentCommandPostRequest{}
 	d := json.NewDecoder(r.Body)
@@ -101,7 +101,7 @@ func (c *DefaultApiController) ComponentCommandPost(w http.ResponseWriter, r *ht
 
 }
 
-// ComponentGet - 
+// ComponentGet -
 func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.ComponentGet(r.Context())
 	// If an error occurred, encode the error with the status code
@@ -114,7 +114,7 @@ func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Reque
 
 }
 
-// InstanceDelete - 
+// InstanceDelete -
 func (c *DefaultApiController) InstanceDelete(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.InstanceDelete(r.Context())
 	// If an error occurred, encode the error with the status code
@@ -127,7 +127,7 @@ func (c *DefaultApiController) InstanceDelete(w http.ResponseWriter, r *http.Req
 
 }
 
-// InstanceGet - 
+// InstanceGet -
 func (c *DefaultApiController) InstanceGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.InstanceGet(r.Context())
 	// If an error occurred, encode the error with the status code

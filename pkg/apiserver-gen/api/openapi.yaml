@@ -4,7 +4,7 @@ info:
   title: odo dev
   version: "0.1"
 servers:
-- url: /
+- url: /api/v1
 paths:
   /instance:
     delete:
