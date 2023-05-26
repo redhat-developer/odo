@@ -136,10 +136,15 @@ echo "$@"
 				if helper.IsKubernetesCluster() {
 					namespace = "namespace"
 				}
-				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-					Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace)))
-				})
-				Expect(err).ToNot(HaveOccurred())
+				// Resources might not pass the security requirements on the default namespace on certain clusters (case of OpenShift 4.14),
+				// but this is not important here, as we just want to make sure that the warning message is displayed (even if the Dev Session does not start correctly).
+				devSession, _, stderr, err := helper.WaitForDevModeToContain(helper.DevSessionOpts{}, "Running on the cluster in Dev mode", false, false)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				}()
+				Expect(string(stderr)).To(ContainSubstring(fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace)))
 			})
 		})
 
