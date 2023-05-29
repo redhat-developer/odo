@@ -128,7 +128,7 @@ Users may encounter storage related permissions issues even while working on a s
 
 This guide will discuss some workarounds that can be used to fix these issues.
 
-### Using Ephemeral Volumes
+### Use Ephemeral Volumes
 This is the simplest way to overcome this issue. There are 2 parts to this solution:
 1. Set `odo` preference `Ephemeral` to _true_.
 
@@ -139,7 +139,86 @@ This is the simplest way to overcome this issue. There are 2 parts to this solut
 
    The above configuration will use the [`emptyDir` Ephemeral volumes](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) instead of creating Persistent Volumes to mount the source files; it also ensures the current user can read/write to the directories.
 
-### Setting `fsGroup` to the PodSecurityContext
+   <details>
+   <summary>Example <code>java-maven</code> Devfile with ephemeral volume.</summary>
+
+   ```yaml showLineNumbers
+   commands:
+   - exec:
+       commandLine: mvn -Dmaven.repo.local=/home/user/.m2/repository package
+       component: tools
+       group:
+         isDefault: true
+         kind: build
+       workingDir: ${PROJECT_SOURCE}
+     id: mvn-package
+   - exec:
+       commandLine: java -jar target/*.jar
+       component: tools
+       group:
+         isDefault: true
+         kind: run
+       workingDir: ${PROJECT_SOURCE}
+     id: run
+   - exec:
+       commandLine: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n
+         -jar target/*.jar
+       component: tools
+       group:
+         isDefault: true
+         kind: debug
+       workingDir: ${PROJECT_SOURCE}
+     id: debug
+   components:
+   - container:
+       command:
+       - tail
+       - -f
+       - /dev/null
+       endpoints:
+       - name: http-maven
+         targetPort: 8080
+       - exposure: none
+         name: debug
+         targetPort: 5858
+       env:
+       - name: DEBUG_PORT
+         value: "5858"
+       image: registry.access.redhat.com/ubi8/openjdk-11:latest
+       memoryLimit: 512Mi
+       mountSources: true
+       volumeMounts:
+       - name: m2
+         path: /home/user/.m2
+     name: tools
+   #  highlight-start
+   - name: m2
+     volume:
+        ephemeral: true
+        size: 3Gi
+   #  highlight-end
+   metadata:
+     description: Java application based on Maven 3.6 and OpenJDK 11
+     displayName: Maven Java
+     icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg
+     language: Java
+     name: jmaven-app
+     projectType: Maven
+     tags:
+     - Java
+     - Maven
+     version: 1.2.0
+   schemaVersion: 2.1.0
+   starterProjects:
+   - git:
+       remotes:
+         origin: https://github.com/odo-devfiles/springboot-ex.git
+     name: springbootproject
+   ```
+   </details>
+
+
+### Set `fsGroup` to the PodSecurityContext
 By setting `fsGroup` in the PodSecurityContext, all processes of the container are also made part of the supplementary group ID set in the field. The owner for volume mount location and any files created in that volume will be Group ID set in the field. This solution is quite common when looking for permission related issues on a mounted volume, [example](https://stackoverflow.com/questions/50156124/kubernetes-nfs-persistent-volumes-permission-denied#50187723).
 
 This solution can be implemented by setting a [`pod-overrides`](https://devfile.io/docs/2.2.0/overriding-pod-and-container-attributes#pod-overrides) attribute to the Devfile `container` component.
@@ -225,8 +304,15 @@ starterProjects:
 ```
 </details>
 
+:::info
+Be cautious with the use of fsGroup; the changing of group ownership of an entire volume can cause pod startup delays for slow and/or large filesystems.
+Read these articles by [Synk](https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/) and [Google Cloud](https://cloud.google.com/kubernetes-engine/docs/troubleshooting/troubleshooting-gke-storage#mounting_a_volume_stops_responding_due_to_the_fsgroup_setting) to learn more about it.
+:::
 
-But this solution may not always be feasible, especially while dealing with large filesystems.
->Be cautious with the use of fsGroup. The changing of group ownership of an entire volume can cause pod startup delays for slow and/or large filesystems. It can also be detrimental to other processes that share the same volume if their processes do not have access permissions to the new GID. For this reason, some providers for shared file systems such as NFS do not implement this functionality. These settings also do not affect ephemeral volumes.
->
-> Read these articles by [Synk](https://snyk.io/blog/10-kubernetes-security-context-settings-you-should-understand/) and [Google Cloud](https://cloud.google.com/kubernetes-engine/docs/troubleshooting/troubleshooting-gke-storage#mounting_a_volume_stops_responding_due_to_the_fsgroup_setting) to learn more about it.
+Note that the above warning is only valid when mounting persistent volumes with large data (for e.g. a Postgres image mounting a 1Tb volume with its data); for a normal developer workflow this should not be a concern.
+
+The ownership change will only take an effect when mounting the volume for the first time while creating a pod, or when a pod is restarted due to a change in the Devfile; but even in those cases; ownership change should be quick.
+
+:::note
+If you do not know the desired group ID, you can assign a random value to it. The user will be added to the group ID and since all the files on the system will be owned by this group, there should be no problem with accessing the files.
+:::
