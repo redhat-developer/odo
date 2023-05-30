@@ -47,6 +47,11 @@ func GetDebugTelemetryFile() string {
 	return os.Getenv(DebugTelemetryFileEnv)
 }
 
+func ClearTelemetryFile() {
+	err := os.Truncate(GetDebugTelemetryFile(), 0)
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
 // GetTelemetryDebugData gets telemetry data dumped into temp file for testing/debugging
 func GetTelemetryDebugData() segment.TelemetryData {
 	var data []byte

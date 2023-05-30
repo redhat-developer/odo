@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -83,6 +84,8 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 	}
 
 	log.Successf("Value of '%s' preference was set to '%s'", o.paramName, o.paramValue)
+
+	scontext.SetPreferenceParameter(ctx, o.paramName, &o.paramValue)
 	return nil
 }
 
