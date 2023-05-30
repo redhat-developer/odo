@@ -49,19 +49,19 @@ func (mr *MockCmdlineMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockCmdline)(nil).Context))
 }
 
-// FlagValue mocks base method.
-func (m *MockCmdline) FlagValue(flagName string) (string, error) {
+// FlagValueBool mocks base method.
+func (m *MockCmdline) FlagValueBool(flagName string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FlagValue", flagName)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "FlagValueBool", flagName)
+	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FlagValue indicates an expected call of FlagValue.
-func (mr *MockCmdlineMockRecorder) FlagValue(flagName interface{}) *gomock.Call {
+// FlagValueBool indicates an expected call of FlagValueBool.
+func (mr *MockCmdlineMockRecorder) FlagValueBool(flagName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValue", reflect.TypeOf((*MockCmdline)(nil).FlagValue), flagName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValueBool", reflect.TypeOf((*MockCmdline)(nil).FlagValueBool), flagName)
 }
 
 // FlagValueIfSet mocks base method.
@@ -76,6 +76,36 @@ func (m *MockCmdline) FlagValueIfSet(flagName string) string {
 func (mr *MockCmdlineMockRecorder) FlagValueIfSet(flagName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValueIfSet", reflect.TypeOf((*MockCmdline)(nil).FlagValueIfSet), flagName)
+}
+
+// FlagValueInt mocks base method.
+func (m *MockCmdline) FlagValueInt(flagName string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FlagValueInt", flagName)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FlagValueInt indicates an expected call of FlagValueInt.
+func (mr *MockCmdlineMockRecorder) FlagValueInt(flagName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValueInt", reflect.TypeOf((*MockCmdline)(nil).FlagValueInt), flagName)
+}
+
+// FlagValueString mocks base method.
+func (m *MockCmdline) FlagValueString(flagName string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FlagValueString", flagName)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FlagValueString indicates an expected call of FlagValueString.
+func (mr *MockCmdlineMockRecorder) FlagValueString(flagName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlagValueString", reflect.TypeOf((*MockCmdline)(nil).FlagValueString), flagName)
 }
 
 // FlagValues mocks base method.

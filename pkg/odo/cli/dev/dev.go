@@ -54,6 +54,8 @@ type DevOptions struct {
 	out            io.Writer
 	errOut         io.Writer
 	forwardedPorts []api.ForwardedPort
+	apiServer      bool
+	apiServerPort  int
 
 	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
 	ctx context.Context
@@ -72,8 +74,6 @@ type DevOptions struct {
 	portForwardFlag      []string
 	addressFlag          string
 	noCommandsFlag       bool
-	apiServerFlag        bool
-	apiServerPortFlag    int
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -112,6 +112,8 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(ctx)
 
+	o.apiServer = commonflags.GetAPIServerValue(cmdline)
+	o.apiServerPort = commonflags.GetAPIServerPortValue(cmdline)
 	return nil
 }
 
@@ -177,9 +179,9 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
-	if o.apiServerFlag && o.apiServerPortFlag != 0 {
-		if !util.IsPortFree(o.apiServerPortFlag, "") {
-			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPortFlag)
+	if o.apiServer && o.apiServerPort != 0 {
+		if !util.IsPortFree(o.apiServerPort, "") {
+			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPort)
 		}
 	}
 
@@ -252,9 +254,9 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	if o.apiServerFlag {
+	if o.apiServer {
 		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
-		apiserver_impl.StartServer(ctx, o.cancel, o.apiServerPortFlag, o.clientset.StateClient)
+		apiserver_impl.StartServer(ctx, o.cancel, o.apiServerPort, o.clientset.StateClient)
 	}
 
 	return o.clientset.DevClient.Start(
@@ -325,8 +327,6 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
 	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
-	devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", false, "Start the API Server; this is an experimental feature")
-	devCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server; this flag should be used in combination with --api-server flag.")
 
 	clientset.Add(devCmd,
 		clientset.BINDING,

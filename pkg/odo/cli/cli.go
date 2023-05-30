@@ -139,6 +139,9 @@ func odoRootCmd(ctx context.Context, name, fullName string, testClientset client
 
 	commonflags.AddOutputFlag()
 	commonflags.AddPlatformFlag(ctx)
+	if os.Args[1] == dev.RecommendedCommandName {
+		commonflags.AddAPIServerFlag(ctx)
+	}
 	commonflags.AddVariablesFlags()
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user

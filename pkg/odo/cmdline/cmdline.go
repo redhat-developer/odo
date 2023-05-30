@@ -4,7 +4,6 @@ package cmdline
 
 import (
 	"context"
-
 	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
@@ -15,8 +14,14 @@ type Cmdline interface {
 	// GetFlags returns a map of flags set
 	GetFlags() map[string]string
 
-	// FlagValue returns the value for a flag
-	FlagValue(flagName string) (string, error)
+	// FlagValueString returns the string value for a flag
+	FlagValueString(flagName string) (string, error)
+
+	// FlagValueInt returns the int value for a flag
+	FlagValueInt(flagName string) (int, error)
+
+	// FlagValueBool returns the bool value for a flag
+	FlagValueBool(flagName string) (bool, error)
 
 	// FlagValueIfSet returns the value for a flag, or an empty string if not set
 	FlagValueIfSet(flagName string) string
