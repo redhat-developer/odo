@@ -22,6 +22,9 @@ func (e NoCommandFoundError) Error() string {
 	if e.name == "" {
 		return fmt.Sprintf("no %s command found in devfile", e.kind)
 	}
+	if e.kind == "" {
+		return fmt.Sprintf("no command named %q found in devfile", e.name)
+	}
 	return fmt.Sprintf("no %s command with name %q found in Devfile", e.kind, e.name)
 }
 

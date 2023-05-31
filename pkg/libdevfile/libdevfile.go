@@ -66,6 +66,26 @@ func ExecuteCommandByNameAndKind(ctx context.Context, devfileObj parser.DevfileO
 	return executeCommand(ctx, devfileObj, cmd, handler)
 }
 
+// ExecuteCommandByNameAndKind executes the specified command cmdName of the given kind in the Devfile.
+// If cmdName is empty, it executes the default command for the given kind or returns an error if there is no default command.
+// If ignoreCommandNotFound is true, nothing is executed if the command is not found and no error is returned.
+func ExecuteCommandByName(ctx context.Context, devfileObj parser.DevfileObj, cmdName string, handler Handler, ignoreCommandNotFound bool) error {
+	commands, err := devfileObj.Data.GetCommands(
+		common.DevfileOptions{
+			FilterByName: cmdName,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	if len(commands) != 1 {
+		return NewNoCommandFoundError("", cmdName)
+	}
+
+	cmd := commands[0]
+	return executeCommand(ctx, devfileObj, cmd, handler)
+}
+
 // executeCommand executes a specific command of a devfile using handler as backend
 func executeCommand(ctx context.Context, devfileObj parser.DevfileObj, command v1alpha2.Command, handler Handler) error {
 	cmd, err := newCommand(devfileObj, command)
