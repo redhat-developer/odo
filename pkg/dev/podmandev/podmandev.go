@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -114,6 +115,8 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
+	s := log.Spinner("Syncing files into the container")
+	defer s.End(false)
 
 	cmdKind := devfilev1.RunCommandGroupKind
 	cmdName := options.RunCommand
@@ -141,6 +144,7 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 	if err != nil {
 		return false, err
 	}
+	s.End(true)
 	return execRequired, nil
 }
 
