@@ -50,6 +50,23 @@ var _ = Describe("odo run command tests", func() {
 			Expect(output).To(ContainSubstring(`no command named "unknown-command" found in the devfile`))
 
 		})
+
+		It("should fail if platform is not available", Label(helper.LabelNoCluster), func() {
+			By("failing when trying to run on default platform", func() {
+				output := helper.Cmd("odo", "run", "build").ShouldFail().Err()
+				Expect(output).To(ContainSubstring(`unable to access the cluster`))
+
+			})
+			By("failing when trying to run on cluster", func() {
+				output := helper.Cmd("odo", "run", "build", "--platform", "cluster").ShouldFail().Err()
+				Expect(output).To(ContainSubstring(`unable to access the cluster`))
+
+			})
+			By("failing when trying to run on podman", func() {
+				output := helper.Cmd("odo", "run", "build", "--platform", "podman").ShouldFail().Err()
+				Expect(output).To(ContainSubstring(`unable to access podman`))
+			})
+		})
 	})
 
 })
