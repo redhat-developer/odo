@@ -19,6 +19,20 @@ func (o NoCommandInDevfileError) Error() string {
 	return fmt.Sprintf("no command of kind %q found in the devfile", o.command)
 }
 
+type NoCommandNameInDevfileError struct {
+	name string
+}
+
+func NewNoCommandNameInDevfileError(name string) NoCommandNameInDevfileError {
+	return NoCommandNameInDevfileError{
+		name: name,
+	}
+}
+
+func (o NoCommandNameInDevfileError) Error() string {
+	return fmt.Sprintf("no command named %q found in the devfile", o.name)
+}
+
 type Warning struct {
 	msg string
 	err error

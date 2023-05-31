@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -22,6 +25,9 @@ const (
 type RunOptions struct {
 	// Clients
 	clientset *clientset.Clientset
+
+	// Args
+	commandName string
 }
 
 var _ genericclioptions.Runnable = (*RunOptions)(nil)
@@ -41,10 +47,25 @@ func (o *RunOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *RunOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
+	o.commandName = args[0] // Value at 0 is expected to exist, thanks to ExactArgs(1)
 	return nil
 }
 
 func (o *RunOptions) Validate(ctx context.Context) error {
+	var (
+		devfileObj = odocontext.GetEffectiveDevfileObj(ctx)
+	)
+
+	if devfileObj == nil {
+		return genericclioptions.NewNoDevfileError(odocontext.GetWorkingDirectory(ctx))
+	}
+
+	commands, err := devfileObj.Data.GetCommands(common.DevfileOptions{
+		FilterByName: o.commandName,
+	})
+	if err != nil || len(commands) != 1 {
+		return errors.NewNoCommandNameInDevfileError(o.commandName)
+	}
 	return nil
 }
 
@@ -64,8 +85,9 @@ func NewCmdRun(name, fullName string) *cobra.Command {
 			return genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	//	clientset.Add(devCmd,
-	//	)
+	clientset.Add(runCmd,
+		clientset.FILESYSTEM,
+	)
 
 	odoutil.SetCommandGroup(runCmd, odoutil.MainGroup)
 	runCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
