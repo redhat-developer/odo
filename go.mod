@@ -40,7 +40,7 @@ require (
 	github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/securego/gosec/v2 v2.15.0
-	github.com/segmentio/backo-go v1.0.1-0.20200129164019-23eae7c10bd3
+	github.com/segmentio/backo-go v1.0.1
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.6.1

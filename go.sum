@@ -1135,8 +1135,8 @@ github.com/securego/gosec/v2 v2.15.0 h1:v4Ym7FF58/jlykYmmhZ7mTm7FQvN/setNm++0fgI
 github.com/securego/gosec/v2 v2.15.0/go.mod h1:VOjTrZOkUtSDt2QLSJmQBMWnvwiQPEjg0l+5juIqGk8=
 github.com/segmentio/analytics-go/v3 v3.2.1 h1:G+f90zxtc1p9G+WigVyTR0xNfOghOGs/PYAlljLOyeg=
 github.com/segmentio/analytics-go/v3 v3.2.1/go.mod h1:p8owAF8X+5o27jmvUognuXxdtqvSGtD0ZrfY2kcS9bE=
-github.com/segmentio/backo-go v1.0.1-0.20200129164019-23eae7c10bd3 h1:bXa9PgdGOTKQ8ji1pO8LzG3sCh7udxfb/4ObDwC8ork=
-github.com/segmentio/backo-go v1.0.1-0.20200129164019-23eae7c10bd3/go.mod h1:9/Rh6yILuLysoQnZ2oNooD2g7aBnvM7r/fNVxRNWfBc=
+github.com/segmentio/backo-go v1.0.1 h1:68RQccglxZeyURy93ASB/2kc9QudzgIDexJ927N++y4=
+github.com/segmentio/backo-go v1.0.1/go.mod h1:9/Rh6yILuLysoQnZ2oNooD2g7aBnvM7r/fNVxRNWfBc=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
 github.com/sergi/go-diff v1.2.0 h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=
