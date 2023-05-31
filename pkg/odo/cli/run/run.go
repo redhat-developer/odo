@@ -90,7 +90,7 @@ func (o *RunOptions) Validate(ctx context.Context) error {
 }
 
 func (o *RunOptions) Run(ctx context.Context) (err error) {
-	return nil
+	return o.clientset.DevClient.Run(ctx, o.commandName)
 }
 
 func NewCmdRun(name, fullName string) *cobra.Command {
@@ -109,6 +109,7 @@ func NewCmdRun(name, fullName string) *cobra.Command {
 		clientset.FILESYSTEM,
 		clientset.KUBERNETES_NULLABLE,
 		clientset.PODMAN_NULLABLE,
+		clientset.DEV,
 	)
 
 	odoutil.SetCommandGroup(runCmd, odoutil.MainGroup)
