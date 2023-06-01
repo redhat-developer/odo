@@ -41,7 +41,7 @@ var _ = Describe("odo run command tests", func() {
 	When("a component is bootstrapped", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-for-run.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 
@@ -67,6 +67,36 @@ var _ = Describe("odo run command tests", func() {
 				Expect(output).To(ContainSubstring(`unable to access podman`))
 			})
 		})
-	})
 
+		for _, podman := range []bool{false} { // TODO add true
+			podman := podman
+			When("odo dev is executed and ready", helper.LabelPodmanIf(podman, func() {
+
+				var devSession helper.DevSession
+
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should execute a command", func() {
+					platform := "cluster"
+					if podman {
+						platform = "podman"
+					}
+					output := helper.Cmd("odo", "run", "create-file", "--platform", platform).ShouldPass().Out()
+					Expect(output).To(ContainSubstring("Executing command in container (command: create-file)"))
+				})
+
+			}))
+		}
+	})
 })
