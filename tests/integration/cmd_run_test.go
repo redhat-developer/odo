@@ -89,15 +89,35 @@ var _ = Describe("odo run command tests", func() {
 					devSession.WaitEnd()
 				})
 
-				It("should execute a command", func() {
+				It("should execute commands", func() {
 					platform := "cluster"
 					if podman {
 						platform = "podman"
 					}
-					output := helper.Cmd("odo", "run", "create-file", "--platform", platform).ShouldPass().Out()
-					Expect(output).To(ContainSubstring("Executing command in container (command: create-file)"))
-					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-					component.Exec("runtime", []string{"ls", "/tmp/new-file"}, pointer.Bool(true))
+
+					By("executing an exec command", func() {
+						output := helper.Cmd("odo", "run", "create-file", "--platform", platform).ShouldPass().Out()
+						Expect(output).To(ContainSubstring("Executing command in container (command: create-file)"))
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						component.Exec("runtime", []string{"ls", "/tmp/new-file"}, pointer.Bool(true))
+					})
+
+					if !podman {
+						By("executing apply command on Kubernetes component", func() {
+							output := helper.Cmd("odo", "run", "deploy-config", "--platform", platform).ShouldPass().Out()
+							Expect(output).To(ContainSubstring("Creating resource ConfigMap/my-config"))
+							out := commonVar.CliRunner.Run("get", "configmap", "my-config", "-n",
+								commonVar.Project).Wait().Out.Contents()
+							Expect(out).To(ContainSubstring("my-config"))
+						})
+					}
+
+					By("executing apply command on Image component", func() {
+						// Will fail because Dockerfile is not present, but we just want to check the build is started
+						// We cannot use PODMAN_CMD=echo with --platform=podman
+						output := helper.Cmd("odo", "run", "build-image", "--platform", platform).ShouldFail().Out()
+						Expect(output).To(ContainSubstring("Building image locally"))
+					})
 				})
 			}))
 		}

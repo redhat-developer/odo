@@ -1,4 +1,4 @@
-schemaVersion: 2.0.0
+schemaVersion: 2.2.0
 metadata:
   name: nodejs
   projectType: nodejs
@@ -17,6 +17,20 @@ components:
         - name: "3000-tcp"
           targetPort: 3000
       mountSources: true
+  - name: config
+    kubernetes:
+      inlined: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: my-config
+  - name: image
+    image:
+      imageName: my-image
+      dockerfile:
+        uri: ./Dockerfile
+        buildContext: ${PROJECTS_ROOT}
+        rootRequired: false
 commands:
   - id: devbuild
     exec:
@@ -53,3 +67,9 @@ commands:
       component: runtime
       commandLine: touch /tmp/new-file
       workingDir: ${PROJECTS_ROOT}
+  - id: deploy-config
+    apply:
+      component: config
+  - id: build-image
+    apply:
+      component: image
