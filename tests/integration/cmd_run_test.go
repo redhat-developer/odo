@@ -68,7 +68,7 @@ var _ = Describe("odo run command tests", func() {
 			})
 		})
 
-		for _, podman := range []bool{false} { // TODO add true
+		for _, podman := range []bool{false, true} {
 			podman := podman
 			When("odo dev is executed and ready", helper.LabelPodmanIf(podman, func() {
 

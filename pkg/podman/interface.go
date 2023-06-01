@@ -38,5 +38,7 @@ type Client interface {
 
 	ListAllComponents() ([]api.ComponentAbstract, error)
 
+	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
+
 	Version(ctx context.Context) (SystemVersionReport, error)
 }
