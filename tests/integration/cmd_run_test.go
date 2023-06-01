@@ -70,6 +70,12 @@ var _ = Describe("odo run command tests", func() {
 			})
 		})
 
+		It("should fail if odo dev is not running", func() {
+			output := helper.Cmd("odo", "run", "build").ShouldFail().Err()
+			Expect(output).To(ContainSubstring(`unable to get pod for component`))
+			Expect(output).To(ContainSubstring(`Please check the command odo dev is running`))
+		})
+
 		for _, podman := range []bool{false, true} {
 			podman := podman
 			When("odo dev is executed and ready", helper.LabelPodmanIf(podman, func() {
@@ -112,12 +118,21 @@ var _ = Describe("odo run command tests", func() {
 						})
 					}
 
-					By("executing apply command on Image component", func() {
-						// Will fail because Dockerfile is not present, but we just want to check the build is started
-						// We cannot use PODMAN_CMD=echo with --platform=podman
-						output := helper.Cmd("odo", "run", "build-image", "--platform", platform).ShouldFail().Out()
-						Expect(output).To(ContainSubstring("Building image locally"))
-					})
+					if podman {
+						By("executing apply command on Image component", func() {
+							// Will fail because Dockerfile is not present, but we just want to check the build is started
+							// We cannot use PODMAN_CMD=echo with --platform=podman
+							output := helper.Cmd("odo", "run", "build-image", "--platform", platform).ShouldFail().Out()
+							Expect(output).To(ContainSubstring("Building image locally"))
+						})
+					} else {
+						By("executing apply command on Image component", func() {
+							output := helper.Cmd("odo", "run", "build-image", "--platform", platform).AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+							Expect(output).To(ContainSubstring("Building image locally"))
+							Expect(output).To(ContainSubstring("Pushing image to container registry"))
+
+						})
+					}
 				})
 			}))
 		}

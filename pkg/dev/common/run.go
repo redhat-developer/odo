@@ -30,7 +30,7 @@ func Run(
 
 	pod, err := platformClient.GetPodUsingComponentName(componentName)
 	if err != nil {
-		return fmt.Errorf("unable to get pod for component %s: %w", componentName, err)
+		return fmt.Errorf("unable to get pod for component %s: %w. Please check the command odo dev is running", componentName, err)
 	}
 
 	handler := component.NewRunHandler(
