@@ -3,7 +3,9 @@ package integration
 import (
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/tests/helper"
+	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -94,8 +96,9 @@ var _ = Describe("odo run command tests", func() {
 					}
 					output := helper.Cmd("odo", "run", "create-file", "--platform", platform).ShouldPass().Out()
 					Expect(output).To(ContainSubstring("Executing command in container (command: create-file)"))
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", []string{"ls", "/tmp/new-file"}, pointer.Bool(true))
 				})
-
 			}))
 		}
 	})
