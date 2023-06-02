@@ -73,7 +73,7 @@ var _ = Describe("odo run command tests", func() {
 		It("should fail if odo dev is not running", func() {
 			output := helper.Cmd("odo", "run", "build").ShouldFail().Err()
 			Expect(output).To(ContainSubstring(`unable to get pod for component`))
-			Expect(output).To(ContainSubstring(`Please check the command odo dev is running`))
+			Expect(output).To(ContainSubstring(`Please check the command 'odo dev' is running`))
 		})
 
 		for _, podman := range []bool{false, true} {
@@ -106,6 +106,13 @@ var _ = Describe("odo run command tests", func() {
 						Expect(output).To(ContainSubstring("Executing command in container (command: create-file)"))
 						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						component.Exec("runtime", []string{"ls", "/tmp/new-file"}, pointer.Bool(true))
+					})
+
+					By("executing an exec command in another container", func() {
+						output := helper.Cmd("odo", "run", "create-file-in-other-container", "--platform", platform).ShouldPass().Out()
+						Expect(output).To(ContainSubstring("Executing command in container (command: create-file-in-other-container)"))
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						component.Exec("other-container", []string{"ls", "/tmp/new-file-in-other-container"}, pointer.Bool(true))
 					})
 
 					if !podman {

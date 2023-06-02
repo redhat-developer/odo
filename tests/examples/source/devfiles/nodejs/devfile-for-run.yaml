@@ -17,6 +17,12 @@ components:
         - name: "3000-tcp"
           targetPort: 3000
       mountSources: true
+  - name: other-container
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      command: ["tail"]
+      args: ["-f", "/dev/null"]
+      memoryLimit: 1024Mi
   - name: config
     kubernetes:
       inlined: |
@@ -66,6 +72,11 @@ commands:
     exec:
       component: runtime
       commandLine: touch /tmp/new-file
+      workingDir: ${PROJECTS_ROOT}
+  - id: create-file-in-other-container
+    exec:
+      component: other-container
+      commandLine: touch /tmp/new-file-in-other-container
       workingDir: ${PROJECTS_ROOT}
   - id: deploy-config
     apply:

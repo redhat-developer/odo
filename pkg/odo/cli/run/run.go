@@ -68,7 +68,10 @@ func (o *RunOptions) Validate(ctx context.Context) error {
 	commands, err := devfileObj.Data.GetCommands(common.DevfileOptions{
 		FilterByName: o.commandName,
 	})
-	if err != nil || len(commands) != 1 {
+	if err != nil {
+		return err
+	}
+	if len(commands) != 1 {
 		return errors.NewNoCommandNameInDevfileError(o.commandName)
 	}
 
