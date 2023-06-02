@@ -219,7 +219,6 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 		do.kubeClient,
 		do.execClient,
 		do.configAutomountClient,
-
 		// TODO(feloy) set these values when we want to support Apply Image commands for PreStop events
 		nil, nil,
 

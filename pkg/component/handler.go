@@ -31,6 +31,7 @@ type runHandler struct {
 	ComponentExists       bool
 	containersRunning     []string
 	msg                   string
+	showLogs              bool
 
 	fs           filesystem.Filesystem
 	imageBackend image.Backend
@@ -46,6 +47,7 @@ type HandlerOptions struct {
 	ComponentExists   bool
 	ContainersRunning []string
 	Msg               string
+	ShowLogs          bool
 
 	// For apply Kubernetes / Openshift
 	Devfile parser.DevfileObj
@@ -74,6 +76,7 @@ func NewRunHandler(
 		ComponentExists:       options.ComponentExists,
 		containersRunning:     options.ContainersRunning,
 		msg:                   options.Msg,
+		showLogs:              options.ShowLogs,
 
 		fs:           fs,
 		imageBackend: imageBackend,
@@ -134,7 +137,7 @@ func (a *runHandler) ExecuteTerminatingCommand(ctx context.Context, command devf
 		appName       = odocontext.GetApplication(a.ctx)
 	)
 	if isContainerRunning(command.Exec.Component, a.containersRunning) {
-		return ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName, a.msg, false)
+		return ExecuteTerminatingCommand(ctx, a.execClient, a.platformClient, command, a.ComponentExists, a.podName, appName, componentName, a.msg, a.showLogs)
 	}
 	switch platform := a.platformClient.(type) {
 	case kclient.ClientInterface:

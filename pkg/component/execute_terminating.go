@@ -36,7 +36,7 @@ func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, plat
 	logger := machineoutput.NewMachineEventLoggingClient()
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
-	cmdline := getCmdline(command)
+	cmdline := getCmdline(command, !show)
 	_, _, err := execClient.ExecuteCommand(ctx, cmdline, podName, command.Exec.Component, show, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
@@ -58,7 +58,7 @@ func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, plat
 	return err
 }
 
-func getCmdline(command v1alpha2.Command) []string {
+func getCmdline(command v1alpha2.Command, redirectToPid1 bool) []string {
 	// deal with environment variables
 	var cmdLine string
 	setEnvVariable := util.GetCommandStringFromEnvs(command.Exec.Env)
@@ -73,7 +73,10 @@ func getCmdline(command v1alpha2.Command) []string {
 	// Redirecting to /proc/1/fd/* allows to redirect the process output to the output streams of PID 1 process inside the container.
 	// This way, returning the container logs with 'odo logs' or 'kubectl logs' would work seamlessly.
 	// See https://stackoverflow.com/questions/58716574/where-exactly-do-the-logs-of-kubernetes-pods-come-from-at-the-container-level
-	redirectString := "1>>/proc/1/fd/1 2>>/proc/1/fd/2"
+	redirectString := ""
+	if redirectToPid1 {
+		redirectString = "1>>/proc/1/fd/1 2>>/proc/1/fd/2"
+	}
 	var cmd []string
 	if command.Exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
