@@ -48,6 +48,11 @@ type Client interface {
 		options StartOptions,
 	) error
 
+	Run(
+		ctx context.Context,
+		commandName string,
+	) error
+
 	// CleanupResources deletes the component created using the context's devfile and writes any outputs to out
 	CleanupResources(ctx context.Context, out io.Writer) error
 }

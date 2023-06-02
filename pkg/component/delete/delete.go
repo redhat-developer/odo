@@ -212,12 +212,6 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 		return fmt.Errorf("unable to determine if component %s exists; cause: %v", componentName, err.Error())
 	}
 
-	// do not fail Delete operation if if the pod is not running or if the event execution fails
-	if pod.Status.Phase != corev1.PodRunning {
-		klog.V(4).Infof("unable to execute preStop events, pod for component %q is not running", componentName)
-		return nil
-	}
-
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
 	handler := component.NewRunHandler(

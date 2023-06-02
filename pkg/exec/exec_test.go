@@ -44,6 +44,10 @@ func (o fakePlatform) GetRunningPodFromSelector(selector string) (*corev1.Pod, e
 	panic("not implemented yet")
 }
 
+func (o fakePlatform) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
+	panic("not implemented yet")
+}
+
 func TestExecuteCommand(t *testing.T) {
 	for _, tt := range []struct {
 		name               string

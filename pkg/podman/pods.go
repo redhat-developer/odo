@@ -92,8 +92,18 @@ func (o *PodmanCli) GetRunningPodFromSelector(selector string) (*corev1.Pod, err
 	if err != nil {
 		return nil, err
 	}
-	if inspect.State == "Running" {
-		pod.Status.Phase = corev1.PodRunning
+	if inspect.State != "Running" {
+		return nil, fmt.Errorf("a pod exists but is not in Running state. Current status=%v", inspect.State)
+	}
+
+	for _, container := range podReport.Containers {
+		// Names of users containers are prefixed with pod name by podman
+		if !strings.HasPrefix(container.Names, podReport.Name+"-") {
+			continue
+		}
+		pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
+			Name: strings.TrimPrefix(container.Names, podReport.Name+"-"),
+		})
 	}
 	return &pod, nil
 }

@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -15,8 +16,13 @@ import (
 
 // ListPodsReport contains the result of the `podman pod ps --format json` command
 type ListPodsReport struct {
-	Name   string
-	Labels map[string]string
+	Name       string
+	Labels     map[string]string
+	Containers []ListPodsContainer `json:"Containers,omitempty"`
+}
+
+type ListPodsContainer struct {
+	Names string `json:"Names,omitempty"`
 }
 
 func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
@@ -85,4 +91,9 @@ func (o *PodmanCli) ListAllComponents() ([]api.ComponentAbstract, error) {
 	}
 
 	return components, nil
+}
+
+func (o *PodmanCli) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
+	podSelector := fmt.Sprintf("component=%s", componentName)
+	return o.GetRunningPodFromSelector(podSelector)
 }

@@ -34,6 +34,7 @@ Examples:
   init         Init bootstraps a new project
   logs         Show logs of all containers of the component
   registry     List all components from the Devfile registry
+  run          Run a specific command in the Dev mode
 
 `
 
