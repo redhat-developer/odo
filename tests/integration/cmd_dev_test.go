@@ -2567,6 +2567,9 @@ CMD ["npm", "start"]
 				})
 
 				It("should run successfully", func() {
+					By("telling the user that odo is synchronizing the files", func() {
+						Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
+					})
 					By("verifying from the output that all commands have been executed", func() {
 						helper.MatchAllInOutput(string(stdout), []string{
 							"Building your application in container",
@@ -2884,6 +2887,7 @@ CMD ["npm", "start"]
 
 						By("checking the output of the command", func() {
 							helper.MatchAllInOutput(stdout, []string{
+								"Syncing files into the container",
 								fmt.Sprintf("Building your application in container (command: %s)", tt.buildCmd),
 								fmt.Sprintf("Executing the application (command: %s)", tt.runCmd),
 							})
@@ -3636,6 +3640,10 @@ CMD ["npm", "start"]
 			It("should execute the build and run commands", func() {
 				Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
 				Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
+
+				By("telling the user that odo is synchronizing the files", func() {
+					Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
+				})
 			})
 
 			When("a source file is modified", func() {
@@ -3649,6 +3657,10 @@ CMD ["npm", "start"]
 				It("should not re-execute the run command", func() {
 					Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
 					Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
+
+					By("telling the user that odo is synchronizing the files", func() {
+						Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
+					})
 				})
 			})
 		}))
@@ -3677,6 +3689,10 @@ CMD ["npm", "start"]
 			It("should execute the build and run commands", func() {
 				Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
 				Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
+
+				By("telling the user that odo is synchronizing the files", func() {
+					Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
+				})
 			})
 
 			When("a source file is modified", func() {
@@ -3690,6 +3706,10 @@ CMD ["npm", "start"]
 				It("should not re-execute the run command", func() {
 					Expect(string(stdout)).ToNot(ContainSubstring(executeBuildCommand))
 					Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
+
+					By("telling the user that odo is synchronizing the files", func() {
+						Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
+					})
 				})
 			})
 		}))
