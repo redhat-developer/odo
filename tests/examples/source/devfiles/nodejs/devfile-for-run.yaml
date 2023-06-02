@@ -82,3 +82,7 @@ commands:
   - id: build-image
     apply:
       component: image
+  - id: error-cmd
+    exec:
+      component: runtime
+      commandLine: ls /not-found

@@ -99,12 +99,12 @@ var _ = Describe("odo run command tests", func() {
 						platform = "podman"
 					}
 
-					By("executing an exec command", func() {
+					By("executing an exec command and displaying output", func() {
 						output := helper.Cmd("odo", "run", "list-files", "--platform", platform).ShouldPass().Out()
 						Expect(output).To(ContainSubstring("etc"))
 					})
 
-					By("executing an exec command in another container", func() {
+					By("executing an exec command in another container and displaying output", func() {
 						output := helper.Cmd("odo", "run", "list-files-in-other-container", "--platform", platform).ShouldPass().Out()
 						Expect(output).To(ContainSubstring("etc"))
 					})
@@ -134,6 +134,11 @@ var _ = Describe("odo run command tests", func() {
 
 						})
 					}
+
+					By("exiting with a status 1 when the exec command fails and displaying error output", func() {
+						stderr := helper.Cmd("odo", "run", "error-cmd", "--platform", platform).ShouldFail().Err()
+						Expect(stderr).To(ContainSubstring("No such file or directory"))
+					})
 				})
 			}))
 		}
