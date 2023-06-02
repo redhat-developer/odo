@@ -33,8 +33,8 @@ func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podNam
 	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	stdoutCompleteChannel := startReaderGoroutine(soutReader, showOutputs, &stdout, stdoutWriter)
-	stderrCompleteChannel := startReaderGoroutine(serrReader, showOutputs, &stderr, stderrWriter)
+	stdoutCompleteChannel := startReaderGoroutine(os.Stdout, soutReader, showOutputs, &stdout, stdoutWriter)
+	stderrCompleteChannel := startReaderGoroutine(os.Stderr, serrReader, showOutputs, &stderr, stderrWriter)
 
 	err = o.platformClient.ExecCMDInContainer(ctx, containerName, podName, command, soutWriter, serrWriter, nil, false)
 
@@ -66,7 +66,7 @@ func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podNam
 // This goroutine will automatically pipe the output from the writer (passed into ExecCMDInContainer) to
 // the loggers.
 // The returned channel will contain a single nil entry once the reader has closed.
-func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *[]string, consoleOutput *io.PipeWriter) chan interface{} {
+func startReaderGoroutine(logWriter io.Writer, reader io.Reader, show bool, cmdOutput *[]string, consoleOutput *io.PipeWriter) chan interface{} {
 	result := make(chan interface{})
 
 	go func() {
@@ -75,7 +75,7 @@ func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *[]string, cons
 			line := scanner.Text()
 
 			if show {
-				_, err := fmt.Fprintln(os.Stdout, line)
+				_, err := fmt.Fprintln(logWriter, line)
 				if err != nil {
 					log.Errorf("Unable to print to stdout: %s", err.Error())
 				}
