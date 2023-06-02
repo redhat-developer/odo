@@ -3,9 +3,7 @@ package integration
 import (
 	"path/filepath"
 
-	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/tests/helper"
-	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -102,17 +100,13 @@ var _ = Describe("odo run command tests", func() {
 					}
 
 					By("executing an exec command", func() {
-						output := helper.Cmd("odo", "run", "create-file", "--platform", platform).ShouldPass().Out()
-						Expect(output).To(ContainSubstring("Executing command in container (command: create-file)"))
-						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						component.Exec("runtime", []string{"ls", "/tmp/new-file"}, pointer.Bool(true))
+						output := helper.Cmd("odo", "run", "list-files", "--platform", platform).ShouldPass().Out()
+						Expect(output).To(ContainSubstring("etc"))
 					})
 
 					By("executing an exec command in another container", func() {
-						output := helper.Cmd("odo", "run", "create-file-in-other-container", "--platform", platform).ShouldPass().Out()
-						Expect(output).To(ContainSubstring("Executing command in container (command: create-file-in-other-container)"))
-						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						component.Exec("other-container", []string{"ls", "/tmp/new-file-in-other-container"}, pointer.Bool(true))
+						output := helper.Cmd("odo", "run", "list-files-in-other-container", "--platform", platform).ShouldPass().Out()
+						Expect(output).To(ContainSubstring("etc"))
 					})
 
 					if !podman {

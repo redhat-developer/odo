@@ -18,7 +18,7 @@ import (
 
 const ShellExecutable string = "/bin/sh"
 
-func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, platformClient platform.Client, command devfilev1.Command, componentExists bool, podName string, appName string, componentName string, msg string, show bool) error {
+func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, platformClient platform.Client, command devfilev1.Command, componentExists bool, podName string, appName string, componentName string, msg string, showOutputs bool) error {
 
 	if componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
 		klog.V(2).Infof("command is hot-reload capable, not executing %q again", command.Id)
@@ -30,19 +30,27 @@ func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, plat
 	} else {
 		msg += " (command: " + command.Id + ")"
 	}
-	spinner := log.Spinner(msg)
-	defer spinner.End(false)
+
+	// Spinner is displayed only if no outputs are displayed
+	var spinner *log.Status
+	if !showOutputs {
+		spinner = log.Spinner(msg)
+		defer spinner.End(false)
+	}
 
 	logger := machineoutput.NewMachineEventLoggingClient()
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
-	cmdline := getCmdline(command, !show)
-	_, _, err := execClient.ExecuteCommand(ctx, cmdline, podName, command.Exec.Component, show, stdoutWriter, stderrWriter)
+	cmdline := getCmdline(command, !showOutputs)
+	_, _, err := execClient.ExecuteCommand(ctx, cmdline, podName, command.Exec.Component, showOutputs, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
-	spinner.End(err == nil)
-	if err != nil {
+	if !showOutputs {
+		spinner.End(err == nil)
+	}
+	// Complete logs are displayed only if no outputs are displayed
+	if err != nil && !showOutputs {
 		rd, errLog := Log(platformClient, componentName, appName, false, command)
 		if errLog != nil {
 			return fmt.Errorf("unable to log error %v: %w", err, errLog)

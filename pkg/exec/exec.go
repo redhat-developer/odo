@@ -26,15 +26,15 @@ func NewExecClient(platformClient platform.Client) *ExecClient {
 
 // ExecuteCommand executes the given command in the pod's container,
 // writing the output to the specified respective pipe writers
-func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podName string, containerName string, show bool, stdoutWriter *io.PipeWriter, stderrWriter *io.PipeWriter) (stdout []string, stderr []string, err error) {
+func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podName string, containerName string, showOutputs bool, stdoutWriter *io.PipeWriter, stderrWriter *io.PipeWriter) (stdout []string, stderr []string, err error) {
 	soutReader, soutWriter := io.Pipe()
 	serrReader, serrWriter := io.Pipe()
 
 	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, stdoutWriter)
-	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, stderrWriter)
+	stdoutCompleteChannel := startReaderGoroutine(soutReader, showOutputs, &stdout, stdoutWriter)
+	stderrCompleteChannel := startReaderGoroutine(serrReader, showOutputs, &stderr, stderrWriter)
 
 	err = o.platformClient.ExecCMDInContainer(ctx, containerName, podName, command, soutWriter, serrWriter, nil, false)
 
@@ -44,7 +44,8 @@ func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podNam
 	_ = serrWriter.Close()
 	<-stderrCompleteChannel
 
-	if err != nil {
+	// Details are displayed only if no outputs are displayed
+	if err != nil && !showOutputs {
 		// It is safe to read from stdout and stderr here, as the goroutines are guaranteed to have terminated at this point.
 		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'\nstdout: %v\nstderr: %v",
 			err, command, stdout, stderr)
