@@ -701,25 +701,6 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "did not execute PreStopEvents because the pod is not in the running state",
-			fields: fields{
-				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
-					client := kclient.NewMockClientInterface(ctrl)
-
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
-					pod := odoTestingUtil.CreateFakePod(componentName, "mypod", "runtime")
-					pod.Status.Phase = corev1.PodFailed
-					client.EXPECT().GetRunningPodFromSelector(selector).Return(pod, nil)
-					return client
-				},
-			},
-			args: args{
-				devfileObj: devfileObjWithPreStopEvents,
-				appName:    appName,
-			},
-			wantErr: false,
-		},
-		{
 			name: "failed to execute PreStopEvents because it failed to execute the command inside the container, but no error returned",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
