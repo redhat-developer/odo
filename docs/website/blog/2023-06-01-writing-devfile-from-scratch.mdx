@@ -1,0 +1,359 @@
+---
+title: How to write custom devfile for your project
+author: Tomas Kral
+author_url: https://github.com/kadel
+author_image_url: https://github.com/kadel.png
+tags: ["tutorial", "Devfile"]
+slug: how-to-write-custom-devfile-for-your-project
+---
+
+Developers often need to customize their development environments to work with a specific project.
+In many cases, this involves configuring a stack of tools and libraries to work together seamlessly.
+Fortunately, a Devfile is a single configuration file that can set up an entire development environment with dependencies and services.
+
+By default, the Devfile Registry provides a set of pre-defined Stacks that developers can use to set up development environments quickly.
+These stacks provide a solid foundation to build upon and can save developers a tremendous amount of time.
+
+However, the predefined stacks may not always suit your needs.
+In this blog post, we'll explore how to write your own Devfile from scratch to fit your project's needs better. 
+This is also a great opportunity to look more closely at the Devfile structure and how it works.
+
+We'll write a Devfile for Backstage as an example.
+
+
+<!--truncate-->
+
+Backstage recommends using NodeJS 18 and requires Yarn.
+At the time of writing, no Devfile in Devfile Registry is using NodeJS 18 or Yarn.
+If you are in a situation like this, writing Devfile on your own makes more sense instead of starting with Devfile from the registry that has nothing in common with what you need.
+
+First, we will need Backstage source code. If you have an existing Backstage project, you can use that, or you can follow [Backstage Getting Started](https://backstage.io/docs/getting-started/) Guide (TL;DR: if you already have NodeJS installed, run `npx @backstage/create-app@latest`)
+
+Now we can start creating a new `devfile.yaml`.
+
+## Structure of a Devfile
+Create a new file called `devfile.yaml` in the Backstage root directory and open it in your favorite IDE or editor.
+We will start with a basic structure of the Devfile and some metadata.
+
+
+```yaml
+schemaVersion: 2.2.0
+metadata:
+  name: my-backstage
+
+commands:
+
+components:
+
+```
+
+Two most important sections in Devfile are `commands` and `containers`.
+
+### Components
+
+`components` section is a list of components that our development environment is composed of.
+There are different types of components available in Devfile.
+- `container` - this is probably the most common component type. Most Devfiles will have at least one container component.
+This allows us to define containers in which the `exec` commands should be executed, 
+or it can be used to define containers that run additional services that our application requires.
+- `kubernetes` - this component allows us to create any Kubernetes resource.
+Kubernetes resource can be either directly inlinded in the Devfile or referenced by URI.
+- `image` - this component can be used to build images from Dockerfile.
+It can be combined with the `container` component. The `image` component creates a container image,
+ which can later be used in `container` definition.
+- `volume` - this component is used with `container` components and allows us to create volumes.
+Volumes can be used to ensure persistence across container restarts,
+or to share data between containers. In Kubernetes world Devfile container is usually translated into `PersistentVolumeClaim`
+
+
+
+Let's start with adding our first component of a type `container`.
+In this example, it will be the only `component` we will use.
+
+```yaml
+schemaVersion: 2.2.0
+metadata:
+  name: my-backstage
+
+commands:
+
+components:
+# highlight-start
+  - name: nodejs
+    container:
+      image: registry.access.redhat.com/ubi9/nodejs-18:latest
+      sourceMapping: /projects
+      command: ['tail', '-f', '/dev/null']
+      memoryLimit: 2Gi
+      endpoints:
+        - name: frontend
+          targetPort: 3000
+          exposure: public
+        - name: backend
+          targetPort: 7007
+          exposure: public
+# highlight-end
+
+```
+
+
+Here is an explanation of what each line does.
+- `image: registry.access.redhat.com/ubi9/nodejs-18:latest` - defines an image that will be used to create a container.
+Here we are using Red Hat's NodeJS image.
+- `sourceMapping: /projects` - defines where in the container the source code of our application will be.
+`odo dev` process makes sure that the local source code is pushed to this location in the container. 
+- `command: ['tail', '-f', '/dev/null']` - this will be the main command in the container.
+In this example the command does nothing; it is there to override the default image command to make
+sure that the container stays running and we execute our commands inside it.
+- `memoryLimit: 2Gi` - ensure that we have enough memory to build and run our application
+- `endpoints` - define what ports should be exposed and how.
+  For example, the next block defines that port `3000` should be exposed as `public`.
+  Public means that the port can be accessible from outside of the cluster.
+ ```yaml
+    - name: frontend
+        targetPort: 3000
+        exposure: public
+  ``` 
+
+
+### Commands
+
+`commands` section defines actions that can be performed.
+There are three types of commands `exec`, `apply`, and `composite`.
+
+- `exec` - this just executes the command defined in `commandLine` inside the `container`.
+  The `container` needs to be defined in `components` section.
+- `apply` - most commonly coupled with `kubernets` component. It creates or, in other words, applies the component referenced in this command. 
+- `composite` - this command can be used to execute multiple existing commands sequentially or in parallel.
+
+
+
+Let's add commands to our Defile.
+
+
+```yaml
+schemaVersion: 2.2.0
+metadata:
+  name: my-backstage
+
+commands:
+# highlight-start
+  - id: yarn-install
+    exec:
+      commandLine: npx yarn install
+      component: nodejs
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+    
+  - id: run-dev
+    exec:
+      commandLine: npx yarn run dev
+      component: nodejs
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+# highlight-end
+
+components:
+  - name: nodejs
+    container:
+      image: registry.access.redhat.com/ubi9/nodejs-18:latest
+      sourceMapping: /projects
+      command: ['tail', '-f', '/dev/null']
+      memoryLimit: 2Gi
+      endpoints:
+        - name: frontend
+          targetPort: 3000
+          exposure: public
+        - name: backend
+          targetPort: 7007
+          exposure: public
+```
+
+
+We have added two commands `yarn-install` and `run-dev`. Let's use the first one to explain what each line means.
+- `commandLine: npx yarn install` - this defines that the command `npx yarn install` should be executed when Devfile command
+  `yarn-install` is executed.
+- `component: nodejs` - this defines in which `container` component the command defined in `commandLine` should be executed.
+- `workingDir: ${PROJECT_SOURCE}` - defines in what working directory the command will be executed.
+  Here we are using `${PROJECT_SOURCE}` variable. This variable will always point to the root directory with the source code.
+  This will be the same path as we used in `sourceMapping` in the `container` component
+- `group:` - defines to what group this command belongs to. There are `build`, `run`, `debug`, `test`, `deploy`.
+  ```yaml
+        kind: build
+        isDefault: true
+  ```
+  The previous block defines that this command belongs to `build` group and is the default command. 
+  Each group can have only one default command. When you run `odo dev`, odo automatically executes the default command in `build` group first,
+ followed by the default command in `run` group.
+ 
+ 
+Ideally, this would be all we need, and you could use this Devfile with odo.
+
+## Fixing issues
+If you try to use Devfile as we have it, you will see an error.
+The first problem is that the NodeJS image doesn't have `yarn` installed. 
+
+### Install `yaml` into the container
+To add yarn, we will leverage Devfile feature called `events`.
+Events allow us to define commands that should be executed on predefined events. 
+There are 3 events that you can use.
+- `preStart` - executed before the main container is started.
+- `postStart` - executed after the main container is started.
+- `preStop` - executed before the main container is stopped.
+
+In our case we will use `preStart` event and execute `npm install -g yarn`.
+
+
+```yaml
+schemaVersion: 2.2.0
+metadata:
+  name: my-backstage
+
+commands:
+# highlight-start
+  - id: install-yarn
+    exec:
+      commandLine: npm install -g yarn
+      workingDir: ${PROJECT_SOURCE}
+      component: nodejs
+# highlight-end
+  - id: yarn-install
+    exec:
+      commandLine: npx yarn install
+      component: nodejs
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+    
+  - id: run-start
+    exec:
+      commandLine: npx yarn run dev
+      component: nodejs
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+    
+components:
+  - name: nodejs
+    container:
+      image: registry.access.redhat.com/ubi9/nodejs-18:latest
+      sourceMapping: /projects
+      command: ['tail', '-f', '/dev/null']
+      memoryLimit: 2Gi
+      endpoints:
+        - name: frontend
+          targetPort: 3000
+          exposure: public
+        - name: backend
+          targetPort: 7007
+          exposure: public
+# highlight-start
+events:
+  postStart:
+    - install-yarn
+# highlight-end
+```
+
+Even after installing `yarn` you won't be able to use this Devfile with odo and Backstage source code.
+
+
+### No space left on device 
+You will get `NOSPC: no space left on device` error.
+
+This is due to the [#6836](https://github.com/redhat-developer/odo/issues/6836) issue in odo.
+At the time of writing this, odo creates a 2GB volume for the source code. For Backstage and it's `node_modules`
+this is not enough. Luckily, there is a simple workaround that we can do in Devfile.
+
+We can create extra volume just for `/projects/node_modules`. This will put `node_modules` into a separate volume form the source code.
+
+
+
+Full Devfile should look like this
+
+
+```yaml
+schemaVersion: 2.2.0
+metadata:
+  name: my-backstage
+
+commands:
+  - id: install-yarn
+    exec:
+      commandLine: npm install -g yarn
+      workingDir: ${PROJECT_SOURCE}
+      component: nodejs
+
+  - id: yarn-install
+    exec:
+      commandLine: npx yarn install
+      component: nodejs
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+    
+  - id: run-start
+    exec:
+      commandLine: npx yarn run dev
+      component: nodejs
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+    
+components:
+  - name: nodejs
+    container:
+      image: registry.access.redhat.com/ubi9/nodejs-18:latest
+      sourceMapping: /projects
+      command: ['tail', '-f', '/dev/null']
+      memoryLimit: 2Gi
+      # highlight-start
+      # workaround for https://github.com/redhat-developer/odo/issues/6836
+      volumeMounts:
+        - name: node-modules
+          path: /projects/node_modules
+      # highlight-end
+      endpoints:
+        - name: frontend
+          targetPort: 3000
+          exposure: public
+        - name: backend
+          targetPort: 7007
+          exposure: public
+  # highlight-start  
+  - name: node-modules
+    volume:
+      size: 3Gi 
+  # highlight-end   
+
+events:
+  postStart:
+    - install-yarn
+```
+
+Now we have completed our `devfile.yaml` for Backstage.
+To use it with Backstage we will need more than just running `odo dev`.
+We must provide additional flags to ensure that Backstage's frontend and backend can communicate.
+From the Devfile you can see that there are two ports. 3000 for frontend and 7007 for backend.
+In default configuration frontend expects that the backend is reachable on `localhost:7007`.
+With odo, we can use `--port-forward` flag to ensure that our local port `7007` is redirected to the backend,
+for the consistency we will also redirect our local port `3000` to the frontend. 
+
+```
+odo dev --port-forward 3000:3000 --port-forward 7007:7007
+```
+
+
+
+
+
+
+
+
