@@ -219,13 +219,15 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 		do.kubeClient,
 		do.execClient,
 		do.configAutomountClient,
-		pod.Name,
-		false,
-		component.GetContainersNames(pod),
-		"Executing pre-stop command in container",
 
-		// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
-		nil, nil, parser.DevfileObj{}, "",
+		// TODO(feloy) set these values when we want to support Apply Image commands for PreStop events
+		nil, nil,
+
+		component.HandlerOptions{
+			PodName:           pod.Name,
+			ContainersRunning: component.GetContainersNames(pod),
+			Msg:               "Executing pre-stop command in container",
+		},
 	)
 	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, handler)
 	if err != nil {

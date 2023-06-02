@@ -7,7 +7,6 @@ import (
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -95,13 +94,13 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			o.kubernetesClient,
 			o.execClient,
 			o.configAutomountClient,
-			pod.Name,
-			false,
-			component.GetContainersNames(pod),
-			"Executing post-start command in container",
-
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-			nil, nil, parser.DevfileObj{}, "",
+			nil, nil,
+			component.HandlerOptions{
+				PodName:           pod.Name,
+				ContainersRunning: component.GetContainersNames(pod),
+				Msg:               "Executing post-start command in container",
+			},
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, parameters.Devfile, handler)
 		if err != nil {
@@ -127,15 +126,14 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		o.kubernetesClient,
 		o.execClient,
 		o.configAutomountClient,
-		pod.GetName(),
-		false,
-		component.GetContainersNames(pod),
-		"",
-
 		o.filesystem,
 		image.SelectBackend(ctx),
-		parameters.Devfile,
-		path,
+		component.HandlerOptions{
+			PodName:           pod.GetName(),
+			ContainersRunning: component.GetContainersNames(pod),
+			Devfile:           parameters.Devfile,
+			Path:              path,
+		},
 	)
 
 	if commandType == devfilev1.ExecCommandType {
@@ -166,13 +164,14 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 				o.kubernetesClient,
 				o.execClient,
 				o.configAutomountClient,
-				pod.Name,
-				running,
-				component.GetContainersNames(pod),
-				"Building your application in container",
-
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-				nil, nil, parser.DevfileObj{}, "",
+				nil, nil,
+				component.HandlerOptions{
+					PodName:           pod.Name,
+					ComponentExists:   running,
+					ContainersRunning: component.GetContainersNames(pod),
+					Msg:               "Building your application in container",
+				},
 			)
 			return libdevfile.Build(ctx, parameters.Devfile, parameters.StartOptions.BuildCommand, execHandler)
 		}

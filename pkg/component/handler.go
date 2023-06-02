@@ -41,23 +41,28 @@ type runHandler struct {
 
 var _ libdevfile.Handler = (*runHandler)(nil)
 
+type HandlerOptions struct {
+	PodName           string
+	ComponentExists   bool
+	ContainersRunning []string
+	Msg               string
+
+	// For apply Kubernetes / Openshift
+	Devfile parser.DevfileObj
+	Path    string
+}
+
 func NewRunHandler(
 	ctx context.Context,
 	platformClient platform.Client,
 	execClient exec.Client,
 	configAutomountClient configAutomount.Client,
-	podName string,
-	componentExists bool,
-	containersRunning []string,
-	msg string,
 
 	// For building images
 	fs filesystem.Filesystem,
 	imageBackend image.Backend,
 
-	// For apply Kubernetes / Openshift
-	devfile parser.DevfileObj,
-	path string,
+	options HandlerOptions,
 
 ) *runHandler {
 	return &runHandler{
@@ -65,16 +70,16 @@ func NewRunHandler(
 		platformClient:        platformClient,
 		execClient:            execClient,
 		configAutomountClient: configAutomountClient,
-		podName:               podName,
-		ComponentExists:       componentExists,
-		containersRunning:     containersRunning,
-		msg:                   msg,
+		podName:               options.PodName,
+		ComponentExists:       options.ComponentExists,
+		containersRunning:     options.ContainersRunning,
+		msg:                   options.Msg,
 
 		fs:           fs,
 		imageBackend: imageBackend,
 
-		devfile: devfile,
-		path:    path,
+		devfile: options.Devfile,
+		path:    options.Path,
 	}
 }
 
