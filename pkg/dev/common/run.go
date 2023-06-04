@@ -44,7 +44,7 @@ func Run(
 			PodName:           pod.Name,
 			ContainersRunning: component.GetContainersNames(pod),
 			Msg:               "Executing command in container",
-			ShowLogs:          true,
+			DirectRun:         true,
 			Devfile:           *devfileObj,
 			Path:              devfilePath,
 		},

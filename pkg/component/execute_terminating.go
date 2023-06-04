@@ -18,49 +18,61 @@ import (
 
 const ShellExecutable string = "/bin/sh"
 
-func ExecuteTerminatingCommand(ctx context.Context, execClient exec.Client, platformClient platform.Client, command devfilev1.Command, componentExists bool, podName string, appName string, componentName string, msg string, showOutputs bool) error {
+func ExecuteTerminatingCommand(
+	ctx context.Context,
+	execClient exec.Client,
+	platformClient platform.Client,
+	command devfilev1.Command,
+	componentExists bool,
+	podName string,
+	appName string,
+	componentName string,
+	msg string,
+	directRun bool,
+) error {
 
 	if componentExists && command.Exec != nil && pointer.BoolDeref(command.Exec.HotReloadCapable, false) {
 		klog.V(2).Infof("command is hot-reload capable, not executing %q again", command.Id)
 		return nil
 	}
 
-	if msg == "" {
-		msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)
-	} else {
-		msg += " (command: " + command.Id + ")"
-	}
-
 	// Spinner is displayed only if no outputs are displayed
 	var spinner *log.Status
-	if !showOutputs {
+	var stdoutWriter, stderrWriter *io.PipeWriter
+	var stdoutChannel, stderrChannel chan interface{}
+
+	if !directRun {
+		if msg == "" {
+			msg = fmt.Sprintf("Executing %s command on container %q", command.Id, command.Exec.Component)
+		} else {
+			msg += " (command: " + command.Id + ")"
+		}
 		spinner = log.Spinner(msg)
 		defer spinner.End(false)
+
+		logger := machineoutput.NewMachineEventLoggingClient()
+		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel = logger.CreateContainerOutputWriter()
 	}
 
-	logger := machineoutput.NewMachineEventLoggingClient()
-	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
+	cmdline := getCmdline(command, !directRun)
+	_, _, err := execClient.ExecuteCommand(ctx, cmdline, podName, command.Exec.Component, directRun, stdoutWriter, stderrWriter)
 
-	cmdline := getCmdline(command, !showOutputs)
-	_, _, err := execClient.ExecuteCommand(ctx, cmdline, podName, command.Exec.Component, showOutputs, stdoutWriter, stderrWriter)
-
-	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
-
-	if !showOutputs {
+	if !directRun {
+		closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 		spinner.End(err == nil)
-	}
-	// Complete logs are displayed only if no outputs are displayed
-	if err != nil && !showOutputs {
-		rd, errLog := Log(platformClient, componentName, appName, false, command)
-		if errLog != nil {
-			return fmt.Errorf("unable to log error %v: %w", err, errLog)
-		}
 
-		// Use GetStderr in order to make sure that colour output is correct
-		// on non-TTY terminals
-		errLog = util.DisplayLog(false, rd, log.GetStderr(), componentName, -1)
-		if errLog != nil {
-			return fmt.Errorf("unable to log error %v: %w", err, errLog)
+		if err != nil {
+			rd, errLog := Log(platformClient, componentName, appName, false, command)
+			if errLog != nil {
+				return fmt.Errorf("unable to log error %v: %w", err, errLog)
+			}
+
+			// Use GetStderr in order to make sure that colour output is correct
+			// on non-TTY terminals
+			errLog = util.DisplayLog(false, rd, log.GetStderr(), componentName, -1)
+			if errLog != nil {
+				return fmt.Errorf("unable to log error %v: %w", err, errLog)
+			}
 		}
 	}
 	return err
