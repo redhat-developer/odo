@@ -23,14 +23,9 @@ func (o *PodmanCli) ExecCMDInContainer(ctx context.Context, containerName, podNa
 	args = append(args, cmd...)
 
 	command := exec.CommandContext(ctx, o.podmanCmd, append(o.containerRunGlobalExtraArgs, args...)...)
+	command.Stdout = stdout
 	command.Stderr = stderr
-	klog.V(3).Infof("executing %v", command.Args)
 	command.Stdin = stdin
-
-	out, err := command.Output()
-	if err != nil {
-		return err
-	}
-	_, err = stdout.Write(out)
-	return err
+	klog.V(3).Infof("executing %v", command.Args)
+	return command.Run()
 }
