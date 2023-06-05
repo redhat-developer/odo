@@ -51,19 +51,19 @@ Two most important sections in Devfile are `commands` and `containers`.
 
 ### Components
 
-`components` section is a list of components that our development environment is composed of.
+[`components`](https://devfile.io/docs/2.2.0/adding-components) section is a list of components that our development environment is composed of.
 There are different types of components available in Devfile.
-- `container` - this is probably the most common component type. Most Devfiles will have at least one container component.
+- [`container`](https://devfile.io/docs/2.2.0/adding-a-container-component) - this is probably the most common component type. Most Devfiles will have at least one container component.
 This allows us to define containers in which the `exec` commands should be executed, 
 or it can be used to define containers that run additional services that our application requires.
-- `kubernetes` - this component allows us to create any Kubernetes resource.
-Kubernetes resource can be either directly inlinded in the Devfile or referenced by URI.
-- `image` - this component can be used to build images from Dockerfile.
+- [`kubernetes`](https://devfile.io/docs/2.2.0/adding-a-kubernetes-or-openshift-component) - this component allows us to create any Kubernetes resource.
+Kubernetes resource can be either directly in-lined in the Devfile or referenced by URI.
+- [`image`](https://devfile.io/docs/2.2.0/adding-an-image-component) - this component can be used to build images from Dockerfile.
 It can be combined with the `container` component. The `image` component creates a container image,
  which can later be used in `container` definition.
-- `volume` - this component is used with `container` components and allows us to create volumes.
+- [`volume`](https://devfile.io/docs/2.2.0/adding-a-volume-component) - this component is used with `container` components and allows us to create volumes.
 Volumes can be used to ensure persistence across container restarts,
-or to share data between containers. In Kubernetes world Devfile container is usually translated into `PersistentVolumeClaim`
+or to share data between containers. In Kubernetes world Devfile volume is usually translated into `PersistentVolumeClaim`.
 
 
 
@@ -99,7 +99,7 @@ components:
 
 Here is an explanation of what each line does.
 - `image: registry.access.redhat.com/ubi9/nodejs-18:latest` - defines an image that will be used to create a container.
-Here we are using Red Hat's NodeJS image.
+Here we are using [Red Hat's NodeJS image](https://catalog.redhat.com/software/containers/ubi9/nodejs-18/62e8e7ed22d1d3c2dfe2ca01?container-tabs=dockerfile).
 - `sourceMapping: /projects` - defines where in the container the source code of our application will be.
 `odo dev` process makes sure that the local source code is pushed to this location in the container. 
 - `command: ['tail', '-f', '/dev/null']` - this will be the main command in the container.
@@ -118,13 +118,13 @@ sure that the container stays running and we execute our commands inside it.
 
 ### Commands
 
-`commands` section defines actions that can be performed.
+[`commands`](https://devfile.io/docs/2.2.0/adding-commands) section defines actions that can be performed.
 There are three types of commands `exec`, `apply`, and `composite`.
 
-- `exec` - this just executes the command defined in `commandLine` inside the `container`.
+- [`exec`](https://devfile.io/docs/2.2.0/adding-an-exec-command) - this just executes the command defined in `commandLine` inside the `container`.
   The `container` needs to be defined in `components` section.
-- `apply` - most commonly coupled with `kubernets` component. It creates or, in other words, applies the component referenced in this command. 
-- `composite` - this command can be used to execute multiple existing commands sequentially or in parallel.
+- [`apply`](https://devfile.io/docs/2.2.0/adding-an-apply-command) - most commonly coupled with `kubernets` component. It creates or, in other words, applies the component referenced in this command. 
+- [`composite`](https://devfile.io/docs/2.2.0/adding-a-composite-command) - this command can be used to execute multiple existing commands sequentially or in parallel.
 
 
 
@@ -198,7 +198,7 @@ If you try to use Devfile as we have it, you will see an error.
 The first problem is that the NodeJS image doesn't have `yarn` installed. 
 
 ### Install `yaml` into the container
-To add yarn, we will leverage Devfile feature called `events`.
+To add yarn, we will leverage Devfile feature called [`events`](https://devfile.io/docs/2.2.0/adding-event-bindings).
 Events allow us to define commands that should be executed on predefined events. 
 There are 3 events that you can use.
 - `preStart` - executed before the main container is started.
@@ -349,7 +349,7 @@ for the consistency we will also redirect our local port `3000` to the frontend.
 ```
 odo dev --port-forward 3000:3000 --port-forward 7007:7007
 ```
-
+You should now be able to access Backstage on `127.0.0.1:3000`.
 
 
 
