@@ -7,6 +7,10 @@
 
 set -x
 
+source .ibm/pipelines/functions.sh
+
+skip_if_only
+
 LOGFILE="pr-${GIT_PR_NUMBER}-windows-tests-${BUILD_NUMBER}"
 export REPO=${REPO:-"https://github.com/redhat-developer/odo"}
 #copy test script inside /tmp/
@@ -19,7 +23,6 @@ RESULT=$?
 echo "RESULT: $RESULT"
 
 # save log
-source .ibm/pipelines/functions.sh
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/${LOGFILE} /tmp/${LOGFILE}
 save_logs "${LOGFILE}" "Windows Tests (OCP)" $RESULT

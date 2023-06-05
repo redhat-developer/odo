@@ -4,6 +4,8 @@ LOGFILE="pr-${GIT_PR_NUMBER}-openshift-unauth-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
+skip_if_only
+
 ibmcloud login --apikey "${API_KEY_QE}"
 ibmcloud target -r eu-de
 ibmcloud oc cluster config -c "${CLUSTER_ID}"
