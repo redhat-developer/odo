@@ -67,14 +67,10 @@ func (o ExecClient) ExecuteCommand(ctx context.Context, command []string, podNam
 		return stdout, stderr, err
 	}
 
-	tty := term.TTY{
-		Raw: true,
-		In:  os.Stdin,
-		Out: os.Stdout,
-	}
+	tty := setupTTY()
 
 	fn := func() error {
-		return o.platformClient.ExecCMDInContainer(ctx, containerName, podName, command, tty.Out, nil, tty.In, true)
+		return o.platformClient.ExecCMDInContainer(ctx, containerName, podName, command, tty.Out, os.Stderr, tty.In, tty.Raw)
 	}
 
 	return nil, nil, tty.Safe(fn)
@@ -115,4 +111,16 @@ func startReaderGoroutine(logWriter io.Writer, reader io.Reader, show bool, cmdO
 	}()
 
 	return result
+}
+
+func setupTTY() term.TTY {
+	tty := term.TTY{
+		In:  os.Stdin,
+		Out: os.Stdout,
+	}
+	if !tty.IsTerminalIn() || !tty.IsTerminalOut() {
+		return tty
+	}
+	tty.Raw = true
+	return tty
 }

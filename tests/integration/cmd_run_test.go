@@ -136,8 +136,7 @@ var _ = Describe("odo run command tests", func() {
 					}
 
 					By("exiting with a status 1 when the exec command fails and displaying error output", func() {
-						// Err is in stdout and not stderr, as the terminal is set in raw mode
-						out := helper.Cmd("odo", "run", "error-cmd", "--platform", platform).ShouldFail().Out()
+						out := helper.Cmd("odo", "run", "error-cmd", "--platform", platform).ShouldFail().Err()
 						Expect(out).To(ContainSubstring("No such file or directory"))
 					})
 				})
