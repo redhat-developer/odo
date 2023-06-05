@@ -48,7 +48,7 @@ require (
 	github.com/tidwall/gjson v1.14.4
 	github.com/zalando/go-keyring v0.2.1
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.5.0
+	golang.org/x/sys v0.8.0
 	golang.org/x/term v0.5.0
 	golang.org/x/text v0.7.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
