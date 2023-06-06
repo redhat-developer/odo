@@ -44,3 +44,29 @@ cleanup_namespaces() {
         fi
     done
 }
+
+skip_if_only() {
+    echo "Checking if tests need to be executed..."
+    NAMES=$(git diff --merge-base --name-only main)
+    for change in ${NAMES}; do
+        skip $change
+        if [[ $? == 0 ]]; then
+            return
+        fi
+    done
+    echo   "  => Skipping the tests."
+    exit 0
+}
+
+skip() {
+    SKIP_IF_ONLY="docs/ CONTRIBUTING.md OWNERS README.md USAGE_DATA.md"
+    change=$1
+    for skip in ${SKIP_IF_ONLY}; do
+        if [[ "${change}" == "${skip}"* ]]; then
+            echo "  - ${change} is ${skip}*"
+            return 1
+        fi
+    done
+    echo "  - $change not in $SKIP_IF_ONLY"
+    return 0
+}

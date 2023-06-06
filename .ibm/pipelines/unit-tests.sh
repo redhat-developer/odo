@@ -7,6 +7,8 @@ LOGFILE="pr-${GIT_PR_NUMBER}-unit-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
+skip_if_only
+
 (
     set -e
     make test
