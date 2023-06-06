@@ -3,7 +3,12 @@ on:
   pull_request:
     branches:    
       - main
-
+    paths-ignore:
+      - 'docs/**'
+      - CONTRIBUTING.md
+      - OWNERS
+      - README.md
+      - USAGE_DATA.md
 
 jobs:
   ODO-PODMAN-TEST:
