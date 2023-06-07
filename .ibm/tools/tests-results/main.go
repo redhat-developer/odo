@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -69,6 +70,10 @@ func main() {
 
 	suites, err := junit.IngestFile(junitFile)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("junit file %s not found. Exiting\n", junitFile)
+			return
+		}
 		panic(err)
 	}
 
