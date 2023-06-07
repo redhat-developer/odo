@@ -1,0 +1,64 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: "{{DEPLOY_RESOURCE_NAME}}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{DEPLOY_RESOURCE_NAME}}"
+  template:
+    metadata:
+      labels:
+        app: "{{DEPLOY_RESOURCE_NAME}}"
+    spec:
+      containers:
+      - name: "{{DEPLOY_RESOURCE_NAME}}"
+        image: "{{DEPLOY_CONTAINER_IMAGE}}"
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{DEPLOY_RESOURCE_NAME}}"
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: "{{DEPLOY_RESOURCE_NAME}}"
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "{{DEPLOY_RESOURCE_NAME}}"
+spec:
+  tls:
+  - hosts:
+    - "{{DEPLOY_RESOURCE_NAME}}.{{DEPLOY_INGRESS_DOMAIN}}"
+
+  rules:
+  - host: "{{DEPLOY_RESOURCE_NAME}}.{{DEPLOY_INGRESS_DOMAIN}}"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: "{{DEPLOY_RESOURCE_NAME}}"
+            port:
+              number: 8080
