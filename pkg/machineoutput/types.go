@@ -3,6 +3,7 @@ package machineoutput
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -35,14 +36,21 @@ func OutputSuccessUnindented(machineOutput interface{}) {
 }
 
 // OutputSuccess outputs a "successful" machine-readable output format in json
-func OutputSuccess(machineOutput interface{}) {
+func OutputSuccess(stdout, stderr io.Writer, machineOutput interface{}) {
 	printableOutput, err := marshalJSONIndented(machineOutput)
+
+	if stdout == nil {
+		stdout = log.GetStdout()
+	}
+	if stderr == nil {
+		stderr = log.GetStderr()
+	}
 
 	// If we error out... there's no way to output it (since we disable logging when using -o json)
 	if err != nil {
-		fmt.Fprintf(log.GetStderr(), "Unable to unmarshal JSON: %s\n", err.Error())
+		fmt.Fprintf(stderr, "Unable to unmarshal JSON: %s\n", err.Error())
 	} else {
-		fmt.Fprintf(log.GetStdout(), "%s\n", string(printableOutput))
+		fmt.Fprintf(stdout, "%s\n", string(printableOutput))
 	}
 }
 

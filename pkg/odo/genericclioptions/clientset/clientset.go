@@ -12,6 +12,8 @@
 package clientset
 
 import (
+	"io"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
@@ -124,6 +126,9 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
+	Stdout io.Writer
+	Stderr io.Writer
+
 	AlizerClient          alizer.Client
 	BindingClient         binding.Client
 	ConfigAutomountClient configAutomount.Client
@@ -171,6 +176,13 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 		dep = Clientset{}
 		ctx = command.Context()
 	)
+
+	if testClientset.Stdout != nil {
+		dep.Stdout = testClientset.Stdout
+	}
+	if testClientset.Stderr != nil {
+		dep.Stderr = testClientset.Stderr
+	}
 
 	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {

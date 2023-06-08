@@ -276,7 +276,7 @@ func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Comman
 		var out interface{}
 		out, err = jsonOutputter.RunForJsonOutput(ctx)
 		if err == nil {
-			machineoutput.OutputSuccess(out)
+			machineoutput.OutputSuccess(testClientset.Stdout, testClientset.Stderr, out)
 		}
 	} else {
 		err = o.Run(ctx)
