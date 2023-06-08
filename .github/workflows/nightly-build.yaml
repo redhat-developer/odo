@@ -1,6 +1,9 @@
 name: Nightly builds
 
 on:
+  # workflow_dispatch so that it can be triggered manually if needed
+  workflow_dispatch:
+
   schedule:
     - cron: "0 0 * * *"
 
