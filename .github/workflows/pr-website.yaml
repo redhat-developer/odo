@@ -86,8 +86,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
-      - run: yq -i '.metadata.name = "${{ env.DEPLOY_RESOURCE_NAME }}"' docs/website/devfile.yaml
-
       - name: Install IBM Cloud CLI
         run: |
           curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
@@ -150,7 +148,7 @@ jobs:
 
       - name: Deploy with odo
         run: |
-          cd docs/website/ && \
+          cd docs/website/
           odo deploy \
             --var DEPLOY_RESOURCE_NAME \
             --var DEPLOY_INGRESS_DOMAIN
@@ -246,21 +244,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           reactions: recycle
 
-      - run: yq -i '.metadata.name = "${{ env.DEPLOY_RESOURCE_NAME }}"' docs/website/devfile.yaml
-
-      - name: Delete component
+      - name: Delete component in namespace
         run: |
-          mkdir -p /tmp && cd /tmp
-          odo delete component \
-            --namespace "$NAMESPACE" \
-            --name "${{ env.DEPLOY_RESOURCE_NAME }}" \
-            --force \
-            --wait
+          if odo list namespaces | grep "$NAMESPACE"; then
+            odo set namespace "$NAMESPACE"
+            cd docs/website/
+            odo delete component --force --wait
+          fi
 
       - name: Delete namespace
         if: ${{ always() }}
         run: |
-          odo delete namespace "$NAMESPACE" \
-            --wait \
-            --force \
-          || echo "Could not delete namespace $NAMESPACE - please delete it manually!"
+          if odo list namespaces | grep "$NAMESPACE"; then
+            odo delete namespace "$NAMESPACE" \
+              --wait \
+              --force \
+            || echo "Could not delete namespace $NAMESPACE - please delete it manually."
+          fi
