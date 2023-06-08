@@ -174,7 +174,11 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 
 	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {
-		dep.FS = filesystem.DefaultFs{}
+		if testClientset.FS != nil {
+			dep.FS = testClientset.FS
+		} else {
+			dep.FS = filesystem.DefaultFs{}
+		}
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		dep.KubernetesClient, err = kclient.New()
@@ -211,7 +215,11 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 
 	/* With sub-dependencies */
 	if isDefined(command, ALIZER) {
-		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+		if testClientset.AlizerClient != nil {
+			dep.AlizerClient = testClientset.AlizerClient
+		} else {
+			dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+		}
 	}
 	if isDefined(command, EXEC) {
 		switch platform {

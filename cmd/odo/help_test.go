@@ -10,7 +10,6 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"k8s.io/klog"
 )
 
 var (
@@ -70,7 +69,8 @@ func TestOdoHelp(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
-	klog.InitFlags(nil)
+
+	resetGlobalFlags()
 
 	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, clientset.Clientset{})
 

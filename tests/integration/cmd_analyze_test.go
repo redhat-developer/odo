@@ -52,13 +52,6 @@ var _ = Describe("odo analyze command tests", func() {
 				Expect(helper.IsJSON(stderr)).To(BeTrue())
 				helper.JsonPathContentContain(stderr, "message", "No valid devfile found for project in")
 			})
-
-			It("analyze should fail without json output", func() {
-				stderr := helper.Cmd("odo", "analyze").ShouldFail().Err()
-				Expect(stderr).To(ContainSubstring("this command can be run with json output only"))
-			})
 		})
-
 	}
-
 })
