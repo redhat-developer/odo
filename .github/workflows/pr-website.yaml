@@ -23,7 +23,6 @@ env:
   ODO_TRACKING_CONSENT: "no"
   IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
   IKS_CLUSTER: ${{ secrets.IBM_CLOUD_IKS_CLUSTER_FOR_WEBSITE_DEPLOY_PREVIEWS }}
-  DEPLOY_CONTAINER_IMAGE: "ttl.sh/odo-dev-website-pr-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}:3h"
   DEPLOY_RESOURCE_NAME: "odo-dev-pr-${{ github.event.number }}"
   NAMESPACE: "odo-dev-pr-${{ github.event.number }}"
   PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -131,12 +130,24 @@ jobs:
           fi
           ~/.local/bin/odo set namespace "$NAMESPACE"
 
+      - name: Login to Container Image Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: odo-dev+gh
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: quay.io/odo-dev
+
+      - name: Set Image Registry in odo preference
+        # Setting this will make odo treat relative image names in the Devfile as a selector.
+        # See https://odo.dev/docs/development/devfile#how-odo-handles-image-names for more details.
+        run: |
+          odo preference set ImageRegistry quay.io/odo-dev --force
+
       - name: Deploy with odo
         run: |
           cd docs/website/ && \
           ~/.local/bin/odo deploy \
             --var DEPLOY_RESOURCE_NAME \
-            --var DEPLOY_CONTAINER_IMAGE \
             --var DEPLOY_INGRESS_DOMAIN
 
       - run: echo "PR_PREVIEW_URL=https://$DEPLOY_RESOURCE_NAME.$DEPLOY_INGRESS_DOMAIN/" >> "$GITHUB_ENV"
