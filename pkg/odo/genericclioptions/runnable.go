@@ -78,7 +78,7 @@ const (
 	defaultAppName = "app"
 )
 
-func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
+func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Command, args []string) error {
 	var (
 		err             error
 		startTime       = time.Now()
@@ -198,7 +198,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 
 	cmdLineObj := cmdline.NewCobra(cmd)
 	platform := commonflags.GetPlatformValue(cmdLineObj)
-	deps, err := clientset.Fetch(cmd, platform)
+	deps, err := clientset.Fetch(cmd, platform, testClientset)
 	if err != nil {
 		return err
 

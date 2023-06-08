@@ -152,7 +152,7 @@ func NewServicesListOptions() *ServiceListOptions {
 	return &ServiceListOptions{}
 }
 
-func NewCmdServicesList(name, fullName string) *cobra.Command {
+func NewCmdServicesList(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewServicesListOptions()
 	servicesListCmd := &cobra.Command{
 		Use:     name,
@@ -161,7 +161,7 @@ func NewCmdServicesList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"service"},
 	}

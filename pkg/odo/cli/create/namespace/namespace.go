@@ -112,7 +112,7 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdNamespaceCreate creates the namespace create command
-func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
+func NewCmdNamespaceCreate(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewNamespaceCreateOptions()
 	// To help the UI messages deal better with namespace vs project
 	o.commandName = name
@@ -127,7 +127,7 @@ func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(createExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"project"},
 	}

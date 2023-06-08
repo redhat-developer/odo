@@ -125,7 +125,7 @@ func showBlankIfNil(intf interface{}) interface{} {
 }
 
 // NewCmdView implements the config view odo command
-func NewCmdView(name, fullName string) *cobra.Command {
+func NewCmdView(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewViewOptions()
 	preferenceViewCmd := &cobra.Command{
 		Use:     name,
@@ -135,7 +135,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(preferenceViewCmd, clientset.PREFERENCE, clientset.REGISTRY)

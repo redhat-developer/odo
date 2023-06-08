@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -17,8 +18,8 @@ const (
 var registryDesc = ktemplates.LongDesc(`Add value to an array of items`)
 
 // NewCmdAdd implements the registry configuration command
-func NewCmdAdd(name, fullName string) *cobra.Command {
-	registryCmd := NewCmdRegistry(registryCommandName, util.GetFullName(fullName, registryCommandName))
+func NewCmdAdd(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
+	registryCmd := NewCmdRegistry(registryCommandName, util.GetFullName(fullName, registryCommandName), testClientset)
 
 	addCmd := &cobra.Command{
 		Use:   name,

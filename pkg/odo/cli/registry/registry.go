@@ -101,7 +101,7 @@ func (o *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	return o.devfileList.Items, nil
 }
 
-func NewCmdRegistry(name, fullName string) *cobra.Command {
+func NewCmdRegistry(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -110,7 +110,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 		Long:    "List all components from the Devfile registry",
 		Example: fmt.Sprintf(Example, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 

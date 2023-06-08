@@ -90,7 +90,7 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdSet implements the config set odo command
-func NewCmdSet(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdSet(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewSetOptions()
 	preferenceSetCmd := &cobra.Command{
 		Use:   name,
@@ -110,7 +110,7 @@ func NewCmdSet(ctx context.Context, name, fullName string) *cobra.Command {
 		}(setExample, fullName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(preferenceSetCmd, clientset.PREFERENCE)

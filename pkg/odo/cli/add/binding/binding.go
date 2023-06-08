@@ -198,7 +198,7 @@ func (o *AddBindingOptions) Run(ctx context.Context) error {
 }
 
 // NewCmdBinding implements the component odo sub-command
-func NewCmdBinding(name, fullName string) *cobra.Command {
+func NewCmdBinding(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewAddBindingOptions()
 
 	var bindingCmd = &cobra.Command{
@@ -208,7 +208,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(addBindingExample, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to add")

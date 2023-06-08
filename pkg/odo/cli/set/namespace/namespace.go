@@ -83,7 +83,7 @@ func (so *SetOptions) Run(ctx context.Context) error {
 }
 
 // NewCmdNamespaceSet creates the 'set namespace' command
-func NewCmdNamespaceSet(name, fullName string) *cobra.Command {
+func NewCmdNamespaceSet(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewSetOptions()
 	// To help the UI messages deal better with namespace vs project
 	o.commandName = name
@@ -98,7 +98,7 @@ func NewCmdNamespaceSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(setExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"project"},
 	}

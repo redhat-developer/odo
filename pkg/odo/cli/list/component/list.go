@@ -140,7 +140,7 @@ func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
 }
 
 // NewCmdList implements the list odo command
-func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdComponentList(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -150,7 +150,7 @@ func NewCmdComponentList(ctx context.Context, name, fullName string) *cobra.Comm
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"components"},
 	}

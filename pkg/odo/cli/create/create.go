@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/create/namespace"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 )
@@ -14,9 +15,9 @@ import (
 const RecommendedCommandName = "create"
 
 // NewCmdCreate implements the namespace odo command
-func NewCmdCreate(name, fullName string) *cobra.Command {
+func NewCmdCreate(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 
-	namespaceCreateCmd := namespace.NewCmdNamespaceCreate(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
+	namespaceCreateCmd := namespace.NewCmdNamespaceCreate(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName), testClientset)
 	createCmd := &cobra.Command{
 		Use:   name + " [options]",
 		Short: "Perform create operation",

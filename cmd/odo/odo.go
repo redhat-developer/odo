@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -37,7 +38,7 @@ func main() {
 	// create the complete command
 	klog.InitFlags(nil)
 
-	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName)
+	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, clientset.Clientset{})
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 

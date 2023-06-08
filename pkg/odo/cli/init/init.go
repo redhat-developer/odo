@@ -260,7 +260,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 }
 
 // NewCmdInit implements the odo command
-func NewCmdInit(name, fullName string) *cobra.Command {
+func NewCmdInit(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 
 	o := NewInitOptions()
 	initCmd := &cobra.Command{
@@ -270,7 +270,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(initExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(initCmd, clientset.PREFERENCE, clientset.FILESYSTEM, clientset.REGISTRY, clientset.INIT)

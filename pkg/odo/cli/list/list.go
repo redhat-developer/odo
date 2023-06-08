@@ -164,7 +164,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 }
 
 // NewCmdList implements the list odo command
-func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdList(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -174,7 +174,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.BINDING, clientset.FILESYSTEM)
@@ -182,10 +182,10 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 
-	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
-	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
-	componentCmd := clicomponent.NewCmdComponentList(ctx, clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName))
-	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName))
+	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName), testClientset)
+	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName), testClientset)
+	componentCmd := clicomponent.NewCmdComponentList(ctx, clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName), testClientset)
+	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName), testClientset)
 	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd, servicesCmd)
 
 	util.SetCommandGroup(listCmd, util.ManagementGroup)

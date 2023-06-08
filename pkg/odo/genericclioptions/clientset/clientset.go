@@ -165,7 +165,7 @@ func isDefined(command *cobra.Command, dependency string) bool {
 	return ok
 }
 
-func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
+func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*Clientset, error) {
 	var (
 		err error
 		dep = Clientset{}

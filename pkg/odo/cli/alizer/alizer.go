@@ -66,7 +66,7 @@ func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, 
 	return []api.DetectionResult{*result}, nil
 }
 
-func NewCmdAlizer(name, fullName string) *cobra.Command {
+func NewCmdAlizer(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewAlizerOptions()
 	alizerCmd := &cobra.Command{
 		Use:         name,
@@ -75,7 +75,7 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 		Args:        cobra.MaximumNArgs(0),
 		Annotations: map[string]string{},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)
