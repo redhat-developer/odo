@@ -118,17 +118,22 @@ jobs:
         with:
           name: odo_bin
 
-      - run: mkdir -p ~/.local/bin/ && mv ./odo ~/.local/bin/odo && chmod +x ~/.local/bin/odo
+      - name: Set odo in system path
+        run: |
+          mkdir -p "$HOME/.local/bin/"
+          mv ./odo "$HOME/.local/bin/odo"
+          chmod +x "$HOME/.local/bin/odo"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Create and set namespace
         run: |
-          if ~/.local/bin/odo list namespaces | grep "$NAMESPACE"; then
+          if odo list namespaces | grep "$NAMESPACE"; then
             echo "Namespace $NAMESPACE already exists."
           else
             echo "Namespace $NAMESPACE *not* found => creating it."
-            ~/.local/bin/odo create namespace "$NAMESPACE" --wait
+            odo create namespace "$NAMESPACE" --wait
           fi
-          ~/.local/bin/odo set namespace "$NAMESPACE"
+          odo set namespace "$NAMESPACE"
 
       - name: Login to Container Image Registry
         uses: redhat-actions/podman-login@v1
@@ -146,7 +151,7 @@ jobs:
       - name: Deploy with odo
         run: |
           cd docs/website/ && \
-          ~/.local/bin/odo deploy \
+          odo deploy \
             --var DEPLOY_RESOURCE_NAME \
             --var DEPLOY_INGRESS_DOMAIN
 
@@ -192,7 +197,12 @@ jobs:
         with:
           name: odo_bin
 
-      - run: mkdir -p ~/.local/bin/ && mv ./odo ~/.local/bin/odo && chmod +x ~/.local/bin/odo
+      - name: Set odo in system path
+        run: |
+          mkdir -p "$HOME/.local/bin/"
+          mv ./odo "$HOME/.local/bin/odo"
+          chmod +x "$HOME/.local/bin/odo"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install IBM Cloud CLI
         run: |
@@ -241,7 +251,7 @@ jobs:
       - name: Delete component
         run: |
           mkdir -p /tmp && cd /tmp
-          ~/.local/bin/odo delete component \
+          odo delete component \
             --namespace "$NAMESPACE" \
             --name "${{ env.DEPLOY_RESOURCE_NAME }}" \
             --force \
@@ -250,7 +260,7 @@ jobs:
       - name: Delete namespace
         if: ${{ always() }}
         run: |
-          ~/.local/bin/odo delete namespace "$NAMESPACE" \
+          odo delete namespace "$NAMESPACE" \
             --wait \
             --force \
           || echo "Could not delete namespace $NAMESPACE - please delete it manually!"
