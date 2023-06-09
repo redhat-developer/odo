@@ -1,4 +1,4 @@
-module github.com/feloy/junit-collector
+module github.com/redhat-developer/odo/junit-collector
 
 go 1.19
 

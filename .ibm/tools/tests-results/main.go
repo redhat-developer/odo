@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/feloy/junit-collector/pkg/db"
 	"github.com/joshdk/go-junit"
+	"github.com/redhat-developer/odo/junit-collector/pkg/db"
 )
 
 func usage(msg string) {
