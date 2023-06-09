@@ -23,7 +23,7 @@ jobs:
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'A friendly reminder that this issue had no activity for 90 days. Stale issues will be closed after an additional 30 days of inactivity.'
-        stale-pr-message: 'A friendly reminder that this PR had no activity for 30 days.'
+        stale-pr-message: 'A friendly reminder that this PR had no activity for 90 days. Stale PRs will be closed after an additional 30 days of inactivity.'
         stale-issue-label: 'lifecycle/stale'
         close-issue-label: 'lifecycle/rotten'
         exempt-issue-labels: 'lifecycle/active,lifecycle/frozen'
