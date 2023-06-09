@@ -58,7 +58,9 @@ jobs:
           fi
 
       - name: Cross-compile odo
-        run: make cross
+        run: |
+          export GITCOMMIT="$(git describe --no-match --always --abbrev=9 --dirty --broken)-nightly"
+          make cross
 
       - name: Upload binaries
         run: |
