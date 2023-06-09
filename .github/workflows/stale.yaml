@@ -27,7 +27,9 @@ jobs:
         stale-issue-label: 'lifecycle/stale'
         close-issue-label: 'lifecycle/rotten'
         exempt-issue-labels: 'lifecycle/active,lifecycle/frozen'
-        stale-pr-label: 'stale-pr'
+        stale-pr-label: 'lifecycle/stale'
+        close-pr-label: 'lifecycle/rotten'
+        exempt-pr-labels: 'lifecycle/active,lifecycle/frozen'
         days-before-stale: 30
         days-before-close: 365
         remove-stale-when-updated: true
