@@ -30,6 +30,6 @@ jobs:
         stale-pr-label: 'lifecycle/stale'
         close-pr-label: 'lifecycle/rotten'
         exempt-pr-labels: 'lifecycle/active,lifecycle/frozen'
-        days-before-stale: 30
+        days-before-stale: 90
         days-before-close: 365
         remove-stale-when-updated: true
