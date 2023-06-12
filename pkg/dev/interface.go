@@ -18,6 +18,9 @@ type StartOptions struct {
 	RunCommand string
 	// If DebugCommand is set, this will look up the specified debug command in the Devfile and execute it. Otherwise, it uses the default one.
 	DebugCommand string
+	// SkipCommands indicates if commands (either Build, Run or Debug) will be skipped when starting the Dev Session.
+	// If SkipCommands is true, then the specified (or default) Build, Run, or Debug commands will not be executed.
+	SkipCommands bool
 	// if RandomPorts is set, will port forward on random local ports, else uses ports starting at 20001
 	RandomPorts bool
 	// CustomForwardedPorts define custom ports for port forwarding

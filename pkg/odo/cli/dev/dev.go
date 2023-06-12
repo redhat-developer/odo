@@ -70,6 +70,7 @@ type DevOptions struct {
 	forwardLocalhostFlag bool
 	portForwardFlag      []string
 	addressFlag          string
+	noCommandsFlag       bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -250,6 +251,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Debug:                o.debugFlag,
 			BuildCommand:         o.buildCommandFlag,
 			RunCommand:           o.runCommandFlag,
+			SkipCommands:         o.noCommandsFlag,
 			RandomPorts:          o.randomPortsFlag,
 			WatchFiles:           !o.noWatchFlag,
 			IgnoreLocalhost:      o.ignoreLocalhostFlag,
@@ -309,6 +311,8 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
+	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
+
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
