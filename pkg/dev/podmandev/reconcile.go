@@ -69,13 +69,13 @@ func (o *DevClient) reconcile(
 			o.podmanClient,
 			o.execClient,
 			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-			pod.Name,
-			false,
-			component.GetContainersNames(pod),
-			"Executing post-start command in container",
-
 			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
-			nil, nil, parser.DevfileObj{}, "",
+			nil, nil,
+			component.HandlerOptions{
+				PodName:           pod.Name,
+				ContainersRunning: component.GetContainersNames(pod),
+				Msg:               "Executing post-start command in container",
+			},
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -91,13 +91,14 @@ func (o *DevClient) reconcile(
 				o.podmanClient,
 				o.execClient,
 				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-				pod.Name,
-				componentStatus.RunExecuted,
-				component.GetContainersNames(pod),
-				"Building your application in container",
-
 				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
-				nil, nil, parser.DevfileObj{}, "",
+				nil, nil,
+				component.HandlerOptions{
+					PodName:           pod.Name,
+					ComponentExists:   componentStatus.RunExecuted,
+					ContainersRunning: component.GetContainersNames(pod),
+					Msg:               "Building your application in container",
+				},
 			)
 			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
 		}
@@ -119,16 +120,14 @@ func (o *DevClient) reconcile(
 			o.podmanClient,
 			o.execClient,
 			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-			pod.Name,
-			componentStatus.RunExecuted,
-			component.GetContainersNames(pod),
-			"",
-
 			o.fs,
 			image.SelectBackend(ctx),
-
 			// TODO(feloy) set to deploy Kubernetes/Openshift components
-			parser.DevfileObj{}, "",
+			component.HandlerOptions{
+				PodName:           pod.Name,
+				ComponentExists:   componentStatus.RunExecuted,
+				ContainersRunning: component.GetContainersNames(pod),
+			},
 		)
 		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
 		if err != nil {

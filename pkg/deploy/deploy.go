@@ -44,14 +44,12 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		o.kubeClient,
 		nil,
 		o.configAutomountClient,
-		"",
-		false,
-		nil,
-		"",
 		o.fs,
 		image.SelectBackend(ctx),
-		*devfileObj,
-		path,
+		component.HandlerOptions{
+			Devfile: *devfileObj,
+			Path:    path,
+		},
 	)
 
 	err := o.buildPushAutoImageComponents(handler, *devfileObj)

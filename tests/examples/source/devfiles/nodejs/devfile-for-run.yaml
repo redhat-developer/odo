@@ -68,19 +68,21 @@ commands:
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
-  - id: create-file
+  - id: list-files
     exec:
       component: runtime
-      commandLine: touch /tmp/new-file
-      workingDir: ${PROJECTS_ROOT}
-  - id: create-file-in-other-container
+      commandLine: ls /
+  - id: list-files-in-other-container
     exec:
       component: other-container
-      commandLine: touch /tmp/new-file-in-other-container
-      workingDir: ${PROJECTS_ROOT}
+      commandLine: ls /
   - id: deploy-config
     apply:
       component: config
   - id: build-image
     apply:
       component: image
+  - id: error-cmd
+    exec:
+      component: runtime
+      commandLine: ls /not-found

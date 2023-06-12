@@ -38,15 +38,16 @@ func Run(
 		platformClient,
 		execClient,
 		configAutomountClient,
-		pod.Name,
-		false,
-		component.GetContainersNames(pod),
-		"Executing command in container",
-
 		filesystem,
 		image.SelectBackend(ctx),
-		*devfileObj,
-		devfilePath,
+		component.HandlerOptions{
+			PodName:           pod.Name,
+			ContainersRunning: component.GetContainersNames(pod),
+			Msg:               "Executing command in container",
+			DirectRun:         true,
+			Devfile:           *devfileObj,
+			Path:              devfilePath,
+		},
 	)
 
 	return libdevfile.ExecuteCommandByName(ctx, *devfileObj, commandName, handler, false)
