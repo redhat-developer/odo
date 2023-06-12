@@ -84,66 +84,73 @@ func (o *DevClient) reconcile(
 	}
 	componentStatus.PostStartEventsDone = true
 
-	if execRequired {
-		doExecuteBuildCommand := func() error {
-			execHandler := component.NewRunHandler(
+	innerLoopWithCommands := !parameters.StartOptions.SkipCommands
+	if innerLoopWithCommands {
+		if execRequired {
+			doExecuteBuildCommand := func() error {
+				execHandler := component.NewRunHandler(
+					ctx,
+					o.podmanClient,
+					o.execClient,
+					nil, // TODO(feloy) set this value when we want to support exec on new container on podman
+
+					// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
+					nil, nil, component.HandlerOptions{
+						PodName:           pod.Name,
+						ComponentExists:   componentStatus.RunExecuted,
+						ContainersRunning: component.GetContainersNames(pod),
+						Msg:               "Building your application in container",
+					},
+				)
+				return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
+			}
+
+			err = doExecuteBuildCommand()
+			if err != nil {
+				return err
+			}
+
+			cmdKind := devfilev1.RunCommandGroupKind
+			cmdName := options.RunCommand
+			if options.Debug {
+				cmdKind = devfilev1.DebugCommandGroupKind
+				cmdName = options.DebugCommand
+			}
+
+			cmdHandler := component.NewRunHandler(
 				ctx,
 				o.podmanClient,
 				o.execClient,
 				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-				// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
-				nil, nil,
+
+				o.fs,
+				image.SelectBackend(ctx),
+
+				// TODO(feloy) set to deploy Kubernetes/Openshift components
 				component.HandlerOptions{
 					PodName:           pod.Name,
 					ComponentExists:   componentStatus.RunExecuted,
 					ContainersRunning: component.GetContainersNames(pod),
-					Msg:               "Building your application in container",
 				},
 			)
-			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
+			err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
+			if err != nil {
+				return err
+			}
+			componentStatus.RunExecuted = true
 		}
-
-		err = doExecuteBuildCommand()
-		if err != nil {
-			return err
-		}
-
-		cmdKind := devfilev1.RunCommandGroupKind
-		cmdName := options.RunCommand
-		if options.Debug {
-			cmdKind = devfilev1.DebugCommandGroupKind
-			cmdName = options.DebugCommand
-		}
-
-		cmdHandler := component.NewRunHandler(
-			ctx,
-			o.podmanClient,
-			o.execClient,
-			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-			o.fs,
-			image.SelectBackend(ctx),
-			// TODO(feloy) set to deploy Kubernetes/Openshift components
-			component.HandlerOptions{
-				PodName:           pod.Name,
-				ComponentExists:   componentStatus.RunExecuted,
-				ContainersRunning: component.GetContainersNames(pod),
-			},
-		)
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
-		if err != nil {
-			return err
-		}
-		componentStatus.RunExecuted = true
 	}
 
-	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
-	appReadySpinner := log.Spinner("Waiting for the application to be ready")
-	err = o.checkAppPorts(ctx, pod.Name, fwPorts)
-	appReadySpinner.End(err == nil)
-	if err != nil {
-		log.Warningf("Port forwarding might not work correctly: %v", err)
-		log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
-		fmt.Fprintln(options.Out)
+	if innerLoopWithCommands {
+		// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
+		appReadySpinner := log.Spinner("Waiting for the application to be ready")
+		err = o.checkAppPorts(ctx, pod.Name, fwPorts)
+		appReadySpinner.End(err == nil)
+		if err != nil {
+			log.Warningf("Port forwarding might not work correctly: %v", err)
+			log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
+			fmt.Fprintln(options.Out)
+		}
 	}
 
 	// By default, Podman will not forward to container applications listening on the loopback interface.

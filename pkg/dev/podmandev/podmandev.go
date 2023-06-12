@@ -118,15 +118,28 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 	s := log.Spinner("Syncing files into the container")
 	defer s.End(false)
 
-	cmdKind := devfilev1.RunCommandGroupKind
-	cmdName := options.RunCommand
-	if options.Debug {
-		cmdKind = devfilev1.DebugCommandGroupKind
-		cmdName = options.DebugCommand
-	}
-	devfileCmd, err := libdevfile.ValidateAndGetCommand(*devfileObj, cmdName, cmdKind)
-	if err != nil {
-		return false, err
+	syncFilesMap := make(map[string]string)
+	var devfileCmd devfilev1.Command
+	innerLoopWithCommands := !options.SkipCommands
+	if innerLoopWithCommands {
+		var (
+			cmdKind = devfilev1.RunCommandGroupKind
+			cmdName = options.RunCommand
+		)
+		if options.Debug {
+			cmdKind = devfilev1.DebugCommandGroupKind
+			cmdName = options.DebugCommand
+		}
+		var hasCmd bool
+		devfileCmd, hasCmd, err = libdevfile.GetCommand(*devfileObj, cmdName, cmdKind)
+		if err != nil {
+			return false, err
+		}
+		if hasCmd {
+			syncFilesMap = common.GetSyncFilesFromAttributes(devfileCmd)
+		} else {
+			klog.V(2).Infof("no command found with name %q and kind %v, syncing files without command attributes", cmdName, cmdKind)
+		}
 	}
 
 	syncParams := sync.SyncParameters{
@@ -138,7 +151,7 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 
 		CompInfo:  compInfo,
 		ForcePush: true,
-		Files:     common.GetSyncFilesFromAttributes(devfileCmd),
+		Files:     syncFilesMap,
 	}
 	execRequired, err := o.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
