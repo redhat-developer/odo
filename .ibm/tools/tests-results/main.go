@@ -61,13 +61,6 @@ func main() {
 
 	ctx := context.Background()
 
-	oldDate := time.Now().Add(-15 * 24 * time.Hour)
-	fmt.Printf("Deleting entries before: %s\n", oldDate.Format("2006-01-02"))
-	err := db.Clean(ctx, spreadsheetId, oldDate.Format("2006-01-02"))
-	if err != nil {
-		panic(err)
-	}
-
 	suites, err := junit.IngestFile(junitFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
