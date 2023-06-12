@@ -23,7 +23,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
-	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -114,11 +113,10 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 
 func (o *DevOptions) Validate(ctx context.Context) error {
 	devfileObj := *odocontext.GetEffectiveDevfileObj(ctx)
-	if !o.debugFlag && !libdevfile.HasRunCommand(devfileObj.Data) {
-		return clierrors.NewNoCommandInDevfileError("run")
-	}
-	if o.debugFlag && !libdevfile.HasDebugCommand(devfileObj.Data) {
-		return clierrors.NewNoCommandInDevfileError("debug")
+	if o.noCommandsFlag {
+		if o.buildCommandFlag != "" || o.runCommandFlag != "" {
+			return errors.New("--no-commands cannot be used with --build-command or --run-command")
+		}
 	}
 
 	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
