@@ -234,4 +234,13 @@ test-doc-automation:
 # Actual implementation must be done inside pkg/apiserver-impl
 .PHONY: generate-apiserver
 generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; also go fmt the files
-	openapi-generator generate -i ododevapispec.yaml -g go-server -o pkg/apiserver-gen --additional-properties=outputAsLibrary=true,onlyInterfaces=true && echo "Formatting generated files:" && go fmt ./pkg/apiserver-gen/...
+	podman run --rm \
+    		-v ${PWD}:/local \
+    		docker.io/openapitools/openapi-generator-cli:v6.6.0 \
+    		generate \
+    		-i /local/ododevapispec.yaml \
+    		-g go-server \
+    		-o /local/pkg/apiserver-gen \
+    		--additional-properties=outputAsLibrary=true,onlyInterfaces=true,hideGenerationTimestamp=true && \
+    	echo "Formatting generated files:" && \
+    	go fmt ./pkg/apiserver-gen/...

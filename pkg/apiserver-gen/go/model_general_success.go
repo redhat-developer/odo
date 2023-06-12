@@ -9,8 +9,19 @@
 
 package openapi
 
+import (
+	"encoding/json"
+)
+
 type GeneralSuccess struct {
 	Message string `json:"message,omitempty"`
+}
+
+// UnmarshalJSON sets *m to a copy of data while respecting defaults if specified.
+func (m *GeneralSuccess) UnmarshalJSON(data []byte) error {
+
+	type Alias GeneralSuccess // To avoid infinite recursion
+	return json.Unmarshal(data, (*Alias)(m))
 }
 
 // AssertGeneralSuccessRequired checks if the required fields are not zero-ed
@@ -18,14 +29,7 @@ func AssertGeneralSuccessRequired(obj GeneralSuccess) error {
 	return nil
 }
 
-// AssertRecurseGeneralSuccessRequired recursively checks if required fields are not zero-ed in a nested slice.
-// Accepts only nested slice of GeneralSuccess (e.g. [][]GeneralSuccess), otherwise ErrTypeAssertionError is thrown.
-func AssertRecurseGeneralSuccessRequired(objSlice interface{}) error {
-	return AssertRecurseInterfaceRequired(objSlice, func(obj interface{}) error {
-		aGeneralSuccess, ok := obj.(GeneralSuccess)
-		if !ok {
-			return ErrTypeAssertionError
-		}
-		return AssertGeneralSuccessRequired(aGeneralSuccess)
-	})
+// AssertGeneralSuccessConstraints checks if the values respects the defined constraints
+func AssertGeneralSuccessConstraints(obj GeneralSuccess) error {
+	return nil
 }
