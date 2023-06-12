@@ -449,13 +449,17 @@ var _ = Describe("odo dev debug command tests", func() {
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 			})
 
-			It("should fail running odo dev --debug", func() {
-				args := []string{"dev", "--debug"}
-				if podman {
-					args = append(args, "--platform", "podman")
-				}
-				output := helper.Cmd("odo", args...).ShouldFail().Err()
-				Expect(output).To(ContainSubstring("no command of kind \"debug\" found in the devfile"))
+			It("should log error about missing debug command when running odo dev --debug", func() {
+				devSession, _, stderr, _, err := helper.StartDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+					CmdlineArgs: []string{"--debug"},
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+				defer func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				}()
+				Expect(string(stderr)).To(ContainSubstring("Missing default debug command"))
 			})
 		}))
 	}
