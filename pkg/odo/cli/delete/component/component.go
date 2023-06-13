@@ -506,7 +506,7 @@ func (o *ComponentOptions) deleteFilesCreatedByOdo(filesys filesystem.Filesystem
 }
 
 // NewCmdComponent implements the component odo sub-command
-func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdComponent(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
@@ -516,7 +516,7 @@ func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command 
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(deleteExample, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")

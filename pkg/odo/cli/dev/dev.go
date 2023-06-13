@@ -282,7 +282,7 @@ func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 }
 
 // NewCmdDev implements the odo dev command
-func NewCmdDev(name, fullName string) *cobra.Command {
+func NewCmdDev(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewDevOptions()
 	devCmd := &cobra.Command{
 		Use:   name,
@@ -292,7 +292,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		Example: fmt.Sprintf(devExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")

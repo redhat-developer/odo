@@ -80,7 +80,7 @@ func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
 	return segmentClient.Close()
 }
 
-func NewCmdTelemetry(name string) *cobra.Command {
+func NewCmdTelemetry(name string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewTelemetryOptions()
 	telemetryCmd := &cobra.Command{
 		Use:                    name,
@@ -95,7 +95,7 @@ func NewCmdTelemetry(name string) *cobra.Command {
 		DisableSuggestions:     true,
 		FParseErrWhitelist:     cobra.FParseErrWhitelist{},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(telemetryCmd, clientset.PREFERENCE)

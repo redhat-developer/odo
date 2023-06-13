@@ -96,7 +96,7 @@ func (o *RunOptions) Run(ctx context.Context) (err error) {
 	return o.clientset.DevClient.Run(ctx, o.commandName)
 }
 
-func NewCmdRun(name, fullName string) *cobra.Command {
+func NewCmdRun(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewRunOptions()
 	runCmd := &cobra.Command{
 		Use:     name,
@@ -105,7 +105,7 @@ func NewCmdRun(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(runExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(runCmd,

@@ -106,7 +106,7 @@ func (o *VersionOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdVersion implements the version odo command
-func NewCmdVersion(name, fullName string) *cobra.Command {
+func NewCmdVersion(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewVersionOptions()
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
@@ -115,7 +115,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 		Long:    versionLongDesc,
 		Example: fmt.Sprintf(versionExample, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(versionCmd, clientset.PREFERENCE)

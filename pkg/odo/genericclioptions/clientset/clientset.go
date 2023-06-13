@@ -12,6 +12,8 @@
 package clientset
 
 import (
+	"io"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
@@ -124,6 +126,9 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
+	Stdout io.Writer
+	Stderr io.Writer
+
 	AlizerClient          alizer.Client
 	BindingClient         binding.Client
 	ConfigAutomountClient configAutomount.Client
@@ -165,16 +170,27 @@ func isDefined(command *cobra.Command, dependency string) bool {
 	return ok
 }
 
-func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
+func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*Clientset, error) {
 	var (
 		err error
 		dep = Clientset{}
 		ctx = command.Context()
 	)
 
+	if testClientset.Stdout != nil {
+		dep.Stdout = testClientset.Stdout
+	}
+	if testClientset.Stderr != nil {
+		dep.Stderr = testClientset.Stderr
+	}
+
 	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {
-		dep.FS = filesystem.DefaultFs{}
+		if testClientset.FS != nil {
+			dep.FS = testClientset.FS
+		} else {
+			dep.FS = filesystem.DefaultFs{}
+		}
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		dep.KubernetesClient, err = kclient.New()
@@ -211,7 +227,11 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 
 	/* With sub-dependencies */
 	if isDefined(command, ALIZER) {
-		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+		if testClientset.AlizerClient != nil {
+			dep.AlizerClient = testClientset.AlizerClient
+		} else {
+			dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+		}
 	}
 	if isDefined(command, EXEC) {
 		switch platform {

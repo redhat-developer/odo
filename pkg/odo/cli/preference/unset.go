@@ -91,7 +91,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdUnset implements the preference unset odo command
-func NewCmdUnset(name, fullName string) *cobra.Command {
+func NewCmdUnset(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewUnsetOptions()
 	preferenceUnsetCmd := &cobra.Command{
 		Use:   name,
@@ -108,7 +108,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		}(unsetExample, fullName),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(preferenceUnsetCmd, clientset.PREFERENCE)

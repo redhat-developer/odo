@@ -104,7 +104,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 }
 
 // NewCmdDeploy implements the odo command
-func NewCmdDeploy(name, fullName string) *cobra.Command {
+func NewCmdDeploy(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewDeployOptions()
 	deployCmd := &cobra.Command{
 		Use:     name,
@@ -113,7 +113,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deployExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY, clientset.FILESYSTEM, clientset.KUBERNETES)

@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/remove/binding"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -11,13 +12,13 @@ import (
 const RecommendedCommandName = "remove"
 
 // NewCmdRemove implements the odo remove command
-func NewCmdRemove(name, fullName string) *cobra.Command {
+func NewCmdRemove(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	var removeCmd = &cobra.Command{
 		Use:   name,
 		Short: "Remove resources from devfile",
 	}
 
-	bindingCmd := binding.NewCmdBinding(binding.BindingRecommendedCommandName, util.GetFullName(fullName, binding.BindingRecommendedCommandName))
+	bindingCmd := binding.NewCmdBinding(binding.BindingRecommendedCommandName, util.GetFullName(fullName, binding.BindingRecommendedCommandName), testClientset)
 	removeCmd.AddCommand(bindingCmd)
 	util.SetCommandGroup(removeCmd, util.ManagementGroup)
 	removeCmd.SetUsageTemplate(util.CmdUsageTemplate)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/set/namespace"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
@@ -13,10 +14,10 @@ import (
 const RecommendedCommandName = "set"
 
 // NewCmdSet implements the namespace odo command
-func NewCmdSet(name, fullName string) *cobra.Command {
+func NewCmdSet(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 
 	namespaceSetCmd := namespace.NewCmdNamespaceSet(namespace.RecommendedCommandName,
-		util.GetFullName(fullName, namespace.RecommendedCommandName))
+		util.GetFullName(fullName, namespace.RecommendedCommandName), testClientset)
 	setCmd := &cobra.Command{
 		Use:   name + " [options]",
 		Short: "Perform set operation",

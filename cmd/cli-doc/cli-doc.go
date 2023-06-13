@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -173,11 +174,12 @@ func main() {
 				fmt.Print(command.Usage())
 			} else {
 				ctx := context.Background()
+				testClientset := clientset.Clientset{}
 				switch args[0] {
 				case "reference":
-					fmt.Print(referencePrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
+					fmt.Print(referencePrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, testClientset), 0))
 				case "structure":
-					fmt.Print(commandPrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName), 0))
+					fmt.Print(commandPrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, testClientset), 0))
 				default:
 					fmt.Print(command.Usage())
 				}

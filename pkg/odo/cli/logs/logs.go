@@ -246,7 +246,7 @@ func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour col
 	return nil
 }
 
-func NewCmdLogs(name, fullname string) *cobra.Command {
+func NewCmdLogs(name, fullname string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewLogsOptions()
 	logsCmd := &cobra.Command{
 		Use:   name,
@@ -256,7 +256,7 @@ By default it shows logs of all containers running in both Dev and Deploy mode. 
 		Example: fmt.Sprintf(logsExample, fullname),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	logsCmd.Flags().BoolVar(&o.devMode, string(DevMode), false, "Show logs for containers running only in Dev mode")

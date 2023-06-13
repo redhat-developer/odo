@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/preference/add"
 	"github.com/redhat-developer/odo/pkg/odo/cli/preference/remove"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 
@@ -21,14 +22,14 @@ var preferenceLongDesc = ktemplates.LongDesc(`Modifies odo specific configuratio
 %[1]s`)
 
 // NewCmdPreference implements the utils config odo command
-func NewCmdPreference(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdPreference(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 
 	// Main Commands
-	preferenceViewCmd := NewCmdView(viewCommandName, util.GetFullName(fullName, viewCommandName))
-	preferenceSetCmd := NewCmdSet(ctx, setCommandName, util.GetFullName(fullName, setCommandName))
-	preferenceUnsetCmd := NewCmdUnset(unsetCommandName, util.GetFullName(fullName, unsetCommandName))
-	preferenceAddCmd := add.NewCmdAdd(add.RecommendedCommandName, util.GetFullName(fullName, add.RecommendedCommandName))
-	preferenceRemoveCmd := remove.NewCmdRemove(remove.RecommendedCommandName, util.GetFullName(fullName, remove.RecommendedCommandName))
+	preferenceViewCmd := NewCmdView(viewCommandName, util.GetFullName(fullName, viewCommandName), testClientset)
+	preferenceSetCmd := NewCmdSet(ctx, setCommandName, util.GetFullName(fullName, setCommandName), testClientset)
+	preferenceUnsetCmd := NewCmdUnset(unsetCommandName, util.GetFullName(fullName, unsetCommandName), testClientset)
+	preferenceAddCmd := add.NewCmdAdd(add.RecommendedCommandName, util.GetFullName(fullName, add.RecommendedCommandName), testClientset)
+	preferenceRemoveCmd := remove.NewCmdRemove(remove.RecommendedCommandName, util.GetFullName(fullName, remove.RecommendedCommandName), testClientset)
 
 	// Subcommands
 

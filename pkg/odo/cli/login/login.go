@@ -91,7 +91,7 @@ func (o *LoginOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdLogin implements the odo command
-func NewCmdLogin(name, fullName string) *cobra.Command {
+func NewCmdLogin(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	loginClient := auth.NewKubernetesClient()
 	o := NewLoginOptions(loginClient)
 
@@ -102,7 +102,7 @@ func NewCmdLogin(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(loginExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 
