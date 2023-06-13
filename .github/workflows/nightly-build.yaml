@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "34 21 * * *"
 
 concurrency: ${{ github.workflow }}
 
