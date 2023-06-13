@@ -85,6 +85,7 @@ func (o *DevClient) reconcile(
 	componentStatus.PostStartEventsDone = true
 
 	innerLoopWithCommands := !parameters.StartOptions.SkipCommands
+	var hasRunOrDebugCmd bool
 	if innerLoopWithCommands {
 		if execRequired {
 			doExecuteBuildCommand := func() error {
@@ -116,7 +117,6 @@ func (o *DevClient) reconcile(
 				cmdKind = devfilev1.DebugCommandGroupKind
 				cmdName = options.DebugCommand
 			}
-			var hasRunOrDebugCmd bool
 			_, hasRunOrDebugCmd, err = libdevfile.GetCommand(parameters.Devfile, cmdName, cmdKind)
 			if err != nil {
 				return err
@@ -154,7 +154,7 @@ func (o *DevClient) reconcile(
 		}
 	}
 
-	if innerLoopWithCommands {
+	if innerLoopWithCommands && hasRunOrDebugCmd && len(fwPorts) != 0 {
 		// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
 		appReadySpinner := log.Spinner("Waiting for the application to be ready")
 		err = o.checkAppPorts(ctx, pod.Name, fwPorts)

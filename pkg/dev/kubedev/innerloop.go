@@ -67,6 +67,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 	}
 	componentStatus.PostStartEventsDone = true
 
+	var hasRunOrDebugCmd bool
 	innerLoopWithCommands := !parameters.StartOptions.SkipCommands
 	if innerLoopWithCommands {
 		var (
@@ -78,10 +79,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			cmdName = parameters.StartOptions.DebugCommand
 		}
 
-		var (
-			cmd              devfilev1.Command
-			hasRunOrDebugCmd bool
-		)
+		var cmd devfilev1.Command
 		cmd, hasRunOrDebugCmd, err = libdevfile.GetCommand(parameters.Devfile, cmdName, cmdKind)
 		if err != nil {
 			return err
@@ -163,6 +161,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 				if err != nil {
 					return err
 				}
+				componentStatus.RunExecuted = true
 			} else {
 				msg := fmt.Sprintf("Missing default %v command", cmdKind)
 				if cmdName != "" {
@@ -177,7 +176,7 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 		o.portForwardClient.StopPortForwarding(ctx, componentName)
 	}
 
-	if innerLoopWithCommands {
+	if innerLoopWithCommands && hasRunOrDebugCmd && len(o.portsToForward) != 0 {
 		// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
 		appReadySpinner := log.Spinner("Waiting for the application to be ready")
 		err = o.checkAppPorts(ctx, pod.Name, o.portsToForward)
