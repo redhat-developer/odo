@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/tests/helper"
@@ -63,7 +64,7 @@ var _ = Describe("odo run command tests", func() {
 
 			})
 			By("failing when trying to run on podman", func() {
-				output := helper.Cmd("odo", "run", "build", "--platform", "podman").ShouldFail().Err()
+				output := helper.Cmd("odo", "run", "build", "--platform", "podman").AddEnv("PODMAN_CMD=false").ShouldFail().Err()
 				Expect(output).To(ContainSubstring(`unable to access podman`))
 			})
 		})
@@ -76,71 +77,75 @@ var _ = Describe("odo run command tests", func() {
 
 		for _, podman := range []bool{false, true} {
 			podman := podman
-			When("odo dev is executed and ready", helper.LabelPodmanIf(podman, func() {
+			for _, noCommands := range []bool{false, true} {
+				noCommands := noCommands
+				When(fmt.Sprintf("odo dev is executed with --no-commands=%v and ready", noCommands), helper.LabelPodmanIf(podman, func() {
 
-				var devSession helper.DevSession
+					var devSession helper.DevSession
 
-				BeforeEach(func() {
-					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-						RunOnPodman: podman,
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				AfterEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should execute commands", func() {
-					platform := "cluster"
-					if podman {
-						platform = "podman"
-					}
-
-					By("executing an exec command and displaying output", func() {
-						output := helper.Cmd("odo", "run", "list-files", "--platform", platform).ShouldPass().Out()
-						Expect(output).To(ContainSubstring("etc"))
-					})
-
-					By("executing an exec command in another container and displaying output", func() {
-						output := helper.Cmd("odo", "run", "list-files-in-other-container", "--platform", platform).ShouldPass().Out()
-						Expect(output).To(ContainSubstring("etc"))
-					})
-
-					if !podman {
-						By("executing apply command on Kubernetes component", func() {
-							output := helper.Cmd("odo", "run", "deploy-config", "--platform", platform).ShouldPass().Out()
-							Expect(output).To(ContainSubstring("Creating resource ConfigMap/my-config"))
-							out := commonVar.CliRunner.Run("get", "configmap", "my-config", "-n",
-								commonVar.Project).Wait().Out.Contents()
-							Expect(out).To(ContainSubstring("my-config"))
+					BeforeEach(func() {
+						var err error
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+							NoCommands:  noCommands,
 						})
-					}
-
-					if podman {
-						By("executing apply command on Image component", func() {
-							// Will fail because Dockerfile is not present, but we just want to check the build is started
-							// We cannot use PODMAN_CMD=echo with --platform=podman
-							output := helper.Cmd("odo", "run", "build-image", "--platform", platform).ShouldFail().Out()
-							Expect(output).To(ContainSubstring("Building image locally"))
-						})
-					} else {
-						By("executing apply command on Image component", func() {
-							output := helper.Cmd("odo", "run", "build-image", "--platform", platform).AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-							Expect(output).To(ContainSubstring("Building image locally"))
-							Expect(output).To(ContainSubstring("Pushing image to container registry"))
-
-						})
-					}
-
-					By("exiting with a status 1 when the exec command fails and displaying error output", func() {
-						out := helper.Cmd("odo", "run", "error-cmd", "--platform", platform).ShouldFail().Err()
-						Expect(out).To(ContainSubstring("No such file or directory"))
+						Expect(err).ToNot(HaveOccurred())
 					})
-				})
-			}))
+
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should execute commands", func() {
+						platform := "cluster"
+						if podman {
+							platform = "podman"
+						}
+
+						By("executing an exec command and displaying output", func() {
+							output := helper.Cmd("odo", "run", "list-files", "--platform", platform).ShouldPass().Out()
+							Expect(output).To(ContainSubstring("etc"))
+						})
+
+						By("executing an exec command in another container and displaying output", func() {
+							output := helper.Cmd("odo", "run", "list-files-in-other-container", "--platform", platform).ShouldPass().Out()
+							Expect(output).To(ContainSubstring("etc"))
+						})
+
+						if !podman {
+							By("executing apply command on Kubernetes component", func() {
+								output := helper.Cmd("odo", "run", "deploy-config", "--platform", platform).ShouldPass().Out()
+								Expect(output).To(ContainSubstring("Creating resource ConfigMap/my-config"))
+								out := commonVar.CliRunner.Run("get", "configmap", "my-config", "-n",
+									commonVar.Project).Wait().Out.Contents()
+								Expect(out).To(ContainSubstring("my-config"))
+							})
+						}
+
+						if podman {
+							By("executing apply command on Image component", func() {
+								// Will fail because Dockerfile is not present, but we just want to check the build is started
+								// We cannot use PODMAN_CMD=echo with --platform=podman
+								output := helper.Cmd("odo", "run", "build-image", "--platform", platform).ShouldFail().Out()
+								Expect(output).To(ContainSubstring("Building image locally"))
+							})
+						} else {
+							By("executing apply command on Image component", func() {
+								output := helper.Cmd("odo", "run", "build-image", "--platform", platform).AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+								Expect(output).To(ContainSubstring("Building image locally"))
+								Expect(output).To(ContainSubstring("Pushing image to container registry"))
+
+							})
+						}
+
+						By("exiting with a status 1 when the exec command fails and displaying error output", func() {
+							out := helper.Cmd("odo", "run", "error-cmd", "--platform", platform).ShouldFail().Err()
+							Expect(out).To(ContainSubstring("No such file or directory"))
+						})
+					})
+				}))
+			}
 		}
 	})
 })
