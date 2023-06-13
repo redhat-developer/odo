@@ -78,50 +78,57 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 			cmdName = parameters.StartOptions.DebugCommand
 		}
 
-		var cmd devfilev1.Command
-		cmd, err = libdevfile.ValidateAndGetCommand(parameters.Devfile, cmdName, cmdKind)
+		var (
+			cmd              devfilev1.Command
+			hasRunOrDebugCmd bool
+		)
+		cmd, hasRunOrDebugCmd, err = libdevfile.GetCommand(parameters.Devfile, cmdName, cmdKind)
 		if err != nil {
 			return err
 		}
 
-		var commandType devfilev1.CommandType
-		commandType, err = parsercommon.GetCommandType(cmd)
-		if err != nil {
-			return err
-		}
 		var running bool
 		var isComposite bool
-
-		cmdHandler := component.NewRunHandler(
-			ctx,
-			o.kubernetesClient,
-			o.execClient,
-			o.configAutomountClient,
-			o.filesystem,
-			image.SelectBackend(ctx),
-			component.HandlerOptions{
-				PodName:           pod.GetName(),
-				ContainersRunning: component.GetContainersNames(pod),
-				Devfile:           parameters.Devfile,
-				Path:              path,
-			},
-		)
-
-		if commandType == devfilev1.ExecCommandType {
-			running, err = cmdHandler.IsRemoteProcessForCommandRunning(ctx, cmd, pod.Name)
+		var runHandler libdevfile.Handler
+		if hasRunOrDebugCmd {
+			var commandType devfilev1.CommandType
+			commandType, err = parsercommon.GetCommandType(cmd)
 			if err != nil {
 				return err
 			}
-		} else if commandType == devfilev1.CompositeCommandType {
-			// this handler will run each command in this composite command individually,
-			// and will determine whether each command is running or not.
-			isComposite = true
-		} else {
-			return fmt.Errorf("unsupported type %q for Devfile command %s, only exec and composite are handled",
-				commandType, cmd.Id)
-		}
 
-		cmdHandler.ComponentExists = running || isComposite
+			cmdHandler := component.NewRunHandler(
+				ctx,
+				o.kubernetesClient,
+				o.execClient,
+				o.configAutomountClient,
+				o.filesystem,
+				image.SelectBackend(ctx),
+				component.HandlerOptions{
+					PodName:           pod.GetName(),
+					ContainersRunning: component.GetContainersNames(pod),
+					Devfile:           parameters.Devfile,
+					Path:              path,
+				},
+			)
+
+			if commandType == devfilev1.ExecCommandType {
+				running, err = cmdHandler.IsRemoteProcessForCommandRunning(ctx, cmd, pod.Name)
+				if err != nil {
+					return err
+				}
+			} else if commandType == devfilev1.CompositeCommandType {
+				// this handler will run each command in this composite command individually,
+				// and will determine whether each command is running or not.
+				isComposite = true
+			} else {
+				return fmt.Errorf("unsupported type %q for Devfile command %s, only exec and composite are handled",
+					commandType, cmd.Id)
+			}
+
+			cmdHandler.ComponentExists = running || isComposite
+			runHandler = cmdHandler
+		}
 
 		klog.V(4).Infof("running=%v, execRequired=%v",
 			running, execRequired)
@@ -151,9 +158,17 @@ func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParamet
 				return err
 			}
 
-			err = libdevfile.ExecuteCommandByNameAndKind(ctx, parameters.Devfile, cmdName, cmdKind, cmdHandler, false)
-			if err != nil {
-				return err
+			if hasRunOrDebugCmd {
+				err = libdevfile.ExecuteCommandByNameAndKind(ctx, parameters.Devfile, cmdName, cmdKind, runHandler, false)
+				if err != nil {
+					return err
+				}
+			} else {
+				msg := fmt.Sprintf("Missing default %v command", cmdKind)
+				if cmdName != "" {
+					msg = fmt.Sprintf("Missing %v command with name %q", cmdKind, cmdName)
+				}
+				log.Warning(msg)
 			}
 		}
 	}

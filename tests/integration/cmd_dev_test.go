@@ -4913,40 +4913,18 @@ CMD ["npm", "start"]
 					cmpName)
 			})
 
-			for _, noCommandsFlag := range []string{"", "--no-commands", "--no-commands=false"} {
-				noCommandsFlag := noCommandsFlag
-				suffix := "without --no-commands"
-				if noCommandsFlag != "" {
-					suffix = "with " + noCommandsFlag
-				}
-
-				It("should start the Dev Session "+suffix, func() {
-					var args []string
-					if noCommandsFlag != "" {
-						args = append(args, noCommandsFlag)
-					}
-					opts := helper.DevSessionOpts{
+			for _, noCommands := range []bool{false, true} {
+				noCommands := noCommands
+				It(fmt.Sprintf("should start the Dev Session with --no-commands=%v", noCommands), func() {
+					devSession, stdout, stderr, ports, err := helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
-						CmdlineArgs: args,
-					}
-					devSession, stdout, stderr, ports, err := helper.StartDevMode(opts)
+						NoCommands:  noCommands,
+					})
 					Expect(err).ShouldNot(HaveOccurred())
 					defer func() {
 						devSession.Stop()
 						devSession.WaitEnd()
 					}()
-
-					By("not executing any build command", func() {
-						for _, out := range [][]byte{stdout, stderr} {
-							Expect(string(out)).ShouldNot(ContainSubstring("Building your application in container on cluster"))
-						}
-					})
-
-					By("not executing any run command", func() {
-						for _, out := range [][]byte{stdout, stderr} {
-							Expect(out).ShouldNot(ContainSubstring("Executing the application"))
-						}
-					})
 
 					By("syncing the files", func() {
 						Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
@@ -4960,6 +4938,24 @@ CMD ["npm", "start"]
 						execResult, _ = component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
 						Expect(execResult).Should(ContainSubstring("App started"))
 					})
+
+					By("not executing any build command", func() {
+						for _, out := range [][]byte{stdout, stderr} {
+							Expect(string(out)).ShouldNot(ContainSubstring("Building your application in container on cluster"))
+						}
+					})
+
+					By("not executing any run command", func() {
+						for _, out := range [][]byte{stdout, stderr} {
+							Expect(string(out)).ShouldNot(ContainSubstring("Executing the application"))
+						}
+					})
+
+					if !noCommands {
+						By("warning about missing default run command", func() {
+							Expect(string(stderr)).Should(ContainSubstring("Missing default run command"))
+						})
+					}
 
 					By("setting up port forwarding", func() {
 						Expect(ports).ShouldNot(BeEmpty())

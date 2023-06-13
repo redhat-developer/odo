@@ -116,28 +116,41 @@ func (o *DevClient) reconcile(
 				cmdKind = devfilev1.DebugCommandGroupKind
 				cmdName = options.DebugCommand
 			}
-
-			cmdHandler := component.NewRunHandler(
-				ctx,
-				o.podmanClient,
-				o.execClient,
-				nil, // TODO(feloy) set this value when we want to support exec on new container on podman
-
-				o.fs,
-				image.SelectBackend(ctx),
-
-				// TODO(feloy) set to deploy Kubernetes/Openshift components
-				component.HandlerOptions{
-					PodName:           pod.Name,
-					ComponentExists:   componentStatus.RunExecuted,
-					ContainersRunning: component.GetContainersNames(pod),
-				},
-			)
-			err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
+			var hasRunOrDebugCmd bool
+			_, hasRunOrDebugCmd, err = libdevfile.GetCommand(parameters.Devfile, cmdName, cmdKind)
 			if err != nil {
 				return err
 			}
-			componentStatus.RunExecuted = true
+
+			if hasRunOrDebugCmd {
+				cmdHandler := component.NewRunHandler(
+					ctx,
+					o.podmanClient,
+					o.execClient,
+					nil, // TODO(feloy) set this value when we want to support exec on new container on podman
+
+					o.fs,
+					image.SelectBackend(ctx),
+
+					// TODO(feloy) set to deploy Kubernetes/Openshift components
+					component.HandlerOptions{
+						PodName:           pod.Name,
+						ComponentExists:   componentStatus.RunExecuted,
+						ContainersRunning: component.GetContainersNames(pod),
+					},
+				)
+				err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
+				if err != nil {
+					return err
+				}
+				componentStatus.RunExecuted = true
+			} else {
+				msg := fmt.Sprintf("Missing default %v command", cmdKind)
+				if cmdName != "" {
+					msg = fmt.Sprintf("Missing %v command with name %q", cmdKind, cmdName)
+				}
+				log.Warning(msg)
+			}
 		}
 	}
 
