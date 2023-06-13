@@ -11,6 +11,8 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/sethvargo/go-envconfig"
 	"github.com/spf13/pflag"
 	"k8s.io/klog"
 )
@@ -21,17 +23,24 @@ func resetGlobalFlags() {
 	klog.InitFlags(nil)
 }
 
+type runOptions struct {
+	env    map[string]string
+	config map[string]string
+}
+
 func runCommand(
 	t *testing.T,
 	args []string,
+	options runOptions,
 	clientset clientset.Clientset,
+	populateFS func(fs filesystem.Filesystem),
 	f func(err error, stdout, stderr string),
 ) {
 
 	// We are running the test on a new and empty directory (on real filesystem)
 	originWd, err := os.Getwd()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer func() {
 		_ = os.Chdir(originWd)
@@ -39,15 +48,24 @@ func runCommand(
 	cwd := t.TempDir()
 	err = os.Chdir(cwd)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
+	}
+
+	if populateFS != nil {
+		populateFS(clientset.FS)
 	}
 
 	ctx := context.Background()
-	envConfig, err := config.GetConfiguration()
+	envConfig, err := config.GetConfigurationWith(envconfig.MapLookuper(options.config))
+
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+
+	for k, v := range options.env {
+		t.Setenv(k, v)
+	}
 
 	resetGlobalFlags()
 

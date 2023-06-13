@@ -238,10 +238,25 @@ func Printf(format string, a ...interface{}) {
 	}
 }
 
+// Fprintf will output in an appropriate "information" manner; for e.g.
+// • <message>
+func Fprintf(w io.Writer, format string, a ...interface{}) {
+	if !IsJSON() {
+		fmt.Fprintf(w, "%s%s%s%s\n", prefixSpacing, getSpacingString(), suffixSpacing, fmt.Sprintf(format, a...))
+	}
+}
+
 // Println will output a new line when applicable
 func Println() {
 	if !IsJSON() {
 		fmt.Fprintln(GetStdout())
+	}
+}
+
+// Fprintln will output a new line when applicable
+func Fprintln(w io.Writer) {
+	if !IsJSON() {
+		fmt.Fprintln(w)
 	}
 }
 
@@ -288,6 +303,16 @@ func Warningf(format string, a ...interface{}) {
 	if !IsJSON() {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
+}
+
+// Fwarningf will output in an appropriate "warning" manner
+//
+//	⚠ <message>
+func Fwarningf(w io.Writer, format string, a ...interface{}) {
+	if !IsJSON() {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		fmt.Fprintf(w, " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 	}
 }
 
@@ -384,12 +409,30 @@ func Errorf(format string, a ...interface{}) {
 	}
 }
 
+// Ferrorf will output in an appropriate "progress" manner
+// ✗ <message>
+func Ferrorf(w io.Writer, format string, a ...interface{}) {
+	if !IsJSON() {
+		red := color.New(color.FgRed).SprintFunc()
+		fmt.Fprintf(w, " %s%s%s\n", red(getErrString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
+}
+
 // Error will output in an appropriate "progress" manner
 // ✗ <message>
 func Error(a ...interface{}) {
 	if !IsJSON() {
 		red := color.New(color.FgRed).SprintFunc()
 		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
+	}
+}
+
+// Frror will output in an appropriate "progress" manner
+// ✗ <message>
+func Ferror(w io.Writer, a ...interface{}) {
+	if !IsJSON() {
+		red := color.New(color.FgRed).SprintFunc()
+		fmt.Fprintf(w, "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 
@@ -475,6 +518,16 @@ func Spinner(status string) *Status {
 // for situations where spinning isn't viable (debug)
 func Spinnerf(format string, a ...interface{}) *Status {
 	s := NewStatus(GetStdout())
+	s.Start(fmt.Sprintf(format, a...), IsDebug())
+	return s
+}
+
+// Fspinnerf creates a spinner, sets the prefix then returns it.
+// Remember to use .End(bool) to stop the spin / when you're done.
+// For example: defer s.End(false)
+// for situations where spinning isn't viable (debug)
+func Fspinnerf(w io.Writer, format string, a ...interface{}) *Status {
+	s := NewStatus(w)
 	s.Start(fmt.Sprintf(format, a...), IsDebug())
 	return s
 }

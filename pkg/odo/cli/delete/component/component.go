@@ -141,7 +141,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 	}
 	remainingResources, err := o.deleteDevfileComponent(ctx)
 	if err == nil {
-		printRemainingResources(ctx, remainingResources)
+		o.printRemainingResources(ctx, remainingResources)
 	}
 	return err
 }
@@ -155,7 +155,7 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 		podmanResources  []*corev1.Pod
 		err              error
 	)
-	log.Info("Searching resources to delete, please wait...")
+	log.Finfof(o.clientset.Stdout, "Searching resources to delete, please wait...")
 	if o.clientset.KubernetesClient != nil {
 		clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDelete(ctx, o.name, o.namespace, o.runningIn)
 		if err != nil {
@@ -171,37 +171,37 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	}
 
 	if len(clusterResources) == 0 && len(podmanResources) == 0 {
-		log.Infof(messageWithPlatforms(
+		log.Finfof(o.clientset.Stdout, messageWithPlatforms(
 			o.clientset.KubernetesClient != nil,
 			o.clientset.PodmanClient != nil,
 			o.name, o.namespace,
 		))
 		return nil
 	}
-	printDevfileComponents(o.name, o.namespace, clusterResources, podmanResources)
+	o.printDevfileComponents(o.name, o.namespace, clusterResources, podmanResources)
 
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
 
 		if len(clusterResources) > 0 {
-			spinner := log.Spinnerf("Deleting resources from cluster")
+			spinner := log.Fspinnerf(o.clientset.Stdout, "Deleting resources from cluster")
 			failed := o.clientset.DeleteClient.DeleteResources(clusterResources, o.waitFlag)
 			for _, fail := range failed {
-				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+				log.Fwarningf(o.clientset.Stderr, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
 			spinner.End(true)
 			successMsg := fmt.Sprintf("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
 			if o.runningIn != "" {
 				successMsg = fmt.Sprintf("The component %q running in the %s mode is successfully deleted from namespace %q", o.name, o.runningIn, o.namespace)
 			}
-			log.Info(successMsg)
+			log.Finfof(o.clientset.Stdout, successMsg)
 		}
 
 		if len(podmanResources) > 0 {
-			spinner := log.Spinnerf("Deleting resources from podman")
+			spinner := log.Fspinnerf(o.clientset.Stdout, "Deleting resources from podman")
 			for _, pod := range podmanResources {
 				err = o.clientset.PodmanClient.CleanupPodResources(pod, true)
 				if err != nil {
-					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
+					log.Fwarningf(o.clientset.Stderr, "Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
 			}
 			spinner.End(true)
@@ -209,13 +209,13 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 			if o.runningIn != "" {
 				successMsg = fmt.Sprintf("The component %q running in the %s mode is successfully deleted podman", o.name, o.runningIn)
 			}
-			log.Info(successMsg)
+			log.Finfof(o.clientset.Stdout, successMsg)
 		}
 
 		return nil
 	}
 
-	log.Error("Aborting deletion of component")
+	log.Ferror(o.clientset.Stderr, "Aborting deletion of component")
 	return nil
 }
 
@@ -231,17 +231,17 @@ func messageWithPlatforms(cluster, podman bool, name, namespace string) string {
 }
 
 // printRemainingResources lists the remaining cluster resources that are not found in the devfile.
-func printRemainingResources(ctx context.Context, remainingResources []unstructured.Unstructured) {
+func (o *ComponentOptions) printRemainingResources(ctx context.Context, remainingResources []unstructured.Unstructured) {
 	if len(remainingResources) == 0 {
 		return
 	}
 	componentName := odocontext.GetComponentName(ctx)
 	namespace := odocontext.GetNamespace(ctx)
-	log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
+	log.Fprintf(o.clientset.Stdout, "There are still resources left in the cluster that might be belonging to the deleted component.")
 	for _, resource := range remainingResources {
-		fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+		fmt.Fprintf(o.clientset.Stdout, "\t- %s: %s\n", resource.GetKind(), resource.GetName())
 	}
-	log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
+	log.Finfof(o.clientset.Stdout, "If you want to delete those, execute `odo delete component --name %s --namespace %s`\n", componentName, namespace)
 }
 
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
@@ -265,14 +265,14 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 		err error
 	)
 
-	log.Info("Searching resources to delete, please wait...")
+	log.Finfof(o.clientset.Stdout, "Searching resources to delete, please wait...")
 
 	if o.clientset.KubernetesClient != nil {
 		isClusterInnerLoopDeployed, clusterResources, err = o.clientset.DeleteClient.ListClusterResourcesToDeleteFromDevfile(
 			*devfileObj, appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
-				log.Warning(err.Error())
+				log.Fwarning(o.clientset.Stderr, err.Error())
 			} else {
 				return nil, err
 			}
@@ -291,7 +291,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 		isPodmanInnerLoopDeployed, podmanPods, err = o.clientset.DeleteClient.ListPodmanResourcesToDelete(appName, componentName, o.runningIn)
 		if err != nil {
 			if clierrors.AsWarning(err) {
-				log.Warning(err.Error())
+				log.Fwarning(o.clientset.Stderr, err.Error())
 			} else {
 				return nil, err
 			}
@@ -300,14 +300,14 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 	}
 
 	if !(hasClusterResources || hasPodmanResources) {
-		log.Infof(messageWithPlatforms(o.clientset.KubernetesClient != nil, o.clientset.PodmanClient != nil, componentName, namespace))
+		log.Finfof(o.clientset.Stdout, messageWithPlatforms(o.clientset.KubernetesClient != nil, o.clientset.PodmanClient != nil, componentName, namespace))
 		if !o.withFilesFlag {
 			// check for resources here
 			return remainingResources, nil
 		}
 	}
 
-	printDevfileComponents(componentName, namespace, clusterResources, podmanPods)
+	o.printDevfileComponents(componentName, namespace, clusterResources, podmanPods)
 
 	var filesToDelete []string
 	if o.withFilesFlag {
@@ -315,7 +315,7 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 		if err != nil {
 			return nil, err
 		}
-		printFileCreatedByOdo(filesToDelete, hasClusterResources)
+		o.printFileCreatedByOdo(filesToDelete, hasClusterResources)
 	}
 	hasFilesToDelete := len(filesToDelete) != 0
 
@@ -331,29 +331,29 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 	if o.forceFlag || ui.Proceed(msg) {
 
 		if hasClusterResources {
-			spinner := log.Spinnerf("Deleting resources from cluster")
+			spinner := log.Fspinnerf(o.clientset.Stdout, "Deleting resources from cluster")
 
 			// if innerloop deployment resource is present, then execute preStop events
 			if isClusterInnerLoopDeployed {
 				err = o.clientset.DeleteClient.ExecutePreStopEvents(ctx, *devfileObj, appName, componentName)
 				if err != nil {
-					log.Errorf("Failed to execute preStop events: %v", err)
+					log.Ferrorf(o.clientset.Stderr, "Failed to execute preStop events: %v", err)
 				}
 			}
 
 			// delete all the resources
 			failed := o.clientset.DeleteClient.DeleteResources(clusterResources, o.waitFlag)
 			for _, fail := range failed {
-				log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+				log.Fwarningf(o.clientset.Stderr, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
 
 			spinner.End(true)
-			log.Infof("The component %q is successfully deleted from namespace %q\n", componentName, namespace)
+			log.Finfof(o.clientset.Stdout, "The component %q is successfully deleted from namespace %q\n", componentName, namespace)
 
 		}
 
 		if hasPodmanResources {
-			spinner := log.Spinnerf("Deleting resources from podman")
+			spinner := log.Fspinnerf(o.clientset.Stdout, "Deleting resources from podman")
 			if isPodmanInnerLoopDeployed {
 				// TODO(feloy) #6424
 				_ = isPodmanInnerLoopDeployed
@@ -361,11 +361,11 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 			for _, pod := range podmanPods {
 				err = o.clientset.PodmanClient.CleanupPodResources(pod, true)
 				if err != nil {
-					log.Warningf("Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
+					log.Fwarningf(o.clientset.Stderr, "Failed to delete the pod %q from podman: %s\n", pod.GetName(), err)
 				}
 			}
 			spinner.End(true)
-			log.Infof("The component %q is successfully deleted from podman", componentName)
+			log.Finfof(o.clientset.Stdout, "The component %q is successfully deleted from podman", componentName)
 		}
 
 		if o.withFilesFlag {
@@ -373,19 +373,19 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 			remainingFiles := o.deleteFilesCreatedByOdo(o.clientset.FS, filesToDelete)
 			var listOfFiles []string
 			for f, e := range remainingFiles {
-				log.Warningf("Failed to delete file or directory: %s: %v\n", f, e)
+				log.Fwarningf(o.clientset.Stderr, "Failed to delete file or directory: %s: %v\n", f, e)
 				listOfFiles = append(listOfFiles, "\t- "+f)
 			}
 			if len(remainingFiles) != 0 {
-				log.Printf("There are still files or directories that could not be deleted.")
-				fmt.Println(strings.Join(listOfFiles, "\n"))
-				log.Info("You need to manually delete those.")
+				log.Fprintf(o.clientset.Stdout, "There are still files or directories that could not be deleted.")
+				fmt.Fprintln(o.clientset.Stdout, strings.Join(listOfFiles, "\n"))
+				log.Finfof(o.clientset.Stdout, "You need to manually delete those.")
 			}
 		}
 		return remainingResources, nil
 	}
 
-	log.Error("Aborting deletion of component")
+	log.Ferror(o.clientset.Stderr, "Aborting deletion of component")
 	return remainingResources, nil
 }
 
@@ -410,12 +410,12 @@ func listResourcesMissingFromDevfilePresentOnCluster(componentName string, devfi
 }
 
 // printDevfileResources prints the devfile components for ComponentOptions.deleteDevfileComponent
-func printDevfileComponents(
+func (o *ComponentOptions) printDevfileComponents(
 	componentName, namespace string,
 	k8sResources []unstructured.Unstructured,
 	podmanResources []*corev1.Pod,
 ) {
-	log.Infof(infoMsg(
+	log.Finfof(o.clientset.Stdout, infoMsg(
 		len(k8sResources) != 0,
 		len(podmanResources) != 0,
 		componentName,
@@ -423,19 +423,19 @@ func printDevfileComponents(
 	))
 
 	if len(k8sResources) != 0 {
-		log.Printf("The following resources will get deleted from cluster:")
+		log.Fprintf(o.clientset.Stdout, "The following resources will get deleted from cluster:")
 		for _, resource := range k8sResources {
-			log.Printf("\t- %s: %s", resource.GetKind(), resource.GetName())
+			log.Fprintf(o.clientset.Stdout, "\t- %s: %s", resource.GetKind(), resource.GetName())
 		}
-		log.Println()
+		log.Fprintln(o.clientset.Stdout)
 	}
 
 	if len(podmanResources) != 0 {
-		log.Printf("The following pods and associated volumes will get deleted from podman:")
+		log.Fprintf(o.clientset.Stdout, "The following pods and associated volumes will get deleted from podman:")
 		for _, pod := range podmanResources {
-			log.Printf("\t- %s", pod.GetName())
+			log.Fprintf(o.clientset.Stdout, "\t- %s", pod.GetName())
 		}
-		log.Println()
+		log.Fprintln(o.clientset.Stdout)
 	}
 }
 
@@ -477,7 +477,7 @@ func getFilesCreatedByOdo(filesys filesystem.Filesystem, ctx context.Context) ([
 	return list, nil
 }
 
-func printFileCreatedByOdo(files []string, hasClusterResources bool) {
+func (o *ComponentOptions) printFileCreatedByOdo(files []string, hasClusterResources bool) {
 	if len(files) == 0 {
 		return
 	}
@@ -486,9 +486,9 @@ func printFileCreatedByOdo(files []string, hasClusterResources bool) {
 	if hasClusterResources {
 		m += "also "
 	}
-	log.Info(m + "delete the following files and directories:")
+	log.Finfof(o.clientset.Stdout, m+"delete the following files and directories:")
 	for _, f := range files {
-		fmt.Println("\t- " + f)
+		fmt.Fprintln(o.clientset.Stdout, "\t- "+f)
 	}
 }
 

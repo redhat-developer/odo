@@ -70,7 +70,7 @@ func TestOdoAlizer(t *testing.T) {
 				var output []api.DetectionResult
 				err := json.Unmarshal(b, &output)
 				if err != nil {
-					t.Error(err)
+					t.Fatal(err)
 				}
 				checkEqual(t, output[0].Devfile, "framework-name")
 				checkEqual(t, output[0].DevfileRegistry, "TheRegistryName")
@@ -86,26 +86,26 @@ func TestOdoAlizer(t *testing.T) {
 			if tt.clientset != nil {
 				clientset = tt.clientset()
 			}
-			runCommand(t, tt.args, clientset, func(err error, stdout, stderr string) {
+			runCommand(t, tt.args, runOptions{}, clientset, nil, func(err error, stdout, stderr string) {
 				if (err != nil) != (tt.wantErr != "") {
 					t.Fatalf("errWanted: %v\nGot: %v", tt.wantErr != "", err != nil)
 				}
 
 				if tt.wantErr != "" {
 					if !strings.Contains(err.Error(), tt.wantErr) {
-						t.Fatalf("%q\nerror does not contain:\n%q", err.Error(), tt.wantErr)
+						t.Errorf("%q\nerror does not contain:\n%q", err.Error(), tt.wantErr)
 					}
 				}
 
 				if tt.wantStdout != "" {
 					if !strings.Contains(stdout, tt.wantStdout) {
-						t.Fatalf("%q\nstdout does not contain:\n%q", stdout, tt.wantStdout)
+						t.Errorf("%q\nstdout does not contain:\n%q", stdout, tt.wantStdout)
 					}
 				}
 
 				if tt.wantStderr != "" {
 					if !strings.Contains(stderr, tt.wantStderr) {
-						t.Fatalf("%q\nstderr does not contain:\n%q", stderr, tt.wantStderr)
+						t.Errorf("%q\nstderr does not contain:\n%q", stderr, tt.wantStderr)
 					}
 				}
 

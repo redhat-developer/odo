@@ -377,6 +377,8 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				forceFlag: tt.fields.forceFlag,
 				runningIn: tt.fields.runningIn,
 				clientset: &clientset.Clientset{
+					Stdout:           os.Stdout,
+					Stderr:           os.Stderr,
 					KubernetesClient: tt.fields.kubernetesClient(ctrl),
 					DeleteClient:     tt.fields.deleteComponentClient(ctrl),
 					PodmanClient:     tt.fields.podmanClient(ctrl),
@@ -643,6 +645,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				forceFlag: tt.fields.forceFlag,
 				runningIn: tt.fields.runningIn,
 				clientset: &clientset.Clientset{
+					Stdout:           os.Stdout,
+					Stderr:           os.Stderr,
 					KubernetesClient: kubeClient,
 					DeleteClient:     deleteClient,
 				},
