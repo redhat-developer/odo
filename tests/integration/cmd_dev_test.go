@@ -193,6 +193,88 @@ echo "$@"
 				errOut := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(errOut).To(ContainSubstring("--random-ports and --port-forward cannot be used together"))
 			}))
+
+			for _, opts := range [][]string{
+				{"--build-command", "my-build-cmd"},
+				{"--run-command", "my-run-cmd"},
+				{"--build-command", "my-build-cmd", "--run-command", "my-run-cmd"},
+			} {
+				opts := opts
+				It("should fail when using --no-commands and --build-command and/or --run-command together", helper.LabelPodmanIf(podman, func() {
+					args := []string{"dev", "--no-commands"}
+					args = append(args, opts...)
+					if podman {
+						args = append(args, "--platform", "podman")
+					}
+					errOut := helper.Cmd("odo", args...).ShouldFail().Err()
+					Expect(errOut).To(ContainSubstring("--no-commands cannot be used with --build-command or --run-command"))
+				}))
+			}
+
+			for _, debug := range []bool{false, true} {
+				debug := debug
+				When(fmt.Sprintf("running with --no-commands (debug=%v)", debug), helper.LabelPodmanIf(podman, func() {
+					var devSession helper.DevSession
+					var stdout, stderr string
+					var ports map[string]string
+					BeforeEach(func() {
+						args := []string{"--no-commands"}
+						if debug {
+							args = append(args, "--debug")
+						}
+						opts := helper.DevSessionOpts{
+							RunOnPodman: podman,
+							CmdlineArgs: args,
+						}
+
+						var outB, errB []byte
+						var err error
+						devSession, outB, errB, ports, err = helper.StartDevMode(opts)
+						Expect(err).ShouldNot(HaveOccurred())
+						stdout = string(outB)
+						stderr = string(errB)
+					})
+
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should start the dev session", func() {
+
+						By("not executing the build command", func() {
+							for _, out := range []string{stdout, stderr} {
+								Expect(out).ShouldNot(ContainSubstring("Building your application in container on cluster"))
+							}
+						})
+
+						By("not executing the run command", func() {
+							for _, out := range []string{stdout, stderr} {
+								Expect(out).ShouldNot(ContainSubstring("Executing the application"))
+							}
+						})
+
+						By("syncing the files", func() {
+							Expect(stdout).Should(ContainSubstring("Syncing files into the container"))
+
+							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+							execResult, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
+							for _, fileName := range []string{"server.js", "package.json"} {
+								Expect(execResult).Should(ContainSubstring(fileName))
+							}
+
+							execResult, _ = component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
+							Expect(execResult).Should(ContainSubstring("App started"))
+						})
+
+						By("setting up port forwarding", func() {
+							Expect(ports).ShouldNot(BeEmpty())
+							_, ok := ports["3000"]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("missing port forwarded for 3000: %v", ports))
+						})
+					})
+				}))
+			}
 		}
 
 		It("ensure that index information is updated", func() {
@@ -559,58 +641,70 @@ ComponentSettings:
 
 		for _, podman := range []bool{true, false} {
 			podman := podman
-			When("odo is executed with --no-watch flag", helper.LabelPodmanIf(podman, func() {
+			for _, noCommandsFlag := range []string{"", "--no-commands", "--no-commands=false"} {
+				noCommandsFlag := noCommandsFlag
+				suffix := "without --no-commands"
+				if noCommandsFlag != "" {
+					suffix = "with " + noCommandsFlag
+				}
 
-				var devSession helper.DevSession
+				When("odo is executed with --no-watch flag and "+suffix, helper.LabelPodmanIf(podman, func() {
 
-				BeforeEach(func() {
-					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-						CmdlineArgs: []string{"--no-watch"},
-						RunOnPodman: podman,
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				AfterEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				When("a file in component directory is modified", func() {
+					var devSession helper.DevSession
 
 					BeforeEach(func() {
-						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+						var err error
+						args := []string{"--no-watch"}
+						if noCommandsFlag != "" {
+							args = append(args, noCommandsFlag)
+						}
+						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs: args,
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
 					})
 
-					It("should not trigger a push", func() {
-						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
-						Expect(execResult).To(ContainSubstring("App started"))
-						Expect(execResult).ToNot(ContainSubstring("App is super started"))
-
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
 					})
 
-					When("p is pressed", func() {
+					When("a file in component directory is modified", func() {
 
 						BeforeEach(func() {
-							if os.Getenv("SKIP_KEY_PRESS") == "true" {
-								Skip("This is a unix-terminal specific scenario, skipping")
-							}
-
-							devSession.PressKey('p')
+							helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 						})
 
-						It("should trigger a push", func() {
-							_, _, _, err := devSession.WaitSync()
-							Expect(err).ToNot(HaveOccurred())
+						It("should not trigger a push", func() {
 							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 							execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
-							Expect(execResult).To(ContainSubstring("App is super started"))
+							Expect(execResult).To(ContainSubstring("App started"))
+							Expect(execResult).ToNot(ContainSubstring("App is super started"))
+
+						})
+
+						When("p is pressed", func() {
+
+							BeforeEach(func() {
+								if os.Getenv("SKIP_KEY_PRESS") == "true" {
+									Skip("This is a unix-terminal specific scenario, skipping")
+								}
+
+								devSession.PressKey('p')
+							})
+
+							It("should trigger a push", func() {
+								_, _, _, err := devSession.WaitSync()
+								Expect(err).ToNot(HaveOccurred())
+								component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+								execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
+								Expect(execResult).To(ContainSubstring("App is super started"))
+							})
 						})
 					})
-				})
-			}))
+				}))
+			}
 		}
 
 		When("a delay is necessary for the component to start and running odo dev", func() {
@@ -4805,5 +4899,71 @@ CMD ["npm", "start"]
 			})
 		}))
 
+	}
+
+	for _, podman := range []bool{false, true} {
+		podman := podman
+
+		When("using a Devfile with no commands", helper.LabelPodmanIf(podman, func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-without-commands.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
+			})
+
+			for _, noCommands := range []bool{false, true} {
+				noCommands := noCommands
+				It(fmt.Sprintf("should start the Dev Session with --no-commands=%v", noCommands), func() {
+					devSession, stdout, stderr, ports, err := helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+						NoCommands:  noCommands,
+					})
+					Expect(err).ShouldNot(HaveOccurred())
+					defer func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					}()
+
+					By("syncing the files", func() {
+						Expect(string(stdout)).Should(ContainSubstring("Syncing files into the container"))
+
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						execResult, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
+						for _, fileName := range []string{"server.js", "package.json"} {
+							Expect(execResult).Should(ContainSubstring(fileName))
+						}
+
+						execResult, _ = component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
+						Expect(execResult).Should(ContainSubstring("App started"))
+					})
+
+					By("not executing any build command", func() {
+						for _, out := range [][]byte{stdout, stderr} {
+							Expect(string(out)).ShouldNot(ContainSubstring("Building your application in container on cluster"))
+						}
+					})
+
+					By("not executing any run command", func() {
+						for _, out := range [][]byte{stdout, stderr} {
+							Expect(string(out)).ShouldNot(ContainSubstring("Executing the application"))
+						}
+					})
+
+					if !noCommands {
+						By("warning about missing default run command", func() {
+							Expect(string(stderr)).Should(ContainSubstring("Missing default run command"))
+						})
+					}
+
+					By("setting up port forwarding", func() {
+						Expect(ports).ShouldNot(BeEmpty())
+						_, ok := ports["3000"]
+						Expect(ok).To(BeTrue(), fmt.Sprintf("missing port forwarded for 3000: %v", ports))
+					})
+				})
+			}
+		}))
 	}
 })

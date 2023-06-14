@@ -23,7 +23,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
-	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -70,6 +69,7 @@ type DevOptions struct {
 	forwardLocalhostFlag bool
 	portForwardFlag      []string
 	addressFlag          string
+	noCommandsFlag       bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -113,11 +113,10 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 
 func (o *DevOptions) Validate(ctx context.Context) error {
 	devfileObj := *odocontext.GetEffectiveDevfileObj(ctx)
-	if !o.debugFlag && !libdevfile.HasRunCommand(devfileObj.Data) {
-		return clierrors.NewNoCommandInDevfileError("run")
-	}
-	if o.debugFlag && !libdevfile.HasDebugCommand(devfileObj.Data) {
-		return clierrors.NewNoCommandInDevfileError("debug")
+	if o.noCommandsFlag {
+		if o.buildCommandFlag != "" || o.runCommandFlag != "" {
+			return errors.New("--no-commands cannot be used with --build-command or --run-command")
+		}
 	}
 
 	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
@@ -250,6 +249,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Debug:                o.debugFlag,
 			BuildCommand:         o.buildCommandFlag,
 			RunCommand:           o.runCommandFlag,
+			SkipCommands:         o.noCommandsFlag,
 			RandomPorts:          o.randomPortsFlag,
 			WatchFiles:           !o.noWatchFlag,
 			IgnoreLocalhost:      o.ignoreLocalhostFlag,
@@ -309,6 +309,8 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
+	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
+
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,

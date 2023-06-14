@@ -123,6 +123,7 @@ type DevSessionOpts struct {
 	TimeoutInSeconds int
 	NoRandomPorts    bool
 	NoWatch          bool
+	NoCommands       bool
 	CustomAddress    string
 }
 
@@ -140,6 +141,9 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 	}
 
 	args := []string{"dev"}
+	if options.NoCommands {
+		args = append(args, "--no-commands")
+	}
 	if !options.NoRandomPorts {
 		args = append(args, "--random-ports")
 	}
