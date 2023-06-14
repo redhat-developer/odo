@@ -132,7 +132,7 @@ var _ = Describe("odo list with devfile", func() {
 		When("dev is running on cluster", func() {
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -231,7 +231,7 @@ var _ = Describe("odo list with devfile", func() {
 		When("dev is running on podman", Label(helper.LabelPodman), func() {
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: true,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -323,7 +323,7 @@ var _ = Describe("odo list with devfile", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
@@ -353,7 +353,7 @@ var _ = Describe("odo list with devfile", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {

@@ -85,7 +85,7 @@ var _ = Describe("odo run command tests", func() {
 
 					BeforeEach(func() {
 						var err error
-						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							RunOnPodman: podman,
 							NoCommands:  noCommands,
 						})

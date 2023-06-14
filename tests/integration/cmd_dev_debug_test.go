@@ -44,10 +44,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			})
 			When("running odo dev with debug flag and custom port mapping for port forwarding", helper.LabelPodmanIf(podman, func() {
 				var (
-					devSession helper.DevSession
-					ports      map[string]string
-				)
-				var (
+					devSession                helper.DevSession
 					LocalPort, LocalDebugPort int
 				)
 				const (
@@ -63,7 +60,7 @@ var _ = Describe("odo dev debug command tests", func() {
 						opts = append(opts, "--forward-localhost")
 					}
 					var err error
-					devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						CmdlineArgs:   opts,
 						NoRandomPorts: true,
 						RunOnPodman:   podman,
@@ -78,12 +75,12 @@ var _ = Describe("odo dev debug command tests", func() {
 
 				It("should connect to relevant custom ports forwarded", func() {
 					By("connecting to the application port", func() {
-						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", ports[ContainerPort]), "Hello from Node.js Starter Application!", 12, 5, 200)
+						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", devSession.Endpoints[ContainerPort]), "Hello from Node.js Starter Application!", 12, 5, 200)
 					})
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 						// We are just using this to validate if nodejs agent is listening on the other side
-						url := fmt.Sprintf("http://%s", ports[ContainerDebugPort])
+						url := fmt.Sprintf("http://%s", devSession.Endpoints[ContainerDebugPort])
 						Expect(url).To(ContainSubstring(strconv.Itoa(LocalDebugPort)))
 
 						helper.HttpWaitForWithStatus(url, "WebSockets request was expected", 12, 5, 400)
@@ -93,7 +90,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 			When("running odo dev with debug flag", helper.LabelPodmanIf(podman, func() {
 				var devSession helper.DevSession
-				var ports map[string]string
+
 				BeforeEach(func() {
 					var err error
 					opts := helper.DevSessionOpts{
@@ -103,7 +100,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					if podman {
 						opts.CmdlineArgs = append(opts.CmdlineArgs, "--forward-localhost")
 					}
-					devSession, _, _, ports, err = helper.StartDevMode(opts)
+					devSession, err = helper.StartDevMode(opts)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -114,12 +111,12 @@ var _ = Describe("odo dev debug command tests", func() {
 
 				It("should connect to relevant ports forwarded", func() {
 					By("connecting to the application port", func() {
-						helper.HttpWaitForWithStatus("http://"+ports["3000"], "Hello from Node.js Starter Application!", 12, 5, 200)
+						helper.HttpWaitForWithStatus("http://"+devSession.Endpoints["3000"], "Hello from Node.js Starter Application!", 12, 5, 200)
 					})
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 						// We are just using this to validate if nodejs agent is listening on the other side
-						helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
+						helper.HttpWaitForWithStatus("http://"+devSession.Endpoints["5858"], "WebSockets request was expected", 12, 5, 400)
 					})
 				})
 
@@ -136,7 +133,7 @@ var _ = Describe("odo dev debug command tests", func() {
 	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
-			var session helper.DevSession
+			var devSession helper.DevSession
 			var devStarted bool
 			BeforeEach(func() {
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
@@ -149,7 +146,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 				helper.ReplaceString("package.json", "node server.js", "node server-debug/server.js")
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 					CmdlineArgs: []string{"--debug"},
 				})
@@ -158,8 +155,8 @@ var _ = Describe("odo dev debug command tests", func() {
 			})
 			AfterEach(func() {
 				if devStarted {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				}
 			})
 
@@ -196,10 +193,8 @@ var _ = Describe("odo dev debug command tests", func() {
 			podman := podman
 			When("a composite command is used as debug command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
-				var session helper.DevSession
-				var stdout []byte
-				var stderr []byte
-				var ports map[string]string
+				var devSession helper.DevSession
+
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
 					helper.CopyExampleDevFile(
@@ -218,18 +213,18 @@ var _ = Describe("odo dev debug command tests", func() {
 					if podman {
 						opts.CmdlineArgs = append(opts.CmdlineArgs, "--forward-localhost")
 					}
-					session, stdout, stderr, ports, err = helper.StartDevMode(opts)
+					devSession, err = helper.StartDevMode(opts)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should run successfully", func() {
 					By("verifying from the output that all commands have been executed", func() {
-						helper.MatchAllInOutput(string(stdout), []string{
+						helper.MatchAllInOutput(devSession.StdOut, []string{
 							"Building your application in container",
 							"Executing the application (command: mkdir)",
 							"Executing the application (command: echo)",
@@ -239,7 +234,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					})
 
 					By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-						helper.MatchAllInOutput(string(stderr), []string{
+						helper.MatchAllInOutput(devSession.ErrOut, []string{
 							"Devfile command \"echo\" exited with an error status",
 							"intentional-error-message",
 						})
@@ -248,8 +243,8 @@ var _ = Describe("odo dev debug command tests", func() {
 					By("building the application only once", func() {
 						// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
 						// The bracket allows to match the last occurrence with the command execution timing information.
-						Expect(strings.Count(string(stdout), "Building your application in container (command: install) [")).
-							To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+						Expect(strings.Count(devSession.StdOut, "Building your application in container (command: install) [")).
+							To(BeNumerically("==", 1), "\nOUTPUT: "+devSession.StdOut+"\n")
 					})
 
 					By("verifying that the command did run successfully", func() {
@@ -262,7 +257,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 						// We are just using this to validate if nodejs agent is listening on the other side
-						helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
+						helper.HttpWaitForWithStatus("http://"+devSession.Endpoints["5858"], "WebSockets request was expected", 12, 5, 400)
 					})
 				})
 			}))
@@ -271,10 +266,8 @@ var _ = Describe("odo dev debug command tests", func() {
 
 	When("a composite apply command is used as debug command", func() {
 		deploymentNames := []string{"my-openshift-component", "my-k8s-component"}
-		var session helper.DevSession
-		var sessionOut []byte
-		var err error
-		var ports map[string]string
+		var devSession helper.DevSession
+
 		const (
 			DEVFILE_DEBUG_PORT = "5858"
 		)
@@ -285,7 +278,8 @@ var _ = Describe("odo dev debug command tests", func() {
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
 				cmpName)
-			session, sessionOut, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+			var err error
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 				EnvVars:     []string{"PODMAN_CMD=echo"},
 				CmdlineArgs: []string{"--debug"},
 			})
@@ -297,15 +291,15 @@ var _ = Describe("odo dev debug command tests", func() {
 				helper.MatchAllInOutput(string(out), deploymentNames)
 			}
 			checkImageBuilt := func() {
-				Expect(string(sessionOut)).To(ContainSubstring("Building & Pushing Image"))
-				Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-				Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+				Expect(devSession.StdOut).To(ContainSubstring("Building & Pushing Image"))
+				Expect(devSession.StdOut).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+				Expect(devSession.StdOut).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 			}
 
 			checkWSConnection := func() {
 				// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 				// We are just using this to validate if nodejs agent is listening on the other side
-				helper.HttpWaitForWithStatus("http://"+ports[DEVFILE_DEBUG_PORT], "WebSockets request was expected", 12, 5, 400)
+				helper.HttpWaitForWithStatus("http://"+devSession.Endpoints[DEVFILE_DEBUG_PORT], "WebSockets request was expected", 12, 5, 400)
 			}
 			By("expecting a ws connection when tried to connect on default debug port locally", func() {
 				checkWSConnection()
@@ -322,7 +316,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			By("checking odo dev watches correctly", func() {
 				// making changes to the project again
 				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
-				_, _, _, err = session.WaitSync()
+				err := devSession.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
 				checkDeploymentExists()
 				checkImageBuilt()
@@ -330,8 +324,8 @@ var _ = Describe("odo dev debug command tests", func() {
 			})
 
 			By("cleaning up the resources on ending the session", func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 				out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
 				helper.DontMatchAllInOutput(string(out), deploymentNames)
 			})
@@ -358,12 +352,10 @@ var _ = Describe("odo dev debug command tests", func() {
 			podman := podman
 			When("running build and debug commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
-				var session helper.DevSession
-				var stdout []byte
-				var stderr []byte
-				var ports map[string]string
+				var devSession helper.DevSession
+
 				BeforeEach(func() {
-					//TODO(rm3l): For some reason, this does not work on Podman
+					// TODO(rm3l): For some reason, this does not work on Podman
 					if podman {
 						Skip("Does not work on Podman due to permission issues related in the volume mount path: /bin/sh: /artifacts/build-result: Permission denied")
 					}
@@ -384,18 +376,18 @@ var _ = Describe("odo dev debug command tests", func() {
 					if podman {
 						opts.CmdlineArgs = append(opts.CmdlineArgs, "--forward-localhost")
 					}
-					session, stdout, stderr, ports, err = helper.StartDevMode(opts)
+					devSession, err = helper.StartDevMode(opts)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should run successfully", func() {
 					By("verifying from the output that all commands have been executed", func() {
-						helper.MatchAllInOutput(string(stdout), []string{
+						helper.MatchAllInOutput(devSession.StdOut, []string{
 							"Building your application in container (command: mkdir)",
 							"Building your application in container (command: sleep-cmd-build)",
 							"Building your application in container (command: build-cmd)",
@@ -407,7 +399,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					})
 
 					By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-						helper.MatchAllInOutput(string(stderr), []string{
+						helper.MatchAllInOutput(devSession.ErrOut, []string{
 							"Devfile command \"echo-with-error\" exited with an error status",
 							"intentional-error-message",
 						})
@@ -416,10 +408,10 @@ var _ = Describe("odo dev debug command tests", func() {
 					By("building the application only once per exec command in the build command", func() {
 						// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
 						// The bracket allows to match the last occurrence with the command execution timing information.
-						out := string(stdout)
+						out := devSession.StdOut
 						for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
 							Expect(strings.Count(out, fmt.Sprintf("Building your application in container (command: %s) [", cmd))).
-								To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+								To(BeNumerically("==", 1), "\nOUTPUT: "+devSession.StdOut+"\n")
 						}
 					})
 
@@ -433,7 +425,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					By("expecting a ws connection when tried to connect on default debug port locally", func() {
 						// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 						// We are just using this to validate if nodejs agent is listening on the other side
-						helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
+						helper.HttpWaitForWithStatus("http://"+devSession.Endpoints["5858"], "WebSockets request was expected", 12, 5, 400)
 					})
 				})
 			}))
@@ -450,7 +442,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			})
 
 			It("should log error about missing debug command when running odo dev --debug", func() {
-				devSession, _, stderr, _, err := helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 					CmdlineArgs: []string{"--debug"},
 				})
@@ -459,7 +451,7 @@ var _ = Describe("odo dev debug command tests", func() {
 					devSession.Stop()
 					devSession.WaitEnd()
 				}()
-				Expect(string(stderr)).To(ContainSubstring("Missing default debug command"))
+				Expect(devSession.ErrOut).To(ContainSubstring("Missing default debug command"))
 			})
 		}))
 	}
@@ -478,10 +470,8 @@ var _ = Describe("odo dev debug command tests", func() {
 
 				When("running odo dev with some components not referenced in the Devfile", func() {
 					var devSession helper.DevSession
-					var stdout, stderr string
 
 					BeforeEach(func() {
-						var bOut, bErr []byte
 						var err error
 						var envvars []string
 						if podman {
@@ -493,14 +483,12 @@ var _ = Describe("odo dev debug command tests", func() {
 						if podman {
 							args = append(args, "--forward-localhost")
 						}
-						devSession, bOut, bErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							CmdlineArgs: args,
 							EnvVars:     envvars,
 							RunOnPodman: podman,
 						})
 						Expect(err).ShouldNot(HaveOccurred())
-						stdout = string(bOut)
-						stderr = string(bErr)
 					})
 
 					AfterEach(func() {
@@ -512,7 +500,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 					It("should create the appropriate resources", func() {
 						if podman {
-							k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(stderr)
+							k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(devSession.ErrOut)
 							By("handling Kubernetes/OpenShift components that would have been created automatically", func() {
 								Expect(k8sOcComponents).Should(ContainElements(
 									"k8s-deploybydefault-true-and-referenced",
@@ -542,7 +530,7 @@ var _ = Describe("odo dev debug command tests", func() {
 									"ocp-deploybydefault-true-and-referenced",
 									"ocp-deploybydefault-true-and-not-referenced",
 								} {
-									Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 							By("automatically applying non-referenced Kubernetes/OpenShift components with deployByDefault not set", func() {
@@ -550,7 +538,7 @@ var _ = Describe("odo dev debug command tests", func() {
 									"k8s-deploybydefault-not-set-and-not-referenced",
 									"ocp-deploybydefault-not-set-and-not-referenced",
 								} {
-									Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 							By("not applying Kubernetes/OpenShift components with deployByDefault=false", func() {
@@ -560,11 +548,11 @@ var _ = Describe("odo dev debug command tests", func() {
 									"ocp-deploybydefault-false-and-referenced",
 									"ocp-deploybydefault-false-and-not-referenced",
 								} {
-									Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 							By("not applying referenced Kubernetes/OpenShift components with deployByDefault unset", func() {
-								Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/k8s-deploybydefault-not-set-and-referenced"))
+								Expect(devSession.StdOut).ShouldNot(ContainSubstring("Creating resource Pod/k8s-deploybydefault-not-set-and-referenced"))
 							})
 						}
 
@@ -578,32 +566,30 @@ var _ = Describe("odo dev debug command tests", func() {
 								"autobuild-true-and-referenced",
 								"autobuild-true-and-not-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
+								Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
 							}
 						})
 						By("automatically applying non-referenced Image components with autoBuild not set", func() {
-							Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
+							Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
 						})
 						By("not applying image components with autoBuild=false", func() {
 							for _, tag := range []string{
 								"autobuild-false-and-referenced",
 								"autobuild-false-and-not-referenced",
 							} {
-								Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:%s", tag))
+								Expect(devSession.StdOut).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:%s", tag))
 							}
 						})
 						By("not applying referenced Image components with deployByDefault unset", func() {
-							Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-not-set-and-referenced"))
+							Expect(devSession.StdOut).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-not-set-and-referenced"))
 						})
 					})
 				})
 
 				When("running odo dev with some components referenced in the Devfile", func() {
 					var devSession helper.DevSession
-					var stdout, stderr string
 
 					BeforeEach(func() {
-						var bOut, bErr []byte
 						var err error
 						//TODO (rm3l): we do not support passing a custom debug command yet. That's why we are manually updating the Devfile to change the default debug command.
 						helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{
@@ -627,14 +613,12 @@ var _ = Describe("odo dev debug command tests", func() {
 						if podman {
 							args = append(args, "--forward-localhost")
 						}
-						devSession, bOut, bErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							CmdlineArgs: args,
 							EnvVars:     envvars,
 							RunOnPodman: podman,
 						})
 						Expect(err).ShouldNot(HaveOccurred())
-						stdout = string(bOut)
-						stderr = string(bErr)
 					})
 
 					AfterEach(func() {
@@ -646,7 +630,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 					It("should create the appropriate resources", func() {
 						if podman {
-							k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(stderr)
+							k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(devSession.ErrOut)
 							By("handling Kubernetes/OpenShift components to create automatically", func() {
 								Expect(k8sOcComponents).Should(ContainElements(
 									"k8s-deploybydefault-true-and-referenced",
@@ -685,7 +669,7 @@ var _ = Describe("odo dev debug command tests", func() {
 									"ocp-deploybydefault-false-and-referenced",
 									"ocp-deploybydefault-not-set-and-referenced",
 								} {
-									Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 
@@ -696,7 +680,7 @@ var _ = Describe("odo dev debug command tests", func() {
 									"ocp-deploybydefault-true-and-referenced",
 									"ocp-deploybydefault-true-and-not-referenced",
 								} {
-									Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 							By("automatically applying non-referenced Kubernetes/OpenShift components with deployByDefault not set", func() {
@@ -704,7 +688,7 @@ var _ = Describe("odo dev debug command tests", func() {
 									"k8s-deploybydefault-not-set-and-not-referenced",
 									"ocp-deploybydefault-not-set-and-not-referenced",
 								} {
-									Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 
@@ -713,7 +697,7 @@ var _ = Describe("odo dev debug command tests", func() {
 									"k8s-deploybydefault-false-and-not-referenced",
 									"ocp-deploybydefault-false-and-not-referenced",
 								} {
-									Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
+									Expect(devSession.StdOut).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
 								}
 							})
 						}
@@ -729,7 +713,7 @@ var _ = Describe("odo dev debug command tests", func() {
 								"autobuild-false-and-referenced",
 								"autobuild-not-set-and-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
+								Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
 							}
 						})
 						By("automatically applying image components with autoBuild=true", func() {
@@ -737,14 +721,14 @@ var _ = Describe("odo dev debug command tests", func() {
 								"autobuild-true-and-referenced",
 								"autobuild-true-and-not-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
+								Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
 							}
 						})
 						By("automatically applying non-referenced Image components with autoBuild not set", func() {
-							Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
+							Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
 						})
 						By("not applying non-referenced image components with autoBuild=false", func() {
-							Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-false-and-not-referenced"))
+							Expect(devSession.StdOut).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-false-and-not-referenced"))
 						})
 					})
 				})

@@ -119,10 +119,10 @@ var _ = Describe("odo logs command tests", func() {
 			podman := podman
 			When("running in Dev mode", helper.LabelPodmanIf(podman, func() {
 				var devSession helper.DevSession
-				var err error
 
 				BeforeEach(func() {
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					var err error
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ToNot(HaveOccurred())
@@ -231,9 +231,9 @@ var _ = Describe("odo logs command tests", func() {
 
 		When("running in both Dev and Deploy mode", func() {
 			var devSession helper.DevSession
-			var err error
 			BeforeEach(func() {
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				var err error
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 				Eventually(func() bool {
