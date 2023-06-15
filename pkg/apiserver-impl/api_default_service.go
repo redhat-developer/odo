@@ -3,8 +3,10 @@ package apiserver_impl
 import (
 	"context"
 	"errors"
-	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"net/http"
+
+	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 )
 
 // DefaultAPIService is a service that implements the logic for the DefaultApiServicer
@@ -53,11 +55,9 @@ func (s *DefaultAPIService) InstanceDelete(ctx context.Context) (openapi.ImplRes
 
 // InstanceGet -
 func (s *DefaultAPIService) InstanceGet(ctx context.Context) (openapi.ImplResponse, error) {
-	// TODO - update InstanceGet with the required logic for this service method.
-	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
-
-	// TODO: Uncomment the next line to return response Response(200, InstanceGet200Response{}) or use other options such as http.Ok ...
-	// return Response(200, InstanceGet200Response{}), nil
-
-	return openapi.Response(http.StatusNotImplemented, nil), errors.New("InstanceGet method not implemented")
+	response := openapi.InstanceGet200Response{
+		Pid:                int32(odocontext.GetPID(ctx)),
+		ComponentDirectory: odocontext.GetWorkingDirectory(ctx),
+	}
+	return openapi.Response(http.StatusOK, response), nil
 }
