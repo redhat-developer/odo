@@ -50,12 +50,12 @@ type DevOptions struct {
 	clientset *clientset.Clientset
 
 	// Variables
-	ignorePaths    []string
-	out            io.Writer
-	errOut         io.Writer
-	forwardedPorts []api.ForwardedPort
-	apiServer      bool
-	apiServerPort  int
+	ignorePaths       []string
+	out               io.Writer
+	errOut            io.Writer
+	forwardedPorts    []api.ForwardedPort
+	apiServerFlag     bool
+	apiServerPortFlag int
 
 	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
 	ctx context.Context
@@ -112,8 +112,8 @@ func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(ctx)
 
-	o.apiServer = commonflags.GetAPIServerValue(cmdline)
-	o.apiServerPort = commonflags.GetAPIServerPortValue(cmdline)
+	o.apiServerFlag = commonflags.GetAPIServerValue(cmdline)
+	o.apiServerPortFlag = commonflags.GetAPIServerPortValue(cmdline)
 	return nil
 }
 
@@ -179,9 +179,9 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
-	if o.apiServer && o.apiServerPort != 0 {
-		if !util.IsPortFree(o.apiServerPort, "") {
-			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPort)
+	if o.apiServerFlag && o.apiServerPortFlag != 0 {
+		if !util.IsPortFree(o.apiServerPortFlag, "") {
+			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPortFlag)
 		}
 	}
 
@@ -254,12 +254,13 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	if o.apiServer {
+	var apiServer apiserver_impl.ApiServer
+	if o.apiServerFlag {
 		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
-		apiserver_impl.StartServer(
+		apiServer = apiserver_impl.StartServer(
 			ctx,
 			o.cancel,
-			o.apiServerPort,
+			o.apiServerPortFlag,
 			o.clientset.KubernetesClient,
 			o.clientset.PodmanClient,
 			o.clientset.StateClient,
@@ -281,6 +282,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Variables:            variables,
 			CustomForwardedPorts: o.forwardedPorts,
 			CustomAddress:        o.addressFlag,
+			PushWatcher:          apiServer.PushWatcher,
 			Out:                  o.out,
 			ErrOut:               o.errOut,
 		},
