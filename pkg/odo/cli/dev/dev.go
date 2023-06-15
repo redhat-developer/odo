@@ -256,7 +256,14 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	if o.apiServer {
 		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
-		apiserver_impl.StartServer(ctx, o.cancel, o.apiServerPort, o.clientset.StateClient)
+		apiserver_impl.StartServer(
+			ctx,
+			o.cancel,
+			o.apiServerPort,
+			o.clientset.KubernetesClient,
+			o.clientset.PodmanClient,
+			o.clientset.StateClient,
+		)
 	}
 
 	return o.clientset.DevClient.Start(
