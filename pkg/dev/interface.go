@@ -36,7 +36,8 @@ type StartOptions struct {
 	// Applicable to Podman only.
 	ForwardLocalhost bool
 	// Variables to override in the Devfile
-	Variables map[string]string
+	Variables   map[string]string
+	PushWatcher <-chan struct{}
 
 	Out    io.Writer
 	ErrOut io.Writer

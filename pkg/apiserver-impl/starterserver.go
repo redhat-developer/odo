@@ -14,6 +14,10 @@ import (
 	"k8s.io/klog"
 )
 
+type ApiServer struct {
+	PushWatcher <-chan struct{}
+}
+
 func StartServer(
 	ctx context.Context,
 	cancelFunc context.CancelFunc,
@@ -21,10 +25,12 @@ func StartServer(
 	kubernetesClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	stateClient state.Client,
-) {
+) ApiServer {
 
+	pushWatcher := make(chan struct{})
 	defaultApiService := NewDefaultApiService(
 		cancelFunc,
+		pushWatcher,
 		kubernetesClient,
 		podmanClient,
 		stateClient,
@@ -73,4 +79,8 @@ func StartServer(
 			cancelFunc()
 		}
 	}()
+
+	return ApiServer{
+		PushWatcher: pushWatcher,
+	}
 }

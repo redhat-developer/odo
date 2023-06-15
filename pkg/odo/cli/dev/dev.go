@@ -113,7 +113,6 @@ func (o *DevOptions) PreInit() string {
 func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(ctx)
-
 	return nil
 }
 
@@ -258,9 +257,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
+	var apiServer apiserver_impl.ApiServer
 	if o.apiServerFlag {
 		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
-		apiserver_impl.StartServer(
+		apiServer = apiserver_impl.StartServer(
 			ctx,
 			o.cancel,
 			o.apiServerPortFlag,
@@ -285,6 +285,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Variables:            variables,
 			CustomForwardedPorts: o.forwardedPorts,
 			CustomAddress:        o.addressFlag,
+			PushWatcher:          apiServer.PushWatcher,
 			Out:                  o.out,
 			ErrOut:               o.errOut,
 		},

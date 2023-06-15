@@ -2,7 +2,6 @@ package apiserver_impl
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -19,19 +18,23 @@ import (
 // Include any external packages or services that will be required by this service.
 type DefaultApiService struct {
 	cancel       context.CancelFunc
+	pushWatcher  chan<- struct{}
 	kubeClient   kclient.ClientInterface
 	podmanClient podman.Client
 	stateClient  state.Client
 }
 
 // NewDefaultApiService creates a default api service
-func NewDefaultApiService(cancel context.CancelFunc,
+func NewDefaultApiService(
+	cancel context.CancelFunc,
+	pushWatcher chan<- struct{},
 	kubeClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	stateClient state.Client,
 ) openapi.DefaultApiServicer {
 	return &DefaultApiService{
 		cancel:       cancel,
+		pushWatcher:  pushWatcher,
 		kubeClient:   kubeClient,
 		podmanClient: podmanClient,
 		stateClient:  stateClient,
@@ -40,13 +43,13 @@ func NewDefaultApiService(cancel context.CancelFunc,
 
 // ComponentCommandPost -
 func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentCommandPostRequest openapi.ComponentCommandPostRequest) (openapi.ImplResponse, error) {
-	// TODO - update ComponentCommandPost with the required logic for this service method.
-	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
-
-	// TODO: Uncomment the next line to return response Response(200, GeneralSuccess{}) or use other options such as http.Ok ...
-	// return Response(200, GeneralSuccess{}), nil
-
-	return openapi.Response(http.StatusNotImplemented, nil), errors.New("ComponentCommandPost method not implemented")
+	switch componentCommandPostRequest.Name {
+	case "push":
+		s.pushWatcher <- struct{}{}
+		return openapi.Response(http.StatusOK, nil), nil
+	default:
+		return openapi.Response(http.StatusBadRequest, nil), fmt.Errorf("command name %q not supported. Supported values are: %q", componentCommandPostRequest.Name, "push")
+	}
 }
 
 // ComponentGet -
