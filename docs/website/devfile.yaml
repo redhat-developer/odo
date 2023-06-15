@@ -1,15 +1,20 @@
 schemaVersion: 2.2.0
 metadata:
-  name: odo.dev
+  name: odo-dev
   description: Website for odo, the developer-focused CLI for container development
   displayName: odo.dev
   icon: https://odo.dev/img/logo.png
-  version: 3.6.0
+  version: 3.12.0
   tags:
   - NodeJS
   - React
   - Docusaurus
   - odo
+
+variables:
+  DEPLOY_RESOURCE_NAME: odo-dev
+  DEPLOY_CONTAINER_IMAGE: odo-dev-webapp
+  DEPLOY_INGRESS_DOMAIN: 127.0.0.1.nip.io
 
 components:
 - name: doc-runtime
@@ -21,6 +26,18 @@ components:
     endpoints:
       - name: http-doc
         targetPort: 3000
+
+- name: outerloop-build
+  image:
+    imageName: "{{DEPLOY_CONTAINER_IMAGE}}"
+    dockerfile:
+      uri: ./Dockerfile
+      buildContext: ${PROJECT_SOURCE}
+      rootRequired: false
+
+- name: outerloop-resources
+  kubernetes:
+    uri: ".kubernetes/resources.yaml"
 
 commands:
 
@@ -53,6 +70,26 @@ commands:
     group:
       kind: run
       isDefault: true
+
+#
+# Deploy
+#
+- id: 2-deploy
+  composite:
+    commands:
+      - 20-build-image
+      - 21-k8s-resources
+    group:
+      isDefault: true
+      kind: deploy
+
+- id: 20-build-image
+  apply:
+    component: outerloop-build
+
+- id: 21-k8s-resources
+  apply:
+    component: outerloop-resources
 
 events:
   postStart:
