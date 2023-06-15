@@ -14,7 +14,7 @@ import (
 
 func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, stateClient state.Client) {
 
-	DefaultApiService := NewDefaultApiService()
+	DefaultApiService := NewDefaultApiService(cancelFunc)
 	DefaultApiController := openapi.NewDefaultAPIController(DefaultApiService)
 
 	router := openapi.NewRouter(DefaultApiController)
