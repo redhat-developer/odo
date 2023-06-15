@@ -14,7 +14,6 @@ To see how to make this your own, look here:
 
 - API version: 0.1
 
-
 ### Running the server
 To run the server, follow these simple steps:
 
