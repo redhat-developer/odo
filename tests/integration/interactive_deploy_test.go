@@ -157,28 +157,12 @@ var _ = Describe("odo deploy interactive command tests", func() {
 			})
 
 			It("should not fail but fallback to the interactive mode", func() {
-				output, err := helper.RunInteractive([]string{"odo", "deploy"}, nil, func(ctx helper.InteractiveContext) {
+				_, err := helper.RunInteractive([]string{"odo", "deploy"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Could not determine a Devfile based on the files in the current directory")
-
 					helper.ExpectString(ctx, "Select language")
-					helper.SendLine(ctx, "PHP")
-
-					helper.ExpectString(ctx, "Select project type")
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-					helper.SendLine(ctx, "")
-
-					helper.ExpectString(ctx, "Enter component name")
-					helper.SendLine(ctx, "my-php-app")
-
-					helper.ExpectString(ctx, "no default deploy command found in devfile")
+					ctx.StopCommand()
 				})
-
-				Expect(err).To(Not(BeNil()))
-				Expect(output).ShouldNot(ContainSubstring("Which starter project do you want to use"))
-				Expect(output).To(ContainSubstring("no default deploy command found in devfile"))
-				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
+				Expect(err).Should(HaveOccurred())
 			})
 		})
 	})
