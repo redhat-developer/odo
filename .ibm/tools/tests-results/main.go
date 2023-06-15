@@ -28,6 +28,7 @@ func main() {
 		fSheetId   = flag.String("sheetId", "", "spreadsheetId")
 		fJunitFile = flag.String("junit", "", "junit file")
 		fPrNumber  = flag.String("pr", "", "PR number")
+		fJobNumber = flag.String("job", "", "Job number")
 		fTestTile  = flag.String("test", "", "Test title")
 		fLogFile   = flag.String("logfile", "", "Log file including base")
 	)
@@ -48,6 +49,11 @@ func main() {
 		usage("--pr is missing")
 	}
 	prNumber := *fPrNumber
+
+	if *fJobNumber == "" {
+		usage("--job is missing")
+	}
+	jobNumber := *fJobNumber
 
 	if *fTestTile == "" {
 		usage("--test is missing")
@@ -84,6 +90,7 @@ func main() {
 				prNumber,
 				testTitle,
 				logFile,
+				jobNumber,
 			}
 			err = db.SaveToSheet(ctx, spreadsheetId, data)
 			if err != nil {

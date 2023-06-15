@@ -20,6 +20,6 @@ ibmcloud oc cluster config -c "${CLUSTER_ID}"
 RESULT=${PIPESTATUS[0]}
 
 save_logs "${LOGFILE}" "${TEST_NAME}" ${RESULT}
-save_results "${PWD}/test-integration-unauth.xml" "${LOGFILE}" "${TEST_NAME}"
+save_results "${PWD}/test-integration-unauth.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
 
 exit ${RESULT}

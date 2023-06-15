@@ -31,9 +31,9 @@ save_logs "${LOGFILE}" "${TEST_NAME}" $RESULT
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/test-integration-nc.xml /tmp/
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/test-integration.xml /tmp/
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/test-e2e.xml /tmp/
-save_results "/tmp/test-integration-nc.xml" "${LOGFILE}" "${TEST_NAME}"
-save_results "/tmp/test-integration.xml" "${LOGFILE}" "${TEST_NAME}"
-save_results "/tmp/test-e2e.xml" "${LOGFILE}" "${TEST_NAME}"
+save_results "/tmp/test-integration-nc.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
+save_results "/tmp/test-integration.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
+save_results "/tmp/test-e2e.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
 
 # cleanup
 sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP -o StrictHostKeyChecking=no rm -rf /tmp/windows-test-script.ps1
