@@ -7,20 +7,34 @@ import (
 	"net/http"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/component/describe"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/state"
 )
 
 // DefaultApiService is a service that implements the logic for the DefaultApiServicer
 // This service should implement the business logic for every endpoint for the DefaultApi API.
 // Include any external packages or services that will be required by this service.
 type DefaultApiService struct {
-	cancel context.CancelFunc
+	cancel       context.CancelFunc
+	kubeClient   kclient.ClientInterface
+	podmanClient podman.Client
+	stateClient  state.Client
 }
 
 // NewDefaultApiService creates a default api service
-func NewDefaultApiService(cancel context.CancelFunc) openapi.DefaultApiServicer {
+func NewDefaultApiService(cancel context.CancelFunc,
+	kubeClient kclient.ClientInterface,
+	podmanClient podman.Client,
+	stateClient state.Client,
+) openapi.DefaultApiServicer {
 	return &DefaultApiService{
-		cancel: cancel,
+		cancel:       cancel,
+		kubeClient:   kubeClient,
+		podmanClient: podmanClient,
+		stateClient:  stateClient,
 	}
 }
 
@@ -37,20 +51,18 @@ func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentC
 
 // ComponentGet -
 func (s *DefaultApiService) ComponentGet(ctx context.Context) (openapi.ImplResponse, error) {
-	// TODO - update ComponentGet with the required logic for this service method.
-	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
-
-	// TODO: Uncomment the next line to return response Response(200, ComponentGet200Response{}) or use other options such as http.Ok ...
-	// return Response(200, ComponentGet200Response{}), nil
-
-	return openapi.Response(http.StatusNotImplemented, nil), errors.New("ComponentGet method not implemented")
+	value, _, err := describe.DescribeDevfileComponent(ctx, s.kubeClient, s.podmanClient, s.stateClient)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, ""), fmt.Errorf("error getting the description of the component: %w", err)
+	}
+	return openapi.Response(http.StatusOK, value), nil
 }
 
 // InstanceDelete -
 func (s *DefaultApiService) InstanceDelete(ctx context.Context) (openapi.ImplResponse, error) {
 	s.cancel()
 	return openapi.Response(http.StatusOK, openapi.GeneralSuccess{
-		Message: fmt.Sprintf("'odo dev' instance with pid: %d is shuting down.", odocontext.GetPID(ctx)),
+		Message: fmt.Sprintf("'odo dev' instance with pid: %d is shutting down.", odocontext.GetPID(ctx)),
 	}), nil
 }
 

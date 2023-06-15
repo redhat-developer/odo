@@ -7,14 +7,28 @@ import (
 	"net/http"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
 )
 
-func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, stateClient state.Client) {
+func StartServer(
+	ctx context.Context,
+	cancelFunc context.CancelFunc,
+	port int,
+	kubernetesClient kclient.ClientInterface,
+	podmanClient podman.Client,
+	stateClient state.Client,
+) {
 
-	defaultApiService := NewDefaultApiService(cancelFunc)
+	defaultApiService := NewDefaultApiService(
+		cancelFunc,
+		kubernetesClient,
+		podmanClient,
+		stateClient,
+	)
 	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
 
 	router := openapi.NewRouter(defaultApiController)
