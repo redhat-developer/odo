@@ -188,7 +188,7 @@ paths:
                   enum:
                     - "push"
               example:
-                action: push
+                name: push
       responses:
         '200':
           description: command was successfully executed

@@ -174,7 +174,7 @@ components:
       type: object
     _component_command_post_request:
       example:
-        action: push
+        name: push
       properties:
         name:
           description: Name of the command that should be executed
