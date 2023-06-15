@@ -3,11 +3,13 @@ package apiserver_impl
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
-	"net/http"
 )
 
 func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, stateClient state.Client) {
@@ -38,6 +40,9 @@ func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, s
 	server := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router}
 	var errChan = make(chan error)
 	go func() {
+		server.BaseContext = func(net.Listener) context.Context {
+			return ctx
+		}
 		err = server.ListenAndServe()
 		errChan <- err
 	}()
