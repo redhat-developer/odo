@@ -52,20 +52,20 @@ var _ = Describe("odo remove binding command tests", func() {
 			})
 
 			When("odo dev is running", func() {
-				var session helper.DevSession
+				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 				When("binding is removed", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
-						_, _, _, err := session.WaitSync()
+						err := devSession.WaitSync()
 						Expect(err).ToNot(HaveOccurred())
 					})
 					It("should have led odo dev to delete ServiceBinding from the cluster", func() {

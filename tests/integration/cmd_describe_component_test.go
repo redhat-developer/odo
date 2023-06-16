@@ -262,7 +262,6 @@ var _ = Describe("odo describe component command tests", func() {
 				debug := debug
 				When(fmt.Sprintf("running odo dev (podman=%s,debug=%s)", strconv.FormatBool(podman), strconv.FormatBool(debug)), helper.LabelPodmanIf(podman, func() {
 					var devSession helper.DevSession
-					var ports map[string]string
 
 					BeforeEach(func() {
 						opts := helper.DevSessionOpts{RunOnPodman: podman}
@@ -274,7 +273,7 @@ var _ = Describe("odo describe component command tests", func() {
 							}
 						}
 						var err error
-						devSession, _, _, ports, err = helper.StartDevMode(opts)
+						devSession, err = helper.StartDevMode(opts)
 						Expect(err).NotTo(HaveOccurred())
 					})
 
@@ -296,19 +295,19 @@ var _ = Describe("odo describe component command tests", func() {
 								Expect(stdout).To(ContainSubstring("Running on:"))
 								Expect(stdout).To(ContainSubstring("Forwarded ports"))
 								if podman {
-									Expect(stdout).To(ContainSubstring("[podman] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", ports["3000"][len("127.0.0.1:"):]))
+									Expect(stdout).To(ContainSubstring("[podman] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", devSession.Endpoints["3000"][len("127.0.0.1:"):]))
 									if debug {
 										Expect(stdout).To(
 											ContainSubstring("127.0.0.1:%s -> runtime:5858\n    Name: debug\n    Exposure: none\n    Debug: true",
-												ports["5858"][len("127.0.0.1:"):]))
+												devSession.Endpoints["5858"][len("127.0.0.1:"):]))
 									}
 									Expect(stdout).NotTo(ContainSubstring("[cluster] 127.0.0.1:"))
 									Expect(stdout).To(ContainSubstring("podman: Dev"))
 									Expect(stdout).NotTo(ContainSubstring("cluster: "))
 								} else {
-									Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", ports["3000"][len("127.0.0.1:"):]))
+									Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", devSession.Endpoints["3000"][len("127.0.0.1:"):]))
 									if debug {
-										Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:5858\n    Name: debug\n    Exposure: none\n    Debug: true", ports["5858"][len("127.0.0.1:"):]))
+										Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:5858\n    Name: debug\n    Exposure: none\n    Debug: true", devSession.Endpoints["5858"][len("127.0.0.1:"):]))
 									}
 									Expect(stdout).NotTo(ContainSubstring("[podman] 127.0.0.1:"))
 									Expect(stdout).To(ContainSubstring("cluster: Dev"))
@@ -374,7 +373,7 @@ var _ = Describe("odo describe component command tests", func() {
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.portName", "http-3000")
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.isDebug", "false")
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localAddress", "127.0.0.1")
-								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", ports["3000"][len("127.0.0.1:"):])
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", devSession.Endpoints["3000"][len("127.0.0.1:"):])
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerPort", "3000")
 								helper.JsonPathDoesNotExist(stdout, "devForwardedPorts.0.exposure")
 								if debug {
@@ -382,7 +381,7 @@ var _ = Describe("odo describe component command tests", func() {
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.portName", "debug")
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.isDebug", "true")
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.localAddress", "127.0.0.1")
-									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.localPort", ports["5858"][len("127.0.0.1:"):])
+									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.localPort", devSession.Endpoints["5858"][len("127.0.0.1:"):])
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.containerPort", "5858")
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.exposure", "none")
 								}
@@ -575,7 +574,7 @@ var _ = Describe("odo describe component command tests", func() {
 						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfile)).ShouldPass()
 						var err error
-						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{RunOnPodman: podman})
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{RunOnPodman: podman})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {

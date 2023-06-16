@@ -711,7 +711,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						var session helper.DevSession
 						BeforeEach(func() {
 							var err error
-							session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+							session, err = helper.StartDevMode(helper.DevSessionOpts{})
 							Expect(err).ToNot(HaveOccurred())
 						})
 

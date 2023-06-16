@@ -159,18 +159,18 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					})
 
 					It("should run odo dev successfully", func() {
-						session, _, _, _, err := helper.StartDevMode(helper.DevSessionOpts{})
+						devSession, err := helper.StartDevMode(helper.DevSessionOpts{})
 						Expect(err).ToNot(HaveOccurred())
-						session.Kill()
-						session.WaitEnd()
+						devSession.Kill()
+						devSession.WaitEnd()
 					})
 
 					When("running and stopping odo dev", func() {
 						BeforeEach(func() {
-							session, _, _, _, err := helper.StartDevMode(helper.DevSessionOpts{})
+							devSession, err := helper.StartDevMode(helper.DevSessionOpts{})
 							Expect(err).ShouldNot(HaveOccurred())
-							session.Stop()
-							session.WaitEnd()
+							devSession.Stop()
+							devSession.WaitEnd()
 						})
 
 						It("should not delete the resources created with odo deploy", func() {

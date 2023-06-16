@@ -229,7 +229,7 @@ var _ = Describe("odo delete command tests", func() {
 					var devSession helper.DevSession
 					BeforeEach(func() {
 						var err error
-						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							RunOnPodman: podman,
 						})
 						Expect(err).ToNot(HaveOccurred())
@@ -552,7 +552,7 @@ var _ = Describe("odo delete command tests", func() {
 					Expect(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()).To(ContainSubstring(serviceName))
 
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 
 					devSession.Kill()
