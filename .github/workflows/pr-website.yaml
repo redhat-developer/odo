@@ -31,10 +31,11 @@ jobs:
   authorize:
     # The 'external' environment is configured with the odo-maintainers team as required reviewers.
     # All the subsequent jobs in this workflow 'need' this job, which will require manual approval for PRs coming from external forks.
+    # TODO(rm3l): list of authorized users that do not require manual review comes from the maintainers team and various robot accounts that handle automation in the repo => find a better way not to hardcode this list!
     environment:
-      ${{ github.event_name == 'pull_request_target' &&
-      github.event.pull_request.head.repo.full_name != github.repository &&
-      'external' || 'internal' }}
+      ${{ (github.event.pull_request.head.repo.full_name == github.repository ||
+        contains(fromJSON('["odo-robot[bot]", "dependabot[bot]", "openshift-ci[bot]", "openshift-merge-robot", "openshift-ci-robot", "feloy", "kadel", "rm3l", "valaparthvi", "ritudes"]'), github.actor)) && 
+      'internal' || 'external' }}
     runs-on: ubuntu-latest
     steps:
       - run: echo ✓
