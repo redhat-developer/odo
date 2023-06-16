@@ -10,12 +10,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, closed]
     branches: [ main ]
     paths:
-      - 'cmd/**'
-      - 'docs/**'
-      - 'pkg/**'
-      - 'vendor/**'
-      - 'go.mod'
-      - 'go.sum'
+      - 'docs/website/**'
       - '.github/workflows/pr-website.yaml'
 
 env:
