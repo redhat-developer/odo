@@ -1,6 +1,7 @@
 #!/bin/bash
 
 LOGFILE="pr-${GIT_PR_NUMBER}-kubernetes-docs-tests-${BUILD_NUMBER}"
+TEST_NAME="Kubernetes Docs Tests"
 
 source .ibm/pipelines/functions.sh
 
@@ -17,6 +18,7 @@ cleanup_namespaces
 
 RESULT=${PIPESTATUS[0]}
 
-save_logs "${LOGFILE}" "Kubernetes Docs Tests" ${RESULT}
+save_logs "${LOGFILE}" "${TEST_NAME}" ${RESULT}
+save_results "${PWD}/test-doc-automation.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
 
 exit ${RESULT}

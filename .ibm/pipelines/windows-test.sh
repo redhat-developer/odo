@@ -5,13 +5,13 @@
 # using the IBM DevOps Services.
 #
 
-set -x
-
 source .ibm/pipelines/functions.sh
 
 skip_if_only
 
 LOGFILE="pr-${GIT_PR_NUMBER}-windows-tests-${BUILD_NUMBER}"
+TEST_NAME="Windows Tests (OCP)"
+
 export REPO=${REPO:-"https://github.com/redhat-developer/odo"}
 #copy test script inside /tmp/
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no ./.ibm/pipelines/windows-test-script.ps1 Administrator@$WINDOWS_IP:/tmp/windows-test-script.ps1
@@ -25,7 +25,15 @@ echo "RESULT: $RESULT"
 # save log
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/${LOGFILE} /tmp/${LOGFILE}
-save_logs "${LOGFILE}" "Windows Tests (OCP)" $RESULT
+save_logs "${LOGFILE}" "${TEST_NAME}" $RESULT
+
+# save results
+sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/test-integration-nc.xml /tmp/
+sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/test-integration.xml /tmp/
+sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/test-e2e.xml /tmp/
+save_results "/tmp/test-integration-nc.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
+save_results "/tmp/test-integration.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
+save_results "/tmp/test-e2e.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
 
 # cleanup
 sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP -o StrictHostKeyChecking=no rm -rf /tmp/windows-test-script.ps1

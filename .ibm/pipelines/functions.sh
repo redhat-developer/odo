@@ -70,3 +70,23 @@ skip() {
     echo "  - $change not in $SKIP_IF_ONLY"
     return 0
 }
+
+save_results() {
+    (        
+        cd .ibm/tools/tests-results
+        echo -n $RESULTS_SERVICE_ACCOUNT > sa.json
+        JUNIT="$1"
+        LOGFILE="$2"
+        NAME="$3"
+        JOB="$4"
+        BASE_URL="https://s3.${IBM_REGION}.cloud-object-storage.appdomain.cloud/${IBM_BUCKET}"
+
+        GOOGLE_APPLICATION_CREDENTIALS=$PWD/sa.json go run main.go \
+            --sheetId "${RESULTS_SHEET_ID}" \
+            --junit "${JUNIT}" \
+            --pr "${GIT_PR_NUMBER}" \
+            --job "${JOB}" \
+            --test "${NAME}" \
+            --logfile "${BASE_URL}/${LOGFILE}.txt"
+    )
+}

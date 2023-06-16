@@ -1,6 +1,7 @@
 #!/bin/bash
 
 LOGFILE="pr-${GIT_PR_NUMBER}-nocluster-tests-${BUILD_NUMBER}"
+TEST_NAME="NoCluster Tests"
 
 source .ibm/pipelines/functions.sh
 
@@ -18,6 +19,7 @@ ibmcloud target -r "${IBM_REGION}"
 
 RESULT=${PIPESTATUS[0]}
 
-save_logs "${LOGFILE}" "NoCluster Tests" ${RESULT}
+save_logs "${LOGFILE}" "${TEST_NAME}" ${RESULT}
+save_results "${PWD}/test-integration-nc.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
 
 exit ${RESULT}

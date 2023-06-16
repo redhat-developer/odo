@@ -4,7 +4,7 @@
 # - ignore files in certain directories, like 'vendor' or 'dist' (created when building RPM Packages of odo)
 # - gofmt doesn't exit with error code when there are errors
 
-GO_FILES=$(find . \( -path ./vendor -o -path ./dist \) -prune -o -name '*.go' -print)
+GO_FILES=$(find . \( -path ./vendor -o -path ./dist -o -path ./.ibm/tools/tests-results/vendor \) -prune -o -name '*.go' -print)
 
 for file in $GO_FILES; do
 	gofmtOutput=$(gofmt -l "$file")
