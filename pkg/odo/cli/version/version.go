@@ -113,7 +113,7 @@ func (o *VersionOptions) Run(ctx context.Context) (err error) {
 		message += fmt.Sprintf("Podman (Client): %v\n", o.podmanInfo.Client.Version)
 	}
 
-	fmt.Printf(message)
+	fmt.Print(message)
 
 	return nil
 }

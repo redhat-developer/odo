@@ -74,3 +74,18 @@ func GetPodmanVersion() string {
 	Expect(err).ToNot(HaveOccurred())
 	return result.Client.Version
 }
+
+// GenerateDelayedPodman returns a podman cmd that sleeps for delaySecond before responding;
+// this function is usually used in combination with PODMAN_CMD_INIT_TIMEOUT odo preference
+func GenerateDelayedPodman(commonVarContext string, delaySecond int) string {
+	delayer := filepath.Join(commonVarContext, "podman-cmd-delayer")
+	fileContent := fmt.Sprintf(`#!/bin/bash
+
+echo Delaying command execution... >&2
+sleep %d
+echo "$@"
+`, delaySecond)
+	err := CreateFileWithContentAndPerm(delayer, fileContent, 0755)
+	Expect(err).ToNot(HaveOccurred())
+	return delayer
+}
