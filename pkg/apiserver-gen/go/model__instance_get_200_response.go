@@ -9,10 +9,6 @@
 
 package openapi
 
-import (
-	"encoding/json"
-)
-
 type InstanceGet200Response struct {
 
 	// Directory on which this 'odo dev' instance is running
@@ -22,19 +18,19 @@ type InstanceGet200Response struct {
 	Pid int32 `json:"pid,omitempty"`
 }
 
-// UnmarshalJSON sets *m to a copy of data while respecting defaults if specified.
-func (m *InstanceGet200Response) UnmarshalJSON(data []byte) error {
-
-	type Alias InstanceGet200Response // To avoid infinite recursion
-	return json.Unmarshal(data, (*Alias)(m))
-}
-
 // AssertInstanceGet200ResponseRequired checks if the required fields are not zero-ed
 func AssertInstanceGet200ResponseRequired(obj InstanceGet200Response) error {
 	return nil
 }
 
-// AssertInstanceGet200ResponseConstraints checks if the values respects the defined constraints
-func AssertInstanceGet200ResponseConstraints(obj InstanceGet200Response) error {
-	return nil
+// AssertRecurseInstanceGet200ResponseRequired recursively checks if required fields are not zero-ed in a nested slice.
+// Accepts only nested slice of InstanceGet200Response (e.g. [][]InstanceGet200Response), otherwise ErrTypeAssertionError is thrown.
+func AssertRecurseInstanceGet200ResponseRequired(objSlice interface{}) error {
+	return AssertRecurseInterfaceRequired(objSlice, func(obj interface{}) error {
+		aInstanceGet200Response, ok := obj.(InstanceGet200Response)
+		if !ok {
+			return ErrTypeAssertionError
+		}
+		return AssertInstanceGet200ResponseRequired(aInstanceGet200Response)
+	})
 }

@@ -9,7 +9,7 @@
 
 package openapi
 
-// ImplResponse defines an implementation response with error code and the associated body
+// ImplResponse response defines an error code with the associated body
 type ImplResponse struct {
 	Code int
 	Body interface{}

@@ -9,21 +9,10 @@
 
 package openapi
 
-import (
-	"encoding/json"
-)
-
 type ComponentCommandPostRequest struct {
 
 	// Name of the command that should be executed
 	Name string `json:"name,omitempty"`
-}
-
-// UnmarshalJSON sets *m to a copy of data while respecting defaults if specified.
-func (m *ComponentCommandPostRequest) UnmarshalJSON(data []byte) error {
-
-	type Alias ComponentCommandPostRequest // To avoid infinite recursion
-	return json.Unmarshal(data, (*Alias)(m))
 }
 
 // AssertComponentCommandPostRequestRequired checks if the required fields are not zero-ed
@@ -31,7 +20,14 @@ func AssertComponentCommandPostRequestRequired(obj ComponentCommandPostRequest) 
 	return nil
 }
 
-// AssertComponentCommandPostRequestConstraints checks if the values respects the defined constraints
-func AssertComponentCommandPostRequestConstraints(obj ComponentCommandPostRequest) error {
-	return nil
+// AssertRecurseComponentCommandPostRequestRequired recursively checks if required fields are not zero-ed in a nested slice.
+// Accepts only nested slice of ComponentCommandPostRequest (e.g. [][]ComponentCommandPostRequest), otherwise ErrTypeAssertionError is thrown.
+func AssertRecurseComponentCommandPostRequestRequired(objSlice interface{}) error {
+	return AssertRecurseInterfaceRequired(objSlice, func(obj interface{}) error {
+		aComponentCommandPostRequest, ok := obj.(ComponentCommandPostRequest)
+		if !ok {
+			return ErrTypeAssertionError
+		}
+		return AssertComponentCommandPostRequestRequired(aComponentCommandPostRequest)
+	})
 }

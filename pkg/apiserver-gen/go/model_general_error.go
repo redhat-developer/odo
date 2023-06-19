@@ -9,19 +9,8 @@
 
 package openapi
 
-import (
-	"encoding/json"
-)
-
 type GeneralError struct {
 	Message string `json:"message,omitempty"`
-}
-
-// UnmarshalJSON sets *m to a copy of data while respecting defaults if specified.
-func (m *GeneralError) UnmarshalJSON(data []byte) error {
-
-	type Alias GeneralError // To avoid infinite recursion
-	return json.Unmarshal(data, (*Alias)(m))
 }
 
 // AssertGeneralErrorRequired checks if the required fields are not zero-ed
@@ -29,7 +18,14 @@ func AssertGeneralErrorRequired(obj GeneralError) error {
 	return nil
 }
 
-// AssertGeneralErrorConstraints checks if the values respects the defined constraints
-func AssertGeneralErrorConstraints(obj GeneralError) error {
-	return nil
+// AssertRecurseGeneralErrorRequired recursively checks if required fields are not zero-ed in a nested slice.
+// Accepts only nested slice of GeneralError (e.g. [][]GeneralError), otherwise ErrTypeAssertionError is thrown.
+func AssertRecurseGeneralErrorRequired(objSlice interface{}) error {
+	return AssertRecurseInterfaceRequired(objSlice, func(obj interface{}) error {
+		aGeneralError, ok := obj.(GeneralError)
+		if !ok {
+			return ErrTypeAssertionError
+		}
+		return AssertGeneralErrorRequired(aGeneralError)
+	})
 }

@@ -15,25 +15,25 @@ import (
 	"strings"
 )
 
-// DefaultAPIController binds http requests to an api service and writes the service results to the http response
-type DefaultAPIController struct {
-	service      DefaultAPIServicer
+// DefaultApiController binds http requests to an api service and writes the service results to the http response
+type DefaultApiController struct {
+	service      DefaultApiServicer
 	errorHandler ErrorHandler
 }
 
-// DefaultAPIOption for how the controller is set up.
-type DefaultAPIOption func(*DefaultAPIController)
+// DefaultApiOption for how the controller is set up.
+type DefaultApiOption func(*DefaultApiController)
 
-// WithDefaultAPIErrorHandler inject ErrorHandler into controller
-func WithDefaultAPIErrorHandler(h ErrorHandler) DefaultAPIOption {
-	return func(c *DefaultAPIController) {
+// WithDefaultApiErrorHandler inject ErrorHandler into controller
+func WithDefaultApiErrorHandler(h ErrorHandler) DefaultApiOption {
+	return func(c *DefaultApiController) {
 		c.errorHandler = h
 	}
 }
 
-// NewDefaultAPIController creates a default api controller
-func NewDefaultAPIController(s DefaultAPIServicer, opts ...DefaultAPIOption) Router {
-	controller := &DefaultAPIController{
+// NewDefaultApiController creates a default api controller
+func NewDefaultApiController(s DefaultApiServicer, opts ...DefaultApiOption) Router {
+	controller := &DefaultApiController{
 		service:      s,
 		errorHandler: DefaultErrorHandler,
 	}
@@ -45,25 +45,29 @@ func NewDefaultAPIController(s DefaultAPIServicer, opts ...DefaultAPIOption) Rou
 	return controller
 }
 
-// Routes returns all the api routes for the DefaultAPIController
-func (c *DefaultAPIController) Routes() Routes {
+// Routes returns all the api routes for the DefaultApiController
+func (c *DefaultApiController) Routes() Routes {
 	return Routes{
-		"ComponentCommandPost": Route{
+		{
+			"ComponentCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/component/command",
 			c.ComponentCommandPost,
 		},
-		"ComponentGet": Route{
+		{
+			"ComponentGet",
 			strings.ToUpper("Get"),
 			"/api/v1/component",
 			c.ComponentGet,
 		},
-		"InstanceDelete": Route{
+		{
+			"InstanceDelete",
 			strings.ToUpper("Delete"),
 			"/api/v1/instance",
 			c.InstanceDelete,
 		},
-		"InstanceGet": Route{
+		{
+			"InstanceGet",
 			strings.ToUpper("Get"),
 			"/api/v1/instance",
 			c.InstanceGet,
@@ -72,7 +76,7 @@ func (c *DefaultAPIController) Routes() Routes {
 }
 
 // ComponentCommandPost -
-func (c *DefaultAPIController) ComponentCommandPost(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultApiController) ComponentCommandPost(w http.ResponseWriter, r *http.Request) {
 	componentCommandPostRequestParam := ComponentCommandPostRequest{}
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
@@ -84,10 +88,6 @@ func (c *DefaultAPIController) ComponentCommandPost(w http.ResponseWriter, r *ht
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	if err := AssertComponentCommandPostRequestConstraints(componentCommandPostRequestParam); err != nil {
-		c.errorHandler(w, r, err, nil)
-		return
-	}
 	result, err := c.service.ComponentCommandPost(r.Context(), componentCommandPostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
@@ -96,10 +96,11 @@ func (c *DefaultAPIController) ComponentCommandPost(w http.ResponseWriter, r *ht
 	}
 	// If no error, encode the body and the result code
 	EncodeJSONResponse(result.Body, &result.Code, w)
+
 }
 
 // ComponentGet -
-func (c *DefaultAPIController) ComponentGet(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.ComponentGet(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
@@ -108,10 +109,11 @@ func (c *DefaultAPIController) ComponentGet(w http.ResponseWriter, r *http.Reque
 	}
 	// If no error, encode the body and the result code
 	EncodeJSONResponse(result.Body, &result.Code, w)
+
 }
 
 // InstanceDelete -
-func (c *DefaultAPIController) InstanceDelete(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultApiController) InstanceDelete(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.InstanceDelete(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
@@ -120,10 +122,11 @@ func (c *DefaultAPIController) InstanceDelete(w http.ResponseWriter, r *http.Req
 	}
 	// If no error, encode the body and the result code
 	EncodeJSONResponse(result.Body, &result.Code, w)
+
 }
 
 // InstanceGet -
-func (c *DefaultAPIController) InstanceGet(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultApiController) InstanceGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.InstanceGet(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
@@ -132,4 +135,5 @@ func (c *DefaultAPIController) InstanceGet(w http.ResponseWriter, r *http.Reques
 	}
 	// If no error, encode the body and the result code
 	EncodeJSONResponse(result.Body, &result.Code, w)
+
 }

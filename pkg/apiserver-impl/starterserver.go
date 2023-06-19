@@ -12,10 +12,10 @@ import (
 
 func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, stateClient state.Client) {
 
-	DefaultApiService := NewDefaultApiService()
-	DefaultApiController := openapi.NewDefaultAPIController(DefaultApiService)
+	defaultApiService := NewDefaultApiService()
+	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
 
-	router := openapi.NewRouter(DefaultApiController)
+	router := openapi.NewRouter(defaultApiController)
 
 	var err error
 
