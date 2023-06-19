@@ -29,7 +29,7 @@ var _ = Describe("odo dev command with api server tests", func() {
 		podman := podman
 		for _, customPort := range []bool{false, true} {
 			customPort := customPort
-			When("the component is bootstrapped", func() {
+			When("the component is bootstrapped", helper.LabelPodmanIf(podman, func() {
 				BeforeEach(func() {
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), cmpName)
@@ -67,7 +67,7 @@ var _ = Describe("odo dev command with api server tests", func() {
 						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNotImplemented))
 					})
 				})
-			})
+			}))
 		}
 	}
 })
