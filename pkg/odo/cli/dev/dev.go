@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
-	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"io"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/spf13/cobra"
@@ -74,6 +75,7 @@ type DevOptions struct {
 	noCommandsFlag       bool
 	apiServerFlag        bool
 	apiServerPortFlag    int
+	syncGitDirFlag       bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -239,6 +241,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	// Ignore the devfile, as it will be handled independently
 	o.ignorePaths = ignores
 
+	if o.syncGitDirFlag {
+		o.ignorePaths = removeGitDir(o.ignorePaths)
+	}
+
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
@@ -276,6 +282,15 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			ErrOut:               o.errOut,
 		},
 	)
+}
+
+func removeGitDir(ignores []string) []string {
+	for i, entry := range ignores {
+		if entry == ".git" {
+			return append(ignores[0:i], ignores[i+1:]...)
+		}
+	}
+	return ignores
 }
 
 func (o *DevOptions) HandleSignal(ctx context.Context, cancelFunc context.CancelFunc) error {
@@ -325,6 +340,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
 	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
+	devCmd.Flags().BoolVar(&o.syncGitDirFlag, "sync-git-dir", false, "Synchronize the .git directory to the container. By default, this directory is not synchronized.")
 
 	if feature.IsExperimentalModeEnabled(ctx) {
 		devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", false, "Start the API Server; this is an experimental feature")
