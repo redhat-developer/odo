@@ -1,6 +1,7 @@
 package podman
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/platform"
@@ -33,6 +35,12 @@ func (o *PodmanCli) GetPodsMatchingSelector(selector string) (*corev1.PodList, e
 			prefix := pod.GetName() + "-"
 			container.Name = strings.TrimPrefix(container.Name, prefix)
 		}
+		inspect, err := o.PodInspect(podReport.Name)
+		if err != nil {
+			return nil, err
+		}
+		pod.Status.Phase = corev1.PodPhase(inspect.State)
+
 		result.Items = append(result.Items, *pod)
 	}
 	return &result, nil
@@ -128,4 +136,8 @@ func (o *PodmanCli) getPodsFromSelector(selector string) ([]ListPodsReport, erro
 		return nil, err
 	}
 	return list, nil
+}
+
+func (o *PodmanCli) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	return nil, nil
 }

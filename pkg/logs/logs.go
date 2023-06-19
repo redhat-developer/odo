@@ -6,6 +6,7 @@ import (
 	"io"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -17,8 +18,9 @@ type LogsClient struct {
 }
 
 type ContainerLogs struct {
-	Name string
-	Logs io.ReadCloser
+	PodName       string
+	ContainerName string
+	Logs          io.ReadCloser
 }
 
 type Events struct {
@@ -80,7 +82,11 @@ func (o *LogsClient) getLogsForMode(
 					if err != nil {
 						events.Err <- fmt.Errorf("failed to get logs for container %s; error: %v", container.Name, err)
 					}
-					events.Logs <- ContainerLogs{container.Name, containerLogs}
+					events.Logs <- ContainerLogs{
+						PodName:       pod.GetName(),
+						ContainerName: container.Name,
+						Logs:          containerLogs,
+					}
 				}
 			case err := <-errChan:
 				events.Err <- err
@@ -92,18 +98,42 @@ func (o *LogsClient) getLogsForMode(
 
 	appname := odocontext.GetApplication(ctx)
 
-	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
-		selector = odolabels.GetSelector(componentName, appname, odolabels.ComponentDevMode, false)
-		err := o.getPodsForSelector(selector, namespace, podChan)
+	getPods := func() error {
+		if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
+			selector = odolabels.GetSelector(componentName, appname, odolabels.ComponentDevMode, false)
+			err := o.getPodsForSelector(selector, namespace, podChan)
+			if err != nil {
+				return err
+			}
+		}
+		if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
+			selector = odolabels.GetSelector(componentName, appname, odolabels.ComponentDeployMode, false)
+			err := o.getPodsForSelector(selector, namespace, podChan)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	err := getPods()
+	if err != nil {
+		errChan <- err
+	}
+
+	if follow {
+		podWatcher, err := o.platformClient.PodWatcher(ctx, "")
 		if err != nil {
 			errChan <- err
 		}
-	}
-	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
-		selector = odolabels.GetSelector(componentName, appname, odolabels.ComponentDeployMode, false)
-		err := o.getPodsForSelector(selector, namespace, podChan)
-		if err != nil {
-			errChan <- err
+		for ev := range podWatcher.ResultChan() {
+			switch ev.Type {
+			case watch.Added, watch.Modified:
+				err = getPods()
+				if err != nil {
+					errChan <- err
+				}
+			}
 		}
 	}
 
@@ -125,7 +155,9 @@ func (o *LogsClient) getPodsForSelector(
 		return err
 	}
 	for _, pod := range podList.Items {
-		pods[pod.GetName()] = struct{}{}
+		if pod.Status.Phase == "Running" {
+			pods[pod.GetName()] = struct{}{}
+		}
 	}
 
 	// get all pods in the namespace
@@ -139,11 +171,15 @@ func (o *LogsClient) getPodsForSelector(
 			// Pod's logs have already been displayed to user
 			continue
 		}
-		podList.Items = append(podList.Items, pod)
+		if pod.Status.Phase == "Running" {
+			podList.Items = append(podList.Items, pod)
+		}
 	}
 
 	for _, pod := range podList.Items {
-		podChan <- pod
+		if pod.Status.Phase == "Running" {
+			podChan <- pod
+		}
 	}
 
 	return nil

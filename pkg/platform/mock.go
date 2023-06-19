@@ -12,6 +12,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	watch "k8s.io/apimachinery/pkg/watch"
 )
 
 // MockClient is a mock of Client interface.
@@ -139,4 +140,19 @@ func (m *MockClient) GetRunningPodFromSelector(selector string) (*v1.Pod, error)
 func (mr *MockClientMockRecorder) GetRunningPodFromSelector(selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClient)(nil).GetRunningPodFromSelector), selector)
+}
+
+// PodWatcher mocks base method.
+func (m *MockClient) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PodWatcher indicates an expected call of PodWatcher.
+func (mr *MockClientMockRecorder) PodWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWatcher", reflect.TypeOf((*MockClient)(nil).PodWatcher), ctx, selector)
 }

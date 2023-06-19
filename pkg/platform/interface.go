@@ -6,6 +6,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 // Client is the interface that wraps operations that can be performed on any supported platform.
@@ -33,4 +34,6 @@ type Client interface {
 	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
 
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
+
+	PodWatcher(ctx context.Context, selector string) (watch.Interface, error)
 }
