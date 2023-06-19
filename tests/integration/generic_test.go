@@ -117,14 +117,20 @@ var _ = Describe("odo generic", func() {
 		BeforeEach(func() {
 			odoVersion = helper.Cmd("odo", "version").ShouldPass().Out()
 		})
-
-		It("should show the version of odo major components including server login URL", func() {
-			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
-			rekubernetesVersion := `Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
-			Expect(odoVersion).Should(SatisfyAll(MatchRegexp(reOdoVersion), MatchRegexp(rekubernetesVersion)))
-			serverURL := oc.GetCurrentServerURL()
-			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
-		})
+		for _, podman := range []bool{true, false} {
+			podman := podman
+			FIt("should show the version of odo major components including server login URL", helper.LabelPodmanIf(podman, func() {
+				reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
+				rekubernetesVersion := `Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
+				Expect(odoVersion).Should(SatisfyAll(MatchRegexp(reOdoVersion), MatchRegexp(rekubernetesVersion)))
+				if podman {
+					podmanVersion := `^Podman \(Client\):\s*[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
+					Expect(odoVersion).Should(Satisfy(MatchRegexp(podmanVersion)))
+				}
+				serverURL := oc.GetCurrentServerURL()
+				Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+			}))
+		}
 
 		It("should show the version of odo major components", Label(helper.LabelNoCluster), func() {
 			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
