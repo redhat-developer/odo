@@ -11,4 +11,5 @@ type Content struct {
 	Platform string `json:"platform"`
 	// ForwardedPorts are the ports forwarded during odo dev session
 	ForwardedPorts []api.ForwardedPort `json:"forwardedPorts"`
+	APIServerPort  int                 `json:"apiServerPort"`
 }

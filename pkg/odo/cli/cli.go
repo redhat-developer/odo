@@ -189,7 +189,7 @@ func odoRootCmd(ctx context.Context, name, fullName string, testClientset client
 		_delete.NewCmdDelete(ctx, _delete.RecommendedCommandName, util.GetFullName(fullName, _delete.RecommendedCommandName), testClientset),
 		add.NewCmdAdd(add.RecommendedCommandName, util.GetFullName(fullName, add.RecommendedCommandName), testClientset),
 		remove.NewCmdRemove(remove.RecommendedCommandName, util.GetFullName(fullName, remove.RecommendedCommandName), testClientset),
-		dev.NewCmdDev(dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName), testClientset),
+		dev.NewCmdDev(ctx, dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName), testClientset),
 		alizer.NewCmdAlizer(alizer.RecommendedCommandName, util.GetFullName(fullName, alizer.RecommendedCommandName), testClientset),
 		describe.NewCmdDescribe(ctx, describe.RecommendedCommandName, util.GetFullName(fullName, describe.RecommendedCommandName), testClientset),
 		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName), testClientset),

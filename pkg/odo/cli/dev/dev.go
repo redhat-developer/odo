@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -70,6 +72,8 @@ type DevOptions struct {
 	portForwardFlag      []string
 	addressFlag          string
 	noCommandsFlag       bool
+	apiServerFlag        bool
+	apiServerPortFlag    int
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -173,6 +177,12 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
+	if o.apiServerFlag && o.apiServerPortFlag != 0 {
+		if !util.IsPortFree(o.apiServerPortFlag, "") {
+			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPortFlag)
+		}
+	}
+
 	return nil
 }
 
@@ -242,6 +252,11 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
+	if o.apiServerFlag {
+		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
+		apiserver_impl.StartServer(ctx, o.cancel, o.apiServerPortFlag, o.clientset.StateClient)
+	}
+
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		dev.StartOptions{
@@ -282,7 +297,7 @@ func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
 }
 
 // NewCmdDev implements the odo dev command
-func NewCmdDev(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
+func NewCmdDev(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewDevOptions()
 	devCmd := &cobra.Command{
 		Use:   name,
@@ -311,6 +326,10 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
 	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
 
+	if feature.IsExperimentalModeEnabled(ctx) {
+		devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", false, "Start the API Server; this is an experimental feature")
+		devCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server; this flag should be used in combination with --api-server flag.")
+	}
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,

@@ -151,10 +151,6 @@ cross: ## compile for multiple platforms
 generate-cli-structure:
 	go run cmd/cli-doc/cli-doc.go structure
 
-.PHONY: generate-cli-reference
-generate-cli-reference:
-	go run cmd/cli-doc/cli-doc.go reference > docs/cli-reference.adoc
-
 # run make cross before this!
 .PHONY: prepare-release
 prepare-release: cross ## create gzipped binaries in ./dist/release/ for uploading to GitHub release page
@@ -232,3 +228,21 @@ test-e2e:
 .PHONY: test-doc-automation
 test-doc-automation:
 	$(RUN_GINKGO) $(GINKGO_FLAGS_ONE) --junit-report="test-doc-automation.xml"  tests/documentation/...
+
+
+# Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; this will only generate interfaces
+# Actual implementation must be done inside pkg/apiserver-impl
+# Apart from generating the files, this target also formats the generated files
+# and removes openapi.yaml to avoid any confusion regarding ododevapispec.yaml file and which file to use.
+.PHONY: generate-apiserver
+generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen
+	podman run --rm \
+    		-v ${PWD}:/local \
+    		docker.io/openapitools/openapi-generator-cli:v6.6.0 \
+    		generate \
+    		-i /local/ododevapispec.yaml \
+    		-g go-server \
+    		-o /local/pkg/apiserver-gen \
+    		--additional-properties=outputAsLibrary=true,onlyInterfaces=true,hideGenerationTimestamp=true && \
+    		echo "Formatting generated files:" && go fmt ./pkg/apiserver-gen/... && \
+    		echo "Removing pkg/apiserver-gen/api/openapi.yaml" && rm ./pkg/apiserver-gen/api/openapi.yaml

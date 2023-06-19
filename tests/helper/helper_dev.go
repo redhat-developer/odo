@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/ActiveState/termtest/expect"
@@ -110,13 +111,14 @@ import (
 */
 
 type DevSession struct {
-	session   *gexec.Session
-	stopped   bool
-	console   *expect.Console
-	address   string
-	StdOut    string
-	ErrOut    string
-	Endpoints map[string]string
+	session           *gexec.Session
+	stopped           bool
+	console           *expect.Console
+	address           string
+	StdOut            string
+	ErrOut            string
+	Endpoints         map[string]string
+	APIServerEndpoint string
 }
 
 type DevSessionOpts struct {
@@ -128,6 +130,8 @@ type DevSessionOpts struct {
 	NoWatch          bool
 	NoCommands       bool
 	CustomAddress    string
+	StartAPIServer   bool
+	APIServerPort    int
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -155,6 +159,12 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	}
 	if options.CustomAddress != "" {
 		args = append(args, "--address", options.CustomAddress)
+	}
+	if options.StartAPIServer {
+		args = append(args, "--api-server")
+		if options.APIServerPort != 0 {
+			args = append(args, "--api-server-port", fmt.Sprintf("%d", options.APIServerPort))
+		}
 	}
 	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)
@@ -186,6 +196,10 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	result.StdOut = string(outContents)
 	result.ErrOut = string(errContents)
 	result.Endpoints = getPorts(string(outContents), options.CustomAddress)
+	if options.StartAPIServer {
+		// errContents because the server message is still printed as a log/warning
+		result.APIServerEndpoint = getAPIServerPort(string(errContents))
+	}
 	return result, nil
 
 }
@@ -357,4 +371,13 @@ func getPorts(s, address string) map[string]string {
 		result[match[2]] = match[1]
 	}
 	return result
+}
+
+// getAPIServerPort returns the address at which api server is running
+//
+// `I0617 11:40:44.124391   49578 starterserver.go:36] API Server started at localhost:20000/api/v1`
+func getAPIServerPort(s string) string {
+	re := regexp.MustCompile(`(API Server started at localhost:[0-9]+\/api\/v1)`)
+	matches := re.FindString(s)
+	return strings.Split(matches, "at ")[1]
 }
