@@ -284,7 +284,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	)
 }
 
+// removeGitDir removes the `.git` entry from the list of paths to ignore
+// and adds `!.git`, to force the sync of all files into the .git directory
 func removeGitDir(ignores []string) []string {
+	ignores = append(ignores, "!.git")
 	for i, entry := range ignores {
 		if entry == ".git" {
 			return append(ignores[0:i], ignores[i+1:]...)

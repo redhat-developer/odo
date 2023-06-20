@@ -182,7 +182,11 @@ echo "$@"
 				})
 				Expect(err).ToNot(HaveOccurred())
 			}))
-			It("should sync .git directory with --sync-git-dir", helper.LabelPodmanIf(podman, func() {
+			It("should sync .git directory and subfiles with --sync-git-dir", helper.LabelPodmanIf(podman, func() {
+				gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
+				if err := helper.CreateFileWithContent(gitignorePath, `file.txt`); err != nil {
+					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
+				}
 				helper.MakeDir(".git")
 				err := helper.CreateFileWithContent(filepath.Join(commonVar.Context, ".git", "file.txt"), "aze")
 				Expect(err).ToNot(HaveOccurred())
