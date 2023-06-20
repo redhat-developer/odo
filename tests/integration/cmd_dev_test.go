@@ -166,6 +166,40 @@ echo "$@"
 
 		for _, podman := range []bool{true, false} {
 			podman := podman
+			It("should not sync .git directory", helper.LabelPodmanIf(podman, func() {
+				helper.MakeDir(".git")
+				err := helper.CreateFileWithContent(filepath.Join(commonVar.Context, ".git", "file.txt"), "aze")
+				Expect(err).ToNot(HaveOccurred())
+				helper.MakeDir("notgit")
+				err = helper.CreateFileWithContent(filepath.Join(commonVar.Context, "notgit", "otherfile.txt"), "aze")
+				Expect(err).ToNot(HaveOccurred())
+				err = helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", []string{"ls", "/projects/.git/file.txt"}, pointer.Bool(false))
+					component.Exec("runtime", []string{"ls", "/projects/notgit/otherfile.txt"}, pointer.Bool(true))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}))
+			It("should sync .git directory and subfiles with --sync-git-dir", helper.LabelPodmanIf(podman, func() {
+				gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
+				if err := helper.CreateFileWithContent(gitignorePath, `file.txt`); err != nil {
+					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
+				}
+				helper.MakeDir(".git")
+				err := helper.CreateFileWithContent(filepath.Join(commonVar.Context, ".git", "file.txt"), "aze")
+				Expect(err).ToNot(HaveOccurred())
+				err = helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+					SyncGitDir:  true,
+				}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", []string{"ls", "/projects/.git/file.txt"}, pointer.Bool(true))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}))
+
 			It("should use the index information from previous push operation", helper.LabelPodmanIf(podman, func() {
 				// Create a new file A
 				fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
