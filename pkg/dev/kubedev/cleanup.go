@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -36,9 +37,13 @@ func (o *DevClient) CleanupResources(ctx context.Context, out io.Writer) error {
 	}
 	// delete all the resources
 	failed := o.deleteClient.DeleteResources(resources, true)
+	if len(failed) == 0 {
+		return nil
+	}
+	var list []string
 	for _, fail := range failed {
-		fmt.Fprintf(out, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+		list = append(list, fmt.Sprintf("- %s/%s", fail.GetKind(), fail.GetName()))
 	}
 
-	return nil
+	return fmt.Errorf("could not delete the following resource(s): \n%v", strings.Join(list, "\n"))
 }

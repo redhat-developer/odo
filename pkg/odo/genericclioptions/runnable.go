@@ -53,7 +53,7 @@ type SignalHandler interface {
 }
 
 type Cleanuper interface {
-	Cleanup(ctx context.Context, err error)
+	Cleanup(ctx context.Context, commandError error) error
 }
 
 // A PreIniter command is a command that will run `init` command if no file is present in current directory
@@ -282,7 +282,7 @@ func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Comman
 	}
 	startTelemetry(cmd, err, startTime)
 	if cleanuper, ok := o.(Cleanuper); ok {
-		cleanuper.Cleanup(ctx, err)
+		err = cleanuper.Cleanup(ctx, err)
 	}
 	return err
 }
