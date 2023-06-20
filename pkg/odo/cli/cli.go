@@ -104,8 +104,11 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 const pluginPrefix = "odo"
 
 // NewCmdOdo creates a new root command for odo
-func NewCmdOdo(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
-	rootCmd := odoRootCmd(ctx, name, fullName, testClientset)
+func NewCmdOdo(ctx context.Context, name, fullName string, unknownCmdHandler func(error), testClientset clientset.Clientset) (*cobra.Command, error) {
+	rootCmd, err := odoRootCmd(ctx, name, fullName, unknownCmdHandler, testClientset)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(os.Args) > 1 {
 		cmdPathPieces := os.Args[1:]
@@ -113,17 +116,17 @@ func NewCmdOdo(ctx context.Context, name, fullName string, testClientset clients
 		// the specified command does not already exist
 		cmd, _, err := rootCmd.Find(cmdPathPieces)
 		if err == nil && cmd != rootCmd {
-			return rootCmd
+			return rootCmd, nil
 		}
 		handleErr := plugins.HandleCommand(plugins.NewExecHandler(pluginPrefix), cmdPathPieces)
 		if handleErr != nil {
-			return rootCmd
+			return rootCmd, handleErr
 		}
 	}
-	return rootCmd
+	return rootCmd, nil
 }
 
-func odoRootCmd(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
+func odoRootCmd(ctx context.Context, name, fullName string, unknownCmdHandler func(error), testClientset clientset.Clientset) (*cobra.Command, error) {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,
@@ -169,11 +172,11 @@ func odoRootCmd(ctx context.Context, name, fullName string, testClientset client
 	helpCmd := rootCmd.HelpFunc()
 	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		// Simple way of checking to see if the command has a parent (if it doesn't, it does not exist)
-		if !command.HasParent() && len(args) > 0 {
-			fmt.Fprintf(log.GetStderr(), "unknown command '%s', type --help for a list of all commands\n", args[0])
-			os.Exit(1)
+		if unknownCmdHandler == nil || command.HasParent() || len(args) == 0 {
+			helpCmd(command, args)
+		} else {
+			unknownCmdHandler(fmt.Errorf("unknown command '%s', type --help for a list of all commands", args[0]))
 		}
-		helpCmd(command, args)
 	})
 
 	rootCmdList := append([]*cobra.Command{},
@@ -205,7 +208,7 @@ func odoRootCmd(ctx context.Context, name, fullName string, testClientset client
 
 	visitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
-	return rootCmd
+	return rootCmd, nil
 }
 
 // capitalizeFlagDescriptions adds capitalizations

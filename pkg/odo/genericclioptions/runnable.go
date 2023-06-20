@@ -24,11 +24,10 @@ import (
 
 	"gopkg.in/AlecAivazis/survey.v1"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-
 	"k8s.io/klog"
 	"k8s.io/utils/pointer"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
@@ -142,11 +141,12 @@ func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Comman
 				var consentTelemetry bool
 				prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
 				err = survey.AskOne(prompt, &consentTelemetry, nil)
-				ui.HandleError(err)
-				if err == nil {
-					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
-						klog.V(4).Info(err1.Error())
-					}
+				if err != nil {
+					return err
+				}
+				err = userConfig.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry))
+				if err != nil {
+					klog.V(4).Info(err.Error())
 				}
 			}
 		}

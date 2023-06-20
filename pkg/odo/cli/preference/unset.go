@@ -69,7 +69,12 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 	if !o.forceFlag {
 
 		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {
-			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
+			var proceed bool
+			proceed, err = ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName))
+			if err != nil {
+				return err
+			}
+			if !proceed {
 				log.Infof("Aborted by the user")
 				return nil
 			}

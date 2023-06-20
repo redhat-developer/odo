@@ -7,9 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sethvargo/go-envconfig"
 	"github.com/spf13/pflag"
 	"k8s.io/klog"
+
+	"github.com/sethvargo/go-envconfig"
 
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
@@ -77,7 +78,10 @@ func runCommand(
 
 	clientset.Stdout = &stdoutB
 	clientset.Stderr = &stderrB
-	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, clientset)
+	root, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, nil, clientset)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	root.SetOut(&stdoutB)
 	root.SetErr(&stderrB)

@@ -180,7 +180,14 @@ func (o *ComponentOptions) deleteNamedComponent(ctx context.Context) error {
 	}
 	o.printDevfileComponents(o.name, o.namespace, clusterResources, podmanResources)
 
-	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
+	proceed := o.forceFlag
+	if !proceed {
+		proceed, err = ui.Proceed("Are you sure you want to delete these resources?")
+		if err != nil {
+			return err
+		}
+	}
+	if proceed {
 
 		if len(clusterResources) > 0 {
 			spinner := log.Fspinnerf(o.clientset.Stdout, "Deleting resources from cluster")
@@ -328,7 +335,14 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 	if o.runningIn != "" {
 		msg = fmt.Sprintf("Are you sure you want to delete %q and all its resources running in the %s mode?", componentName, o.runningIn)
 	}
-	if o.forceFlag || ui.Proceed(msg) {
+	proceed := o.forceFlag
+	if !proceed {
+		proceed, err = ui.Proceed(msg)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if proceed {
 
 		if hasClusterResources {
 			spinner := log.Fspinnerf(o.clientset.Stdout, "Deleting resources from cluster")

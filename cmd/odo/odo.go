@@ -38,7 +38,12 @@ func main() {
 	// create the complete command
 	klog.InitFlags(nil)
 
-	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, clientset.Clientset{})
+	root, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, func(err error) {
+		util.LogErrorAndExit(err, "")
+	}, clientset.Clientset{})
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
@@ -59,7 +64,7 @@ func main() {
 	args := os.Args[1:]
 	if err = flag.CommandLine.Parse(args); err != nil {
 		if err == flag.ErrHelp {
-			os.Exit(0)
+			return
 		}
 	}
 
