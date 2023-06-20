@@ -140,6 +140,9 @@ var _ = Describe("odo generic", func() {
 							Expect(odoVersion).Should(MatchRegexp(reKubernetesVersion))
 							serverURL := oc.GetCurrentServerURL()
 							Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+							if !helper.IsKubernetesCluster() {
+								Expect(odoVersion).Should(ContainSubstring("OpenShift: "))
+							}
 						}
 					})
 
@@ -155,6 +158,9 @@ var _ = Describe("odo generic", func() {
 							serverURL := oc.GetCurrentServerURL()
 							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
 							helper.JsonPathExist(odoVersion, "cluster.openshift")
+							if !helper.IsKubernetesCluster() {
+								helper.JsonPathSatisfies(odoVersion, "cluster.openshift", Not(BeEmpty()))
+							}
 						}
 					})
 				}))
