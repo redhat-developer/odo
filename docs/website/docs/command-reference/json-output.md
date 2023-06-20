@@ -907,3 +907,30 @@ If odo can't find any projects on the cluster that you have access to, it will s
 $ odo list projects -o json
 {}
 ```
+
+## odo version -o json
+The `odo version -o json` returns the version information about `odo`, cluster and podman client.
+```shell
+odo version -o json
+```
+```shell
+$ odo version -o json
+{
+	"version": "v3.11.0",
+	"gitCommit": "ea2d256e8",
+	"cluster": {
+		"serverURL": "https://kubernetes.docker.internal:6443",
+		"kubernetes": {
+			"version": "v1.25.9"
+		},
+		"openshift": {
+		  "version": "4.13.0"
+		},
+	},
+	"podman": {
+		"client": {
+			"version": "4.5.1"
+		}
+	}
+}
+```

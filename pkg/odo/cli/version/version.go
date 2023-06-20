@@ -136,7 +136,7 @@ func (o *VersionOptions) Run(ctx context.Context) (err error) {
 	message := "\n"
 	if odoVersion.Cluster != nil {
 		cluster := odoVersion.Cluster
-		message = fmt.Sprintf("Server: %v\n", cluster.ServerURL)
+		message += fmt.Sprintf("Server: %v\n", cluster.ServerURL)
 
 		// make sure we only include OpenShift info if we actually have it
 		if cluster.OpenShift.Version != "" {

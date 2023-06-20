@@ -61,6 +61,7 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 
 	// This will fetch the information about OpenShift Version
 	coreGet := c.GetClient().CoreV1().RESTClient().Get()
+	// TODO: Use this /apis/config.openshift.io/v1/clusterversions/version instead
 	rawOpenShiftVersion, err := coreGet.AbsPath("/version/openshift").Do(context.TODO()).Raw()
 	if err != nil {
 		klog.V(3).Info("Unable to get OpenShift Version: ", err)
