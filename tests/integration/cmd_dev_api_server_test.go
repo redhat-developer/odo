@@ -2,11 +2,12 @@ package integration
 
 import (
 	"fmt"
+	"net/http"
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
-	"net/http"
-	"path/filepath"
 )
 
 var _ = Describe("odo dev command with api server tests", func() {
@@ -63,8 +64,7 @@ var _ = Describe("odo dev command with api server tests", func() {
 						url := fmt.Sprintf("http://%s/instance", devSession.APIServerEndpoint)
 						resp, err := http.Get(url)
 						Expect(err).ToNot(HaveOccurred())
-						// TODO: Change this once it is implemented
-						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNotImplemented))
+						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusOK))
 					})
 				})
 			}))
