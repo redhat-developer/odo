@@ -101,7 +101,7 @@ var _ = Describe("odo logs command tests", func() {
 				cmd := getLogCommand(podman)
 				out := cmd.ShouldPass().Out()
 				Expect(out).To(ContainSubstring(noContainersRunning))
-				cmd = getLogCommand(podman, "--follow")
+				cmd = getLogCommand(podman)
 				out = cmd.ShouldPass().Out()
 				Expect(out).To(ContainSubstring(noContainersRunning))
 			})
