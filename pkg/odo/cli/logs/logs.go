@@ -192,6 +192,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 					if err != nil {
 						errChan <- err
 					}
+					delete(displayedLogs, podContainerName)
 					events.Done <- struct{}{}
 				}(o.out)
 			} else {
