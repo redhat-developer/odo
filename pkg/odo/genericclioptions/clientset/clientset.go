@@ -21,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/podman"
@@ -179,9 +180,13 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 
 	if testClientset.Stdout != nil {
 		dep.Stdout = testClientset.Stdout
+	} else {
+		dep.Stdout = log.GetStdout()
 	}
 	if testClientset.Stderr != nil {
 		dep.Stderr = testClientset.Stderr
+	} else {
+		dep.Stderr = log.GetStderr()
 	}
 
 	/* Without sub-dependencies */
@@ -193,26 +198,33 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 		}
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
-		dep.KubernetesClient, err = kclient.New()
-		if err != nil {
-			// only return error is KUBERNETES_NULLABLE is not defined in combination with KUBERNETES
-			if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
-				return nil, err
+		if testClientset.KubernetesClient != nil {
+			dep.KubernetesClient = testClientset.KubernetesClient
+		} else {
+			dep.KubernetesClient, err = kclient.New()
+			if err != nil {
+				// only return error is KUBERNETES_NULLABLE is not defined in combination with KUBERNETES
+				if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
+					return nil, err
+				}
+				klog.V(3).Infof("no Kubernetes client initialized: %v", err)
+				dep.KubernetesClient = nil
 			}
-			klog.V(3).Infof("no Kubernetes client initialized: %v", err)
-			dep.KubernetesClient = nil
 		}
-
 	}
 	if isDefined(command, PODMAN) || isDefined(command, PODMAN_NULLABLE) {
-		dep.PodmanClient, err = podman.NewPodmanCli(ctx)
-		if err != nil {
-			// send error in case the command is to run on podman platform or if PODMAN clientset is required.
-			if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
-				return nil, podman.NewPodmanNotFoundError(err)
+		if testClientset.PodmanClient != nil {
+			dep.PodmanClient = testClientset.PodmanClient
+		} else {
+			dep.PodmanClient, err = podman.NewPodmanCli(ctx)
+			if err != nil {
+				// send error in case the command is to run on podman platform or if PODMAN clientset is required.
+				if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
+					return nil, podman.NewPodmanNotFoundError(err)
+				}
+				klog.V(3).Infof("no Podman client initialized: %v", err)
+				dep.PodmanClient = nil
 			}
-			klog.V(3).Infof("no Podman client initialized: %v", err)
-			dep.PodmanClient = nil
 		}
 	}
 	if isDefined(command, PREFERENCE) {
