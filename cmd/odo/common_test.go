@@ -7,14 +7,15 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sethvargo/go-envconfig"
+	"github.com/spf13/pflag"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-	"github.com/sethvargo/go-envconfig"
-	"github.com/spf13/pflag"
-	"k8s.io/klog"
 )
 
 func resetGlobalFlags() {
@@ -33,7 +34,7 @@ func runCommand(
 	args []string,
 	options runOptions,
 	clientset clientset.Clientset,
-	populateFS func(fs filesystem.Filesystem),
+	populateFS func(fs filesystem.Filesystem) error,
 	f func(err error, stdout, stderr string),
 ) {
 
@@ -52,7 +53,10 @@ func runCommand(
 	}
 
 	if populateFS != nil {
-		populateFS(clientset.FS)
+		err = populateFS(clientset.FS)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	ctx := context.Background()
