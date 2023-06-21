@@ -17,11 +17,11 @@ If you are pushing a change to documentation, please read: https://github.com/re
 Add one of the following kinds:
 /kind bug
 /kind feature
-/kind code-refactoring
 
-Additionally, add one of the following areas if applicable:
+Additionally, add one or more [`area/*` label(s)](https://github.com/redhat-developer/odo/labels?q=area%2F) if applicable. For example:
 /area documentation
 /area testing
+/area refactoring
 
 Feel free to use other [labels](https://github.com/redhat-developer/odo/labels) as needed. However one of the above labels must be present or the PR will not be reviewed. This instruction is for reviewers as well.
 -->
