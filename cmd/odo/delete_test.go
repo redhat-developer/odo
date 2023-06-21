@@ -8,16 +8,17 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/tests/helper"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Context
@@ -82,12 +83,15 @@ var allPlatforms = map[string]platformFunc{
 
 // FS content
 
-type fscontentFunc func(fs filesystem.Filesystem)
+type fscontentFunc func(fs filesystem.Filesystem) error
 
-var noContentFscontent fscontentFunc = func(fs filesystem.Filesystem) {}
+var noContentFscontent fscontentFunc = func(fs filesystem.Filesystem) error {
+	return nil
+}
 
-var nodeJsSourcesFsContent fscontentFunc = func(fs filesystem.Filesystem) {
+var nodeJsSourcesFsContent fscontentFunc = func(fs filesystem.Filesystem) error {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), ".")
+	return nil
 }
 
 type fsOptions struct {
@@ -96,7 +100,7 @@ type fsOptions struct {
 }
 
 var nodeJsSourcesAndDevfileFsContent = func(devfilePath string, options fsOptions) fscontentFunc {
-	return func(fs filesystem.Filesystem) {
+	return func(fs filesystem.Filesystem) error {
 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), ".")
 		helper.CopyExampleDevFile(
 			devfilePath,
@@ -110,6 +114,7 @@ var nodeJsSourcesAndDevfileFsContent = func(devfilePath string, options fsOption
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		}
+		return nil
 	}
 }
 
