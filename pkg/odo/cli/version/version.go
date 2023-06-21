@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"os"
@@ -75,7 +76,13 @@ func (o *VersionOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, 
 				klog.V(4).Info("unable to fetch the podman client version: ", err)
 			}
 		}
+	}
 
+	if o.serverInfo == nil {
+		log.Warning("unable to fetch the cluster server version")
+	}
+	if o.podmanInfo.Client == nil {
+		log.Warning("unable to fetch the podman client version")
 	}
 	return nil
 }
@@ -144,7 +151,6 @@ func (o *VersionOptions) Run(ctx context.Context) (err error) {
 		}
 
 		message += fmt.Sprintf("Kubernetes: %v\n", cluster.Kubernetes.Version)
-
 	}
 
 	if odoVersion.Podman != nil {

@@ -909,9 +909,10 @@ $ odo list projects -o json
 ```
 
 ## odo version -o json
-The `odo version -o json` returns the version information about `odo`, cluster and podman client.
+The `odo version -o json` returns the version information about `odo`, cluster server and podman client.
+Use `--client` flag to only obtain version information about `odo`.
 ```shell
-odo version -o json
+odo version -o json [--client]
 ```
 ```shell
 $ odo version -o json

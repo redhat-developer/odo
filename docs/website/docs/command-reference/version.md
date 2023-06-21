@@ -3,10 +3,12 @@ title: odo version
 ---
 
 ## Description
-The `odo version` command returns the version information about `odo`, cluster and podman client.
+The `odo version` command returns the version information about `odo`, cluster server and podman client.
 
 ## Running the Command
-The command takes an optional `--client` flag that only returns version information about `odo`. It will only print Openshift version if it is available.
+The command takes an optional `--client` flag that only returns version information about `odo`.
+
+The command will only print Openshift version if it is available.
 ```shell
 odo version [--client] [-o json]
 ```
