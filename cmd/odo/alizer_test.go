@@ -49,7 +49,7 @@ func TestOdoAlizer(t *testing.T) {
 				ctrl := gomock.NewController(t)
 				fs := filesystem.NewFakeFs()
 				alizerClient := alizer.NewMockClient(ctrl)
-				path := "."
+				path := "/"
 				alizerClient.EXPECT().DetectFramework(gomock.Any(), path).
 					Return(
 						model.DevFileType{
