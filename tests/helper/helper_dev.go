@@ -252,6 +252,13 @@ func (o DevSession) WaitEnd() {
 	o.session.Wait(3 * time.Minute)
 }
 
+func (o DevSession) GetExitCode() int {
+	if o.session == nil {
+		return -1
+	}
+	return o.session.ExitCode()
+}
+
 // WaitSync waits for the synchronization of files to be finished
 // It returns the contents of the standard and error outputs
 // and the list of forwarded ports
