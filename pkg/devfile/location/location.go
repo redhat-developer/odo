@@ -13,9 +13,9 @@ var possibleDevfileNames = [...]string{"devfile.yaml", ".devfile.yaml"}
 
 // DevfileFilenamesProvider checks if the context dir contains devfile with possible names from possibleDevfileNames variable,
 // else it returns "devfile.yaml" as default value.
-func DevfileFilenamesProvider(contexDir string) string {
+func DevfileFilenamesProvider(fsys filesystem.Filesystem, contextDir string) string {
 	for _, devFile := range possibleDevfileNames {
-		if util.CheckPathExists(filepath.Join(contexDir, devFile)) {
+		if util.CheckPathExists(fsys, filepath.Join(contextDir, devFile)) {
 			return devFile
 		}
 	}
@@ -25,12 +25,12 @@ func DevfileFilenamesProvider(contexDir string) string {
 // DevfileLocation returns path to devfile File with approprite devfile File name from possibleDevfileNames variable,
 // if contextDir value is provided as argument then DevfileLocation returns devfile path
 // else it assumes current dir as contextDir and returns appropriate value.
-func DevfileLocation(contexDir string) string {
-	if contexDir == "" {
-		contexDir = "./"
+func DevfileLocation(fsys filesystem.Filesystem, contextDir string) string {
+	if contextDir == "" {
+		contextDir = "./"
 	}
-	devFile := DevfileFilenamesProvider(contexDir)
-	return filepath.Join(contexDir, devFile)
+	devFile := DevfileFilenamesProvider(fsys, contextDir)
+	return filepath.Join(contextDir, devFile)
 }
 
 // IsDevfileName returns true if name is a supported name for a devfile

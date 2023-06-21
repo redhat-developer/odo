@@ -3,9 +3,10 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
@@ -50,7 +51,7 @@ func DownloadStarterProject(fs filesystem.Filesystem, starterProject *devfilev1.
 	}
 
 	// We will check to see if the project has a valid directory
-	err = util.IsValidProjectDir(path, location.DevfileLocation(""), fs)
+	err = util.IsValidProjectDir(path, location.DevfileLocation(fs, ""), fs)
 	if err != nil {
 		return err
 	}

@@ -405,27 +405,38 @@ func TestGetAbsPath(t *testing.T) {
 }
 
 func TestCheckPathExists(t *testing.T) {
-	dir, err := os.CreateTemp("", "")
-	defer os.RemoveAll(dir.Name())
-	if err != nil {
-		return
-	}
 	tests := []struct {
-		fileName string
-		wantBool bool
+		fsProvider func() (filesystem.Filesystem, error)
+		fileName   string
+		wantBool   bool
 	}{
 		{
-			fileName: dir.Name(),
+			fsProvider: func() (filesystem.Filesystem, error) {
+				fakeFs := filesystem.NewFakeFs()
+				_, err := fakeFs.Create("my-file")
+				if err != nil {
+					return nil, err
+				}
+				return fakeFs, nil
+			},
+			fileName: "my-file",
 			wantBool: true,
 		},
 		{
-			fileName: dir.Name() + "-blah",
+			fsProvider: func() (filesystem.Filesystem, error) {
+				return filesystem.NewFakeFs(), nil
+			},
+			fileName: "some-file-blah",
 			wantBool: false,
 		},
 	}
 
 	for _, tt := range tests {
-		exists := CheckPathExists(tt.fileName)
+		fsys, err := tt.fsProvider()
+		if err != nil {
+			t.Fatal(err)
+		}
+		exists := CheckPathExists(fsys, tt.fileName)
 		if tt.wantBool != exists {
 			t.Errorf("the expected value of TestCheckPathExists function is different : %v, got: %v", tt.wantBool, exists)
 		}
