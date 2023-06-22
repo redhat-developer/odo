@@ -157,7 +157,6 @@ var _ = Describe("odo generic", func() {
 							helper.JsonPathSatisfies(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
 							serverURL := oc.GetCurrentServerURL()
 							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
-							helper.JsonPathExist(odoVersion, "cluster.openshift")
 							if !helper.IsKubernetesCluster() {
 								helper.JsonPathSatisfies(odoVersion, "cluster.openshift", Not(BeEmpty()))
 							}

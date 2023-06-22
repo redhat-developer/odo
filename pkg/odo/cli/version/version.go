@@ -61,20 +61,22 @@ func (o *VersionOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes VersionOptions after they have been created
 func (o *VersionOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	if !o.clientFlag {
-		// Let's fetch the info about the server, ignoring errors
-		if o.clientset.KubernetesClient != nil {
-			o.serverInfo, err = o.clientset.KubernetesClient.GetServerVersion(o.clientset.PreferenceClient.GetTimeout())
-			if err != nil {
-				klog.V(4).Info("unable to fetch the server version: ", err)
-			}
-		}
+	if o.clientFlag {
+		return nil
+	}
 
-		if o.clientset.PodmanClient != nil {
-			o.podmanInfo, err = o.clientset.PodmanClient.Version(ctx)
-			if err != nil {
-				klog.V(4).Info("unable to fetch the podman client version: ", err)
-			}
+	// Fetch the info about the server, ignoring errors
+	if o.clientset.KubernetesClient != nil {
+		o.serverInfo, err = o.clientset.KubernetesClient.GetServerVersion(o.clientset.PreferenceClient.GetTimeout())
+		if err != nil {
+			klog.V(4).Info("unable to fetch the server version: ", err)
+		}
+	}
+
+	if o.clientset.PodmanClient != nil {
+		o.podmanInfo, err = o.clientset.PodmanClient.Version(ctx)
+		if err != nil {
+			klog.V(4).Info("unable to fetch the podman client version: ", err)
 		}
 	}
 
@@ -109,14 +111,16 @@ func (o *VersionOptions) run() api.OdoVersion {
 	if o.serverInfo != nil {
 		clusterInfo := &api.ClusterInfo{
 			ServerURL:  o.serverInfo.Address,
-			Kubernetes: api.ClusterClientInfo{Version: o.serverInfo.KubernetesVersion},
-			OpenShift:  api.ClusterClientInfo{Version: o.serverInfo.OpenShiftVersion},
+			Kubernetes: &api.ClusterClientInfo{Version: o.serverInfo.KubernetesVersion},
+		}
+		if o.serverInfo.OpenShiftVersion != "" {
+			clusterInfo.OpenShift = &api.ClusterClientInfo{Version: o.serverInfo.OpenShiftVersion}
 		}
 		result.Cluster = clusterInfo
 	}
 
 	if o.podmanInfo.Client != nil {
-		podmanInfo := &api.PodmanInfo{Client: api.PodmanClientInfo{Version: o.podmanInfo.Client.Version}}
+		podmanInfo := &api.PodmanInfo{Client: &api.PodmanClientInfo{Version: o.podmanInfo.Client.Version}}
 		result.Podman = podmanInfo
 	}
 
@@ -146,14 +150,15 @@ func (o *VersionOptions) Run(ctx context.Context) (err error) {
 		message += fmt.Sprintf("Server: %v\n", cluster.ServerURL)
 
 		// make sure we only include OpenShift info if we actually have it
-		if cluster.OpenShift.Version != "" {
+		if cluster.OpenShift != nil && cluster.OpenShift.Version != "" {
 			message += fmt.Sprintf("OpenShift: %v\n", cluster.OpenShift.Version)
 		}
-
-		message += fmt.Sprintf("Kubernetes: %v\n", cluster.Kubernetes.Version)
+		if cluster.Kubernetes != nil {
+			message += fmt.Sprintf("Kubernetes: %v\n", cluster.Kubernetes.Version)
+		}
 	}
 
-	if odoVersion.Podman != nil {
+	if odoVersion.Podman != nil && odoVersion.Podman.Client != nil {
 		message += fmt.Sprintf("Podman Client: %v\n", odoVersion.Podman.Client.Version)
 	}
 

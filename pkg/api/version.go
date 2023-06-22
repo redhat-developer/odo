@@ -29,9 +29,9 @@ type OdoVersion struct {
 }
 
 type ClusterInfo struct {
-	ServerURL  string            `json:"serverURL,omitempty"`
-	Kubernetes ClusterClientInfo `json:"kubernetes,omitempty"`
-	OpenShift  ClusterClientInfo `json:"openshift,omitempty"`
+	ServerURL  string             `json:"serverURL,omitempty"`
+	Kubernetes *ClusterClientInfo `json:"kubernetes,omitempty"`
+	OpenShift  *ClusterClientInfo `json:"openshift,omitempty"`
 }
 
 type ClusterClientInfo struct {
@@ -39,7 +39,7 @@ type ClusterClientInfo struct {
 }
 
 type PodmanInfo struct {
-	Client PodmanClientInfo `json:"client,omitempty"`
+	Client *PodmanClientInfo `json:"client,omitempty"`
 }
 
 type PodmanClientInfo struct {
