@@ -11,9 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/AlecAivazis/survey.v1/terminal"
-
 	"github.com/devfile/library/v2/pkg/devfile/parser"
+	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -248,7 +247,7 @@ func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Comman
 
 		var devfilePath, componentName string
 		var devfileObj *parser.DevfileObj
-		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables, userConfig.GetImageRegistry())
+		devfilePath, devfileObj, componentName, err = getDevfileInfo(cmd, deps.FS, cwd, variables, userConfig.GetImageRegistry())
 		if err != nil {
 			startTelemetry(cmd, err, startTime)
 			return err

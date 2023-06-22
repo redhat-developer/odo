@@ -182,7 +182,7 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, o.prefClient.GetImageRegistry(), true)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(o.fs, ""), pushParams.StartOptions.Variables, o.prefClient.GetImageRegistry(), true)
 	if err != nil {
 		return fmt.Errorf("unable to read devfile: %w", err)
 	}

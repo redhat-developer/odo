@@ -78,7 +78,7 @@ func (o *AddBindingOptions) Validate(ctx context.Context) (err error) {
 
 func (o *AddBindingOptions) Run(ctx context.Context) error {
 	// Update the raw Devfile only, so we do not break any relationship between parent-child for example
-	withDevfile := odoutil.CheckPathExists(location.DevfileLocation(odocontext.GetWorkingDirectory(ctx)))
+	withDevfile := odoutil.CheckPathExists(o.clientset.FS, location.DevfileLocation(o.clientset.FS, odocontext.GetWorkingDirectory(ctx)))
 	var devfileObj *parser.DevfileObj
 	if withDevfile {
 		rawDevfileObj, err := devfile.ParseAndValidateFromFile(odocontext.GetDevfilePath(ctx), "", false)
