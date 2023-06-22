@@ -219,6 +219,22 @@ var _ = Describe("odo dev command with api server tests", func() {
 						devSession.WaitEnd()
 					})
 				})
+
+				When("/component/command endpoint is POSTed", func() {
+
+					BeforeEach(func() {
+						url := fmt.Sprintf("http://%s/component/command", devSession.APIServerEndpoint)
+						resp, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(`{"name": "push"}`)))
+						Expect(err).ToNot(HaveOccurred())
+						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusOK))
+					})
+
+					It("should trigger a push", func() {
+						err := devSession.WaitSync()
+						Expect(err).ToNot(HaveOccurred())
+					})
+				})
+
 			}))
 		}))
 	}
