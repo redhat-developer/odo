@@ -131,13 +131,12 @@ func DescribeDevfileComponent(
 	return cmp, devfileObj, err
 }
 
-// describeNamedComponent describes a component given its name
+// DescribeNamedComponent describes a component given its name
 func DescribeNamedComponent(
 	ctx context.Context,
 	name string,
 	kubeClient kclient.ClientInterface,
 	podmanClient podman.Client,
-	// stateClient state.Client,
 ) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 
 	isPlatformFeatureEnabled := feature.IsEnabled(ctx, feature.GenericPlatformFlag)
