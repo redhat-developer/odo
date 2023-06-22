@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -20,6 +21,11 @@ var _ = Describe("odo add binding command tests", func() {
 	var err error
 
 	var _ = BeforeEach(func() {
+		skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+		if skipLogin == "true" {
+			Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+		}
+
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 		// Ensure that the operators are installed

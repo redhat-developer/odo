@@ -385,6 +385,11 @@ ComponentSettings:
 	When("deploying a ServiceBinding k8s resource", func() {
 		const serviceBindingName = "my-nodejs-app-cluster-sample" // hard-coded from devfile-deploy-with-SB.yaml
 		BeforeEach(func() {
+			skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+			if skipLogin == "true" {
+				Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+			}
+
 			commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
 			commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
 			Eventually(func() string {

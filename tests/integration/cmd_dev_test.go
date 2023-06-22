@@ -1786,6 +1786,11 @@ ComponentSettings:
 
 		When("Starting a PostgreSQL service", func() {
 			BeforeEach(func() {
+				skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+				if skipLogin == "true" {
+					Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+				}
+
 				// Ensure that the operators are installed
 				commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
 				commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
