@@ -72,7 +72,10 @@ func TestOdoHelp(t *testing.T) {
 
 	resetGlobalFlags()
 
-	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, clientset.Clientset{})
+	root, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, nil, clientset.Clientset{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var stdoutB, stderrB bytes.Buffer
 	root.SetOut(&stdoutB)

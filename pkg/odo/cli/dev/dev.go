@@ -303,15 +303,30 @@ func (o *DevOptions) HandleSignal(ctx context.Context, cancelFunc context.Cancel
 	select {}
 }
 
-func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
+func (o *DevOptions) Cleanup(ctx context.Context, commandError error) error {
 	if errors.As(commandError, &state.ErrAlreadyRunningOnPlatform{}) {
 		klog.V(4).Info("session already running, no need to cleanup")
-		return
+		return commandError
 	}
-	if commandError != nil {
-		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
+	defer func() {
+		err := o.clientset.StateClient.SaveExit(ctx)
+		if err != nil {
+			klog.V(1).Infof("unable to persist dev state: %v", err)
+		}
+	}()
+
+	wrapWithCmdErr := func(err error) error {
+		if err == nil {
+			return commandError
+		}
+		if commandError != nil {
+			return fmt.Errorf("command error: %v and error durring cleanup: %w", commandError.Error(), err)
+		}
+		return err
 	}
-	_ = o.clientset.StateClient.SaveExit(ctx)
+
+	err := o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
+	return wrapWithCmdErr(err)
 }
 
 // NewCmdDev implements the odo dev command

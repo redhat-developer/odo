@@ -71,7 +71,12 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 	if !o.forceFlag {
 		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {
 			// TODO: could add a logic to check if the new value set by the user is not same as the current value
-			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
+			var proceed bool
+			proceed, err = ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName))
+			if err != nil {
+				return err
+			}
+			if !proceed {
 				log.Info("Aborted by the user")
 				return nil
 			}

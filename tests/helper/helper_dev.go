@@ -252,6 +252,13 @@ func (o DevSession) WaitEnd() {
 	o.session.Wait(3 * time.Minute)
 }
 
+func (o DevSession) GetExitCode() int {
+	if o.session == nil {
+		return -1
+	}
+	return o.session.ExitCode()
+}
+
 // WaitSync waits for the synchronization of files to be finished
 // It returns the contents of the standard and error outputs
 // and the list of forwarded ports
@@ -273,13 +280,18 @@ func (o *DevSession) WaitRestartPortforward() error {
 func (o *DevSession) UpdateInfo() error {
 	outContents := o.session.Out.Contents()
 	errContents := o.session.Err.Contents()
-	err := o.session.Out.Clear()
-	if err != nil {
-		return err
+	var err error
+	if !o.session.Out.Closed() {
+		err = o.session.Out.Clear()
+		if err != nil {
+			return err
+		}
 	}
-	err = o.session.Err.Clear()
-	if err != nil {
-		return err
+	if !o.session.Err.Closed() {
+		err = o.session.Err.Clear()
+		if err != nil {
+			return err
+		}
 	}
 	o.StdOut = string(outContents)
 	o.ErrOut = string(errContents)

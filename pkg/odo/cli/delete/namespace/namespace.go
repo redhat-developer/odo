@@ -86,7 +86,14 @@ func (do *DeleteOptions) Run(ctx context.Context) error {
 	if !exists {
 		return fmt.Errorf("No %s named %q found", do.commandName, do.namespaceName)
 	}
-	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %s %q?", do.commandName, do.namespaceName)) {
+	proceed := do.forceFlag
+	if !proceed {
+		proceed, err = ui.Proceed(fmt.Sprintf("Are you sure you want to delete %s %q?", do.commandName, do.namespaceName))
+		if err != nil {
+			return err
+		}
+	}
+	if proceed {
 		// Create the "spinner"
 		s := &log.Status{}
 

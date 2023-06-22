@@ -322,7 +322,8 @@ func (o *WatchClient) eventWatcher(
 			return watchErr
 
 		case <-ctx.Done():
-			return errors.New("Dev mode interrupted by user")
+			klog.V(2).Info("Dev mode interrupted by user")
+			return nil
 		}
 	}
 }

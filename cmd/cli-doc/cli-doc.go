@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
 /*
@@ -169,21 +171,34 @@ func main() {
 		Args:      cobra.OnlyValidArgs,
 		ValidArgs: []string{"help", "reference", "structure"},
 
-		Run: func(command *cobra.Command, args []string) {
+		RunE: func(command *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				fmt.Print(command.Usage())
-			} else {
-				ctx := context.Background()
-				testClientset := clientset.Clientset{}
-				switch args[0] {
-				case "reference":
-					fmt.Print(referencePrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, testClientset), 0))
-				case "structure":
-					fmt.Print(commandPrinter(cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, testClientset), 0))
-				default:
-					fmt.Print(command.Usage())
-				}
+				return nil
 			}
+			ctx := context.Background()
+			testClientset := clientset.Clientset{}
+			switch args[0] {
+			case "reference":
+				cmdOdo, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, func(err error) {
+					util.LogErrorAndExit(err, "")
+				}, testClientset)
+				if err != nil {
+					return err
+				}
+				fmt.Print(referencePrinter(cmdOdo, 0))
+			case "structure":
+				cmdOdo, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, func(err error) {
+					util.LogErrorAndExit(err, "")
+				}, testClientset)
+				if err != nil {
+					return err
+				}
+				fmt.Print(commandPrinter(cmdOdo, 0))
+			default:
+				fmt.Print(command.Usage())
+			}
+			return nil
 		},
 	}
 

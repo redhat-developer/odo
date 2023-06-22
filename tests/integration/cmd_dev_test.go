@@ -461,10 +461,7 @@ echo "$@"
 				It("should record the telemetry data correctly", func() {
 					td := helper.GetTelemetryDebugData()
 					Expect(td.Event).To(ContainSubstring("odo dev"))
-					if !podman {
-						// TODO(feloy) what should be the correct exit code for odo dev after pressing ctrl-c?
-						Expect(td.Properties.Success).To(BeFalse())
-					}
+					Expect(td.Properties.Success).To(BeTrue())
 					Expect(td.Properties.Error).ToNot(ContainSubstring("user interrupted"))
 					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
 					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
@@ -510,9 +507,14 @@ echo "$@"
 						devSession.WaitEnd()
 					})
 
-					It("should delete component from the cluster", func() {
-						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						component.ExpectIsNotDeployed()
+					It("should delete the component from the platform", func() {
+						By("deleting the component", func() {
+							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+							component.ExpectIsNotDeployed()
+						})
+						By("exiting successfully", func() {
+							Expect(devSession.GetExitCode()).Should(Equal(0), "unexpected exit code for the dev session")
+						})
 					})
 				})
 			}))
@@ -4935,4 +4937,53 @@ CMD ["npm", "start"]
 			}
 		}))
 	}
+
+	Context("cleanup of resources is not successful", func() {
+		for _, podman := range []bool{false, true} {
+			podman := podman
+			When("using a Devfile with a Pod failing to delete before the cleanup timeout", helper.LabelPodmanIf(podman, func() {
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "devfile-with-container-failing-to-terminate-before-cleanup-timeout.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						cmpName)
+				})
+
+				When("odo dev is executed", helper.LabelPodmanIf(podman, func() {
+
+					var devSession helper.DevSession
+
+					BeforeEach(func() {
+						if podman {
+							Skip("podman does not support container lifecycle hooks and pod termination grace period")
+						}
+						var err error
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					When("odo dev is stopped", func() {
+						BeforeEach(func() {
+							devSession.Stop()
+							devSession.WaitEnd()
+							Expect(devSession.UpdateInfo()).ShouldNot(HaveOccurred())
+						})
+
+						It("should report that the component could not be deleted", func() {
+							By("deleting the component", func() {
+								Expect(devSession.ErrOut).Should(ContainSubstring("could not delete the following resource(s)"))
+								Expect(devSession.ErrOut).Should(ContainSubstring("- Deployment/%s-app", cmpName))
+							})
+							By("not exiting successfully", func() {
+								Expect(devSession.GetExitCode()).ShouldNot(Equal(0), "unexpected exit code for the dev session")
+							})
+						})
+					})
+				}))
+			}))
+		}
+	})
 })
