@@ -57,6 +57,7 @@ function Run-Test {
     [Environment]::SetEnvironmentVariable("TEST_EXEC_NODES", "$TEST_EXEC_NODES") 
     [Environment]::SetEnvironmentVariable("SKIP_USER_LOGIN_TESTS","true")
     [Environment]::SetEnvironmentVariable("SKIP_WELCOMING_MESSAGES","true")
+    [Environment]::SetEnvironmentVariable("SKIP_SERVICE_BINDING_TESTS","$SKIP_SERVICE_BINDING_TESTS" )
     # Integration tests detecting key press when running DevSession are not working on Windows
     [Environment]::SetEnvironmentVariable("SKIP_KEY_PRESS","true")
     [Environment]::SetEnvironmentVariable("DEVFILE_REGISTRY", "$DEVFILE_REGISTRY") 
