@@ -172,3 +172,9 @@ to user agents beginning with `containerd` or `Go-http-client`.
 
 The integration tests are able to detect the presence of the Load Balancer service and use the proxy if the service is present
 and providing an external address.
+
+## Devfile registry
+
+Install a local Devvile registry in the cluster with the instructions provoded at https://devfile.io/docs/2.1.0/deploying-a-devfile-registry 
+and the configuration in /scripts/devfile-registry/ci-values.yaml. You will need to modify the field `global.ingress.domain` in the configuration file.
+
