@@ -45,8 +45,17 @@ func NewDefaultApiService(
 func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentCommandPostRequest openapi.ComponentCommandPostRequest) (openapi.ImplResponse, error) {
 	switch componentCommandPostRequest.Name {
 	case "push":
-		s.pushWatcher <- struct{}{}
-		return openapi.Response(http.StatusOK, nil), nil
+		select {
+		case s.pushWatcher <- struct{}{}:
+			return openapi.Response(http.StatusOK, openapi.GeneralSuccess{
+				Message: "push was successfully executed",
+			}), nil
+		default:
+			return openapi.Response(http.StatusTooManyRequests, openapi.GeneralError{
+				Message: "a push operation is not possible at this time. Please retry later",
+			}), nil
+		}
+
 	default:
 		return openapi.Response(http.StatusBadRequest, nil), fmt.Errorf("command name %q not supported. Supported values are: %q", componentCommandPostRequest.Name, "push")
 	}
