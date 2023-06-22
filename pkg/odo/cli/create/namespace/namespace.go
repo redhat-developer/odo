@@ -3,7 +3,10 @@ package namespace
 import (
 	"context"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/project"
+	"k8s.io/klog"
 	"os"
+	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -105,7 +108,28 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-
+	if nco.waitFlag {
+		var timeOut = time.After(nco.clientset.PreferenceClient.GetTimeout())
+	L:
+		for {
+			select {
+			case <-timeOut:
+				log.Warningf("Timeout while waiting for %s %q; it may take a while to appear", nco.commandName, nco.namespaceName)
+				return nil
+			default:
+				var nsList project.ProjectList
+				nsList, err = nco.clientset.ProjectClient.List()
+				if err != nil {
+					klog.V(4).Infof("Failed to list %ss", nco.commandName)
+				}
+				for _, ns := range nsList.Items {
+					if ns.Name == nco.namespaceName {
+						break L
+					}
+				}
+			}
+		}
+	}
 	log.Successf("New %[1]s created and now using %[1]s: %v", nco.commandName, nco.namespaceName)
 
 	return nil
@@ -134,7 +158,7 @@ func NewCmdNamespaceCreate(name, fullName string, testClientset clientset.Client
 
 	namespaceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the namespace is ready")
 
-	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT)
+	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT, clientset.PREFERENCE)
 	util.SetCommandGroup(namespaceCreateCmd, util.MainGroup)
 
 	return namespaceCreateCmd
