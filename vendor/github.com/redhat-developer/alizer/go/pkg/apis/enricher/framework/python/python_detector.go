@@ -8,12 +8,14 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
+// hasFramework uses all files to check for framework
 func hasFramework(files *[]string, tag string) bool {
 	for _, file := range *files {
 		if hasTag, _ := utils.IsTagInFile(file, tag); hasTag {

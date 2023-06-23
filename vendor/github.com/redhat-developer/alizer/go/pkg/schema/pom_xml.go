@@ -35,4 +35,18 @@ type Pom struct {
 		} `xml:"plugins"`
 	} `xml:"build,omitempty"`
 	ArtifactId string `xml:"artifactId"`
+	Profiles   struct {
+		Profile []struct {
+			Build struct {
+				Plugins struct {
+					Plugin []struct {
+						GroupId    string `xml:"groupId"`
+						ArtifactId string `xml:"artifactId"`
+						Version    string `xml:"version"`
+						Scope      string `xml:"scope"`
+					} `xml:"plugin"`
+				} `xml:"plugins"`
+			} `xml:"build,omitempty"`
+		} `xml:"profile"`
+	} `xml:"profiles"`
 }

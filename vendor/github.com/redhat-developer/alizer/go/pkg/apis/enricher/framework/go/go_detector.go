@@ -8,9 +8,13 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -19,6 +23,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+// hasFramework uses the go.mod to check for framework
 func hasFramework(modules []*modfile.Require, tag string) bool {
 	for _, module := range modules {
 		if strings.EqualFold(module.Mod.Path, tag) || strings.HasPrefix(module.Mod.Path, tag) {
@@ -28,8 +33,39 @@ func hasFramework(modules []*modfile.Require, tag string) bool {
 	return false
 }
 
+func DoGoPortsDetection(component *model.Component, ctx *context.Context) {
+	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
+	if err != nil {
+		return
+	}
+
+	matchRegexRules := model.PortMatchRules{
+		MatchIndexRegexes: []model.PortMatchRule{
+			{
+				Regex:     regexp.MustCompile(`.ListenAndServe\([^,)]*`),
+				ToReplace: ".ListenAndServe(",
+			},
+			{
+				Regex:     regexp.MustCompile(`.Start\([^,)]*`),
+				ToReplace: ".Start(",
+			},
+		},
+		MatchRegexes: []model.PortMatchSubRule{
+			{
+				Regex:    regexp.MustCompile(`Addr:\s+"([^",]+)`),
+				SubRegex: regexp.MustCompile(`:*(\d+)$`),
+			},
+		},
+	}
+
+	ports := GetPortFromFilesGo(matchRegexRules, files)
+	if len(ports) > 0 {
+		component.Ports = ports
+	}
+}
+
 func GetPortFromFileGo(rules model.PortMatchRules, text string) []int {
-	ports := []int{}
+	var ports []int
 	for _, matchIndexRegex := range rules.MatchIndexRegexes {
 		matchIndexesSlice := matchIndexRegex.Regex.FindAllStringSubmatchIndex(text, -1)
 		for _, matchIndexes := range matchIndexesSlice {
@@ -60,26 +96,52 @@ func GetPortFromFileGo(rules model.PortMatchRules, text string) []int {
 
 func GetPortWithMatchIndexesGo(content string, matchIndexes []int, toBeReplaced string) int {
 	portPlaceholder := content[matchIndexes[0]:matchIndexes[1]]
-	//we should end up with something like ".ListenAndServe(PORT"
+	// we should end up with something like ".ListenAndServe(PORT"
 	portPlaceholder = strings.Replace(portPlaceholder, toBeReplaced, "", -1)
 	// if we are lucky enough portPlaceholder contains a real HOST:PORT otherwise it is a variable/expression
-	re := regexp.MustCompile(`:*(\d+)`)
+	re, err := regexp.Compile(`:*(\d+)`)
+	if err != nil {
+		return -1
+	}
 	if port := utils.FindPortSubmatch(re, portPlaceholder, 1); port != -1 {
 		return port
 	}
 
 	// we are not dealing with a host:port, let's try to find a variable set before the listen function
 	contentBeforeMatch := content[0:matchIndexes[0]]
-	re = regexp.MustCompile(portPlaceholder + `\s+[:=]+\s"([^"]*)`)
+	re, err = regexp.Compile(portPlaceholder + `\s+[:=]+\s"([^"]*)`)
+	if err != nil {
+		return -1
+	}
 	matches := re.FindStringSubmatch(contentBeforeMatch)
 	if len(matches) > 0 {
 		// hostPortValue should be host:port
 		hostPortValue := matches[len(matches)-1]
-		re = regexp.MustCompile(`:*(\d+)$`)
+		re, err = regexp.Compile(`:*(\d+)$`)
+		if err != nil {
+			return -1
+		}
 		if port := utils.FindPortSubmatch(re, hostPortValue, 1); port != -1 {
 			return port
 		}
 	}
 
 	return -1
+}
+
+// GetPortFromFilesGo loops through a list of paths and tries to find a port matching the
+// given set PortMatchRules
+func GetPortFromFilesGo(matchRegexRules model.PortMatchRules, files []string) []int {
+	for _, file := range files {
+		cleanFile := filepath.Clean(file)
+		bytes, err := os.ReadFile(cleanFile)
+		if err != nil {
+			continue
+		}
+		ports := GetPortFromFileGo(matchRegexRules, string(bytes))
+		if len(ports) > 0 {
+			return ports
+		}
+	}
+	return []int{}
 }

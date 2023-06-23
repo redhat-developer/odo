@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -15,7 +16,7 @@ import (
 
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/python"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type PythonEnricher struct{}
@@ -31,17 +32,20 @@ func (p PythonEnricher) GetSupportedLanguages() []string {
 	return []string{"python"}
 }
 
+// DoEnrichLanguage runs DoFrameworkDetection with files.
+// No specific file is targeted, will use everything in files.
 func (p PythonEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	language.Tools = []string{}
 	detectPythonFrameworks(language, files)
 }
 
-func (j PythonEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
+// DoEnrichComponent checks for the port number using a Dockerfile, Compose file, or Source strategy
+func (p PythonEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
 	for _, algorithm := range settings.PortDetectionStrategy {
-		ports := []int{}
+		var ports []int
 		switch algorithm {
 		case model.DockerFile:
 			{

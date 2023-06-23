@@ -8,11 +8,11 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
-	"os"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -26,6 +26,7 @@ func (e EchoDetector) GetSupportedFrameworks() []string {
 	return []string{"Echo"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (e EchoDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/labstack/echo") {
 		language.Frameworks = append(language.Frameworks, "Echo")
@@ -57,16 +58,8 @@ func (e EchoDetector) DoPortsDetection(component *model.Component, ctx *context.
 		},
 	}
 
-	for _, file := range files {
-		bytes, err := os.ReadFile(file)
-		if err != nil {
-			continue
-		}
-		ports := GetPortFromFileGo(matchRegexRules, string(bytes))
-		if len(ports) > 0 {
-			component.Ports = ports
-			return
-		}
+	ports := GetPortFromFilesGo(matchRegexRules, files)
+	if len(ports) > 0 {
+		component.Ports = ports
 	}
-
 }

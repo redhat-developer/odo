@@ -8,10 +8,13 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils"
@@ -23,6 +26,8 @@ func (d FlaskDetector) GetSupportedFrameworks() []string {
 	return []string{"Flask"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
+// with flask files and flask config files
 func (d FlaskDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
 	appPy := utils.GetFile(files, "app.py")
 	wsgiPy := utils.GetFile(files, "wsgi.py")
@@ -41,6 +46,89 @@ func (d FlaskDetector) DoFrameworkDetection(language *model.Language, files *[]s
 	}
 }
 
+// getPortFromFileFlask tries to find a port configuration inside a given file content
+func getPortFromFileFlask(matchIndexRegexes []model.PortMatchRule, text string) []int {
+	var ports []int
+	for _, matchIndexRegex := range matchIndexRegexes {
+		matchIndexesSlice := matchIndexRegex.Regex.FindAllStringSubmatchIndex(text, -1)
+		for _, matchIndexes := range matchIndexesSlice {
+			if len(matchIndexes) > 1 {
+				port := getPortWithMatchIndexesFlask(text, matchIndexes, matchIndexRegex.ToReplace)
+				if port != -1 {
+					ports = append(ports, port)
+				}
+			}
+		}
+	}
+
+	return ports
+}
+
+func getPortWithMatchIndexesFlask(content string, matchIndexes []int, toBeReplaced string) int {
+	// select the correct range for placeholder and remove unnecessary strings
+	portPlaceholder := content[matchIndexes[0]:matchIndexes[1]]
+	portPlaceholder = strings.Replace(portPlaceholder, toBeReplaced, "", -1)
+	// try first to check for hardcoded ports inside the app.run command. e.g port=3001
+	re, err := regexp.Compile(`port=*(\d+)`)
+	if err != nil {
+		return -1
+	}
+	if port := utils.FindPortSubmatch(re, portPlaceholder, 1); port != -1 {
+		return port
+	}
+
+	// get the value of kwarg "port" inside app.run and check if there is
+	// any variable defined with its value
+	contentBeforeMatch := content[0:matchIndexes[0]]
+	portPlaceholder = strings.Replace(portPlaceholder, "port=", "", -1)
+	re, err = regexp.Compile(portPlaceholder + `\s=\s*(\d+)`)
+	if err != nil {
+		return -1
+	}
+	matches := re.FindStringSubmatch(contentBeforeMatch)
+	if len(matches) > 0 {
+		portValue := matches[len(matches)-1]
+		re, err = regexp.Compile(`:*(\d+)$`)
+		if err != nil {
+			return -1
+		}
+		if port := utils.FindPortSubmatch(re, portValue, 1); port != -1 {
+			return port
+		}
+	}
+
+	return -1
+}
+
+// DoPortsDetection searches for the port in app/__init__.py, app.py or /wsgi.py
 func (d FlaskDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	// Not implemented yet
+	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
+		{
+			Dir:  "",
+			File: "app.py",
+		},
+		{
+			Dir:  "",
+			File: "wsgi.py",
+		},
+		{
+			Dir:  "app",
+			File: "__init__.py",
+		},
+	}, ctx)
+
+	matchIndexRegexes := []model.PortMatchRule{
+		{
+			Regex:     regexp.MustCompile(`.run\([^)]*`),
+			ToReplace: ".run(",
+		},
+	}
+	if err != nil {
+		return
+	}
+	ports := getPortFromFileFlask(matchIndexRegexes, string(bytes))
+	if len(ports) > 0 {
+		component.Ports = ports
+		return
+	}
 }

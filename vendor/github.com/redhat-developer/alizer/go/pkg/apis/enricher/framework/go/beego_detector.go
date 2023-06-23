@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -25,6 +26,7 @@ func (b BeegoDetector) GetSupportedFrameworks() []string {
 	return []string{"Beego"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (b BeegoDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/beego/beego") {
 		language.Frameworks = append(language.Frameworks, "Beego")
@@ -36,6 +38,7 @@ type ApplicationPropertiesFile struct {
 	File string
 }
 
+// DoPortsDetection searches for the port in conf/app.conf
 func (b BeegoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{

@@ -8,11 +8,11 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
-	"os"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -26,6 +26,7 @@ func (g GoFiberDetector) GetSupportedFrameworks() []string {
 	return []string{"GoFiber"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (g GoFiberDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gofiber/fiber") {
 		language.Frameworks = append(language.Frameworks, "GoFiber")
@@ -38,7 +39,7 @@ func (g GoFiberDetector) DoPortsDetection(component *model.Component, ctx *conte
 		return
 	}
 
-	matchRegexRule := model.PortMatchRules{
+	matchRegexRules := model.PortMatchRules{
 		MatchIndexRegexes: []model.PortMatchRule{
 			{
 				Regex:     regexp.MustCompile(`.Listen\(([^,)]*)`),
@@ -46,15 +47,8 @@ func (g GoFiberDetector) DoPortsDetection(component *model.Component, ctx *conte
 			},
 		},
 	}
-	for _, file := range files {
-		bytes, err := os.ReadFile(file)
-		if err != nil {
-			continue
-		}
-		ports := GetPortFromFileGo(matchRegexRule, string(bytes))
-		if len(ports) > 0 {
-			component.Ports = ports
-			return
-		}
+	ports := GetPortFromFilesGo(matchRegexRules, files)
+	if len(ports) > 0 {
+		component.Ports = ports
 	}
 }

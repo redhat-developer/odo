@@ -8,10 +8,11 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type ApplicationPropertiesFile struct {
@@ -19,10 +20,13 @@ type ApplicationPropertiesFile struct {
 	File string
 }
 
-func hasFramework(configFile string, tag string) (bool, error) {
+// hasFramework uses the build.gradle, groupId, and artifactId to check for framework
+func hasFramework(configFile, groupId, artifactId string) (bool, error) {
 	if utils.IsPathOfWantedFile(configFile, "build.gradle") {
-		return utils.IsTagInFile(configFile, tag)
+		return utils.IsTagInFile(configFile, groupId)
+	} else if artifactId != "" {
+		return utils.IsTagInPomXMLFileArtifactId(configFile, groupId, artifactId)
 	} else {
-		return utils.IsTagInPomXMLFile(configFile, tag)
+		return utils.IsTagInPomXMLFile(configFile, groupId)
 	}
 }

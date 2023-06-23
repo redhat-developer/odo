@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -24,12 +25,14 @@ func (r ReactJsDetector) GetSupportedFrameworks() []string {
 	return []string{"React"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (r ReactJsDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "react") {
 		language.Frameworks = append(language.Frameworks, "React")
 	}
 }
 
+// DoPortsDetection searches for the port in the env var, .env file, and package.json
 func (r ReactJsDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	portValue := os.Getenv("PORT")

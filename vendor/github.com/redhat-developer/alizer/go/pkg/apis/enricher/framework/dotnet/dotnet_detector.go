@@ -8,13 +8,16 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -28,6 +31,7 @@ func (d DotNetDetector) GetSupportedFrameworks() []string {
 	return []string{""}
 }
 
+// DoFrameworkDetection uses configFilePath to check for the name of the framework
 func (d DotNetDetector) DoFrameworkDetection(language *model.Language, configFilePath string) {
 	framework := getFrameworks(configFilePath)
 	if framework == "" {
@@ -51,16 +55,24 @@ func (d DotNetDetector) DoPortsDetection(component *model.Component, ctx *contex
 }
 
 func getFrameworks(configFilePath string) string {
-	xmlFile, err := os.Open(configFilePath)
+	cleanConfigPath := filepath.Clean(configFilePath)
+	xmlFile, err := os.Open(cleanConfigPath)
 	if err != nil {
 		return ""
 	}
 	byteValue, _ := ioutil.ReadAll(xmlFile)
 
 	var proj schema.DotNetProject
-	xml.Unmarshal(byteValue, &proj)
-
-	defer xmlFile.Close()
+	err = xml.Unmarshal(byteValue, &proj)
+	if err != nil {
+		return ""
+	}
+	defer func() error {
+		if err := xmlFile.Close(); err != nil {
+			return fmt.Errorf("error closing file: %s", err)
+		}
+		return nil
+	}()
 	if proj.PropertyGroup.TargetFramework != "" {
 		return proj.PropertyGroup.TargetFramework
 	} else if proj.PropertyGroup.TargetFrameworkVersion != "" {

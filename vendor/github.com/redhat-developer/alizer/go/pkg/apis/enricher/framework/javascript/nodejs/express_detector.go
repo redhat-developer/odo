@@ -8,11 +8,13 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -26,6 +28,7 @@ func (e ExpressDetector) GetSupportedFrameworks() []string {
 	return []string{"Express"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (e ExpressDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "express") {
 		language.Frameworks = append(language.Frameworks, "Express")
@@ -39,9 +42,10 @@ func (e ExpressDetector) DoPortsDetection(component *model.Component, ctx *conte
 	}
 
 	re := regexp.MustCompile(`\.listen\([^,)]*`)
-	ports := []int{}
+	var ports []int
 	for _, file := range files {
-		bytes, err := os.ReadFile(file)
+		cleanFile := filepath.Clean(file)
+		bytes, err := os.ReadFile(cleanFile)
 		if err != nil {
 			continue
 		}
@@ -60,31 +64,76 @@ func (e ExpressDetector) DoPortsDetection(component *model.Component, ctx *conte
 	}
 }
 
+func getPortGroup(content string, matchIndexes []int, portPlaceholder string) string {
+	contentBeforeMatch := content[0:matchIndexes[0]]
+	re, err := regexp.Compile(`(let|const|var)\s+` + portPlaceholder + `\s*=\s*([^;]*)`)
+	if err != nil {
+		return ""
+	}
+	return utils.FindPotentialPortGroup(re, contentBeforeMatch, 2)
+}
+
+func GetEnvPort(envPlaceholder string) int {
+	envPlaceholder = strings.Replace(envPlaceholder, "process.env.", "", -1)
+	portValue := os.Getenv(envPlaceholder)
+	if port, err := utils.GetValidPort(portValue); err == nil {
+		return port
+	}
+	return -1
+}
+
 func getPort(content string, matchIndexes []int) int {
+	// Express configures its port with app.listen()
 	portPlaceholder := content[matchIndexes[0]:matchIndexes[1]]
-	//we should end up with something like ".listen(PORT"
 	portPlaceholder = strings.Replace(portPlaceholder, ".listen(", "", -1)
-	// if we are lucky enough portPlaceholder contains a real PORT otherwise it would be a variable/expression
+
+	// Case: Raw port value -> return it directly
 	if port, err := utils.GetValidPort(portPlaceholder); err == nil {
 		return port
 	}
-	// of course we are unlucky ... is it an env variable?
+
+	// Case: Env var given as value in app.listen -> Get env value
+	// example: app.listen(process.env.PORT...
 	re := regexp.MustCompile(`process.env.[^ ,)]+`)
 	envMatchIndexes := re.FindStringSubmatchIndex(portPlaceholder)
+	envPortValue := portPlaceholder
+	// If no match was found check if port is a variable assigned elsewhere in the code
+	if len(envMatchIndexes) == 0 {
+		// Case: Var Port with env var as value
+		potentialPortGroup := getPortGroup(content, matchIndexes, portPlaceholder)
+		if potentialPortGroup != "" {
+			// Takes into account cases like -> var PORT = process.env.PORT || 8080
+			portValues := strings.Split(potentialPortGroup, " || ")
+			for _, portValue := range portValues {
+				re = regexp.MustCompile(`process.env.[^ ,)]+`)
+				tmpMatchIndexes := re.FindStringSubmatchIndex(portValue)
+				// If there is any matching update the env values
+				if len(tmpMatchIndexes) > 1 {
+					envMatchIndexes = tmpMatchIndexes
+					envPortValue = portValue
+				}
+			}
+		}
+	}
+	// After double-checking for env vars try to get the value of this port
 	if len(envMatchIndexes) > 1 {
-		envPlaceholder := portPlaceholder[envMatchIndexes[0]:envMatchIndexes[1]]
-		// we should end up with something like process.env.PORT
-		envPlaceholder = strings.Replace(envPlaceholder, "process.env.", "", -1)
-		//envPlaceholder should contain the name of the env variable
-		portValue := os.Getenv(envPlaceholder)
-		if port, err := utils.GetValidPort(portValue); err == nil {
+		envPlaceholder := envPortValue[envMatchIndexes[0]:envMatchIndexes[1]]
+		port := GetEnvPort(envPlaceholder)
+		// The port will be return only if a value was found for the given env var
+		if port > 0 {
 			return port
 		}
-	} else {
-		// we are not dealing with an env variable, let's try to find a variable set before the listen function
-		contentBeforeMatch := content[0:matchIndexes[0]]
-		re = regexp.MustCompile(`(let|const|var)\s+` + portPlaceholder + `\s*=\s*([^;]*)`)
-		return utils.FindPortSubmatch(re, contentBeforeMatch, 2)
+	}
+	// Case: No env var or raw value found -> check for raw value into a var
+	potentialPortGroup := getPortGroup(content, matchIndexes, portPlaceholder)
+	if potentialPortGroup != "" {
+		// Takes into account cases like -> var PORT = process.env.PORT || 8080
+		portValues := strings.Split(potentialPortGroup, " || ")
+		for _, portValue := range portValues {
+			if port, err := utils.GetValidPort(portValue); err == nil {
+				return port
+			}
+		}
 	}
 	return -1
 }

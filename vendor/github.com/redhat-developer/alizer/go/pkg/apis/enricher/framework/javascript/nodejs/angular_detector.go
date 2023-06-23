@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -47,12 +48,14 @@ func (a AngularDetector) GetSupportedFrameworks() []string {
 	return []string{"Angular"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (a AngularDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "angular") {
 		language.Frameworks = append(language.Frameworks, "Angular")
 	}
 }
 
+// DoPortsDetection searches for the port in angular.json, package.json, and angular-cli.json
 func (a AngularDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on angular.json file
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{

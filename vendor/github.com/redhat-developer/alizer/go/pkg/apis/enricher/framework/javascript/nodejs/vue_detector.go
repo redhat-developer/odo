@@ -8,6 +8,7 @@
 * Contributors:
 * Red Hat, Inc.
 ******************************************************************************/
+
 package enricher
 
 import (
@@ -24,12 +25,14 @@ func (v VueDetector) GetSupportedFrameworks() []string {
 	return []string{"Vue"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (v VueDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "vue") {
 		language.Frameworks = append(language.Frameworks, "Vue")
 	}
 }
 
+// DoPortsDetection searches for the port in package.json, .env file, and vue.config.js
 func (v VueDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`--port (\d*)`, `PORT=(\d*)`}
 	// check if --port or PORT is set in start script in package.json
