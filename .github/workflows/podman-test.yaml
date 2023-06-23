@@ -15,6 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - run: cat /etc/os-release || true
+
+    - run: podman info
+
+    # TODO(rm3l): workaround for https://github.com/actions/runner-images/issues/7753 (caused by https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394).
+    #   Remove this when this issue is fixed and available in the ubuntu runner image
+    - run: |
+        sudo apt install podman=3.4.4+ds1-1ubuntu1 --allow-downgrades
+        podman info
+
     - name: Checkout
       uses: actions/checkout@v3
 
