@@ -127,6 +127,7 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 						break L
 					}
 				}
+				time.Sleep(50 * time.Millisecond)
 			}
 		}
 	}
