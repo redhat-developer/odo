@@ -15,18 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - run: podman info
+
     - name: Checkout
+      # TODO(rm3l): Remove the line below
+      if: false
       uses: actions/checkout@v3
 
     - name: Setup Go
+      # TODO(rm3l): Remove the line below
+      if: false
       uses: actions/setup-go@v3
       with:
         go-version-file: 'go.mod'
 
     - name: Build odo
+      # TODO(rm3l): Remove the line below
+      if: false
       run: make install
 
     - name: Run Integration tests
+      # TODO(rm3l): Remove the line below
+      if: false
       env:
         # This should ideally be a configuration in the GH repo (secret or variable).
         # This is currently hard-coded because GH won't expose secrets or variables to PRs created from forks.
@@ -36,7 +46,9 @@ jobs:
       run: make test-integration-podman
 
     - name: List and stop remaining containers
-      if: ${{ always() }}
+      # TODO(rm3l): Remove the line below
+      if: false
+#      if: ${{ always() }}
       run: |
         podman pod ls --format '{{.Name}}' | xargs -I '{}' podman pod inspect '{}'
         podman pod ls --format '{{.Name}}' | xargs podman pod stop || true
