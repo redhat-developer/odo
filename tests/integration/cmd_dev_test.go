@@ -71,7 +71,11 @@ var _ = Describe("odo dev command tests", func() {
 	When("a component is bootstrapped", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			devfile := "devfile.yaml"
+			if os.Getenv("KUBERNETES") == "true" {
+				devfile = "devfile-fsgroup.yaml"
+			}
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", devfile)).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 
@@ -1786,6 +1790,11 @@ ComponentSettings:
 
 		When("Starting a PostgreSQL service", func() {
 			BeforeEach(func() {
+				skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+				if skipLogin == "true" {
+					Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+				}
+
 				// Ensure that the operators are installed
 				commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
 				commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
