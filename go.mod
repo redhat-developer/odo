@@ -216,3 +216,16 @@ require (
 replace gopkg.in/segmentio/analytics-go.v3 => github.com/segmentio/analytics-go/v3 v3.2.1
 
 replace github.com/apcera/gssapi => github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b
+
+// We are pinning the versions here because bumping Alizer bumped these packages to upper versions,
+// which were not compatible with the Service Binding Operator (SBO) version at this time.
+// Example error: *ServiceBinding does not implement admission.Validator (wrong type for ValidateCreate method)
+// But we don't want to update SBO libraries at this time, as SBO is currently in maintenance mode only.
+// TODO(rm3l): remove these when we remove support for SBO.
+replace (
+	k8s.io/api => k8s.io/api v0.26.1
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.26.1
+	k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
+	k8s.io/client-go => k8s.io/client-go v0.26.1
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.14.4
+)

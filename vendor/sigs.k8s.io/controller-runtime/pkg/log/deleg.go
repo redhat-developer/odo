@@ -25,7 +25,7 @@ import (
 // loggerPromise knows how to populate a concrete logr.Logger
 // with options, given an actual base logger later on down the line.
 type loggerPromise struct {
-	logger        *delegatingLogSink
+	logger        *DelegatingLogSink
 	childPromises []*loggerPromise
 	promisesLock  sync.Mutex
 
@@ -33,7 +33,7 @@ type loggerPromise struct {
 	tags []interface{}
 }
 
-func (p *loggerPromise) WithName(l *delegatingLogSink, name string) *loggerPromise {
+func (p *loggerPromise) WithName(l *DelegatingLogSink, name string) *loggerPromise {
 	res := &loggerPromise{
 		logger:       l,
 		name:         &name,
@@ -47,7 +47,7 @@ func (p *loggerPromise) WithName(l *delegatingLogSink, name string) *loggerPromi
 }
 
 // WithValues provides a new Logger with the tags appended.
-func (p *loggerPromise) WithValues(l *delegatingLogSink, tags ...interface{}) *loggerPromise {
+func (p *loggerPromise) WithValues(l *DelegatingLogSink, tags ...interface{}) *loggerPromise {
 	res := &loggerPromise{
 		logger:       l,
 		tags:         tags,
@@ -84,12 +84,12 @@ func (p *loggerPromise) Fulfill(parentLogSink logr.LogSink) {
 	}
 }
 
-// delegatingLogSink is a logsink that delegates to another logr.LogSink.
+// DelegatingLogSink is a logsink that delegates to another logr.LogSink.
 // If the underlying promise is not nil, it registers calls to sub-loggers with
 // the logging factory to be populated later, and returns a new delegating
 // logger.  It expects to have *some* logr.Logger set at all times (generally
 // a no-op logger before the promises are fulfilled).
-type delegatingLogSink struct {
+type DelegatingLogSink struct {
 	lock    sync.RWMutex
 	logger  logr.LogSink
 	promise *loggerPromise
@@ -97,8 +97,7 @@ type delegatingLogSink struct {
 }
 
 // Init implements logr.LogSink.
-func (l *delegatingLogSink) Init(info logr.RuntimeInfo) {
-	eventuallyFulfillRoot()
+func (l *DelegatingLogSink) Init(info logr.RuntimeInfo) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.info = info
@@ -107,8 +106,7 @@ func (l *delegatingLogSink) Init(info logr.RuntimeInfo) {
 // Enabled tests whether this Logger is enabled.  For example, commandline
 // flags might be used to set the logging verbosity and disable some info
 // logs.
-func (l *delegatingLogSink) Enabled(level int) bool {
-	eventuallyFulfillRoot()
+func (l *DelegatingLogSink) Enabled(level int) bool {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 	return l.logger.Enabled(level)
@@ -120,8 +118,7 @@ func (l *delegatingLogSink) Enabled(level int) bool {
 // the log line.  The key/value pairs can then be used to add additional
 // variable information.  The key/value pairs should alternate string
 // keys and arbitrary values.
-func (l *delegatingLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
-	eventuallyFulfillRoot()
+func (l *DelegatingLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 	l.logger.Info(level, msg, keysAndValues...)
@@ -135,16 +132,14 @@ func (l *delegatingLogSink) Info(level int, msg string, keysAndValues ...interfa
 // The msg field should be used to add context to any underlying error,
 // while the err field should be used to attach the actual error that
 // triggered this log line, if present.
-func (l *delegatingLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
-	eventuallyFulfillRoot()
+func (l *DelegatingLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 	l.logger.Error(err, msg, keysAndValues...)
 }
 
 // WithName provides a new Logger with the name appended.
-func (l *delegatingLogSink) WithName(name string) logr.LogSink {
-	eventuallyFulfillRoot()
+func (l *DelegatingLogSink) WithName(name string) logr.LogSink {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
@@ -156,7 +151,7 @@ func (l *delegatingLogSink) WithName(name string) logr.LogSink {
 		return sink
 	}
 
-	res := &delegatingLogSink{logger: l.logger}
+	res := &DelegatingLogSink{logger: l.logger}
 	promise := l.promise.WithName(res, name)
 	res.promise = promise
 
@@ -164,8 +159,7 @@ func (l *delegatingLogSink) WithName(name string) logr.LogSink {
 }
 
 // WithValues provides a new Logger with the tags appended.
-func (l *delegatingLogSink) WithValues(tags ...interface{}) logr.LogSink {
-	eventuallyFulfillRoot()
+func (l *DelegatingLogSink) WithValues(tags ...interface{}) logr.LogSink {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
@@ -177,7 +171,7 @@ func (l *delegatingLogSink) WithValues(tags ...interface{}) logr.LogSink {
 		return sink
 	}
 
-	res := &delegatingLogSink{logger: l.logger}
+	res := &DelegatingLogSink{logger: l.logger}
 	promise := l.promise.WithValues(res, tags...)
 	res.promise = promise
 
@@ -187,16 +181,16 @@ func (l *delegatingLogSink) WithValues(tags ...interface{}) logr.LogSink {
 // Fulfill switches the logger over to use the actual logger
 // provided, instead of the temporary initial one, if this method
 // has not been previously called.
-func (l *delegatingLogSink) Fulfill(actual logr.LogSink) {
+func (l *DelegatingLogSink) Fulfill(actual logr.LogSink) {
 	if l.promise != nil {
 		l.promise.Fulfill(actual)
 	}
 }
 
-// newDelegatingLogSink constructs a new DelegatingLogSink which uses
+// NewDelegatingLogSink constructs a new DelegatingLogSink which uses
 // the given logger before its promise is fulfilled.
-func newDelegatingLogSink(initial logr.LogSink) *delegatingLogSink {
-	l := &delegatingLogSink{
+func NewDelegatingLogSink(initial logr.LogSink) *DelegatingLogSink {
+	l := &DelegatingLogSink{
 		logger:  initial,
 		promise: &loggerPromise{promisesLock: sync.Mutex{}},
 	}

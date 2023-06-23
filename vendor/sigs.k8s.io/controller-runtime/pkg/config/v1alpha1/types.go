@@ -26,7 +26,7 @@ import (
 
 // ControllerManagerConfigurationSpec defines the desired state of GenericControllerManagerConfiguration.
 //
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
+// Deprecated: This package has been deprecated and will be removed in a future release.
 type ControllerManagerConfigurationSpec struct {
 	// SyncPeriod determines the minimum frequency at which watched resources are
 	// reconciled. A lower period will correct entropy more quickly, but reduce
@@ -62,7 +62,7 @@ type ControllerManagerConfigurationSpec struct {
 	// +optional
 	Controller *ControllerConfigurationSpec `json:"controller,omitempty"`
 
-	// Metrics contains the controller metrics configuration
+	// Metrics contains thw controller metrics configuration
 	// +optional
 	Metrics ControllerMetrics `json:"metrics,omitempty"`
 
@@ -78,10 +78,7 @@ type ControllerManagerConfigurationSpec struct {
 // ControllerConfigurationSpec defines the global configuration for
 // controllers registered with the manager.
 //
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
-//
-// Deprecated: Controller global configuration can now be set at the manager level,
-// using the manager.Options.Controller field.
+// Deprecated: This package has been deprecated and will be removed in a future release.
 type ControllerConfigurationSpec struct {
 	// GroupKindConcurrency is a map from a Kind to the number of concurrent reconciliation
 	// allowed for that controller.
@@ -108,8 +105,6 @@ type ControllerConfigurationSpec struct {
 }
 
 // ControllerMetrics defines the metrics configs.
-//
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
 type ControllerMetrics struct {
 	// BindAddress is the TCP address that the controller should bind to
 	// for serving prometheus metrics.
@@ -119,8 +114,6 @@ type ControllerMetrics struct {
 }
 
 // ControllerHealth defines the health configs.
-//
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
 type ControllerHealth struct {
 	// HealthProbeBindAddress is the TCP address that the controller should bind to
 	// for serving health probes
@@ -138,8 +131,6 @@ type ControllerHealth struct {
 }
 
 // ControllerWebhook defines the webhook server for the controller.
-//
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
 type ControllerWebhook struct {
 	// Port is the port that the webhook server serves at.
 	// It is used to set webhook.Server.Port.
@@ -163,17 +154,19 @@ type ControllerWebhook struct {
 
 // ControllerManagerConfiguration is the Schema for the GenericControllerManagerConfigurations API.
 //
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
+// Deprecated: This package has been deprecated and will be removed in a future release.
 type ControllerManagerConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// ControllerManagerConfiguration returns the contfigurations for controllers
+	//
+	// Deprecated: This package has been deprecated and will be removed in a future release.
 	ControllerManagerConfigurationSpec `json:",inline"`
 }
 
 // Complete returns the configuration for controller-runtime.
 //
-// Deprecated: The component config package has been deprecated and will be removed in a future release. Users should migrate to their own config implementation, please share feedback in https://github.com/kubernetes-sigs/controller-runtime/issues/895.
+// Deprecated: This package has been deprecated and will be removed in a future release.
 func (c *ControllerManagerConfigurationSpec) Complete() (ControllerManagerConfigurationSpec, error) {
 	return *c, nil
 }

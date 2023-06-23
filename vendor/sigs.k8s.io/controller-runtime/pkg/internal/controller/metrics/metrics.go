@@ -39,13 +39,6 @@ var (
 		Help: "Total number of reconciliation errors per controller",
 	}, []string{"controller"})
 
-	// TerminalReconcileErrors is a prometheus counter metrics which holds the total
-	// number of terminal errors from the Reconciler.
-	TerminalReconcileErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "controller_runtime_terminal_reconcile_errors_total",
-		Help: "Total number of terminal reconciliation errors per controller",
-	}, []string{"controller"})
-
 	// ReconcileTime is a prometheus metric which keeps track of the duration
 	// of reconciliations.
 	ReconcileTime = prometheus.NewHistogramVec(prometheus.HistogramOpts{
@@ -74,7 +67,6 @@ func init() {
 	metrics.Registry.MustRegister(
 		ReconcileTotal,
 		ReconcileErrors,
-		TerminalReconcileErrors,
 		ReconcileTime,
 		WorkerCount,
 		ActiveWorkers,
