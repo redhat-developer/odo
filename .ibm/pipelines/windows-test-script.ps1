@@ -110,6 +110,7 @@ $REPO=$args[5]
 $CLUSTER_ID=$args[6]
 $TEST_EXEC_NODES=$args[7]
 $DEVFILE_REGISTRY=$args[8]
+$SKIP_SERVICE_BINDING_TESTS=$args[9]
 Shout "Args Recived"
 
 
