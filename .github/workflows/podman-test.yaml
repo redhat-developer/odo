@@ -15,28 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - run: cat /etc/os-release || true
+
     - run: podman info
 
+    # TODO(rm3l): workaround for https://github.com/actions/runner-images/issues/7753 (caused by https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394).
+    #   Remove this when this issue is fixed and available in the ubuntu runner image
+    - run: |
+        sudo apt install podman=3.4.4+ds1-1ubuntu1 --allow-downgrades
+        podman info
+
     - name: Checkout
-      # TODO(rm3l): Remove the line below
-      if: false
       uses: actions/checkout@v3
 
     - name: Setup Go
-      # TODO(rm3l): Remove the line below
-      if: false
       uses: actions/setup-go@v3
       with:
         go-version-file: 'go.mod'
 
     - name: Build odo
-      # TODO(rm3l): Remove the line below
-      if: false
       run: make install
 
     - name: Run Integration tests
-      # TODO(rm3l): Remove the line below
-      if: false
       env:
         # This should ideally be a configuration in the GH repo (secret or variable).
         # This is currently hard-coded because GH won't expose secrets or variables to PRs created from forks.
@@ -46,9 +46,7 @@ jobs:
       run: make test-integration-podman
 
     - name: List and stop remaining containers
-      # TODO(rm3l): Remove the line below
-      if: false
-#      if: ${{ always() }}
+      if: ${{ always() }}
       run: |
         podman pod ls --format '{{.Name}}' | xargs -I '{}' podman pod inspect '{}'
         podman pod ls --format '{{.Name}}' | xargs podman pod stop || true
