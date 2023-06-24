@@ -100,14 +100,7 @@ var _ = Describe("odo dev command tests", func() {
 			// odo dev on cluster should not wait for the Podman client to initialize properly, if this client takes very long.
 			// See https://github.com/redhat-developer/odo/issues/6575.
 			// StartDevMode will time out if Podman client takes too long to initialize.
-			delayer := filepath.Join(commonVar.Context, "podman-cmd-delayer")
-			err = helper.CreateFileWithContentAndPerm(delayer, `#!/bin/bash
-
-echo Delaying command execution... >&2
-sleep 10
-echo "$@"
-`, 0755)
-			Expect(err).ShouldNot(HaveOccurred())
+			delayer := helper.GenerateDelayedPodman(commonVar.Context, 10)
 
 			var devSession helper.DevSession
 			devSession, err = helper.StartDevMode(helper.DevSessionOpts{
