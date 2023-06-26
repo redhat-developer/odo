@@ -3,6 +3,7 @@ package integration
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -141,7 +142,12 @@ var _ = Describe("odo generic", func() {
 							serverURL := oc.GetCurrentServerURL()
 							Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 							if !helper.IsKubernetesCluster() {
-								Expect(odoVersion).Should(ContainSubstring("OpenShift: "))
+								ocpMatcher := ContainSubstring("OpenShift: ")
+								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion == "" {
+									// Might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
+									ocpMatcher = Not(ocpMatcher)
+								}
+								Expect(odoVersion).Should(ocpMatcher)
 							}
 						}
 					})
@@ -158,7 +164,12 @@ var _ = Describe("odo generic", func() {
 							serverURL := oc.GetCurrentServerURL()
 							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
 							if !helper.IsKubernetesCluster() {
-								helper.JsonPathSatisfies(odoVersion, "cluster.openshift", Not(BeEmpty()))
+								m := BeEmpty()
+								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion != "" {
+									// A blank serverVersion might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
+									m = Not(m)
+								}
+								helper.JsonPathSatisfies(odoVersion, "cluster.openshift", m)
 							}
 						}
 					})
