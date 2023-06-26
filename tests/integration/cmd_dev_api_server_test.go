@@ -153,6 +153,24 @@ var _ = Describe("odo dev command with api server tests", func() {
 						Expect(err).ToNot(HaveOccurred())
 					})
 				})
+
+				When("/instance endpoint is DELETEd", func() {
+
+					BeforeEach(func() {
+						url := fmt.Sprintf("http://%s/instance", devSession.APIServerEndpoint)
+						req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer([]byte{}))
+						Expect(err).ToNot(HaveOccurred())
+						client := &http.Client{}
+						resp, err := client.Do(req)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusOK))
+					})
+
+					It("should terminate the dev session", func() {
+						devSession.WaitEnd()
+						fmt.Println("<<< Session terminated >>>")
+					})
+				})
 			})
 
 			When("odo is executed with --no-watch and --api-server flags", helper.LabelPodmanIf(podman, func() {
@@ -199,38 +217,6 @@ var _ = Describe("odo dev command with api server tests", func() {
 							execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
 							Expect(execResult).To(ContainSubstring("App is super started"))
 						})
-					})
-				})
-			}))
-
-			When("odo is executed with --api-server flag", helper.LabelPodmanIf(podman, func() {
-
-				var devSession helper.DevSession
-
-				BeforeEach(func() {
-					var err error
-					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
-						RunOnPodman:    podman,
-						StartAPIServer: true,
-						EnvVars:        []string{"ODO_EXPERIMENTAL_MODE=true"},
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				When("/instance endpoint is DELETEd", func() {
-
-					BeforeEach(func() {
-						url := fmt.Sprintf("http://%s/instance", devSession.APIServerEndpoint)
-						req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer([]byte{}))
-						Expect(err).ToNot(HaveOccurred())
-						client := &http.Client{}
-						resp, err := client.Do(req)
-						Expect(err).ToNot(HaveOccurred())
-						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusOK))
-					})
-
-					It("should terminate the dev session", func() {
-						devSession.WaitEnd()
 					})
 				})
 			}))
