@@ -241,6 +241,9 @@ var _ = Describe("User guides: Quickstart test", func() {
 				Expect(diff).To(BeEmpty(), file)
 			})
 			By("running odo dev", func() {
+				helper.UpdateDevfileContent("devfile.yaml", []helper.DevfileUpdater{
+					helper.SetFsGroup("tools", 2000),
+				})
 				devSession, err := helper.StartDevMode(helper.DevSessionOpts{TimeoutInSeconds: 420})
 				Expect(err).To(BeNil())
 				devSession.Stop()
