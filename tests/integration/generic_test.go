@@ -3,6 +3,7 @@ package integration
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -141,7 +142,12 @@ var _ = Describe("odo generic", func() {
 							serverURL := oc.GetCurrentServerURL()
 							Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 							if !helper.IsKubernetesCluster() {
-								Expect(odoVersion).Should(ContainSubstring("OpenShift: "))
+								ocpMatcher := ContainSubstring("OpenShift: ")
+								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion == "" {
+									// Might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
+									ocpMatcher = Not(ocpMatcher)
+								}
+								Expect(odoVersion).Should(ocpMatcher)
 							}
 						}
 					})
@@ -149,16 +155,21 @@ var _ = Describe("odo generic", func() {
 					By("checking the JSON output", func() {
 						odoVersion = helper.Cmd("odo", "version", "-o", "json").ShouldPass().Out()
 						Expect(helper.IsJSON(odoVersion)).To(BeTrue())
-						helper.JsonPathSatisfies(odoVersion, "version", MatchRegexp(reJSONVersion))
+						helper.JsonPathSatisfiesAll(odoVersion, "version", MatchRegexp(reJSONVersion))
 						helper.JsonPathExist(odoVersion, "gitCommit")
 						if podman {
-							helper.JsonPathSatisfies(odoVersion, "podman.client.version", MatchRegexp(reJSONVersion), Equal(helper.GetPodmanVersion()))
+							helper.JsonPathSatisfiesAll(odoVersion, "podman.client.version", MatchRegexp(reJSONVersion), Equal(helper.GetPodmanVersion()))
 						} else {
-							helper.JsonPathSatisfies(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
+							helper.JsonPathSatisfiesAll(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
 							serverURL := oc.GetCurrentServerURL()
 							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
 							if !helper.IsKubernetesCluster() {
-								helper.JsonPathSatisfies(odoVersion, "cluster.openshift", Not(BeEmpty()))
+								m := BeEmpty()
+								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion != "" {
+									// A blank serverVersion might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
+									m = Not(m)
+								}
+								helper.JsonPathSatisfiesAll(odoVersion, "cluster.openshift", m)
 							}
 						}
 					})
@@ -194,10 +205,10 @@ var _ = Describe("odo generic", func() {
 			By("checking JSON output", func() {
 				odoVersion := helper.Cmd("odo", "version", "--client", "-o", "json").ShouldPass().Out()
 				Expect(helper.IsJSON(odoVersion)).To(BeTrue())
-				helper.JsonPathSatisfies(odoVersion, "version", MatchRegexp(reJSONVersion))
+				helper.JsonPathSatisfiesAll(odoVersion, "version", MatchRegexp(reJSONVersion))
 				helper.JsonPathExist(odoVersion, "gitCommit")
-				helper.JsonPathSatisfies(odoVersion, "cluster", BeEmpty())
-				helper.JsonPathSatisfies(odoVersion, "podman", BeEmpty())
+				helper.JsonPathSatisfiesAll(odoVersion, "cluster", BeEmpty())
+				helper.JsonPathSatisfiesAll(odoVersion, "podman", BeEmpty())
 			})
 		})
 	})
