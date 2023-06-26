@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/onsi/gomega/types"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/onsi/gomega/types"
 
 	"github.com/tidwall/gjson"
 
@@ -325,8 +326,8 @@ func JsonPathContentContain(json string, path string, value string) {
 	Expect(result.String()).To(ContainSubstring(value), fmt.Sprintf("content of path %q should contain %q but is %q", path, value, result.String()))
 }
 
-// JsonPathSatisfies expects content of the path to satisfy all the matchers passed to it
-func JsonPathSatisfies(json string, path string, matchers ...types.GomegaMatcher) {
+// JsonPathSatisfiesAll expects content of the path to satisfy all the matchers passed to it
+func JsonPathSatisfiesAll(json string, path string, matchers ...types.GomegaMatcher) {
 	result := gjson.Get(json, path)
 	Expect(result.String()).Should(SatisfyAll(matchers...))
 }

@@ -155,12 +155,12 @@ var _ = Describe("odo generic", func() {
 					By("checking the JSON output", func() {
 						odoVersion = helper.Cmd("odo", "version", "-o", "json").ShouldPass().Out()
 						Expect(helper.IsJSON(odoVersion)).To(BeTrue())
-						helper.JsonPathSatisfies(odoVersion, "version", MatchRegexp(reJSONVersion))
+						helper.JsonPathSatisfiesAll(odoVersion, "version", MatchRegexp(reJSONVersion))
 						helper.JsonPathExist(odoVersion, "gitCommit")
 						if podman {
-							helper.JsonPathSatisfies(odoVersion, "podman.client.version", MatchRegexp(reJSONVersion), Equal(helper.GetPodmanVersion()))
+							helper.JsonPathSatisfiesAll(odoVersion, "podman.client.version", MatchRegexp(reJSONVersion), Equal(helper.GetPodmanVersion()))
 						} else {
-							helper.JsonPathSatisfies(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
+							helper.JsonPathSatisfiesAll(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
 							serverURL := oc.GetCurrentServerURL()
 							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
 							if !helper.IsKubernetesCluster() {
@@ -169,7 +169,7 @@ var _ = Describe("odo generic", func() {
 									// A blank serverVersion might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
 									m = Not(m)
 								}
-								helper.JsonPathSatisfies(odoVersion, "cluster.openshift", m)
+								helper.JsonPathSatisfiesAll(odoVersion, "cluster.openshift", m)
 							}
 						}
 					})
@@ -205,10 +205,10 @@ var _ = Describe("odo generic", func() {
 			By("checking JSON output", func() {
 				odoVersion := helper.Cmd("odo", "version", "--client", "-o", "json").ShouldPass().Out()
 				Expect(helper.IsJSON(odoVersion)).To(BeTrue())
-				helper.JsonPathSatisfies(odoVersion, "version", MatchRegexp(reJSONVersion))
+				helper.JsonPathSatisfiesAll(odoVersion, "version", MatchRegexp(reJSONVersion))
 				helper.JsonPathExist(odoVersion, "gitCommit")
-				helper.JsonPathSatisfies(odoVersion, "cluster", BeEmpty())
-				helper.JsonPathSatisfies(odoVersion, "podman", BeEmpty())
+				helper.JsonPathSatisfiesAll(odoVersion, "cluster", BeEmpty())
+				helper.JsonPathSatisfiesAll(odoVersion, "podman", BeEmpty())
 			})
 		})
 	})
