@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/attributes"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	. "github.com/onsi/gomega"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/pointer"
 )
 
@@ -82,4 +84,24 @@ func UpdateDevfileContent(path string, handlers []DevfileUpdater) {
 	}
 	err = d.WriteYamlDevfile()
 	Expect(err).NotTo(HaveOccurred())
+}
+
+// SetFsGroup is a DevfileUpdater which sets an attribute to a container
+// to set a specific fsGroup for the container's pod
+func SetFsGroup(containerName string, fsGroup int) DevfileUpdater {
+	return func(d *parser.DevfileObj) error {
+		containers, err := d.Data.GetComponents(parsercommon.DevfileOptions{
+			FilterByName: containerName,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(containers)).To(Equal(1))
+		containers[0].Attributes = attributes.Attributes{
+			"pod-overrides": apiext.JSON{
+				Raw: []byte(fmt.Sprintf(`{"spec": {"securityContext": {"fsGroup": %d}}}`, fsGroup)),
+			},
+		}
+		err = d.Data.UpdateComponent(containers[0])
+		Expect(err).NotTo(HaveOccurred())
+		return nil
+	}
 }
