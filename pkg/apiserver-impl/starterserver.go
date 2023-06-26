@@ -3,16 +3,38 @@ package apiserver_impl
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
-	"net/http"
 )
 
-func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, stateClient state.Client) {
+type ApiServer struct {
+	PushWatcher <-chan struct{}
+}
 
-	defaultApiService := NewDefaultApiService()
+func StartServer(
+	ctx context.Context,
+	cancelFunc context.CancelFunc,
+	port int,
+	kubernetesClient kclient.ClientInterface,
+	podmanClient podman.Client,
+	stateClient state.Client,
+) ApiServer {
+
+	pushWatcher := make(chan struct{})
+	defaultApiService := NewDefaultApiService(
+		cancelFunc,
+		pushWatcher,
+		kubernetesClient,
+		podmanClient,
+		stateClient,
+	)
 	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
 
 	router := openapi.NewRouter(defaultApiController)
@@ -38,6 +60,9 @@ func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, s
 	server := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router}
 	var errChan = make(chan error)
 	go func() {
+		server.BaseContext = func(net.Listener) context.Context {
+			return ctx
+		}
 		err = server.ListenAndServe()
 		errChan <- err
 	}()
@@ -54,4 +79,8 @@ func StartServer(ctx context.Context, cancelFunc context.CancelFunc, port int, s
 			cancelFunc()
 		}
 	}()
+
+	return ApiServer{
+		PushWatcher: pushWatcher,
+	}
 }

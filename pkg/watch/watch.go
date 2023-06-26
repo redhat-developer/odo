@@ -257,6 +257,10 @@ func (o *WatchClient) eventWatcher(
 				sourcesTimer.Reset(100 * time.Millisecond)
 			}
 
+		case <-parameters.StartOptions.PushWatcher:
+			o.forceSync = true
+			sourcesTimer.Reset(100 * time.Millisecond)
+
 		case ev := <-o.deploymentWatcher.ResultChan():
 			switch obj := ev.Object.(type) {
 			case *appsv1.Deployment:

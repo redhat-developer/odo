@@ -37,6 +37,8 @@ type StartOptions struct {
 	ForwardLocalhost bool
 	// Variables to override in the Devfile
 	Variables map[string]string
+	// PushWatcher is a channel that will emit an event when Pushing files to the component is requested
+	PushWatcher <-chan struct{}
 
 	Out    io.Writer
 	ErrOut io.Writer
