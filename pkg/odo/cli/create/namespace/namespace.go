@@ -82,29 +82,21 @@ func (nco *NamespaceCreateOptions) Validate(ctx context.Context) error {
 
 // Run runs the namespace create command
 func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
-	// Create the "spinner"
-	s := &log.Status{}
-
-	// If the --wait parameter has been passed, we add a spinner..
-	if nco.waitFlag {
-		s = log.Spinnerf("Waiting for %s to come up", nco.commandName)
-		defer s.End(false)
-	}
+	createSpinner := log.Spinnerf("Creating the %s %q", nco.commandName, nco.namespaceName)
+	defer createSpinner.End(false)
 
 	// Create the namespace & end the spinner (if there is any..)
 	err = nco.clientset.ProjectClient.Create(nco.namespaceName, nco.waitFlag)
 	if err != nil {
 		return err
 	}
-	s.End(true)
+	createSpinner.End(true)
 
-	// Set the current namespace when created
-	err = nco.clientset.ProjectClient.SetCurrent(nco.namespaceName)
-	if err != nil {
-		return err
-	}
+	// If the --wait parameter has been passed, we add a spinner..
 	if nco.waitFlag {
-		var timeOut = time.After(nco.clientset.PreferenceClient.GetTimeout())
+		waitSpinner := log.Spinnerf("Waiting for the %s to come up", nco.commandName)
+		defer waitSpinner.End(false)
+		timeOut := time.After(nco.clientset.PreferenceClient.GetTimeout())
 	L:
 		for {
 			select {
@@ -124,6 +116,13 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 				time.Sleep(50 * time.Millisecond)
 			}
 		}
+		waitSpinner.End(true)
+	}
+
+	// Set the current namespace when created
+	err = nco.clientset.ProjectClient.SetCurrent(nco.namespaceName)
+	if err != nil {
+		return err
 	}
 	caser := cases.Title(language.Und)
 	successMessage := fmt.Sprintf(`%s %q is ready for use`, caser.String(nco.commandName), nco.namespaceName)
