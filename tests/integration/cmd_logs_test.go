@@ -182,6 +182,48 @@ var _ = Describe("odo logs command tests", func() {
 					})
 				})
 			}))
+
+			When("logs --follow is started", func() {
+				var logsSession helper.LogsSession
+				var err error
+
+				BeforeEach(func() {
+					logsSession, _, _, err = helper.StartLogsFollow(podman, "--dev")
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					logsSession.Kill()
+				})
+
+				When("running in Dev mode", helper.LabelPodmanIf(podman, func() {
+					var devSession helper.DevSession
+
+					BeforeEach(func() {
+						var err error
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+						if !podman {
+							// We need to wait for the pod deployed as a Kubernetes component
+							Eventually(func() bool {
+								return areAllPodsRunning()
+							}).Should(Equal(true))
+						}
+					})
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should successfully follow logs of running component", func() {
+						Eventually(func() bool {
+							logs := logsSession.OutContents()
+							return strings.Contains(string(logs), "Server running on")
+						}, 20*time.Second, 5).Should(BeTrue())
+					})
+				}))
+			})
 		}
 
 		When("running in Deploy mode", func() {
