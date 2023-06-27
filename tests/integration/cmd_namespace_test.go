@@ -25,6 +25,20 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
+
+	When("namespace is created with -w", func() {
+		// Ref: https://github.com/redhat-developer/odo/issues/6827
+		var namespace string
+		BeforeEach(func() {
+			namespace = helper.GetProjectName()
+			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
+		})
+		It("should list the new namespace when listing namespace", func() {
+			out := helper.Cmd("odo", "list", "namespace").ShouldPass().Out()
+			Expect(out).To(ContainSubstring(namespace))
+		})
+	})
+
 	for _, commandName := range []string{"namespace", "project"} {
 		// this is a workaround to ensure that the for loop works with `It` blocks
 		commandName := commandName

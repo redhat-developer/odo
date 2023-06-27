@@ -41,7 +41,9 @@ func StripSpinner(docString string) (returnString string) {
 		if (strings.HasPrefix(line, "•  Downloading") ||
 			strings.HasPrefix(line, "•  Syncing") ||
 			strings.HasPrefix(line, "•  Building") ||
-			strings.HasPrefix(line, "•  Waiting for the application")) &&
+			strings.HasPrefix(line, "•  Waiting for the application") ||
+			strings.HasPrefix(line, "•  Creating the namespace") ||
+			strings.HasPrefix(line, "•  Creating the project")) &&
 			strings.HasSuffix(line, "...") {
 			continue
 		}
