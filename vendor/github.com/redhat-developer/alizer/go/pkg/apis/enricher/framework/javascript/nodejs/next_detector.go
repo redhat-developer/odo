@@ -8,6 +8,7 @@
 * Contributors:
 * Red Hat, Inc.
 ******************************************************************************/
+
 package enricher
 
 import (
@@ -23,12 +24,14 @@ func (n NextDetector) GetSupportedFrameworks() []string {
 	return []string{"Next"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (n NextDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "next") {
 		language.Frameworks = append(language.Frameworks, "Next", "Next.js")
 	}
 }
 
+// DoPortsDetection searches for the port in package.json
 func (n NextDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`-p (\d*)`}
 	// check if port is set in start script in package.json

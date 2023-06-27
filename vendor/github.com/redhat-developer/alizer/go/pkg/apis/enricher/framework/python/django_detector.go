@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -24,6 +25,8 @@ func (d DjangoDetector) GetSupportedFrameworks() []string {
 	return []string{"Django"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
+// with django files and django config files
 func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
 	managePy := utils.GetFile(files, "manage.py")
 	urlsPy := utils.GetFile(files, "urls.py")
@@ -32,8 +35,8 @@ func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]
 	requirementsTxt := utils.GetFile(files, "requirements.txt")
 	projectToml := utils.GetFile(files, "pyproject.toml")
 
-	djangoFiles := []string{}
-	configDjangoFiles := []string{}
+	var djangoFiles []string
+	var configDjangoFiles []string
 	utils.AddToArrayIfValueExist(&djangoFiles, managePy)
 	utils.AddToArrayIfValueExist(&djangoFiles, urlsPy)
 	utils.AddToArrayIfValueExist(&djangoFiles, wsgiPy)
@@ -51,6 +54,7 @@ type ApplicationPropertiesFile struct {
 	File string
 }
 
+// DoPortsDetection searches for the port in /manage.py
 func (d DjangoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{

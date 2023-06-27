@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -17,7 +18,7 @@ import (
 
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/javascript/nodejs"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 	langfile "github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
 )
 
@@ -39,6 +40,8 @@ func (j JavaScriptEnricher) GetSupportedLanguages() []string {
 	return []string{"javascript", "typescript"}
 }
 
+// DoEnrichLanguage runs DoFrameworkDetection with found javascript project files.
+// javascript project files: package.json
 func (j JavaScriptEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	packageJson := utils.GetFile(files, "package.json")
 
@@ -59,6 +62,7 @@ func (j JavaScriptEnricher) DoEnrichLanguage(language *model.Language, files *[]
 	}
 }
 
+// DoEnrichComponent checks for the port number using a Dockerfile, Compose file, or Source strategy
 func (j JavaScriptEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := ""
 	packageJsonPath := filepath.Join(component.Path, "package.json")
@@ -74,7 +78,7 @@ func (j JavaScriptEnricher) DoEnrichComponent(component *model.Component, settin
 	component.Name = projectName
 
 	for _, algorithm := range settings.PortDetectionStrategy {
-		ports := []int{}
+		var ports []int
 		switch algorithm {
 		case model.DockerFile:
 			{

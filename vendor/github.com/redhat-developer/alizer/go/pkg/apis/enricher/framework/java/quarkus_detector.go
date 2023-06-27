@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -18,7 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -42,12 +43,15 @@ func (q QuarkusDetector) GetSupportedFrameworks() []string {
 	return []string{"Quarkus"}
 }
 
+// DoFrameworkDetection uses the groupId to check for the framework name
 func (q QuarkusDetector) DoFrameworkDetection(language *model.Language, config string) {
-	if hasFwk, _ := hasFramework(config, "io.quarkus"); hasFwk {
+	if hasFwk, _ := hasFramework(config, "io.quarkus", ""); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Quarkus")
 	}
 }
 
+// DoPortsDetection searches for ports in the env var, .env file, and
+// src/main/resources/application.properties, or src/main/resources/application.yaml
 func (q QuarkusDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	ports := getQuarkusPortsFromEnvs()
@@ -107,7 +111,7 @@ func getQuarkusPortsFromEnvs() []int {
 }
 
 func getServerPortsFromQuarkusPropertiesFile(file string) ([]int, error) {
-	ports := []int{}
+	var ports []int
 	props, err := utils.ConvertPropertiesFileAsPathToMap(file)
 	if err != nil {
 		return ports, err
@@ -136,8 +140,11 @@ func getServerPortsFromQuarkusApplicationYamlFile(file string) ([]int, error) {
 		return []int{}, err
 	}
 	var data QuarkusApplicationYaml
-	yaml.Unmarshal(yamlFile, &data)
-	ports := []int{}
+	err = yaml.Unmarshal(yamlFile, &data)
+	if err != nil {
+		return []int{}, err
+	}
+	var ports []int
 	if data.Quarkus.Http.SSLPort > 0 {
 		ports = append(ports, data.Quarkus.Http.SSLPort)
 	}

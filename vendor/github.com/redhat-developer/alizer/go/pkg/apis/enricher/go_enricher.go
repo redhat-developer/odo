@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -17,7 +18,7 @@ import (
 
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/go"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 	"golang.org/x/mod/modfile"
 )
 
@@ -40,11 +41,13 @@ func getGoFrameworkDetectors() []GoFrameworkDetector {
 	}
 }
 
-func (j GoEnricher) GetSupportedLanguages() []string {
+func (g GoEnricher) GetSupportedLanguages() []string {
 	return []string{"go"}
 }
 
-func (j GoEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
+// DoEnrichLanguage runs DoFrameworkDetection with found go project files.
+// go project files: go.mod
+func (g GoEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	goModPath := utils.GetFile(files, "go.mod")
 
 	if goModPath != "" {
@@ -59,12 +62,13 @@ func (j GoEnricher) DoEnrichLanguage(language *model.Language, files *[]string) 
 	}
 }
 
-func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
+// DoEnrichComponent checks for the port number using a Dockerfile, Compose file, or Source strategy
+func (g GoEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
 	for _, algorithm := range settings.PortDetectionStrategy {
-		ports := []int{}
+		var ports []int
 		switch algorithm {
 		case model.DockerFile:
 			{
@@ -85,6 +89,9 @@ func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model
 						}
 					}
 				}
+				if len(component.Ports) == 0 {
+					framework.DoGoPortsDetection(component, ctx)
+				}
 			}
 		}
 		if len(ports) > 0 {
@@ -96,7 +103,7 @@ func (j GoEnricher) DoEnrichComponent(component *model.Component, settings model
 	}
 }
 
-func (j GoEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
+func (g GoEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
 	return IsConfigurationValidForLanguage(language, config)
 }
 

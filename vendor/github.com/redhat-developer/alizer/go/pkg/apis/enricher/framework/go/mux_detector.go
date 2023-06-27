@@ -8,11 +8,11 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
-	"os"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -26,6 +26,7 @@ func (m MuxDetector) GetSupportedFrameworks() []string {
 	return []string{"Mux"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (m MuxDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gorilla/mux") {
 		language.Frameworks = append(language.Frameworks, "Mux")
@@ -53,15 +54,8 @@ func (m MuxDetector) DoPortsDetection(component *model.Component, ctx *context.C
 		},
 	}
 
-	for _, file := range files {
-		bytes, err := os.ReadFile(file)
-		if err != nil {
-			continue
-		}
-		ports := GetPortFromFileGo(matchRegexRules, string(bytes))
-		if len(ports) > 0 {
-			component.Ports = ports
-			return
-		}
+	ports := GetPortFromFilesGo(matchRegexRules, files)
+	if len(ports) > 0 {
+		component.Ports = ports
 	}
 }

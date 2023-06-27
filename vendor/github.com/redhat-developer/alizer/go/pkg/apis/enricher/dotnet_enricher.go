@@ -20,7 +20,7 @@ import (
 
 type DotNetEnricher struct{}
 
-func (j DotNetEnricher) GetSupportedLanguages() []string {
+func (d DotNetEnricher) GetSupportedLanguages() []string {
 	return []string{"c#", "f#", "visual basic .net"}
 }
 
@@ -30,14 +30,17 @@ func getDotNetFrameworkDetectors() []FrameworkDetectorWithConfigFile {
 	}
 }
 
-func (j DotNetEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
+// DoEnrichLanguage runs DoFrameworkDetection with found dot net project files.
+// dot net project files: https://learn.microsoft.com/en-us/dotnet/core/project-sdk/overview#project-files
+func (d DotNetEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	configFiles := utils.GetFilesByRegex(files, ".*\\.\\w+proj")
 	for _, configFile := range configFiles {
 		getDotNetFrameworks(language, configFile)
 	}
 }
 
-func (j DotNetEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
+// DoEnrichComponent checks for the port number using a Dockerfile or Compose file
+func (d DotNetEnricher) DoEnrichComponent(component *model.Component, settings model.DetectionSettings, ctx *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
@@ -64,7 +67,7 @@ func (j DotNetEnricher) DoEnrichComponent(component *model.Component, settings m
 	}
 }
 
-func (j DotNetEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
+func (d DotNetEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
 	return IsConfigurationValidForLanguage(language, config)
 }
 

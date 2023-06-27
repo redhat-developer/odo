@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -15,7 +16,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,12 +38,14 @@ func (m MicronautDetector) GetSupportedFrameworks() []string {
 	return []string{"Micronaut"}
 }
 
+// DoFrameworkDetection uses the groupId to check for the framework name
 func (m MicronautDetector) DoFrameworkDetection(language *model.Language, config string) {
-	if hasFwk, _ := hasFramework(config, "io.micronaut"); hasFwk {
+	if hasFwk, _ := hasFramework(config, "io.micronaut", ""); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Micronaut")
 	}
 }
 
+// DoPortsDetection searches for the port in src/main/resources/application.yaml
 func (m MicronautDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	ports := getMicronautPortsFromEnvs()
@@ -71,9 +74,12 @@ func (m MicronautDetector) DoPortsDetection(component *model.Component, ctx *con
 }
 
 func getMicronautPortsFromBytes(bytes []byte) []int {
-	ports := []int{}
+	var ports []int
 	var data MicronautApplicationProps
-	yaml.Unmarshal(bytes, &data)
+	err := yaml.Unmarshal(bytes, &data)
+	if err != nil {
+		return []int{}
+	}
 	if data.Micronaut.Server.SSL.Enabled && utils.IsValidPort(data.Micronaut.Server.SSL.Port) {
 		ports = append(ports, data.Micronaut.Server.SSL.Port)
 	}

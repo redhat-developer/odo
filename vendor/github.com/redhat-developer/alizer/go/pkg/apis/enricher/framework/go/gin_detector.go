@@ -8,11 +8,11 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
 	"context"
-	"os"
 	"regexp"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
@@ -26,6 +26,7 @@ func (g GinDetector) GetSupportedFrameworks() []string {
 	return []string{"Gin"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (g GinDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gin-gonic/gin") {
 		language.Frameworks = append(language.Frameworks, "Gin")
@@ -38,7 +39,7 @@ func (g GinDetector) DoPortsDetection(component *model.Component, ctx *context.C
 		return
 	}
 
-	matchRegexRule := model.PortMatchRules{
+	matchRegexRules := model.PortMatchRules{
 		MatchIndexRegexes: []model.PortMatchRule{
 			{
 				Regex:     regexp.MustCompile(`.Run\(([^,)]*)`),
@@ -47,15 +48,8 @@ func (g GinDetector) DoPortsDetection(component *model.Component, ctx *context.C
 		},
 	}
 
-	for _, file := range files {
-		bytes, err := os.ReadFile(file)
-		if err != nil {
-			continue
-		}
-		ports := GetPortFromFileGo(matchRegexRule, string(bytes))
-		if len(ports) > 0 {
-			component.Ports = ports
-			return
-		}
+	ports := GetPortFromFilesGo(matchRegexRules, files)
+	if len(ports) > 0 {
+		component.Ports = ports
 	}
 }

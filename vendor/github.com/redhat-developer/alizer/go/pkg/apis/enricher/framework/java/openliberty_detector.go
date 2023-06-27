@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -15,30 +16,30 @@ import (
 	"encoding/xml"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type OpenLibertyDetector struct{}
 
-type Server_Xml struct {
-	Server struct {
-		HttpEndpoint struct {
-			HttpPort  string `xml:"httpPort,attr"`
-			HttpsPort string `xml:"httpsPort,attr"`
-		} `xml:"httpEndpoint"`
-	} `xml:"server"`
+type ServerXml struct {
+	HttpEndpoint struct {
+		HttpPort  string `xml:"httpPort,attr"`
+		HttpsPort string `xml:"httpsPort,attr"`
+	} `xml:"httpEndpoint"`
 }
 
 func (o OpenLibertyDetector) GetSupportedFrameworks() []string {
 	return []string{"OpenLiberty"}
 }
 
+// DoFrameworkDetection uses the groupId to check for the framework name
 func (o OpenLibertyDetector) DoFrameworkDetection(language *model.Language, config string) {
-	if hasFwk, _ := hasFramework(config, "io.openliberty"); hasFwk {
+	if hasFwk, _ := hasFramework(config, "io.openliberty", ""); hasFwk {
 		language.Frameworks = append(language.Frameworks, "OpenLiberty")
 	}
 }
 
+// DoPortsDetection searches for the port in src/main/liberty/config/server.xml and /server.xml
 func (o OpenLibertyDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
@@ -53,9 +54,12 @@ func (o OpenLibertyDetector) DoPortsDetection(component *model.Component, ctx *c
 	if err != nil {
 		return
 	}
-	var data Server_Xml
-	xml.Unmarshal(bytes, &data)
-	ports := utils.GetValidPorts([]string{data.Server.HttpEndpoint.HttpPort, data.Server.HttpEndpoint.HttpsPort})
+	var data ServerXml
+	err = xml.Unmarshal(bytes, &data)
+	if err != nil {
+		return
+	}
+	ports := utils.GetValidPorts([]string{data.HttpEndpoint.HttpPort, data.HttpEndpoint.HttpsPort})
 	if len(ports) > 0 {
 		component.Ports = ports
 	}

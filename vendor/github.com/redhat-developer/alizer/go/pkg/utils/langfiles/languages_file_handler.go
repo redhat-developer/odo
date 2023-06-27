@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package langfiles
 
 import (
@@ -113,7 +114,10 @@ func getLanguagesProperties() schema.LanguagesProperties {
 		return schema.LanguagesProperties{}
 	}
 	var data schema.LanguagesProperties
-	yaml.Unmarshal(yamlFile, &data)
+	err = yaml.Unmarshal(yamlFile, &data)
+	if err != nil {
+		return schema.LanguagesProperties{}
+	}
 	return data
 }
 
@@ -124,7 +128,10 @@ func getLanguageCustomizations() schema.LanguagesCustomizations {
 	}
 
 	var data schema.LanguagesCustomizations
-	yaml.Unmarshal(yamlFile, &data)
+	err = yaml.Unmarshal(yamlFile, &data)
+	if err != nil {
+		return schema.LanguagesCustomizations{}
+	}
 	return data
 }
 
@@ -170,4 +177,35 @@ func (l *LanguageFile) GetConfigurationPerLanguageMapping() map[string][]string 
 		}
 	}
 	return configurationPerLanguage
+}
+
+func (l *LanguageFile) GetExcludedFolders() []string {
+	var excludedFolders []string
+	for _, langItem := range l.languages {
+		for _, exclude := range langItem.ExcludeFolders {
+			excludedFolders = append(excludedFolders, exclude)
+		}
+	}
+	excludedFolders = removeDuplicates(excludedFolders)
+	return excludedFolders
+}
+
+// RemoveDuplicates goes through a string slice and removes all duplicates.
+// Reference: https://siongui.github.io/2018/04/14/go-remove-duplicates-from-slice-or-array/
+func removeDuplicates(s []string) []string {
+
+	// Make a map and go through each value to see if it's a duplicate or not
+	m := make(map[string]bool)
+	for _, item := range s {
+		if _, ok := m[item]; !ok {
+			m[item] = true
+		}
+	}
+
+	// Append to the unique string
+	var result []string
+	for item := range m {
+		result = append(result, item)
+	}
+	return result
 }

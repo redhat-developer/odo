@@ -8,14 +8,17 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package recognizer
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 
-	enricher "github.com/redhat-developer/alizer/go/pkg/apis/enricher"
+	"github.com/redhat-developer/alizer/go/pkg/apis/enricher"
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils"
 	langfile "github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
@@ -34,20 +37,29 @@ func Analyze(path string) ([]model.Language, error) {
 func analyze(path string, ctx *context.Context) ([]model.Language, error) {
 	languagesFile := langfile.Get()
 	languagesDetected := make(map[string]languageItem)
-
+	alizerLogger := utils.GetOrCreateLogger()
+	alizerLogger.V(1).Info("Searching for files in root")
 	paths, err := utils.GetCachedFilePathsFromRoot(path, ctx)
 	if err != nil {
 		return []model.Language{}, err
 	}
+	alizerLogger.V(0).Info(fmt.Sprintf("Found %d cached file paths from root", len(paths)))
+	alizerLogger.V(1).Info("Searching for language file extensions in given paths")
 	extensionsGrouped := extractExtensions(paths)
+	alizerLogger.V(0).Info(fmt.Sprintf("Found %d file extensions in given paths", len(extensionsGrouped)))
 	extensionHasProgrammingLanguage := false
-	totalProgrammingOccurrences := 0
+	totalProgrammingPoints := 0
 	for extension := range extensionsGrouped {
+		alizerLogger.V(1).Info(fmt.Sprintf("Checking extension %s", extension))
 		languages := languagesFile.GetLanguagesByExtension(extension)
 		if len(languages) == 0 {
+			alizerLogger.V(1).Info(fmt.Sprintf("Not able to match %s extension with any known language", extension))
 			continue
 		}
+		alizerLogger.V(1).Info(fmt.Sprintf("Found %d languages for extension %s", len(languages), extension))
+		alizerLogger.V(1).Info(fmt.Sprintf("Accessing languages for extension %s", extension))
 		for _, language := range languages {
+			alizerLogger.V(1).Info(fmt.Sprintf("Accessing %s language", language.Name))
 			if language.Kind == "programming" {
 				var languageFileItem langfile.LanguageItem
 				var err error
@@ -56,26 +68,35 @@ func analyze(path string, ctx *context.Context) ([]model.Language, error) {
 				} else {
 					languageFileItem, err = languagesFile.GetLanguageByName(language.Group)
 					if err != nil {
+						alizerLogger.V(1).Info(fmt.Sprintf("Cannot get language item for %s", language.Name))
 						continue
 					}
 				}
 				tmpLanguageItem := languageItem{languageFileItem, 0}
+				alizerLogger.V(1).Info(fmt.Sprintf("Extension %s was found %d times. Adding %s to detected languages", extension, extensionsGrouped[extension], language.Name))
 				weight := languagesDetected[tmpLanguageItem.item.Name].weight + extensionsGrouped[extension]
 				tmpLanguageItem.weight = weight
 				languagesDetected[tmpLanguageItem.item.Name] = tmpLanguageItem
 				extensionHasProgrammingLanguage = true
+			} else {
+				alizerLogger.V(1).Info(fmt.Sprintf("%s is not a programming language", language.Name))
 			}
 		}
 		if extensionHasProgrammingLanguage {
-			totalProgrammingOccurrences += extensionsGrouped[extension]
+			totalProgrammingPoints += extensionsGrouped[extension]
 			extensionHasProgrammingLanguage = false
 		}
 	}
 
 	var languagesFound []model.Language
+	if len(languagesDetected) > 0 {
+		alizerLogger.V(0).Info(fmt.Sprintf("Accessing %d detected programming languages", len(languagesDetected)))
+	} else {
+		alizerLogger.V(0).Info("No programming language was detected")
+	}
 	for name, item := range languagesDetected {
-		tmpWeight := float64(item.weight) / float64(totalProgrammingOccurrences)
-		tmpWeight = float64(int(tmpWeight*10000)) / 10000
+		tmpWeight := float64(item.weight) / float64(totalProgrammingPoints)
+		tmpWeight = float64(int(tmpWeight*100)) / 100
 		if tmpWeight > 0.02 {
 			tmpLanguage := model.Language{
 				Name:           name,
@@ -88,6 +109,7 @@ func analyze(path string, ctx *context.Context) ([]model.Language, error) {
 			if langEnricher != nil {
 				langEnricher.DoEnrichLanguage(&tmpLanguage, &paths)
 			}
+			alizerLogger.V(0).Info(fmt.Sprintf("%s weight is %f. Detecting frameworks", tmpLanguage.Name, tmpLanguage.Weight))
 			languagesFound = append(languagesFound, tmpLanguage)
 		}
 	}
@@ -118,6 +140,16 @@ func AnalyzeFile(configFile string, targetLanguage string) (model.Language, erro
 	return tmpLanguage, nil
 }
 
+func isStaticFileExtension(path string) bool {
+	staticDirs := [2]string{"static/", "templates/"}
+	for _, dir := range staticDirs {
+		if strings.Contains(path, dir) {
+			return true
+		}
+	}
+	return false
+}
+
 func extractExtensions(paths []string) map[string]int {
 	extensions := make(map[string]int)
 	for _, path := range paths {
@@ -125,8 +157,13 @@ func extractExtensions(paths []string) map[string]int {
 		if len(extension) == 0 {
 			continue
 		}
-		count := extensions[extension] + 1
-		extensions[extension] = count
+		extensionPoints := extensions[extension]
+		if !isStaticFileExtension(path) {
+			extensionPoints = extensionPoints + 100
+		} else {
+			extensionPoints = extensionPoints + 10
+		}
+		extensions[extension] = extensionPoints
 	}
 	return extensions
 }

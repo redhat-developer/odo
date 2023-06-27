@@ -17,6 +17,8 @@ F#:
 GCC Machine Description:
   disable_detection: true
 Go:
+  exclude_folders:
+    - "vendor"
   configuration_files:
     - "go.mod"
   component: true
@@ -31,6 +33,11 @@ JavaScript:
   exclude_folders:
     - "node_modules"
   configuration_files:
+    - "[^-]package.json"
+  component: true
+PHP:
+  configuration_files:
+    - "composer.json"
     - "[^-]package.json"
   component: true
 Python:

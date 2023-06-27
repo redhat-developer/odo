@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -17,7 +18,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	utils "github.com/redhat-developer/alizer/go/pkg/utils"
+	"github.com/redhat-developer/alizer/go/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,15 +34,18 @@ type ApplicationProsServer struct {
 }
 
 func (s SpringDetector) GetSupportedFrameworks() []string {
-	return []string{"Spring"}
+	return []string{"Spring", "Spring Boot"}
 }
 
+// DoFrameworkDetection uses the groupId to check for the framework name
 func (s SpringDetector) DoFrameworkDetection(language *model.Language, config string) {
-	if hasFwk, _ := hasFramework(config, "org.springframework"); hasFwk {
-		language.Frameworks = append(language.Frameworks, "Spring")
+	if hasFwk, _ := hasFramework(config, "org.springframework", ""); hasFwk {
+		language.Frameworks = append(language.Frameworks, s.GetSupportedFrameworks()...)
 	}
 }
 
+// DoPortsDetection searches for ports in the env var and
+// src/main/resources/application.properties, or src/main/resources/application.yaml
 func (s SpringDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on env var
 	ports := getSpringPortsFromEnvs()
@@ -98,7 +102,7 @@ func getServerPortsFromPropertiesFile(file string) ([]int, error) {
 }
 
 func getPortsFromMap(props map[string]string, keys []string) []int {
-	ports := []int{}
+	var ports []int
 	for _, key := range keys {
 		port := getPortFromMap(props, key)
 		if port != -1 {
@@ -123,8 +127,11 @@ func getServerPortsFromYamlFile(file string) ([]int, error) {
 		return []int{}, err
 	}
 	var data ApplicationProsServer
-	yaml.Unmarshal(yamlFile, &data)
-	ports := []int{}
+	err = yaml.Unmarshal(yamlFile, &data)
+	if err != nil {
+		return []int{}, err
+	}
+	var ports []int
 	if data.Server.Port > 0 {
 		ports = append(ports, data.Server.Port)
 	}

@@ -8,6 +8,7 @@
 * Contributors:
 * Red Hat, Inc.
 ******************************************************************************/
+
 package enricher
 
 import (
@@ -24,12 +25,14 @@ func (n NuxtDetector) GetSupportedFrameworks() []string {
 	return []string{"Nuxt"}
 }
 
+// DoFrameworkDetection uses a tag to check for the framework name
 func (n NuxtDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "nuxt") {
 		language.Frameworks = append(language.Frameworks, "Nuxt", "Nuxt.js")
 	}
 }
 
+// DoPortsDetection searches for the port in package.json, and nuxt.config.js
 func (n NuxtDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`--port=(\d*)`}
 	// check if port is set in start script in package.json

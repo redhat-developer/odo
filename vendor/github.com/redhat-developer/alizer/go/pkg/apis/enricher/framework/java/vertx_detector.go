@@ -8,6 +8,7 @@
  * Contributors:
  * Red Hat, Inc.
  ******************************************************************************/
+
 package enricher
 
 import (
@@ -32,12 +33,14 @@ func (v VertxDetector) GetSupportedFrameworks() []string {
 	return []string{"Vertx"}
 }
 
+// DoFrameworkDetection uses the groupId to check for the framework name
 func (v VertxDetector) DoFrameworkDetection(language *model.Language, config string) {
-	if hasFwk, _ := hasFramework(config, "io.vertx"); hasFwk {
+	if hasFwk, _ := hasFramework(config, "io.vertx", ""); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Vertx")
 	}
 }
 
+// DoPortsDetection searches for the port in json files under src/main/conf/
 func (v VertxDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
 		{
