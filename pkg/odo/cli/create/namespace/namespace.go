@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/project"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"k8s.io/klog"
 	"os"
 	"time"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/spf13/cobra"
@@ -99,10 +98,6 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 	}
 	s.End(true)
 
-	caser := cases.Title(language.Und)
-	successMessage := fmt.Sprintf(`%s %q is ready for use`, caser.String(nco.commandName), nco.namespaceName)
-	log.Successf(successMessage)
-
 	// Set the current namespace when created
 	err = nco.clientset.ProjectClient.SetCurrent(nco.namespaceName)
 	if err != nil {
@@ -114,8 +109,7 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 		for {
 			select {
 			case <-timeOut:
-				log.Warningf("Timeout while waiting for %s %q; it may take a while to appear", nco.commandName, nco.namespaceName)
-				return nil
+				return fmt.Errorf("timeout while waiting for %s %q to be ready; you can change the timeout preference by running `odo preference set timeout <duration>`", nco.commandName, nco.namespaceName)
 			default:
 				var nsList project.ProjectList
 				nsList, err = nco.clientset.ProjectClient.List()
@@ -131,6 +125,9 @@ func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
 			}
 		}
 	}
+	caser := cases.Title(language.Und)
+	successMessage := fmt.Sprintf(`%s %q is ready for use`, caser.String(nco.commandName), nco.namespaceName)
+	log.Successf(successMessage)
 	log.Successf("New %[1]s created and now using %[1]s: %v", nco.commandName, nco.namespaceName)
 
 	return nil
