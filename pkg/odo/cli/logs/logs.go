@@ -152,13 +152,35 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	errChan := make(chan error)          // errors are put on this channel
 	var mu sync.Mutex
 
+	displayedLogs := map[string]struct{}{}
 	for {
 		select {
 		case containerLogs := <-events.Logs:
-			uniqueName := getUniqueContainerName(containerLogs.Name, uniqueContainerNames)
+			podContainerName := fmt.Sprintf("%s-%s", containerLogs.PodName, containerLogs.ContainerName)
+			if _, ok := displayedLogs[podContainerName]; ok {
+				continue
+			}
+			displayedLogs[podContainerName] = struct{}{}
+
+			uniqueName := getUniqueContainerName(containerLogs.ContainerName, uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
 			colour := log.ColorPicker()
 			logs := containerLogs.Logs
+
+			func() {
+				mu.Lock()
+				defer mu.Unlock()
+				color.Set(colour)
+				defer color.Unset()
+				help := ""
+				if uniqueName != containerLogs.ContainerName {
+					help = fmt.Sprintf(" (%s)", uniqueName)
+				}
+				_, err = fmt.Fprintf(o.out, "--> Logs for %s / %s%s\n", containerLogs.PodName, containerLogs.ContainerName, help)
+				if err != nil {
+					errChan <- err
+				}
+			}()
 
 			if o.follow {
 				atomic.AddInt64(&goroutines.count, 1)
@@ -170,6 +192,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 					if err != nil {
 						errChan <- err
 					}
+					delete(displayedLogs, podContainerName)
 					events.Done <- struct{}{}
 				}(o.out)
 			} else {
@@ -183,7 +206,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		case err = <-events.Err:
 			return err
 		case <-events.Done:
-			if goroutines.count == 0 {
+			if !o.follow && goroutines.count == 0 {
 				if len(uniqueContainerNames) == 0 {
 					// This will be the case when:
 					// 1. user specifies --dev flag, but the component's running in Deploy mode

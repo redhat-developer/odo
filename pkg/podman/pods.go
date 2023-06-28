@@ -1,13 +1,18 @@
 package podman
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/platform"
@@ -24,7 +29,8 @@ func (o *PodmanCli) GetPodsMatchingSelector(selector string) (*corev1.PodList, e
 	for _, podReport := range podsReport {
 		pod, err := o.KubeGenerate(podReport.Name)
 		if err != nil {
-			return nil, err
+			// The pod has disappeared in the meantime, forget it
+			continue
 		}
 		// We remove the podname- prefix from the container names as Podman adds this prefix
 		// (to avoid colliding container names?)
@@ -33,6 +39,13 @@ func (o *PodmanCli) GetPodsMatchingSelector(selector string) (*corev1.PodList, e
 			prefix := pod.GetName() + "-"
 			container.Name = strings.TrimPrefix(container.Name, prefix)
 		}
+		inspect, err := o.PodInspect(podReport.Name)
+		if err != nil {
+			// The pod has disappeared in the meantime, forget it
+			continue
+		}
+		pod.Status.Phase = corev1.PodPhase(inspect.State)
+
 		result.Items = append(result.Items, *pod)
 	}
 	return &result, nil
@@ -128,4 +141,68 @@ func (o *PodmanCli) getPodsFromSelector(selector string) ([]ListPodsReport, erro
 		return nil, err
 	}
 	return list, nil
+}
+
+type podWatcher struct {
+	stop   chan struct{}
+	pods   map[string]struct{}
+	events chan watch.Event
+}
+
+func (o *PodmanCli) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+
+	watcher := podWatcher{
+		stop:   make(chan struct{}),
+		pods:   make(map[string]struct{}),
+		events: make(chan watch.Event),
+	}
+	go watcher.watch(o.podmanCmd, o.containerRunGlobalExtraArgs)
+	return watcher, nil
+}
+
+func (o podWatcher) watch(podmanCmd string, containerRunGlobalExtraArgs []string) {
+	args := []string{"ps", "--quiet"}
+	args = append(containerRunGlobalExtraArgs, args...)
+	ticker := time.NewTicker(3 * time.Second)
+	for {
+		select {
+		case <-o.stop:
+			return
+		case <-ticker.C:
+			cmd := exec.Command(podmanCmd, args...)
+			out, err := cmd.Output()
+			if err != nil {
+				klog.V(4).Infof("error getting containers from podman: %s", err)
+				continue
+			}
+			scanner := bufio.NewScanner(bytes.NewReader(out))
+			currentPods := make(map[string]struct{})
+			for scanner.Scan() {
+				podName := scanner.Text()
+				currentPods[podName] = struct{}{}
+				if _, ok := o.pods[podName]; !ok {
+					o.events <- watch.Event{
+						Type: watch.Added,
+					}
+					o.pods[podName] = struct{}{}
+				}
+			}
+			for p := range o.pods {
+				if _, ok := currentPods[p]; !ok {
+					o.events <- watch.Event{
+						Type: watch.Deleted,
+					}
+					delete(o.pods, p)
+				}
+			}
+		}
+	}
+}
+
+func (o podWatcher) Stop() {
+	o.stop <- struct{}{}
+}
+
+func (o podWatcher) ResultChan() <-chan watch.Event {
+	return o.events
 }
