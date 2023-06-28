@@ -57,7 +57,9 @@ func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentC
 		}
 
 	default:
-		return openapi.Response(http.StatusBadRequest, nil), fmt.Errorf("command name %q not supported. Supported values are: %q", componentCommandPostRequest.Name, "push")
+		return openapi.Response(http.StatusBadRequest, openapi.GeneralError{
+			Message: fmt.Sprintf("command name %q not supported. Supported values are: %q", componentCommandPostRequest.Name, "push"),
+		}), nil
 	}
 }
 
@@ -65,7 +67,9 @@ func (s *DefaultApiService) ComponentCommandPost(ctx context.Context, componentC
 func (s *DefaultApiService) ComponentGet(ctx context.Context) (openapi.ImplResponse, error) {
 	value, _, err := describe.DescribeDevfileComponent(ctx, s.kubeClient, s.podmanClient, s.stateClient)
 	if err != nil {
-		return openapi.Response(http.StatusInternalServerError, ""), fmt.Errorf("error getting the description of the component: %w", err)
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("error getting the description of the component: %s", err),
+		}), nil
 	}
 	return openapi.Response(http.StatusOK, value), nil
 }

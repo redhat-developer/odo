@@ -172,6 +172,14 @@ paths:
                   },
                   "managedBy": "odo"
                }
+        '500':
+          description: error getting the description of the component
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "error getting the description of the component"
 
   /component/command:
     post:
@@ -198,6 +206,22 @@ paths:
                 $ref: '#/components/schemas/GeneralSuccess'
               example:
                 message: "push was successfully executed"
+        '400':
+          description: command name not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "command name 'unknown' not supported. Supported values are: \"push\""
+        '429':
+          description: a push operation is not possible at this time. Please retry later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "a push operation is not possible at this time. Please retry later"
 
 components:
   schemas:
