@@ -223,6 +223,55 @@ paths:
               example:
                 message: "a push operation is not possible at this time. Please retry later"
 
+  /devstate/container:
+    post:
+      description: Add a new container to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the container
+                  type: string
+                image: 
+                  description: Container image
+                  type: string
+                command: 
+                  description: Entrypoint of the container
+                  type: array
+                  items: {
+                        type: string
+                  }
+                args: 
+                  description: Args passed to the Container entrypoint
+                  type: array
+                  items: {
+                        type: string
+                  }
+                memReq: 
+                  description: Requested memory for the deployed container
+                  type: string
+                memLimit:
+                  description: Memory limit for the deployed container
+                  type: string
+                cpuReq:
+                  description: Requested CPU for the deployed container
+                  type: string
+                cpuLimit:
+                  description: CPU limit for the deployed container
+                  type: string
+      responses:
+        '200':
+          description: container was successfully added to the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "container was successfully added to the container"
+
 components:
   schemas:
     GeneralSuccess:

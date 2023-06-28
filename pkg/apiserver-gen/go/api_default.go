@@ -61,6 +61,12 @@ func (c *DefaultApiController) Routes() Routes {
 			c.ComponentGet,
 		},
 		{
+			"DevstateContainerPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/container",
+			c.DevstateContainerPost,
+		},
+		{
 			"InstanceDelete",
 			strings.ToUpper("Delete"),
 			"/api/v1/instance",
@@ -102,6 +108,30 @@ func (c *DefaultApiController) ComponentCommandPost(w http.ResponseWriter, r *ht
 // ComponentGet -
 func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.ComponentGet(r.Context())
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateContainerPost -
+func (c *DefaultApiController) DevstateContainerPost(w http.ResponseWriter, r *http.Request) {
+	devstateContainerPostRequestParam := DevstateContainerPostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateContainerPostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateContainerPostRequestRequired(devstateContainerPostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateContainerPost(r.Context(), devstateContainerPostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
