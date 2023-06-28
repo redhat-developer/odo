@@ -1,0 +1,40 @@
+<div class="main">
+    <h2>Add a new container</h2>
+    <div class="description">A Container is used to execute shell commands into a specific environment. The entrypoint of the container must be a non-terminating command. You can use an image pulled from a registry or an image built by an Image command.</div>
+    <form [formGroup]="form">
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Name</span></mat-label>
+            <mat-error>Lowercase words separated by dashes. Ex: my-container</mat-error>
+            <input placeholder="unique name to identify the container" data-cy="container-name" matInput formControlName="name">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Image</span></mat-label>
+            <input placeholder="Image to start the container" data-cy="container-image" matInput formControlName="image">
+        </mat-form-field>
+        <app-multi-text formControlName="command" title="Command" label="Command" addLabel="Add command"></app-multi-text>
+        <app-multi-text formControlName="args" title="Arguments to command" label="Arg" addLabel="Add arg"></app-multi-text>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Memory Request</span></mat-label>
+            <mat-error>{{quantityErrMsgMemory}}</mat-error>
+            <input placeholder="memory requested for the container. Ex: 1Gi" data-cy="container-memory-request" matInput formControlName="memoryRequest">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Memory Limit</span></mat-label>
+            <mat-error>{{quantityErrMsgMemory}}</mat-error>
+            <input placeholder="memory limit for the container. Ex: 1Gi" data-cy="container-memory-limit" matInput formControlName="memoryLimit">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>CPU Request</span></mat-label>
+            <mat-error>{{quantityErrMsgCPU}}</mat-error>
+            <input placeholder="CPU requested for the container. Ex: 500m" data-cy="container-cpu-request" matInput formControlName="cpuRequest">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>CPU Limit</span></mat-label>
+            <mat-error>{{quantityErrMsgCPU}}</mat-error>
+            <input placeholder="CPU limit for the container. Ex: 1" data-cy="container-cpu-limit" matInput formControlName="cpuLimit">
+        </mat-form-field>
+    </form>
+
+    <button data-cy="container-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new container" (click)="create()">Create</button>
+    <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>
+</div>

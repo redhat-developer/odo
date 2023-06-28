@@ -1,0 +1,34 @@
+<div class="main">
+    <h2>Pre-Start event</h2>
+    <div class="description">Pre-Start commands are executed before the inner loop is started, inside init-containers (not implemented by odo).</div>
+    <app-chips-events 
+        [commands]="events?.preStart ?? []" 
+        [allCommands]="allCommands ?? []"
+        (updated)="onUpdate('preStart', $event)"
+        ></app-chips-events>
+
+    <h2>Post-Start event</h2>
+    <div class="description">Post-Start commands are executed at the beginning of the inner loop, inside pre-fetched containers.</div>
+    <app-chips-events 
+        [commands]="events?.postStart ?? []" 
+        [allCommands]="allCommands ?? []"
+        (updated)="onUpdate('postStart', $event)"
+        ></app-chips-events>
+
+    <h2>Pre-Stop event</h2>
+    <div class="description">Pre-Stop commands are executed at the end of  the inner loop, inside pre-fetched containers.</div>
+    <app-chips-events 
+        [commands]="events?.preStop ?? []" 
+        [allCommands]="allCommands ?? []"
+        (updated)="onUpdate('preStop', $event)"
+        ></app-chips-events>
+
+    <h2>Post-Stop event</h2>
+    <div class="description">Post-Stop commands are executed after the inner loop is finished (not implemented by odo).</div>
+    <app-chips-events 
+        [commands]="events?.postStop ?? []" 
+        [allCommands]="allCommands ?? []"
+        (updated)="onUpdate('postStop', $event)"
+        ></app-chips-events>
+
+</div>

@@ -1,0 +1,31 @@
+<div class="main">
+    <mat-card data-cy="resource-info" *ngFor="let resource of resources">
+        <mat-card-header class="colored-title">
+            <mat-card-title>{{resource.name}}</mat-card-title>
+            <mat-card-subtitle>Cluster Resource</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <div *ngIf="resource.uri">URI: <code>{{resource.uri}}</code></div>
+            <div *ngIf="resource.inlined"><pre>{{resource.inlined}}</pre></div>
+        </mat-card-content>
+
+        <mat-card-actions>
+            <button mat-button color="warn" (click)="delete(resource.name)">Delete</button>
+        </mat-card-actions>
+
+    </mat-card>
+
+    <app-resource 
+        *ngIf="forceDisplayAdd || resources == undefined || resources.length == 0"
+        [cancelable]="forceDisplayAdd"
+        (canceled)="undisplayAddForm()"
+        (created)="onCreated($event)"
+    ></app-resource>
+</div>
+
+
+<ng-container *ngIf="!forceDisplayAdd && resources != undefined && resources.length > 0">
+    <button class="fab" mat-fab color="primary" (click)="displayAddForm()">
+        <mat-icon class="material-icons-outlined">add</mat-icon>
+    </button>
+</ng-container>

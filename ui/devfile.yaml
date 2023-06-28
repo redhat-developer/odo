@@ -1,0 +1,72 @@
+commands:
+- composite:
+    commands:
+    - go-build
+    - angular-install
+    group:
+      isDefault: true
+      kind: build
+    parallel: true
+  id: build
+- exec:
+    commandLine: npm run start
+    component: node
+    group:
+      isDefault: true
+      kind: run
+    hotReloadCapable: true
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+- exec:
+    commandLine: make deploy
+    component: node
+    group:
+      isDefault: true
+      kind: deploy
+    hotReloadCapable: false
+    workingDir: ${PROJECTS_ROOT}
+  id: deploy
+- exec:
+    commandLine: make build-wasm
+    component: go
+    env:
+    - name: GOPATH
+      value: ${PROJECT_SOURCE}/.go
+    - name: GOCACHE
+      value: ${PROJECT_SOURCE}/.cache
+    hotReloadCapable: false
+    workingDir: ${PROJECT_SOURCE}
+  id: go-build
+- exec:
+    commandLine: npm install
+    component: node
+    hotReloadCapable: false
+    workingDir: ${PROJECT_SOURCE}
+  id: angular-install
+components:
+- container:
+    args:
+    - tail
+    - -f
+    - /dev/null
+    dedicatedPod: false
+    endpoints:
+    - name: http-angular
+      secure: false
+      targetPort: 4200
+    image: registry.access.redhat.com/ubi8/nodejs-16:latest
+    memoryLimit: 4096Mi
+    mountSources: true
+  name: node
+- container:
+    args:
+    - tail
+    - -f
+    - /dev/null
+    dedicatedPod: false
+    image: registry.access.redhat.com/ubi9/go-toolset:1.18.9-14
+    memoryLimit: 1024Mi
+    mountSources: true
+  name: go
+metadata: {}
+schemaVersion: 2.2.0

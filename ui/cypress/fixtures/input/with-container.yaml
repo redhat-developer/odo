@@ -1,0 +1,14 @@
+schemaVersion: 2.2.0
+metadata: {}
+components:
+- container:
+    args:
+    - with
+    - arg
+    command:
+    - the
+    - command
+    - to
+    - run
+    image: nginx
+  name: container1

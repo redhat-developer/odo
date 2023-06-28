@@ -1,0 +1,60 @@
+<div class="main">
+    <mat-card data-cy="container-info" *ngFor="let container of containers">
+        <mat-card-header class="colored-title">
+            <mat-card-title>{{container.name}}</mat-card-title>
+            <mat-card-subtitle>Container</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <table class="aligned">
+                <tr>
+                    <td>Image:</td>
+                    <td><code>{{container.image}}</code></td>
+                </tr>
+                <tr *ngIf="container.command.length > 0">
+                    <td>Command:</td>
+                    <td><code>{{container.command.join(" ")}}</code></td>
+                </tr>
+                <tr *ngIf="container.args.length > 0">
+                    <td>Args:</td>
+                    <td><code>{{container.args.join(" ")}}</code></td>
+                </tr>
+                <tr *ngIf="container.memoryRequest.length > 0">
+                    <td>Memory Request:</td>
+                    <td><code>{{container.memoryRequest}}</code></td>
+                </tr>
+                <tr *ngIf="container.memoryLimit.length > 0">
+                    <td>Memory Limit:</td>
+                    <td><code>{{container.memoryLimit}}</code></td>
+                </tr>
+                <tr *ngIf="container.cpuRequest.length > 0">
+                    <td>CPU Request:</td>
+                    <td><code>{{container.cpuRequest}}</code></td>
+                </tr>
+                <tr *ngIf="container.cpuLimit.length > 0">
+                    <td>CPU Limit:</td>
+                    <td><code>{{container.cpuLimit}}</code></td>
+                </tr>
+            </table>
+
+        </mat-card-content>
+
+        <mat-card-actions>
+            <button mat-button color="warn" (click)="delete(container.name)">Delete</button>
+        </mat-card-actions>
+
+    </mat-card>
+
+    <app-container 
+        *ngIf="forceDisplayAdd || containers == undefined || containers.length == 0"
+        [cancelable]="forceDisplayAdd"
+        (canceled)="undisplayAddForm()"
+        (created)="onCreated($event)"
+        ></app-container>
+</div>
+
+
+<ng-container *ngIf="!forceDisplayAdd && containers != undefined && containers.length > 0">
+    <button data-cy="add" class="fab" mat-fab color="primary" (click)="displayAddForm()">
+        <mat-icon class="material-icons-outlined">add</mat-icon>
+    </button>
+</ng-container>

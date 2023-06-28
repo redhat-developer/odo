@@ -1,0 +1,90 @@
+<mat-toolbar color="primary">
+    <span>Devfile Builder</span>
+    <span class="spacer"></span>
+    <span class="topright">Work in progress</span>
+    <a mat-icon-button href="https://github.com/feloy/devfile-builder" target="_blank"><mat-icon svgIcon="github"></mat-icon></a>
+</mat-toolbar>
+<main>
+
+    <div class="flex-container">
+
+        <div class="flex-child">
+            <mat-tab-group animationDuration="0">
+
+                <mat-tab data-cy="tab-yaml" label="YAML">
+                    <div class="tab-content">
+                        <div *ngIf="errorMessage" data-cy="yaml-error" class="error-message">{{errorMessage}}</div>
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Devfile YAML</mat-label>
+                            <textarea data-cy="yaml-input" matInput #input id="input" rows="20" [value]="devfileYaml"></textarea>
+                        </mat-form-field>
+                        <button data-cy="yaml-save" mat-flat-button color="primary" (click)="onButtonClick(input.value)">Save</button>
+                        <button data-cy="yaml-clear" mat-flat-button color="warn" (click)="clear()">Clear</button>
+                    </div>
+                </mat-tab>
+
+                <mat-tab data-cy="tab-chart" label="Chart">
+                    <div class="flex-child">
+                        <div #mermaid id="mermaid" class="mermaid" [innerHTML]="sanitizer.bypassSecurityTrustHtml(mermaidContent)"></div>
+                    </div>            
+                </mat-tab>
+
+                <mat-tab data-cy="tab-metadata">
+                    <ng-template mat-tab-label>
+                        Metadata
+                    </ng-template>
+                    <app-metadata></app-metadata>
+                </mat-tab>
+
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-icon material-icons-outlined">code</mat-icon>
+                        Commands
+                    </ng-template>
+                    <app-commands></app-commands>
+                </mat-tab>
+
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-icon material-icons-outlined">alarm</mat-icon>
+                        Events
+                    </ng-template>
+                    <app-events></app-events>
+                </mat-tab>
+
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-icon material-icons-outlined">width_normal</mat-icon>
+                        Containers
+                    </ng-template>
+                    <app-containers></app-containers>
+                </mat-tab>
+
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-icon material-icons-outlined">image</mat-icon>
+                        Images
+                    </ng-template>
+                    <app-images></app-images>
+                </mat-tab>
+
+                <mat-tab >
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-icon material-icons-outlined">description</mat-icon>
+                        Resources
+                    </ng-template>
+                    <app-resources></app-resources>
+                </mat-tab>
+
+                <mat-tab>
+                    <ng-template mat-tab-label>
+                        <mat-icon class="tab-icon material-icons-outlined">storage</mat-icon>
+                        Volumes
+                    </ng-template>
+                </mat-tab>
+
+            </mat-tab-group>
+        </div>      
+
+    </div>
+</main>

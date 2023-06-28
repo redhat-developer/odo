@@ -1,0 +1,109 @@
+<div class="nothing-here" *ngIf="!getCommandsByKind(commands, kind)?.length && kind != ''">No {{kind}} commands yet. You can create a command then drag&drop it here</div>
+<div class="nothing-here" *ngIf="!getCommandsByKind(commands, kind)?.length && kind == ''">No generic commands yet. New commands will appear here</div>
+<ng-container *ngFor="let command of commands">
+    <mat-card data-cy="command-info" cdkDrag [cdkDragDisabled]="dragDisabled" *ngIf="command.group == kind">
+        <mat-card-header class="with-right-content colored-title">
+                <div class="space-between">
+                    <mat-card-title>
+                        {{command.name}}
+                    </mat-card-title>
+                    <mat-checkbox 
+                        *ngIf="command.group != ''" 
+                        [checked]="command.default" 
+                        (change)="toggleDefault($event, command.name, command.group)"
+                    >Default {{kind}} command</mat-checkbox>
+                </div>
+            <div>
+                <mat-card-subtitle *ngIf="command.type == 'exec'">Exec Command</mat-card-subtitle>
+                <mat-card-subtitle *ngIf="command.type == 'apply'">Apply Command</mat-card-subtitle>
+                <mat-card-subtitle *ngIf="command.type == 'image'">Image Command</mat-card-subtitle>
+                <mat-card-subtitle *ngIf="command.type == 'composite'">Composite Command</mat-card-subtitle>
+            </div>
+        </mat-card-header>
+
+        <mat-card-content>
+            
+
+            <ng-container *ngIf="command.type == 'exec'">
+                <table class="aligned">
+                    <tr>
+                        <td>Is Hot Reload Capable:</td>
+                        <td>
+                            <span *ngIf="command.exec?.hotReloadCapable">Yes</span>
+                            <span *ngIf="!command.exec?.hotReloadCapable">No</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Command Line:</td>
+                        <td><code>{{command.exec?.commandLine}}</code></td>
+                    </tr>
+                    <tr>
+                        <td>Working Directory:</td>
+                        <td><code>{{command.exec?.workingDir}}</code></td>
+                    </tr>
+                    <tr>
+                        <td>Container:</td>
+                        <td><mat-chip disableRipple>
+                            <mat-icon matChipAvatar class="material-icons-outlined">width_normal</mat-icon>
+                            {{command.exec?.component}}
+                        </mat-chip></td>
+                    </tr>
+                </table>
+            </ng-container>
+
+            <ng-container *ngIf="command.type == 'apply'">
+                <table class="aligned">
+                    <tr>
+                        <td>Cluster resource:</td>
+                        <td><mat-chip disableRipple>
+                                <mat-icon matChipAvatar class="material-icons-outlined">description</mat-icon>
+                                {{command.apply?.component}}
+                            </mat-chip></td>
+                    </tr>
+                </table>
+            </ng-container>
+
+            <ng-container *ngIf="command.type == 'image'">
+                <table class="aligned">
+                    <tr>
+                        <td>Image:</td>
+                        <td><mat-chip disableRipple>
+                            <mat-icon matChipAvatar class="material-icons-outlined">image</mat-icon>
+                            {{command.image?.component}}
+                        </mat-chip></td>
+                    </tr>
+                </table>
+            </ng-container>
+
+            <ng-container *ngIf="command.type == 'composite'">
+                <table class="aligned">
+                    <tr>
+                        <td>Scheduling:</td>
+                        <td>
+                            <div *ngIf="command.composite?.parallel">Commands executed in parallel</div>
+                            <div *ngIf="!command.composite?.parallel">Commands executed serially</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Commands:</td>
+                        <td>
+                            <mat-chip-set [class.mat-mdc-chip-set-stacked]="command.composite?.parallel">
+                                <mat-chip disableRipple *ngFor="let command of command.composite?.commands">
+                                    <mat-icon matChipAvatar class="material-icons-outlined">code</mat-icon>
+                                    {{command}}
+                                    </mat-chip>
+                            </mat-chip-set>
+                        </td>
+                    </tr>
+                </table>
+
+            </ng-container>
+
+        </mat-card-content>
+
+        <mat-card-actions>
+            <button mat-button color="warn" (click)="delete(command.name)">Delete</button>
+        </mat-card-actions>
+
+    </mat-card>
+</ng-container>

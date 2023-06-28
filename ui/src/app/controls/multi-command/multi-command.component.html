@@ -1,0 +1,14 @@
+<h3>{{title}}</h3>
+<div class="group">
+    <span *ngFor="let command of commands; let i=index">
+        <mat-form-field appearance="fill">
+            <mat-select [value]="command" (selectionChange)="onCommandChange(i, $event.value)">
+                <mat-option *ngFor="let commandElement of commandList" [value]="commandElement">{{commandElement}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+    </span>
+    <button *ngIf="commands.length > 0" mat-icon-button (click)="addCommand()">
+        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
+    </button>                
+    <button *ngIf="commands.length == 0" mat-flat-button (click)="addCommand()">{{addLabel}}</button>
+</div>

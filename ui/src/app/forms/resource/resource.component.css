@@ -1,0 +1,4 @@
+.main { padding: 16px; }
+mat-form-field.full-width { width: 100%; }
+mat-form-field.mid-width { width: 50%; }
+span.toggleUriInlined { margin-left: 16px; }
