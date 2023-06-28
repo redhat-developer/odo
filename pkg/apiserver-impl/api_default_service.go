@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/apiserver-impl/devstate"
 	"github.com/redhat-developer/odo/pkg/component/describe"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -22,6 +23,8 @@ type DefaultApiService struct {
 	kubeClient   kclient.ClientInterface
 	podmanClient podman.Client
 	stateClient  state.Client
+
+	devfileState devstate.DevfileState
 }
 
 // NewDefaultApiService creates a default api service
@@ -38,6 +41,8 @@ func NewDefaultApiService(
 		kubeClient:   kubeClient,
 		podmanClient: podmanClient,
 		stateClient:  stateClient,
+
+		devfileState: devstate.NewDevfileState(),
 	}
 }
 
