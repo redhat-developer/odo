@@ -1,6 +1,7 @@
 package devstate
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -74,6 +75,9 @@ func (o *DevfileState) DeleteContainer(name string) (DevfileContent, error) {
 	if err != nil {
 		return DevfileContent{}, fmt.Errorf("error deleting container %q: %w", name, err)
 	}
+
+	// TODO check if it is a Container, not another component
+
 	err = o.Devfile.Data.DeleteComponent(name)
 	if err != nil {
 		return DevfileContent{}, err
@@ -134,6 +138,9 @@ func (o *DevfileState) DeleteImage(name string) (DevfileContent, error) {
 	if err != nil {
 		return DevfileContent{}, fmt.Errorf("error deleting image %q: %w", name, err)
 	}
+
+	// TODO check if it is an Image, not another component
+
 	err = o.Devfile.Data.DeleteComponent(name)
 	if err != nil {
 		return DevfileContent{}, err
@@ -153,6 +160,62 @@ func (o *DevfileState) checkImageUsed(name string) error {
 	for _, command := range commands {
 		if command.Apply.Component == name {
 			return fmt.Errorf("image %q is used by Image Command %q", name, command.Id)
+		}
+	}
+	return nil
+}
+
+func (o *DevfileState) AddResource(name string, inlined string, uri string) (DevfileContent, error) {
+	if inlined != "" && uri != "" {
+		return DevfileContent{}, errors.New("both inlined and uri cannot be set at the same time")
+	}
+	container := v1alpha2.Component{
+		Name: name,
+		ComponentUnion: v1alpha2.ComponentUnion{
+			Kubernetes: &v1alpha2.KubernetesComponent{
+				K8sLikeComponent: v1alpha2.K8sLikeComponent{
+					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+						Inlined: inlined,
+						Uri:     uri,
+					},
+				},
+			},
+		},
+	}
+	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) DeleteResource(name string) (DevfileContent, error) {
+
+	err := o.checkResourceUsed(name)
+	if err != nil {
+		return DevfileContent{}, fmt.Errorf("error deleting resource %q: %w", name, err)
+	}
+	// TODO check if it is a Resource, not another component
+
+	err = o.Devfile.Data.DeleteComponent(name)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) checkResourceUsed(name string) error {
+	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ApplyCommandType,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for _, command := range commands {
+		if command.Apply.Component == name {
+			return fmt.Errorf("resource %q is used by Apply Command %q", name, command.Id)
 		}
 	}
 	return nil
