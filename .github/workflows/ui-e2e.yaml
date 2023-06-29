@@ -1,4 +1,4 @@
-name: e2e
+name: Dev UI E2E tests
 on:
   pull_request:
     branches:    
