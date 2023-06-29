@@ -87,6 +87,18 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateImagePost,
 		},
 		{
+			"DevstateResourcePost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/resource",
+			c.DevstateResourcePost,
+		},
+		{
+			"DevstateResourceResourceNameDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/resource/{resourceName}",
+			c.DevstateResourceResourceNameDelete,
+		},
+		{
 			"InstanceDelete",
 			strings.ToUpper("Delete"),
 			"/api/v1/instance",
@@ -206,6 +218,45 @@ func (c *DefaultApiController) DevstateImagePost(w http.ResponseWriter, r *http.
 		return
 	}
 	result, err := c.service.DevstateImagePost(r.Context(), devstateImagePostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateResourcePost -
+func (c *DefaultApiController) DevstateResourcePost(w http.ResponseWriter, r *http.Request) {
+	devstateResourcePostRequestParam := DevstateResourcePostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateResourcePostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateResourcePostRequestRequired(devstateResourcePostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateResourcePost(r.Context(), devstateResourcePostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateResourceResourceNameDelete -
+func (c *DefaultApiController) DevstateResourceResourceNameDelete(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	resourceNameParam := params["resourceName"]
+	result, err := c.service.DevstateResourceResourceNameDelete(r.Context(), resourceNameParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

@@ -441,6 +441,99 @@ paths:
               example:
                 message: "Error deleting the image"
 
+  /devstate/resource:
+    post:
+      description: Add a new Kubernetes resource to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the resource
+                  type: string
+                inlined:
+                  type: string
+                uri:
+                  type: string
+      responses:
+        '200':
+          description: resource was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  component:
+                    type: object
+                    description: Content of the Devfile
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the resource"
+
+  /devstate/resource/{resourceName}:
+    delete:
+      description: "Delete a resource from the Devfile"
+      parameters:
+        - name: resourceName
+          in: path
+          description: Resource name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Resource has been deleted"
+          description: "Resource has been deleted"
+        '500':
+          description: Error deleting the resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the resource"
+
 components:
   schemas:
     GeneralSuccess:

@@ -24,6 +24,8 @@ type DefaultApiRouter interface {
 	DevstateContainerPost(http.ResponseWriter, *http.Request)
 	DevstateImageImageNameDelete(http.ResponseWriter, *http.Request)
 	DevstateImagePost(http.ResponseWriter, *http.Request)
+	DevstateResourcePost(http.ResponseWriter, *http.Request)
+	DevstateResourceResourceNameDelete(http.ResponseWriter, *http.Request)
 	InstanceDelete(http.ResponseWriter, *http.Request)
 	InstanceGet(http.ResponseWriter, *http.Request)
 }
@@ -39,6 +41,8 @@ type DefaultApiServicer interface {
 	DevstateContainerPost(context.Context, DevstateContainerPostRequest) (ImplResponse, error)
 	DevstateImageImageNameDelete(context.Context, string) (ImplResponse, error)
 	DevstateImagePost(context.Context, DevstateImagePostRequest) (ImplResponse, error)
+	DevstateResourcePost(context.Context, DevstateResourcePostRequest) (ImplResponse, error)
+	DevstateResourceResourceNameDelete(context.Context, string) (ImplResponse, error)
 	InstanceDelete(context.Context) (ImplResponse, error)
 	InstanceGet(context.Context) (ImplResponse, error)
 }
