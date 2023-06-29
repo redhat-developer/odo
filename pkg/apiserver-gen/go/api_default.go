@@ -63,6 +63,30 @@ func (c *DefaultApiController) Routes() Routes {
 			c.ComponentGet,
 		},
 		{
+			"DevstateApplyCommandCommandNameDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/applyCommand/{commandName}",
+			c.DevstateApplyCommandCommandNameDelete,
+		},
+		{
+			"DevstateApplyCommandPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/applyCommand",
+			c.DevstateApplyCommandPost,
+		},
+		{
+			"DevstateCompositeCommandCommandNameDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/compositeCommand/{commandName}",
+			c.DevstateCompositeCommandCommandNameDelete,
+		},
+		{
+			"DevstateCompositeCommandPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/compositeCommand",
+			c.DevstateCompositeCommandPost,
+		},
+		{
 			"DevstateContainerContainerNameDelete",
 			strings.ToUpper("Delete"),
 			"/api/v1/devstate/container/{containerName}",
@@ -73,6 +97,18 @@ func (c *DefaultApiController) Routes() Routes {
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/container",
 			c.DevstateContainerPost,
+		},
+		{
+			"DevstateExecCommandCommandNameDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/execCommand/{commandName}",
+			c.DevstateExecCommandCommandNameDelete,
+		},
+		{
+			"DevstateExecCommandPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/execCommand",
+			c.DevstateExecCommandPost,
 		},
 		{
 			"DevstateImageImageNameDelete",
@@ -150,6 +186,84 @@ func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Reque
 
 }
 
+// DevstateApplyCommandCommandNameDelete -
+func (c *DefaultApiController) DevstateApplyCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	result, err := c.service.DevstateApplyCommandCommandNameDelete(r.Context(), commandNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateApplyCommandPost -
+func (c *DefaultApiController) DevstateApplyCommandPost(w http.ResponseWriter, r *http.Request) {
+	devstateApplyCommandPostRequestParam := DevstateApplyCommandPostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateApplyCommandPostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateApplyCommandPostRequestRequired(devstateApplyCommandPostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateApplyCommandPost(r.Context(), devstateApplyCommandPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateCompositeCommandCommandNameDelete -
+func (c *DefaultApiController) DevstateCompositeCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	result, err := c.service.DevstateCompositeCommandCommandNameDelete(r.Context(), commandNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateCompositeCommandPost -
+func (c *DefaultApiController) DevstateCompositeCommandPost(w http.ResponseWriter, r *http.Request) {
+	devstateCompositeCommandPostRequestParam := DevstateCompositeCommandPostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateCompositeCommandPostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateCompositeCommandPostRequestRequired(devstateCompositeCommandPostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateCompositeCommandPost(r.Context(), devstateCompositeCommandPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
 // DevstateContainerContainerNameDelete -
 func (c *DefaultApiController) DevstateContainerContainerNameDelete(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -179,6 +293,45 @@ func (c *DefaultApiController) DevstateContainerPost(w http.ResponseWriter, r *h
 		return
 	}
 	result, err := c.service.DevstateContainerPost(r.Context(), devstateContainerPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateExecCommandCommandNameDelete -
+func (c *DefaultApiController) DevstateExecCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	result, err := c.service.DevstateExecCommandCommandNameDelete(r.Context(), commandNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateExecCommandPost -
+func (c *DefaultApiController) DevstateExecCommandPost(w http.ResponseWriter, r *http.Request) {
+	devstateExecCommandPostRequestParam := DevstateExecCommandPostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateExecCommandPostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateExecCommandPostRequestRequired(devstateExecCommandPostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateExecCommandPost(r.Context(), devstateExecCommandPostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

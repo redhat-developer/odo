@@ -534,6 +534,291 @@ paths:
               example:
                 message: "Error deleting the resource"
 
+  /devstate/applyCommand:
+    post:
+      description: Add a new Apply Command to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command
+                  type: string
+                component:
+                  type: string
+      responses:
+        '200':
+          description: Apply command was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  component:
+                    type: object
+                    description: Content of the Devfile
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the Apply command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the Apply command"
+
+  /devstate/applyCommand/{commandName}:
+    delete:
+      description: "Delete an Apply command from the Devfile"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Apply Command has been deleted"
+          description: "Apply Command has been deleted"
+        '500':
+          description: Error deleting the Apply command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the Apply command"
+
+
+  /devstate/compositeCommand:
+    post:
+      description: Add a new Composite Command to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command
+                  type: string
+                parallel:
+                  type: bool
+                commands:
+                  type: array
+                  items: {
+                    type: string
+                  }
+      responses:
+        '200':
+          description: Composite command was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  component:
+                    type: object
+                    description: Content of the Devfile
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the Composite command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the Composite command"
+
+  /devstate/compositeCommand/{commandName}:
+    delete:
+      description: "Delete an Composite command from the Devfile"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Composite Command has been deleted"
+          description: "Composite Command has been deleted"
+        '500':
+          description: Error deleting the Composite command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the Composite command"
+
+  /devstate/execCommand:
+    post:
+      description: Add a new Exec Command to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command
+                  type: string
+                component:
+                  type: string
+                commandLine:
+                  type: string
+                workingDir:
+                  type: string
+                hotReloadCapable:
+                  type: bool
+      responses:
+        '200':
+          description: Exec command was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  component:
+                    type: object
+                    description: Content of the Devfile
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the Exec command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the Exec command"
+
+  /devstate/execCommand/{commandName}:
+    delete:
+      description: "Delete an Exec command from the Devfile"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Exec Command has been deleted"
+          description: "Exec Command has been deleted"
+        '500':
+          description: Error deleting the Exec command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the Exec command"
+
 components:
   schemas:
     GeneralSuccess:
