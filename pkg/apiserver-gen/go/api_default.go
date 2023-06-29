@@ -13,6 +13,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 // DefaultApiController binds http requests to an api service and writes the service results to the http response
@@ -59,6 +61,12 @@ func (c *DefaultApiController) Routes() Routes {
 			strings.ToUpper("Get"),
 			"/api/v1/component",
 			c.ComponentGet,
+		},
+		{
+			"DevstateContainerContainerNameDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/container/{containerName}",
+			c.DevstateContainerContainerNameDelete,
 		},
 		{
 			"DevstateContainerPost",
@@ -108,6 +116,21 @@ func (c *DefaultApiController) ComponentCommandPost(w http.ResponseWriter, r *ht
 // ComponentGet -
 func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.ComponentGet(r.Context())
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateContainerContainerNameDelete -
+func (c *DefaultApiController) DevstateContainerContainerNameDelete(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	containerNameParam := params["containerName"]
+	result, err := c.service.DevstateContainerContainerNameDelete(r.Context(), containerNameParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

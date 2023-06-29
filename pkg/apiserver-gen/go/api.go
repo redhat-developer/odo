@@ -20,6 +20,7 @@ import (
 type DefaultApiRouter interface {
 	ComponentCommandPost(http.ResponseWriter, *http.Request)
 	ComponentGet(http.ResponseWriter, *http.Request)
+	DevstateContainerContainerNameDelete(http.ResponseWriter, *http.Request)
 	DevstateContainerPost(http.ResponseWriter, *http.Request)
 	InstanceDelete(http.ResponseWriter, *http.Request)
 	InstanceGet(http.ResponseWriter, *http.Request)
@@ -32,6 +33,7 @@ type DefaultApiRouter interface {
 type DefaultApiServicer interface {
 	ComponentCommandPost(context.Context, ComponentCommandPostRequest) (ImplResponse, error)
 	ComponentGet(context.Context) (ImplResponse, error)
+	DevstateContainerContainerNameDelete(context.Context, string) (ImplResponse, error)
 	DevstateContainerPost(context.Context, DevstateContainerPostRequest) (ImplResponse, error)
 	InstanceDelete(context.Context) (ImplResponse, error)
 	InstanceGet(context.Context) (ImplResponse, error)

@@ -302,6 +302,42 @@ paths:
                         "SupportUrl": ""
                     }
                 }
+        '500':
+          description: Error adding the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the container"
+
+  /devstate/container/{containerName}:
+    delete:
+      description: "Delete a container from the Devfile"
+      parameters:
+        - name: containerName
+          in: path
+          description: Container name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Container has been deleted"
+          description: "Container has been deleted"
+        '500':
+          description: Error deleting the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the container"
 
 components:
   schemas:
