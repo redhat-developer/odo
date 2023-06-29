@@ -93,3 +93,92 @@ schemaVersion: 2.2.0
 		})
 	}
 }
+
+func TestDevfileState_DeleteContainer(t *testing.T) {
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name    string
+		state   func(t *testing.T) DevfileState
+		args    args
+		want    DevfileContent
+		wantErr bool
+	}{
+		{
+			name: "Delete an existing container",
+			state: func(t *testing.T) DevfileState {
+				state := NewDevfileState()
+				_, err := state.AddContainer(
+					"a-name",
+					"an-image",
+					[]string{"run", "command"},
+					[]string{"arg1", "arg2"},
+					"1Gi",
+					"2Gi",
+					"100m",
+					"200m",
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return state
+			},
+			args: args{
+				name: "a-name",
+			},
+			want: DevfileContent{
+				Content: `metadata: {}
+schemaVersion: 2.2.0
+`,
+				Commands:   []Command{},
+				Containers: []Container{},
+				Images:     []Image{},
+				Resources:  []Resource{},
+				Events:     Events{},
+			},
+		},
+		{
+			name: "Delete a non existing container",
+			state: func(t *testing.T) DevfileState {
+				state := NewDevfileState()
+				_, err := state.AddContainer(
+					"a-name",
+					"an-image",
+					[]string{"run", "command"},
+					[]string{"arg1", "arg2"},
+					"1Gi",
+					"2Gi",
+					"100m",
+					"200m",
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return state
+			},
+			args: args{
+				name: "another-name",
+			},
+			want:    DevfileContent{},
+			wantErr: true,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := tt.state(t)
+			got, err := o.DeleteContainer(tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DevfileState.AddContainer() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want.Content, got.Content); diff != "" {
+				t.Errorf("DevfileState.AddContainer() mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileState.AddContainer() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

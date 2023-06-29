@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	context "github.com/devfile/library/v2/pkg/devfile/parser/context"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 
 	"k8s.io/utils/pointer"
@@ -65,4 +66,34 @@ func (o *DevfileState) AddContainer(name string, image string, command []string,
 		return DevfileContent{}, err
 	}
 	return o.GetContent()
+}
+
+func (o *DevfileState) DeleteContainer(name string) (DevfileContent, error) {
+
+	err := o.checkContainerUsed(name)
+	if err != nil {
+		return DevfileContent{}, fmt.Errorf("error deleting container %q: %w", name, err)
+	}
+	err = o.Devfile.Data.DeleteComponent(name)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) checkContainerUsed(name string) error {
+	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ExecCommandType,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for _, command := range commands {
+		if command.Exec.Component == name {
+			return fmt.Errorf("container %q is used by exec command %q", name, command.Id)
+		}
+	}
+	return nil
 }

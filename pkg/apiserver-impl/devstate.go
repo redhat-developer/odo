@@ -26,3 +26,13 @@ func (s *DefaultApiService) DevstateContainerPost(ctx context.Context, container
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateContainerContainerNameDelete(ctx context.Context, containerName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteContainer(containerName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the container: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
