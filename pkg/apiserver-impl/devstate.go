@@ -162,3 +162,27 @@ func (s *DefaultApiService) DevstateExecCommandCommandNameDelete(ctx context.Con
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateMetadataPut(ctx context.Context, metadata openapi.DevstateMetadataPutRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.SetMetadata(
+		metadata.Name,
+		metadata.Version,
+		metadata.DisplayName,
+		metadata.Description,
+		metadata.Tags,
+		metadata.Architectures,
+		metadata.Icon,
+		metadata.GlobalMemoryLimit,
+		metadata.ProjectType,
+		metadata.Language,
+		metadata.Website,
+		metadata.Provider,
+		metadata.SupportUrl,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the metadata: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
