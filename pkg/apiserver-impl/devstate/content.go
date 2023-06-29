@@ -46,10 +46,10 @@ type Command struct {
 	Group     string
 	Default   bool
 	Type      string
-	Exec      ExecCommand
-	Apply     ApplyCommand
-	Image     ImageCommand
-	Composite CompositeCommand
+	Exec      *ExecCommand
+	Apply     *ApplyCommand
+	Image     *ImageCommand
+	Composite *CompositeCommand
 }
 
 type ExecCommand struct {
@@ -118,7 +118,7 @@ func (o *DevfileState) GetContent() (DevfileContent, error) {
 
 	commands, err := o.getCommands()
 	if err != nil {
-		return DevfileContent{}, errors.New("error getting commands")
+		return DevfileContent{}, fmt.Errorf("error getting commands: %w", err)
 	}
 
 	containers, err := o.getContainers()
@@ -188,7 +188,7 @@ func (o *DevfileState) getCommands() ([]Command, error) {
 
 		if command.Exec != nil {
 			newCommand.Type = "exec"
-			newCommand.Exec = ExecCommand{
+			newCommand.Exec = &ExecCommand{
 				Component:        command.Exec.Component,
 				CommandLine:      command.Exec.CommandLine,
 				WorkingDir:       command.Exec.WorkingDir,
@@ -209,13 +209,13 @@ func (o *DevfileState) getCommands() ([]Command, error) {
 			component := components[0]
 			if component.Kubernetes != nil || component.Openshift != nil {
 				newCommand.Type = "apply"
-				newCommand.Apply = ApplyCommand{
+				newCommand.Apply = &ApplyCommand{
 					Component: command.Apply.Component,
 				}
 			}
 			if component.Image != nil {
 				newCommand.Type = "image"
-				newCommand.Image = ImageCommand{
+				newCommand.Image = &ImageCommand{
 					Component: command.Apply.Component,
 				}
 			}
@@ -223,7 +223,7 @@ func (o *DevfileState) getCommands() ([]Command, error) {
 
 		if command.Composite != nil {
 			newCommand.Type = "composite"
-			newCommand.Composite = CompositeCommand{
+			newCommand.Composite = &CompositeCommand{
 				Commands: command.Composite.Commands,
 				Parallel: pointer.BoolDeref(command.Composite.Parallel, false),
 			}

@@ -88,3 +88,77 @@ func (s *DefaultApiService) DevstateResourceResourceNameDelete(ctx context.Conte
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateApplyCommandPost(ctx context.Context, command openapi.DevstateApplyCommandPostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.AddApplyCommand(
+		command.Name,
+		command.Component,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error adding the Apply command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateApplyCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteCommand(commandName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the Apply command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateCompositeCommandPost(ctx context.Context, command openapi.DevstateCompositeCommandPostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.AddCompositeCommand(
+		command.Name,
+		command.Parallel,
+		command.Commands,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error adding the Composite command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+
+}
+
+func (s *DefaultApiService) DevstateCompositeCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteCommand(commandName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the Composite command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateExecCommandPost(ctx context.Context, command openapi.DevstateExecCommandPostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.AddExecCommand(
+		command.Name,
+		command.Component,
+		command.CommandLine,
+		command.WorkingDir,
+		command.HotReloadCapable,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error adding the Exec command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateExecCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteCommand(commandName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the Exec command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
