@@ -36,3 +36,30 @@ func (s *DefaultApiService) DevstateContainerContainerNameDelete(ctx context.Con
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateImagePost(ctx context.Context, image openapi.DevstateImagePostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.AddImage(
+		image.Name,
+		image.ImageName,
+		image.Args,
+		image.BuildContext,
+		image.RootRequired,
+		image.Uri,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error adding the image: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateImageImageNameDelete(ctx context.Context, imageName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteImage(imageName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the image: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

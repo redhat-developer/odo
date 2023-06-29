@@ -97,3 +97,63 @@ func (o *DevfileState) checkContainerUsed(name string) error {
 	}
 	return nil
 }
+
+func (o *DevfileState) AddImage(name string, imageName string, args []string, buildContext string, rootRequired bool, uri string) (DevfileContent, error) {
+	container := v1alpha2.Component{
+		Name: name,
+		ComponentUnion: v1alpha2.ComponentUnion{
+			Image: &v1alpha2.ImageComponent{
+				Image: v1alpha2.Image{
+					ImageName: imageName,
+					ImageUnion: v1alpha2.ImageUnion{
+						Dockerfile: &v1alpha2.DockerfileImage{
+							Dockerfile: v1alpha2.Dockerfile{
+								Args:         args,
+								BuildContext: buildContext,
+								RootRequired: &rootRequired,
+							},
+							DockerfileSrc: v1alpha2.DockerfileSrc{
+								Uri: uri,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) DeleteImage(name string) (DevfileContent, error) {
+
+	err := o.checkImageUsed(name)
+	if err != nil {
+		return DevfileContent{}, fmt.Errorf("error deleting image %q: %w", name, err)
+	}
+	err = o.Devfile.Data.DeleteComponent(name)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) checkImageUsed(name string) error {
+	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ApplyCommandType,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for _, command := range commands {
+		if command.Apply.Component == name {
+			return fmt.Errorf("image %q is used by Image Command %q", name, command.Id)
+		}
+	}
+	return nil
+}
