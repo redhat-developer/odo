@@ -106,7 +106,7 @@ func PressKey(ctx InteractiveContext, c byte) {
 }
 
 func ExpectString(ctx InteractiveContext, line string) {
-	res, err := ctx.cp.Expect(line, 180*time.Second)
+	res, err := ctx.cp.Expect(line, 120*time.Second)
 	fmt.Fprint(ctx.buffer, res)
 	Expect(err).ShouldNot(HaveOccurred(), expectDescriptionSupplier(ctx, line))
 }
