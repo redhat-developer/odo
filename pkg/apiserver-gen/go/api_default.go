@@ -75,6 +75,18 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateContainerPost,
 		},
 		{
+			"DevstateImageImageNameDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/image/{imageName}",
+			c.DevstateImageImageNameDelete,
+		},
+		{
+			"DevstateImagePost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/image",
+			c.DevstateImagePost,
+		},
+		{
 			"InstanceDelete",
 			strings.ToUpper("Delete"),
 			"/api/v1/instance",
@@ -155,6 +167,45 @@ func (c *DefaultApiController) DevstateContainerPost(w http.ResponseWriter, r *h
 		return
 	}
 	result, err := c.service.DevstateContainerPost(r.Context(), devstateContainerPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateImageImageNameDelete -
+func (c *DefaultApiController) DevstateImageImageNameDelete(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	imageNameParam := params["imageName"]
+	result, err := c.service.DevstateImageImageNameDelete(r.Context(), imageNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateImagePost -
+func (c *DefaultApiController) DevstateImagePost(w http.ResponseWriter, r *http.Request) {
+	devstateImagePostRequestParam := DevstateImagePostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateImagePostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateImagePostRequestRequired(devstateImagePostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateImagePost(r.Context(), devstateImagePostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
