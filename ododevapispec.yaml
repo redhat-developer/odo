@@ -223,6 +223,90 @@ paths:
               example:
                 message: "a push operation is not possible at this time. Please retry later"
 
+  /devstate/metadata:
+    put:
+      description: Updates the metadata for the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+                displayName:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: string
+                architectures:
+                  type: string
+                icon:
+                  type: string
+                globalMemoryLimit:
+                  type: string
+                projectType:
+                  type: string
+                language:
+                  type: string
+                website:
+                  type: string
+                provider:
+                  type: string
+                supportUrl:
+                  type: string
+      responses:
+        '200':
+          description: metadata was successfully updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  component:
+                    type: object
+                    description: Content of the Devfile
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the metadata"
+
   /devstate/container:
     post:
       description: Add a new container to the Devfile
