@@ -1,0 +1,32 @@
+<div class="main">
+    <h2>Add a new resource</h2>
+    <div class="description">A Resource defines a Kubernetes resource. Its definition can be given either by a URI pointing to a manifest file or by an inlined YAML manifest.</div>
+    <form [formGroup]="form">
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Name</span></mat-label>
+            <mat-error>Lowercase words separated by dashes. Ex: my-resource</mat-error>
+            <input placeholder="unique name to identify the resource" data-cy="resource-name" matInput formControlName="name">
+        </mat-form-field>
+    
+        <span class="toggleUriInlined">
+            <mat-button-toggle-group (change)="changeUriOrInlined($event.value)">
+                <mat-button-toggle data-cy="resource-toogle-uri" value="uri" checked>Specify URI</mat-button-toggle>
+                <mat-button-toggle data-cy="resource-toggle-inlined" value="inlined">Inlined content</mat-button-toggle>
+            </mat-button-toggle-group>
+        </span>
+
+        <mat-form-field *ngIf="uriOrInlined=='uri'" appearance="outline" class="full-width">
+            <mat-label><span>URI</span></mat-label>
+            <input placeholder="Reference to a YAML manifest" data-cy="resource-uri" matInput formControlName="uri">
+        </mat-form-field>
+    
+        <mat-form-field  *ngIf="uriOrInlined=='inlined'" appearance="outline" class="full-width">
+            <mat-label>YAML Manifest</mat-label>
+            <textarea data-cy="resource-manifest" matInput formControlName="inlined" rows="8"></textarea>
+        </mat-form-field>
+    
+    </form>
+
+    <button data-cy="resource-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new resource" (click)="create()">Create</button>
+    <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>
+</div>

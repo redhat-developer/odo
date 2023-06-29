@@ -1,0 +1,29 @@
+mat-card-header.with-right-content {
+    display: block;
+}
+
+.space-between {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+mat-card { margin-bottom: 16px; }
+mat-card-content { padding: 16px; }
+.command {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #eee;
+    padding: 4px;
+    margin: 4px;
+}
+.parallel-command {
+    margin: 8px;
+}
+.serial-commands {
+    margin: 4px;
+}
+div.nothing-here {
+    margin: 0 4px 16px 4px;
+    color: #00000054;
+}

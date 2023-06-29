@@ -1,0 +1,21 @@
+name: Dev UI E2E tests
+on:
+  pull_request:
+    branches:    
+      - main
+    paths:
+      - 'ui'
+      - '.github/workflows/ui-e2e.yaml'
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Cypress run
+        uses: cypress-io/github-action@v5
+        with:
+          working-directory: ui
+          start: npm start
+          wait-on: 'npx wait-on --timeout 180000 http://0.0.0.0:4200'

@@ -1,0 +1,24 @@
+<div class="main">
+    <h2>Add an Image Command</h2>
+    <div class="description">An Image command builds a container image and pushes it to a container registry.</div>
+    <form [formGroup]="form">
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Name</span></mat-label>
+            <mat-error>Lowercase words separated by dashes. Ex: my-command</mat-error>
+            <input placeholder="unique name to identify the command" data-cy="command-image-name" matInput formControlName="name">
+        </mat-form-field>
+        <div><app-select-container
+            formControlName="component"
+            label="Image"
+            [containers]="imageList"
+            (createNew)="onCreateNewImage($event)"></app-select-container></div>
+    </form>
+
+    <app-image
+    *ngIf="showNewImage"
+    (created)="onNewImageCreated($event)"
+    ></app-image>
+
+    <button data-cy="command-image-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new Image Command" (click)="create()">Create</button>
+    <button mat-flat-button (click)="cancel()">Cancel</button>
+</div>

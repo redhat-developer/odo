@@ -59,7 +59,7 @@ skip_if_only() {
 }
 
 skip() {
-    SKIP_IF_ONLY="docs/ CONTRIBUTING.md OWNERS README.md USAGE_DATA.md scripts/ .github/ .threatmodel/"
+    SKIP_IF_ONLY="docs/ CONTRIBUTING.md OWNERS README.md USAGE_DATA.md scripts/ .github/ .threatmodel/ ui/"
     change=$1
     for skip in ${SKIP_IF_ONLY}; do
         if [[ "${change}" == "${skip}"* ]]; then

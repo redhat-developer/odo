@@ -1,0 +1,29 @@
+<div class="main">
+    <h2>Add a new image</h2>
+    <div class="description">An Image defines how to build a container image.</div>
+    <form [formGroup]="form">
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Name</span></mat-label>
+            <mat-error>Lowercase words separated by dashes. Ex: my-image</mat-error>
+            <input placeholder="unique name to identify the image" data-cy="image-name" matInput formControlName="name">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Image Name</span></mat-label>
+            <input placeholder="Reference to a container image" data-cy="image-image-name" matInput formControlName="imageName">
+        </mat-form-field>
+        <app-multi-text formControlName="args" title="Build Args" label="Arg" addLabel="Add Build Arg"></app-multi-text>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Build Context</span></mat-label>
+            <input placeholder="Directory from which the build will be executed" data-cy="image-build-context" matInput formControlName="buildContext">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Dockerfile URI</span></mat-label>
+            <input placeholder="Dockerfile used to build the image" data-cy="image-dockerfile-uri" matInput formControlName="uri">
+        </mat-form-field>
+        <mat-checkbox formControlName="rootRequired">Root Required</mat-checkbox>    
+
+    </form>
+
+    <button data-cy="image-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new image" (click)="create()">Create</button>
+    <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>
+</div>

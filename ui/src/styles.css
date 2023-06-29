@@ -1,0 +1,52 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; background-color: #333; }
+body { max-width: 1060px; margin: auto; font-family: Roboto, "Helvetica Neue", sans-serif; }
+main { padding: 16px; background-color: #fff; }
+.spacer { flex: 1 1 auto;}
+.topright { font-size: small; }
+
+mat-tab-group { width: 1028px; }
+
+mat-card-header.colored-title {
+    background-color: #f4f4f4;
+    padding: 8px 16px;
+}
+
+table.aligned td:first-child {
+    text-align: right;
+    color: #00000087;
+}
+table.aligned tr {
+    height: 30px;
+}
+
+h2:has(+.description) {
+    margin-bottom: 0;
+}
+
+.description {
+    font-style: italic;
+    font-size: smaller;
+    color: #00000087;
+    margin-bottom: 16px;
+}
+
+div mat-checkbox { margin-bottom: 16px; }
+
+button { margin-right: 8px; }
+
+.fab {
+    position: fixed !important;
+    bottom: 16px;
+    right: calc((100vw - 1060px)/2 - 15px + 16px);
+}
+
+#loading {
+    position: fixed;
+    top: 10px;
+    left: 0px;
+    width: 100%;
+    text-align: center;
+    color: white;
+}

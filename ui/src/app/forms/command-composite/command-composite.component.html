@@ -1,0 +1,16 @@
+<div class="main">
+    <h2>Add a Composite Command</h2>
+    <div class="description">A Composite command executes several commands, either serially or in parallel.</div>
+    <form [formGroup]="form">
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Name</span></mat-label>
+            <mat-error>Lowercase words separated by dashes. Ex: my-command</mat-error>
+            <input placeholder="unique name to identify the command" data-cy="command-composite-name" matInput formControlName="name">
+        </mat-form-field>
+        <div><mat-checkbox formControlName="parallel">Run commands in parallel</mat-checkbox></div>
+        <app-multi-command formControlName="commands" title="Commands" addLabel="Add a command" [commandList]="commandList"></app-multi-command>
+    </form>
+
+    <button data-cy="command-composite-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new Composite Command" (click)="create()">Create</button>
+    <button mat-flat-button (click)="cancel()">Cancel</button>
+</div>
