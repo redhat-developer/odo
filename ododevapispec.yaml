@@ -903,6 +903,21 @@ paths:
               example:
                 message: "Error deleting the Exec command"
 
+  /devstate/chart:
+    get:
+      description: Get chart representing the Devfile cycle in mermaid format
+      responses:
+        '200':
+          description: Chart representing the Devfile cycle
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chart:
+                    type: string
+                    description: chart in mermaid format
+
 components:
   schemas:
     GeneralSuccess:

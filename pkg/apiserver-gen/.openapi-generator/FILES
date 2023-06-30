@@ -9,6 +9,7 @@ go/logger.go
 go/model__component_command_post_request.go
 go/model__component_get_200_response.go
 go/model__devstate_apply_command_post_request.go
+go/model__devstate_chart_get_200_response.go
 go/model__devstate_composite_command_post_request.go
 go/model__devstate_container_post_request.go
 go/model__devstate_exec_command_post_request.go

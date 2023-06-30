@@ -75,6 +75,12 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateApplyCommandPost,
 		},
 		{
+			"DevstateChartGet",
+			strings.ToUpper("Get"),
+			"/api/v1/devstate/chart",
+			c.DevstateChartGet,
+		},
+		{
 			"DevstateCompositeCommandCommandNameDelete",
 			strings.ToUpper("Delete"),
 			"/api/v1/devstate/compositeCommand/{commandName}",
@@ -221,6 +227,19 @@ func (c *DefaultApiController) DevstateApplyCommandPost(w http.ResponseWriter, r
 		return
 	}
 	result, err := c.service.DevstateApplyCommandPost(r.Context(), devstateApplyCommandPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateChartGet -
+func (c *DefaultApiController) DevstateChartGet(w http.ResponseWriter, r *http.Request) {
+	result, err := c.service.DevstateChartGet(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
