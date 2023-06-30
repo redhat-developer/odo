@@ -213,3 +213,13 @@ func (s *DefaultApiService) DevstateCommandCommandNameUnsetDefaultPost(ctx conte
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateEventsPut(ctx context.Context, params openapi.DevstateEventsPutRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.UpdateEvents(params.EventName, params.Commands)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating commands for event %q: %s", params.EventName, err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
