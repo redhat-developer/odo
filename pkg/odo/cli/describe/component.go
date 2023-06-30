@@ -11,6 +11,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component/describe"
@@ -189,6 +190,36 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 		log.Printf("Dev: Unknown")
 		log.Printf("Deploy: Unknown")
 		log.Printf("Debug: Unknown")
+	}
+	fmt.Println()
+
+	if cmp.DevfileData != nil && len(cmp.DevfileData.Commands) != 0 {
+		log.Info("Commands:")
+		for _, cmd := range cmp.DevfileData.Commands {
+			item := cmd.Name
+			if pointer.BoolDeref(cmd.IsDefault, false) {
+				item = log.Sbold(cmd.Name)
+			}
+			if cmd.Type != "" {
+				item += fmt.Sprintf("\n      Type: %s", cmd.Type)
+			}
+			if cmd.Group != "" {
+				item += fmt.Sprintf("\n      Group: %s", cmd.Group)
+			}
+			if cmd.CommandLine != "" {
+				item += fmt.Sprintf("\n      Command Line: %q", cmd.CommandLine)
+			}
+			if cmd.Component != "" {
+				item += fmt.Sprintf("\n      Component: %s", cmd.Component)
+			}
+			if cmd.ComponentType != "" {
+				item += fmt.Sprintf("\n      Component Type: %s", cmd.ComponentType)
+			}
+			if cmd.ImageName != "" {
+				item += fmt.Sprintf("\n      Image Name: %s", cmd.ImageName)
+			}
+			log.Printf(item)
+		}
 	}
 	fmt.Println()
 
