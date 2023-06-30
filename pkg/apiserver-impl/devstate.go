@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/apiserver-impl/devstate"
 )
 
 func (s *DefaultApiService) DevstateContainerPost(ctx context.Context, container openapi.DevstateContainerPostRequest) (openapi.ImplResponse, error) {
@@ -222,4 +223,16 @@ func (s *DefaultApiService) DevstateEventsPut(ctx context.Context, params openap
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateQuantityValidPost(ctx context.Context, params openapi.DevstateQuantityValidPostRequest) (openapi.ImplResponse, error) {
+	result := devstate.IsQuantityValid(params.Quantity)
+	if !result {
+		return openapi.Response(http.StatusBadRequest, openapi.GeneralError{
+			Message: fmt.Sprintf("Quantity %q is not valid", params.Quantity),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, openapi.GeneralSuccess{
+		Message: fmt.Sprintf("Quantity %q is valid", params.Quantity),
+	}), nil
 }
