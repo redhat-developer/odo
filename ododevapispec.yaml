@@ -661,9 +661,9 @@ paths:
               example:
                 message: "Error adding the Apply command"
 
-  /devstate/applyCommand/{commandName}:
+  /devstate/command/{commandName}:
     delete:
-      description: "Delete an Apply command from the Devfile"
+      description: "Delete a command from the Devfile"
       parameters:
         - name: commandName
           in: path
@@ -678,16 +678,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/GeneralSuccess'
               example:
-                message: "Apply Command has been deleted"
-          description: "Apply Command has been deleted"
+                message: "Command has been deleted"
+          description: "Command has been deleted"
         '500':
-          description: Error deleting the Apply command
+          description: Error deleting the command
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralError'
               example:
-                message: "Error deleting the Apply command"
+                message: "Error deleting the command"
 
 
   /devstate/compositeCommand:
@@ -754,34 +754,6 @@ paths:
               example:
                 message: "Error adding the Composite command"
 
-  /devstate/compositeCommand/{commandName}:
-    delete:
-      description: "Delete an Composite command from the Devfile"
-      parameters:
-        - name: commandName
-          in: path
-          description: Command name to delete
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralSuccess'
-              example:
-                message: "Composite Command has been deleted"
-          description: "Composite Command has been deleted"
-        '500':
-          description: Error deleting the Composite command
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralError'
-              example:
-                message: "Error deleting the Composite command"
-
   /devstate/execCommand:
     post:
       description: Add a new Exec Command to the Devfile
@@ -846,34 +818,6 @@ paths:
                 $ref: '#/components/schemas/GeneralError'
               example:
                 message: "Error adding the Exec command"
-
-  /devstate/execCommand/{commandName}:
-    delete:
-      description: "Delete an Exec command from the Devfile"
-      parameters:
-        - name: commandName
-          in: path
-          description: Command name to delete
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralSuccess'
-              example:
-                message: "Exec Command has been deleted"
-          description: "Exec Command has been deleted"
-        '500':
-          description: Error deleting the Exec command
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralError'
-              example:
-                message: "Error deleting the Exec command"
 
   /devstate/chart:
     get:

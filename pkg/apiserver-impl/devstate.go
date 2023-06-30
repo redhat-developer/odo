@@ -102,11 +102,11 @@ func (s *DefaultApiService) DevstateApplyCommandPost(ctx context.Context, comman
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateApplyCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+func (s *DefaultApiService) DevstateCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.DeleteCommand(commandName)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
-			Message: fmt.Sprintf("Error deleting the Apply command: %s", err),
+			Message: fmt.Sprintf("Error deleting the command: %s", err),
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
@@ -127,16 +127,6 @@ func (s *DefaultApiService) DevstateCompositeCommandPost(ctx context.Context, co
 
 }
 
-func (s *DefaultApiService) DevstateCompositeCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
-	newContent, err := s.devfileState.DeleteCommand(commandName)
-	if err != nil {
-		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
-			Message: fmt.Sprintf("Error deleting the Composite command: %s", err),
-		}), nil
-	}
-	return openapi.Response(http.StatusOK, newContent), nil
-}
-
 func (s *DefaultApiService) DevstateExecCommandPost(ctx context.Context, command openapi.DevstateExecCommandPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddExecCommand(
 		command.Name,
@@ -148,16 +138,6 @@ func (s *DefaultApiService) DevstateExecCommandPost(ctx context.Context, command
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
 			Message: fmt.Sprintf("Error adding the Exec command: %s", err),
-		}), nil
-	}
-	return openapi.Response(http.StatusOK, newContent), nil
-}
-
-func (s *DefaultApiService) DevstateExecCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
-	newContent, err := s.devfileState.DeleteCommand(commandName)
-	if err != nil {
-		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
-			Message: fmt.Sprintf("Error deleting the Exec command: %s", err),
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil

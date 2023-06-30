@@ -63,12 +63,6 @@ func (c *DefaultApiController) Routes() Routes {
 			c.ComponentGet,
 		},
 		{
-			"DevstateApplyCommandCommandNameDelete",
-			strings.ToUpper("Delete"),
-			"/api/v1/devstate/applyCommand/{commandName}",
-			c.DevstateApplyCommandCommandNameDelete,
-		},
-		{
 			"DevstateApplyCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/applyCommand",
@@ -81,10 +75,10 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateChartGet,
 		},
 		{
-			"DevstateCompositeCommandCommandNameDelete",
+			"DevstateCommandCommandNameDelete",
 			strings.ToUpper("Delete"),
-			"/api/v1/devstate/compositeCommand/{commandName}",
-			c.DevstateCompositeCommandCommandNameDelete,
+			"/api/v1/devstate/command/{commandName}",
+			c.DevstateCommandCommandNameDelete,
 		},
 		{
 			"DevstateCompositeCommandPost",
@@ -103,12 +97,6 @@ func (c *DefaultApiController) Routes() Routes {
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/container",
 			c.DevstateContainerPost,
-		},
-		{
-			"DevstateExecCommandCommandNameDelete",
-			strings.ToUpper("Delete"),
-			"/api/v1/devstate/execCommand/{commandName}",
-			c.DevstateExecCommandCommandNameDelete,
 		},
 		{
 			"DevstateExecCommandPost",
@@ -198,21 +186,6 @@ func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Reque
 
 }
 
-// DevstateApplyCommandCommandNameDelete -
-func (c *DefaultApiController) DevstateApplyCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	commandNameParam := params["commandName"]
-	result, err := c.service.DevstateApplyCommandCommandNameDelete(r.Context(), commandNameParam)
-	// If an error occurred, encode the error with the status code
-	if err != nil {
-		c.errorHandler(w, r, err, &result)
-		return
-	}
-	// If no error, encode the body and the result code
-	EncodeJSONResponse(result.Body, &result.Code, w)
-
-}
-
 // DevstateApplyCommandPost -
 func (c *DefaultApiController) DevstateApplyCommandPost(w http.ResponseWriter, r *http.Request) {
 	devstateApplyCommandPostRequestParam := DevstateApplyCommandPostRequest{}
@@ -250,11 +223,11 @@ func (c *DefaultApiController) DevstateChartGet(w http.ResponseWriter, r *http.R
 
 }
 
-// DevstateCompositeCommandCommandNameDelete -
-func (c *DefaultApiController) DevstateCompositeCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
+// DevstateCommandCommandNameDelete -
+func (c *DefaultApiController) DevstateCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	commandNameParam := params["commandName"]
-	result, err := c.service.DevstateCompositeCommandCommandNameDelete(r.Context(), commandNameParam)
+	result, err := c.service.DevstateCommandCommandNameDelete(r.Context(), commandNameParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
@@ -318,21 +291,6 @@ func (c *DefaultApiController) DevstateContainerPost(w http.ResponseWriter, r *h
 		return
 	}
 	result, err := c.service.DevstateContainerPost(r.Context(), devstateContainerPostRequestParam)
-	// If an error occurred, encode the error with the status code
-	if err != nil {
-		c.errorHandler(w, r, err, &result)
-		return
-	}
-	// If no error, encode the body and the result code
-	EncodeJSONResponse(result.Body, &result.Code, w)
-
-}
-
-// DevstateExecCommandCommandNameDelete -
-func (c *DefaultApiController) DevstateExecCommandCommandNameDelete(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	commandNameParam := params["commandName"]
-	result, err := c.service.DevstateExecCommandCommandNameDelete(r.Context(), commandNameParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
