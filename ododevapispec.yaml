@@ -264,11 +264,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -352,11 +348,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -454,11 +446,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -547,11 +535,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -638,11 +622,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -735,11 +715,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -832,11 +808,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  component:
-                    type: object
-                    description: Content of the Devfile
+                $ref: '#/components/schemas/DevfileContent'
               example:
                 {
                     "Content": "schemaVersion: 2.2.0\n",
@@ -930,3 +902,9 @@ components:
       properties:
         message:
           type: string
+    DevfileContent:
+      type: object
+      properties:
+        component:
+          type: object
+          description: Content of the Devfile
