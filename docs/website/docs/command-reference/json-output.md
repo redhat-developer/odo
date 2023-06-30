@@ -139,6 +139,7 @@ When the `describe component` command is executed without parameter from a direc
   - the path of the Devfile,
   - the content of the Devfile,
   - supported `odo` features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
+  - the list of commands, if any, along with some useful information about each command
   - ingress or routes created in Deploy mode
 - the status of the component
   - the forwarded ports if odo is currently running in Dev mode,
@@ -155,6 +156,45 @@ odo describe component -o json
 			"schemaVersion": "2.0.0",
 			[ devfile.yaml file content ]
 		},
+		"commands": [
+            {
+                "name": "my-install",
+                "type": "exec",
+                "group": "build",
+                "isDefault": true,
+                "commandLine": "npm install",
+                "component": "runtime",
+                "componentType": "container"
+            },
+            {
+                "name": "my-run",
+                "type": "exec",
+                "group": "run",
+                "isDefault": true,
+                "commandLine": "npm start",
+                "component": "runtime",
+                "componentType": "container"
+            },
+            {
+                "name": "build-image",
+                "type": "apply",
+                "component": "prod-image",
+                "componentType": "image",
+                "imageName": "devfile-nodejs-deploy"
+            },
+            {
+                "name": "deploy-deployment",
+                "type": "apply",
+                "component": "outerloop-deploy",
+                "componentType": "kubernetes"
+            },
+            {
+                "name": "deploy",
+                "type": "composite",
+                "group": "deploy",
+                "isDefault": true
+            }
+        ],
 		"supportedOdoFeatures": {
 			"dev": true,
 			"deploy": false,
