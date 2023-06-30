@@ -161,9 +161,13 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	if err != nil {
 		return nil, err
 	}
+	devfileData, err := api.GetDevfileData(devfileObj)
+	if err != nil {
+		return nil, err
+	}
 	return api.Component{
 		DevfilePath:       devfilePath,
-		DevfileData:       api.GetDevfileData(devfileObj),
+		DevfileData:       devfileData,
 		DevForwardedPorts: []api.ForwardedPort{},
 		RunningIn:         api.NewRunningModes(),
 		ManagedBy:         "odo",

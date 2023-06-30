@@ -445,5 +445,10 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 
 	// Convert DevfileObj to DevfileData
 	// use api.GetDevfileData to get supported features
-	return *api.GetDevfileData(devfileObj), nil
+	devfileData, err := api.GetDevfileData(devfileObj)
+	if err != nil {
+		return api.DevfileData{}, err
+	}
+
+	return *devfileData, nil
 }
