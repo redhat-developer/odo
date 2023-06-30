@@ -178,3 +178,18 @@ func (s *DefaultApiService) DevstateChartGet(context.Context) (openapi.ImplRespo
 		Chart: chart,
 	}), nil
 }
+
+func (s *DefaultApiService) DevstateCommandCommandNameMovePost(ctx context.Context, commandName string, params openapi.DevstateCommandCommandNameMovePostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.MoveCommand(
+		params.FromGroup,
+		params.ToGroup,
+		int(params.FromIndex),
+		int(params.ToIndex),
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error moving command to group %q index %d: %s", params.ToGroup, params.ToIndex, err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

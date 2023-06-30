@@ -89,3 +89,56 @@ func (o *DevfileState) checkCommandUsed(name string) error {
 	}
 	return nil
 }
+
+func (o *DevfileState) MoveCommand(previousGroup, newGroup string, previousIndex, newIndex int) (DevfileContent, error) {
+	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+
+	commandsByGroup, err := subMoveCommand(commands, previousGroup, newGroup, previousIndex, newIndex)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+
+	// Deleting from the end as deleting from the beginning seems buggy
+	for i := len(commands) - 1; i >= 0; i-- {
+		o.Devfile.Data.DeleteCommand(commands[i].Id)
+	}
+
+	for _, group := range []string{"build", "run", "test", "debug", "deploy", ""} {
+		err := o.Devfile.Data.AddCommands(commandsByGroup[group])
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return DevfileContent{}, err
+		}
+	}
+	return o.GetContent()
+}
+
+func subMoveCommand(commands []v1alpha2.Command, previousGroup, newGroup string, previousIndex, newIndex int) (map[string][]v1alpha2.Command, error) {
+	commandsByGroup := map[string][]v1alpha2.Command{}
+
+	for _, command := range commands {
+		group := GetGroup(command)
+		commandsByGroup[group] = append(commandsByGroup[group], command)
+	}
+
+	if len(commandsByGroup[previousGroup]) <= previousIndex {
+		return nil, fmt.Errorf("unable to find command at index #%d in group %q", previousIndex, previousGroup)
+	}
+
+	commandToMove := commandsByGroup[previousGroup][previousIndex]
+	SetGroup(&commandToMove, newGroup)
+
+	commandsByGroup[previousGroup] = append(
+		commandsByGroup[previousGroup][:previousIndex],
+		commandsByGroup[previousGroup][previousIndex+1:]...,
+	)
+
+	end := append([]v1alpha2.Command{}, commandsByGroup[newGroup][newIndex:]...)
+	commandsByGroup[newGroup] = append(commandsByGroup[newGroup][:newIndex], commandToMove)
+	commandsByGroup[newGroup] = append(commandsByGroup[newGroup], end...)
+
+	return commandsByGroup, nil
+}
