@@ -929,6 +929,68 @@ paths:
               example:
                 message: "Error adding the Exec command"
 
+  /devstate/events:
+    put:
+      description: Updates the Events for the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventName:
+                  type: string
+                  enum: [postStart,postStop,preStart,preStop]
+                commands:
+                  type: array
+                  items: {
+                    type: string
+                  }
+      responses:
+        '200':
+          description: Events were successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the events"
+
   /devstate/chart:
     get:
       description: Get chart representing the Devfile cycle in mermaid format
