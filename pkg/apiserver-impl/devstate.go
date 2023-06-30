@@ -186,3 +186,15 @@ func (s *DefaultApiService) DevstateMetadataPut(ctx context.Context, metadata op
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateChartGet(context.Context) (openapi.ImplResponse, error) {
+	chart, err := s.devfileState.GetFlowChart()
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error building the Devfile cycle chart: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, openapi.DevstateChartGet200Response{
+		Chart: chart,
+	}), nil
+}

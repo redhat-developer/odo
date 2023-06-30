@@ -75,6 +75,7 @@ require (
 	github.com/ActiveState/termtest/xpty v0.6.0 // indirect
 	github.com/ActiveState/vt10x v1.3.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Heiko-san/mermaidgen v0.0.0-20190623222458-ec72afae378b // indirect
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 // indirect
@@ -108,6 +109,7 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
+	github.com/feloy/devfile-lifecycle v0.0.0-20230515183001-11d088157da2 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
