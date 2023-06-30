@@ -87,6 +87,18 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateCommandCommandNameMovePost,
 		},
 		{
+			"DevstateCommandCommandNameSetDefaultPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/command/{commandName}/setDefault",
+			c.DevstateCommandCommandNameSetDefaultPost,
+		},
+		{
+			"DevstateCommandCommandNameUnsetDefaultPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/command/{commandName}/unsetDefault",
+			c.DevstateCommandCommandNameUnsetDefaultPost,
+		},
+		{
 			"DevstateCompositeCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/compositeCommand",
@@ -260,6 +272,47 @@ func (c *DefaultApiController) DevstateCommandCommandNameMovePost(w http.Respons
 		return
 	}
 	result, err := c.service.DevstateCommandCommandNameMovePost(r.Context(), commandNameParam, devstateCommandCommandNameMovePostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateCommandCommandNameSetDefaultPost -
+func (c *DefaultApiController) DevstateCommandCommandNameSetDefaultPost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	devstateCommandCommandNameSetDefaultPostRequestParam := DevstateCommandCommandNameSetDefaultPostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateCommandCommandNameSetDefaultPostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateCommandCommandNameSetDefaultPostRequestRequired(devstateCommandCommandNameSetDefaultPostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateCommandCommandNameSetDefaultPost(r.Context(), commandNameParam, devstateCommandCommandNameSetDefaultPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateCommandCommandNameUnsetDefaultPost -
+func (c *DefaultApiController) DevstateCommandCommandNameUnsetDefaultPost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	result, err := c.service.DevstateCommandCommandNameUnsetDefaultPost(r.Context(), commandNameParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

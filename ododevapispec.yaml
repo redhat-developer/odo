@@ -695,7 +695,7 @@ paths:
       parameters:
         - name: commandName
           in: path
-          description: Command name to delete
+          description: Command name to move
           required: true
           schema:
             type: string
@@ -735,6 +735,70 @@ paths:
               example:
                 message: "Error moving the command to group NewGroup position 4"
 
+  /devstate/command/{commandName}/setDefault:
+    post:
+      description: "Set a command as default command for a group"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to set as default
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group:
+                  description: group of the command
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been set as default"
+          description: "Command has been set as default"
+        '500':
+          description: Error setting the command as default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error setting the command as default"
+
+  /devstate/command/{commandName}/unsetDefault:
+    post:
+      description: "Unset a command as default command for its group"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to set as default
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been unset as default"
+          description: "Command has been unset as default"
+        '500':
+          description: Error unsetting the command as default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error unsetting the command as default"
 
   /devstate/compositeCommand:
     post:
