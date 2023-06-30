@@ -1006,6 +1006,35 @@ paths:
                     type: string
                     description: chart in mermaid format
 
+  /devstate/quantityValid:
+    post:
+      description: Check if a quantity is valid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: string
+      responses:
+        '200':
+          description: quantity is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Quantity \"1Gi\" is valid"
+        '400':
+          description: quantity is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Quantity \"aze\" is not valid"
+
 components:
   schemas:
     GeneralSuccess:

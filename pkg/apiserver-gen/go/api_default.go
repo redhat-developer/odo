@@ -147,6 +147,12 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateMetadataPut,
 		},
 		{
+			"DevstateQuantityValidPost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/quantityValid",
+			c.DevstateQuantityValidPost,
+		},
+		{
 			"DevstateResourcePost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/resource",
@@ -493,6 +499,30 @@ func (c *DefaultApiController) DevstateMetadataPut(w http.ResponseWriter, r *htt
 		return
 	}
 	result, err := c.service.DevstateMetadataPut(r.Context(), devstateMetadataPutRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateQuantityValidPost -
+func (c *DefaultApiController) DevstateQuantityValidPost(w http.ResponseWriter, r *http.Request) {
+	devstateQuantityValidPostRequestParam := DevstateQuantityValidPostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateQuantityValidPostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateQuantityValidPostRequestRequired(devstateQuantityValidPostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateQuantityValidPost(r.Context(), devstateQuantityValidPostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

@@ -18,6 +18,7 @@ go/model__devstate_events_put_request.go
 go/model__devstate_exec_command_post_request.go
 go/model__devstate_image_post_request.go
 go/model__devstate_metadata_put_request.go
+go/model__devstate_quantity_valid_post_request.go
 go/model__devstate_resource_post_request.go
 go/model__instance_get_200_response.go
 go/model_devfile_content.go
