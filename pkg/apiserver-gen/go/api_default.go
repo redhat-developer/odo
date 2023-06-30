@@ -81,6 +81,12 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateCommandCommandNameDelete,
 		},
 		{
+			"DevstateCommandCommandNameMovePost",
+			strings.ToUpper("Post"),
+			"/api/v1/devstate/command/{commandName}/move",
+			c.DevstateCommandCommandNameMovePost,
+		},
+		{
 			"DevstateCompositeCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/compositeCommand",
@@ -228,6 +234,32 @@ func (c *DefaultApiController) DevstateCommandCommandNameDelete(w http.ResponseW
 	params := mux.Vars(r)
 	commandNameParam := params["commandName"]
 	result, err := c.service.DevstateCommandCommandNameDelete(r.Context(), commandNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateCommandCommandNameMovePost -
+func (c *DefaultApiController) DevstateCommandCommandNameMovePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	devstateCommandCommandNameMovePostRequestParam := DevstateCommandCommandNameMovePostRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateCommandCommandNameMovePostRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateCommandCommandNameMovePostRequestRequired(devstateCommandCommandNameMovePostRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateCommandCommandNameMovePost(r.Context(), commandNameParam, devstateCommandCommandNameMovePostRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

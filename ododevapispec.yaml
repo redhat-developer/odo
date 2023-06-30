@@ -689,6 +689,52 @@ paths:
               example:
                 message: "Error deleting the command"
 
+  /devstate/command/{commandName}/move:
+    post:
+      description: "Move a command"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to delete
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromGroup:
+                  description: Initial group of the command
+                  type: string
+                fromIndex:
+                  description: Initial index of the command in the group
+                  type: integer
+                toGroup:
+                  description: Target group of the command
+                  type: string
+                toIndex:
+                  description: Target index of the command in the group
+                  type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been moved to group NewGroup position 4"
+          description: "Command has been moved"
+        '500':
+          description: Error moving the command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error moving the command to group NewGroup position 4"
+
 
   /devstate/compositeCommand:
     post:
