@@ -142,3 +142,45 @@ func subMoveCommand(commands []v1alpha2.Command, previousGroup, newGroup string,
 
 	return commandsByGroup, nil
 }
+
+func (o *DevfileState) SetDefaultCommand(commandName string, group string) (DevfileContent, error) {
+	fmt.Printf("change default for group %q\n", group)
+	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+
+	for _, command := range commands {
+		if GetGroup(command) == group {
+			isDefault := command.Id == commandName
+			fmt.Printf("setting default = %v for command %q\n", isDefault, command.Id)
+			SetDefault(&command, isDefault)
+			err = o.Devfile.Data.UpdateCommand(command)
+			if err != nil {
+				fmt.Printf("%s\n", err)
+				return DevfileContent{}, err
+			}
+		}
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) UnsetDefaultCommand(commandName string) (DevfileContent, error) {
+	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+
+	for _, command := range commands {
+		if command.Id == commandName {
+			SetDefault(&command, false)
+			err = o.Devfile.Data.UpdateCommand(command)
+			if err != nil {
+				fmt.Printf("%s\n", err)
+				return DevfileContent{}, err
+			}
+			break
+		}
+	}
+	return o.GetContent()
+}

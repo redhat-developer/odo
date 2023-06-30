@@ -193,3 +193,23 @@ func (s *DefaultApiService) DevstateCommandCommandNameMovePost(ctx context.Conte
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateCommandCommandNameSetDefaultPost(ctx context.Context, commandName string, params openapi.DevstateCommandCommandNameSetDefaultPostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.SetDefaultCommand(commandName, params.Group)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error setting command %q as default for group %q: %s", commandName, params.Group, err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DefaultApiService) DevstateCommandCommandNameUnsetDefaultPost(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.UnsetDefaultCommand(commandName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error unsetting command %q as default: %s", commandName, err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

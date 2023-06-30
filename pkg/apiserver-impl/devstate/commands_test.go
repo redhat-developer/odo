@@ -644,3 +644,177 @@ schemaVersion: 2.2.0
 		})
 	}
 }
+
+func TestDevfileState_SetDefaultCommand(t *testing.T) {
+	type args struct {
+		commandName string
+		group       string
+	}
+	tests := []struct {
+		name    string
+		state   func(t *testing.T) DevfileState
+		args    args
+		want    DevfileContent
+		wantErr bool
+	}{
+		{
+			name: "command set to default in run group",
+			state: func(t *testing.T) DevfileState {
+				state := NewDevfileState()
+				_, err := state.AddExecCommand(
+					"an-exec-command",
+					"a-container",
+					"run command",
+					"/path/to/work",
+					true,
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = state.MoveCommand("", "run", 0, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return state
+			},
+			args: args{
+				commandName: "an-exec-command",
+				group:       "run",
+			},
+			want: DevfileContent{
+				Content: `commands:
+- exec:
+    commandLine: run command
+    component: a-container
+    group:
+      isDefault: true
+      kind: run
+    hotReloadCapable: true
+    workingDir: /path/to/work
+  id: an-exec-command
+metadata: {}
+schemaVersion: 2.2.0
+`,
+				Commands: []Command{
+					{
+						Name:    "an-exec-command",
+						Group:   "run",
+						Default: true,
+						Type:    "exec",
+						Exec: &ExecCommand{
+							Component:        "a-container",
+							CommandLine:      "run command",
+							WorkingDir:       "/path/to/work",
+							HotReloadCapable: true,
+						},
+					},
+				},
+				Containers: []Container{},
+				Images:     []Image{},
+				Resources:  []Resource{},
+			},
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := tt.state(t)
+			got, err := o.SetDefaultCommand(tt.args.commandName, tt.args.group)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DevfileState.SetDefaultCommand() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileState.SetDefaultCommand() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDevfileState_UnsetDefaultCommand(t *testing.T) {
+	type args struct {
+		commandName string
+	}
+	tests := []struct {
+		name    string
+		state   func(t *testing.T) DevfileState
+		args    args
+		want    DevfileContent
+		wantErr bool
+	}{
+		{
+			name: "command unset default",
+			state: func(t *testing.T) DevfileState {
+				state := NewDevfileState()
+				_, err := state.AddExecCommand(
+					"an-exec-command",
+					"a-container",
+					"run command",
+					"/path/to/work",
+					true,
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = state.MoveCommand("", "run", 0, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = state.SetDefaultCommand("an-exec-command", "run")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return state
+			},
+			args: args{
+				commandName: "an-exec-command",
+			},
+			want: DevfileContent{
+				Content: `commands:
+- exec:
+    commandLine: run command
+    component: a-container
+    group:
+      isDefault: false
+      kind: run
+    hotReloadCapable: true
+    workingDir: /path/to/work
+  id: an-exec-command
+metadata: {}
+schemaVersion: 2.2.0
+`,
+				Commands: []Command{
+					{
+						Name:    "an-exec-command",
+						Group:   "run",
+						Default: false,
+						Type:    "exec",
+						Exec: &ExecCommand{
+							Component:        "a-container",
+							CommandLine:      "run command",
+							WorkingDir:       "/path/to/work",
+							HotReloadCapable: true,
+						},
+					},
+				},
+				Containers: []Container{},
+				Images:     []Image{},
+				Resources:  []Resource{},
+			},
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := tt.state(t)
+			got, err := o.UnsetDefaultCommand(tt.args.commandName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DevfileState.UnsetDefaultCommand() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileState.UnsetDefaultCommand() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
