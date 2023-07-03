@@ -13,16 +13,7 @@ export class StateService {
   public state = this._state.asObservable(); 
 
   changeDevfileYaml(newValue: ResultValue) {
-    localStorage.setItem("devfile", newValue.content);
     this._state.next(newValue);
-  }
-
-  resetDevfile() {
-    localStorage.removeItem('devfile');
-  }
-
-  getDevfile(): string | null {
-    return localStorage.getItem("devfile");
   }
 
   getDragAndDropEnabled(): boolean {

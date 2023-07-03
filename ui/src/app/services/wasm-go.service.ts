@@ -174,6 +174,16 @@ export class WasmGoService {
     });
   }
 
+  // getDevfileContent gets the content of the Devfile
+  getDevfileContent(): Observable<ResultValue> {
+    return this.http.get<ResultValue>(this.base+"/devfile");
+  }
+  
+  // clearDevfileContent clears the content of the Devfile
+  clearDevfileContent(): Observable<ResultValue> {
+    return this.http.delete<ResultValue>(this.base+"/devfile");
+  }
+  
   setMetadata(metadata: Metadata): Observable<ResultValue> {
     return this.http.put<ResultValue>(this.base+"/metadata", {
       name: metadata.name,

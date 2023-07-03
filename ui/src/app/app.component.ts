@@ -35,10 +35,12 @@ export class AppComponent implements OnInit {
       loading.style.visibility = "hidden";
     }
 
-    const devfile = this.state.getDevfile();
-    if (devfile != null) {
-      this.onButtonClick(devfile);
-    }
+    const devfile = this.wasmGo.getDevfileContent();
+    devfile.subscribe({
+      next: (devfile) => {
+        this.onButtonClick(devfile.content);
+      }
+    });
 
     this.state.state.subscribe(async newContent => {
       if (newContent == null) {
@@ -75,8 +77,11 @@ export class AppComponent implements OnInit {
 
   clear() {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
-      this.state.resetDevfile();
-      window.location.reload();  
+      this.wasmGo.clearDevfileContent().subscribe({
+        next: (value) => {
+          this.onButtonClick(value.content);
+        }
+      });
     }
   }
 }

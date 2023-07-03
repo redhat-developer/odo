@@ -10,11 +10,11 @@
                     <td>Image:</td>
                     <td><code>{{container.image}}</code></td>
                 </tr>
-                <tr *ngIf="container.command.length > 0">
+                <tr *ngIf="container.command != null && container.command.length > 0">
                     <td>Command:</td>
                     <td><code>{{container.command.join(" ")}}</code></td>
                 </tr>
-                <tr *ngIf="container.args.length > 0">
+                <tr *ngIf="container.args != null && container.args.length > 0">
                     <td>Args:</td>
                     <td><code>{{container.args.join(" ")}}</code></td>
                 </tr>
