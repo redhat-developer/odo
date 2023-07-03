@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { BehaviorSubject } from 'rxjs';
 
-import { ResultValue } from './wasm-go.service';
+import { ResultValue } from './devstate.service';
 
 @Injectable({
   providedIn: 'root'

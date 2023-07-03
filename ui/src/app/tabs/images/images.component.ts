@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Image, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Image, DevstateService } from 'src/app/services/devstate.service';
 
 @Component({
   selector: 'app-images',
@@ -14,7 +14,7 @@ export class ImagesComponent implements OnInit {
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {}
 
   ngOnInit() {
@@ -41,7 +41,7 @@ export class ImagesComponent implements OnInit {
 
   delete(name: string) {
     if(confirm('You will delete the image "'+name+'". Continue?')) {
-      const result = this.wasm.deleteImage(name);
+      const result = this.devstate.deleteImage(name);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);
@@ -54,7 +54,7 @@ export class ImagesComponent implements OnInit {
   }
 
   onCreated(image: Image) {
-    const result = this.wasm.addImage(image);
+    const result = this.devstate.addImage(image);
     result.subscribe({
       next: value => {
         this.state.changeDevfileYaml(value);

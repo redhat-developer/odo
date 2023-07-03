@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { WasmGoService } from './services/wasm-go.service';
+import { DevstateService } from './services/devstate.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MermaidService } from './services/mermaid.service';
 import { StateService } from './services/state.service';
@@ -19,7 +19,7 @@ export class AppComponent implements OnInit {
   constructor(
     protected sanitizer: DomSanitizer,
     private matIconRegistry: MatIconRegistry,
-    private wasmGo: WasmGoService,
+    private wasmGo: DevstateService,
     private mermaid: MermaidService,
     private state: StateService,
   ) {

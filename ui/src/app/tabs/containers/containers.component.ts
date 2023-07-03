@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Container, DevstateService } from 'src/app/services/devstate.service';
 import { catchError } from 'rxjs/operators'
 import { HttpErrorResponse } from '@angular/common/http';
 import { throwError } from 'rxjs';
@@ -17,7 +17,7 @@ export class ContainersComponent implements OnInit {
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {}
 
   ngOnInit() {
@@ -44,7 +44,7 @@ export class ContainersComponent implements OnInit {
 
   delete(name: string) {
     if(confirm('You will delete the container "'+name+'". Continue?')) {
-      const result = this.wasm.deleteContainer(name);
+      const result = this.devstate.deleteContainer(name);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);
@@ -57,7 +57,7 @@ export class ContainersComponent implements OnInit {
   }
 
   onCreated(container: Container) {
-    const result = this.wasm.addContainer(container);
+    const result = this.devstate.addContainer(container);
     result.subscribe({
       next: value => {
         this.state.changeDevfileYaml(value);

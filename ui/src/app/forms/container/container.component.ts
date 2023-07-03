@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
-import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Container, DevstateService } from 'src/app/services/devstate.service';
 import { Observable, of, map, catchError } from 'rxjs';
 
 @Component({
@@ -20,7 +20,7 @@ export class ContainerComponent {
   quantityErrMsgCPU = 'Numeric value, with optional unit m, k, M, G, T, P, E';
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {
     this.form = new FormGroup({
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMPONENT_ID)]),
@@ -48,7 +48,7 @@ export class ContainerComponent {
       if (val == '') {
         return of(null);
       }
-      const valid = this.wasm.isQuantityValid(val);
+      const valid = this.devstate.isQuantityValid(val);
       return valid.pipe(
         map(() => null),
         catchError(() => of({"isQuantity": false}))

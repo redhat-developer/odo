@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { ClusterResource, WasmGoService } from 'src/app/services/wasm-go.service';
+import { ClusterResource, DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
 
 @Component({
@@ -18,7 +18,7 @@ export class CommandApplyComponent {
   resourceToCreate: ClusterResource | null = null;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {
     this.form = new FormGroup({
@@ -37,7 +37,7 @@ export class CommandApplyComponent {
 
   create() {
     const subcreate = () => {
-      const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
+      const result = this.devstate.addApplyCommand(this.form.value["name"], this.form.value);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);
@@ -50,7 +50,7 @@ export class CommandApplyComponent {
 
     if (this.resourceToCreate != null && 
       this.resourceToCreate?.name == this.form.controls["component"].value) {
-      const result = this.wasm.addResource(this.resourceToCreate);
+      const result = this.devstate.addResource(this.resourceToCreate);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);

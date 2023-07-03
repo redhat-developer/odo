@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
 
 const semverPattern = `^([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\-[0-9a-z-]+(\\.[0-9a-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$`;
 
@@ -15,7 +15,7 @@ export class MetadataComponent implements OnInit {
   form: FormGroup;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {
     this.form = new FormGroup({
@@ -46,7 +46,7 @@ export class MetadataComponent implements OnInit {
   }
 
   onSave() {
-    const result = this.wasm.setMetadata(this.form.value);
+    const result = this.devstate.setMetadata(this.form.value);
     result.subscribe({
       next: (value) => {
         this.state.changeDevfileYaml(value);

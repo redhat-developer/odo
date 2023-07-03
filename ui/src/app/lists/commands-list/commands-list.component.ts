@@ -1,8 +1,7 @@
-import { Component, EventEmitter, Input } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { StateService } from 'src/app/services/state.service';
-import { Command, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Command, DevstateService } from 'src/app/services/devstate.service';
 
 @Component({
   selector: 'app-commands-list',
@@ -15,7 +14,7 @@ export class CommandsListComponent {
   @Input() dragDisabled: boolean = true;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {}
 
@@ -28,7 +27,7 @@ export class CommandsListComponent {
   }
 
   setDefault(command: string, group: string) {
-    const result = this.wasm.setDefaultCommand(command, group);
+    const result = this.devstate.setDefaultCommand(command, group);
     result.subscribe({
       next: (value) => {
         this.state.changeDevfileYaml(value);
@@ -40,7 +39,7 @@ export class CommandsListComponent {
   }
 
   unsetDefault(command: string) {
-    const result = this.wasm.unsetDefaultCommand(command);
+    const result = this.devstate.unsetDefaultCommand(command);
     result.subscribe({
       next: (value) => {
         this.state.changeDevfileYaml(value);
@@ -57,7 +56,7 @@ export class CommandsListComponent {
 
   delete(command: string) {
     if(confirm('You will delete the command "'+command+'". Continue?')) {
-      const result = this.wasm.deleteCommand(command);
+      const result = this.devstate.deleteCommand(command);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);

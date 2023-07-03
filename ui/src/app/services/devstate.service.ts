@@ -99,7 +99,7 @@ export type ClusterResource = {
 @Injectable({
   providedIn: 'root'
 })
-export class WasmGoService {
+export class DevstateService {
 
   private base = "/api/v1/devstate";
 

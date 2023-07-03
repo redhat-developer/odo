@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { WasmGoService } from './wasm-go.service';
+import { DevstateService } from './devstate.service';
 
-describe('WasmGoService', () => {
-  let service: WasmGoService;
+describe('DevstateService', () => {
+  let service: DevstateService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(WasmGoService);
+    service = TestBed.inject(DevstateService);
   });
 
   it('should be created', () => {

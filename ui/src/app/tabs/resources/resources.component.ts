@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { ClusterResource, WasmGoService } from 'src/app/services/wasm-go.service';
+import { ClusterResource, DevstateService } from 'src/app/services/devstate.service';
 
 @Component({
   selector: 'app-resources',
@@ -14,7 +14,7 @@ export class ResourcesComponent implements OnInit {
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {}
 
   ngOnInit() {
@@ -41,7 +41,7 @@ export class ResourcesComponent implements OnInit {
 
   delete(name: string) {
     if(confirm('You will delete the resource "'+name+'". Continue?')) {
-      const result = this.wasm.deleteResource(name);
+      const result = this.devstate.deleteResource(name);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);
@@ -54,7 +54,7 @@ export class ResourcesComponent implements OnInit {
   }
 
   onCreated(resource: ClusterResource) {
-    const result = this.wasm.addResource(resource);
+    const result = this.devstate.addResource(resource);
     result.subscribe({
       next: (value) => {
         this.state.changeDevfileYaml(value);

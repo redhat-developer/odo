@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Events, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Events, DevstateService } from 'src/app/services/devstate.service';
 
 @Component({
   selector: 'app-events',
@@ -14,7 +14,7 @@ export class EventsComponent {
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {}
 
   ngOnInit() {
@@ -25,7 +25,7 @@ export class EventsComponent {
   }
 
   onUpdate(event: "preStart" | "postStart" | "preStop" | "postStop", commands: string[]) {
-    const result = this.wasm.updateEvents(event, commands);
+    const result = this.devstate.updateEvents(event, commands);
     result.subscribe({
       next: (value) => {
         this.state.changeDevfileYaml(value);

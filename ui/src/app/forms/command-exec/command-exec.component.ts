@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Container, DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
 
 @Component({
@@ -18,7 +18,7 @@ export class CommandExecComponent {
   containerToCreate: Container | null = null;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {
     this.form = new FormGroup({
@@ -42,7 +42,7 @@ export class CommandExecComponent {
   create() {
 
     const subcreate = () => {
-      const result = this.wasm.addExecCommand(this.form.value["name"], this.form.value);
+      const result = this.devstate.addExecCommand(this.form.value["name"], this.form.value);
       result.subscribe({
         next: (value) => {
           this.state.changeDevfileYaml(value);
@@ -55,7 +55,7 @@ export class CommandExecComponent {
 
     if (this.containerToCreate != null && 
         this.containerToCreate?.name == this.form.controls["component"].value) {
-        const res = this.wasm.addContainer(this.containerToCreate);
+        const res = this.devstate.addContainer(this.containerToCreate);
         res.subscribe({
           next: () => {
             subcreate();

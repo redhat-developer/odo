@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Image } from 'src/app/services/wasm-go.service';
+import { Image } from 'src/app/services/devstate.service';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 
 @Component({
