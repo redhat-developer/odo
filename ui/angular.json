@@ -28,9 +28,6 @@
             "styles": [
               "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.css"
-            ],
-            "scripts": [
-              "src/assets/wasm_exec.js"
             ]
           },
           "configurations": {
