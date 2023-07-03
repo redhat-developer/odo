@@ -45,11 +45,14 @@ export class ContainersComponent implements OnInit {
   delete(name: string) {
     if(confirm('You will delete the container "'+name+'". Continue?')) {
       const result = this.wasm.deleteContainer(name);
-      if (result.err != '') {
-        alert(result.err);
-      } else {
-        this.state.changeDevfileYaml(result.value);
-      }
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
   }
 

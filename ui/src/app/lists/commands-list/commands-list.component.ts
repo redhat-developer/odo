@@ -29,20 +29,26 @@ export class CommandsListComponent {
 
   setDefault(command: string, group: string) {
     const result = this.wasm.setDefaultCommand(command, group);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: (value) => {
+        this.state.changeDevfileYaml(value);
+      }, 
+      error: (error) => {
+        alert(error.error.message);
+      }
+    });
   }
 
   unsetDefault(command: string) {
     const result = this.wasm.unsetDefaultCommand(command);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: (value) => {
+        this.state.changeDevfileYaml(value);
+      }, 
+      error: (error) => {
+        alert(error.error.message);
+      }
+    });
   }
 
   getCommandsByKind(commands: Command[] | undefined, kind: string ): Command[] | undefined {
@@ -52,11 +58,14 @@ export class CommandsListComponent {
   delete(command: string) {
     if(confirm('You will delete the command "'+command+'". Continue?')) {
       const result = this.wasm.deleteCommand(command);
-      if (result.err != '') {
-        alert(result.err);
-      } else {
-        this.state.changeDevfileYaml(result.value);
-      }
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
   }
 }

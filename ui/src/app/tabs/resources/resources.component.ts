@@ -42,11 +42,14 @@ export class ResourcesComponent implements OnInit {
   delete(name: string) {
     if(confirm('You will delete the resource "'+name+'". Continue?')) {
       const result = this.wasm.deleteResource(name);
-      if (result.err != '') {
-        alert(result.err);
-      } else {
-        this.state.changeDevfileYaml(result.value);
-      }
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
   }
 

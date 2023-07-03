@@ -62,12 +62,15 @@ export class AppComponent implements OnInit {
 
   onButtonClick(content: string){
     const result = this.wasmGo.setDevfileContent(content);
-    if (result.err != '') {
-      this.errorMessage = result.err;
-    } else {
-      this.errorMessage = '';
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: (value) => {
+        this.errorMessage = '';
+        this.state.changeDevfileYaml(value);  
+      },
+      error: (error) => {
+        this.errorMessage = error.error.message;
+      }
+    });
   }
 
   clear() {

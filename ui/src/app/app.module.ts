@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -41,20 +41,6 @@ import { CommandsListComponent } from './lists/commands-list/commands-list.compo
 import { MultiCommandComponent } from './controls/multi-command/multi-command.component';
 import { EventsComponent } from './tabs/events/events.component';
 import { ChipsEventsComponent } from './controls/chips-events/chips-events.component';
-
-declare const Go: any;
-
-function loadWasmModule() {
-  return () => {
-    return new Promise<void>((resolve) => {
-      const go = new Go();
-      WebAssembly.instantiateStreaming(fetch("./assets/devfile.6ccdbea7789422ba86e8b08707f15f66.wasm"), go.importObject).then((result) => {
-          go.run(result.instance);
-          resolve();
-      });
-    });
-  };
-}
 
 @NgModule({
   declarations: [
@@ -102,13 +88,7 @@ function loadWasmModule() {
     MatToolbarModule,
     MatTooltipModule
   ],
-  providers: [
-    {
-      provide: APP_INITIALIZER,
-      useFactory: loadWasmModule,
-      multi: true,
-    },
-  ],
+  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

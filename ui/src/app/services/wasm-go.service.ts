@@ -6,11 +6,6 @@ type ChartResult = {
   chart: string;
 };
 
-type Result = {
-  err: string;
-  value: ResultValue;
-};
-
 export type ResultValue = {
   content: string;
   metadata: Metadata;
@@ -101,17 +96,6 @@ export type ClusterResource = {
   uri: string;
 };
 
-declare const setDevfileContent: (devfile: string) => Result;
-declare const moveCommand: (previousKind: string, newKind: string, previousIndex: number, newIndex: number) => Result;
-declare const setDefaultCommand: (command: string, group: string) => Result;
-declare const unsetDefaultCommand: (command: string) => Result;
-declare const deleteCommand: (command: string) => Result;
-declare const deleteContainer: (container: string) => Result;
-declare const deleteImage: (image: string) => Result;
-declare const deleteResource: (resource: string) => Result;
-declare const updateEvents: (event: string, commands: string[]) => Result;
-declare const isQuantityValid: (quantity: string) => Boolean;
-
 @Injectable({
   providedIn: 'root'
 })
@@ -184,9 +168,10 @@ export class WasmGoService {
   }
 
   // setDevfileContent calls the wasm module to reset the content of the Devfile
-  setDevfileContent(devfile: string): Result {
-    const result = setDevfileContent(devfile);
-    return result;  
+  setDevfileContent(devfile: string): Observable<ResultValue> {
+    return this.http.put<ResultValue>(this.base+"/devfile", {
+      content: devfile
+    });
   }
 
   setMetadata(metadata: Metadata): Observable<ResultValue> {
@@ -207,43 +192,52 @@ export class WasmGoService {
     });
   }
 
-  moveCommand(previousKind: string, newKind: string, previousIndex: number, newIndex: number): Result {
-    return moveCommand(previousKind, newKind, previousIndex, newIndex);
+  moveCommand(previousKind: string, newKind: string, previousIndex: number, newIndex: number): Observable<ResultValue> {
+    // TODO set correct command Name
+    return this.http.post<ResultValue>(this.base+"/command/0/move", {
+      fromGroup: previousKind,
+      fromIndex: previousIndex,
+      toGroup: newKind,
+      toIndex: newIndex
+    });
   }
 
-  setDefaultCommand(command: string, group: string): Result {
-    return setDefaultCommand(command, group);
+  setDefaultCommand(command: string, group: string): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/command/"+command+"/setDefault", {
+      group: group
+    });
   }
 
-  unsetDefaultCommand(command: string): Result {
-    return unsetDefaultCommand(command);
+  unsetDefaultCommand(command: string): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/command/"+command+"/unsetDefault", {});
   }
 
-  deleteCommand(command: string): Result {
-    const result = deleteCommand(command);
-    return result;
+  deleteCommand(command: string): Observable<ResultValue>  {
+    return this.http.delete<ResultValue>(this.base+"/command/"+command);
   }
 
-  deleteContainer(container: string): Result {
-    const result = deleteContainer(container);
-    return result;
+  deleteContainer(container: string): Observable<ResultValue> {
+    return this.http.delete<ResultValue>(this.base+"/container/"+container);
   }
 
-  deleteImage(image: string): Result {
-    const result = deleteImage(image);
-    return result;
+  deleteImage(image: string): Observable<ResultValue> {
+    return this.http.delete<ResultValue>(this.base+"/image/"+image);
   }
 
-  deleteResource(resource: string): Result {
-    const result = deleteResource(resource);
-    return result;
+  deleteResource(resource: string): Observable<ResultValue> {
+    return this.http.delete<ResultValue>(this.base+"/resource/"+resource);
   }
 
-  updateEvents(event: "preStart"|"postStart"|"preStop"|"postStop", commands: string[]): Result {
-    return updateEvents(event, commands);
+  updateEvents(event: "preStart"|"postStart"|"preStop"|"postStop", commands: string[]): Observable<ResultValue> {
+    return this.http.put<ResultValue>(this.base+"/events", {
+      eventName: event,
+      commands: commands
+    });
   }
 
-  isQuantityValid(quantity: string): Boolean {
-    return isQuantityValid(quantity);
+  isQuantityValid(quantity: string): Observable<{}> {
+    return this.http.post<{}>(this.base+"/quantityValid", {
+      quantity: quantity
+    });
   }
 }

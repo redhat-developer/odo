@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { Observable, of, map, catchError } from 'rxjs';
 
 @Component({
   selector: 'app-container',
@@ -26,10 +27,10 @@ export class ContainerComponent {
       image: new FormControl("", [Validators.required]),
       command: new FormControl([]),
       args: new FormControl([]),
-      memoryRequest: new FormControl("", [this.isQuantity()]),
-      memoryLimit: new FormControl("", [this.isQuantity()]),
-      cpuRequest: new FormControl("", [this.isQuantity()]),
-      cpuLimit: new FormControl("", [this.isQuantity()]),
+      memoryRequest: new FormControl("", null, [this.isQuantity()]),
+      memoryLimit: new FormControl("", null, [this.isQuantity()]),
+      cpuRequest: new FormControl("", null, [this.isQuantity()]),
+      cpuLimit: new FormControl("", null, [this.isQuantity()]),
     })
   }
 
@@ -41,19 +42,17 @@ export class ContainerComponent {
     this.canceled.emit();
   }
 
-  isQuantity():  ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
+  isQuantity():  AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
       const val = control.value;
       if (val == '') {
-        return null;
+        return of(null);
       }
       const valid = this.wasm.isQuantityValid(val);
-      if (!valid) {
-        return {
-          "isQuantity": false,
-        }
-      }
-      return null;
+      return valid.pipe(
+        map(() => null),
+        catchError(() => of({"isQuantity": false}))
+      );
     };
   }   
 }
