@@ -256,3 +256,13 @@ func (s *DefaultApiService) DevstateDevfileGet(context.Context) (openapi.ImplRes
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateDevfileDelete(context.Context) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.SetDevfileContent(`schemaVersion: 2.2.0`)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error clearing Devfile content: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

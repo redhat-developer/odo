@@ -117,6 +117,12 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateContainerPost,
 		},
 		{
+			"DevstateDevfileDelete",
+			strings.ToUpper("Delete"),
+			"/api/v1/devstate/devfile",
+			c.DevstateDevfileDelete,
+		},
+		{
 			"DevstateDevfileGet",
 			strings.ToUpper("Get"),
 			"/api/v1/devstate/devfile",
@@ -400,6 +406,19 @@ func (c *DefaultApiController) DevstateContainerPost(w http.ResponseWriter, r *h
 		return
 	}
 	result, err := c.service.DevstateContainerPost(r.Context(), devstateContainerPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateDevfileDelete -
+func (c *DefaultApiController) DevstateDevfileDelete(w http.ResponseWriter, r *http.Request) {
+	result, err := c.service.DevstateDevfileDelete(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
