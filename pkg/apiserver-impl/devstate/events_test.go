@@ -46,7 +46,10 @@ schemaVersion: 2.2.0
 			name: "set postStart event when preStart is already set",
 			state: func(t *testing.T) DevfileState {
 				state := NewDevfileState()
-				state.UpdateEvents("preStart", []string{"command1"})
+				_, err := state.UpdateEvents("preStart", []string{"command1"})
+				if err != nil {
+					t.Fatal(err)
+				}
 				return state
 			},
 			args: args{

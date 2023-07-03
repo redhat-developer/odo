@@ -75,8 +75,6 @@ github.com/Azure/go-autorest/logger v0.2.1/go.mod h1:T9E3cAhj2VqvPOtCYAvby9aBXkZ
 github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBpUA79WCAKPPZVC2DeU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Heiko-san/mermaidgen v0.0.0-20190623222458-ec72afae378b h1:vMD9lRM0RSgyh32p9nu7guZq99XBo+m2LTTgih1Jkyc=
-github.com/Heiko-san/mermaidgen v0.0.0-20190623222458-ec72afae378b/go.mod h1:wsRHegZ2aKrPucCK/XTSCe3stHT09+U8aAM5AZ0XdKY=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd h1:sjQovDkwrZp8u+gxLtPgKGjk5hCxuy2hrRejBTA9xFU=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
@@ -461,8 +459,10 @@ github.com/fatih/color v1.14.1/go.mod h1:2oHN61fhTpgcxD3TSWCgKDiH1+x4OiDVVGH8Wlg
 github.com/felixge/httpsnoop v1.0.1/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/felixge/httpsnoop v1.0.3 h1:s/nj+GCswXYzN5v2DpNMuMQYe+0DDwt5WVCU6CWBdXk=
 github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
-github.com/feloy/devfile-lifecycle v0.0.0-20230515183001-11d088157da2 h1:yu3RkIH8lmDrtC0HaTEc5weAWcyCu0TOB3Gxo8jqNxw=
-github.com/feloy/devfile-lifecycle v0.0.0-20230515183001-11d088157da2/go.mod h1:iATIK0fjTcnDmYCKfefNd7Fiw0TEn3V0Q4nmNNuYvvY=
+github.com/feloy/devfile-lifecycle v0.0.0-20230703132439-dcf25e046335 h1:fNtlKfkIi1QZcfvjHnXvP+w7kH6846jH9flvDHJgpWA=
+github.com/feloy/devfile-lifecycle v0.0.0-20230703132439-dcf25e046335/go.mod h1:rBF2ebDSKA42kFdoWAETkPplCUoQgjMWRMyYjgymERg=
+github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778 h1:wLd04m6xrPZkon6qORwSvA64lFDqYYXcSZXBsVw7tHo=
+github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778/go.mod h1:rBF2ebDSKA42kFdoWAETkPplCUoQgjMWRMyYjgymERg=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/form3tech-oss/jwt-go v3.2.3+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=

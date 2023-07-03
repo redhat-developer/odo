@@ -1,9 +1,9 @@
 package graph
 
 import (
+	"fmt"
 	"sort"
-
-	"github.com/Heiko-san/mermaidgen/flowchart"
+	"strings"
 )
 
 type Graph struct {
@@ -37,10 +37,15 @@ func (o *Graph) AddEdge(from *Node, to *Node, text ...string) *Edge {
 	return &edge
 }
 
-func (o *Graph) ToFlowchart() *flowchart.Flowchart {
-	f := flowchart.NewFlowchart()
-	n := f.AddNode(o.EntryNodeID)
-	n.Text = o.nodes[o.EntryNodeID].Text
+func (o *Graph) ToFlowchart() string {
+	var str strings.Builder
+	str.WriteString("graph TB\n")
+	texts := o.nodes[o.EntryNodeID].Text
+	if len(texts) == 0 {
+		texts = []string{o.EntryNodeID}
+	}
+	str.WriteString(fmt.Sprintf("%s[\"%s\"]\n", o.EntryNodeID, strings.Join(texts, "<br/>")))
+
 	keys := make([]string, 0, len(o.nodes))
 	for k := range o.nodes {
 		keys = append(keys, k)
@@ -52,15 +57,17 @@ func (o *Graph) ToFlowchart() *flowchart.Flowchart {
 		if node.ID == o.EntryNodeID {
 			continue
 		}
-		n := f.AddNode(node.ID)
-		n.Text = node.Text
+		if len(node.Text) == 0 {
+			node.Text = []string{node.ID}
+		}
+		str.WriteString(fmt.Sprintf("%s[\"%s\"]\n", node.ID, strings.Join(node.Text, "<br/>")))
 	}
 
 	for _, edge := range o.edges {
-		e := f.AddEdge(f.GetNode(edge.From.ID), f.GetNode(edge.To.ID))
-		e.Text = edge.Text
+		str.WriteString(fmt.Sprintf("%s -->|\"%s\"| %s\n", edge.From.ID, strings.Join(edge.Text, "<br/>"), edge.To.ID))
 	}
-	return f
+
+	return str.String()
 }
 
 type Node struct {

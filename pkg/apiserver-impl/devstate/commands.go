@@ -103,13 +103,15 @@ func (o *DevfileState) MoveCommand(previousGroup, newGroup string, previousIndex
 
 	// Deleting from the end as deleting from the beginning seems buggy
 	for i := len(commands) - 1; i >= 0; i-- {
-		o.Devfile.Data.DeleteCommand(commands[i].Id)
+		err = o.Devfile.Data.DeleteCommand(commands[i].Id)
+		if err != nil {
+			return DevfileContent{}, err
+		}
 	}
 
 	for _, group := range []string{"build", "run", "test", "debug", "deploy", ""} {
 		err := o.Devfile.Data.AddCommands(commandsByGroup[group])
 		if err != nil {
-			fmt.Printf("%s\n", err)
 			return DevfileContent{}, err
 		}
 	}
@@ -144,20 +146,17 @@ func subMoveCommand(commands []v1alpha2.Command, previousGroup, newGroup string,
 }
 
 func (o *DevfileState) SetDefaultCommand(commandName string, group string) (DevfileContent, error) {
-	fmt.Printf("change default for group %q\n", group)
 	commands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{})
 	if err != nil {
 		return DevfileContent{}, err
 	}
 
-	for _, command := range commands {
+	for i, command := range commands {
 		if GetGroup(command) == group {
 			isDefault := command.Id == commandName
-			fmt.Printf("setting default = %v for command %q\n", isDefault, command.Id)
-			SetDefault(&command, isDefault)
+			SetDefault(&commands[i], isDefault)
 			err = o.Devfile.Data.UpdateCommand(command)
 			if err != nil {
-				fmt.Printf("%s\n", err)
 				return DevfileContent{}, err
 			}
 		}
@@ -171,12 +170,11 @@ func (o *DevfileState) UnsetDefaultCommand(commandName string) (DevfileContent, 
 		return DevfileContent{}, err
 	}
 
-	for _, command := range commands {
+	for i, command := range commands {
 		if command.Id == commandName {
-			SetDefault(&command, false)
+			SetDefault(&commands[i], false)
 			err = o.Devfile.Data.UpdateCommand(command)
 			if err != nil {
-				fmt.Printf("%s\n", err)
 				return DevfileContent{}, err
 			}
 			break

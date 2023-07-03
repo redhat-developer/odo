@@ -11,5 +11,5 @@ func (o *DevfileState) GetFlowChart() (string, error) {
 	if err != nil {
 		return "", errors.New("error building graph")
 	}
-	return g.ToFlowchart().String(), nil
+	return g.ToFlowchart(), nil
 }
