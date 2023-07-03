@@ -236,3 +236,13 @@ func (s *DefaultApiService) DevstateQuantityValidPost(ctx context.Context, param
 		Message: fmt.Sprintf("Quantity %q is valid", params.Quantity),
 	}), nil
 }
+
+func (s *DefaultApiService) DevstateDevfilePut(ctx context.Context, params openapi.DevstateDevfilePutRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.SetDevfileContent(params.Content)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error setting new Devfile content: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

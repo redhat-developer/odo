@@ -223,6 +223,62 @@ paths:
               example:
                 message: "a push operation is not possible at this time. Please retry later"
 
+  /devstate/devfile:
+    put:
+      description: Updates the complete Devfile content
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Devfile content was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "Content": "schemaVersion: 2.2.0\n",
+                    "Commands": [],
+                    "Containers": [],
+                    "Images": [],
+                    "Resources": [],
+                    "Events": {
+                        "PreStart": null,
+                        "PostStart": null,
+                        "PreStop": null,
+                        "PostStop": null
+                    },
+                    "Metadata": {
+                        "Name": "",
+                        "Version": "",
+                        "DisplayName": "",
+                        "Description": "",
+                        "Tags": "",
+                        "Architectures": "",
+                        "Icon": "",
+                        "GlobalMemoryLimit": "",
+                        "ProjectType": "",
+                        "Language": "",
+                        "Website": "",
+                        "Provider": "",
+                        "SupportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Devfile content"
+
   /devstate/metadata:
     put:
       description: Updates the metadata for the Devfile

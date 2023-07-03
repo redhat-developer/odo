@@ -117,6 +117,12 @@ func (c *DefaultApiController) Routes() Routes {
 			c.DevstateContainerPost,
 		},
 		{
+			"DevstateDevfilePut",
+			strings.ToUpper("Put"),
+			"/api/v1/devstate/devfile",
+			c.DevstateDevfilePut,
+		},
+		{
 			"DevstateEventsPut",
 			strings.ToUpper("Put"),
 			"/api/v1/devstate/events",
@@ -388,6 +394,30 @@ func (c *DefaultApiController) DevstateContainerPost(w http.ResponseWriter, r *h
 		return
 	}
 	result, err := c.service.DevstateContainerPost(r.Context(), devstateContainerPostRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateDevfilePut -
+func (c *DefaultApiController) DevstateDevfilePut(w http.ResponseWriter, r *http.Request) {
+	devstateDevfilePutRequestParam := DevstateDevfilePutRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateDevfilePutRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateDevfilePutRequestRequired(devstateDevfilePutRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateDevfilePut(r.Context(), devstateDevfilePutRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
