@@ -16,93 +16,93 @@ const (
 )
 
 type DevfileContent struct {
-	Content    string
-	Commands   []Command
-	Containers []Container
-	Images     []Image
-	Resources  []Resource
-	Events     Events
-	Metadata   Metadata
+	Content    string      `json:"content"`
+	Commands   []Command   `json:"commands"`
+	Containers []Container `json:"containers"`
+	Images     []Image     `json:"images"`
+	Resources  []Resource  `json:"resources"`
+	Events     Events      `json:"events"`
+	Metadata   Metadata    `json:"metadata"`
 }
 
 type Metadata struct {
-	Name              string
-	Version           string
-	DisplayName       string
-	Description       string
-	Tags              string
-	Architectures     string
-	Icon              string
-	GlobalMemoryLimit string
-	ProjectType       string
-	Language          string
-	Website           string
-	Provider          string
-	SupportUrl        string
+	Name              string `json:"name"`
+	Version           string `json:"version"`
+	DisplayName       string `json:"displayName"`
+	Description       string `json:"description"`
+	Tags              string `json:"tags"`
+	Architectures     string `json:"architectures"`
+	Icon              string `json:"icon"`
+	GlobalMemoryLimit string `json:"globalMemoryLimit"`
+	ProjectType       string `json:"projectType"`
+	Language          string `json:"language"`
+	Website           string `json:"website"`
+	Provider          string `json:"provider"`
+	SupportUrl        string `json:"supportUrl"`
 }
 
 type Command struct {
-	Name      string
-	Group     string
-	Default   bool
-	Type      string
-	Exec      *ExecCommand
-	Apply     *ApplyCommand
-	Image     *ImageCommand
-	Composite *CompositeCommand
+	Name      string            `json:"name"`
+	Group     string            `json:"group"`
+	Default   bool              `json:"default"`
+	Type      string            `json:"type"`
+	Exec      *ExecCommand      `json:"exec"`
+	Apply     *ApplyCommand     `json:"apply"`
+	Image     *ImageCommand     `json:"image"`
+	Composite *CompositeCommand `json:"composite"`
 }
 
 type ExecCommand struct {
-	Component        string
-	CommandLine      string
-	WorkingDir       string
-	HotReloadCapable bool
+	Component        string `json:"component"`
+	CommandLine      string `json:"commandLine"`
+	WorkingDir       string `json:"workingDir"`
+	HotReloadCapable bool   `json:"hotReloadCapable"`
 }
 
 type ApplyCommand struct {
-	Component string
+	Component string `json:"component"`
 }
 
 type ImageCommand struct {
-	Component string
+	Component string `json:"component"`
 }
 
 type CompositeCommand struct {
-	Commands []string
-	Parallel bool
+	Commands []string `json:"commands"`
+	Parallel bool     `json:"parallel"`
 }
 
 type Container struct {
-	Name          string
-	Image         string
-	Command       []string
-	Args          []string
-	MemoryRequest string
-	MemoryLimit   string
-	CpuRequest    string
-	CpuLimit      string
+	Name          string   `json:"name"`
+	Image         string   `json:"image"`
+	Command       []string `json:"command"`
+	Args          []string `json:"args"`
+	MemoryRequest string   `json:"memoryRequest"`
+	MemoryLimit   string   `json:"memoryLimit"`
+	CpuRequest    string   `json:"cpuRequest"`
+	CpuLimit      string   `json:"cpuLimit"`
 }
 
 type Image struct {
-	Name         string
-	ImageName    string
-	Args         []string
-	BuildContext string
-	RootRequired bool
-	URI          string
+	Name         string   `json:"name"`
+	ImageName    string   `json:"imageName"`
+	Args         []string `json:"args"`
+	BuildContext string   `json:"buildContext"`
+	RootRequired bool     `json:"rootRequired"`
+	URI          string   `json:"uri"`
 }
 
 type Resource struct {
-	Name    string
-	Inlined string
-	URI     string
+	Name    string `json:"name"`
+	Inlined string `json:"inlined"`
+	URI     string `json:"uri"`
 }
 
 type Events struct {
-	PreStart  []string
-	PostStart []string
-	PreStop   []string
-	PostStop  []string
+	PreStart  []string `json:"preStart"`
+	PostStart []string `json:"postStart"`
+	PreStop   []string `json:"preStop"`
+	PostStop  []string `json:"postStop"`
 }
 
 // getContent returns the YAML content of the global devfile as string
