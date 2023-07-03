@@ -246,3 +246,13 @@ func (s *DefaultApiService) DevstateDevfilePut(ctx context.Context, params opena
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DefaultApiService) DevstateDevfileGet(context.Context) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.GetContent()
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error getting new Devfile content: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
