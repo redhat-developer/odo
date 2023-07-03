@@ -52,11 +52,14 @@ export class ImagesComponent implements OnInit {
 
   onCreated(image: Image) {
     const result = this.wasm.addImage(image);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: value => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: error => {
+        alert(error.error.message);
+      }
+    });
   }
 
   scrollToBottom() {

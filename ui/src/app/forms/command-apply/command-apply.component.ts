@@ -36,20 +36,32 @@ export class CommandApplyComponent {
   }
 
   create() {
+    const subcreate = () => {
+      const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });  
+    }
+
     if (this.resourceToCreate != null && 
       this.resourceToCreate?.name == this.form.controls["component"].value) {
       const result = this.wasm.addResource(this.resourceToCreate);
-      if (result.err != '') {
-        alert(result.err);
-        return;
-      }
-    }
-
-    const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);      
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+          subcreate();
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });        
     } else {
-      this.state.changeDevfileYaml(result.value);
+      subcreate();
     }
   }
 

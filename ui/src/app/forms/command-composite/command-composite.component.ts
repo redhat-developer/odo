@@ -37,11 +37,14 @@ export class CommandCompositeComponent {
 
   create() {
     const result = this.wasm.addCompositeCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: (value) => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: (error) => {
+        alert(error.error.message);
+      }
+    });
    }
  
   cancel() {

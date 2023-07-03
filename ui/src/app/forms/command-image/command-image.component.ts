@@ -36,20 +36,32 @@ export class CommandImageComponent {
   }
 
   create() {
-    if (this.imageToCreate != null && 
-      this.imageToCreate?.name == this.form.controls["component"].value) {
-      const result = this.wasm.addImage(this.imageToCreate);
-      if (result.err != '') {
-        alert(result.err);
-        return;
-      }
+
+    const subcreate = () => {
+      const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
 
-    const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);
+    if (this.imageToCreate != null && 
+      this.imageToCreate?.name == this.form.controls["component"].value) {
+        const result = this.wasm.addImage(this.imageToCreate);
+        result.subscribe({
+          next: () => {
+            subcreate();
+          },
+          error: error => {
+            alert(error.error.message);
+          }
+        });
     } else {
-      this.state.changeDevfileYaml(result.value);
+      subcreate();
     }
   }
 

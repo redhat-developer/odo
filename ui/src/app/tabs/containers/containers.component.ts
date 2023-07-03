@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { catchError } from 'rxjs/operators'
+import { HttpErrorResponse } from '@angular/common/http';
+import { throwError } from 'rxjs';
 
 @Component({
   selector: 'app-containers',
@@ -52,11 +55,14 @@ export class ContainersComponent implements OnInit {
 
   onCreated(container: Container) {
     const result = this.wasm.addContainer(container);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: value => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: error => {
+        alert(error.error.message);
+      }
+    });      
   }
 
   scrollToBottom() {

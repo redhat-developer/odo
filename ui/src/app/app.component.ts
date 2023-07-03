@@ -47,11 +47,16 @@ export class AppComponent implements OnInit {
 
       this.devfileYaml = newContent.content;
 
-      try {
-        const result = this.wasmGo.getFlowChart();
-        const svg = await this.mermaid.getMermaidAsSVG(result);
-        this.mermaidContent = svg;  
-      } catch {}
+      const result = this.wasmGo.getFlowChart();
+      result.subscribe({
+        next: async (res) => {
+          const svg = await this.mermaid.getMermaidAsSVG(res.chart);
+          this.mermaidContent = svg;      
+        },
+        error: (error) => {
+          console.log(error);
+        }
+      });
     });
   }
 

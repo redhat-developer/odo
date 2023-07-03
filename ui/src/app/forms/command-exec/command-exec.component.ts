@@ -38,20 +38,34 @@ export class CommandExecComponent {
     });
   }
 
+
   create() {
+
+    const subcreate = () => {
+      const result = this.wasm.addExecCommand(this.form.value["name"], this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
+    }
+
     if (this.containerToCreate != null && 
         this.containerToCreate?.name == this.form.controls["component"].value) {
-      const result = this.wasm.addContainer(this.containerToCreate);
-      if (result.err != '') {
-        alert(result.err);
-        return;
-      }
-    }
-    const result = this.wasm.addExecCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);      
+        const res = this.wasm.addContainer(this.containerToCreate);
+        res.subscribe({
+          next: () => {
+            subcreate();
+          },
+          error: error => {
+            alert(error.error.message);
+          }
+        });
     } else {
-      this.state.changeDevfileYaml(result.value);
+      subcreate();
     }
   }
 

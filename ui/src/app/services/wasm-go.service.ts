@@ -1,8 +1,9 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 
 type ChartResult = {
-  err: string;
-  value: any;
+  chart: string;
 };
 
 type Result = {
@@ -100,15 +101,7 @@ export type ClusterResource = {
   uri: string;
 };
 
-declare const addContainer: (name: string, image: string, command: string[], args: string[], memReq: string, memLimit: string, cpuReq: string, cpuLimit: string) => Result;
-declare const addImage: (name: string, imageName: string, args: string[], buildContext: string, rootRequired: boolean, uri: string) => Result;
-declare const addResource: (name: string, inlined: string, uri: string) => Result;
-declare const addExecCommand: (name: string, component: string, commmandLine: string, workingDir: string, hotReloadCapable: boolean) => Result;
-declare const addApplyCommand: (name: string, component: string) => Result;
-declare const addCompositeCommand: (name: string, parallel: boolean, commands: string[]) => Result;
-declare const getFlowChart: () => ChartResult;
 declare const setDevfileContent: (devfile: string) => Result;
-declare const setMetadata: (metadata: Metadata) => Result;
 declare const moveCommand: (previousKind: string, newKind: string, previousIndex: number, newIndex: number) => Result;
 declare const setDefaultCommand: (command: string, group: string) => Result;
 declare const unsetDefaultCommand: (command: string) => Result;
@@ -122,71 +115,72 @@ declare const isQuantityValid: (quantity: string) => Boolean;
 @Injectable({
   providedIn: 'root'
 })
-// WasmGoService uses the wasm module. 
-// The module manages a single instance of a Devfile
 export class WasmGoService {
 
-  addContainer(container: Container): Result {
-    return addContainer(
-      container.name,
-      container.image,
-      container.command,
-      container.args,
-      container.memoryRequest,
-      container.memoryLimit,
-      container.cpuRequest,
-      container.cpuLimit,
-    );
+  private base = "/api/v1/devstate";
+
+  constructor(private http: HttpClient) { }
+
+  addContainer(container: Container): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/container", {
+      name: container.name,
+      image: container.image,
+      command: container.command,
+      args: container.args,
+      memReq: container.memoryRequest,
+      memLimit: container.memoryLimit,
+      cpuReq: container.cpuRequest,
+      cpuLimit: container.cpuLimit,
+    });
   }
 
-  addImage(image: Image): Result {
-    return addImage(
-      image.name,
-      image.imageName,
-      image.args,
-      image.buildContext,
-      image.rootRequired,
-      image.uri,
-    );
+  addImage(image: Image): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/image", {
+      name: image.name,
+      imageName: image.imageName,
+      args: image.args,
+      buildContext: image.buildContext,
+      rootRequired: image.rootRequired,
+      uri: image.uri
+    });
   }
 
-  addResource(resource: ClusterResource): Result {
-    return addResource(
-      resource.name,
-      resource.inlined,
-      resource.uri,
-    );
+  addResource(resource: ClusterResource): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/resource", {
+      name: resource.name,
+      inlined: resource.inlined,
+      uri: resource.uri,
+    });
   }
 
-  addExecCommand(name: string, cmd: ExecCommand): Result {
-    return addExecCommand(
-      name,
-      cmd.component,
-      cmd.commandLine,
-      cmd.workingDir,
-      cmd.hotReloadCapable,
-    );
+  addExecCommand(name: string, cmd: ExecCommand): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/execCommand", {
+      name: name,
+      component: cmd.component,
+      commandLine: cmd.commandLine,
+      workingDir: cmd.workingDir,
+      hotReloadCapable: cmd.hotReloadCapable,
+    });
   }
 
-  addApplyCommand(name: string, cmd: ApplyCommand): Result {
-    return addApplyCommand(
-      name,
-      cmd.component,      
-    );
+  addApplyCommand(name: string, cmd: ApplyCommand): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/applyCommand", {
+      name: name,
+      component: cmd.component,
+    });
   }
 
-  addCompositeCommand(name: string, cmd: CompositeCommand): Result {
-    return addCompositeCommand(
-      name,
-      cmd.parallel,
-      cmd.commands,      
-    );
+  addCompositeCommand(name: string, cmd: CompositeCommand): Observable<ResultValue> {
+    return this.http.post<ResultValue>(this.base+"/compositeCommand", {
+      name: name,
+      parallel: cmd.parallel,
+      commands: cmd.commands,
+    });
   }
 
   // getFlowChart calls the wasm module to get the lifecycle of the Devfile in mermaid chart format
-  getFlowChart(): string {
-    const result = getFlowChart();
-    return result.value;
+  getFlowChart(): Observable<ChartResult> {
+    return this.http.get<ChartResult>(this.base+"/chart");
   }
 
   // setDevfileContent calls the wasm module to reset the content of the Devfile
@@ -195,8 +189,22 @@ export class WasmGoService {
     return result;  
   }
 
-  setMetadata(metadata: Metadata): Result {
-    return setMetadata(metadata);
+  setMetadata(metadata: Metadata): Observable<ResultValue> {
+    return this.http.put<ResultValue>(this.base+"/metadata", {
+      name: metadata.name,
+      version: metadata.version,
+      displayName: metadata.displayName,
+      description: metadata.description,
+      tags: metadata.tags,
+      architectures: metadata.architectures,
+      icon: metadata.icon,
+      globalMemoryLimit: metadata.globalMemoryLimit,
+      projectType: metadata.projectType,
+      language: metadata.language,
+      website: metadata.website,
+      provider: metadata.provider,
+      supportUrl: metadata.supportUrl,
+    });
   }
 
   moveCommand(previousKind: string, newKind: string, previousIndex: number, newIndex: number): Result {
