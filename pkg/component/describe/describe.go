@@ -9,6 +9,8 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -20,7 +22,6 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/state"
-	"k8s.io/klog"
 )
 
 // DescribeDevfileComponent describes the component defined by the devfile in the current directory
@@ -35,6 +36,11 @@ func DescribeDevfileComponent(
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 	)
+
+	devfileData, err := api.GetDevfileData(*devfileObj)
+	if err != nil {
+		return api.Component{}, nil, err
+	}
 
 	isPlatformFeatureEnabled := feature.IsEnabled(ctx, feature.GenericPlatformFlag)
 	platform := fcontext.GetPlatform(ctx, "")
@@ -115,7 +121,7 @@ func DescribeDevfileComponent(
 
 	cmp := api.Component{
 		DevfilePath:       devfilePath,
-		DevfileData:       api.GetDevfileData(*devfileObj),
+		DevfileData:       devfileData,
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         api.MergeRunningModes(runningOn),
 		RunningOn:         runningOn,

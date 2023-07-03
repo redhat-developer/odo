@@ -451,6 +451,20 @@ func GetContainerComponentsForCommand(devfileObj parser.DevfileObj, cmd v1alpha2
 	}
 }
 
+// FindComponentByName returns the Devfile component that matches the specified name.
+func FindComponentByName(d data.DevfileData, n string) (v1alpha2.Component, bool, error) {
+	comps, err := d.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return v1alpha2.Component{}, false, err
+	}
+	for _, c := range comps {
+		if c.Name == n {
+			return c, true, nil
+		}
+	}
+	return v1alpha2.Component{}, false, nil
+}
+
 // GetK8sManifestsWithVariablesSubstituted returns the full content of either a Kubernetes or an Openshift
 // Devfile component, either Inlined or referenced via a URI.
 // No matter how the component is defined, it returns the content with all variables substituted

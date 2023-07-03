@@ -131,6 +131,26 @@ var _ = Describe("odo describe component command tests", func() {
 			helper.JsonPathContentIs(jsonContent, "devfileData.supportedOdoFeatures.deploy", "false")
 			helper.JsonPathContentIs(jsonContent, "devfileData.supportedOdoFeatures.debug", "true")
 			helper.JsonPathContentIs(jsonContent, "managedBy", "odo")
+
+			helper.JsonPathContentHasLen(jsonContent, "devfileData.commands", 4)
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.0.name", "install")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.0.group", "build")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.0.commandLine", "npm install")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.1.name", "run")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.1.group", "run")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.1.commandLine", "npm start")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.2.name", "debug")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.2.group", "debug")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.2.commandLine", "npm run debug")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.3.name", "test")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.3.group", "test")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.3.commandLine", "npm test")
+			for i := 0; i <= 3; i++ {
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.type", i), "exec")
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.isDefault", i), "true")
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.component", i), "runtime")
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.componentType", i), "container")
+			}
 		}
 
 		checkDevfileDescription := func(content string, withUnknown bool) {
@@ -144,6 +164,7 @@ var _ = Describe("odo describe component command tests", func() {
 				Expect(content).To(ContainSubstring("Dev: Unknown"))
 				Expect(content).To(ContainSubstring("Debug: Unknown"))
 				Expect(content).To(ContainSubstring("Deploy: Unknown"))
+				Expect(content).ShouldNot(ContainSubstring("Commands:"))
 			} else {
 				Expect(content).To(ContainSubstring("Display Name: "))
 				Expect(content).To(ContainSubstring("Language: "))
@@ -153,6 +174,26 @@ var _ = Describe("odo describe component command tests", func() {
 				Expect(content).To(ContainSubstring("Dev: true"))
 				Expect(content).To(ContainSubstring("Debug: true"))
 				Expect(content).To(ContainSubstring("Deploy: false"))
+
+				Expect(content).To(ContainSubstring("Commands:"))
+				for _, c := range []string{"exec"} {
+					Expect(content).To(ContainSubstring("Type: " + c))
+				}
+				for _, c := range []string{"runtime"} {
+					Expect(content).To(ContainSubstring("Component: " + c))
+				}
+				for _, c := range []string{"container"} {
+					Expect(content).To(ContainSubstring("Component Type: " + c))
+				}
+				for _, c := range []string{"install", "run", "debug", "test"} {
+					Expect(content).To(ContainSubstring(c))
+				}
+				for _, c := range []string{"build", "run", "debug", "test"} {
+					Expect(content).To(ContainSubstring("Group: %s", c))
+				}
+				for _, c := range []string{"npm install", "npm start", "npm run debug", "npm test"} {
+					Expect(content).To(ContainSubstring("Command Line: %q", c))
+				}
 			}
 		}
 
@@ -440,6 +481,7 @@ var _ = Describe("odo describe component command tests", func() {
 										helper.JsonPathContentIs(stdout, "runningOn.cluster.deploy", "false")
 										helper.JsonPathDoesNotExist(stdout, "runningOn.podman")
 									}
+									helper.JsonPathDoesNotExist(stdout, "devfileData.commands")
 								})
 							})
 						})
@@ -649,6 +691,99 @@ var _ = Describe("odo describe component command tests", func() {
 					componentName + ": ",
 				})
 			}
+		})
+	})
+
+	Context("describe commands in Devfile", Label(helper.LabelUnauth), Label(helper.LabelNoCluster), func() {
+
+		When("initializing a component with different types of commands", func() {
+
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-functional-pods.yaml"),
+					path.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
+			})
+
+			It("should describe the Devfile commands in human-readable form", func() {
+				stdout := helper.Cmd("odo", "describe", "component").ShouldPass().Out()
+				Expect(stdout).To(ContainSubstring("Commands:"))
+				for _, c := range []string{"exec", "composite", "apply"} {
+					Expect(stdout).To(ContainSubstring("Type: " + c))
+				}
+				for _, c := range []string{"runtime", "innerloop-pod", "prod-image", "outerloop-deploy"} {
+					Expect(stdout).To(ContainSubstring("Component: " + c))
+				}
+				for _, c := range []string{"container", "kubernetes", "image"} {
+					Expect(stdout).To(ContainSubstring("Component Type: " + c))
+				}
+				for _, c := range []string{
+					"install",
+					"innerloop-pod-command",
+					"start",
+					"run",
+					"build-image",
+					"deploy-deployment",
+					"deploy-another-deployment",
+					"outerloop-pod-command",
+					"deploy",
+				} {
+					Expect(stdout).To(ContainSubstring(c))
+				}
+				for _, c := range []string{"build", "run", "deploy"} {
+					Expect(stdout).To(ContainSubstring("Group: %s", c))
+				}
+				for _, c := range []string{"npm install", "npm start"} {
+					Expect(stdout).To(ContainSubstring("Command Line: %q", c))
+				}
+				for _, c := range []string{"quay.io/tkral/devfile-nodejs-deploy:latest"} {
+					Expect(stdout).To(ContainSubstring("Image Name: %s", c))
+				}
+			})
+
+			It("should describe the Devfile commands in JSON output", func() {
+				stdout := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass().Out()
+				Expect(helper.IsJSON(stdout)).To(BeTrue(), fmt.Sprintf("invalid JSON output: %q", stdout))
+
+				helper.JsonPathContentHasLen(stdout, "devfileData.commands", 9)
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.name", "install")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.group", "build")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.commandLine", "npm install")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.type", "exec")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.isDefault", "true")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.component", "runtime")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.componentType", "container")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.0.imageName")
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.name", "innerloop-pod-command")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.type", "apply")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.component", "innerloop-pod")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.componentType", "kubernetes")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.group")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.commandLine")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.isDefault")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.imageName")
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.name", "build-image")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.type", "apply")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.component", "prod-image")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.componentType", "image")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.imageName", "quay.io/tkral/devfile-nodejs-deploy:latest")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.4.group")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.4.commandLine")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.4.isDefault")
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.name", "deploy")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.group", "deploy")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.type", "composite")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.isDefault", "true")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.imageName")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.commandLine")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.component")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.componentType")
+			})
 		})
 	})
 })
