@@ -6,6 +6,7 @@ author_image_url: https://github.com/valaparthvi.png
 image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: []
 slug: using-helm-with-odo
+date: 2023-05-05
 ---
 
 This blog will show how `odo` can now be used with tools such as [Helm](https://helm.sh/), [Kustomize](https://kustomize.io/), etc. for the [outerloop](/docs/introduction/#what-is-inner-loop-and-outer-loop) development cycle.
