@@ -1,5 +1,4 @@
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/oceanicNext');
+const prismReactRenderer = require('prism-react-renderer');
 const path = require('path');
 
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
@@ -116,8 +115,8 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} odo Authors -- All Rights Reserved <br> Apache License 2.0 open source project`,
     },
     prism: {
-      theme: lightCodeTheme,
-      darkTheme: darkCodeTheme,
+      theme: prismReactRenderer.themes.github,
+      darkTheme: prismReactRenderer.themes.oceanicNext,
     },
     algolia: {
       appId: '7RBQSTPIA4',
