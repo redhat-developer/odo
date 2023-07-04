@@ -8,6 +8,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"k8s.io/utils/pointer"
 )
 
@@ -15,6 +16,7 @@ const (
 	SEPARATOR = ","
 )
 
+/*
 type DevfileContent struct {
 	Content    string      `json:"content"`
 	Commands   []Command   `json:"commands"`
@@ -104,7 +106,7 @@ type Events struct {
 	PreStop   []string `json:"preStop"`
 	PostStop  []string `json:"postStop"`
 }
-
+*/
 // getContent returns the YAML content of the global devfile as string
 func (o *DevfileState) GetContent() (DevfileContent, error) {
 	err := o.Devfile.WriteYamlDevfile()
@@ -188,7 +190,7 @@ func (o *DevfileState) getCommands() ([]Command, error) {
 
 		if command.Exec != nil {
 			newCommand.Type = "exec"
-			newCommand.Exec = &ExecCommand{
+			newCommand.Exec = ExecCommand{
 				Component:        command.Exec.Component,
 				CommandLine:      command.Exec.CommandLine,
 				WorkingDir:       command.Exec.WorkingDir,
@@ -209,13 +211,13 @@ func (o *DevfileState) getCommands() ([]Command, error) {
 			component := components[0]
 			if component.Kubernetes != nil || component.Openshift != nil {
 				newCommand.Type = "apply"
-				newCommand.Apply = &ApplyCommand{
+				newCommand.Apply = ApplyCommand{
 					Component: command.Apply.Component,
 				}
 			}
 			if component.Image != nil {
 				newCommand.Type = "image"
-				newCommand.Image = &ImageCommand{
+				newCommand.Image = ImageCommand{
 					Component: command.Apply.Component,
 				}
 			}
@@ -223,7 +225,7 @@ func (o *DevfileState) getCommands() ([]Command, error) {
 
 		if command.Composite != nil {
 			newCommand.Type = "composite"
-			newCommand.Composite = &CompositeCommand{
+			newCommand.Composite = CompositeCommand{
 				Commands: command.Composite.Commands,
 				Parallel: pointer.BoolDeref(command.Composite.Parallel, false),
 			}
@@ -275,7 +277,7 @@ func (o *DevfileState) getImages() ([]Image, error) {
 			Args:         image.Image.Dockerfile.Args,
 			BuildContext: image.Image.Dockerfile.BuildContext,
 			RootRequired: pointer.BoolDeref(image.Image.Dockerfile.RootRequired, false),
-			URI:          image.Image.Dockerfile.Uri,
+			Uri:          image.Image.Dockerfile.Uri,
 		})
 	}
 	return result, nil
@@ -295,7 +297,7 @@ func (o *DevfileState) getResources() ([]Resource, error) {
 		result = append(result, Resource{
 			Name:    resource.Name,
 			Inlined: resource.ComponentUnion.Kubernetes.Inlined,
-			URI:     resource.ComponentUnion.Kubernetes.Uri,
+			Uri:     resource.ComponentUnion.Kubernetes.Uri,
 		})
 	}
 	return result, nil

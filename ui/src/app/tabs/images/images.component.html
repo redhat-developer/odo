@@ -14,7 +14,7 @@
                     <td>Dockerfile URI:</td>
                     <td><code>{{image.uri}}</code></td>
                 </tr>
-                <tr *ngIf="image.args.length > 0">
+                <tr *ngIf="image.args != null && image.args.length > 0">
                     <td>Build Args:</td>
                     <td><code>{{image.args}}</code></td>
                 </tr>

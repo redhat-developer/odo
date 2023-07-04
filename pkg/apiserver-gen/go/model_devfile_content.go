@@ -10,13 +10,49 @@
 package openapi
 
 type DevfileContent struct {
+	Content string `json:"content,omitempty"`
 
-	// Content of the Devfile
-	Component map[string]interface{} `json:"component,omitempty"`
+	Commands []Command `json:"commands,omitempty"`
+
+	Containers []Container `json:"containers,omitempty"`
+
+	Images []Image `json:"images,omitempty"`
+
+	Resources []Resource `json:"resources,omitempty"`
+
+	Events Events `json:"events,omitempty"`
+
+	Metadata Metadata `json:"metadata,omitempty"`
 }
 
 // AssertDevfileContentRequired checks if the required fields are not zero-ed
 func AssertDevfileContentRequired(obj DevfileContent) error {
+	for _, el := range obj.Commands {
+		if err := AssertCommandRequired(el); err != nil {
+			return err
+		}
+	}
+	for _, el := range obj.Containers {
+		if err := AssertContainerRequired(el); err != nil {
+			return err
+		}
+	}
+	for _, el := range obj.Images {
+		if err := AssertImageRequired(el); err != nil {
+			return err
+		}
+	}
+	for _, el := range obj.Resources {
+		if err := AssertResourceRequired(el); err != nil {
+			return err
+		}
+	}
+	if err := AssertEventsRequired(obj.Events); err != nil {
+		return err
+	}
+	if err := AssertMetadataRequired(obj.Metadata); err != nil {
+		return err
+	}
 	return nil
 }
 

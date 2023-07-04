@@ -6,6 +6,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func (o *DevfileState) AddContainer(name string, image string, command []string, args []string, memRequest string, memLimit string, cpuRequest string, cpuLimit string) (DevfileContent, error) {

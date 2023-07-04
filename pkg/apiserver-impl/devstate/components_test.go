@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func TestDevfileState_AddContainer(t *testing.T) {
@@ -237,7 +238,7 @@ schemaVersion: 2.2.0
 						Args:         []string{"start", "command"},
 						BuildContext: "path/to/context",
 						RootRequired: true,
-						URI:          "an-uri",
+						Uri:          "an-uri",
 					},
 				},
 				Resources: []Resource{},
@@ -385,7 +386,7 @@ schemaVersion: 2.2.0
 				Resources: []Resource{
 					{
 						Name: "a-name",
-						URI:  "an-uri",
+						Uri:  "an-uri",
 					},
 				},
 				Events: Events{},

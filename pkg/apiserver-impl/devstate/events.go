@@ -1,5 +1,9 @@
 package devstate
 
+import (
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+)
+
 func (o *DevfileState) UpdateEvents(event string, commands []string) (DevfileContent, error) {
 	switch event {
 	case "postStart":

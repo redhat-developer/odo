@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func TestDevfileState_GetContent(t *testing.T) {

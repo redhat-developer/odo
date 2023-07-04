@@ -22,7 +22,17 @@ go/model__devstate_metadata_put_request.go
 go/model__devstate_quantity_valid_post_request.go
 go/model__devstate_resource_post_request.go
 go/model__instance_get_200_response.go
+go/model_apply_command.go
+go/model_command.go
+go/model_composite_command.go
+go/model_container.go
 go/model_devfile_content.go
+go/model_events.go
+go/model_exec_command.go
 go/model_general_error.go
 go/model_general_success.go
+go/model_image.go
+go/model_image_command.go
+go/model_metadata.go
+go/model_resource.go
 go/routers.go

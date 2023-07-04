@@ -5,6 +5,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func (o *DevfileState) AddExecCommand(name string, component string, commandLine string, workingDir string, hotReloadCapable bool) (DevfileContent, error) {

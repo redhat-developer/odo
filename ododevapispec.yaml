@@ -1200,6 +1200,172 @@ components:
     DevfileContent:
       type: object
       properties:
+        content:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/Command'
+        containers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Container'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        events:
+          $ref: '#/components/schemas/Events'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    Command:
+      type: object
+      properties:
+        name:
+          type: string
+        group:
+          type: string
+        default:
+          type: boolean
+        type:
+          type: string
+        exec:
+          $ref: '#/components/schemas/ExecCommand'
+        apply:
+          $ref: '#/components/schemas/ApplyCommand'
+        image:
+          $ref: '#/components/schemas/ImageCommand'
+        composite:
+          $ref: '#/components/schemas/CompositeCommand'
+    ExecCommand:
+      type: object
+      properties:
         component:
-          type: object
-          description: Content of the Devfile
+          type: string
+        commandLine:
+          type: string
+        workingDir:
+          type: string
+        hotReloadCapable:
+          type: boolean
+    ApplyCommand:
+      type: object
+      properties:
+        component:
+          type: string
+    ImageCommand:
+      type: object
+      properties:
+        component:
+          type: string
+    CompositeCommand:
+      type: object
+      properties:
+        commands:
+          type: array
+          items:
+            type: string
+        parallel:
+          type: boolean
+    Container:
+      type: object
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+        command:
+          type: array
+          items:
+            type: string
+        args:
+          type: array
+          items:
+            type: string
+        memoryRequest:
+          type: string
+        memoryLimit:
+          type: string
+        cpuRequest:
+          type: string
+        cpuLimit:
+          type: string
+    Image:
+      type: object
+      properties:
+        name:
+          type: string
+        imageName:
+          type: string
+        args:
+          type: array
+          items:
+            type: string
+        buildContext:
+          type: string
+        rootRequired:
+          type: boolean
+        uri:
+          type: string
+    Resource:
+      type: object
+      properties:
+        name:
+          type: string
+        inlined:
+          type: string
+        uri:
+          type: string
+    Events:
+      type: object
+      properties:
+        preStart:
+          type: array
+          items:
+            type: string
+        postStart:
+          type: array
+          items:
+            type: string
+        preStop:
+          type: array
+          items:
+            type: string
+        postStop:
+          type: array
+          items:
+            type: string
+    Metadata:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+        architectures:
+          type: string
+        icon:
+          type: string
+        globalMemoryLimit:
+          type: string
+        projectType:
+          type: string
+        language:
+          type: string
+        website:
+          type: string
+        provider:
+          type: string
+        supportUrl:
+          type: string
+

@@ -9,6 +9,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	context "github.com/devfile/library/v2/pkg/devfile/parser/context"
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 
 	"k8s.io/utils/pointer"
 )

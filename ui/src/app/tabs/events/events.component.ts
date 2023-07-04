@@ -20,7 +20,7 @@ export class EventsComponent {
   ngOnInit() {
     this.state.state.subscribe(async newContent => {
       this.events = newContent?.events;
-      this.allCommands = newContent?.commands.map(c => c.name);
+      this.allCommands = newContent?.commands?.map(c => c.name);
     });
   }
 

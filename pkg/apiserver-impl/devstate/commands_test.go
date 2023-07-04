@@ -5,6 +5,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/google/go-cmp/cmp"
+	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func TestDevfileState_AddExecCommand(t *testing.T) {
@@ -77,7 +78,7 @@ schemaVersion: 2.2.0
 					{
 						Name: "an-exec-command",
 						Type: "exec",
-						Exec: &ExecCommand{
+						Exec: ExecCommand{
 							Component:        "a-container",
 							CommandLine:      "run command",
 							WorkingDir:       "/path/to/work",
@@ -171,7 +172,7 @@ schemaVersion: 2.2.0
 					{
 						Name: "an-apply-command",
 						Type: "image",
-						Image: &ImageCommand{
+						Image: ImageCommand{
 							Component: "an-image",
 						},
 					},
@@ -289,7 +290,7 @@ schemaVersion: 2.2.0
 					{
 						Name: "an-exec-command",
 						Type: "exec",
-						Exec: &ExecCommand{
+						Exec: ExecCommand{
 							Component:        "a-container",
 							CommandLine:      "run command",
 							WorkingDir:       "/path/to/work",
@@ -299,7 +300,7 @@ schemaVersion: 2.2.0
 					{
 						Name:      "a-composite-command",
 						Type:      "composite",
-						Composite: &CompositeCommand{Commands: []string{"an-exec-command"}, Parallel: true},
+						Composite: CompositeCommand{Commands: []string{"an-exec-command"}, Parallel: true},
 					},
 				},
 				Containers: []Container{
@@ -615,7 +616,7 @@ schemaVersion: 2.2.0
 						Group:   "run",
 						Default: false,
 						Type:    "exec",
-						Exec: &ExecCommand{
+						Exec: ExecCommand{
 							Component:        "a-container",
 							CommandLine:      "run command",
 							WorkingDir:       "/path/to/work",
@@ -701,7 +702,7 @@ schemaVersion: 2.2.0
 						Group:   "run",
 						Default: true,
 						Type:    "exec",
-						Exec: &ExecCommand{
+						Exec: ExecCommand{
 							Component:        "a-container",
 							CommandLine:      "run command",
 							WorkingDir:       "/path/to/work",
@@ -789,7 +790,7 @@ schemaVersion: 2.2.0
 						Group:   "run",
 						Default: false,
 						Type:    "exec",
-						Exec: &ExecCommand{
+						Exec: ExecCommand{
 							Component:        "a-container",
 							CommandLine:      "run command",
 							WorkingDir:       "/path/to/work",
