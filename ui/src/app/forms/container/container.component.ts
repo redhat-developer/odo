@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
-import { Container, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
 import { Observable, of, map, catchError } from 'rxjs';
+import { Container } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-container',

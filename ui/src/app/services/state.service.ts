@@ -1,18 +1,17 @@
 import { Injectable } from '@angular/core';
 
 import { BehaviorSubject } from 'rxjs';
-
-import { ResultValue } from './devstate.service';
+import { DevfileContent } from '../api-gen';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StateService {
 
-  private _state = new BehaviorSubject<ResultValue | null>(null);
+  private _state = new BehaviorSubject<DevfileContent | null>(null);
   public state = this._state.asObservable(); 
 
-  changeDevfileYaml(newValue: ResultValue) {
+  changeDevfileYaml(newValue: DevfileContent) {
     this._state.next(newValue);
   }
 

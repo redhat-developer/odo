@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { ClusterResource, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Resource } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-resources',
@@ -10,7 +11,7 @@ import { ClusterResource, DevstateService } from 'src/app/services/devstate.serv
 export class ResourcesComponent implements OnInit {
 
   forceDisplayAdd: boolean = false;
-  resources: ClusterResource[] | undefined = [];
+  resources: Resource[] | undefined = [];
 
   constructor(
     private state: StateService,
@@ -53,7 +54,7 @@ export class ResourcesComponent implements OnInit {
     }
   }
 
-  onCreated(resource: ClusterResource) {
+  onCreated(resource: Resource) {
     const result = this.devstate.addResource(resource);
     result.subscribe({
       next: (value) => {

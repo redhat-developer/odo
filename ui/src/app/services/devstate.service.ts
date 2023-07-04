@@ -1,100 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-
-type ChartResult = {
-  chart: string;
-};
-
-export type ResultValue = {
-  content: string;
-  metadata: Metadata;
-  commands: Command[];
-  events: Events;
-  containers: Container[];
-  images: Image[];
-  resources: ClusterResource[];
-};
-
-export type Metadata = {
-  name: string | null;
-  version: string | null;
-  displayName: string | null;
-  description: string | null;
-  tags: string | null;
-  architectures: string | null;
-  icon: string | null;
-  globalMemoryLimit: string | null;
-  projectType: string | null;
-  language: string | null;
-  website: string | null;
-  provider: string | null;
-  supportUrl: string | null;
-};
-
-export type Command = {
-  name: string;
-  group: string;
-  default: boolean;
-  type: "exec" | "apply" | "image" | "composite";
-  exec: ExecCommand | undefined;
-  apply: ApplyCommand | undefined;
-  image: ImageCommand | undefined;
-  composite: CompositeCommand | undefined;
-};
-
-export type Events = {
-  preStart: string[];
-  postStart: string[];
-  preStop: string[];
-  postStop: string[];
-};
-
-export type ExecCommand = {
-  component: string;
-  commandLine: string;
-  workingDir: string;
-  hotReloadCapable: boolean;
-};
-
-export type ApplyCommand = {
-  component: string;
-};
-
-export type ImageCommand = {
-  component: string;
-};
-
-export type CompositeCommand = {
-  commands: string[];
-  parallel: boolean;
-};
-
-export type Container = {
-  name: string;
-  image: string;
-  command: string[];
-  args: string[];
-  memoryRequest: string;
-  memoryLimit: string;
-  cpuRequest: string;
-  cpuLimit: string;
-};
-
-export type Image = {
-  name: string;
-  imageName: string;
-  args: string[];
-  buildContext: string;
-  rootRequired: boolean;
-  uri: string;
-};
-
-export type ClusterResource = {
-  name: string;
-  inlined: string;
-  uri: string;
-};
+import { ApplyCommand, CompositeCommand, Container, DevfileContent, DevstateChartGet200Response, ExecCommand, Image, Metadata, Resource } from '../api-gen';
 
 @Injectable({
   providedIn: 'root'
@@ -105,8 +12,8 @@ export class DevstateService {
 
   constructor(private http: HttpClient) { }
 
-  addContainer(container: Container): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/container", {
+  addContainer(container: Container): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/container", {
       name: container.name,
       image: container.image,
       command: container.command,
@@ -118,8 +25,8 @@ export class DevstateService {
     });
   }
 
-  addImage(image: Image): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/image", {
+  addImage(image: Image): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/image", {
       name: image.name,
       imageName: image.imageName,
       args: image.args,
@@ -129,16 +36,16 @@ export class DevstateService {
     });
   }
 
-  addResource(resource: ClusterResource): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/resource", {
+  addResource(resource: Resource): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/resource", {
       name: resource.name,
       inlined: resource.inlined,
       uri: resource.uri,
     });
   }
 
-  addExecCommand(name: string, cmd: ExecCommand): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/execCommand", {
+  addExecCommand(name: string, cmd: ExecCommand): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/execCommand", {
       name: name,
       component: cmd.component,
       commandLine: cmd.commandLine,
@@ -147,15 +54,15 @@ export class DevstateService {
     });
   }
 
-  addApplyCommand(name: string, cmd: ApplyCommand): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/applyCommand", {
+  addApplyCommand(name: string, cmd: ApplyCommand): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/applyCommand", {
       name: name,
       component: cmd.component,
     });
   }
 
-  addCompositeCommand(name: string, cmd: CompositeCommand): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/compositeCommand", {
+  addCompositeCommand(name: string, cmd: CompositeCommand): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/compositeCommand", {
       name: name,
       parallel: cmd.parallel,
       commands: cmd.commands,
@@ -163,29 +70,29 @@ export class DevstateService {
   }
 
   // getFlowChart calls the wasm module to get the lifecycle of the Devfile in mermaid chart format
-  getFlowChart(): Observable<ChartResult> {
-    return this.http.get<ChartResult>(this.base+"/chart");
+  getFlowChart(): Observable<DevstateChartGet200Response> {
+    return this.http.get<DevstateChartGet200Response>(this.base+"/chart");
   }
 
   // setDevfileContent calls the wasm module to reset the content of the Devfile
-  setDevfileContent(devfile: string): Observable<ResultValue> {
-    return this.http.put<ResultValue>(this.base+"/devfile", {
+  setDevfileContent(devfile: string): Observable<DevfileContent> {
+    return this.http.put<DevfileContent>(this.base+"/devfile", {
       content: devfile
     });
   }
 
   // getDevfileContent gets the content of the Devfile
-  getDevfileContent(): Observable<ResultValue> {
-    return this.http.get<ResultValue>(this.base+"/devfile");
+  getDevfileContent(): Observable<DevfileContent> {
+    return this.http.get<DevfileContent>(this.base+"/devfile");
   }
   
   // clearDevfileContent clears the content of the Devfile
-  clearDevfileContent(): Observable<ResultValue> {
-    return this.http.delete<ResultValue>(this.base+"/devfile");
+  clearDevfileContent(): Observable<DevfileContent> {
+    return this.http.delete<DevfileContent>(this.base+"/devfile");
   }
   
-  setMetadata(metadata: Metadata): Observable<ResultValue> {
-    return this.http.put<ResultValue>(this.base+"/metadata", {
+  setMetadata(metadata: Metadata): Observable<DevfileContent> {
+    return this.http.put<DevfileContent>(this.base+"/metadata", {
       name: metadata.name,
       version: metadata.version,
       displayName: metadata.displayName,
@@ -202,9 +109,9 @@ export class DevstateService {
     });
   }
 
-  moveCommand(previousKind: string, newKind: string, previousIndex: number, newIndex: number): Observable<ResultValue> {
+  moveCommand(previousKind: string, newKind: string, previousIndex: number, newIndex: number): Observable<DevfileContent> {
     // TODO set correct command Name
-    return this.http.post<ResultValue>(this.base+"/command/0/move", {
+    return this.http.post<DevfileContent>(this.base+"/command/0/move", {
       fromGroup: previousKind,
       fromIndex: previousIndex,
       toGroup: newKind,
@@ -212,34 +119,34 @@ export class DevstateService {
     });
   }
 
-  setDefaultCommand(command: string, group: string): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/command/"+command+"/setDefault", {
+  setDefaultCommand(command: string, group: string): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/command/"+command+"/setDefault", {
       group: group
     });
   }
 
-  unsetDefaultCommand(command: string): Observable<ResultValue> {
-    return this.http.post<ResultValue>(this.base+"/command/"+command+"/unsetDefault", {});
+  unsetDefaultCommand(command: string): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/command/"+command+"/unsetDefault", {});
   }
 
-  deleteCommand(command: string): Observable<ResultValue>  {
-    return this.http.delete<ResultValue>(this.base+"/command/"+command);
+  deleteCommand(command: string): Observable<DevfileContent>  {
+    return this.http.delete<DevfileContent>(this.base+"/command/"+command);
   }
 
-  deleteContainer(container: string): Observable<ResultValue> {
-    return this.http.delete<ResultValue>(this.base+"/container/"+container);
+  deleteContainer(container: string): Observable<DevfileContent> {
+    return this.http.delete<DevfileContent>(this.base+"/container/"+container);
   }
 
-  deleteImage(image: string): Observable<ResultValue> {
-    return this.http.delete<ResultValue>(this.base+"/image/"+image);
+  deleteImage(image: string): Observable<DevfileContent> {
+    return this.http.delete<DevfileContent>(this.base+"/image/"+image);
   }
 
-  deleteResource(resource: string): Observable<ResultValue> {
-    return this.http.delete<ResultValue>(this.base+"/resource/"+resource);
+  deleteResource(resource: string): Observable<DevfileContent> {
+    return this.http.delete<DevfileContent>(this.base+"/resource/"+resource);
   }
 
-  updateEvents(event: "preStart"|"postStart"|"preStop"|"postStop", commands: string[]): Observable<ResultValue> {
-    return this.http.put<ResultValue>(this.base+"/events", {
+  updateEvents(event: "preStart"|"postStart"|"preStop"|"postStop", commands: string[]): Observable<DevfileContent> {
+    return this.http.put<DevfileContent>(this.base+"/events", {
       eventName: event,
       commands: commands
     });

@@ -1,7 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { StateService } from 'src/app/services/state.service';
-import { Command, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Command } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-commands-list',

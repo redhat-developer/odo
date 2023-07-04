@@ -231,6 +231,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+              - content
               properties:
                 content:
                   type: string
@@ -380,34 +382,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                version:
-                  type: string
-                displayName:
-                  type: string
-                description:
-                  type: string
-                tags:
-                  type: string
-                architectures:
-                  type: string
-                icon:
-                  type: string
-                globalMemoryLimit:
-                  type: string
-                projectType:
-                  type: string
-                language:
-                  type: string
-                website:
-                  type: string
-                provider:
-                  type: string
-                supportUrl:
-                  type: string
+              $ref: '#/components/schemas/Metadata'
       responses:
         '200':
           description: metadata was successfully updated
@@ -1151,6 +1126,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                - chart
                 properties:
                   chart:
                     type: string
@@ -1164,6 +1141,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+              - quantity
               properties:
                 quantity:
                   type: string

@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { ClusterResource, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
+import { Resource } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-command-apply',
@@ -15,7 +16,7 @@ export class CommandApplyComponent {
   form: FormGroup;
   resourceList: string[] = [];
   showNewResource: boolean = false;
-  resourceToCreate: ClusterResource | null = null;
+  resourceToCreate: Resource | null = null;
 
   constructor(
     private devstate: DevstateService,
@@ -73,7 +74,7 @@ export class CommandApplyComponent {
     this.showNewResource = v;
   }
 
-  onNewResourceCreated(resource: ClusterResource) {
+  onNewResourceCreated(resource: Resource) {
     this.resourceList.push(resource.name);
     this.form.controls["component"].setValue(resource.name);
     this.showNewResource = false;

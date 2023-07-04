@@ -1,9 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Container, DevstateService } from 'src/app/services/devstate.service';
-import { catchError } from 'rxjs/operators'
-import { HttpErrorResponse } from '@angular/common/http';
-import { throwError } from 'rxjs';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Container } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-containers',

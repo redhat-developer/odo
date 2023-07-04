@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Image } from 'src/app/services/devstate.service';
 import { PATTERN_COMPONENT_ID } from '../patterns';
+import { Image } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-image',

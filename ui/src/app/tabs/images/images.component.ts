@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Image, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Image } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-images',

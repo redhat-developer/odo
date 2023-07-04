@@ -1,7 +1,8 @@
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Component } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Command, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Command } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-commands',

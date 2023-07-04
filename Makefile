@@ -246,3 +246,13 @@ generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml 
     		--additional-properties=outputAsLibrary=true,onlyInterfaces=true,hideGenerationTimestamp=true && \
     		echo "Formatting generated files:" && go fmt ./pkg/apiserver-gen/... && \
     		echo "Removing pkg/apiserver-gen/api/openapi.yaml" && rm ./pkg/apiserver-gen/api/openapi.yaml
+
+.PHONY: generate-apifront
+generate-apifront: ## Generate OpenAPISpec library based on ododevapispec.yaml inside ui/src/app
+	podman run --rm \
+    		-v ${PWD}:/local \
+    		docker.io/openapitools/openapi-generator-cli:v6.6.0 \
+    		generate \
+    		-i /local/ododevapispec.yaml \
+    		-g typescript-angular \
+    		-o /local/ui/src/app/api-gen

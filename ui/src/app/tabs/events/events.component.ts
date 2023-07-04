@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Events, DevstateService } from 'src/app/services/devstate.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Events } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-events',
