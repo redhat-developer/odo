@@ -10,17 +10,29 @@
 package openapi
 
 type ExecCommand struct {
-	Component string `json:"component,omitempty"`
+	Component string `json:"component"`
 
-	CommandLine string `json:"commandLine,omitempty"`
+	CommandLine string `json:"commandLine"`
 
-	WorkingDir string `json:"workingDir,omitempty"`
+	WorkingDir string `json:"workingDir"`
 
-	HotReloadCapable bool `json:"hotReloadCapable,omitempty"`
+	HotReloadCapable bool `json:"hotReloadCapable"`
 }
 
 // AssertExecCommandRequired checks if the required fields are not zero-ed
 func AssertExecCommandRequired(obj ExecCommand) error {
+	elements := map[string]interface{}{
+		"component":        obj.Component,
+		"commandLine":      obj.CommandLine,
+		"workingDir":       obj.WorkingDir,
+		"hotReloadCapable": obj.HotReloadCapable,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

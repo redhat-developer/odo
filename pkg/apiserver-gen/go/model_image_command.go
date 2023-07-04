@@ -10,11 +10,20 @@
 package openapi
 
 type ImageCommand struct {
-	Component string `json:"component,omitempty"`
+	Component string `json:"component"`
 }
 
 // AssertImageCommandRequired checks if the required fields are not zero-ed
 func AssertImageCommandRequired(obj ImageCommand) error {
+	elements := map[string]interface{}{
+		"component": obj.Component,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

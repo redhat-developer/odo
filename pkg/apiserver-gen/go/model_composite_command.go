@@ -10,13 +10,23 @@
 package openapi
 
 type CompositeCommand struct {
-	Commands []string `json:"commands,omitempty"`
+	Commands []string `json:"commands"`
 
-	Parallel bool `json:"parallel,omitempty"`
+	Parallel bool `json:"parallel"`
 }
 
 // AssertCompositeCommandRequired checks if the required fields are not zero-ed
 func AssertCompositeCommandRequired(obj CompositeCommand) error {
+	elements := map[string]interface{}{
+		"commands": obj.Commands,
+		"parallel": obj.Parallel,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

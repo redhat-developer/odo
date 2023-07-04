@@ -10,11 +10,20 @@
 package openapi
 
 type ApplyCommand struct {
-	Component string `json:"component,omitempty"`
+	Component string `json:"component"`
 }
 
 // AssertApplyCommandRequired checks if the required fields are not zero-ed
 func AssertApplyCommandRequired(obj ApplyCommand) error {
+	elements := map[string]interface{}{
+		"component": obj.Component,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

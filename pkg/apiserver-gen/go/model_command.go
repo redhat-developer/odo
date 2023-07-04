@@ -10,13 +10,13 @@
 package openapi
 
 type Command struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
-	Group string `json:"group,omitempty"`
+	Group string `json:"group"`
 
 	Default bool `json:"default,omitempty"`
 
-	Type string `json:"type,omitempty"`
+	Type string `json:"type"`
 
 	Exec ExecCommand `json:"exec,omitempty"`
 
@@ -29,6 +29,17 @@ type Command struct {
 
 // AssertCommandRequired checks if the required fields are not zero-ed
 func AssertCommandRequired(obj Command) error {
+	elements := map[string]interface{}{
+		"name":  obj.Name,
+		"group": obj.Group,
+		"type":  obj.Type,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	if err := AssertExecCommandRequired(obj.Exec); err != nil {
 		return err
 	}

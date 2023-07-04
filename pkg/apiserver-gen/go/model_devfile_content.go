@@ -10,23 +10,38 @@
 package openapi
 
 type DevfileContent struct {
-	Content string `json:"content,omitempty"`
+	Content string `json:"content"`
 
-	Commands []Command `json:"commands,omitempty"`
+	Commands []Command `json:"commands"`
 
-	Containers []Container `json:"containers,omitempty"`
+	Containers []Container `json:"containers"`
 
-	Images []Image `json:"images,omitempty"`
+	Images []Image `json:"images"`
 
-	Resources []Resource `json:"resources,omitempty"`
+	Resources []Resource `json:"resources"`
 
-	Events Events `json:"events,omitempty"`
+	Events Events `json:"events"`
 
-	Metadata Metadata `json:"metadata,omitempty"`
+	Metadata Metadata `json:"metadata"`
 }
 
 // AssertDevfileContentRequired checks if the required fields are not zero-ed
 func AssertDevfileContentRequired(obj DevfileContent) error {
+	elements := map[string]interface{}{
+		"content":    obj.Content,
+		"commands":   obj.Commands,
+		"containers": obj.Containers,
+		"images":     obj.Images,
+		"resources":  obj.Resources,
+		"events":     obj.Events,
+		"metadata":   obj.Metadata,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	for _, el := range obj.Commands {
 		if err := AssertCommandRequired(el); err != nil {
 			return err

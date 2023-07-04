@@ -1199,6 +1199,14 @@ components:
           type: string
     DevfileContent:
       type: object
+      required:
+      - content
+      - commands
+      - containers
+      - images
+      - resources
+      - events
+      - metadata
       properties:
         content:
           type: string
@@ -1224,6 +1232,10 @@ components:
           $ref: '#/components/schemas/Metadata'
     Command:
       type: object
+      required:
+      - name
+      - group
+      - type
       properties:
         name:
           type: string
@@ -1243,6 +1255,11 @@ components:
           $ref: '#/components/schemas/CompositeCommand'
     ExecCommand:
       type: object
+      required:
+      - component
+      - commandLine
+      - workingDir
+      - hotReloadCapable
       properties:
         component:
           type: string
@@ -1254,16 +1271,23 @@ components:
           type: boolean
     ApplyCommand:
       type: object
+      required:
+      - component
       properties:
         component:
           type: string
     ImageCommand:
       type: object
+      required:
+      - component
       properties:
         component:
           type: string
     CompositeCommand:
       type: object
+      required:
+      - commands
+      - parallel
       properties:
         commands:
           type: array
@@ -1273,6 +1297,15 @@ components:
           type: boolean
     Container:
       type: object
+      required:
+      - name
+      - image
+      - command
+      - args
+      - memoryRequest
+      - memoryLimit
+      - cpuRequest
+      - cpuLimit
       properties:
         name:
           type: string
@@ -1296,6 +1329,13 @@ components:
           type: string
     Image:
       type: object
+      required:
+      - name
+      - imageName
+      - args
+      - buildContext
+      - rootRequired
+      - uri
       properties:
         name:
           type: string
@@ -1313,6 +1353,8 @@ components:
           type: string
     Resource:
       type: object
+      required:
+      - name      
       properties:
         name:
           type: string

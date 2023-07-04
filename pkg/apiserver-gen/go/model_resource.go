@@ -10,7 +10,7 @@
 package openapi
 
 type Resource struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	Inlined string `json:"inlined,omitempty"`
 
@@ -19,6 +19,15 @@ type Resource struct {
 
 // AssertResourceRequired checks if the required fields are not zero-ed
 func AssertResourceRequired(obj Resource) error {
+	elements := map[string]interface{}{
+		"name": obj.Name,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

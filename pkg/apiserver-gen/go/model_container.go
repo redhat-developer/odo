@@ -10,25 +10,41 @@
 package openapi
 
 type Container struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
-	Image string `json:"image,omitempty"`
+	Image string `json:"image"`
 
-	Command []string `json:"command,omitempty"`
+	Command []string `json:"command"`
 
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args"`
 
-	MemoryRequest string `json:"memoryRequest,omitempty"`
+	MemoryRequest string `json:"memoryRequest"`
 
-	MemoryLimit string `json:"memoryLimit,omitempty"`
+	MemoryLimit string `json:"memoryLimit"`
 
-	CpuRequest string `json:"cpuRequest,omitempty"`
+	CpuRequest string `json:"cpuRequest"`
 
-	CpuLimit string `json:"cpuLimit,omitempty"`
+	CpuLimit string `json:"cpuLimit"`
 }
 
 // AssertContainerRequired checks if the required fields are not zero-ed
 func AssertContainerRequired(obj Container) error {
+	elements := map[string]interface{}{
+		"name":          obj.Name,
+		"image":         obj.Image,
+		"command":       obj.Command,
+		"args":          obj.Args,
+		"memoryRequest": obj.MemoryRequest,
+		"memoryLimit":   obj.MemoryLimit,
+		"cpuRequest":    obj.CpuRequest,
+		"cpuLimit":      obj.CpuLimit,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

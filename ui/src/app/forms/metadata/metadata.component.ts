@@ -41,7 +41,7 @@ export class MetadataComponent implements OnInit {
       if (metadata == null) {
         return
       }
-      this.form.setValue(metadata);
+      this.form.patchValue(metadata);
     });
   }
 

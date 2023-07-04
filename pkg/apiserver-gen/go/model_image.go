@@ -10,21 +10,35 @@
 package openapi
 
 type Image struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
-	ImageName string `json:"imageName,omitempty"`
+	ImageName string `json:"imageName"`
 
-	Args []string `json:"args,omitempty"`
+	Args []string `json:"args"`
 
-	BuildContext string `json:"buildContext,omitempty"`
+	BuildContext string `json:"buildContext"`
 
-	RootRequired bool `json:"rootRequired,omitempty"`
+	RootRequired bool `json:"rootRequired"`
 
-	Uri string `json:"uri,omitempty"`
+	Uri string `json:"uri"`
 }
 
 // AssertImageRequired checks if the required fields are not zero-ed
 func AssertImageRequired(obj Image) error {
+	elements := map[string]interface{}{
+		"name":         obj.Name,
+		"imageName":    obj.ImageName,
+		"args":         obj.Args,
+		"buildContext": obj.BuildContext,
+		"rootRequired": obj.RootRequired,
+		"uri":          obj.Uri,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 
