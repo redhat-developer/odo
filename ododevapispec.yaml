@@ -587,7 +587,7 @@ paths:
                 buildContext:
                   type: string
                 rootRequired:
-                  type: bool
+                  type: boolean
                 uri:
                   type: string
       responses:
@@ -963,7 +963,7 @@ paths:
                   description: Name of the command
                   type: string
                 parallel:
-                  type: bool
+                  type: boolean
                 commands:
                   type: array
                   items: {
@@ -1033,7 +1033,7 @@ paths:
                 workingDir:
                   type: string
                 hotReloadCapable:
-                  type: bool
+                  type: boolean
       responses:
         '200':
           description: Exec command was successfully added to the devfile
