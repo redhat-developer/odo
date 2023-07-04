@@ -12,11 +12,20 @@ package openapi
 type DevstateChartGet200Response struct {
 
 	// chart in mermaid format
-	Chart string `json:"chart,omitempty"`
+	Chart string `json:"chart"`
 }
 
 // AssertDevstateChartGet200ResponseRequired checks if the required fields are not zero-ed
 func AssertDevstateChartGet200ResponseRequired(obj DevstateChartGet200Response) error {
+	elements := map[string]interface{}{
+		"chart": obj.Chart,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

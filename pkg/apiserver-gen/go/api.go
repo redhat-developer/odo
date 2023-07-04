@@ -67,7 +67,7 @@ type DefaultApiServicer interface {
 	DevstateExecCommandPost(context.Context, DevstateExecCommandPostRequest) (ImplResponse, error)
 	DevstateImageImageNameDelete(context.Context, string) (ImplResponse, error)
 	DevstateImagePost(context.Context, DevstateImagePostRequest) (ImplResponse, error)
-	DevstateMetadataPut(context.Context, DevstateMetadataPutRequest) (ImplResponse, error)
+	DevstateMetadataPut(context.Context, Metadata) (ImplResponse, error)
 	DevstateQuantityValidPost(context.Context, DevstateQuantityValidPostRequest) (ImplResponse, error)
 	DevstateResourcePost(context.Context, DevstateResourcePostRequest) (ImplResponse, error)
 	DevstateResourceResourceNameDelete(context.Context, string) (ImplResponse, error)

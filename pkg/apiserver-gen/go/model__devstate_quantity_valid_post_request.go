@@ -10,11 +10,20 @@
 package openapi
 
 type DevstateQuantityValidPostRequest struct {
-	Quantity string `json:"quantity,omitempty"`
+	Quantity string `json:"quantity"`
 }
 
 // AssertDevstateQuantityValidPostRequestRequired checks if the required fields are not zero-ed
 func AssertDevstateQuantityValidPostRequestRequired(obj DevstateQuantityValidPostRequest) error {
+	elements := map[string]interface{}{
+		"quantity": obj.Quantity,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

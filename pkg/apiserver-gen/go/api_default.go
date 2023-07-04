@@ -555,18 +555,18 @@ func (c *DefaultApiController) DevstateImagePost(w http.ResponseWriter, r *http.
 
 // DevstateMetadataPut -
 func (c *DefaultApiController) DevstateMetadataPut(w http.ResponseWriter, r *http.Request) {
-	devstateMetadataPutRequestParam := DevstateMetadataPutRequest{}
+	metadataParam := Metadata{}
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
-	if err := d.Decode(&devstateMetadataPutRequestParam); err != nil {
+	if err := d.Decode(&metadataParam); err != nil {
 		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
 		return
 	}
-	if err := AssertDevstateMetadataPutRequestRequired(devstateMetadataPutRequestParam); err != nil {
+	if err := AssertMetadataRequired(metadataParam); err != nil {
 		c.errorHandler(w, r, err, nil)
 		return
 	}
-	result, err := c.service.DevstateMetadataPut(r.Context(), devstateMetadataPutRequestParam)
+	result, err := c.service.DevstateMetadataPut(r.Context(), metadataParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

@@ -10,11 +10,20 @@
 package openapi
 
 type DevstateDevfilePutRequest struct {
-	Content string `json:"content,omitempty"`
+	Content string `json:"content"`
 }
 
 // AssertDevstateDevfilePutRequestRequired checks if the required fields are not zero-ed
 func AssertDevstateDevfilePutRequestRequired(obj DevstateDevfilePutRequest) error {
+	elements := map[string]interface{}{
+		"content": obj.Content,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 
