@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { Image, WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
+import { Image } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-command-image',
@@ -18,7 +19,7 @@ export class CommandImageComponent {
   imageToCreate: Image | null = null;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {
     this.form = new FormGroup({
@@ -36,20 +37,32 @@ export class CommandImageComponent {
   }
 
   create() {
-    if (this.imageToCreate != null && 
-      this.imageToCreate?.name == this.form.controls["component"].value) {
-      const result = this.wasm.addImage(this.imageToCreate);
-      if (result.err != '') {
-        alert(result.err);
-        return;
-      }
+
+    const subcreate = () => {
+      const result = this.devstate.addApplyCommand(this.form.value["name"], this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
 
-    const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);
+    if (this.imageToCreate != null && 
+      this.imageToCreate?.name == this.form.controls["component"].value) {
+        const result = this.devstate.addImage(this.imageToCreate);
+        result.subscribe({
+          next: () => {
+            subcreate();
+          },
+          error: error => {
+            alert(error.error.message);
+          }
+        });
     } else {
-      this.state.changeDevfileYaml(result.value);
+      subcreate();
     }
   }
 

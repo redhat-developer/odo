@@ -1,7 +1,8 @@
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Component } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Command, WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Command } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-commands',
@@ -19,7 +20,7 @@ export class CommandsComponent {
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {
     this.enableDragAndDrop = this.state.getDragAndDropEnabled();
   }
@@ -91,12 +92,15 @@ export class CommandsComponent {
   }
 
   moveCommand(previousKind: string, newKind: string, previousIndex: number, newIndex: number) {
-    const result = this.wasm.moveCommand(previousKind, newKind, previousIndex, newIndex);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    const result = this.devstate.moveCommand(previousKind, newKind, previousIndex, newIndex);
+    result.subscribe({
+      next: (value) => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: (error) => {
+        alert(error.error.message);
+      }
+    });
   }
 
   enableDragAndDropChange() {

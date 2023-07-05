@@ -4,7 +4,7 @@ on:
     branches:    
       - main
     paths:
-      - 'ui'
+      - 'ui/**'
       - '.github/workflows/ui-e2e.yaml'
 
 jobs:

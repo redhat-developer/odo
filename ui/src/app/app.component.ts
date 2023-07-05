@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { WasmGoService } from './services/wasm-go.service';
+import { DevstateService } from './services/devstate.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MermaidService } from './services/mermaid.service';
 import { StateService } from './services/state.service';
@@ -19,7 +19,7 @@ export class AppComponent implements OnInit {
   constructor(
     protected sanitizer: DomSanitizer,
     private matIconRegistry: MatIconRegistry,
-    private wasmGo: WasmGoService,
+    private wasmGo: DevstateService,
     private mermaid: MermaidService,
     private state: StateService,
   ) {
@@ -35,10 +35,12 @@ export class AppComponent implements OnInit {
       loading.style.visibility = "hidden";
     }
 
-    const devfile = this.state.getDevfile();
-    if (devfile != null) {
-      this.onButtonClick(devfile);
-    }
+    const devfile = this.wasmGo.getDevfileContent();
+    devfile.subscribe({
+      next: (devfile) => {
+        this.onButtonClick(devfile.content);
+      }
+    });
 
     this.state.state.subscribe(async newContent => {
       if (newContent == null) {
@@ -47,28 +49,39 @@ export class AppComponent implements OnInit {
 
       this.devfileYaml = newContent.content;
 
-      try {
-        const result = this.wasmGo.getFlowChart();
-        const svg = await this.mermaid.getMermaidAsSVG(result);
-        this.mermaidContent = svg;  
-      } catch {}
+      const result = this.wasmGo.getFlowChart();
+      result.subscribe({
+        next: async (res) => {
+          const svg = await this.mermaid.getMermaidAsSVG(res.chart);
+          this.mermaidContent = svg;      
+        },
+        error: (error) => {
+          console.log(error);
+        }
+      });
     });
   }
 
   onButtonClick(content: string){
     const result = this.wasmGo.setDevfileContent(content);
-    if (result.err != '') {
-      this.errorMessage = result.err;
-    } else {
-      this.errorMessage = '';
-      this.state.changeDevfileYaml(result.value);
-    }
+    result.subscribe({
+      next: (value) => {
+        this.errorMessage = '';
+        this.state.changeDevfileYaml(value);  
+      },
+      error: (error) => {
+        this.errorMessage = error.error.message;
+      }
+    });
   }
 
   clear() {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
-      this.state.resetDevfile();
-      window.location.reload();  
+      this.wasmGo.clearDevfileContent().subscribe({
+        next: (value) => {
+          this.onButtonClick(value.content);
+        }
+      });
     }
   }
 }

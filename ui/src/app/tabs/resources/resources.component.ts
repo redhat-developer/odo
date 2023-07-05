@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { ClusterResource, WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Resource } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-resources',
@@ -10,11 +11,11 @@ import { ClusterResource, WasmGoService } from 'src/app/services/wasm-go.service
 export class ResourcesComponent implements OnInit {
 
   forceDisplayAdd: boolean = false;
-  resources: ClusterResource[] | undefined = [];
+  resources: Resource[] | undefined = [];
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {}
 
   ngOnInit() {
@@ -41,22 +42,28 @@ export class ResourcesComponent implements OnInit {
 
   delete(name: string) {
     if(confirm('You will delete the resource "'+name+'". Continue?')) {
-      const result = this.wasm.deleteResource(name);
-      if (result.err != '') {
-        alert(result.err);
-      } else {
-        this.state.changeDevfileYaml(result.value);
-      }
+      const result = this.devstate.deleteResource(name);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
   }
 
-  onCreated(resource: ClusterResource) {
-    const result = this.wasm.addResource(resource);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+  onCreated(resource: Resource) {
+    const result = this.devstate.addResource(resource);
+    result.subscribe({
+      next: (value) => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: (error) => {
+        alert(error.error.message);
+      }
+    });
   }
 
   scrollToBottom() {

@@ -258,6 +258,10 @@ github.com/exponent-io/jsonpath
 # github.com/fatih/color v1.14.1
 ## explicit; go 1.17
 github.com/fatih/color
+# github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778
+## explicit; go 1.19
+github.com/feloy/devfile-lifecycle/pkg/dftools
+github.com/feloy/devfile-lifecycle/pkg/graph
 # github.com/frapposelli/wwhrd v0.4.0
 ## explicit; go 1.15
 github.com/frapposelli/wwhrd

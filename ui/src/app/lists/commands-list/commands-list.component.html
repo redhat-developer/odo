@@ -9,7 +9,7 @@
                     </mat-card-title>
                     <mat-checkbox 
                         *ngIf="command.group != ''" 
-                        [checked]="command.default" 
+                        [checked]="command._default" 
                         (change)="toggleDefault($event, command.name, command.group)"
                     >Default {{kind}} command</mat-checkbox>
                 </div>

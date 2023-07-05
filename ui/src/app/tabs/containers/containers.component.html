@@ -10,27 +10,27 @@
                     <td>Image:</td>
                     <td><code>{{container.image}}</code></td>
                 </tr>
-                <tr *ngIf="container.command.length > 0">
+                <tr *ngIf="container.command != null && container.command.length > 0">
                     <td>Command:</td>
                     <td><code>{{container.command.join(" ")}}</code></td>
                 </tr>
-                <tr *ngIf="container.args.length > 0">
+                <tr *ngIf="container.args != null && container.args.length > 0">
                     <td>Args:</td>
                     <td><code>{{container.args.join(" ")}}</code></td>
                 </tr>
-                <tr *ngIf="container.memoryRequest.length > 0">
+                <tr *ngIf="container.memoryRequest != null && container.memoryRequest.length > 0">
                     <td>Memory Request:</td>
                     <td><code>{{container.memoryRequest}}</code></td>
                 </tr>
-                <tr *ngIf="container.memoryLimit.length > 0">
+                <tr *ngIf="container.memoryLimit != null && container.memoryLimit.length > 0">
                     <td>Memory Limit:</td>
                     <td><code>{{container.memoryLimit}}</code></td>
                 </tr>
-                <tr *ngIf="container.cpuRequest.length > 0">
+                <tr *ngIf="container.cpuRequest != null && container.cpuRequest.length > 0">
                     <td>CPU Request:</td>
                     <td><code>{{container.cpuRequest}}</code></td>
                 </tr>
-                <tr *ngIf="container.cpuLimit.length > 0">
+                <tr *ngIf="container.cpuLimit != null && container.cpuLimit.length > 0">
                     <td>CPU Limit:</td>
                     <td><code>{{container.cpuLimit}}</code></td>
                 </tr>

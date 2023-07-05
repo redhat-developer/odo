@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { ClusterResource } from 'src/app/services/wasm-go.service';
 import { PATTERN_COMPONENT_ID } from '../patterns';
+import { Resource } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-resource',
@@ -11,7 +11,7 @@ import { PATTERN_COMPONENT_ID } from '../patterns';
 export class ResourceComponent {
   @Input() cancelable: boolean = false;
   @Output() canceled = new EventEmitter<void>();
-  @Output() created = new EventEmitter<ClusterResource>();
+  @Output() created = new EventEmitter<Resource>();
 
   form: FormGroup;
   uriOrInlined: string = 'uri';

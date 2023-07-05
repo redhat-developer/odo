@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { ClusterResource, WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
+import { Resource } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-command-apply',
@@ -15,10 +16,10 @@ export class CommandApplyComponent {
   form: FormGroup;
   resourceList: string[] = [];
   showNewResource: boolean = false;
-  resourceToCreate: ClusterResource | null = null;
+  resourceToCreate: Resource | null = null;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {
     this.form = new FormGroup({
@@ -36,20 +37,32 @@ export class CommandApplyComponent {
   }
 
   create() {
-    if (this.resourceToCreate != null && 
-      this.resourceToCreate?.name == this.form.controls["component"].value) {
-      const result = this.wasm.addResource(this.resourceToCreate);
-      if (result.err != '') {
-        alert(result.err);
-        return;
-      }
+    const subcreate = () => {
+      const result = this.devstate.addApplyCommand(this.form.value["name"], this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });  
     }
 
-    const result = this.wasm.addApplyCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);      
+    if (this.resourceToCreate != null && 
+      this.resourceToCreate?.name == this.form.controls["component"].value) {
+      const result = this.devstate.addResource(this.resourceToCreate);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+          subcreate();
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });        
     } else {
-      this.state.changeDevfileYaml(result.value);
+      subcreate();
     }
   }
 
@@ -61,7 +74,7 @@ export class CommandApplyComponent {
     this.showNewResource = v;
   }
 
-  onNewResourceCreated(resource: ClusterResource) {
+  onNewResourceCreated(resource: Resource) {
     this.resourceList.push(resource.name);
     this.form.controls["component"].setValue(resource.name);
     this.showNewResource = false;

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
-import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
+import { Container } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-containers',
@@ -14,7 +15,7 @@ export class ContainersComponent implements OnInit {
 
   constructor(
     private state: StateService,
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
   ) {}
 
   ngOnInit() {
@@ -41,22 +42,28 @@ export class ContainersComponent implements OnInit {
 
   delete(name: string) {
     if(confirm('You will delete the container "'+name+'". Continue?')) {
-      const result = this.wasm.deleteContainer(name);
-      if (result.err != '') {
-        alert(result.err);
-      } else {
-        this.state.changeDevfileYaml(result.value);
-      }
+      const result = this.devstate.deleteContainer(name);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
     }
   }
 
   onCreated(container: Container) {
-    const result = this.wasm.addContainer(container);
-    if (result.err != '') {
-      alert(result.err);
-    } else {
-      this.state.changeDevfileYaml(result.value);
-    }
+    const result = this.devstate.addContainer(container);
+    result.subscribe({
+      next: value => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: error => {
+        alert(error.error.message);
+      }
+    });      
   }
 
   scrollToBottom() {

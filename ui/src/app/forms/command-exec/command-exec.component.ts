@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
-import { Container, WasmGoService } from 'src/app/services/wasm-go.service';
+import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
+import { Container } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-command-exec',
@@ -18,7 +19,7 @@ export class CommandExecComponent {
   containerToCreate: Container | null = null;
 
   constructor(
-    private wasm: WasmGoService,
+    private devstate: DevstateService,
     private state: StateService,
   ) {
     this.form = new FormGroup({
@@ -38,20 +39,34 @@ export class CommandExecComponent {
     });
   }
 
+
   create() {
+
+    const subcreate = () => {
+      const result = this.devstate.addExecCommand(this.form.value["name"], this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });
+    }
+
     if (this.containerToCreate != null && 
         this.containerToCreate?.name == this.form.controls["component"].value) {
-      const result = this.wasm.addContainer(this.containerToCreate);
-      if (result.err != '') {
-        alert(result.err);
-        return;
-      }
-    }
-    const result = this.wasm.addExecCommand(this.form.value["name"], this.form.value);
-    if (result.err != '') {
-      alert(result.err);      
+        const res = this.devstate.addContainer(this.containerToCreate);
+        res.subscribe({
+          next: () => {
+            subcreate();
+          },
+          error: error => {
+            alert(error.error.message);
+          }
+        });
     } else {
-      this.state.changeDevfileYaml(result.value);
+      subcreate();
     }
   }
 
