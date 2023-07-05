@@ -245,31 +245,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -292,31 +292,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -339,31 +339,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -392,31 +392,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -476,31 +476,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -574,31 +574,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -663,31 +663,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -750,31 +750,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -953,31 +953,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -1018,31 +1018,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
@@ -1080,31 +1080,31 @@ paths:
                 $ref: '#/components/schemas/DevfileContent'
               example:
                 {
-                    "Content": "schemaVersion: 2.2.0\n",
-                    "Commands": [],
-                    "Containers": [],
-                    "Images": [],
-                    "Resources": [],
-                    "Events": {
-                        "PreStart": null,
-                        "PostStart": null,
-                        "PreStop": null,
-                        "PostStop": null
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
                     },
-                    "Metadata": {
-                        "Name": "",
-                        "Version": "",
-                        "DisplayName": "",
-                        "Description": "",
-                        "Tags": "",
-                        "Architectures": "",
-                        "Icon": "",
-                        "GlobalMemoryLimit": "",
-                        "ProjectType": "",
-                        "Language": "",
-                        "Website": "",
-                        "Provider": "",
-                        "SupportUrl": ""
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
                     }
                 }
         '500':
