@@ -256,3 +256,6 @@ generate-apifront: ## Generate OpenAPISpec library based on ododevapispec.yaml i
     		-i /local/ododevapispec.yaml \
     		-g typescript-angular \
     		-o /local/ui/src/app/api-gen
+
+.PHONY: generate-api
+generate-api: generate-apiserver generate-apifront ## Generate code based on ododevapispec.yaml
