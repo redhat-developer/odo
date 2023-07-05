@@ -18,7 +18,7 @@
                             <mat-label>Devfile YAML</mat-label>
                             <textarea data-cy="yaml-input" matInput #input id="input" rows="20" [value]="devfileYaml"></textarea>
                         </mat-form-field>
-                        <button data-cy="yaml-save" mat-flat-button color="primary" (click)="onButtonClick(input.value)">Save</button>
+                        <button data-cy="yaml-save" mat-flat-button color="primary" (click)="onButtonClick(input.value, true)">Save</button>
                         <button data-cy="yaml-clear" mat-flat-button color="warn" (click)="clear()">Clear</button>
                     </div>
                 </mat-tab>
