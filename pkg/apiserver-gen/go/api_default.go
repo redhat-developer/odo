@@ -63,6 +63,18 @@ func (c *DefaultApiController) Routes() Routes {
 			c.ComponentGet,
 		},
 		{
+			"DevfileGet",
+			strings.ToUpper("Get"),
+			"/api/v1/devfile",
+			c.DevfileGet,
+		},
+		{
+			"DevfilePut",
+			strings.ToUpper("Put"),
+			"/api/v1/devfile",
+			c.DevfilePut,
+		},
+		{
 			"DevstateApplyCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/applyCommand",
@@ -224,6 +236,43 @@ func (c *DefaultApiController) ComponentCommandPost(w http.ResponseWriter, r *ht
 // ComponentGet -
 func (c *DefaultApiController) ComponentGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.ComponentGet(r.Context())
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevfileGet -
+func (c *DefaultApiController) DevfileGet(w http.ResponseWriter, r *http.Request) {
+	result, err := c.service.DevfileGet(r.Context())
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevfilePut -
+func (c *DefaultApiController) DevfilePut(w http.ResponseWriter, r *http.Request) {
+	devfilePutRequestParam := DevfilePutRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devfilePutRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevfilePutRequestRequired(devfilePutRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevfilePut(r.Context(), devfilePutRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

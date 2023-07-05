@@ -5,6 +5,8 @@ export * from './componentGet200Response';
 export * from './compositeCommand';
 export * from './container';
 export * from './devfileContent';
+export * from './devfileGet200Response';
+export * from './devfilePutRequest';
 export * from './devstateApplyCommandPostRequest';
 export * from './devstateChartGet200Response';
 export * from './devstateCommandCommandNameMovePostRequest';

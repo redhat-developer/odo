@@ -20,6 +20,8 @@ import (
 type DefaultApiRouter interface {
 	ComponentCommandPost(http.ResponseWriter, *http.Request)
 	ComponentGet(http.ResponseWriter, *http.Request)
+	DevfileGet(http.ResponseWriter, *http.Request)
+	DevfilePut(http.ResponseWriter, *http.Request)
 	DevstateApplyCommandPost(http.ResponseWriter, *http.Request)
 	DevstateChartGet(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameDelete(http.ResponseWriter, *http.Request)
@@ -51,6 +53,8 @@ type DefaultApiRouter interface {
 type DefaultApiServicer interface {
 	ComponentCommandPost(context.Context, ComponentCommandPostRequest) (ImplResponse, error)
 	ComponentGet(context.Context) (ImplResponse, error)
+	DevfileGet(context.Context) (ImplResponse, error)
+	DevfilePut(context.Context, DevfilePutRequest) (ImplResponse, error)
 	DevstateApplyCommandPost(context.Context, DevstateApplyCommandPostRequest) (ImplResponse, error)
 	DevstateChartGet(context.Context) (ImplResponse, error)
 	DevstateCommandCommandNameDelete(context.Context, string) (ImplResponse, error)
