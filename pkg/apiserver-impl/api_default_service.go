@@ -4,13 +4,18 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/devstate"
 	"github.com/redhat-developer/odo/pkg/component/describe"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
 )
 
@@ -18,11 +23,12 @@ import (
 // This service should implement the business logic for every endpoint for the DefaultApi API.
 // Include any external packages or services that will be required by this service.
 type DefaultApiService struct {
-	cancel       context.CancelFunc
-	pushWatcher  chan<- struct{}
-	kubeClient   kclient.ClientInterface
-	podmanClient podman.Client
-	stateClient  state.Client
+	cancel           context.CancelFunc
+	pushWatcher      chan<- struct{}
+	kubeClient       kclient.ClientInterface
+	podmanClient     podman.Client
+	stateClient      state.Client
+	preferenceClient preference.Client
 
 	devfileState devstate.DevfileState
 }
@@ -34,13 +40,15 @@ func NewDefaultApiService(
 	kubeClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	stateClient state.Client,
+	preferenceClient preference.Client,
 ) openapi.DefaultApiServicer {
 	return &DefaultApiService{
-		cancel:       cancel,
-		pushWatcher:  pushWatcher,
-		kubeClient:   kubeClient,
-		podmanClient: podmanClient,
-		stateClient:  stateClient,
+		cancel:           cancel,
+		pushWatcher:      pushWatcher,
+		kubeClient:       kubeClient,
+		podmanClient:     podmanClient,
+		stateClient:      stateClient,
+		preferenceClient: preferenceClient,
 
 		devfileState: devstate.NewDevfileState(),
 	}
@@ -94,4 +102,54 @@ func (s *DefaultApiService) InstanceGet(ctx context.Context) (openapi.ImplRespon
 		ComponentDirectory: odocontext.GetWorkingDirectory(ctx),
 	}
 	return openapi.Response(http.StatusOK, response), nil
+}
+
+func (s *DefaultApiService) DevfileGet(ctx context.Context) (openapi.ImplResponse, error) {
+	devfilePath := odocontext.GetDevfilePath(ctx)
+	content, err := os.ReadFile(devfilePath)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("error getting Devfile content: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, openapi.DevfileGet200Response{
+		Content: string(content),
+	}), nil
+
+}
+
+func (s *DefaultApiService) DevfilePut(ctx context.Context, params openapi.DevfilePutRequest) (openapi.ImplResponse, error) {
+	devfilePath := odocontext.GetDevfilePath(ctx)
+
+	err := s.validateDevfile(ctx)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("error validating Devfile: %s", err),
+		}), nil
+	}
+
+	err = os.WriteFile(devfilePath, []byte(params.Content), 0600)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("error writing Devfile content to %q: %s", devfilePath, err),
+		}), nil
+	}
+
+	return openapi.Response(http.StatusOK, openapi.GeneralSuccess{
+		Message: "devfile has been successfully written to disk",
+	}), nil
+
+}
+
+func (s *DefaultApiService) validateDevfile(ctx context.Context) error {
+	var (
+		devfilePath   = odocontext.GetDevfilePath(ctx)
+		variables     = fcontext.GetVariables(ctx)
+		imageRegistry = s.preferenceClient.GetImageRegistry()
+	)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(devfilePath, variables, imageRegistry, true)
+	if err != nil {
+		return fmt.Errorf("failed to parse the devfile %s: %w", devfilePath, err)
+	}
+	return validate.ValidateDevfileData(devObj.Data)
 }

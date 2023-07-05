@@ -267,6 +267,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			o.clientset.KubernetesClient,
 			o.clientset.PodmanClient,
 			o.clientset.StateClient,
+			o.clientset.PreferenceClient,
 		)
 	}
 
