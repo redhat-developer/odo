@@ -59,7 +59,7 @@ import { GeneralSuccess } from '../model/generalSuccess';
 // @ts-ignore
 import { InstanceGet200Response } from '../model/instanceGet200Response';
 // @ts-ignore
-import { Metadata } from '../model/metadata';
+import { MetadataRequest } from '../model/metadataRequest';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -1358,14 +1358,14 @@ export class DefaultService {
 
     /**
      * Updates the metadata for the Devfile
-     * @param metadata 
+     * @param metadataRequest 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public devstateMetadataPut(metadata?: Metadata, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<DevfileContent>;
-    public devstateMetadataPut(metadata?: Metadata, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<DevfileContent>>;
-    public devstateMetadataPut(metadata?: Metadata, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<DevfileContent>>;
-    public devstateMetadataPut(metadata?: Metadata, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
+    public devstateMetadataPut(metadataRequest?: MetadataRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<DevfileContent>;
+    public devstateMetadataPut(metadataRequest?: MetadataRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<DevfileContent>>;
+    public devstateMetadataPut(metadataRequest?: MetadataRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<DevfileContent>>;
+    public devstateMetadataPut(metadataRequest?: MetadataRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
 
         let localVarHeaders = this.defaultHeaders;
 
@@ -1411,7 +1411,7 @@ export class DefaultService {
         return this.httpClient.request<DevfileContent>('put', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
-                body: metadata,
+                body: metadataRequest,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,

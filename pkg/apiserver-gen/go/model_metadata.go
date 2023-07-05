@@ -10,35 +10,56 @@
 package openapi
 
 type Metadata struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
-	Version string `json:"version,omitempty"`
+	Version string `json:"version"`
 
-	DisplayName string `json:"displayName,omitempty"`
+	DisplayName string `json:"displayName"`
 
-	Description string `json:"description,omitempty"`
+	Description string `json:"description"`
 
-	Tags string `json:"tags,omitempty"`
+	Tags string `json:"tags"`
 
-	Architectures string `json:"architectures,omitempty"`
+	Architectures string `json:"architectures"`
 
-	Icon string `json:"icon,omitempty"`
+	Icon string `json:"icon"`
 
-	GlobalMemoryLimit string `json:"globalMemoryLimit,omitempty"`
+	GlobalMemoryLimit string `json:"globalMemoryLimit"`
 
-	ProjectType string `json:"projectType,omitempty"`
+	ProjectType string `json:"projectType"`
 
-	Language string `json:"language,omitempty"`
+	Language string `json:"language"`
 
-	Website string `json:"website,omitempty"`
+	Website string `json:"website"`
 
-	Provider string `json:"provider,omitempty"`
+	Provider string `json:"provider"`
 
-	SupportUrl string `json:"supportUrl,omitempty"`
+	SupportUrl string `json:"supportUrl"`
 }
 
 // AssertMetadataRequired checks if the required fields are not zero-ed
 func AssertMetadataRequired(obj Metadata) error {
+	elements := map[string]interface{}{
+		"name":              obj.Name,
+		"version":           obj.Version,
+		"displayName":       obj.DisplayName,
+		"description":       obj.Description,
+		"tags":              obj.Tags,
+		"architectures":     obj.Architectures,
+		"icon":              obj.Icon,
+		"globalMemoryLimit": obj.GlobalMemoryLimit,
+		"projectType":       obj.ProjectType,
+		"language":          obj.Language,
+		"website":           obj.Website,
+		"provider":          obj.Provider,
+		"supportUrl":        obj.SupportUrl,
+	}
+	for name, el := range elements {
+		if isZero := IsZeroValue(el); isZero {
+			return &RequiredError{Field: name}
+		}
+	}
+
 	return nil
 }
 

@@ -430,7 +430,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Metadata'
+              $ref: '#/components/schemas/MetadataRequest'
       responses:
         '200':
           description: metadata was successfully updated
@@ -1423,6 +1423,49 @@ components:
           items:
             type: string
     Metadata:
+      type: object
+      required:
+      - name
+      - version
+      - displayName
+      - description
+      - tags
+      - architectures
+      - icon
+      - globalMemoryLimit
+      - projectType
+      - language
+      - website
+      - provider
+      - supportUrl
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+        architectures:
+          type: string
+        icon:
+          type: string
+        globalMemoryLimit:
+          type: string
+        projectType:
+          type: string
+        language:
+          type: string
+        website:
+          type: string
+        provider:
+          type: string
+        supportUrl:
+          type: string
+    MetadataRequest:
       type: object
       properties:
         name:

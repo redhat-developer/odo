@@ -27,4 +27,5 @@ export * from './image';
 export * from './imageCommand';
 export * from './instanceGet200Response';
 export * from './metadata';
+export * from './metadataRequest';
 export * from './resource';

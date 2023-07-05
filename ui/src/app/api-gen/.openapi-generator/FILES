@@ -36,6 +36,7 @@ model/image.ts
 model/imageCommand.ts
 model/instanceGet200Response.ts
 model/metadata.ts
+model/metadataRequest.ts
 model/models.ts
 model/resource.ts
 param.ts

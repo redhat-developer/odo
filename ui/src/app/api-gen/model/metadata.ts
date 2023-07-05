@@ -12,18 +12,18 @@
 
 
 export interface Metadata { 
-    name?: string;
-    version?: string;
-    displayName?: string;
-    description?: string;
-    tags?: string;
-    architectures?: string;
-    icon?: string;
-    globalMemoryLimit?: string;
-    projectType?: string;
-    language?: string;
-    website?: string;
-    provider?: string;
-    supportUrl?: string;
+    name: string;
+    version: string;
+    displayName: string;
+    description: string;
+    tags: string;
+    architectures: string;
+    icon: string;
+    globalMemoryLimit: string;
+    projectType: string;
+    language: string;
+    website: string;
+    provider: string;
+    supportUrl: string;
 }
 

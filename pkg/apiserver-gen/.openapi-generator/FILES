@@ -1,4 +1,3 @@
-.openapi-generator-ignore
 README.md
 api/openapi.yaml
 go/api.go
@@ -36,5 +35,6 @@ go/model_general_success.go
 go/model_image.go
 go/model_image_command.go
 go/model_metadata.go
+go/model_metadata_request.go
 go/model_resource.go
 go/routers.go
