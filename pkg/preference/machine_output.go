@@ -60,7 +60,7 @@ func toPreferenceItems(prefInfo preferenceInfo) []api.PreferenceItem {
 		{
 			Name:        ImageRegistrySetting,
 			Value:       settings.ImageRegistry,
-			Default:     DefaultDevfileRegistryURL,
+			Default:     "",
 			Type:        getType(prefInfo.GetImageRegistry()),
 			Description: ImageRegistrySettingDescription,
 		},
