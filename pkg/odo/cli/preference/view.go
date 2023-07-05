@@ -81,7 +81,7 @@ func HumanReadableOutput(preferenceList api.PreferenceList, registryList []api.R
 	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
 	for _, pref := range preferenceList.Items {
 		value := showBlankIfNil(pref.Value)
-		if reflect.DeepEqual(value, pref.Default) {
+		if value != "" && reflect.DeepEqual(value, pref.Default) {
 			value = fmt.Sprintf("%v (default)", value)
 		}
 		preferenceT.AppendRow(table.Row{pref.Name, value})
