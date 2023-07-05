@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/apiserver"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logs"
 	"github.com/redhat-developer/odo/pkg/odo/cli/run"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -201,6 +202,7 @@ func odoRootCmd(ctx context.Context, name, fullName string, unknownCmdHandler fu
 		logs.NewCmdLogs(logs.RecommendedCommandName, util.GetFullName(fullName, logs.RecommendedCommandName), testClientset),
 		completion.NewCmdCompletion(completion.RecommendedCommandName, util.GetFullName(fullName, completion.RecommendedCommandName)),
 		run.NewCmdRun(run.RecommendedCommandName, util.GetFullName(fullName, run.RecommendedCommandName), testClientset),
+		apiserver.NewCmdApiServer(ctx, apiserver.RecommendedCommandName, util.GetFullName(fullName, apiserver.RecommendedCommandName), testClientset),
 	)
 
 	// Add all subcommands to base commands
