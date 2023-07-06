@@ -76,6 +76,11 @@ The `--starter` flag indicates the name of the starter project (as referenced in
 
 The required `--name` flag indicates how the component initialized by this command should be named. The name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
 
+If you know what ports your application uses, you can specify the `--run-port` flag to initialize the Devfile with the specified ports, instead of the default ones set in the registry.
+The `--run-port` flag is a repeatable flag that will make `odo` read the downloaded Devfile and look for the container component referenced by the default `run` command.
+It will then overwrite the container component endpoints with the ports specified.
+As such, it requires the default `run` command to be an `exec` command pointing to a `container` component.
+
 #### Fetch Devfile from any registry of the list
 
 In this example, the devfile will be downloaded from the **StagingRegistry** registry, which is the first one in the list containing the `nodejs-react` devfile.
@@ -156,3 +161,26 @@ Use "latest" as the version name to fetch the latest version of a given Devfile.
 
 </details>
 :::
+
+#### Specify the application ports
+
+
+```console
+odo init \
+    --devfile <devfile-name> \
+    --name <component-name> \
+    --run-port <port> [--run-port ANOTHER_PORT] \
+    [--starter STARTER]
+```
+
+In this example, `odo` will download the Devfile from the registry and overwrite the container endpoints with the ones specified in `--run-port`.
+This works because the Devfile downloaded from the registry defines a default `run` command of type `exec` and referencing a `container` component.
+
+<details>
+<summary>Example</summary>
+
+import DevfileWithRunPortOutput from './docs-mdx/init/devfile_with_run-port_output.mdx';
+
+<DevfileWithRunPortOutput />
+
+</details>
