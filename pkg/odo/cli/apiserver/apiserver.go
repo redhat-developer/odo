@@ -46,9 +46,10 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
 	_ = apiserver_impl.StartServer(
 		ctx,
-		nil,
+		cancel,
 		o.apiServerPortFlag,
 		nil,
 		nil,
