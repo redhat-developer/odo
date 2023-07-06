@@ -4,6 +4,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { MermaidService } from './services/mermaid.service';
 import { StateService } from './services/state.service';
 import { MatIconRegistry } from "@angular/material/icon";
+import { OdoapiService } from './services/odoapi.service';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,7 @@ export class AppComponent implements OnInit {
     protected sanitizer: DomSanitizer,
     private matIconRegistry: MatIconRegistry,
     private wasmGo: DevstateService,
+    private odoApi: OdoapiService,
     private mermaid: MermaidService,
     private state: StateService,
   ) {
@@ -35,10 +37,12 @@ export class AppComponent implements OnInit {
       loading.style.visibility = "hidden";
     }
 
-    const devfile = this.wasmGo.getDevfileContent();
+    const devfile = this.odoApi.getDevfile();
     devfile.subscribe({
       next: (devfile) => {
-        this.onButtonClick(devfile.content);
+        if (devfile.content != undefined) {
+          this.onButtonClick(devfile.content, false);
+        }
       }
     });
 
@@ -62,12 +66,20 @@ export class AppComponent implements OnInit {
     });
   }
 
-  onButtonClick(content: string){
+  onButtonClick(content: string, save: boolean){
     const result = this.wasmGo.setDevfileContent(content);
     result.subscribe({
       next: (value) => {
         this.errorMessage = '';
-        this.state.changeDevfileYaml(value);  
+        this.state.changeDevfileYaml(value);
+        if (save) {
+          this.odoApi.saveDevfile(value.content).subscribe({
+            next: () => {},
+            error: (error) => {
+              this.errorMessage = error.error.message;
+            }
+          });
+        }
       },
       error: (error) => {
         this.errorMessage = error.error.message;
@@ -79,7 +91,7 @@ export class AppComponent implements OnInit {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
       this.wasmGo.clearDevfileContent().subscribe({
         next: (value) => {
-          this.onButtonClick(value.content);
+          this.onButtonClick(value.content, false);
         }
       });
     }

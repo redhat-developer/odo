@@ -223,6 +223,59 @@ paths:
               example:
                 message: "a push operation is not possible at this time. Please retry later"
 
+  /devfile:
+    put:
+      description: Updates the Devfile used by the current dev session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DevfilePutRequest"
+      responses:
+        '200':
+          description: Devfile content was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "The Devfile content has been updated successfully"
+
+        '500':
+          description: Error updating the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Devfile content"
+
+    get:
+      description: Get the raw content of the Devfile used by the current dev session
+      responses:
+        '200':
+          description: Devfile content was successfully returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                }
+        '500':
+          description: Error getting the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error getting the Devfile content"
+
+
   /devstate/devfile:
     put:
       description: Updates the complete Devfile content
@@ -230,12 +283,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - content
-              properties:
-                content:
-                  type: string
+              $ref: "#/components/schemas/DevstateDevfilePutRequest"
       responses:
         '200':
           description: Devfile content was successfully updated
@@ -382,7 +430,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Metadata'
+              $ref: '#/components/schemas/MetadataRequest'
       responses:
         '200':
           description: metadata was successfully updated
@@ -1176,6 +1224,20 @@ components:
       properties:
         message:
           type: string
+    DevfilePutRequest:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
+    DevstateDevfilePutRequest:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
     DevfileContent:
       type: object
       required:
@@ -1361,6 +1423,49 @@ components:
           items:
             type: string
     Metadata:
+      type: object
+      required:
+      - name
+      - version
+      - displayName
+      - description
+      - tags
+      - architectures
+      - icon
+      - globalMemoryLimit
+      - projectType
+      - language
+      - website
+      - provider
+      - supportUrl
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+        architectures:
+          type: string
+        icon:
+          type: string
+        globalMemoryLimit:
+          type: string
+        projectType:
+          type: string
+        language:
+          type: string
+        website:
+          type: string
+        provider:
+          type: string
+        supportUrl:
+          type: string
+    MetadataRequest:
       type: object
       properties:
         name:

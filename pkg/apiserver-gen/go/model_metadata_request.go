@@ -9,7 +9,7 @@
 
 package openapi
 
-type DevstateMetadataPutRequest struct {
+type MetadataRequest struct {
 	Name string `json:"name,omitempty"`
 
 	Version string `json:"version,omitempty"`
@@ -37,19 +37,19 @@ type DevstateMetadataPutRequest struct {
 	SupportUrl string `json:"supportUrl,omitempty"`
 }
 
-// AssertDevstateMetadataPutRequestRequired checks if the required fields are not zero-ed
-func AssertDevstateMetadataPutRequestRequired(obj DevstateMetadataPutRequest) error {
+// AssertMetadataRequestRequired checks if the required fields are not zero-ed
+func AssertMetadataRequestRequired(obj MetadataRequest) error {
 	return nil
 }
 
-// AssertRecurseDevstateMetadataPutRequestRequired recursively checks if required fields are not zero-ed in a nested slice.
-// Accepts only nested slice of DevstateMetadataPutRequest (e.g. [][]DevstateMetadataPutRequest), otherwise ErrTypeAssertionError is thrown.
-func AssertRecurseDevstateMetadataPutRequestRequired(objSlice interface{}) error {
+// AssertRecurseMetadataRequestRequired recursively checks if required fields are not zero-ed in a nested slice.
+// Accepts only nested slice of MetadataRequest (e.g. [][]MetadataRequest), otherwise ErrTypeAssertionError is thrown.
+func AssertRecurseMetadataRequestRequired(objSlice interface{}) error {
 	return AssertRecurseInterfaceRequired(objSlice, func(obj interface{}) error {
-		aDevstateMetadataPutRequest, ok := obj.(DevstateMetadataPutRequest)
+		aMetadataRequest, ok := obj.(MetadataRequest)
 		if !ok {
 			return ErrTypeAssertionError
 		}
-		return AssertDevstateMetadataPutRequestRequired(aDevstateMetadataPutRequest)
+		return AssertMetadataRequestRequired(aMetadataRequest)
 	})
 }

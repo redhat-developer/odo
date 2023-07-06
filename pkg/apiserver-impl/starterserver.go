@@ -9,6 +9,7 @@ import (
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
@@ -25,6 +26,7 @@ func StartServer(
 	kubernetesClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	stateClient state.Client,
+	preferenceClient preference.Client,
 ) ApiServer {
 
 	pushWatcher := make(chan struct{})
@@ -34,6 +36,7 @@ func StartServer(
 		kubernetesClient,
 		podmanClient,
 		stateClient,
+		preferenceClient,
 	)
 	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
 

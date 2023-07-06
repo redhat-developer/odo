@@ -11,7 +11,7 @@
  */
 
 
-export interface DevstateMetadataPutRequest { 
+export interface MetadataRequest { 
     name?: string;
     version?: string;
     displayName?: string;

@@ -144,7 +144,7 @@ func (s *DefaultApiService) DevstateExecCommandPost(ctx context.Context, command
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateMetadataPut(ctx context.Context, metadata openapi.Metadata) (openapi.ImplResponse, error) {
+func (s *DefaultApiService) DevstateMetadataPut(ctx context.Context, metadata openapi.MetadataRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.SetMetadata(
 		metadata.Name,
 		metadata.Version,
