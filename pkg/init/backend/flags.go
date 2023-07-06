@@ -4,7 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
+	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/registry"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -24,6 +29,7 @@ const (
 	FLAG_STARTER          = "starter"
 	FLAG_DEVFILE_PATH     = "devfile-path"
 	FLAG_DEVFILE_VERSION  = "devfile-version"
+	FLAG_RUN_PORT         = "run-port"
 )
 
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
@@ -133,7 +139,80 @@ func (o FlagsBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (pa
 	return devfileobj, nil
 }
 
-func (o FlagsBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, ports []int, flags map[string]string) (parser.DevfileObj, error) {
-	// Currently not supported, but this will be done in a separate issue: https://github.com/redhat-developer/odo/issues/6211
+func (o FlagsBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, _ []int, flags map[string]string) (parser.DevfileObj, error) {
+	d, err := setPortsForFlag(devfileobj, flags, FLAG_RUN_PORT)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+
+	return d, nil
+}
+
+func setPortsForFlag(devfileobj parser.DevfileObj, flags map[string]string, flagName string) (parser.DevfileObj, error) {
+	flagVal := flags[flagName]
+	// Repeatable flags are formatted as "[val1,val2]"
+	if !(strings.HasPrefix(flagVal, "[") && strings.HasSuffix(flagVal, "]")) {
+		return devfileobj, nil
+	}
+	portsStr := flagVal[1 : len(flagVal)-1]
+
+	var ports []int
+	split := strings.Split(portsStr, ",")
+	for _, s := range split {
+		p, err := strconv.Atoi(s)
+		if err != nil {
+			return parser.DevfileObj{}, fmt.Errorf("invalid value for %s (%q): %w", flagName, s, err)
+		}
+		ports = append(ports, p)
+	}
+
+	var kind v1alpha2.CommandGroupKind
+	switch flagName {
+	case FLAG_RUN_PORT:
+		kind = v1alpha2.RunCommandGroupKind
+	default:
+		return parser.DevfileObj{}, fmt.Errorf("unknown flag: %q", flagName)
+	}
+
+	cmd, ok, err := libdevfile.GetCommand(devfileobj, "", kind)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	if !ok {
+		klog.V(3).Infof("Specified %s flag will not be applied - no default (or single non-default) command found for kind %v", flagName, kind)
+		return devfileobj, nil
+	}
+	// command must be an exec command to determine the right container component endpoints to update.
+	cmdType, err := common.GetCommandType(cmd)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	if cmdType != v1alpha2.ExecCommandType {
+		return parser.DevfileObj{},
+			fmt.Errorf("%v cannot be used with non-exec commands. Found out that command (id: %s) for kind %v is of type %q instead",
+				flagName, cmd.Id, kind, cmdType)
+	}
+
+	cmp, ok, err := libdevfile.FindComponentByName(devfileobj.Data, cmd.Exec.Component)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	if !ok {
+		return parser.DevfileObj{}, fmt.Errorf("component not found in Devfile for exec command %q", cmd.Id)
+	}
+	cmpType, err := common.GetComponentType(cmp)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	if cmpType != v1alpha2.ContainerComponentType {
+		return parser.DevfileObj{},
+			fmt.Errorf("%v cannot be used with non-container components. Found out that command (id: %s) for kind %v points to a compoenent of type %q instead",
+				flagName, cmd.Id, kind, cmpType)
+	}
+
+	err = setPortsInContainerComponent(&devfileobj, &cmp, ports, false)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
 	return devfileobj, nil
 }
