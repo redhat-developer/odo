@@ -17,7 +17,8 @@ const (
 )
 
 type ApiServerOptions struct {
-	clientset *clientset.Clientset
+	clientset         *clientset.Clientset
+	apiServerPortFlag int
 }
 
 func NewApiServerOptions() *ApiServerOptions {
@@ -48,7 +49,7 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 	_ = apiserver_impl.StartServer(
 		ctx,
 		nil,
-		20000,
+		o.apiServerPortFlag,
 		nil,
 		nil,
 		o.clientset.StateClient,
@@ -85,5 +86,6 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 	clientset.Add(apiserverCmd,
 		clientset.STATE,
 	)
+	apiserverCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server.")
 	return apiserverCmd
 }
