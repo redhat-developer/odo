@@ -56,6 +56,7 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 		nil,
 		nil,
 		o.clientset.StateClient,
+		o.clientset.PreferenceClient,
 	)
 	<-ctx.Done()
 	return nil
