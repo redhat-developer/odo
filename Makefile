@@ -77,6 +77,10 @@ default: bin
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+.PHONY: ui-static
+ui-static: ## build static files for UI to be served by embedded API server
+	(cd ui && npm install && npm run build) && rm -rf pkg/apiserver-impl/ui/* && mv ui/dist/devfile-builder/* pkg/apiserver-impl/ui/
+
 .PHONY: bin
 bin: ## build the odo binary
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
