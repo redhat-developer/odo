@@ -67,10 +67,10 @@ import NonEmptyDirectoryOutput from './docs-mdx/init/interactive_mode_directory_
 In non-interactive mode, you will have to specify from the command-line the information needed to get a devfile.
 
 If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference view`), and the first one matching will be downloaded.
-If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
-If you want to download a version devfile, you must specify the version with `--devfile-version` flag.
+If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default, `odo` uses the official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use the registry [web interface](https://registry.devfile.io/viewer) to view its content.
+If you want to download a specific version of a devfile, you can specify the version with the `--devfile-version` flag.
 
-If you prefer to download a devfile from an URL or from the local filesystem, you can use the `--devfile-path` instead.
+If you prefer to download a devfile from a URL or from the local filesystem, you can use the `--devfile-path` instead.
 
 The `--starter` flag indicates the name of the starter project (as referenced in the selected devfile), that you want to use to start your development. To see the available starter projects for devfile stacks in the official devfile registry use its [web interface](https://registry.devfile.io/viewer) to view its content.  
 
