@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/utils/pointer"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -464,6 +467,688 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 			}
 			if tt.checkResult != nil && !tt.checkResult(newName, tt.args) {
 				t.Errorf("FlagsBackend.PersonalizeName(), checking result failed")
+			}
+		})
+	}
+}
+
+func TestFlagsBackend_HandleApplicationPorts(t *testing.T) {
+	type devfileProvider func(fs dffilesystem.Filesystem) (parser.DevfileObj, error)
+
+	zeroDevfileProvider := func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+		return parser.DevfileObj{}, nil
+	}
+	fakeDevfileProvider := func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+		devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+		obj := parser.DevfileObj{
+			Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
+			Data: devfileData,
+		}
+		return obj, nil
+	}
+	type fields struct {
+		registryClient registry.Client
+	}
+	type args struct {
+		devfileObjProvider devfileProvider
+		flags              map[string]string
+	}
+	tests := []struct {
+		name         string
+		fields       fields
+		args         args
+		wantProvider devfileProvider
+		wantErr      bool
+	}{
+		{
+			name: "no run-port flag",
+			args: args{
+				devfileObjProvider: fakeDevfileProvider,
+				flags: map[string]string{
+					"opt1":    "val1",
+					FLAG_NAME: "my-name",
+				},
+			},
+			wantProvider: fakeDevfileProvider,
+		},
+		{
+			name: "flag string value not enclosed within []",
+			args: args{
+				devfileObjProvider: fakeDevfileProvider,
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "aaa,bbb",
+				},
+			},
+			wantProvider: fakeDevfileProvider,
+		},
+		{
+			name: "invalid port type",
+			args: args{
+				devfileObjProvider: fakeDevfileProvider,
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,abcde]",
+				},
+			},
+			wantErr:      true,
+			wantProvider: zeroDevfileProvider,
+		},
+		{
+			name: "devfile with no command, but --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+				devfileObj, err := fakeDevfileProvider(fs)
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+					testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+					testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				return devfileObj, nil
+			},
+		},
+		{
+			name: "devfile with more than one default run commands, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Id: "devrun2",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantErr:      true,
+			wantProvider: zeroDevfileProvider,
+		},
+		{
+			name: "devfile with more than one non-default run commands, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(false),
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Id: "devrun2",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(false),
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+				devfileObj, err := fakeDevfileProvider(fs)
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+					testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+					testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+					{
+						Id: "devrun1",
+						CommandUnion: v1alpha2.CommandUnion{
+							Exec: &v1alpha2.ExecCommand{
+								LabeledCommand: v1alpha2.LabeledCommand{
+									BaseCommand: v1alpha2.BaseCommand{
+										Group: &v1alpha2.CommandGroup{
+											Kind:      v1alpha2.RunCommandGroupKind,
+											IsDefault: pointer.Bool(false),
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Id: "devrun2",
+						CommandUnion: v1alpha2.CommandUnion{
+							Exec: &v1alpha2.ExecCommand{
+								LabeledCommand: v1alpha2.LabeledCommand{
+									BaseCommand: v1alpha2.BaseCommand{
+										Group: &v1alpha2.CommandGroup{
+											Kind:      v1alpha2.RunCommandGroupKind,
+											IsDefault: pointer.Bool(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				return devfileObj, nil
+			},
+		},
+		{
+			name: "devfile with no run command, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devdebug",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{Kind: v1alpha2.DebugCommandGroupKind},
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+				devfileObj, err := fakeDevfileProvider(fs)
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+					testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+					testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+					{
+						Id: "devdebug",
+						CommandUnion: v1alpha2.CommandUnion{
+							Exec: &v1alpha2.ExecCommand{
+								LabeledCommand: v1alpha2.LabeledCommand{
+									BaseCommand: v1alpha2.BaseCommand{
+										Group: &v1alpha2.CommandGroup{Kind: v1alpha2.DebugCommandGroupKind},
+									},
+								},
+							},
+						},
+					},
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				return devfileObj, nil
+			},
+		},
+		{
+			name: "devfile with a default non-exec (apply) run command, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Apply: &v1alpha2.ApplyCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantErr:      true,
+			wantProvider: zeroDevfileProvider,
+		},
+		{
+			name: "devfile with a default non-exec (composite) run command, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Composite: &v1alpha2.CompositeCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantErr:      true,
+			wantProvider: zeroDevfileProvider,
+		},
+
+		{
+			name: "devfile with an exec run command with non-container component, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+									Component: "some-random-name",
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantErr:      true,
+			wantProvider: zeroDevfileProvider,
+		},
+		{
+			name: "devfile with an exec run command with non-container component, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+						{
+							Name: "k8s-comp1",
+							ComponentUnion: v1alpha2.ComponentUnion{
+								Kubernetes: &v1alpha2.KubernetesComponent{
+									K8sLikeComponent: v1alpha2.K8sLikeComponent{
+										K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+											Inlined: "some-k8s-def",
+										},
+									},
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+									Component: "k8s-comp1",
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantErr:      true,
+			wantProvider: zeroDevfileProvider,
+		},
+		{
+			name: "devfile with default exec run command with container component, --run-port set",
+			args: args{
+				devfileObjProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+					devfileObj, err := fakeDevfileProvider(fs)
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeContainerComponent("my-cont1", 1234, 2345),
+						testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+						{
+							Id: "devrun1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.RunCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+									Component: "my-cont1",
+								},
+							},
+						},
+						{
+							Id: "devdebug1",
+							CommandUnion: v1alpha2.CommandUnion{
+								Exec: &v1alpha2.ExecCommand{
+									LabeledCommand: v1alpha2.LabeledCommand{
+										BaseCommand: v1alpha2.BaseCommand{
+											Group: &v1alpha2.CommandGroup{
+												Kind:      v1alpha2.DebugCommandGroupKind,
+												IsDefault: pointer.Bool(true),
+											},
+										},
+									},
+									Component: "my-cont2",
+								},
+							},
+						},
+					})
+					if err != nil {
+						return parser.DevfileObj{}, err
+					}
+					return devfileObj, nil
+				},
+				flags: map[string]string{
+					FLAG_NAME:     "my-name",
+					FLAG_RUN_PORT: "[8080,8081]",
+				},
+			},
+			wantErr: false,
+			wantProvider: func(fs dffilesystem.Filesystem) (parser.DevfileObj, error) {
+				devfileObj, err := fakeDevfileProvider(fs)
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				// only my-cont1 (referenced by the default run command) should change
+				cont1 := testingutil.GetFakeContainerComponent("my-cont1")
+				cont1.Container.Endpoints = append(cont1.Container.Endpoints,
+					v1alpha2.Endpoint{
+						Name:       "port-8080-tcp",
+						TargetPort: 8080,
+						Protocol:   "tcp",
+					},
+					v1alpha2.Endpoint{
+						Name:       "port-8081-tcp",
+						TargetPort: 8081,
+						Protocol:   "tcp",
+					},
+				)
+				err = devfileObj.Data.AddComponents([]v1alpha2.Component{
+					cont1,
+					testingutil.GetFakeContainerComponent("my-cont2", 4321, 5432),
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				err = devfileObj.Data.AddCommands([]v1alpha2.Command{
+					{
+						Id: "devrun1",
+						CommandUnion: v1alpha2.CommandUnion{
+							Exec: &v1alpha2.ExecCommand{
+								LabeledCommand: v1alpha2.LabeledCommand{
+									BaseCommand: v1alpha2.BaseCommand{
+										Group: &v1alpha2.CommandGroup{
+											Kind:      v1alpha2.RunCommandGroupKind,
+											IsDefault: pointer.Bool(true),
+										},
+									},
+								},
+								Component: "my-cont1",
+							},
+						},
+					},
+					{
+						Id: "devdebug1",
+						CommandUnion: v1alpha2.CommandUnion{
+							Exec: &v1alpha2.ExecCommand{
+								LabeledCommand: v1alpha2.LabeledCommand{
+									BaseCommand: v1alpha2.BaseCommand{
+										Group: &v1alpha2.CommandGroup{
+											Kind:      v1alpha2.DebugCommandGroupKind,
+											IsDefault: pointer.Bool(true),
+										},
+									},
+								},
+								Component: "my-cont2",
+							},
+						},
+					},
+				})
+				if err != nil {
+					return parser.DevfileObj{}, err
+				}
+				return devfileObj, nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &FlagsBackend{
+				registryClient: tt.fields.registryClient,
+			}
+			fs := dffilesystem.NewFakeFs()
+			devfileObj, err := tt.args.devfileObjProvider(fs)
+			if err != nil {
+				t.Errorf("error building input DevfileObj: %v", err)
+				return
+			}
+			want, err := tt.wantProvider(fs)
+			if err != nil {
+				t.Errorf("error building expected DevfileObj: %v", err)
+				return
+			}
+
+			got, err := o.HandleApplicationPorts(devfileObj, nil, tt.args.flags)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HandleApplicationPorts() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(parsercontext.DevfileCtx{})); diff != "" {
+				t.Errorf("HandleApplicationPorts() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

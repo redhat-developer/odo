@@ -95,7 +95,9 @@ func executeCommand(ctx context.Context, devfileObj parser.DevfileObj, command v
 }
 
 // GetCommand iterates through the devfile commands and returns the devfile command with the specified name and group kind.
-// If commandName is empty, it returns the default command for the group kind or returns an error if there is no default command.
+// If commandName is empty, it returns the default command for the group kind; or, if there is only one command for the specified kind, it will return that
+// (even if it is not marked as the default).
+// It returns an error if there is more than one default command.
 func GetCommand(
 	devfileObj parser.DevfileObj,
 	commandName string,

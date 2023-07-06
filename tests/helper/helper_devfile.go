@@ -10,6 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/pointer"
+
+	"github.com/redhat-developer/odo/pkg/devfile"
 )
 
 // DevfileUpdater is a helper type that can mutate a Devfile object.
@@ -104,4 +106,11 @@ func SetFsGroup(containerName string, fsGroup int) DevfileUpdater {
 		Expect(err).NotTo(HaveOccurred())
 		return nil
 	}
+}
+
+// ReadRawDevfile parses and validates the Devfile specified and returns its raw content.
+func ReadRawDevfile(devfilePath string) parser.DevfileObj {
+	d, err := devfile.ParseAndValidateFromFile(devfilePath, "", false)
+	Expect(err).ToNot(HaveOccurred())
+	return d
 }

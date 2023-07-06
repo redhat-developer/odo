@@ -212,6 +212,16 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty(), file)
 		})
+
+		It("set application ports after fetching Devfile", func() {
+			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--run-port", "3456", "--run-port", "9876"}
+			out := helper.Cmd("odo", args...).ShouldPass().Out()
+			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			file := "devfile_with_run-port_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
+			diff := cmp.Diff(want, got)
+			Expect(diff).To(BeEmpty(), file)
+		})
 	})
 
 })

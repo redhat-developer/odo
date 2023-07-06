@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tidwall/gjson"
@@ -616,4 +618,57 @@ spec:
 		})
 	})
 
+	Context("setting application ports", func() {
+		When("running odo init --run-port with a Devfile with no commands", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile-path",
+					filepath.Join(helper.GetExamplePath(), "source", "devfiles", "nodejs", "devfile-without-commands.yaml"),
+					"--run-port", "1234", "--run-port", "2345", "--run-port", "3456").ShouldPass().Out()
+			})
+			It("should ignore the run ports", func() {
+				d := helper.ReadRawDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+				components, err := d.Data.GetComponents(common.DevfileOptions{
+					ComponentOptions: common.ComponentOptions{
+						ComponentType: v1alpha2.ContainerComponentType,
+					},
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(components).To(HaveLen(1))
+				Expect(components[0].Name).Should(Equal("runtime"))
+				Expect(components[0].Container).ShouldNot(BeNil())
+				Expect(components[0].Container.Endpoints).Should(HaveLen(2))
+				Expect(components[0].Container.Endpoints[0].Name).Should(Equal("http-node"))
+				Expect(components[0].Container.Endpoints[0].TargetPort).Should(Equal(3000))
+				Expect(components[0].Container.Endpoints[1].Name).Should(Equal("debug"))
+				Expect(components[0].Container.Endpoints[1].TargetPort).Should(Equal(5858))
+				Expect(components[0].Container.Endpoints[1].Exposure).Should(Equal(v1alpha2.NoneEndpointExposure))
+			})
+		})
+
+		When("running odo init --run-port with a Devfile with no commands", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile-path",
+					filepath.Join(helper.GetExamplePath(), "source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"),
+					"--run-port", "1234", "--run-port", "2345", "--run-port", "3456").ShouldPass().Out()
+			})
+			It("should overwrite the ports into the container component referenced by the default run command", func() {
+				d := helper.ReadRawDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+				components, err := d.Data.GetComponents(common.DevfileOptions{
+					ComponentOptions: common.ComponentOptions{
+						ComponentType: v1alpha2.ContainerComponentType,
+					},
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(components).To(HaveLen(1))
+				Expect(components[0].Name).Should(Equal("runtime"))
+				Expect(components[0].Container).ShouldNot(BeNil())
+				Expect(components[0].Container.Endpoints).Should(HaveLen(3))
+				for i, p := range []int{1234, 2345, 3456} {
+					Expect(components[0].Container.Endpoints[i].Name).Should(Equal(fmt.Sprintf("port-%d-tcp", p)))
+					Expect(components[0].Container.Endpoints[i].TargetPort).Should(Equal(p))
+					Expect(components[0].Container.Endpoints[i].Protocol).Should(Equal(v1alpha2.TCPEndpointProtocol))
+				}
+			})
+		})
+	})
 })

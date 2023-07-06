@@ -285,6 +285,7 @@ func NewCmdInit(name, fullName string, testClientset clientset.Clientset) *cobra
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_VERSION, "", "version of the devfile stack; use \"latest\" to dowload the latest stack")
+	initCmd.Flags().StringArray(backend.FLAG_RUN_PORT, []string{}, "ports used by the application (via the 'run' command)")
 
 	commonflags.UseOutputFlag(initCmd)
 	// Add a defined annotation in order to appear in the help menu

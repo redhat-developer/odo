@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/AlecAivazis/survey/v2/terminal"
 	"net/url"
 	"path/filepath"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2/terminal"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
@@ -40,6 +41,17 @@ type InitClient struct {
 
 var _ Client = (*InitClient)(nil)
 
+// Explicit list of tags useful to select the right backend
+var _initFlags = []string{
+	backend.FLAG_NAME,
+	backend.FLAG_DEVFILE,
+	backend.FLAG_DEVFILE_REGISTRY,
+	backend.FLAG_STARTER,
+	backend.FLAG_DEVFILE_PATH,
+	backend.FLAG_DEVFILE_VERSION,
+	backend.FLAG_RUN_PORT,
+}
+
 func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client, alizerClient alizer.Client) *InitClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()
@@ -57,9 +69,13 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 // It ignores all the flags except the ones specific to init operation, for e.g. verbosity flag
 func (o *InitClient) GetFlags(flags map[string]string) map[string]string {
 	initFlags := map[string]string{}
+outer:
 	for flag, value := range flags {
-		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH || flag == backend.FLAG_DEVFILE_VERSION {
-			initFlags[flag] = value
+		for _, f := range _initFlags {
+			if flag == f {
+				initFlags[flag] = value
+				continue outer
+			}
 		}
 	}
 	return initFlags
