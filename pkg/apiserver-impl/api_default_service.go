@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/devstate"
@@ -17,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
+	"k8s.io/klog"
 )
 
 // DefaultApiService is a service that implements the logic for the DefaultApiServicer
@@ -119,15 +121,36 @@ func (s *DefaultApiService) DevfileGet(ctx context.Context) (openapi.ImplRespons
 }
 
 func (s *DefaultApiService) DevfilePut(ctx context.Context, params openapi.DevfilePutRequest) (openapi.ImplResponse, error) {
-	devfilePath := odocontext.GetDevfilePath(ctx)
 
-	err := s.validateDevfile(ctx)
+	tmpdir, err := func() (string, error) {
+		dir, err := os.MkdirTemp("", "odo")
+		if err != nil {
+			return "", err
+		}
+		return dir, os.WriteFile(filepath.Join(dir, "devfile.yaml"), []byte(params.Content), 0600)
+	}()
+	defer func() {
+		if tmpdir != "" {
+			err = os.RemoveAll(tmpdir)
+			if err != nil {
+				klog.V(1).Infof("Error deleting temp directory %q: %s", tmpdir, err)
+			}
+		}
+	}()
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("error saving temp Devfile: %s", err),
+		}), nil
+	}
+
+	err = s.validateDevfile(ctx, tmpdir)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
 			Message: fmt.Sprintf("error validating Devfile: %s", err),
 		}), nil
 	}
 
+	devfilePath := odocontext.GetDevfilePath(ctx)
 	err = os.WriteFile(devfilePath, []byte(params.Content), 0600)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -141,15 +164,14 @@ func (s *DefaultApiService) DevfilePut(ctx context.Context, params openapi.Devfi
 
 }
 
-func (s *DefaultApiService) validateDevfile(ctx context.Context) error {
+func (s *DefaultApiService) validateDevfile(ctx context.Context, dir string) error {
 	var (
-		devfilePath   = odocontext.GetDevfilePath(ctx)
 		variables     = fcontext.GetVariables(ctx)
 		imageRegistry = s.preferenceClient.GetImageRegistry()
 	)
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(devfilePath, variables, imageRegistry, true)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(dir, variables, imageRegistry, false)
 	if err != nil {
-		return fmt.Errorf("failed to parse the devfile %s: %w", devfilePath, err)
+		return fmt.Errorf("failed to parse the devfile: %w", err)
 	}
 	return validate.ValidateDevfileData(devObj.Data)
 }
