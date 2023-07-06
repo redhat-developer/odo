@@ -17,8 +17,8 @@ const (
 )
 
 type ApiServerOptions struct {
-	clientset         *clientset.Clientset
-	apiServerPortFlag int
+	clientset *clientset.Clientset
+	portFlag  int
 }
 
 func NewApiServerOptions() *ApiServerOptions {
@@ -26,6 +26,8 @@ func NewApiServerOptions() *ApiServerOptions {
 }
 
 var _ genericclioptions.Runnable = (*ApiServerOptions)(nil)
+var _ genericclioptions.SignalHandler = (*ApiServerOptions)(nil)
+var _ genericclioptions.Cleanuper = (*ApiServerOptions)(nil)
 
 func (o *ApiServerOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
@@ -50,7 +52,7 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 	_ = apiserver_impl.StartServer(
 		ctx,
 		cancel,
-		o.apiServerPortFlag,
+		o.portFlag,
 		nil,
 		nil,
 		o.clientset.StateClient,
@@ -72,7 +74,7 @@ func (o *ApiServerOptions) HandleSignal(ctx context.Context, cancelFunc context.
 	return nil
 }
 
-// NewCmdDev implements the odo dev command
+// NewCmdApiServer implements the odo api-server command
 func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewApiServerOptions()
 	apiserverCmd := &cobra.Command{
@@ -87,6 +89,6 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 	clientset.Add(apiserverCmd,
 		clientset.STATE,
 	)
-	apiserverCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server.")
+	apiserverCmd.Flags().IntVar(&o.portFlag, "port", 0, "Define custom port for API Server.")
 	return apiserverCmd
 }
