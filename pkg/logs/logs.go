@@ -1,14 +1,21 @@
 package logs
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"github.com/fatih/color"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/platform"
 )
@@ -41,6 +48,149 @@ func NewLogsClient(platformClient platform.Client) *LogsClient {
 }
 
 var _ Client = (*LogsClient)(nil)
+
+func (o *LogsClient) DisplayLogs(
+	ctx context.Context,
+	mode string,
+	componentName string,
+	namespace string,
+	follow bool,
+	out io.Writer,
+) error {
+	events, err := o.GetLogsForMode(
+		ctx,
+		mode,
+		componentName,
+		namespace,
+		follow,
+	)
+	if err != nil {
+		return err
+	}
+
+	uniqueContainerNames := map[string]struct{}{}
+	var goroutines struct{ count int64 } // keep a track of running goroutines so that we don't exit prematurely
+	errChan := make(chan error)          // errors are put on this channel
+	var mu sync.Mutex
+
+	displayedLogs := map[string]struct{}{}
+	for {
+		select {
+		case containerLogs := <-events.Logs:
+			podContainerName := fmt.Sprintf("%s-%s", containerLogs.PodName, containerLogs.ContainerName)
+			if _, ok := displayedLogs[podContainerName]; ok {
+				continue
+			}
+			displayedLogs[podContainerName] = struct{}{}
+
+			uniqueName := getUniqueContainerName(containerLogs.ContainerName, uniqueContainerNames)
+			uniqueContainerNames[uniqueName] = struct{}{}
+			colour := log.ColorPicker()
+			logs := containerLogs.Logs
+
+			func() {
+				mu.Lock()
+				defer mu.Unlock()
+				color.Set(colour)
+				defer color.Unset()
+				help := ""
+				if uniqueName != containerLogs.ContainerName {
+					help = fmt.Sprintf(" (%s)", uniqueName)
+				}
+				_, err = fmt.Fprintf(out, "--> Logs for %s / %s%s\n", containerLogs.PodName, containerLogs.ContainerName, help)
+				if err != nil {
+					errChan <- err
+				}
+			}()
+
+			if follow {
+				atomic.AddInt64(&goroutines.count, 1)
+				go func(out io.Writer) {
+					defer func() {
+						atomic.AddInt64(&goroutines.count, -1)
+					}()
+					err = printLogs(uniqueName, logs, out, colour, &mu)
+					if err != nil {
+						errChan <- err
+					}
+					delete(displayedLogs, podContainerName)
+					events.Done <- struct{}{}
+				}(out)
+			} else {
+				err = printLogs(uniqueName, logs, out, colour, &mu)
+				if err != nil {
+					return err
+				}
+			}
+		case err = <-errChan:
+			return err
+		case err = <-events.Err:
+			return err
+		case <-events.Done:
+			if !follow && goroutines.count == 0 {
+				if len(uniqueContainerNames) == 0 {
+					// This will be the case when:
+					// 1. user specifies --dev flag, but the component's running in Deploy mode
+					// 2. user specified --deploy flag, but the component's running in Dev mode
+					// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
+					fmt.Fprintf(out, "no containers running in the specified mode for the component %q\n", componentName)
+				}
+				return nil
+			}
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string {
+	if _, ok := uniqueNames[name]; ok {
+		// name already present in uniqueNames; find another name
+		// first check if last character in name is a number; if so increment it, else append name with [1]
+		var numStr string
+		var last int
+		var err error
+
+		split := strings.Split(name, "[")
+		if len(split) == 2 {
+			numStr = strings.Trim(split[1], "]")
+			last, err = strconv.Atoi(numStr)
+			if err != nil {
+				return ""
+			}
+			last++
+		} else {
+			last = 1
+		}
+		name = fmt.Sprintf("%s[%d]", split[0], last)
+		return getUniqueContainerName(name, uniqueNames)
+	}
+	return name
+}
+
+// printLogs prints the logs of the containers with container name prefixed to the log message
+func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour color.Attribute, mu *sync.Mutex) error {
+	scanner := bufio.NewScanner(rd)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		err := func() error {
+			mu.Lock()
+			defer mu.Unlock()
+			color.Set(colour)
+			defer color.Unset()
+
+			_, err := fmt.Fprintln(out, containerName+": "+line)
+			return err
+		}()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (o *LogsClient) GetLogsForMode(
 	ctx context.Context,
@@ -126,13 +276,20 @@ func (o *LogsClient) getLogsForMode(
 		if err != nil {
 			errChan <- err
 		}
-		for ev := range podWatcher.ResultChan() {
-			switch ev.Type {
-			case watch.Added, watch.Modified:
-				err = getPods()
-				if err != nil {
-					errChan <- err
+	outer:
+		for {
+			select {
+			case ev := <-podWatcher.ResultChan():
+				switch ev.Type {
+				case watch.Added, watch.Modified:
+					err = getPods()
+					if err != nil {
+						errChan <- err
+					}
 				}
+
+			case <-ctx.Done():
+				break outer
 			}
 		}
 	}

@@ -133,6 +133,7 @@ type DevSessionOpts struct {
 	StartAPIServer   bool
 	APIServerPort    int
 	SyncGitDir       bool
+	ShowLogs         bool
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -169,6 +170,9 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	}
 	if options.SyncGitDir {
 		args = append(args, "--sync-git-dir")
+	}
+	if options.ShowLogs {
+		args = append(args, "--logs")
 	}
 	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)

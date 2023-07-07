@@ -1,17 +1,10 @@
 package logs
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
-
-	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -50,6 +43,7 @@ type LogsOptions struct {
 }
 
 var _ genericclioptions.Runnable = (*LogsOptions)(nil)
+var _ genericclioptions.SignalHandler = (*LogsOptions)(nil)
 
 type logsMode string
 
@@ -112,7 +106,6 @@ func (o *LogsOptions) Validate(ctx context.Context) error {
 
 func (o *LogsOptions) Run(ctx context.Context) error {
 	var logMode logsMode
-	var err error
 
 	componentName := odocontext.GetComponentName(ctx)
 
@@ -136,137 +129,20 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	if o.clientset.KubernetesClient != nil {
 		ns = odocontext.GetNamespace(ctx)
 	}
-	events, err := o.clientset.LogsClient.GetLogsForMode(
+
+	return o.clientset.LogsClient.DisplayLogs(
 		ctx,
 		mode,
 		componentName,
 		ns,
 		o.follow,
+		o.out,
 	)
-	if err != nil {
-		return err
-	}
-
-	uniqueContainerNames := map[string]struct{}{}
-	var goroutines struct{ count int64 } // keep a track of running goroutines so that we don't exit prematurely
-	errChan := make(chan error)          // errors are put on this channel
-	var mu sync.Mutex
-
-	displayedLogs := map[string]struct{}{}
-	for {
-		select {
-		case containerLogs := <-events.Logs:
-			podContainerName := fmt.Sprintf("%s-%s", containerLogs.PodName, containerLogs.ContainerName)
-			if _, ok := displayedLogs[podContainerName]; ok {
-				continue
-			}
-			displayedLogs[podContainerName] = struct{}{}
-
-			uniqueName := getUniqueContainerName(containerLogs.ContainerName, uniqueContainerNames)
-			uniqueContainerNames[uniqueName] = struct{}{}
-			colour := log.ColorPicker()
-			logs := containerLogs.Logs
-
-			func() {
-				mu.Lock()
-				defer mu.Unlock()
-				color.Set(colour)
-				defer color.Unset()
-				help := ""
-				if uniqueName != containerLogs.ContainerName {
-					help = fmt.Sprintf(" (%s)", uniqueName)
-				}
-				_, err = fmt.Fprintf(o.out, "--> Logs for %s / %s%s\n", containerLogs.PodName, containerLogs.ContainerName, help)
-				if err != nil {
-					errChan <- err
-				}
-			}()
-
-			if o.follow {
-				atomic.AddInt64(&goroutines.count, 1)
-				go func(out io.Writer) {
-					defer func() {
-						atomic.AddInt64(&goroutines.count, -1)
-					}()
-					err = printLogs(uniqueName, logs, out, colour, &mu)
-					if err != nil {
-						errChan <- err
-					}
-					delete(displayedLogs, podContainerName)
-					events.Done <- struct{}{}
-				}(o.out)
-			} else {
-				err = printLogs(uniqueName, logs, o.out, colour, &mu)
-				if err != nil {
-					return err
-				}
-			}
-		case err = <-errChan:
-			return err
-		case err = <-events.Err:
-			return err
-		case <-events.Done:
-			if !o.follow && goroutines.count == 0 {
-				if len(uniqueContainerNames) == 0 {
-					// This will be the case when:
-					// 1. user specifies --dev flag, but the component's running in Deploy mode
-					// 2. user specified --deploy flag, but the component's running in Dev mode
-					// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
-					fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", componentName)
-				}
-				return nil
-			}
-		}
-	}
 }
 
-func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string {
-	if _, ok := uniqueNames[name]; ok {
-		// name already present in uniqueNames; find another name
-		// first check if last character in name is a number; if so increment it, else append name with [1]
-		var numStr string
-		var last int
-		var err error
-
-		split := strings.Split(name, "[")
-		if len(split) == 2 {
-			numStr = strings.Trim(split[1], "]")
-			last, err = strconv.Atoi(numStr)
-			if err != nil {
-				return ""
-			}
-			last++
-		} else {
-			last = 1
-		}
-		name = fmt.Sprintf("%s[%d]", split[0], last)
-		return getUniqueContainerName(name, uniqueNames)
-	}
-	return name
-}
-
-// printLogs prints the logs of the containers with container name prefixed to the log message
-func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour color.Attribute, mu *sync.Mutex) error {
-	scanner := bufio.NewScanner(rd)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		err := func() error {
-			mu.Lock()
-			defer mu.Unlock()
-			color.Set(colour)
-			defer color.Unset()
-
-			_, err := fmt.Fprintln(out, containerName+": "+line)
-			return err
-		}()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (o *LogsOptions) HandleSignal(ctx context.Context, cancelFunc context.CancelFunc) error {
+	cancelFunc()
+	select {}
 }
 
 func NewCmdLogs(name, fullname string, testClientset clientset.Clientset) *cobra.Command {

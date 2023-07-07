@@ -1,8 +1,20 @@
 package logs
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 type Client interface {
+	DisplayLogs(
+		ctx context.Context,
+		mode string,
+		componentName string,
+		namespace string,
+		follow bool,
+		out io.Writer,
+	) error
+
 	// GetLogsForMode gets logs of the containers for the specified mode (Dev, Deploy or both) of the provided
 	// component name and namespace. It returns Events which has multiple channels. Logs are put on the
 	// Events.Logs channel and errors on Events.Err. Events.Done channel is populated to indicate that all Pods' logs

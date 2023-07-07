@@ -24,6 +24,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
@@ -76,6 +77,7 @@ type DevOptions struct {
 	apiServerFlag        bool
 	apiServerPortFlag    int
 	syncGitDirFlag       bool
+	logsFlag             bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -271,6 +273,12 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		)
 	}
 
+	if o.logsFlag {
+		go func() {
+			_ = o.followLogs(ctx)
+		}()
+	}
+
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		dev.StartOptions{
@@ -290,6 +298,28 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Out:                  o.out,
 			ErrOut:               o.errOut,
 		},
+	)
+}
+
+func (o *DevOptions) followLogs(
+	ctx context.Context,
+) error {
+	var (
+		componentName = odocontext.GetComponentName(ctx)
+	)
+
+	ns := ""
+	if o.clientset.KubernetesClient != nil {
+		ns = odocontext.GetNamespace(ctx)
+	}
+
+	return o.clientset.LogsClient.DisplayLogs(
+		ctx,
+		odolabels.ComponentDevMode,
+		componentName,
+		ns,
+		true,
+		o.out,
 	)
 }
 
@@ -368,6 +398,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
 	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
 	devCmd.Flags().BoolVar(&o.syncGitDirFlag, "sync-git-dir", false, "Synchronize the .git directory to the container. By default, this directory is not synchronized.")
+	devCmd.Flags().BoolVar(&o.logsFlag, "logs", false, "Follow logs of component")
 
 	if feature.IsExperimentalModeEnabled(ctx) {
 		devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", false, "Start the API Server; this is an experimental feature")
@@ -380,6 +411,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.FILESYSTEM,
 		clientset.INIT,
 		clientset.KUBERNETES_NULLABLE,
+		clientset.LOGS,
 		clientset.PODMAN_NULLABLE,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
