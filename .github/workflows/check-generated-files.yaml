@@ -15,7 +15,7 @@ jobs:
         run: make ui-static
 
       - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v16
+        uses: tj-actions/verify-changed-files@7f1b21ceb7ef533b97b46e89e2f882ee5cb17ae0
         id: verify-changed-files
       
       - name: Some files have changed
