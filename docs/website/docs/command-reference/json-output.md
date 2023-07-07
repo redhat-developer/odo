@@ -368,56 +368,45 @@ odo registry -o json
 ```json
 [
   {
-    "name": "python",
-    "displayName": "Python",
-    "description": "Python is an interpreted, object-oriented, high-level programming language with dynamic semantics. Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together.",
+    "name": "java-openliberty",
+    "displayName": "Open Liberty Maven",
+    "description": "Java application based on Java 11 and Maven 3.8, using the Open Liberty runtime 22.0.0.1",
     "registry": {
       "name": "DefaultDevfileRegistry",
       "url": "https://registry.devfile.io",
       "secure": false
     },
-    "language": "Python",
+    "language": "Java",
     "tags": [
-      "Python",
-      "Pip",
-      "Flask"
+      "Java",
+      "Maven"
     ],
-    "projectType": "Python",
-    "version": "2.1.0",
+    "projectType": "Open Liberty",
+    "version": "0.9.0",
     "versions": [
       {
-        "version": "2.1.0",
+        "version": "0.9.0",
         "isDefault": true,
         "schemaVersion": "2.1.0",
         "starterProjects": [
-          "flask-example"
+          "rest"
         ],
         "commandGroups": {
-            "build": true,
-            "debug": true,
-            "deploy": false,
-            "run": true,
-            "test": false
-        }
-      },
-      {
-        "version": "3.0.0",
-        "isDefault": false,
-        "schemaVersion": "2.2.0",
-        "starterProjects": [
-          "flask-example"
-        ],
-        "commandGroups": {
-            "build": true,
-            "debug": true,
-            "deploy": false,
-            "run": true,
-            "test": false
+          "build": false,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": true
         }
       }
     ],
     "starterProjects": [
-      "flask-example"
+      "rest"
+    ],
+    "architectures": [
+      "amd64",
+      "ppc64le",
+      "s390x"
     ]
   },
   [...]
