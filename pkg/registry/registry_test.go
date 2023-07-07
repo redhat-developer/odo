@@ -208,6 +208,11 @@ func TestListDevfileStacks(t *testing.T) {
 						"Python",
 						"pip"
 					],
+					"architectures": [
+						"amd64",
+						"ppc64le",
+						"s390x"
+					],
 					"language": "python",
 					"icon": "/images/foobar.svg",
 					"globalMemoryLimit": "2686Mi",
@@ -264,8 +269,9 @@ func TestListDevfileStacks(t *testing.T) {
 							Name: registryName,
 							URL:  server.URL,
 						},
-						Language: "python",
-						Tags:     []string{"Python", "pip"},
+						Language:      "python",
+						Tags:          []string{"Python", "pip"},
+						Architectures: []string{"amd64", "ppc64le", "s390x"},
 					},
 				},
 			},
@@ -318,8 +324,64 @@ func TestListDevfileStacks(t *testing.T) {
 							Name: registryName,
 							URL:  server.URL,
 						},
-						Language: "python",
-						Tags:     []string{"Python", "pip"},
+						Language:      "python",
+						Tags:          []string{"Python", "pip"},
+						Architectures: []string{"amd64", "ppc64le", "s390x"},
+					},
+				},
+			},
+		},
+		{
+			name:         "Case 3.2: Test getting a devfile using a filter from the architectures",
+			registryName: "TestRegistry",
+			filter:       "s390",
+			want: DevfileStackList{
+				DevfileRegistries: []api.Registry{
+					{
+						Name:   "TestRegistry",
+						URL:    server.URL,
+						Secure: false,
+					},
+				},
+				Items: []api.DevfileStack{
+					// Devfiles with no architectures are supposed to be compatible with all architectures,
+					// so s390 will match an existing valid architecture (s390x).
+					{
+						Name:        "nodejs",
+						DisplayName: "NodeJS Angular Web Application",
+						Description: "Stack for developing NodeJS Angular Web Application",
+						Registry: api.Registry{
+							Name: registryName,
+							URL:  server.URL,
+						},
+						Language: "nodejs",
+						Tags:     []string{"NodeJS", "Angular", "Alpine"},
+					},
+					{
+						Name:        "python",
+						DisplayName: "Python",
+						Description: "Python Stack with Python 3.7",
+						Registry: api.Registry{
+							Name: registryName,
+							URL:  server.URL,
+						},
+						Language:      "python",
+						Tags:          []string{"Python", "pip"},
+						Architectures: []string{"amd64", "ppc64le", "s390x"},
+					},
+				},
+			},
+		},
+		{
+			name:         "Case 3.3: Test getting a devfile using a filter not matching name, description or architectures",
+			registryName: "TestRegistry",
+			filter:       "some-random-string",
+			want: DevfileStackList{
+				DevfileRegistries: []api.Registry{
+					{
+						Name:   "TestRegistry",
+						URL:    server.URL,
+						Secure: false,
 					},
 				},
 			},
@@ -378,63 +440,132 @@ func TestGetRegistryDevfiles(t *testing.T) {
 		"links": {
 			"self": "/devfiles/angular/devfile.yaml"
 		}
+	},
+	{
+		"name": "python",
+		"displayName": "Python Application",
+		"description": "Stack for developing a Python Web Application",
+		"version": "2.3.4",
+		"tags": ["Python"],
+		"language": "python",
+		"architectures": [
+		  "amd64",
+		  "ppc64le"
+		],
+		"links": {
+			"self": "/devfiles/python/devfile.yaml"
+		}
 	}
 ]
 `
 		v2IndexResponse = `
 [
 	{
-    "name": "go",
-    "displayName": "Go Runtime",
-    "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
-    "type": "stack",
-    "tags": [
-      "Go"
-    ],
-    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
-    "projectType": "Go",
-    "language": "Go",
-    "provider": "Red Hat",
-    "versions": [
-      {
-        "version": "2.0.0",
-        "schemaVersion": "2.2.0",
-        "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
-        "tags": [
-          "Go"
-        ],
-        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
-        "links": {
-          "self": "devfile-catalog/go:2.0.0"
-        },
-        "resources": [
-          "devfile.yaml"
-        ],
-        "starterProjects": [
-          "go-starter"
-        ]
-      },
-      {
-        "version": "1.0.2",
-        "schemaVersion": "2.1.0",
-        "default": true,
-        "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
-        "tags": [
-          "Go"
-        ],
-        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
-        "links": {
-          "self": "devfile-catalog/go:1.0.2"
-        },
-        "resources": [
-          "devfile.yaml"
-        ],
-        "starterProjects": [
-          "go-starter"
-        ]
-      }
-    ]
-  }
+		"name": "go",
+		"displayName": "Go Runtime",
+		"description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+		"type": "stack",
+		"tags": [
+		  "Go"
+		],
+		"icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+		"projectType": "Go",
+		"language": "Go",
+		"provider": "Red Hat",
+		"versions": [
+		  {
+			"version": "2.0.0",
+			"schemaVersion": "2.2.0",
+			"description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+			"tags": [
+			  "Go"
+			],
+			"icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+			"links": {
+			  "self": "devfile-catalog/go:2.0.0"
+			},
+			"resources": [
+			  "devfile.yaml"
+			],
+			"starterProjects": [
+			  "go-starter"
+			]
+		  },
+		  {
+			"version": "1.0.2",
+			"schemaVersion": "2.1.0",
+			"default": true,
+			"description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+			"tags": [
+			  "Go"
+			],
+			"icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+			"links": {
+			  "self": "devfile-catalog/go:1.0.2"
+			},
+			"resources": [
+			  "devfile.yaml"
+			],
+			"starterProjects": [
+			  "go-starter"
+			]
+		  }
+		]
+	},
+	{
+		"name": "python",
+		"displayName": "Python Application",
+		"description": "Python Stack",
+		"type": "stack",
+		"tags": [
+		  "Python"
+		],
+		"architectures": [
+		  "amd64",
+		  "ppc64le"
+		],
+		"projectType": "Python",
+		"language": "Python",
+		"versions": [
+		  {
+			"version": "2.3.4",
+			"schemaVersion": "2.2.0",
+			"description": "Python stack.",
+			"tags": [
+			  "Python"
+			],
+			"icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg",
+			"links": {
+			  "self": "devfile-catalog/python:2.0.0"
+			},
+			"resources": [
+			  "devfile.yaml"
+			],
+			"starterProjects": [
+			  "python-starter"
+			]
+		  },
+		  {
+			"version": "1.2.3",
+			"schemaVersion": "2.1.0",
+			"default": true,
+			"description": "Python stack.",
+			"tags": [
+			  "Python"
+			],
+			"icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg",
+			"links": {
+			  "self": "devfile-catalog/python:2.0.0"
+			},
+			"resources": [
+			  "devfile.yaml"
+			],
+			"starterProjects": [
+			  "python-starter"
+			]
+		  }
+		]
+	}
 ]
 `
 	)
@@ -520,6 +651,16 @@ func TestGetRegistryDevfiles(t *testing.T) {
 						Tags:           []string{"NodeJS", "Angular", "Alpine"},
 						DefaultVersion: "1.2.3",
 					},
+					{
+						Name:           "python",
+						DisplayName:    "Python Application",
+						Description:    "Stack for developing a Python Web Application",
+						Registry:       api.Registry{Name: registryName, URL: registryUrl},
+						Language:       "python",
+						Tags:           []string{"Python"},
+						Architectures:  []string{"amd64", "ppc64le"},
+						DefaultVersion: "2.3.4",
+					},
 				}
 			},
 		},
@@ -554,6 +695,22 @@ func TestGetRegistryDevfiles(t *testing.T) {
 							{Version: "1.0.2", IsDefault: true, SchemaVersion: "2.1.0", StarterProjects: []string{"go-starter"}},
 							{Version: "2.0.0", IsDefault: false, SchemaVersion: "2.2.0", StarterProjects: []string{"go-starter"}},
 						},
+					},
+					{
+						Name:                   "python",
+						DisplayName:            "Python Application",
+						Description:            "Python Stack",
+						Registry:               api.Registry{Name: registryName, URL: registryUrl},
+						Language:               "Python",
+						ProjectType:            "Python",
+						Tags:                   []string{"Python"},
+						DefaultVersion:         "1.2.3",
+						DefaultStarterProjects: []string{"python-starter"},
+						Versions: []api.DevfileStackVersion{
+							{Version: "1.2.3", IsDefault: true, SchemaVersion: "2.1.0", StarterProjects: []string{"python-starter"}},
+							{Version: "2.3.4", IsDefault: false, SchemaVersion: "2.2.0", StarterProjects: []string{"python-starter"}},
+						},
+						Architectures: []string{"amd64", "ppc64le"},
 					},
 				}
 			},
@@ -595,6 +752,22 @@ func TestGetRegistryDevfiles(t *testing.T) {
 						Versions: []api.DevfileStackVersion{
 							{Version: "1.0.2", IsDefault: true, SchemaVersion: "2.1.0", StarterProjects: []string{"go-starter"}},
 							{Version: "2.0.0", IsDefault: false, SchemaVersion: "2.2.0", StarterProjects: []string{"go-starter"}},
+						},
+					},
+					{
+						Name:                   "python",
+						DisplayName:            "Python Application",
+						Description:            "Python Stack",
+						Registry:               api.Registry{Name: registryName, URL: registryUrl},
+						Language:               "Python",
+						ProjectType:            "Python",
+						Tags:                   []string{"Python"},
+						Architectures:          []string{"amd64", "ppc64le"},
+						DefaultVersion:         "1.2.3",
+						DefaultStarterProjects: []string{"python-starter"},
+						Versions: []api.DevfileStackVersion{
+							{Version: "1.2.3", IsDefault: true, SchemaVersion: "2.1.0", StarterProjects: []string{"python-starter"}},
+							{Version: "2.3.4", IsDefault: false, SchemaVersion: "2.2.0", StarterProjects: []string{"python-starter"}},
 						},
 					},
 				}

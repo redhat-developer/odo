@@ -79,6 +79,9 @@ var _ = Describe("odo devfile registry command tests", func() {
 							Expect(output).Should(ContainSubstring(h + ":"))
 						}
 					})
+					By("not displaying Architectures", func() {
+						Expect(output).ShouldNot(ContainSubstring("Architectures:"))
+					})
 					By("checking values", func() {
 						helper.MatchAllInOutput(output, []string{"nodejs-starter", "JavaScript", "Node.js Runtime", "Dev: Y"})
 					})
@@ -94,6 +97,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 					helper.JsonPathContentContain(stdout, "0.description", "Node")
 					helper.JsonPathContentContain(stdout, "0.language", "JavaScript")
 					helper.JsonPathContentContain(stdout, "0.projectType", "Node.js")
+					helper.JsonPathDoesNotExist(stdout, "0.architectures")
 					helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
 					helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
 					helper.JsonPathContentContain(stdout, "0.versions.0.commandGroups.run", "true")
@@ -113,15 +117,15 @@ var _ = Describe("odo devfile registry command tests", func() {
 				})
 			})
 
-			It("Should list python specifically", func() {
-				args := []string{"registry", "--devfile", "python", "--devfile-registry", "DefaultDevfileRegistry"}
+			It("Should list java-openliberty specifically", func() {
+				args := []string{"registry", "--devfile", "java-openliberty", "--devfile-registry", "DefaultDevfileRegistry"}
 				By("using human readable output", func() {
 					output := helper.Cmd("odo", args...).ShouldPass().Out()
 					By("checking table header", func() {
-						helper.MatchAllInOutput(output, []string{"NAME", "REGISTRY", "DESCRIPTION", "VERSIONS"})
+						helper.MatchAllInOutput(output, []string{"NAME", "REGISTRY", "DESCRIPTION", "ARCHITECTURES", "VERSIONS"})
 					})
 					By("checking table row", func() {
-						helper.MatchAllInOutput(output, []string{"python"})
+						helper.MatchAllInOutput(output, []string{"java-openliberty"})
 					})
 				})
 				By("using JSON output", func() {
@@ -130,16 +134,21 @@ var _ = Describe("odo devfile registry command tests", func() {
 					stdout, stderr := res.Out(), res.Err()
 					Expect(stderr).To(BeEmpty())
 					Expect(helper.IsJSON(stdout)).To(BeTrue())
-					helper.JsonPathContentIs(stdout, "0.name", "python")
-					helper.JsonPathContentContain(stdout, "0.displayName", "Python")
-					helper.JsonPathContentContain(stdout, "0.description", "Python is an interpreted")
-					helper.JsonPathContentContain(stdout, "0.language", "Python")
-					helper.JsonPathContentContain(stdout, "0.projectType", "Python")
+					helper.JsonPathContentIs(stdout, "0.name", "java-openliberty")
+					helper.JsonPathContentContain(stdout, "0.displayName", "Open Liberty Maven")
+					helper.JsonPathContentContain(stdout, "0.description", "using the Open Liberty runtime")
+					helper.JsonPathContentContain(stdout, "0.language", "Java")
+					helper.JsonPathContentContain(stdout, "0.projectType", "Open Liberty")
 					helper.JsonPathContentContain(stdout, "0.devfileData", "")
+
+					By("checking architectures", func() {
+						architectures := gjson.Get(stdout, "0.architectures").Array()
+						Expect(architectures).ShouldNot(BeEmpty())
+					})
 
 					defaultVersion := gjson.Get(stdout, "0.version").String()
 					By("returning backward-compatible information linked to the default stack version", func() {
-						helper.JsonPathContentContain(stdout, "0.starterProjects.0", "flask-example")
+						helper.JsonPathContentContain(stdout, "0.starterProjects.0", "rest")
 						Expect(defaultVersion).ShouldNot(BeEmpty())
 					})
 					By("returning a non-empty list of versions", func() {

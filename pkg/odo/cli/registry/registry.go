@@ -32,6 +32,9 @@ var Example = `  # Get all devfile components
 # Filter by name and devfile registry
 %[1]s --filter nodejs --devfile-registry DefaultDevfileRegistry
 
+# Filter by architecture
+%[1]s --filter amd64
+
 # Show more details from a specific devfile
 %[1]s --details --devfile nodejs
 
@@ -117,7 +120,7 @@ func NewCmdRegistry(name, fullName string, testClientset clientset.Clientset) *c
 	clientset.Add(listCmd, clientset.REGISTRY)
 
 	// Flags
-	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description of the component")
+	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description or supported architecture of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of a Devfile, to be used only with --devfile")
@@ -158,7 +161,7 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 	})
 	t.SetOutputMirror(log.GetStdout())
 
-	t.AppendHeader(table.Row{"NAME", "REGISTRY", "DESCRIPTION", "VERSIONS"})
+	t.AppendHeader(table.Row{"NAME", "REGISTRY", "DESCRIPTION", "ARCHITECTURES", "VERSIONS"})
 
 	for _, devfileComponent := range DevfileList {
 		// Mark the name as yellow in the index so it's easier to see.
@@ -195,6 +198,14 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 				return
 			}
 
+			var archs string
+			if len(devfileComponent.Architectures) != 0 {
+				archs = fmt.Sprintf(`%s:
+  - %s`,
+					log.Sbold("Architectures"),
+					strings.Join(devfileComponent.Architectures, "\n  - ")+"\n")
+			}
+
 			// Output the details of the component
 			fmt.Printf(`%s: %s
 %s: %s
@@ -211,9 +222,9 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
   - Dev: %s
   - Deploy: %s
   - Debug: %s
-%s:
+%s%s:
   - %s
-%s`,
+`,
 				log.Sbold("Name"), name,
 				log.Sbold("Display Name"), devfileComponent.DisplayName,
 				log.Sbold("Registry"), devfileComponent.Registry.Name,
@@ -229,15 +240,17 @@ func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 				boolToYesNo(defaultVersionDetails.CommandGroups[schema.RunCommandGroupKind]),
 				boolToYesNo(defaultVersionDetails.CommandGroups[schema.DeployCommandGroupKind]),
 				boolToYesNo(defaultVersionDetails.CommandGroups[schema.DebugCommandGroupKind]),
+				archs,
 				log.Sbold("Versions"),
 				strings.Join(vList, "\n  - "),
-				"\n")
+			)
 		} else {
 			// Create a simplified row only showing the name, registry and description and versions
 			t.AppendRow(table.Row{
 				name,
 				devfileComponent.Registry.Name,
 				util.TruncateString(devfileComponent.Description, 40, "..."),
+				strings.Join(devfileComponent.Architectures, ", "),
 				strings.Join(vList, ", "),
 			})
 		}
