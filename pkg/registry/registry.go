@@ -366,6 +366,7 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 			ProjectType:            devfileIndexEntry.ProjectType,
 			DefaultStarterProjects: devfileIndexEntry.StarterProjects,
 			DefaultVersion:         devfileIndexEntry.Version,
+			Architectures:          devfileIndexEntry.Architectures,
 		}
 		for _, v := range devfileIndexEntry.Versions {
 			if v.Default {

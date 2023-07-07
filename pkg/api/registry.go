@@ -1,7 +1,7 @@
 package api
 
 import (
-	schema "github.com/devfile/registry-support/index/generator/schema"
+	"github.com/devfile/registry-support/index/generator/schema"
 )
 
 // Registry is the main struct of devfile registry
@@ -33,6 +33,7 @@ type DevfileStack struct {
 	// Deprecated. Use Versions.StarterProjects instead.
 	DefaultStarterProjects []string     `json:"starterProjects"`
 	DevfileData            *DevfileData `json:"devfileData,omitempty"`
+	Architectures          []string     `json:"architectures,omitempty"`
 }
 
 type DevfileStackVersion struct {
