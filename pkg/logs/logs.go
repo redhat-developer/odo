@@ -137,6 +137,8 @@ func (o *LogsClient) DisplayLogs(
 				}
 				return nil
 			}
+		case <-ctx.Done():
+			return nil
 		}
 	}
 }
@@ -274,13 +276,20 @@ func (o *LogsClient) getLogsForMode(
 		if err != nil {
 			errChan <- err
 		}
-		for ev := range podWatcher.ResultChan() {
-			switch ev.Type {
-			case watch.Added, watch.Modified:
-				err = getPods()
-				if err != nil {
-					errChan <- err
+	outer:
+		for {
+			select {
+			case ev := <-podWatcher.ResultChan():
+				switch ev.Type {
+				case watch.Added, watch.Modified:
+					err = getPods()
+					if err != nil {
+						errChan <- err
+					}
 				}
+
+			case <-ctx.Done():
+				break outer
 			}
 		}
 	}

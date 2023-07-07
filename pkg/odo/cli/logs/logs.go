@@ -43,6 +43,7 @@ type LogsOptions struct {
 }
 
 var _ genericclioptions.Runnable = (*LogsOptions)(nil)
+var _ genericclioptions.SignalHandler = (*LogsOptions)(nil)
 
 type logsMode string
 
@@ -137,6 +138,11 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		o.follow,
 		o.out,
 	)
+}
+
+func (o *LogsOptions) HandleSignal(ctx context.Context, cancelFunc context.CancelFunc) error {
+	cancelFunc()
+	select {}
 }
 
 func NewCmdLogs(name, fullname string, testClientset clientset.Clientset) *cobra.Command {
