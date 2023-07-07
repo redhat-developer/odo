@@ -334,7 +334,7 @@ func TestListDevfileStacks(t *testing.T) {
 		{
 			name:         "Case 3.2: Test getting a devfile using a filter from the architectures",
 			registryName: "TestRegistry",
-			filter:       "s390x",
+			filter:       "s390",
 			want: DevfileStackList{
 				DevfileRegistries: []api.Registry{
 					{
@@ -344,6 +344,19 @@ func TestListDevfileStacks(t *testing.T) {
 					},
 				},
 				Items: []api.DevfileStack{
+					// Devfiles with no architectures are supposed to be compatible with all architectures,
+					// so s390 will match an existing valid architecture (s390x).
+					{
+						Name:        "nodejs",
+						DisplayName: "NodeJS Angular Web Application",
+						Description: "Stack for developing NodeJS Angular Web Application",
+						Registry: api.Registry{
+							Name: registryName,
+							URL:  server.URL,
+						},
+						Language: "nodejs",
+						Tags:     []string{"NodeJS", "Angular", "Alpine"},
+					},
 					{
 						Name:        "python",
 						DisplayName: "Python",
@@ -355,6 +368,20 @@ func TestListDevfileStacks(t *testing.T) {
 						Language:      "python",
 						Tags:          []string{"Python", "pip"},
 						Architectures: []string{"amd64", "ppc64le", "s390x"},
+					},
+				},
+			},
+		},
+		{
+			name:         "Case 3.3: Test getting a devfile using a filter not matching name, description or architectures",
+			registryName: "TestRegistry",
+			filter:       "some-random-string",
+			want: DevfileStackList{
+				DevfileRegistries: []api.Registry{
+					{
+						Name:   "TestRegistry",
+						URL:    server.URL,
+						Secure: false,
 					},
 				},
 			},
