@@ -2,7 +2,9 @@ package apiserver_impl
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 
@@ -14,6 +16,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
 )
+
+//go:embed ui/*
+var staticFiles embed.FS
 
 type ApiServer struct {
 	PushWatcher <-chan struct{}
@@ -28,6 +33,7 @@ func StartServer(
 	stateClient state.Client,
 	preferenceClient preference.Client,
 ) ApiServer {
+	var err error
 
 	pushWatcher := make(chan struct{})
 	defaultApiService := NewDefaultApiService(
@@ -42,7 +48,13 @@ func StartServer(
 
 	router := openapi.NewRouter(defaultApiController)
 
-	var err error
+	fSys, err := fs.Sub(staticFiles, "ui")
+	if err != nil {
+		// Assertion, error can only happen if the path "ui" is not valid
+		panic(err)
+	}
+	staticServer := http.FileServer(http.FS(fSys))
+	router.PathPrefix("/").Handler(staticServer)
 
 	if port == 0 {
 		port, err = util.NextFreePort(20000, 30001, nil, "")

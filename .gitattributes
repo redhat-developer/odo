@@ -13,3 +13,4 @@ pkg/**/mock.go linguist-generated=true
 pkg/**/mock_Backend.go linguist-generated=true
 pkg/**/mock_Client.go linguist-generated=true
 ui/src/app/api-gen/**/* linguist-generated=true
+pkg/apiserver-impl/ui/**/* linguist-generated=true
