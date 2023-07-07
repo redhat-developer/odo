@@ -32,6 +32,9 @@ var Example = `  # Get all devfile components
 # Filter by name and devfile registry
 %[1]s --filter nodejs --devfile-registry DefaultDevfileRegistry
 
+# Filter by architecture
+%[1]s --filter amd64
+
 # Show more details from a specific devfile
 %[1]s --details --devfile nodejs
 
@@ -117,7 +120,7 @@ func NewCmdRegistry(name, fullName string, testClientset clientset.Clientset) *c
 	clientset.Add(listCmd, clientset.REGISTRY)
 
 	// Flags
-	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description of the component")
+	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description or supported architecture of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of a Devfile, to be used only with --devfile")

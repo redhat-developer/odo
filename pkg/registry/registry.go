@@ -288,7 +288,15 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 			devfile.Registry.Priority = priorityNumber
 
 			if filterFlag != "" {
-				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) {
+				containsArch := func(s string) bool {
+					for _, arch := range devfile.Architectures {
+						if strings.Contains(arch, s) {
+							return true
+						}
+					}
+					return false
+				}
+				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) && !containsArch(filterFlag) {
 					continue
 				}
 			}
