@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
+	model "github.com/devfile/alizer/pkg/apis/model"
 	gomock "github.com/golang/mock/gomock"
-	model "github.com/redhat-developer/alizer/go/pkg/apis/model"
 	api "github.com/redhat-developer/odo/pkg/api"
 )
 

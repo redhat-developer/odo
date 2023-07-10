@@ -531,8 +531,8 @@ func (pk *PrivateKey) encrypt(key []byte, params *s2k.Params, cipherFunction Cip
 	return err
 }
 
-// encryptWithConfig encrypts an unencrypted private key using the passphrase and the config.
-func (pk *PrivateKey) encryptWithConfig(passphrase []byte, config *Config) error {
+// EncryptWithConfig encrypts an unencrypted private key using the passphrase and the config.
+func (pk *PrivateKey) EncryptWithConfig(passphrase []byte, config *Config) error {
 	params, err := s2k.Generate(config.Random(), config.S2K())
 	if err != nil {
 		return err
@@ -584,7 +584,7 @@ func (pk *PrivateKey) Encrypt(passphrase []byte) error {
 		} ,
 		DefaultCipher: CipherAES256,
 	}
-	return pk.encryptWithConfig(passphrase, config)
+	return pk.EncryptWithConfig(passphrase, config)
 }
 
 func (pk *PrivateKey) serializePrivateKey(w io.Writer) (err error) {

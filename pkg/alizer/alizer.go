@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
+	"github.com/devfile/alizer/pkg/apis/model"
+	"github.com/devfile/alizer/pkg/apis/recognizer"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/api"

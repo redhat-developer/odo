@@ -3,7 +3,7 @@ package alizer
 import (
 	"context"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/model"
+	"github.com/devfile/alizer/pkg/apis/model"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )

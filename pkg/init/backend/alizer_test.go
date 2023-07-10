@@ -10,7 +10,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/model"
+	"github.com/devfile/alizer/pkg/apis/model"
+
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
