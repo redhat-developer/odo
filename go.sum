@@ -1027,8 +1027,8 @@ github.com/openshift/oc v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1 h1:/hyEDbpY
 github.com/openshift/oc v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1/go.mod h1:Zn2GW8pcxWzR3FzJXOGBtybuEbJqiIkUrGWMR7khdPU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/operator-framework/api v0.3.8/go.mod h1:Xbje9x0SHmh0nihE21kpesB38vk3cyxnE6JdDS8Jo1Q=
-github.com/operator-framework/api v0.17.3 h1:wddE1SLKTNiIzwt28DbBIO+vPG2GOV6dkB9xBkDfT3o=
-github.com/operator-framework/api v0.17.3/go.mod h1:34tb98EwTN5SZLkgoxwvRkhMJKLHUWHOrrcv1ZwvEeA=
+github.com/operator-framework/api v0.17.6 h1:E6+vlvYUKafvoXYtCuHlDZrXX4vl8AT+r93OxNlzjpU=
+github.com/operator-framework/api v0.17.6/go.mod h1:l/cuwtPxkVUY7fzYgdust2m9tlmb8I4pOvbsUufRb24=
 github.com/operator-framework/operator-lifecycle-manager v0.21.2 h1:kUhgC+1E/epottCmFGdsshrrQ/H33d0vGFWkrKqD2SI=
 github.com/operator-framework/operator-lifecycle-manager v0.21.2/go.mod h1:g8FR6z0tPmcjAOs90YAOOwX7P67btMzS61jSJZ91TYo=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=

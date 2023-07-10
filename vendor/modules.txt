@@ -673,7 +673,7 @@ github.com/openshift/oc/pkg/helpers/motd
 github.com/openshift/oc/pkg/helpers/project
 github.com/openshift/oc/pkg/helpers/term
 github.com/openshift/oc/pkg/helpers/tokencmd
-# github.com/operator-framework/api v0.17.3
+# github.com/operator-framework/api v0.17.6
 ## explicit; go 1.19
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/operators
