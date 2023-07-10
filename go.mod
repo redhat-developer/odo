@@ -230,3 +230,8 @@ replace (
 	k8s.io/client-go => k8s.io/client-go v0.26.1
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.14.4
 )
+
+replace (
+	github.com/docker/cli => github.com/docker/cli v20.10.13+incompatible
+	github.com/docker/docker => github.com/docker/docker v20.10.24+incompatible
+)
