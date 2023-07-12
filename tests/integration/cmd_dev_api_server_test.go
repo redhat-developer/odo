@@ -10,9 +10,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/pointer"
+
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/tests/helper"
-	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("odo dev command with api server tests", func() {
@@ -49,7 +50,6 @@ var _ = Describe("odo dev command with api server tests", func() {
 						opts := helper.DevSessionOpts{
 							RunOnPodman:    podman,
 							StartAPIServer: true,
-							EnvVars:        []string{"ODO_EXPERIMENTAL_MODE=true"},
 						}
 						if customPort {
 							opts.APIServerPort = localPort
@@ -88,7 +88,6 @@ var _ = Describe("odo dev command with api server tests", func() {
 					opts := helper.DevSessionOpts{
 						RunOnPodman:    podman,
 						StartAPIServer: true,
-						EnvVars:        []string{"ODO_EXPERIMENTAL_MODE=true"},
 					}
 					var err error
 					devSession, err = helper.StartDevMode(opts)
@@ -184,7 +183,6 @@ var _ = Describe("odo dev command with api server tests", func() {
 						CmdlineArgs:    args,
 						RunOnPodman:    podman,
 						StartAPIServer: true,
-						EnvVars:        []string{"ODO_EXPERIMENTAL_MODE=true"},
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
