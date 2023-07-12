@@ -29,6 +29,13 @@ type ForwardedPort struct {
 	Protocol      string `json:"protocol,omitempty"`
 }
 
+type DevControlPlane struct {
+	Platform         string `json:"platform,omitempty"`
+	LocalPort        int    `json:"localPort"`
+	APIServerPath    string `json:"apiServerPath"`
+	WebInterfacePath string `json:"webInterfacePath"`
+}
+
 type ConnectionData struct {
 	Name  string  `json:"name"`
 	Rules []Rules `json:"rules,omitempty"`

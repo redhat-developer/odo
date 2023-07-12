@@ -21,4 +21,7 @@ type Client interface {
 
 	// SetAPIServerPort sets the port where API server is listening in the state file and saves it to the file, updating the metadata
 	SetAPIServerPort(ctx context.Context, port int) error
+
+	// GetAPIServerPorts returns the port where the API servers are listening, possibly per platform.
+	GetAPIServerPorts(ctx context.Context) ([]api.DevControlPlane, error)
 }
