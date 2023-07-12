@@ -24,6 +24,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/state"
 )
 
+type platformDependent interface {
+	GetPlatform() string
+}
+
 // DescribeDevfileComponent describes the component defined by the devfile in the current directory
 func DescribeDevfileComponent(
 	ctx context.Context,
@@ -64,6 +68,22 @@ func DescribeDevfileComponent(
 		kubeClient = nil
 	}
 
+	isApiServerFeatureEnabled := feature.IsEnabled(ctx, feature.APIServerFlag)
+	// TODO(feloy) Pass PID with `--pid` flag
+	allControlPlaneData, err := stateClient.GetAPIServerPorts(ctx)
+	if err != nil {
+		return api.Component{}, nil, err
+	}
+	if isApiServerFeatureEnabled {
+		for i := range allControlPlaneData {
+			if allControlPlaneData[i].Platform == "" {
+				allControlPlaneData[i].Platform = commonflags.PlatformCluster
+			}
+		}
+	}
+
+	devControlPlaneData := filterByPlatform(ctx, isApiServerFeatureEnabled, allControlPlaneData, false)
+
 	// TODO(feloy) Pass PID with `--pid` flag
 	allFwdPorts, err := stateClient.GetForwardedPorts(ctx)
 	if err != nil {
@@ -76,33 +96,7 @@ func DescribeDevfileComponent(
 			}
 		}
 	}
-	var forwardedPorts []api.ForwardedPort
-	switch platform {
-	case "":
-		if isPlatformFeatureEnabled {
-			// Read ports from all platforms
-			forwardedPorts = allFwdPorts
-		} else {
-			// Limit to cluster ports only
-			for _, p := range allFwdPorts {
-				if p.Platform == "" || p.Platform == commonflags.PlatformCluster {
-					forwardedPorts = append(forwardedPorts, p)
-				}
-			}
-		}
-	case commonflags.PlatformCluster:
-		for _, p := range allFwdPorts {
-			if p.Platform == "" || p.Platform == commonflags.PlatformCluster {
-				forwardedPorts = append(forwardedPorts, p)
-			}
-		}
-	case commonflags.PlatformPodman:
-		for _, p := range allFwdPorts {
-			if p.Platform == commonflags.PlatformPodman {
-				forwardedPorts = append(forwardedPorts, p)
-			}
-		}
-	}
+	forwardedPorts := filterByPlatform(ctx, isPlatformFeatureEnabled, allFwdPorts, true)
 
 	runningOn, err := GetRunningOn(ctx, componentName, kubeClient, podmanClient)
 	if err != nil {
@@ -122,6 +116,7 @@ func DescribeDevfileComponent(
 	cmp := api.Component{
 		DevfilePath:       devfilePath,
 		DevfileData:       devfileData,
+		DevControlPlane:   devControlPlaneData,
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         api.MergeRunningModes(runningOn),
 		RunningOn:         runningOn,
@@ -232,6 +227,41 @@ func GetRunningOn(ctx context.Context, n string, kubeClient kclient.ClientInterf
 		}
 	}
 	return runningOn, nil
+}
+
+func filterByPlatform[T platformDependent](ctx context.Context, isFeatEnabled bool, all []T, includeIfFeatDisabled bool) (result []T) {
+	plt := fcontext.GetPlatform(ctx, "")
+	switch plt {
+	case "":
+		if isFeatEnabled {
+			// Read from all platforms
+			result = all
+		} else if includeIfFeatDisabled {
+			// Limit to cluster only
+			for _, p := range all {
+				if p.GetPlatform() == "" || p.GetPlatform() == commonflags.PlatformCluster {
+					result = append(result, p)
+				}
+			}
+		}
+	case commonflags.PlatformCluster:
+		if isFeatEnabled || includeIfFeatDisabled {
+			for _, p := range all {
+				if p.GetPlatform() == "" || p.GetPlatform() == commonflags.PlatformCluster {
+					result = append(result, p)
+				}
+			}
+		}
+	case commonflags.PlatformPodman:
+		if isFeatEnabled || includeIfFeatDisabled {
+			for _, p := range all {
+				if p.GetPlatform() == commonflags.PlatformPodman {
+					result = append(result, p)
+				}
+			}
+		}
+	}
+	return result
 }
 
 func updateWithRemoteSourceLocation(cmp *api.Component) {
