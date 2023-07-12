@@ -6,6 +6,28 @@ info:
 servers:
   - url: /api/v1
 paths:
+  /notifications:
+    get:
+      description: Subscribe to notifications sent out by the server.
+      responses:
+        '200':
+          description: Subscription to server-sent events.
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                format: event-stream
+                items:
+                  oneOf:
+                    - $ref: '#/components/schemas/DevfileUpdatedNotification'
+              examples:
+                DevfileUpdatedEvent:
+                  value:
+                    timestamp: 1689198725
+                    event: 'DevfileUpdated'
+                    data:
+                      path: '/absolute/path/to/devfile.yaml'
+
   /instance:
     get:
       description: Get information about the this 'odo dev' instance.
@@ -1494,4 +1516,17 @@ components:
           type: string
         supportUrl:
           type: string
-
+    DevfileUpdatedNotification:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+        event:
+          type: string
+          enum: [ 'DevfileUpdated' ]
+        data:
+          type: object
+          properties:
+            path:
+              type: string
