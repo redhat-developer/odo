@@ -261,16 +261,26 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	var apiServer apiserver_impl.ApiServer
 	if o.apiServerFlag {
+		var devfileFiles []string
+		devfileFiles, err = libdevfile.GetReferencedLocalFiles(*devFileObj)
+		if err != nil {
+			return err
+		}
+		devfileFiles = append(devfileFiles, devfilePath)
 		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
-		apiServer = apiserver_impl.StartServer(
+		apiServer, err = apiserver_impl.StartServer(
 			ctx,
 			o.cancel,
 			o.apiServerPortFlag,
+			devfileFiles,
 			o.clientset.KubernetesClient,
 			o.clientset.PodmanClient,
 			o.clientset.StateClient,
 			o.clientset.PreferenceClient,
 		)
+		if err != nil {
+			return err
+		}
 	}
 
 	if o.logsFlag {
