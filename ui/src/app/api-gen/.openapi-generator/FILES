@@ -16,6 +16,8 @@ model/container.ts
 model/devfileContent.ts
 model/devfileGet200Response.ts
 model/devfilePutRequest.ts
+model/devfileUpdatedNotification.ts
+model/devfileUpdatedNotificationData.ts
 model/devstateApplyCommandPostRequest.ts
 model/devstateChartGet200Response.ts
 model/devstateCommandCommandNameMovePostRequest.ts
@@ -38,6 +40,7 @@ model/instanceGet200Response.ts
 model/metadata.ts
 model/metadataRequest.ts
 model/models.ts
+model/notificationsGet200ResponseInner.ts
 model/resource.ts
 param.ts
 variables.ts
