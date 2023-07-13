@@ -178,9 +178,6 @@ func (s *DefaultApiService) validateDevfile(ctx context.Context, dir string) err
 }
 
 func (s *DefaultApiService) NotificationsGet(ctx context.Context) (openapi.ImplResponse, error) {
-	return openapi.Response(http.StatusOK, openapi.GeneralSuccess{
-		Message: `
-event: Event1
-data: {}`,
-	}), nil
+	//TODO implement me
+	panic("implement me")
 }
