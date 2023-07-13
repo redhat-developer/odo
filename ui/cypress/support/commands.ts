@@ -37,7 +37,7 @@
 // }
 
 Cypress.Commands.add('getByDataCy', (value: string) => {
-    cy.get('[data-cy="'+value+'"]', { timeout: 60000 });
+    cy.get('[data-cy="'+value+'"]');
 });
 
 Cypress.Commands.add('selectTab', (n: number) => {
