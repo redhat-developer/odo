@@ -206,12 +206,6 @@ func (c *DefaultApiController) Routes() Routes {
 			"/api/v1/instance",
 			c.InstanceGet,
 		},
-		{
-			"NotificationsGet",
-			strings.ToUpper("Get"),
-			"/api/v1/notifications",
-			c.NotificationsGet,
-		},
 	}
 }
 
@@ -711,19 +705,6 @@ func (c *DefaultApiController) InstanceDelete(w http.ResponseWriter, r *http.Req
 // InstanceGet -
 func (c *DefaultApiController) InstanceGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.InstanceGet(r.Context())
-	// If an error occurred, encode the error with the status code
-	if err != nil {
-		c.errorHandler(w, r, err, &result)
-		return
-	}
-	// If no error, encode the body and the result code
-	EncodeJSONResponse(result.Body, &result.Code, w)
-
-}
-
-// NotificationsGet -
-func (c *DefaultApiController) NotificationsGet(w http.ResponseWriter, r *http.Request) {
-	result, err := c.service.NotificationsGet(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

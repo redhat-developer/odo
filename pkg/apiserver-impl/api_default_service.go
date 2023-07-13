@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/klog"
-
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/devstate"
 	"github.com/redhat-developer/odo/pkg/component/describe"
@@ -20,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
+	"k8s.io/klog"
 )
 
 // DefaultApiService is a service that implements the logic for the DefaultApiServicer
@@ -175,9 +174,4 @@ func (s *DefaultApiService) validateDevfile(ctx context.Context, dir string) err
 		return fmt.Errorf("failed to parse the devfile: %w", err)
 	}
 	return validate.ValidateDevfileData(devObj.Data)
-}
-
-func (s *DefaultApiService) NotificationsGet(ctx context.Context) (openapi.ImplResponse, error) {
-	//TODO implement me
-	panic("implement me")
 }
