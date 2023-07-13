@@ -41,3 +41,14 @@ jobs:
             npm start
           wait-on: 'http://localhost:20000, http://localhost:4200'
           wait-on-timeout: 180
+
+      # after the test run completes, store videos and any screenshots only upon a failure
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-artifacts
+          path: |
+            ui/cypress/screenshots/
+            ui/cypress/videos/
+          if-no-files-found: warn
+          retention-days: 7
