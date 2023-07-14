@@ -35,7 +35,7 @@ func (o KubernetesClient) Login(server, username, password, token, caAuth string
 
 	a := login.LoginOptions{
 		Server:         server,
-		CommandName:    "odo",
+		CommandName:    "oc",
 		CAFile:         caAuth,
 		InsecureTLS:    skipTLS,
 		Username:       username,
