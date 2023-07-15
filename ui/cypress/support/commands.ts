@@ -45,12 +45,19 @@ Cypress.Commands.add('selectTab', (n: number) => {
 });
 
 Cypress.Commands.add('setDevfile', (devfile: string) => {
+    cy.intercept('GET', '/api/v1/devstate/chart').as('getDevStateChart');
+    cy.intercept('PUT', '/api/v1/devstate/devfile').as('applyDevState');
     cy.get('[data-cy="yaml-input"]').type(devfile);
     cy.get('[data-cy="yaml-save"]').click();
+    cy.wait(['@applyDevState', '@getDevStateChart']);
 });
 
 Cypress.Commands.add('clearDevfile', () => {
+    cy.intercept('GET', '/api/v1/devstate/chart').as('getDevStateChart');
+    cy.intercept('DELETE', '/api/v1/devstate/devfile').as('clearDevState');
+    cy.intercept('PUT', '/api/v1/devstate/devfile').as('applyDevState');
     cy.get('[data-cy="yaml-clear"]', { timeout: 60000 }).click();
+    cy.wait(['@clearDevState', '@applyDevState', '@getDevStateChart']);
 });
 
 declare namespace Cypress {

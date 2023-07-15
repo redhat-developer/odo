@@ -13,9 +13,42 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build odo
+        run: make bin
+
+      - name: Set odo in system path
+        run: |
+          mkdir -p "$HOME/.local/bin/"
+          mv ./odo "$HOME/.local/bin/odo"
+          chmod +x "$HOME/.local/bin/odo"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Cypress run
         uses: cypress-io/github-action@v5
+        env:
+          ODO_EXPERIMENTAL_MODE: "true"
         with:
           working-directory: ui
-          start: npm start
-          wait-on: 'npx wait-on --timeout 180000 http://0.0.0.0:4200'
+          # Run odo against the UI itself
+          start: |
+            odo api-server --port 20000
+            npm start
+          wait-on: 'http://localhost:20000, http://localhost:4200'
+          wait-on-timeout: 180
+
+      # after the test run completes, store videos and any screenshots only upon a failure
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-artifacts
+          path: |
+            ui/cypress/screenshots/
+            ui/cypress/videos/
+          if-no-files-found: warn
+          retention-days: 7

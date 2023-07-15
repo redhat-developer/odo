@@ -13,6 +13,10 @@
 // https://on.cypress.io/configuration
 // ***********************************************************
 
+// Cypress terminal report is an open source Cypress plugin that outputs actions,
+// intercepted requests, console messages and errors directly to stdout in a convenient format.
+require('cypress-terminal-report/src/installLogsCollector')();
+
 // Import commands.js using ES2015 syntax:
 import './commands'
 
