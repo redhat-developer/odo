@@ -2,6 +2,19 @@ import {TAB_COMMANDS, TAB_CONTAINERS, TAB_IMAGES, TAB_METADATA, TAB_RESOURCES} f
 
 describe('devfile editor spec', () => {
 
+  let originalDevfile: string
+  before(() => {
+    cy.readFile('devfile.yaml', null).then(yaml => originalDevfile = (<BufferType> yaml).toString())
+  })
+
+  afterEach(() => {
+    cy.readFile('devfile.yaml', null).then(yaml => {
+      if (originalDevfile !== (<BufferType> yaml).toString()) {
+        cy.writeDevfileFile(originalDevfile)
+      }
+    });
+  })
+
   it('displays matadata.name set in YAML', () => {
     cy.visit('http://localhost:4200');
     cy.clearDevfile();
@@ -203,5 +216,22 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'a-created-resource')
       .should('contain.text', 'URI')
       .should('contain.text', '/my/manifest.yaml');
+  });
+
+  it('reloads the Devfile upon changes in the filesystem', () => {
+    cy.visit('http://localhost:4200');
+    cy.fixture('input/devfile-new-version.yaml').then(yaml => {
+      cy.writeDevfileFile(yaml);
+    });
+
+    cy.selectTab(TAB_METADATA);
+    cy.getByDataCy("metadata-name").should('have.value', 'my-component');
+
+    cy.selectTab(TAB_CONTAINERS);
+    cy.getByDataCy('container-info').first()
+        .should('contain.text', 'my-cont1')
+        .should('contain.text', 'some-image:latest')
+        .should('contain.text', 'some command')
+        .should('contain.text', 'some arg');
   });
 });

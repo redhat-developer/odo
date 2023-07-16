@@ -60,6 +60,16 @@ Cypress.Commands.add('clearDevfile', () => {
     cy.wait(['@clearDevState', '@applyDevState', '@getDevStateChart']);
 });
 
+// writeDevfileFile writes the specified content into the local devfile.yaml file on the filesystem.
+// Since #6902, doing so sends notification from the server to the client, and makes it reload the Devfile.
+Cypress.Commands.add('writeDevfileFile', (content: string) => {
+    cy.intercept('GET', '/api/v1/devfile').as('fetchDevfile');
+    cy.intercept('PUT', '/api/v1/devstate/devfile').as('applyDevState');
+    cy.intercept('GET', '/api/v1/devstate/chart').as('getDevStateChart');
+    cy.writeFile('devfile.yaml',  content)
+    cy.wait(['@fetchDevfile', '@applyDevState', '@getDevStateChart']);
+});
+
 declare namespace Cypress {
     interface Chainable {
         getByDataCy(value: string): Chainable<void>
@@ -67,5 +77,7 @@ declare namespace Cypress {
 
         setDevfile(devfile: string): Chainable<void>
         clearDevfile(): Chainable<void>
+
+        writeDevfileFile(content: string): Chainable<void>
     }
 }
