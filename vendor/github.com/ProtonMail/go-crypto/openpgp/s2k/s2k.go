@@ -192,13 +192,21 @@ func Generate(rand io.Reader, c *Config) (*Params, error) {
 			parallelism: argonConfig.Parallelism(),
 			memoryExp:   argonConfig.EncodedMemory(),
 		}
-	} else {
-		// handle IteratedSaltedS2K case
+	} else if c != nil && c.PassphraseIsHighEntropy && c.Mode() == SaltedS2K { // Allow SaltedS2K if PassphraseIsHighEntropy
 		hashId, ok := algorithm.HashToHashId(c.hash())
 		if !ok {
 			return nil, errors.UnsupportedError("no such hash")
 		}
-		// Enforce iterared + salted method if not Argon 2
+
+		params = &Params{
+			mode:      SaltedS2K,
+			hashId:    hashId,
+		}
+	} else { // Enforce IteratedSaltedS2K method otherwise
+		hashId, ok := algorithm.HashToHashId(c.hash())
+		if !ok {
+			return nil, errors.UnsupportedError("no such hash")
+		}
 		if c != nil {
 			c.S2KMode = IteratedSaltedS2K
 		}
