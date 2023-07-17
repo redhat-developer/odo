@@ -28,11 +28,17 @@ func (n *Notifier) watchDevfileChanges(ctx context.Context, devfileFiles []strin
 					return
 				}
 				klog.V(7).Infof("event: %v", ev)
+				devfileContent, rErr := n.fsys.ReadFile(n.devfilePath)
+				if rErr != nil {
+					klog.V(1).Infof("unable to read Devfile at path %q: %v", n.devfilePath, rErr)
+					continue
+				}
 				n.eventsChan <- Event{
 					eventType: DevfileUpdated,
 					data: map[string]string{
 						"path":      ev.Name,
 						"operation": ev.Op.String(),
+						"content":   string(devfileContent),
 					},
 				}
 				if ev.Has(fsnotify.Remove) {

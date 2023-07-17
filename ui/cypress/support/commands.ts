@@ -63,11 +63,10 @@ Cypress.Commands.add('clearDevfile', () => {
 // writeDevfileFile writes the specified content into the local devfile.yaml file on the filesystem.
 // Since #6902, doing so sends notification from the server to the client, and makes it reload the Devfile.
 Cypress.Commands.add('writeDevfileFile', (content: string) => {
-    cy.intercept('GET', '/api/v1/devfile').as('fetchDevfile');
     cy.intercept('PUT', '/api/v1/devstate/devfile').as('applyDevState');
     cy.intercept('GET', '/api/v1/devstate/chart').as('getDevStateChart');
     cy.writeFile('devfile.yaml',  content)
-    cy.wait(['@fetchDevfile', '@applyDevState', '@getDevStateChart']);
+    cy.wait(['@applyDevState', '@getDevStateChart']);
 });
 
 declare namespace Cypress {

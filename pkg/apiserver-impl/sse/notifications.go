@@ -9,9 +9,14 @@ import (
 	"k8s.io/klog"
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type Notifier struct {
+	fsys filesystem.Filesystem
+
+	devfilePath string
+
 	// eventsChan is a channel for all events that will be broadcast to all subscribers.
 	// Because it is not natively possible to read a same value twice from a Go channel,
 	// we are storing the list of channels to broadcast the event to into the subscribers list.
@@ -28,10 +33,11 @@ type Notifier struct {
 	cancelSubscriptionChan chan (<-chan Event)
 }
 
-func NewNotifier(ctx context.Context, devfileFiles []string) (*Notifier, error) {
-	eventsChan := make(chan Event)
+func NewNotifier(ctx context.Context, fsys filesystem.Filesystem, devfilePath string, devfileFiles []string) (*Notifier, error) {
 	notifier := Notifier{
-		eventsChan:             eventsChan,
+		fsys:                   fsys,
+		devfilePath:            devfilePath,
+		eventsChan:             make(chan Event),
 		subscribers:            make([]chan Event, 0),
 		newSubscriptionChan:    make(chan chan Event),
 		cancelSubscriptionChan: make(chan (<-chan Event)),

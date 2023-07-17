@@ -68,7 +68,9 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 		ctx,
 		cancel,
 		o.portFlag,
+		devfilePath,
 		devfileFiles,
+		o.clientset.FS,
 		nil,
 		nil,
 		o.clientset.StateClient,
@@ -108,6 +110,7 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 		},
 	}
 	clientset.Add(apiserverCmd,
+		clientset.FILESYSTEM,
 		clientset.STATE,
 		clientset.PREFERENCE,
 	)

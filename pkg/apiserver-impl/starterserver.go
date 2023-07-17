@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -30,7 +31,9 @@ func StartServer(
 	ctx context.Context,
 	cancelFunc context.CancelFunc,
 	port int,
+	devfilePath string,
 	devfileFiles []string,
+	fsys filesystem.Filesystem,
 	kubernetesClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	stateClient state.Client,
@@ -47,7 +50,7 @@ func StartServer(
 	)
 	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
 
-	sseNotifier, err := sse.NewNotifier(ctx, devfileFiles)
+	sseNotifier, err := sse.NewNotifier(ctx, fsys, devfilePath, devfileFiles)
 	if err != nil {
 		return ApiServer{}, err
 	}
