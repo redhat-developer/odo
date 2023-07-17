@@ -149,7 +149,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 		return DevSession{}, err
 	}
 
-	env := append(make([]string, 0, len(options.EnvVars)), options.EnvVars...)
+	env := append([]string{}, options.EnvVars...)
 	args := []string{"dev"}
 	if options.NoCommands {
 		args = append(args, "--no-commands")
