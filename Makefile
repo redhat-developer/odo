@@ -79,7 +79,10 @@ help: ## Show this help.
 
 .PHONY: ui-static
 ui-static: ## build static files for UI to be served by embedded API server
-	(cd ui && npm install && npm run build) && rm -rf pkg/apiserver-impl/ui/* && mv ui/dist/devfile-builder/* pkg/apiserver-impl/ui/
+	podman run --rm \
+		-v ${PWD}:/local \
+		-t docker.io/library/node:18 \
+		/bin/sh -c "cd /local && (cd ui && npm install && npm run build) && rm -rf pkg/apiserver-impl/ui/* && mv ui/dist/devfile-builder/* pkg/apiserver-impl/ui/"
 
 .PHONY: bin
 bin: ## build the odo binary
