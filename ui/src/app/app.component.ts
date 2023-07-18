@@ -44,7 +44,7 @@ export class AppComponent implements OnInit {
     devfile.subscribe({
       next: (devfile) => {
         if (devfile.content != undefined) {
-          this.onButtonClick(devfile.content, false);
+          this.propagateChange(devfile.content, false);
         }
       }
     });
@@ -76,13 +76,13 @@ export class AppComponent implements OnInit {
     });
   }
 
-  onButtonClick(content: string, save: boolean){
+  propagateChange(content: string, saveToApi: boolean){
     const result = this.wasmGo.setDevfileContent(content);
     result.subscribe({
       next: (value) => {
         this.errorMessage = '';
         this.state.changeDevfileYaml(value);
-        if (save) {
+        if (saveToApi) {
           this.odoApi.saveDevfile(value.content).subscribe({
             next: () => {},
             error: (error) => {
@@ -97,11 +97,21 @@ export class AppComponent implements OnInit {
     });
   }
 
+  onSave(content: string) {
+    this.segment.track("[ui] save devfile to disk");
+    this.propagateChange(content, true);
+  }
+
+  onApply(content: string) {
+    this.segment.track("[ui] change devfile from textarea");
+    this.propagateChange(content, false);
+  }
+
   clear() {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
       this.wasmGo.clearDevfileContent().subscribe({
         next: (value) => {
-          this.onButtonClick(value.content, false);
+          this.propagateChange(value.content, false);
         }
       });
     }
