@@ -22,9 +22,8 @@ func (c testType) GetPlatform() string {
 
 func Test_filterByPlatform(t *testing.T) {
 	type args struct {
-		ctx                   context.Context
-		isFeatEnabled         bool
-		includeIfFeatDisabled bool
+		ctx           context.Context
+		isFeatEnabled bool
 	}
 	type testCase struct {
 		name       string
@@ -40,29 +39,26 @@ func Test_filterByPlatform(t *testing.T) {
 	}
 	tests := []testCase{
 		{
-			name: "platform unset in context, isFeatEnabled=true, includeIfFeatDisabled=false",
+			name: "feature disabled",
 			args: args{
-				ctx:                   context.Background(),
-				isFeatEnabled:         true,
-				includeIfFeatDisabled: false,
+				ctx:           context.Background(),
+				isFeatEnabled: false,
+			},
+			wantResult: nil,
+		},
+		{
+			name: "feature enabled and platform unset in context",
+			args: args{
+				ctx:           context.Background(),
+				isFeatEnabled: true,
 			},
 			wantResult: allValues,
 		},
 		{
-			name: "platform unset in context, isFeatEnabled=true, includeIfFeatDisabled=true",
+			name: "feature enabled and platform set to cluster in context",
 			args: args{
-				ctx:                   context.Background(),
-				isFeatEnabled:         true,
-				includeIfFeatDisabled: true,
-			},
-			wantResult: allValues,
-		},
-		{
-			name: "platform unset in context, isFeatEnabled=false, includeIfFeatDisabled=true",
-			args: args{
-				ctx:                   context.Background(),
-				isFeatEnabled:         false,
-				includeIfFeatDisabled: true,
+				ctx:           fcontext.WithPlatform(context.Background(), "cluster"),
+				isFeatEnabled: true,
 			},
 			wantResult: []testType{
 				{"value without platform", ""},
@@ -71,101 +67,10 @@ func Test_filterByPlatform(t *testing.T) {
 			},
 		},
 		{
-			name: "platform unset in context, isFeatEnabled=false, includeIfFeatDisabled=false",
+			name: "feature enabled and platform set to podman in context",
 			args: args{
-				ctx:                   context.Background(),
-				isFeatEnabled:         false,
-				includeIfFeatDisabled: false,
-			},
-			wantResult: nil,
-		},
-		{
-			name: "platform set to cluster in context, isFeatEnabled=true, includeIfFeatDisabled=false",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "cluster"),
-				isFeatEnabled:         true,
-				includeIfFeatDisabled: false,
-			},
-			wantResult: []testType{
-				{"value without platform", ""},
-				{"value11 (cluster)", "cluster"},
-				{"value12 (cluster)", "cluster"},
-			},
-		},
-		{
-			name: "platform set to cluster in context, isFeatEnabled=true, includeIfFeatDisabled=true",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "cluster"),
-				isFeatEnabled:         true,
-				includeIfFeatDisabled: true,
-			},
-			wantResult: []testType{
-				{"value without platform", ""},
-				{"value11 (cluster)", "cluster"},
-				{"value12 (cluster)", "cluster"},
-			},
-		},
-		{
-			name: "platform set to cluster in context, isFeatEnabled=false, includeIfFeatDisabled=false",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "cluster"),
-				isFeatEnabled:         false,
-				includeIfFeatDisabled: false,
-			},
-			wantResult: nil,
-		},
-		{
-			name: "platform set to cluster in context, isFeatEnabled=false, includeIfFeatDisabled=true",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "cluster"),
-				isFeatEnabled:         false,
-				includeIfFeatDisabled: true,
-			},
-			wantResult: []testType{
-				{"value without platform", ""},
-				{"value11 (cluster)", "cluster"},
-				{"value12 (cluster)", "cluster"},
-			},
-		},
-		{
-			name: "platform set to podman in context, isFeatEnabled=true, includeIfFeatDisabled=false",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "podman"),
-				isFeatEnabled:         true,
-				includeIfFeatDisabled: false,
-			},
-			wantResult: []testType{
-				{"value21 (podman)", "podman"},
-				{"value22 (podman)", "podman"},
-			},
-		},
-		{
-			name: "platform set to podman in context, isFeatEnabled=true, includeIfFeatDisabled=true",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "podman"),
-				isFeatEnabled:         true,
-				includeIfFeatDisabled: true,
-			},
-			wantResult: []testType{
-				{"value21 (podman)", "podman"},
-				{"value22 (podman)", "podman"},
-			},
-		},
-		{
-			name: "platform set to podman in context, isFeatEnabled=false, includeIfFeatDisabled=false",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "podman"),
-				isFeatEnabled:         false,
-				includeIfFeatDisabled: false,
-			},
-			wantResult: nil,
-		},
-		{
-			name: "platform set to podman in context, isFeatEnabled=false, includeIfFeatDisabled=true",
-			args: args{
-				ctx:                   fcontext.WithPlatform(context.Background(), "podman"),
-				isFeatEnabled:         false,
-				includeIfFeatDisabled: true,
+				ctx:           fcontext.WithPlatform(context.Background(), "podman"),
+				isFeatEnabled: true,
 			},
 			wantResult: []testType{
 				{"value21 (podman)", "podman"},
@@ -175,7 +80,7 @@ func Test_filterByPlatform(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult := filterByPlatform(tt.args.ctx, tt.args.isFeatEnabled, allValues, tt.args.includeIfFeatDisabled)
+			gotResult := filterByPlatform(tt.args.ctx, tt.args.isFeatEnabled, allValues)
 			if diff := cmp.Diff(tt.wantResult, gotResult, cmp.AllowUnexported(testType{})); diff != "" {
 				t.Errorf("filterByPlatform() mismatch (-want +got):\n%s", diff)
 			}

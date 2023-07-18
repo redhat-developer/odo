@@ -82,7 +82,7 @@ func DescribeDevfileComponent(
 		}
 	}
 
-	devControlPlaneData := filterByPlatform(ctx, isApiServerFeatureEnabled, allControlPlaneData, false)
+	devControlPlaneData := filterByPlatform(ctx, isApiServerFeatureEnabled, allControlPlaneData)
 
 	// TODO(feloy) Pass PID with `--pid` flag
 	allFwdPorts, err := stateClient.GetForwardedPorts(ctx)
@@ -96,7 +96,7 @@ func DescribeDevfileComponent(
 			}
 		}
 	}
-	forwardedPorts := filterByPlatform(ctx, isPlatformFeatureEnabled, allFwdPorts, true)
+	forwardedPorts := filterByPlatform(ctx, isPlatformFeatureEnabled, allFwdPorts)
 
 	runningOn, err := GetRunningOn(ctx, componentName, kubeClient, podmanClient)
 	if err != nil {
@@ -229,35 +229,26 @@ func GetRunningOn(ctx context.Context, n string, kubeClient kclient.ClientInterf
 	return runningOn, nil
 }
 
-func filterByPlatform[T platformDependent](ctx context.Context, isFeatEnabled bool, all []T, includeIfFeatDisabled bool) (result []T) {
+func filterByPlatform[T platformDependent](ctx context.Context, isFeatEnabled bool, all []T) (result []T) {
+	if !isFeatEnabled {
+		return nil
+	}
+
 	plt := fcontext.GetPlatform(ctx, "")
 	switch plt {
 	case "":
-		if isFeatEnabled {
-			// Read from all platforms
-			result = all
-		} else if includeIfFeatDisabled {
-			// Limit to cluster only
-			for _, p := range all {
-				if p.GetPlatform() == "" || p.GetPlatform() == commonflags.PlatformCluster {
-					result = append(result, p)
-				}
-			}
-		}
+		// Read from all platforms
+		result = all
 	case commonflags.PlatformCluster:
-		if isFeatEnabled || includeIfFeatDisabled {
-			for _, p := range all {
-				if p.GetPlatform() == "" || p.GetPlatform() == commonflags.PlatformCluster {
-					result = append(result, p)
-				}
+		for _, p := range all {
+			if p.GetPlatform() == "" || p.GetPlatform() == commonflags.PlatformCluster {
+				result = append(result, p)
 			}
 		}
 	case commonflags.PlatformPodman:
-		if isFeatEnabled || includeIfFeatDisabled {
-			for _, p := range all {
-				if p.GetPlatform() == commonflags.PlatformPodman {
-					result = append(result, p)
-				}
+		for _, p := range all {
+			if p.GetPlatform() == commonflags.PlatformPodman {
+				result = append(result, p)
 			}
 		}
 	}
