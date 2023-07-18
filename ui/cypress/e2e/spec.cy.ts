@@ -16,8 +16,7 @@ describe('devfile editor spec', () => {
   })
 
   it('displays matadata.name set in YAML', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
     cy.fixture('input/with-metadata-name.yaml').then(yaml => {
       cy.setDevfile(yaml);
     });
@@ -27,8 +26,7 @@ describe('devfile editor spec', () => {
   });
 
   it('displays container set in YAML', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
     cy.fixture('input/with-container.yaml').then(yaml => {
       cy.setDevfile(yaml);
     });
@@ -42,8 +40,7 @@ describe('devfile editor spec', () => {
   });
 
   it('displays a created container', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_CONTAINERS);
     cy.getByDataCy('container-name').type('created-container');
@@ -56,8 +53,7 @@ describe('devfile editor spec', () => {
   });
 
   it('displays a created image', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_IMAGES);
     cy.getByDataCy('image-name').type('created-image');
@@ -74,8 +70,7 @@ describe('devfile editor spec', () => {
   });
 
   it('displays a created resource, with manifest', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_RESOURCES);
     cy.getByDataCy('resource-name').type('created-resource');
@@ -89,8 +84,7 @@ describe('devfile editor spec', () => {
   });
 
   it('displays a created resource, with uri (default)', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_RESOURCES);
     cy.getByDataCy('resource-name').type('created-resource');
@@ -104,8 +98,7 @@ describe('devfile editor spec', () => {
   });
 
   it('creates an exec command with a new container', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_COMMANDS);
     cy.getByDataCy('add').click();
@@ -135,8 +128,7 @@ describe('devfile editor spec', () => {
   });
 
   it('creates an apply image command with a new image', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_COMMANDS);
     cy.getByDataCy('add').click();
@@ -165,8 +157,7 @@ describe('devfile editor spec', () => {
   });
 
   it('creates an apply resource command with a new resource using manifest', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_COMMANDS);
     cy.getByDataCy('add').click();
@@ -192,8 +183,7 @@ describe('devfile editor spec', () => {
   });
 
   it('creates an apply resource command with a new resource using uri (default)', () => {
-    cy.visit('http://localhost:4200');
-    cy.clearDevfile();
+    cy.init();
 
     cy.selectTab(TAB_COMMANDS);
     cy.getByDataCy('add').click();
@@ -219,7 +209,7 @@ describe('devfile editor spec', () => {
   });
 
   it('reloads the Devfile upon changes in the filesystem', () => {
-    cy.visit('http://localhost:4200');
+    cy.init();
     cy.fixture('input/devfile-new-version.yaml').then(yaml => {
       cy.writeDevfileFile(yaml);
     });
