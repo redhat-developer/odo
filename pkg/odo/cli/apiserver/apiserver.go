@@ -89,6 +89,7 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 	}
 	clientset.Add(apiserverCmd,
 		clientset.STATE,
+		clientset.PREFERENCE,
 	)
 	apiserverCmd.Flags().IntVar(&o.portFlag, "port", 0, "Define custom port for API Server.")
 	return apiserverCmd
