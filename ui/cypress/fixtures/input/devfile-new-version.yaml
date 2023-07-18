@@ -1,0 +1,13 @@
+schemaVersion: 2.2.0
+metadata:
+    name: my-component
+components:
+- container:
+    args:
+    - some
+    - arg
+    command:
+    - some
+    - command
+    image: some-image:latest
+  name: my-cont1

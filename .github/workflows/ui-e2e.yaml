@@ -33,6 +33,7 @@ jobs:
         uses: cypress-io/github-action@v5
         env:
           ODO_EXPERIMENTAL_MODE: "true"
+          ODO_TRACKING_CONSENT: "no"
         with:
           working-directory: ui
           # Run odo against the UI itself

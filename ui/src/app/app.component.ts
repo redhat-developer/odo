@@ -5,6 +5,8 @@ import { MermaidService } from './services/mermaid.service';
 import { StateService } from './services/state.service';
 import { MatIconRegistry } from "@angular/material/icon";
 import { OdoapiService } from './services/odoapi.service';
+import { SseService } from './services/sse.service';
+import {DevfileContent} from "./api-gen";
 
 @Component({
   selector: 'app-root',
@@ -24,6 +26,7 @@ export class AppComponent implements OnInit {
     private odoApi: OdoapiService,
     private mermaid: MermaidService,
     private state: StateService,
+    private sse: SseService,
   ) {
     this.matIconRegistry.addSvgIcon(
       `github`,
@@ -63,6 +66,13 @@ export class AppComponent implements OnInit {
           console.log(error);
         }
       });
+    });
+
+    this.sse.subscribeTo(['DevfileUpdated']).subscribe(event => {
+      let newDevfile: DevfileContent = JSON.parse(event.data)
+      if (newDevfile.content != undefined) {
+        this.onButtonClick(newDevfile.content, false);
+      }
     });
   }
 

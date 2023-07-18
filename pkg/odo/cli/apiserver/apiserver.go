@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
+
+	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
 
 const (
@@ -49,15 +52,34 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	_ = apiserver_impl.StartServer(
+	defer cancel()
+
+	var (
+		devfileObj  = odocontext.GetEffectiveDevfileObj(ctx)
+		devfilePath = odocontext.GetDevfilePath(ctx)
+	)
+
+	devfileFiles, err := libdevfile.GetReferencedLocalFiles(*devfileObj)
+	if err != nil {
+		return err
+	}
+	devfileFiles = append(devfileFiles, devfilePath)
+	_, err = apiserver_impl.StartServer(
 		ctx,
 		cancel,
 		o.portFlag,
+		devfilePath,
+		devfileFiles,
+		o.clientset.FS,
 		nil,
 		nil,
 		o.clientset.StateClient,
 		o.clientset.PreferenceClient,
 	)
+	if err != nil {
+		return err
+	}
+
 	<-ctx.Done()
 	return nil
 }
@@ -88,6 +110,7 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 		},
 	}
 	clientset.Add(apiserverCmd,
+		clientset.FILESYSTEM,
 		clientset.STATE,
 		clientset.PREFERENCE,
 	)

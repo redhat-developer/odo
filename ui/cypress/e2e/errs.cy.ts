@@ -3,15 +3,13 @@ import { TAB_COMMANDS, TAB_CONTAINERS, TAB_IMAGES, TAB_RESOURCES } from "./const
 describe('devfile editor errors handling', () => {
 
     it('fails when YAML is not valid', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.setDevfile("wrong yaml content");
         cy.getByDataCy("yaml-error").should('contain.text', 'error parsing devfile YAML');
       });
 
     it('fails when adding a container with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-container.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });
@@ -26,8 +24,7 @@ describe('devfile editor errors handling', () => {
     });
 
     it('fails when adding an image with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-container.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });
@@ -43,8 +40,7 @@ describe('devfile editor errors handling', () => {
     });
 
     it('fails when adding a resource with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-container.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });
@@ -59,8 +55,7 @@ describe('devfile editor errors handling', () => {
     });
 
     it('fails when adding an exec command with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-exec-command.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });
@@ -79,8 +74,7 @@ describe('devfile editor errors handling', () => {
     });
 
     it('fails when adding an apply command with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-apply-command.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });
@@ -97,8 +91,7 @@ describe('devfile editor errors handling', () => {
     });
 
     it('fails when adding an image command with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-image-command.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });
@@ -115,8 +108,7 @@ describe('devfile editor errors handling', () => {
     });
 
     it('fails when adding a composite command with an already used name', () => {
-        cy.visit('http://localhost:4200');
-        cy.clearDevfile();
+        cy.init();
         cy.fixture('input/with-image-command.yaml').then(yaml => {
             cy.setDevfile(yaml);
         });

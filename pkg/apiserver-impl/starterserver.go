@@ -8,13 +8,16 @@ import (
 	"net"
 	"net/http"
 
+	"k8s.io/klog"
+
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/apiserver-impl/sse"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
-	"k8s.io/klog"
 )
 
 //go:embed ui/*
@@ -28,13 +31,14 @@ func StartServer(
 	ctx context.Context,
 	cancelFunc context.CancelFunc,
 	port int,
+	devfilePath string,
+	devfileFiles []string,
+	fsys filesystem.Filesystem,
 	kubernetesClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	stateClient state.Client,
 	preferenceClient preference.Client,
-) ApiServer {
-	var err error
-
+) (ApiServer, error) {
 	pushWatcher := make(chan struct{})
 	defaultApiService := NewDefaultApiService(
 		cancelFunc,
@@ -46,7 +50,12 @@ func StartServer(
 	)
 	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
 
-	router := openapi.NewRouter(defaultApiController)
+	sseNotifier, err := sse.NewNotifier(ctx, fsys, devfilePath, devfileFiles)
+	if err != nil {
+		return ApiServer{}, err
+	}
+
+	router := openapi.NewRouter(sseNotifier, defaultApiController)
 
 	fSys, err := fs.Sub(staticFiles, "ui")
 	if err != nil {
@@ -97,5 +106,5 @@ func StartServer(
 
 	return ApiServer{
 		PushWatcher: pushWatcher,
-	}
+	}, nil
 }
