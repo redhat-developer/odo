@@ -85,6 +85,7 @@ func (o *State) SaveExit(ctx context.Context) error {
 	o.content.ForwardedPorts = nil
 	o.content.PID = 0
 	o.content.Platform = ""
+	o.content.APIServerPort = 0
 	err := o.delete(pid)
 	if err != nil {
 		return err
@@ -101,6 +102,39 @@ func (o *State) SetAPIServerPort(ctx context.Context, port int) error {
 	o.content.APIServerPort = port
 	o.content.Platform = platform
 	return o.save(ctx, pid)
+}
+
+func (o *State) GetAPIServerPorts(ctx context.Context) ([]api.DevControlPlane, error) {
+	var (
+		result    []api.DevControlPlane
+		platforms []string
+		platform  = fcontext.GetPlatform(ctx, "")
+	)
+	if platform == "" {
+		platforms = []string{commonflags.PlatformCluster, commonflags.PlatformPodman}
+	} else {
+		platforms = []string{platform}
+	}
+
+	for _, platform = range platforms {
+		content, err := o.read(platform)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue // if the state file does not exist, no API Servers are listening
+			}
+			return nil, err
+		}
+		if content.APIServerPort == 0 {
+			continue
+		}
+		result = append(result, api.DevControlPlane{
+			Platform:         platform,
+			LocalPort:        content.APIServerPort,
+			APIServerPath:    "/api/v1/",
+			WebInterfacePath: "/",
+		})
+	}
+	return result, nil
 }
 
 // save writes the content structure in json format in file

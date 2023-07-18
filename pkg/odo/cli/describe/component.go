@@ -156,6 +156,19 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 		fmt.Println()
 	}
 
+	if feature.IsEnabled(ctx, feature.APIServerFlag) && len(cmp.DevControlPlane) != 0 {
+		const ctrlPlaneHost = "localhost"
+		log.Info("Dev Control Plane:")
+		for _, dcp := range cmp.DevControlPlane {
+			log.Printf(`%[1]s
+      API: http://%[2]s:%[3]d/%[4]s
+      Web UI: http://%[2]s:%[3]d/`,
+				log.Sbold(dcp.Platform),
+				ctrlPlaneHost, dcp.LocalPort, strings.TrimPrefix(dcp.APIServerPath, "/"))
+		}
+		fmt.Println()
+	}
+
 	if len(cmp.DevForwardedPorts) > 0 {
 		log.Info("Forwarded ports:")
 		for _, port := range cmp.DevForwardedPorts {

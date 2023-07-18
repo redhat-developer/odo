@@ -149,6 +149,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 		return DevSession{}, err
 	}
 
+	env := append([]string{}, options.EnvVars...)
 	args := []string{"dev"}
 	if options.NoCommands {
 		args = append(args, "--no-commands")
@@ -163,6 +164,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 		args = append(args, "--address", options.CustomAddress)
 	}
 	if options.StartAPIServer {
+		env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 		args = append(args, "--api-server")
 		if options.APIServerPort != 0 {
 			args = append(args, "--api-server-port", fmt.Sprintf("%d", options.APIServerPort))
@@ -180,7 +182,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	cmd.Cmd.Stdout = c.Tty()
 	cmd.Cmd.Stderr = c.Tty()
 
-	session := cmd.AddEnv(options.EnvVars...).Runner().session
+	session := cmd.AddEnv(env...).Runner().session
 	timeoutInSeconds := 420
 	if options.TimeoutInSeconds != 0 {
 		timeoutInSeconds = options.TimeoutInSeconds
