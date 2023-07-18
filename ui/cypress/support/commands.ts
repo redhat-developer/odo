@@ -46,37 +46,33 @@ Cypress.Commands.add('selectTab', (n: number) => {
 
 Cypress.Commands.add('init', () => {
     cy.intercept('GET', '/api/v1/devfile').as('init.fetchDevfile');
-    cy.intercept('GET', '/api/v1/devstate/chart').as('init.getDevStateChart');
     cy.intercept('PUT', '/api/v1/devstate/devfile').as('init.applyDevState');
     cy.visit('http://localhost:4200');
-    cy.wait(['@init.fetchDevfile', '@init.applyDevState', '@init.getDevStateChart']);
+    cy.wait(['@init.fetchDevfile', '@init.applyDevState']);
 
     cy.clearDevfile()
 });
 
 Cypress.Commands.add('setDevfile', (devfile: string) => {
-    cy.intercept('GET', '/api/v1/devstate/chart').as('setDevfile.getDevStateChart');
     cy.intercept('PUT', '/api/v1/devstate/devfile').as('setDevfile.applyDevState');
     cy.get('[data-cy="yaml-input"]').type(devfile);
     cy.get('[data-cy="yaml-save"]').click();
-    cy.wait(['@setDevfile.applyDevState', '@setDevfile.getDevStateChart']);
+    cy.wait(['@setDevfile.applyDevState']);
 });
 
 Cypress.Commands.add('clearDevfile', () => {
-    cy.intercept('GET', '/api/v1/devstate/chart').as('clearDevfile.getDevStateChart');
     cy.intercept('DELETE', '/api/v1/devstate/devfile').as('clearDevfile.clearDevState');
     cy.intercept('PUT', '/api/v1/devstate/devfile').as('clearDevfile.applyDevState');
     cy.get('[data-cy="yaml-clear"]', { timeout: 60000 }).click();
-    cy.wait(['@clearDevfile.clearDevState', '@clearDevfile.applyDevState', '@clearDevfile.getDevStateChart']);
+    cy.wait(['@clearDevfile.clearDevState', '@clearDevfile.applyDevState']);
 });
 
 // writeDevfileFile writes the specified content into the local devfile.yaml file on the filesystem.
 // Since #6902, doing so sends notification from the server to the client, and makes it reload the Devfile.
 Cypress.Commands.add('writeDevfileFile', (content: string) => {
     cy.intercept('PUT', '/api/v1/devstate/devfile').as('writeDevfileFile.applyDevState');
-    cy.intercept('GET', '/api/v1/devstate/chart').as('writeDevfileFile.getDevStateChart');
     cy.writeFile('devfile.yaml',  content)
-    cy.wait(['@writeDevfileFile.applyDevState', '@writeDevfileFile.getDevStateChart']);
+    cy.wait(['@writeDevfileFile.applyDevState']);
 });
 
 declare namespace Cypress {
