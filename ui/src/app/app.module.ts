@@ -22,6 +22,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { SegmentModule } from 'ngx-segment-analytics';
+
 import { AppComponent } from './app.component';
 import { MetadataComponent } from './forms/metadata/metadata.component';
 import { MultiTextComponent } from './controls/multi-text/multi-text.component';
@@ -86,7 +88,9 @@ import { ChipsEventsComponent } from './controls/chips-events/chips-events.compo
     MatSelectModule,
     MatTabsModule,
     MatToolbarModule,
-    MatTooltipModule
+    MatTooltipModule,
+
+    SegmentModule.forRoot({ loadOnInitialization: false })
   ],
   providers: [],
   bootstrap: [AppComponent]
