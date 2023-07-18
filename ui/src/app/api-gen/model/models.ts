@@ -29,3 +29,4 @@ export * from './instanceGet200Response';
 export * from './metadata';
 export * from './metadataRequest';
 export * from './resource';
+export * from './telemetryResponse';

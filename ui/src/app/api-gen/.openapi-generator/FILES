@@ -39,5 +39,6 @@ model/metadata.ts
 model/metadataRequest.ts
 model/models.ts
 model/resource.ts
+model/telemetryResponse.ts
 param.ts
 variables.ts

@@ -206,6 +206,12 @@ func (c *DefaultApiController) Routes() Routes {
 			"/api/v1/instance",
 			c.InstanceGet,
 		},
+		{
+			"TelemetryGet",
+			strings.ToUpper("Get"),
+			"/api/v1/telemetry",
+			c.TelemetryGet,
+		},
 	}
 }
 
@@ -705,6 +711,19 @@ func (c *DefaultApiController) InstanceDelete(w http.ResponseWriter, r *http.Req
 // InstanceGet -
 func (c *DefaultApiController) InstanceGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.InstanceGet(r.Context())
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// TelemetryGet -
+func (c *DefaultApiController) TelemetryGet(w http.ResponseWriter, r *http.Request) {
+	result, err := c.service.TelemetryGet(r.Context())
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)
