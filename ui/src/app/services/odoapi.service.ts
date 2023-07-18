@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DevfileGet200Response, GeneralSuccess } from '../api-gen';
+import { DevfileGet200Response, GeneralSuccess, TelemetryResponse } from '../api-gen';
 
 @Injectable({
   providedIn: 'root'
@@ -20,5 +20,9 @@ export class OdoapiService {
     return this.http.put<GeneralSuccess>(this.base+"/devfile", {
       content: content
     });
+  }
+
+  telemetry(): Observable<TelemetryResponse> {
+    return this.http.get<TelemetryResponse>(this.base+"/telemetry");
   }
 }

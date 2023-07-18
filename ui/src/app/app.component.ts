@@ -7,6 +7,8 @@ import { MatIconRegistry } from "@angular/material/icon";
 import { OdoapiService } from './services/odoapi.service';
 import { SseService } from './services/sse.service';
 import {DevfileContent} from "./api-gen";
+import { SegmentService } from 'ngx-segment-analytics';
+import { TelemetryResponse } from './api-gen';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +29,7 @@ export class AppComponent implements OnInit {
     private mermaid: MermaidService,
     private state: StateService,
     private sse: SseService,
+    private segment: SegmentService
   ) {
     this.matIconRegistry.addSvgIcon(
       `github`,
@@ -71,9 +74,20 @@ export class AppComponent implements OnInit {
     this.sse.subscribeTo(['DevfileUpdated']).subscribe(event => {
       let newDevfile: DevfileContent = JSON.parse(event.data)
       if (newDevfile.content != undefined) {
-        this.onButtonClick(newDevfile.content, false);
+        this.propagateChange(newDevfile.content, false);
       }
     });
+
+    this.odoApi.telemetry().subscribe({
+      next: (data: TelemetryResponse) => {
+        if (data.enabled) {
+          this.segment.identify(data.userid);
+          this.segment.load(data.apikey!);
+          this.segment.track("[ui] start");  
+        }    
+      },
+      error: () => {}
+    })
   }
 
   propagateChange(content: string, saveToApi: boolean){
