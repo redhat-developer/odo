@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
-	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/spf13/cobra"
@@ -415,11 +414,9 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
 	devCmd.Flags().BoolVar(&o.syncGitDirFlag, "sync-git-dir", false, "Synchronize the .git directory to the container. By default, this directory is not synchronized.")
 	devCmd.Flags().BoolVar(&o.logsFlag, "logs", false, "Follow logs of component")
+	devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", true, "Start the API Server")
+	devCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server; this flag should be used in combination with --api-server flag.")
 
-	if feature.IsExperimentalModeEnabled(ctx) {
-		devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", false, "Start the API Server; this is an experimental feature")
-		devCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server; this flag should be used in combination with --api-server flag.")
-	}
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,

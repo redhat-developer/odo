@@ -38,7 +38,7 @@ type DevControlPlane struct {
 	Platform         string `json:"platform,omitempty"`
 	LocalPort        int    `json:"localPort"`
 	APIServerPath    string `json:"apiServerPath"`
-	WebInterfacePath string `json:"webInterfacePath"`
+	WebInterfacePath string `json:"webInterfacePath,omitempty"`
 }
 
 func (o DevControlPlane) GetPlatform() string {

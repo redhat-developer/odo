@@ -156,13 +156,16 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 		fmt.Println()
 	}
 
-	if feature.IsEnabled(ctx, feature.APIServerFlag) && len(cmp.DevControlPlane) != 0 {
+	if len(cmp.DevControlPlane) != 0 {
+		var webui string
+		if feature.IsEnabled(ctx, feature.UIServer) {
+			webui = "\n      Web UI: http://%[2]s:%[3]d/"
+		}
 		const ctrlPlaneHost = "localhost"
 		log.Info("Dev Control Plane:")
 		for _, dcp := range cmp.DevControlPlane {
 			log.Printf(`%[1]s
-      API: http://%[2]s:%[3]d/%[4]s
-      Web UI: http://%[2]s:%[3]d/`,
+      API: http://%[2]s:%[3]d/%[4]s`+webui,
 				log.Sbold(dcp.Platform),
 				ctrlPlaneHost, dcp.LocalPort, strings.TrimPrefix(dcp.APIServerPath, "/"))
 		}

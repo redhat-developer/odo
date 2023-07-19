@@ -68,21 +68,18 @@ func DescribeDevfileComponent(
 		kubeClient = nil
 	}
 
-	isApiServerFeatureEnabled := feature.IsEnabled(ctx, feature.APIServerFlag)
 	// TODO(feloy) Pass PID with `--pid` flag
 	allControlPlaneData, err := stateClient.GetAPIServerPorts(ctx)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	if isApiServerFeatureEnabled {
-		for i := range allControlPlaneData {
-			if allControlPlaneData[i].Platform == "" {
-				allControlPlaneData[i].Platform = commonflags.PlatformCluster
-			}
+	for i := range allControlPlaneData {
+		if allControlPlaneData[i].Platform == "" {
+			allControlPlaneData[i].Platform = commonflags.PlatformCluster
 		}
 	}
 
-	devControlPlaneData := filterByPlatform(ctx, isApiServerFeatureEnabled, allControlPlaneData)
+	devControlPlaneData := filterByPlatform(ctx, true, allControlPlaneData)
 
 	// TODO(feloy) Pass PID with `--pid` flag
 	allFwdPorts, err := stateClient.GetForwardedPorts(ctx)
