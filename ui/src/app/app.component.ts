@@ -9,6 +9,7 @@ import { SseService } from './services/sse.service';
 import {DevfileContent} from "./api-gen";
 import { SegmentService } from 'ngx-segment-analytics';
 import { TelemetryResponse } from './api-gen';
+import { MatTabChangeEvent } from '@angular/material/tabs';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,17 @@ import { TelemetryResponse } from './api-gen';
 })
 export class AppComponent implements OnInit {
 
+  protected tabNames: string[] = [
+    "YAML",
+    "Chart",
+    "Metadata",
+    "Commands",
+    "Events",
+    "Containers",
+    "Images",
+    "Resources",
+    "Volumes"
+  ];
   protected mermaidContent: string = "";
   protected devfileYaml: string = "";
   protected errorMessage: string  = "";
@@ -130,5 +142,9 @@ export class AppComponent implements OnInit {
         }
       });
     }
+  }
+
+  onSelectedTabChange(e: MatTabChangeEvent) {
+    this.segment.track("[ui] change to tab "+this.tabNames[e.index]);
   }
 }
