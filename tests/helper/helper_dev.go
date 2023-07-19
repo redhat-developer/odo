@@ -164,7 +164,6 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 		args = append(args, "--address", options.CustomAddress)
 	}
 	if options.StartAPIServer {
-		env = append(env, "ODO_EXPERIMENTAL_MODE=true")
 		args = append(args, "--api-server")
 		if options.APIServerPort != 0 {
 			args = append(args, "--api-server-port", fmt.Sprintf("%d", options.APIServerPort))
