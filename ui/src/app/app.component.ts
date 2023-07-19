@@ -123,6 +123,7 @@ export class AppComponent implements OnInit {
 
   clear() {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
+      this.segment.track("[ui] clear devfile");
       this.wasmGo.clearDevfileContent().subscribe({
         next: (value) => {
           this.propagateChange(value.content, false);

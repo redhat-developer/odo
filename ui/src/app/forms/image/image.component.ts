@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 import { Image } from 'src/app/api-gen';
+import { SegmentService } from 'ngx-segment-analytics';
 
 @Component({
   selector: 'app-image',
@@ -15,7 +16,9 @@ export class ImageComponent {
 
   form: FormGroup;
 
-  constructor() {
+  constructor(
+    private segment: SegmentService
+  ) {
     this.form = new FormGroup({
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMPONENT_ID)]),
       imageName: new FormControl("", [Validators.required]),
@@ -27,6 +30,7 @@ export class ImageComponent {
   }
 
   create() {
+    this.segment.track("[ui] create image");
     this.created.emit(this.form.value);
   }
 

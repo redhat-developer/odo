@@ -4,6 +4,7 @@ import { PATTERN_COMPONENT_ID } from '../patterns';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { Observable, of, map, catchError } from 'rxjs';
 import { Container } from 'src/app/api-gen';
+import { SegmentService } from 'ngx-segment-analytics';
 
 @Component({
   selector: 'app-container',
@@ -22,6 +23,7 @@ export class ContainerComponent {
 
   constructor(
     private devstate: DevstateService,
+    private segment: SegmentService
   ) {
     this.form = new FormGroup({
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMPONENT_ID)]),
@@ -36,6 +38,7 @@ export class ContainerComponent {
   }
 
   create() {
+    this.segment.track("[ui] create container");
     this.created.emit(this.form.value);
   }
 
