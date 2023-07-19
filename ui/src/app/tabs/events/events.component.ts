@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { Events } from 'src/app/api-gen';
-import { SegmentService } from 'ngx-segment-analytics';
+import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
   selector: 'app-events',
@@ -17,7 +17,7 @@ export class EventsComponent {
   constructor(
     private state: StateService,
     private devstate: DevstateService,
-    private segment: SegmentService
+    private telemetry: TelemetryService
   ) {}
 
   ngOnInit() {
@@ -28,7 +28,7 @@ export class EventsComponent {
   }
 
   onUpdate(event: "preStart" | "postStart" | "preStop" | "postStop", commands: string[]) {
-    this.segment.track("[ui] add "+event+" event");
+    this.telemetry.track("[ui] add "+event+" event");
     const result = this.devstate.updateEvents(event, commands);
     result.subscribe({
       next: (value) => {

@@ -7,9 +7,9 @@ import { MatIconRegistry } from "@angular/material/icon";
 import { OdoapiService } from './services/odoapi.service';
 import { SseService } from './services/sse.service';
 import {DevfileContent} from "./api-gen";
-import { SegmentService } from 'ngx-segment-analytics';
 import { TelemetryResponse } from './api-gen';
 import { MatTabChangeEvent } from '@angular/material/tabs';
+import { TelemetryService } from './services/telemetry.service';
 
 @Component({
   selector: 'app-root',
@@ -41,7 +41,7 @@ export class AppComponent implements OnInit {
     private mermaid: MermaidService,
     private state: StateService,
     private sse: SseService,
-    private segment: SegmentService
+    private telemetry: TelemetryService
   ) {
     this.matIconRegistry.addSvgIcon(
       `github`,
@@ -93,9 +93,11 @@ export class AppComponent implements OnInit {
     this.odoApi.telemetry().subscribe({
       next: (data: TelemetryResponse) => {
         if (data.enabled) {
-          this.segment.identify(data.userid);
-          this.segment.load(data.apikey!);
-          this.segment.track("[ui] start");  
+          if (data.apikey == null || data.userid == null) {
+            return;
+          }
+          this.telemetry.init(data.apikey, data.userid)
+          this.telemetry.track("[ui] start");
         }    
       },
       error: () => {}
@@ -124,18 +126,18 @@ export class AppComponent implements OnInit {
   }
 
   onSave(content: string) {
-    this.segment.track("[ui] save devfile to disk");
+    this.telemetry.track("[ui] save devfile to disk");
     this.propagateChange(content, true);
   }
 
   onApply(content: string) {
-    this.segment.track("[ui] change devfile from textarea");
+    this.telemetry.track("[ui] change devfile from textarea");
     this.propagateChange(content, false);
   }
 
   clear() {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
-      this.segment.track("[ui] clear devfile");
+      this.telemetry.track("[ui] clear devfile");
       this.wasmGo.clearDevfileContent().subscribe({
         next: (value) => {
           this.propagateChange(value.content, false);
@@ -145,6 +147,6 @@ export class AppComponent implements OnInit {
   }
 
   onSelectedTabChange(e: MatTabChangeEvent) {
-    this.segment.track("[ui] change to tab "+this.tabNames[e.index]);
+    this.telemetry.track("[ui] change to tab "+this.tabNames[e.index]);
   }
 }
