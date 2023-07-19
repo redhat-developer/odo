@@ -1321,6 +1321,9 @@ terms above.
 mermaid
 MIT
 
+ngx-segment-analytics
+MIT
+
 rxjs
 Apache-2.0
                                Apache License
