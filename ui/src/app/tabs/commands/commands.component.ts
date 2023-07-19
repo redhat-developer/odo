@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { Command } from 'src/app/api-gen';
+import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
   selector: 'app-commands',
@@ -21,6 +22,7 @@ export class CommandsComponent {
   constructor(
     private state: StateService,
     private devstate: DevstateService,
+    private telemetry: TelemetryService
   ) {
     this.enableDragAndDrop = this.state.getDragAndDropEnabled();
   }
@@ -39,6 +41,7 @@ export class CommandsComponent {
   }
 
   displayExecForm() {
+    this.telemetry.track("[ui] start create exec command");
     this.forceDisplayExecForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
@@ -46,6 +49,7 @@ export class CommandsComponent {
   }
 
   displayApplyForm() {
+    this.telemetry.track("[ui] start create apply command");
     this.forceDisplayApplyForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
@@ -53,6 +57,7 @@ export class CommandsComponent {
   }
 
   displayImageForm() {
+    this.telemetry.track("[ui] start create image command");
     this.forceDisplayImageForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
@@ -60,6 +65,7 @@ export class CommandsComponent {
   }
 
   displayCompositeForm() {
+    this.telemetry.track("[ui] start create composite command");
     this.forceDisplayCompositeForm = true;
     setTimeout(() => {
       this.scrollToBottom();      

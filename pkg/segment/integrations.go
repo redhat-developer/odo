@@ -39,7 +39,7 @@ func getTelemetryForDevfileRegistry(ctx context.Context) (registryLibrary.Teleme
 	tag, _ := locale.Detect()
 	td.Locale = tag.String()
 
-	user, err := getUserIdentity(GetTelemetryFilePath())
+	user, err := GetUserIdentity(GetTelemetryFilePath())
 	if err != nil {
 		// default to the generic user ID if the anonymous ID cannot be found
 		td.User = td.Client

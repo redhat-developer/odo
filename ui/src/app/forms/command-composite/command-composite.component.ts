@@ -3,6 +3,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
+import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
   selector: 'app-command-composite',
@@ -18,6 +19,7 @@ export class CommandCompositeComponent {
   constructor(
     private devstate: DevstateService,
     private state: StateService,
+    private telemetry: TelemetryService
   ) {
     this.form = new FormGroup({
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMMAND_ID)]),
@@ -36,6 +38,7 @@ export class CommandCompositeComponent {
   }
 
   create() {
+    this.telemetry.track("[ui] create composite command");
     const result = this.devstate.addCompositeCommand(this.form.value["name"], this.form.value);
     result.subscribe({
       next: (value) => {

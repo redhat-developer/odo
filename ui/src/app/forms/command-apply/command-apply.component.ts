@@ -4,6 +4,7 @@ import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
 import { Resource } from 'src/app/api-gen';
+import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
   selector: 'app-command-apply',
@@ -21,6 +22,7 @@ export class CommandApplyComponent {
   constructor(
     private devstate: DevstateService,
     private state: StateService,
+    private telemetry: TelemetryService
   ) {
     this.form = new FormGroup({
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMMAND_ID)]),
@@ -37,6 +39,7 @@ export class CommandApplyComponent {
   }
 
   create() {
+    this.telemetry.track("[ui] create apply command");
     const subcreate = () => {
       const result = this.devstate.addApplyCommand(this.form.value["name"], this.form.value);
       result.subscribe({

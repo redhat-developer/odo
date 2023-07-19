@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
+import { TelemetryService } from 'src/app/services/telemetry.service';
 
 const semverPattern = `^([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\-[0-9a-z-]+(\\.[0-9a-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$`;
 
@@ -17,6 +18,7 @@ export class MetadataComponent implements OnInit {
   constructor(
     private devstate: DevstateService,
     private state: StateService,
+    private telemetry: TelemetryService
   ) {
     this.form = new FormGroup({
       name: new FormControl(''),
@@ -46,6 +48,7 @@ export class MetadataComponent implements OnInit {
   }
 
   onSave() {
+    this.telemetry.track("[ui] apply metadata");  
     const result = this.devstate.setMetadata(this.form.value);
     result.subscribe({
       next: (value) => {

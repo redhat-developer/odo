@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 import { Resource } from 'src/app/api-gen';
+import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
   selector: 'app-resource',
@@ -16,7 +17,9 @@ export class ResourceComponent {
   form: FormGroup;
   uriOrInlined: string = 'uri';
 
-  constructor() {
+  constructor(
+    private telemetry: TelemetryService
+  ) {
     this.form = new FormGroup({
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMPONENT_ID)]),
       uri: new FormControl("", [Validators.required]),
@@ -42,6 +45,7 @@ export class ResourceComponent {
   }
 
   create() {
+    this.telemetry.track("[ui] create resource");
     this.created.emit(this.form.value);
   }
 

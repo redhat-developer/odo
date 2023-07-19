@@ -44,6 +44,7 @@ type DefaultApiRouter interface {
 	DevstateResourceResourceNameDelete(http.ResponseWriter, *http.Request)
 	InstanceDelete(http.ResponseWriter, *http.Request)
 	InstanceGet(http.ResponseWriter, *http.Request)
+	TelemetryGet(http.ResponseWriter, *http.Request)
 }
 
 // DefaultApiServicer defines the api actions for the DefaultApi service
@@ -77,4 +78,5 @@ type DefaultApiServicer interface {
 	DevstateResourceResourceNameDelete(context.Context, string) (ImplResponse, error)
 	InstanceDelete(context.Context) (ImplResponse, error)
 	InstanceGet(context.Context) (ImplResponse, error)
+	TelemetryGet(context.Context) (ImplResponse, error)
 }

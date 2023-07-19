@@ -73,6 +73,10 @@ type Client struct {
 	TelemetryFilePath string
 }
 
+func GetApikey() string {
+	return writeKey
+}
+
 // NewClient returns a Client created with the default args
 func NewClient() (*Client, error) {
 	return newCustomClient(
@@ -131,7 +135,7 @@ func (c *Client) Upload(ctx context.Context, data TelemetryData) error {
 	}
 
 	// obtain the user ID
-	userId, uerr := getUserIdentity(c.TelemetryFilePath)
+	userId, uerr := GetUserIdentity(c.TelemetryFilePath)
 	if uerr != nil {
 		return uerr
 	}
@@ -193,8 +197,8 @@ func GetTelemetryFilePath() string {
 	return filepath.Join(homeDir, ".redhat", "anonymousId")
 }
 
-// getUserIdentity returns the anonymous ID if it exists, else creates a new one and sends the data to Segment
-func getUserIdentity(telemetryFilePath string) (string, error) {
+// GetUserIdentity returns the anonymous ID if it exists, else creates a new one and sends the data to Segment
+func GetUserIdentity(telemetryFilePath string) (string, error) {
 	var id []byte
 
 	// Get-or-Create the '$HOME/.redhat' directory

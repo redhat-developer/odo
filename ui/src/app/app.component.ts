@@ -7,6 +7,9 @@ import { MatIconRegistry } from "@angular/material/icon";
 import { OdoapiService } from './services/odoapi.service';
 import { SseService } from './services/sse.service';
 import {DevfileContent} from "./api-gen";
+import { TelemetryResponse } from './api-gen';
+import { MatTabChangeEvent } from '@angular/material/tabs';
+import { TelemetryService } from './services/telemetry.service';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +18,17 @@ import {DevfileContent} from "./api-gen";
 })
 export class AppComponent implements OnInit {
 
+  protected tabNames: string[] = [
+    "YAML",
+    "Chart",
+    "Metadata",
+    "Commands",
+    "Events",
+    "Containers",
+    "Images",
+    "Resources",
+    "Volumes"
+  ];
   protected mermaidContent: string = "";
   protected devfileYaml: string = "";
   protected errorMessage: string  = "";
@@ -27,6 +41,7 @@ export class AppComponent implements OnInit {
     private mermaid: MermaidService,
     private state: StateService,
     private sse: SseService,
+    private telemetry: TelemetryService
   ) {
     this.matIconRegistry.addSvgIcon(
       `github`,
@@ -44,7 +59,7 @@ export class AppComponent implements OnInit {
     devfile.subscribe({
       next: (devfile) => {
         if (devfile.content != undefined) {
-          this.onButtonClick(devfile.content, false);
+          this.propagateChange(devfile.content, false);
         }
       }
     });
@@ -71,18 +86,31 @@ export class AppComponent implements OnInit {
     this.sse.subscribeTo(['DevfileUpdated']).subscribe(event => {
       let newDevfile: DevfileContent = JSON.parse(event.data)
       if (newDevfile.content != undefined) {
-        this.onButtonClick(newDevfile.content, false);
+        this.propagateChange(newDevfile.content, false);
       }
     });
+
+    this.odoApi.telemetry().subscribe({
+      next: (data: TelemetryResponse) => {
+        if (data.enabled) {
+          if (data.apikey == null || data.userid == null) {
+            return;
+          }
+          this.telemetry.init(data.apikey, data.userid)
+          this.telemetry.track("[ui] start");
+        }    
+      },
+      error: () => {}
+    })
   }
 
-  onButtonClick(content: string, save: boolean){
+  propagateChange(content: string, saveToApi: boolean){
     const result = this.wasmGo.setDevfileContent(content);
     result.subscribe({
       next: (value) => {
         this.errorMessage = '';
         this.state.changeDevfileYaml(value);
-        if (save) {
+        if (saveToApi) {
           this.odoApi.saveDevfile(value.content).subscribe({
             next: () => {},
             error: (error) => {
@@ -97,13 +125,28 @@ export class AppComponent implements OnInit {
     });
   }
 
+  onSave(content: string) {
+    this.telemetry.track("[ui] save devfile to disk");
+    this.propagateChange(content, true);
+  }
+
+  onApply(content: string) {
+    this.telemetry.track("[ui] change devfile from textarea");
+    this.propagateChange(content, false);
+  }
+
   clear() {
     if (confirm('You will delete the content of the Devfile. Continue?')) {
+      this.telemetry.track("[ui] clear devfile");
       this.wasmGo.clearDevfileContent().subscribe({
         next: (value) => {
-          this.onButtonClick(value.content, false);
+          this.propagateChange(value.content, false);
         }
       });
     }
+  }
+
+  onSelectedTabChange(e: MatTabChangeEvent) {
+    this.telemetry.track("[ui] change to tab "+this.tabNames[e.index]);
   }
 }

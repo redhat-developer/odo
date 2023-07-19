@@ -155,6 +155,9 @@ func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Comman
 		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
+	isTelemetryEnabled := segment.IsTelemetryEnabled(userConfig, envcontext.GetEnvConfig(ctx))
+	scontext.SetTelemetryStatus(ctx, isTelemetryEnabled)
+
 	// We can dereference as there is a default value defined for this config field
 	err = scontext.SetCaller(ctx, envConfig.TelemetryCaller)
 	if err != nil {

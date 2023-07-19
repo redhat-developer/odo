@@ -17,6 +17,8 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/state"
 	"k8s.io/klog"
 )
@@ -174,4 +176,28 @@ func (s *DefaultApiService) validateDevfile(ctx context.Context, dir string) err
 		return fmt.Errorf("failed to parse the devfile: %w", err)
 	}
 	return validate.ValidateDevfileData(devObj.Data)
+}
+
+func (s *DefaultApiService) TelemetryGet(ctx context.Context) (openapi.ImplResponse, error) {
+	var (
+		enabled = scontext.GetTelemetryStatus(ctx)
+		apikey  string
+		userid  string
+	)
+	if enabled {
+		apikey = segment.GetApikey()
+		var err error
+		userid, err = segment.GetUserIdentity(segment.GetTelemetryFilePath())
+		if err != nil {
+			return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+				Message: fmt.Sprintf("error getting telemetry data: %s", err),
+			}), nil
+		}
+	}
+
+	return openapi.Response(http.StatusOK, openapi.TelemetryResponse{
+		Enabled: enabled,
+		Apikey:  apikey,
+		Userid:  userid,
+	}), nil
 }

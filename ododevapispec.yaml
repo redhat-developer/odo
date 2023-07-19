@@ -275,6 +275,24 @@ paths:
               example:
                 message: "Error getting the Devfile content"
 
+  /telemetry:
+    get:
+      description: Get the specific information for sending telemetry data
+      responses:
+        '200':
+          description: 'Specific information for sending telemetry data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryResponse'
+        '500':
+          description: Error getting the telemetry data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error getting the telemetry data"
 
   /devstate/devfile:
     put:
@@ -1230,6 +1248,17 @@ components:
       - content
       properties:
         content:
+          type: string
+    TelemetryResponse:
+      type: object
+      required:
+      - enabled
+      properties:
+        enabled:
+          type: boolean
+        apikey:
+          type: string
+        userid:
           type: string
     DevstateDevfilePutRequest:
       type: object
