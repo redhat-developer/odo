@@ -14,6 +14,9 @@ jobs:
       - name: Generate static files for UI
         run: make ui-static
 
+      - name: Copy embedded files to Go sources
+        run: make prebuild
+
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@7f1b21ceb7ef533b97b46e89e2f882ee5cb17ae0
         id: verify-changed-files
@@ -21,5 +24,5 @@ jobs:
       - name: Some files have changed
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
-          echo "::error Changed files: ${{ steps.verify-changed-files.outputs.changed_files }} -- Please regenerate with make ui-static"
+          echo "::error Changed files: ${{ steps.verify-changed-files.outputs.changed_files }} -- Please regenerate with make ui-static / make prebuild"
           exit 1
