@@ -179,6 +179,10 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
+	if !o.apiServerFlag && o.apiServerPortFlag != 0 {
+		return errors.New("--api-server-port makes sense only if --api-server is enabled")
+	}
+
 	if o.apiServerFlag && o.apiServerPortFlag != 0 {
 		if o.randomPortsFlag {
 			return errors.New("--random-ports and --api-server-port cannot be used together")

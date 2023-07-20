@@ -33,28 +33,43 @@ var _ = Describe("odo dev command with api server tests", func() {
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
+
 	for _, podman := range []bool{false, true} {
 		podman := podman
-		for _, customPort := range []bool{false, true} {
-			customPort := customPort
-			When("the component is bootstrapped", helper.LabelPodmanIf(podman, func() {
-				BeforeEach(func() {
-					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), cmpName)
-				})
+
+		When("the component is bootstrapped", helper.LabelPodmanIf(podman, func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), cmpName)
+			})
+
+			It("should fail if --api-server is false but --api-server-port is true", func() {
+				args := []string{
+					"dev",
+					"--api-server=false",
+					fmt.Sprintf("--api-server-port=%d", helper.GetCustomStartPort()),
+				}
+				if podman {
+					args = append(args, "--platform=podman")
+				}
+				errOut := helper.Cmd("odo", args...).ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("--api-server-port makes sense only if --api-server is enabled"))
+			})
+
+			for _, customPort := range []bool{false, true} {
+				customPort := customPort
 
 				if customPort {
 					It("should fail if --random-ports and --api-server-port are used together", func() {
 						args := []string{
 							"dev",
 							"--random-ports",
-							"--api-server",
 							fmt.Sprintf("--api-server-port=%d", helper.GetCustomStartPort()),
 						}
 						if podman {
 							args = append(args, "--platform=podman")
 						}
-						errOut := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+						errOut := helper.Cmd("odo", args...).ShouldFail().Err()
 						Expect(errOut).Should(ContainSubstring("--random-ports and --api-server-port cannot be used together"))
 					})
 				}
@@ -162,8 +177,8 @@ var _ = Describe("odo dev command with api server tests", func() {
 						helper.JsonPathDoesNotExist(stdout, "devControlPlane.0.webInterfacePath")
 					})
 				})
-			}))
-		}
+			}
+		}))
 
 		When("the component is bootstrapped", helper.LabelPodmanIf(podman, func() {
 			BeforeEach(func() {
