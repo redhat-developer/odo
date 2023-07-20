@@ -23,7 +23,7 @@ export default function Home(): JSX.Element {
   className={styles.logo}
   src={useBaseUrl('/img/logo.png')}
   />
-                <span className={styles.bannerTitleTextHtml}>Simplified <b>container</b>-based application <b>development</b></span>
+                <span className={styles.bannerTitleTextHtml}>Fast, Iterative and Simplified <b>container</b>-based application <b>development</b></span>
             </h1>
             <div className={styles.indexCtas}>
               <Link className="button button--primary" to="/docs/introduction">
@@ -59,10 +59,10 @@ export default function Home(): JSX.Element {
               <div className="col col--5 col--offset-1">
                     <video className={styles.loopVideo} autoPlay loop muted><source src="/video/container_ship.webm" type="video/webm"/></video>
                 <h2 className={clsx(styles.featureHeading)}>
-                  Deploy on <b className={styles.kubernetesFont}>Kubernetes</b> and <b className={styles.openshiftFont}>OpenShift</b>
+                  Develop on Podman, <b className={styles.kubernetesFont}>Kubernetes</b> and <b className={styles.openshiftFont}>OpenShift</b>
                 </h2>
                 <p className="padding-horiz--md">
-    We provide first class support for both Kubernetes and OpenShift. Choose your favourite container orchestrator and deploy your application.
+    We provide first class support for Podman, Kubernetes and OpenShift. Choose your favourite container orchestrator to develop your application.
                 </p>
               </div>
               <div className="col col--5">
@@ -71,7 +71,7 @@ export default function Home(): JSX.Element {
                   Push code fast and often
                 </h2>
                 <p className="padding-horiz--md">
-    Spend less time maintaining your deployment infrastructure and more time coding. Immediately have your application running each time you compile.
+    Spend less time maintaining your development environment and more time coding. Immediately have your application up-to-date each time you modify the sources.
                 </p>
               </div>
             </div>
@@ -79,14 +79,14 @@ export default function Home(): JSX.Element {
         </div>
         <div className={styles.overview}>
           <div className="container text--center margin-top--md">
-            <h1>A developer-focused tool for blazingly fast Kubernetes application development</h1>
+            <h1>A developer-focused tool for blazingly fast Container-based application development</h1>
             <div className="row">
               <div className="col col--6">
                 <h2 className={clsx(styles.featureHeading)}>
                   Initialize and develop your application
                 </h2>
                 <p className="padding-horiz--md">
-                  Only two commands away from deploying on a cluster! Use <code>odo</code> to initialize and then develop your application directly on the cluster.
+                  Only two commands away from developing in a container! Use <code>odo</code> to initialize and then develop your application directly on your container platform of choice.
                 </p>
                 <img className={styles.terminalImage} alt="init" src={useBaseUrl('/img/init.png')}/>
               </div>
@@ -95,7 +95,7 @@ export default function Home(): JSX.Element {
                   Build, push, and deploy your application seamlessly
                 </h2>
                 <p className="padding-horiz--md">
-                  Go further with development. Deploy your application seamlessly to Kubernetes. <code>odo</code> can easily manage the build, pushing, and deployment of your application. 
+                  Go further with development. Deploy your application seamlessly to Kubernetes and OpenShift. <code>odo</code> can easily manage the build, pushing, and deployment of your application. 
                 </p>
                 <img className={styles.terminalImage} alt="deploy" src={useBaseUrl('/img/deploy.png')}/>
               </div>
@@ -105,7 +105,7 @@ export default function Home(): JSX.Element {
               </h2>
               <p className="padding-horiz--md">
                   No need to leave your development environment of choice!
-                  Use the <a href={useBaseUrl('/docs/overview/installation#ide-installation')}>available extensions</a> to initialize and then iterate on your application running directly on the cluster.
+                  Use the <a href={useBaseUrl('/docs/overview/installation#ide-installation')}>available extensions</a> to initialize and then iterate on your application running directly on your container platform of choice.
               </p>
               <div className="row">
                 <div className="col col--6">
@@ -126,7 +126,7 @@ export default function Home(): JSX.Element {
     Standalone client
                 </h2>
                 <p className="padding-horiz--md">
-    <code>odo</code> is a standalone tool that communicates directly with the Kubernetes API. There is no requirement for a daemon or server process.
+    <code>odo</code> is a standalone tool that communicates directly with the Kubernetes API or the Podman client. There is no requirement for a daemon or server process.
                 </p>
               </div>
               <div className="col">
@@ -135,7 +135,7 @@ export default function Home(): JSX.Element {
                   Built for container engineers
                 </h2>
                 <p className="padding-horiz--md">
-      Built from the ground up with application development on Kubernetes in mind. Each command has been carefuly crafted for application container development.
+      Built from the ground up with application development on containers in mind. Each command has been carefuly crafted for application container development.
                 </p>
               </div>
               <div className="col">
@@ -165,10 +165,10 @@ export default function Home(): JSX.Element {
               <div className="col col--4">
                 <img className={styles.featureImage} alt="foobar" src={useBaseUrl('/img/icons/tests.png')}/>
                 <h2 className={clsx(styles.featureHeading)}>
-                  Run your tests directly on the cluster
+                  Run your tests directly on the container
                 </h2>
                 <p className="padding-horiz--md">
-    Debug and test remote applications deployed using <code>odo</code> directly from your IDE to Kubernetes. No more having to exit your IDE to push your application.
+    Debug and test remote applications deployed using <code>odo</code> directly from your IDE to containers. No more having to exit your IDE to push your application.
                 </p>
               </div>
             </div>
