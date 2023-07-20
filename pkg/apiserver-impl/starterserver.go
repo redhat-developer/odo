@@ -23,6 +23,11 @@ import (
 //go:embed ui/*
 var staticFiles embed.FS
 
+// swagger UI files are from https://github.com/swagger-api/swagger-ui/tree/master/dist
+
+//go:embed swagger-ui/*
+var swaggerFiles embed.FS
+
 type ApiServer struct {
 	PushWatcher <-chan struct{}
 }
@@ -56,6 +61,14 @@ func StartServer(
 	}
 
 	router := openapi.NewRouter(sseNotifier, defaultApiController)
+
+	fSysSwagger, err := fs.Sub(swaggerFiles, "swagger-ui")
+	if err != nil {
+		// Assertion, error can only happen if the path "swagger-ui" is not valid
+		panic(err)
+	}
+	swaggerServer := http.FileServer(http.FS(fSysSwagger))
+	router.PathPrefix("/swagger-ui/").Handler(http.StripPrefix("/swagger-ui/", swaggerServer))
 
 	fSys, err := fs.Sub(staticFiles, "ui")
 	if err != nil {

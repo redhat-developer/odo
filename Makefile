@@ -86,10 +86,12 @@ ui-static: ## build static files for UI to be served by embedded API server
 
 .PHONY: bin
 bin: ## build the odo binary
+	cp ododevapispec.yaml pkg/apiserver-impl/swagger-ui/swagger.yaml
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: release-bin
 release-bin: ## build the odo binary
+	cp ododevapispec.yaml pkg/apiserver-impl/swagger-ui/swagger.yaml
 	go build ${RELEASE_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: install
