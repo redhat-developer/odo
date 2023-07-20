@@ -163,11 +163,11 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	if options.CustomAddress != "" {
 		args = append(args, "--address", options.CustomAddress)
 	}
-	if options.StartAPIServer {
-		args = append(args, "--api-server")
-		if options.APIServerPort != 0 {
-			args = append(args, "--api-server-port", fmt.Sprintf("%d", options.APIServerPort))
-		}
+	if !options.StartAPIServer {
+		args = append(args, "--api-server=false")
+	}
+	if options.APIServerPort != 0 {
+		args = append(args, fmt.Sprintf("--api-server-port=%d", options.APIServerPort))
 	}
 	if options.SyncGitDir {
 		args = append(args, "--sync-git-dir")
