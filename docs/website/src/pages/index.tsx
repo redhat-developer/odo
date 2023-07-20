@@ -86,7 +86,7 @@ export default function Home(): JSX.Element {
                   Initialize and develop your application
                 </h2>
                 <p className="padding-horiz--md">
-                  Only two commands away from developing on a cluster! Use <code>odo</code> to initialize and then develop your application directly on the cluster.
+                  Only two commands away from developing in a container! Use <code>odo</code> to initialize and then develop your application directly on your container platform of choice.
                 </p>
                 <img className={styles.terminalImage} alt="init" src={useBaseUrl('/img/init.png')}/>
               </div>
