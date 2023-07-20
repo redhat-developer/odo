@@ -105,7 +105,7 @@ export default function Home(): JSX.Element {
               </h2>
               <p className="padding-horiz--md">
                   No need to leave your development environment of choice!
-                  Use the <a href={useBaseUrl('/docs/overview/installation#ide-installation')}>available extensions</a> to initialize and then iterate on your application running directly on the cluster.
+                  Use the <a href={useBaseUrl('/docs/overview/installation#ide-installation')}>available extensions</a> to initialize and then iterate on your application running directly on your container platform of choice.
               </p>
               <div className="row">
                 <div className="col col--6">
