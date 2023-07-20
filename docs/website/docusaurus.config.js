@@ -4,7 +4,7 @@ const path = require('path');
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: 'odo',
-  tagline: 'odo - Fast iterative Kubernetes and OpenShift development',
+  tagline: 'odo - Fast iterative container-based application development',
   url: 'https://odo.dev',
   baseUrl: '/',
   onBrokenLinks: 'throw',
