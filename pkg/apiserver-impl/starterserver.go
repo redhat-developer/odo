@@ -13,6 +13,7 @@ import (
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/sse"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/state"
@@ -71,13 +72,17 @@ func StartServer(
 	swaggerServer := http.FileServer(http.FS(fSysSwagger))
 	router.PathPrefix("/swagger-ui/").Handler(http.StripPrefix("/swagger-ui/", swaggerServer))
 
-	fSys, err := fs.Sub(staticFiles, "ui")
-	if err != nil {
-		// Assertion, error can only happen if the path "ui" is not valid
-		panic(err)
+	if feature.IsEnabled(ctx, feature.UIServer) {
+		var fSys fs.FS
+		fSys, err = fs.Sub(staticFiles, "ui")
+		if err != nil {
+			// Assertion, error can only happen if the path "ui" is not valid
+			panic(err)
+		}
+
+		staticServer := http.FileServer(http.FS(fSys))
+		router.PathPrefix("/").Handler(staticServer)
 	}
-	staticServer := http.FileServer(http.FS(fSys))
-	router.PathPrefix("/").Handler(staticServer)
 
 	if port == 0 && !randomPort {
 		port, err = util.NextFreePort(20000, 30001, nil, "")

@@ -18,7 +18,7 @@ var (
 		isExperimental: false,
 	}
 
-	APIServerFlag = OdoFeature{
+	UIServer = OdoFeature{
 		isExperimental: true,
 	}
 )

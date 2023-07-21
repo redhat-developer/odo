@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
@@ -127,12 +128,15 @@ func (o *State) GetAPIServerPorts(ctx context.Context) ([]api.DevControlPlane, e
 		if content.APIServerPort == 0 {
 			continue
 		}
-		result = append(result, api.DevControlPlane{
-			Platform:         platform,
-			LocalPort:        content.APIServerPort,
-			APIServerPath:    "/api/v1/",
-			WebInterfacePath: "/",
-		})
+		controlPlane := api.DevControlPlane{
+			Platform:      platform,
+			LocalPort:     content.APIServerPort,
+			APIServerPath: "/api/v1/",
+		}
+		if feature.IsEnabled(ctx, feature.UIServer) {
+			controlPlane.WebInterfacePath = "/"
+		}
+		result = append(result, controlPlane)
 	}
 	return result, nil
 }
