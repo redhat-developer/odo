@@ -18,6 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -43,6 +44,7 @@ import { CommandsListComponent } from './lists/commands-list/commands-list.compo
 import { MultiCommandComponent } from './controls/multi-command/multi-command.component';
 import { EventsComponent } from './tabs/events/events.component';
 import { ChipsEventsComponent } from './controls/chips-events/chips-events.component';
+import { ConfirmComponent } from './components/confirm/confirm.component';
 
 @NgModule({
   declarations: [
@@ -65,6 +67,7 @@ import { ChipsEventsComponent } from './controls/chips-events/chips-events.compo
     MultiCommandComponent,
     EventsComponent,
     ChipsEventsComponent,
+    ConfirmComponent,
   ],
   imports: [
     BrowserModule,
@@ -86,6 +89,7 @@ import { ChipsEventsComponent } from './controls/chips-events/chips-events.compo
     MatInputModule,
     MatMenuModule,
     MatSelectModule,
+    MatSnackBarModule,
     MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,

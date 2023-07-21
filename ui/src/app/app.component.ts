@@ -10,6 +10,8 @@ import {DevfileContent} from "./api-gen";
 import { TelemetryResponse } from './api-gen';
 import { MatTabChangeEvent } from '@angular/material/tabs';
 import { TelemetryService } from './services/telemetry.service';
+import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
+import { ConfirmComponent } from './components/confirm/confirm.component';
 
 @Component({
   selector: 'app-root',
@@ -32,6 +34,7 @@ export class AppComponent implements OnInit {
   protected mermaidContent: string = "";
   protected devfileYaml: string = "";
   protected errorMessage: string  = "";
+  private snackBarRef: MatSnackBarRef<ConfirmComponent> | null = null;
 
   constructor(
     protected sanitizer: DomSanitizer,
@@ -41,7 +44,8 @@ export class AppComponent implements OnInit {
     private mermaid: MermaidService,
     private state: StateService,
     private sse: SseService,
-    private telemetry: TelemetryService
+    private telemetry: TelemetryService,
+    private snackbar: MatSnackBar
   ) {
     this.matIconRegistry.addSvgIcon(
       `github`,
@@ -84,10 +88,25 @@ export class AppComponent implements OnInit {
     });
 
     this.sse.subscribeTo(['DevfileUpdated']).subscribe(event => {
-      let newDevfile: DevfileContent = JSON.parse(event.data)
-      if (newDevfile.content != undefined) {
-        this.propagateChange(newDevfile.content, false);
+      if (this.snackBarRef != null) {
+        this.snackBarRef.afterDismissed().subscribe(() => {});
+        this.snackBarRef.dismiss();
       }
+      this.snackBarRef = this.snackbar.openFromComponent(ConfirmComponent, { data: { 
+        message: "The Devfile has changed on disk. Do you want to update it here?",
+        noLabel: "Cancel", 
+        yesLabel: "Update"
+      }});
+      this.snackBarRef.onAction().subscribe(() => {
+        let newDevfile: DevfileContent = JSON.parse(event.data);
+        if (newDevfile.content != undefined) {
+          this.propagateChange(newDevfile.content, false);
+        }
+        this.snackBarRef = null;
+      });
+      this.snackBarRef.afterDismissed().subscribe(() => { 
+        this.snackBarRef = null;
+      });
     });
 
     this.odoApi.telemetry().subscribe({
