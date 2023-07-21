@@ -1,3 +1,3 @@
 <p>{{message}}</p>
-<button mat-raised-button (click)="cancel()">{{noLabel}} </button>
-<button mat-raised-button (click)="update()">{{yesLabel}}</button>
+<button data-cy="confirm-no" mat-raised-button (click)="doNo()">{{noLabel}} </button>
+<button data-cy="confirm-yes" mat-raised-button (click)="doYes()">{{yesLabel}}</button>

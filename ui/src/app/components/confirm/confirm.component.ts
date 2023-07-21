@@ -21,11 +21,11 @@ export class ConfirmComponent {
       this.yesLabel = data.yesLabel;
     }
 
-  cancel() {
+  doNo() {
     this.snackbarRef.dismiss();
   }
 
-  update() {
+  doYes() {
     this.snackbarRef.dismissWithAction();
   }
 }
