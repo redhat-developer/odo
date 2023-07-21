@@ -72,6 +72,7 @@ Cypress.Commands.add('clearDevfile', () => {
 Cypress.Commands.add('writeDevfileFile', (content: string) => {
     cy.intercept('PUT', '/api/v1/devstate/devfile').as('writeDevfileFile.applyDevState');
     cy.writeFile('devfile.yaml',  content)
+    cy.get('button[data-cy="confirm-yes"]').first().click();
     cy.wait(['@writeDevfileFile.applyDevState']);
 });
 
