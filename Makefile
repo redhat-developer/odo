@@ -270,3 +270,7 @@ generate-apifront: ## Generate OpenAPISpec library based on ododevapispec.yaml i
 
 .PHONY: generate-api
 generate-api: generate-apiserver generate-apifront ## Generate code based on ododevapispec.yaml
+
+.PHONY: copy-swagger-ui
+copy-swagger-ui:
+	./scripts/copy-swagger-ui.sh
