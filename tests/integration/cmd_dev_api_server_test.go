@@ -42,6 +42,23 @@ var _ = Describe("odo dev command with api server tests", func() {
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"), cmpName)
 				})
+
+				if customPort {
+					It("should fail if --random-ports and --api-server-port are used together", func() {
+						args := []string{
+							"dev",
+							"--random-ports",
+							"--api-server",
+							fmt.Sprintf("--api-server-port=%d", helper.GetCustomStartPort()),
+						}
+						if podman {
+							args = append(args, "--platform=podman")
+						}
+						errOut := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldFail().Err()
+						Expect(errOut).Should(ContainSubstring("--random-ports and --api-server-port cannot be used together"))
+					})
+				}
+
 				When(fmt.Sprintf("odo dev is run with --api-server flag (custom api server port=%v)", customPort), func() {
 					var devSession helper.DevSession
 					var localPort int
@@ -53,6 +70,7 @@ var _ = Describe("odo dev command with api server tests", func() {
 						if customPort {
 							localPort = helper.GetCustomStartPort()
 							opts.APIServerPort = localPort
+							opts.NoRandomPorts = true
 						}
 						var err error
 						devSession, err = helper.StartDevMode(opts)

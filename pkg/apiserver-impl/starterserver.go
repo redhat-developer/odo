@@ -30,6 +30,7 @@ type ApiServer struct {
 func StartServer(
 	ctx context.Context,
 	cancelFunc context.CancelFunc,
+	randomPort bool,
 	port int,
 	devfilePath string,
 	devfileFiles []string,
@@ -65,7 +66,7 @@ func StartServer(
 	staticServer := http.FileServer(http.FS(fSys))
 	router.PathPrefix("/").Handler(staticServer)
 
-	if port == 0 {
+	if port == 0 && !randomPort {
 		port, err = util.NextFreePort(20000, 30001, nil, "")
 		if err != nil {
 			klog.V(0).Infof("Unable to start the API server; encountered error: %v", err)
@@ -73,23 +74,36 @@ func StartServer(
 		}
 	}
 
-	err = stateClient.SetAPIServerPort(ctx, port)
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return ApiServer{}, fmt.Errorf("unable to start API Server listener on port %d: %w", port, err)
+	}
+
+	server := &http.Server{
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
+		Handler: router,
+	}
+	var errChan = make(chan error)
+	go func() {
+		errChan <- server.Serve(listener)
+	}()
+
+	// Get the actual port value assigned by the operating system
+	listeningPort := listener.Addr().(*net.TCPAddr).Port
+	if port != 0 && port != listeningPort {
+		panic(fmt.Sprintf("requested port (%d) not the same as the actual port the API Server is bound to (%d)", port, listeningPort))
+	}
+
+	err = stateClient.SetAPIServerPort(ctx, listeningPort)
 	if err != nil {
 		klog.V(0).Infof("Unable to start the API server; encountered error: %v", err)
 		cancelFunc()
 	}
 
-	klog.V(0).Infof("API Server started at localhost:%d/api/v1", port)
+	klog.V(0).Infof("API Server started at localhost:%d/api/v1", listeningPort)
 
-	server := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router}
-	var errChan = make(chan error)
-	go func() {
-		server.BaseContext = func(net.Listener) context.Context {
-			return ctx
-		}
-		err = server.ListenAndServe()
-		errChan <- err
-	}()
 	go func() {
 		select {
 		case <-ctx.Done():
