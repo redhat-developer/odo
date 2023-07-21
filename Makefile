@@ -84,16 +84,20 @@ ui-static: ## build static files for UI to be served by embedded API server
 		-t docker.io/library/node:18 \
 		/bin/sh -c "cd /local && (cd ui && npm install && npm run build) && rm -rf pkg/apiserver-impl/ui/* && mv ui/dist/devfile-builder/* pkg/apiserver-impl/ui/"
 
+.PHONY: prebuild
+prebuild: ## Step to place go embedded files into Go sources before to build the go executable
+	cp ododevapispec.yaml pkg/apiserver-impl/swagger-ui/swagger.yaml
+
 .PHONY: bin
-bin: ## build the odo binary
+bin: prebuild ## build the odo binary
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: release-bin
-release-bin: ## build the odo binary
+release-bin: prebuild ## build the odo binary
 	go build ${RELEASE_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: install
-install:
+install: prebuild
 	go install ${BUILD_FLAGS} ./cmd/odo/
 
 .PHONY: validate
@@ -266,3 +270,7 @@ generate-apifront: ## Generate OpenAPISpec library based on ododevapispec.yaml i
 
 .PHONY: generate-api
 generate-api: generate-apiserver generate-apifront ## Generate code based on ododevapispec.yaml
+
+.PHONY: copy-swagger-ui
+copy-swagger-ui:
+	./scripts/copy-swagger-ui.sh
