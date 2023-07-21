@@ -53,6 +53,7 @@ var _ = Describe("odo dev command with api server tests", func() {
 						if customPort {
 							localPort = helper.GetCustomStartPort()
 							opts.APIServerPort = localPort
+							opts.NoRandomPorts = true
 						}
 						var err error
 						devSession, err = helper.StartDevMode(opts)

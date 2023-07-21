@@ -21,7 +21,10 @@ const (
 
 type ApiServerOptions struct {
 	clientset *clientset.Clientset
-	portFlag  int
+
+	// Flags
+	randomPortsFlag bool
+	portFlag        int
 }
 
 func NewApiServerOptions() *ApiServerOptions {
@@ -67,6 +70,7 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 	_, err = apiserver_impl.StartServer(
 		ctx,
 		cancel,
+		o.randomPortsFlag,
 		o.portFlag,
 		devfilePath,
 		devfileFiles,
@@ -114,6 +118,7 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 		clientset.STATE,
 		clientset.PREFERENCE,
 	)
+	apiserverCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign a random API Server port.")
 	apiserverCmd.Flags().IntVar(&o.portFlag, "port", 0, "Define custom port for API Server.")
 	return apiserverCmd
 }

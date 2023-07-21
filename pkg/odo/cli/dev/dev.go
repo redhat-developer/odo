@@ -271,6 +271,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		apiServer, err = apiserver_impl.StartServer(
 			ctx,
 			o.cancel,
+			o.randomPortsFlag,
 			o.apiServerPortFlag,
 			devfilePath,
 			devfileFiles,
