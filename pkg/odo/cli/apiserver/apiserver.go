@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -44,6 +45,9 @@ func (o *ApiServerOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline
 }
 
 func (o *ApiServerOptions) Validate(ctx context.Context) error {
+	if o.randomPortsFlag && o.portFlag != 0 {
+		return errors.New("--random-ports and --port cannot be used together")
+	}
 	return nil
 }
 

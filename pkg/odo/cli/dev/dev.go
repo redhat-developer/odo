@@ -181,6 +181,9 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 	}
 
 	if o.apiServerFlag && o.apiServerPortFlag != 0 {
+		if o.randomPortsFlag {
+			return errors.New("--random-ports and --api-server-port cannot be used together")
+		}
 		if !util.IsPortFree(o.apiServerPortFlag, "") {
 			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPortFlag)
 		}
