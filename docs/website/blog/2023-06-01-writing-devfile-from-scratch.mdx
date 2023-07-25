@@ -18,7 +18,7 @@ However, the predefined stacks may not always suit your needs.
 In this blog post, we'll explore how to write your own Devfile from scratch to fit your project's needs better. 
 This is also a great opportunity to look more closely at the Devfile structure and how it works.
 
-We'll write a Devfile for Backstage as an example.
+We'll write a Devfile for a Backstage project as an example.
 
 
 <!--truncate-->
@@ -47,7 +47,7 @@ components:
 
 ```
 
-Two most important sections in Devfile are `commands` and `containers`.
+Two most important sections in Devfile are `commands` and `components`.
 
 ### Components
 
@@ -123,12 +123,12 @@ There are three types of commands `exec`, `apply`, and `composite`.
 
 - [`exec`](https://devfile.io/docs/2.2.0/adding-an-exec-command) - this just executes the command defined in `commandLine` inside the `container`.
   The `container` needs to be defined in `components` section.
-- [`apply`](https://devfile.io/docs/2.2.0/adding-an-apply-command) - most commonly coupled with `kubernets` component. It creates or, in other words, applies the component referenced in this command. 
+- [`apply`](https://devfile.io/docs/2.2.0/adding-an-apply-command) - most commonly coupled with `kubernetes` component. It creates or, in other words, applies the component referenced in this command. 
 - [`composite`](https://devfile.io/docs/2.2.0/adding-a-composite-command) - this command can be used to execute multiple existing commands sequentially or in parallel.
 
 
 
-Let's add commands to our Defile.
+Let's add commands to our Devfile.
 
 
 ```yaml
@@ -197,7 +197,7 @@ Ideally, this would be all we need, and you could use this Devfile with odo.
 If you try to use Devfile as we have it, you will see an error.
 The first problem is that the NodeJS image doesn't have `yarn` installed. 
 
-### Install `yaml` into the container
+### Install `yarn` into the container
 To add yarn, we will leverage Devfile feature called [`events`](https://devfile.io/docs/2.2.0/adding-event-bindings).
 Events allow us to define commands that should be executed on predefined events. 
 There are 3 events that you can use.
@@ -205,7 +205,7 @@ There are 3 events that you can use.
 - `postStart` - executed after the main container is started.
 - `preStop` - executed before the main container is stopped.
 
-In our case we will use `preStart` event and execute `npm install -g yarn`.
+In our case we will use `postStart` event and execute `npm install -g yarn`.
 
 
 ```yaml
@@ -270,7 +270,7 @@ This is due to the [#6836](https://github.com/redhat-developer/odo/issues/6836) 
 At the time of writing this, odo creates a 2GB volume for the source code. For Backstage and it's `node_modules`
 this is not enough. Luckily, there is a simple workaround that we can do in Devfile.
 
-We can create extra volume just for `/projects/node_modules`. This will put `node_modules` into a separate volume form the source code.
+We can create extra volume just for `/projects/node_modules`. This will put `node_modules` into a separate volume for the source code.
 
 
 
