@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/registry-support/registry-library/library"
 	"github.com/golang/mock/gomock"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -25,6 +26,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 		registryName string
 		devfile      string
 		dest         string
+		archs        []string
 	}
 	tests := []struct {
 		name    string
@@ -52,7 +54,12 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 						},
 					}
 					client.EXPECT().GetDevfileRegistries(gomock.Eq("Registry1")).Return(registryList, nil).Times(1)
-					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), gomock.Any()).Return(nil).Times(1)
+					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), library.RegistryOptions{
+						Telemetry: library.TelemetryData{
+							Client: "odo",
+						},
+						NewIndexSchema: true,
+					}).Return(nil).Times(1)
 					return client
 				},
 			},
@@ -60,6 +67,46 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 				registryName: "Registry1",
 				devfile:      "java",
 				dest:         ".",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Download devfile from one specific Registry where devfile is present and arch is passed",
+			fields: fields{
+				preferenceClient: func(ctrl *gomock.Controller) preference.Client {
+					client := preference.NewMockClient(ctrl)
+					return client
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					registryList := []api.Registry{
+						{
+							Name: "Registry0",
+							URL:  "http://registry0",
+						},
+						{
+							Name: "Registry1",
+							URL:  "http://registry1",
+						},
+					}
+					client.EXPECT().GetDevfileRegistries(gomock.Eq("Registry1")).Return(registryList, nil).Times(1)
+					client.EXPECT().PullStackFromRegistry("http://registry1", "java", gomock.Any(), library.RegistryOptions{
+						Telemetry: library.TelemetryData{
+							Client: "odo",
+						},
+						Filter: library.RegistryFilter{
+							Architectures: []string{"arm64"},
+						},
+						NewIndexSchema: true,
+					}).Return(nil).Times(1)
+					return client
+				},
+			},
+			args: args{
+				registryName: "Registry1",
+				devfile:      "java",
+				dest:         ".",
+				archs:        []string{"arm64"},
 			},
 			wantErr: false,
 		},
@@ -167,7 +214,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 			}
 			ctx := context.Background()
 			ctx = envcontext.WithEnvConfig(ctx, config.Configuration{})
-			if err := o.downloadFromRegistry(ctx, tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
+			if err := o.downloadFromRegistry(ctx, tt.args.registryName, tt.args.devfile, tt.args.dest, tt.args.archs); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadFromRegistry() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
