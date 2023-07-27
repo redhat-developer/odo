@@ -9,8 +9,12 @@ import (
 
 // Asker interactively asks for information to the user
 type Asker interface {
-	// AskLanguage asks for a language, from a list of language names. The language name is returned
-	AskLanguage(langs []string) (string, error)
+	// AskArchitectures asks for a selection of architectures from a list of architecture names
+	AskArchitectures(archs []string, selectedDefault []string) ([]string, error)
+
+	// AskLanguage asks for a language, from a list of language names.
+	// back is returned as true if the user selected to go back, or the language name is returned
+	AskLanguage(langs []string) (back bool, result string, err error)
 
 	// AskType asks for a Devfile type, or to go back. back is returned as true if the user selected to go back,
 	// or the selected type is returned

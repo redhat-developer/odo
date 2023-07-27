@@ -283,32 +283,37 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 
 		devfiles := []api.DevfileStack{}
 
+	devfileLoop:
 		for _, devfile := range registryDevfiles {
 
 			// Add the "priority" of the registry to the devfile
 			devfile.Registry.Priority = priorityNumber
 
 			if filterFlag != "" {
-				archs := append(make([]string, 0, len(devfile.Architectures)), devfile.Architectures...)
-				if len(archs) == 0 {
-					// Devfiles with no architectures are compatible with all architectures.
-					archs = append(archs,
-						string(apidevfile.AMD64),
-						string(apidevfile.ARM64),
-						string(apidevfile.PPC64LE),
-						string(apidevfile.S390X),
-					)
-				}
-				containsArch := func(s string) bool {
-					for _, arch := range archs {
-						if strings.Contains(arch, s) {
-							return true
-						}
+				filters := strings.Split(filterFlag, ",")
+				for _, filter := range filters {
+					filter = strings.TrimSpace(filter)
+					archs := append(make([]string, 0, len(devfile.Architectures)), devfile.Architectures...)
+					if len(archs) == 0 {
+						// Devfiles with no architectures are compatible with all architectures.
+						archs = append(archs,
+							string(apidevfile.AMD64),
+							string(apidevfile.ARM64),
+							string(apidevfile.PPC64LE),
+							string(apidevfile.S390X),
+						)
 					}
-					return false
-				}
-				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) && !containsArch(filterFlag) {
-					continue
+					containsArch := func(s string) bool {
+						for _, arch := range archs {
+							if strings.Contains(arch, s) {
+								return true
+							}
+						}
+						return false
+					}
+					if !strings.Contains(devfile.Name, filter) && !strings.Contains(devfile.Description, filter) && !containsArch(filter) {
+						continue devfileLoop
+					}
 				}
 			}
 

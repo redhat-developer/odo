@@ -24,18 +24,36 @@ func NewSurveyAsker() *Survey {
 	return &Survey{}
 }
 
-func (o *Survey) AskLanguage(langs []string) (string, error) {
+func (o *Survey) AskArchitectures(archs []string, selectedDefault []string) ([]string, error) {
+	question := &survey.MultiSelect{
+		Message: "Select architectures to support:",
+		Options: archs,
+		Default: selectedDefault,
+	}
+	var answer []string
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return nil, err
+	}
+	return answer, nil
+}
+
+func (o *Survey) AskLanguage(langs []string) (bool, string, error) {
 	sort.Strings(langs)
+	langs = append(langs, GOBACK)
 	question := &survey.Select{
 		Message: "Select language:",
 		Options: langs,
 	}
-	var answer string
-	err := survey.AskOne(question, &answer)
+	var answerPos int
+	err := survey.AskOne(question, &answerPos)
 	if err != nil {
-		return "", err
+		return false, "", err
 	}
-	return answer, nil
+	if answerPos == len(langs)-1 {
+		return true, "", nil
+	}
+	return false, langs[answerPos], nil
 }
 
 func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ api.DevfileStack, _ error) {
