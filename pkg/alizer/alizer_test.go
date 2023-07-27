@@ -119,18 +119,18 @@ func TestDetectFramework(t *testing.T) {
 			registryClient.EXPECT().ListDevfileStacks(ctx, "", "", "", false, false).Return(list, nil)
 			alizerClient := NewAlizerClient(registryClient)
 			// Run function DetectFramework
-			detected, _, registry, err := alizerClient.DetectFramework(ctx, tt.args.path)
 
+			detected, err := alizerClient.DetectFramework(ctx, tt.args.path)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if detected.Name != tt.wantedDevfile {
+			if detected.Type.Name != tt.wantedDevfile {
 				t.Errorf("unexpected devfile %v, wantedDevfile %v", detected, tt.wantedDevfile)
 			}
-			if registry.Name != tt.wantedRegistry {
-				t.Errorf("unexpected registry %v, wantedRegistry %v", registry, tt.wantedRegistry)
+			if detected.Registry.Name != tt.wantedRegistry {
+				t.Errorf("unexpected registry %v, wantedRegistry %v", detected.Registry, tt.wantedRegistry)
 			}
 		})
 	}

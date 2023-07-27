@@ -8,9 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	model "github.com/devfile/alizer/pkg/apis/model"
 	gomock "github.com/golang/mock/gomock"
-	api "github.com/redhat-developer/odo/pkg/api"
 )
 
 // MockClient is a mock of Client interface.
@@ -37,14 +35,12 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DetectFramework mocks base method.
-func (m *MockClient) DetectFramework(ctx context.Context, path string) (model.DevFileType, string, api.Registry, error) {
+func (m *MockClient) DetectFramework(ctx context.Context, path string) (DetectedFramework, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DetectFramework", ctx, path)
-	ret0, _ := ret[0].(model.DevFileType)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(api.Registry)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
+	ret0, _ := ret[0].(DetectedFramework)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DetectFramework indicates an expected call of DetectFramework.

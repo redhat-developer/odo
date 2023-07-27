@@ -52,14 +52,15 @@ func TestOdoAlizer(t *testing.T) {
 				alizerClient := alizer.NewMockClient(ctrl)
 				path := "/"
 				alizerClient.EXPECT().DetectFramework(gomock.Any(), path).
-					Return(
-						model.DevFileType{
+					Return(alizer.DetectedFramework{
+						Type: model.DevFileType{
 							Name: "framework-name",
 						},
-						"1.1.1",
-						api.Registry{
+						DefaultVersion: "1.1.1",
+						Registry: api.Registry{
 							Name: "TheRegistryName",
 						},
+					},
 						nil,
 					)
 				alizerClient.EXPECT().DetectPorts(path).Return([]int{8080, 3000}, nil)
@@ -92,14 +93,15 @@ func TestOdoAlizer(t *testing.T) {
 				alizerClient := alizer.NewMockClient(ctrl)
 				path := "/"
 				alizerClient.EXPECT().DetectFramework(gomock.Any(), path).
-					Return(
-						model.DevFileType{
+					Return(alizer.DetectedFramework{
+						Type: model.DevFileType{
 							Name: "framework-name",
 						},
-						"1.1.1",
-						api.Registry{
+						DefaultVersion: "1.1.1",
+						Registry: api.Registry{
 							Name: "TheRegistryName",
 						},
+					},
 						nil,
 					)
 				alizerClient.EXPECT().DetectPorts(path).Return([]int{8080, 3000}, nil)
