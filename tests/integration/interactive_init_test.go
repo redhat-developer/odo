@@ -56,6 +56,9 @@ var _ = Describe("odo init interactive command tests", func() {
 						helper.ExpectString(ctx, messages.InteractiveModeEnabled)
 					})
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
 
@@ -96,6 +99,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					It("should allow to add and delete a port ", func() {
 						command := []string{"odo", "init"}
 						output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+							helper.ExpectString(ctx, "Select architectures")
+							helper.SendLine(ctx, "")
 
 							helper.ExpectString(ctx, "Select language")
 							helper.SendLine(ctx, "Javascript")
@@ -148,6 +154,9 @@ var _ = Describe("odo init interactive command tests", func() {
 				command := []string{"odo", "init"}
 				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
 
@@ -192,6 +201,9 @@ var _ = Describe("odo init interactive command tests", func() {
 
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
 
@@ -230,6 +242,9 @@ var _ = Describe("odo init interactive command tests", func() {
 						helper.ExpectString(ctx, messages.InteractiveModeEnabled)
 					})
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
 
@@ -264,6 +279,9 @@ var _ = Describe("odo init interactive command tests", func() {
 				devfileVersion := "2.0.0"
 
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
@@ -300,6 +318,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					By("showing the interactive mode notice message", func() {
 						helper.ExpectString(ctx, messages.InteractiveModeEnabled)
 					})
+
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "java")
@@ -395,6 +416,9 @@ var _ = Describe("odo init interactive command tests", func() {
 						welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.NoSourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 						output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
+							helper.ExpectString(ctx, "Select architectures")
+							helper.SendLine(ctx, "")
+
 							helper.ExpectString(ctx, "Select language")
 							helper.SendLine(ctx, language)
 
@@ -547,6 +571,9 @@ var _ = Describe("odo init interactive command tests", func() {
 
 				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, ".NET")
 
@@ -643,7 +670,7 @@ var _ = Describe("odo init interactive command tests", func() {
 					_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 						helper.ExpectString(ctx, "Could not determine a Devfile based on the files in the current directory")
 
-						helper.ExpectString(ctx, "Select language")
+						helper.ExpectString(ctx, "Select architectures")
 						ctx.StopCommand()
 					})
 					Expect(err).Should(HaveOccurred())
@@ -689,6 +716,9 @@ spec:
 				}
 
 				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Java")
 
