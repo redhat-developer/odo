@@ -166,6 +166,9 @@ var _ = Describe("User guides: Quickstart test", func() {
 					helper.ExpectString(ctx, "Is this correct?")
 					helper.SendLine(ctx, "No")
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, ".")
 
