@@ -6,7 +6,6 @@ go/api_devstate.go
 go/error.go
 go/helpers.go
 go/impl.go
-go/logger.go
 go/model__component_command_post_request.go
 go/model__component_get_200_response.go
 go/model__devfile_get_200_response.go

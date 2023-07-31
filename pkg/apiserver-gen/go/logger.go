@@ -10,9 +10,10 @@
 package openapi
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"k8s.io/klog"
 )
 
 func Logger(inner http.Handler, name string) http.Handler {
@@ -21,7 +22,7 @@ func Logger(inner http.Handler, name string) http.Handler {
 
 		inner.ServeHTTP(w, r)
 
-		log.Printf(
+		klog.V(2).Infof(
 			"%s %s %s %s",
 			r.Method,
 			r.RequestURI,
