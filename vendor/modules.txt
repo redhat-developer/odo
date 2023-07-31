@@ -133,8 +133,8 @@ github.com/containerd/typeurl
 # github.com/creack/pty v1.1.18
 ## explicit; go 1.13
 github.com/creack/pty
-# github.com/danieljoos/wincred v1.1.2
-## explicit; go 1.13
+# github.com/danieljoos/wincred v1.2.0
+## explicit; go 1.18
 github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
@@ -381,7 +381,7 @@ github.com/gobwas/glob/syntax/ast
 github.com/gobwas/glob/syntax/lexer
 github.com/gobwas/glob/util/runes
 github.com/gobwas/glob/util/strings
-# github.com/godbus/dbus/v5 v5.0.6
+# github.com/godbus/dbus/v5 v5.1.0
 ## explicit; go 1.12
 github.com/godbus/dbus/v5
 # github.com/gogo/protobuf v1.3.2
@@ -842,8 +842,8 @@ github.com/xlab/treeprint
 # github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778
 ## explicit; go 1.15
 github.com/xo/terminfo
-# github.com/zalando/go-keyring v0.2.1
-## explicit; go 1.13
+# github.com/zalando/go-keyring v0.2.3
+## explicit; go 1.18
 github.com/zalando/go-keyring
 github.com/zalando/go-keyring/secret_service
 # go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5
