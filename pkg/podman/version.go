@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os/exec"
-	"sync"
 	"time"
 
 	"k8s.io/klog"
@@ -34,85 +32,47 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 	// it is expected to return in a timely manner (hence this configurable timeout).
 	// This is to avoid situations like the one described in https://github.com/redhat-developer/odo/issues/6575
 	// (where a podman CLI that takes too long to respond affects the "odo dev" command, even if the user did not intend to use the Podman platform).
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, o.podmanCmdInitTimeout)
-	defer cancel()
 
-	cmd := exec.CommandContext(ctxWithTimeout, o.podmanCmd, "version", "--format", "json")
+	cmd := exec.CommandContext(ctx, o.podmanCmd, "version", "--format", "json")
 	klog.V(3).Infof("executing %v", cmd.Args)
 
-	// Because cmd.Output() does not respect the context timeout (see https://github.com/golang/go/issues/57129),
-	// we are reading from the connected pipes instead.
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return SystemVersionReport{}, err
-	}
-	stderrPipe, err := cmd.StderrPipe()
+	outbuf, errbuf := new(bytes.Buffer), new(bytes.Buffer)
+	cmd.Stdout, cmd.Stderr = outbuf, errbuf
+
+	err := cmd.Start()
 	if err != nil {
 		return SystemVersionReport{}, err
 	}
 
-	err = cmd.Start()
-	if err != nil {
-		return SystemVersionReport{}, err
-	}
+	// Use a channel to signal completion so we can use a select statement
+	done := make(chan error)
+	go func() { done <- cmd.Wait() }()
 
-	var wg sync.WaitGroup
-	wg.Add(3)
+	select {
+	case <-time.After(o.podmanCmdInitTimeout):
+		err = cmd.Process.Kill()
+		if err != nil {
+			klog.V(3).Infof("unable to kill podman version process: %s", err)
+		}
+		return SystemVersionReport{}, errors.New("podman version command timed out")
+	case err = <-done:
+		if err != nil {
+			klog.V(3).Infof("Non-zero exit code for podman version: %v", err)
+
+			stderr := errbuf.String()
+			if len(stderr) > 0 {
+				klog.V(3).Infof("podman version stderr: %v", stderr)
+			}
+
+			return SystemVersionReport{}, err
+		}
+	}
 
 	var result SystemVersionReport
-	go func() {
-		defer wg.Done()
-		// Reading from the pipe is a blocking call, hence this goroutine.
-		// The goroutine will exit after the pipe is closed or the command exits;
-		// these will be triggered by cmd.Wait() either after the timeout expires or the command finished.
-		err = json.NewDecoder(stdoutPipe).Decode(&result)
-		if err != nil {
-			klog.V(3).Infof("unable to decode output: %v", err)
-		}
-	}()
-
-	var stderr string
-	go func() {
-		defer wg.Done()
-		var buf bytes.Buffer
-		_, rErr := buf.ReadFrom(stderrPipe)
-		if rErr != nil {
-			klog.V(7).Infof("unable to read from stderr pipe: %v", rErr)
-		}
-		stderr = buf.String()
-	}()
-
-	var wErr error
-	go func() {
-		defer wg.Done()
-		// cmd.Wait() will block until the timeout expires or the program started by cmd exits.
-		// It will then close all resources associated with cmd,
-		// including the stdout and stderr pipes above, which will in turn terminate the goroutines spawned above.
-		wErr = cmd.Wait()
-	}()
-
-	// Wait until all we are sure all previous goroutines are done
-	wg.Wait()
-
-	if wErr != nil {
-		ctxErr := ctxWithTimeout.Err()
-		if ctxErr != nil {
-			msg := "error"
-			if errors.Is(ctxErr, context.DeadlineExceeded) {
-				msg = fmt.Sprintf("timeout (%s)", o.podmanCmdInitTimeout.Round(time.Second).String())
-			}
-			wErr = fmt.Errorf("%s while waiting for Podman version: %s: %w", msg, ctxErr, wErr)
-		}
-		if exitErr, ok := wErr.(*exec.ExitError); ok {
-			wErr = fmt.Errorf("%s: %s", wErr, string(exitErr.Stderr))
-		}
-		if err != nil {
-			wErr = fmt.Errorf("%s: (%w)", wErr, err)
-		}
-		if stderr != "" {
-			wErr = fmt.Errorf("%w: %s", wErr, stderr)
-		}
-		return SystemVersionReport{}, fmt.Errorf("%v. Please check the output of the following command: %v", wErr, cmd.Args)
+	err = json.NewDecoder(outbuf).Decode(&result)
+	if err != nil {
+		klog.V(3).Infof("unable to decode output: %v", err)
+		return SystemVersionReport{}, err
 	}
 
 	return result, nil
