@@ -56,13 +56,22 @@ func StartServer(
 		preferenceClient,
 	)
 	defaultApiController := openapi.NewDefaultApiController(defaultApiService)
+	devstateApiService := NewDevstateApiService(
+		cancelFunc,
+		pushWatcher,
+		kubernetesClient,
+		podmanClient,
+		stateClient,
+		preferenceClient,
+	)
+	devstateApiController := openapi.NewDevstateApiController(devstateApiService)
 
 	sseNotifier, err := sse.NewNotifier(ctx, fsys, devfilePath, devfileFiles)
 	if err != nil {
 		return ApiServer{}, err
 	}
 
-	router := openapi.NewRouter(sseNotifier, defaultApiController)
+	router := openapi.NewRouter(sseNotifier, defaultApiController, devstateApiController)
 
 	fSysSwagger, err := fs.Sub(swaggerFiles, "swagger-ui")
 	if err != nil {

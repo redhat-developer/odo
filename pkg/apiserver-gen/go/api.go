@@ -22,6 +22,15 @@ type DefaultApiRouter interface {
 	ComponentGet(http.ResponseWriter, *http.Request)
 	DevfileGet(http.ResponseWriter, *http.Request)
 	DevfilePut(http.ResponseWriter, *http.Request)
+	InstanceDelete(http.ResponseWriter, *http.Request)
+	InstanceGet(http.ResponseWriter, *http.Request)
+	TelemetryGet(http.ResponseWriter, *http.Request)
+}
+
+// DevstateApiRouter defines the required methods for binding the api requests to a responses for the DevstateApi
+// The DevstateApiRouter implementation should parse necessary information from the http request,
+// pass the data to a DevstateApiServicer to perform the required actions, then write the service results to the http response.
+type DevstateApiRouter interface {
 	DevstateApplyCommandPost(http.ResponseWriter, *http.Request)
 	DevstateChartGet(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameDelete(http.ResponseWriter, *http.Request)
@@ -42,9 +51,6 @@ type DefaultApiRouter interface {
 	DevstateQuantityValidPost(http.ResponseWriter, *http.Request)
 	DevstateResourcePost(http.ResponseWriter, *http.Request)
 	DevstateResourceResourceNameDelete(http.ResponseWriter, *http.Request)
-	InstanceDelete(http.ResponseWriter, *http.Request)
-	InstanceGet(http.ResponseWriter, *http.Request)
-	TelemetryGet(http.ResponseWriter, *http.Request)
 }
 
 // DefaultApiServicer defines the api actions for the DefaultApi service
@@ -56,6 +62,16 @@ type DefaultApiServicer interface {
 	ComponentGet(context.Context) (ImplResponse, error)
 	DevfileGet(context.Context) (ImplResponse, error)
 	DevfilePut(context.Context, DevfilePutRequest) (ImplResponse, error)
+	InstanceDelete(context.Context) (ImplResponse, error)
+	InstanceGet(context.Context) (ImplResponse, error)
+	TelemetryGet(context.Context) (ImplResponse, error)
+}
+
+// DevstateApiServicer defines the api actions for the DevstateApi service
+// This interface intended to stay up to date with the openapi yaml used to generate it,
+// while the service implementation can be ignored with the .openapi-generator-ignore file
+// and updated with the logic required for the API.
+type DevstateApiServicer interface {
 	DevstateApplyCommandPost(context.Context, DevstateApplyCommandPostRequest) (ImplResponse, error)
 	DevstateChartGet(context.Context) (ImplResponse, error)
 	DevstateCommandCommandNameDelete(context.Context, string) (ImplResponse, error)
@@ -76,7 +92,4 @@ type DefaultApiServicer interface {
 	DevstateQuantityValidPost(context.Context, DevstateQuantityValidPostRequest) (ImplResponse, error)
 	DevstateResourcePost(context.Context, DevstateResourcePostRequest) (ImplResponse, error)
 	DevstateResourceResourceNameDelete(context.Context, string) (ImplResponse, error)
-	InstanceDelete(context.Context) (ImplResponse, error)
-	InstanceGet(context.Context) (ImplResponse, error)
-	TelemetryGet(context.Context) (ImplResponse, error)
 }
