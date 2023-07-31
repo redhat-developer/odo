@@ -48,7 +48,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/gjson v1.14.4
-	github.com/zalando/go-keyring v0.2.1
+	github.com/zalando/go-keyring v0.2.3
 	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.10.0
 	golang.org/x/term v0.9.0
@@ -93,7 +93,7 @@ require (
 	github.com/containerd/containerd v1.6.20 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
 	github.com/creack/pty v1.1.18 // indirect
-	github.com/danieljoos/wincred v1.1.2 // indirect
+	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20211118083504-a29a3c99a684 // indirect
 	github.com/docker/cli v23.0.0-rc.1+incompatible // indirect
@@ -117,7 +117,7 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/godbus/dbus/v5 v5.0.6 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
