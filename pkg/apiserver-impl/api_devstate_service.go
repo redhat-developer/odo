@@ -11,8 +11,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/state"
 )
 
-// DefaultApiService is a service that implements the logic for the DefaultApiServicer
-// This service should implement the business logic for every endpoint for the DefaultApi API.
+// DevstateApiService is a service that implements the logic for the DevstateApiServicer
+// This service should implement the business logic for every endpoint for the DevstateApi API.
 // Include any external packages or services that will be required by this service.
 type DevstateApiService struct {
 	cancel           context.CancelFunc
@@ -25,7 +25,7 @@ type DevstateApiService struct {
 	devfileState devstate.DevfileState
 }
 
-// NewDefaultApiService creates a default api service
+// NewDevstateApiService creates a devstate api service
 func NewDevstateApiService(
 	cancel context.CancelFunc,
 	pushWatcher chan<- struct{},
