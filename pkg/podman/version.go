@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"os/exec"
 	"time"
 
@@ -54,7 +53,7 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 		if err != nil {
 			klog.V(3).Infof("unable to kill podman version process: %s", err)
 		}
-		return SystemVersionReport{}, fmt.Errorf("timeout (%s) while waiting for Podman version", o.podmanCmdInitTimeout.Round(time.Second).String())
+		klog.V(3).Infof("timeout (%s) while waiting for Podman version", o.podmanCmdInitTimeout.Round(time.Second).String())
 	case err = <-done:
 		if err != nil {
 			klog.V(3).Infof("Non-zero exit code for podman version: %v", err)
