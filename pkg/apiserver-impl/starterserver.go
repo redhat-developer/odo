@@ -13,6 +13,7 @@ import (
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/sse"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -129,7 +130,11 @@ func StartServer(
 		cancelFunc()
 	}
 
-	klog.V(0).Infof("API Server started at localhost:%d/api/v1", listeningPort)
+	if feature.IsEnabled(ctx, feature.UIServer) {
+		log.Spinner(fmt.Sprintf("Web console accessible at http://localhost:%d/", listeningPort)).End(true)
+	}
+	log.Spinner(fmt.Sprintf("API Server started at http://localhost:%d/api/v1", listeningPort)).End(true)
+	log.Spinner(fmt.Sprintf("API documentation accessible at http://localhost:%d/swagger-ui/", listeningPort)).End(true)
 
 	go func() {
 		select {
