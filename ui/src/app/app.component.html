@@ -2,7 +2,6 @@
     <span>Devfile Builder</span>
     <span class="spacer"></span>
     <span class="topright">Work in progress</span>
-    <a mat-icon-button href="https://github.com/feloy/devfile-builder" target="_blank"><mat-icon svgIcon="github"></mat-icon></a>
     <button style="top: -8px" data-cy="yaml-send" matTooltip="Save Devfile to disk" mat-flat-button color="warn" disabled="{{!(state.modified|async)}}" (click)="onSave(input.value)">Save</button>    
 </mat-toolbar>
 <main>
