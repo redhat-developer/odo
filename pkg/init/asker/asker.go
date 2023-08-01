@@ -26,7 +26,7 @@ func NewSurveyAsker() *Survey {
 
 func (o *Survey) AskArchitectures(archs []string, selectedDefault []string) ([]string, error) {
 	question := &survey.MultiSelect{
-		Message: "Select architectures to support:",
+		Message: "Select architectures to filter by:",
 		Options: archs,
 		Default: selectedDefault,
 	}
