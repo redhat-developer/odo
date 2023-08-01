@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/devstate"
 )
 
-func (s *DefaultApiService) DevstateContainerPost(ctx context.Context, container openapi.DevstateContainerPostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateContainerPost(ctx context.Context, container openapi.DevstateContainerPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddContainer(
 		container.Name,
 		container.Image,
@@ -28,7 +28,7 @@ func (s *DefaultApiService) DevstateContainerPost(ctx context.Context, container
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateContainerContainerNameDelete(ctx context.Context, containerName string) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateContainerContainerNameDelete(ctx context.Context, containerName string) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.DeleteContainer(containerName)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -38,7 +38,7 @@ func (s *DefaultApiService) DevstateContainerContainerNameDelete(ctx context.Con
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateImagePost(ctx context.Context, image openapi.DevstateImagePostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateImagePost(ctx context.Context, image openapi.DevstateImagePostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddImage(
 		image.Name,
 		image.ImageName,
@@ -55,7 +55,7 @@ func (s *DefaultApiService) DevstateImagePost(ctx context.Context, image openapi
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateImageImageNameDelete(ctx context.Context, imageName string) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateImageImageNameDelete(ctx context.Context, imageName string) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.DeleteImage(imageName)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -65,7 +65,7 @@ func (s *DefaultApiService) DevstateImageImageNameDelete(ctx context.Context, im
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateResourcePost(ctx context.Context, resource openapi.DevstateResourcePostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateResourcePost(ctx context.Context, resource openapi.DevstateResourcePostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddResource(
 		resource.Name,
 		resource.Inlined,
@@ -80,7 +80,7 @@ func (s *DefaultApiService) DevstateResourcePost(ctx context.Context, resource o
 
 }
 
-func (s *DefaultApiService) DevstateResourceResourceNameDelete(ctx context.Context, resourceName string) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateResourceResourceNameDelete(ctx context.Context, resourceName string) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.DeleteResource(resourceName)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -90,7 +90,7 @@ func (s *DefaultApiService) DevstateResourceResourceNameDelete(ctx context.Conte
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateApplyCommandPost(ctx context.Context, command openapi.DevstateApplyCommandPostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateApplyCommandPost(ctx context.Context, command openapi.DevstateApplyCommandPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddApplyCommand(
 		command.Name,
 		command.Component,
@@ -103,7 +103,7 @@ func (s *DefaultApiService) DevstateApplyCommandPost(ctx context.Context, comman
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateCommandCommandNameDelete(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.DeleteCommand(commandName)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -113,7 +113,7 @@ func (s *DefaultApiService) DevstateCommandCommandNameDelete(ctx context.Context
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateCompositeCommandPost(ctx context.Context, command openapi.DevstateCompositeCommandPostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateCompositeCommandPost(ctx context.Context, command openapi.DevstateCompositeCommandPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddCompositeCommand(
 		command.Name,
 		command.Parallel,
@@ -128,7 +128,7 @@ func (s *DefaultApiService) DevstateCompositeCommandPost(ctx context.Context, co
 
 }
 
-func (s *DefaultApiService) DevstateExecCommandPost(ctx context.Context, command openapi.DevstateExecCommandPostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateExecCommandPost(ctx context.Context, command openapi.DevstateExecCommandPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddExecCommand(
 		command.Name,
 		command.Component,
@@ -144,7 +144,7 @@ func (s *DefaultApiService) DevstateExecCommandPost(ctx context.Context, command
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateMetadataPut(ctx context.Context, metadata openapi.MetadataRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateMetadataPut(ctx context.Context, metadata openapi.MetadataRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.SetMetadata(
 		metadata.Name,
 		metadata.Version,
@@ -168,7 +168,7 @@ func (s *DefaultApiService) DevstateMetadataPut(ctx context.Context, metadata op
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateChartGet(context.Context) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateChartGet(context.Context) (openapi.ImplResponse, error) {
 	chart, err := s.devfileState.GetFlowChart()
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -180,7 +180,7 @@ func (s *DefaultApiService) DevstateChartGet(context.Context) (openapi.ImplRespo
 	}), nil
 }
 
-func (s *DefaultApiService) DevstateCommandCommandNameMovePost(ctx context.Context, commandName string, params openapi.DevstateCommandCommandNameMovePostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateCommandCommandNameMovePost(ctx context.Context, commandName string, params openapi.DevstateCommandCommandNameMovePostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.MoveCommand(
 		params.FromGroup,
 		params.ToGroup,
@@ -195,7 +195,7 @@ func (s *DefaultApiService) DevstateCommandCommandNameMovePost(ctx context.Conte
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateCommandCommandNameSetDefaultPost(ctx context.Context, commandName string, params openapi.DevstateCommandCommandNameSetDefaultPostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateCommandCommandNameSetDefaultPost(ctx context.Context, commandName string, params openapi.DevstateCommandCommandNameSetDefaultPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.SetDefaultCommand(commandName, params.Group)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -205,7 +205,7 @@ func (s *DefaultApiService) DevstateCommandCommandNameSetDefaultPost(ctx context
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateCommandCommandNameUnsetDefaultPost(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateCommandCommandNameUnsetDefaultPost(ctx context.Context, commandName string) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.UnsetDefaultCommand(commandName)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -215,7 +215,7 @@ func (s *DefaultApiService) DevstateCommandCommandNameUnsetDefaultPost(ctx conte
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateEventsPut(ctx context.Context, params openapi.DevstateEventsPutRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateEventsPut(ctx context.Context, params openapi.DevstateEventsPutRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.UpdateEvents(params.EventName, params.Commands)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -225,7 +225,7 @@ func (s *DefaultApiService) DevstateEventsPut(ctx context.Context, params openap
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateQuantityValidPost(ctx context.Context, params openapi.DevstateQuantityValidPostRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateQuantityValidPost(ctx context.Context, params openapi.DevstateQuantityValidPostRequest) (openapi.ImplResponse, error) {
 	result := devstate.IsQuantityValid(params.Quantity)
 	if !result {
 		return openapi.Response(http.StatusBadRequest, openapi.GeneralError{
@@ -237,7 +237,7 @@ func (s *DefaultApiService) DevstateQuantityValidPost(ctx context.Context, param
 	}), nil
 }
 
-func (s *DefaultApiService) DevstateDevfilePut(ctx context.Context, params openapi.DevstateDevfilePutRequest) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateDevfilePut(ctx context.Context, params openapi.DevstateDevfilePutRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.SetDevfileContent(params.Content)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -247,7 +247,7 @@ func (s *DefaultApiService) DevstateDevfilePut(ctx context.Context, params opena
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateDevfileGet(context.Context) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateDevfileGet(context.Context) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.GetContent()
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -257,7 +257,7 @@ func (s *DefaultApiService) DevstateDevfileGet(context.Context) (openapi.ImplRes
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
-func (s *DefaultApiService) DevstateDevfileDelete(context.Context) (openapi.ImplResponse, error) {
+func (s *DevstateApiService) DevstateDevfileDelete(context.Context) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.SetDevfileContent(`schemaVersion: 2.2.0`)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{

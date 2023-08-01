@@ -2,10 +2,10 @@ README.md
 api/openapi.yaml
 go/api.go
 go/api_default.go
+go/api_devstate.go
 go/error.go
 go/helpers.go
 go/impl.go
-go/logger.go
 go/model__component_command_post_request.go
 go/model__component_get_200_response.go
 go/model__devfile_get_200_response.go
@@ -38,4 +38,3 @@ go/model_metadata.go
 go/model_metadata_request.go
 go/model_resource.go
 go/model_telemetry_response.go
-go/routers.go

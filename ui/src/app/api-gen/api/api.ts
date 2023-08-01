@@ -1,3 +1,5 @@
 export * from './default.service';
 import { DefaultService } from './default.service';
-export const APIS = [DefaultService];
+export * from './devstate.service';
+import { DevstateService } from './devstate.service';
+export const APIS = [DefaultService, DevstateService];
