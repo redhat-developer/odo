@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"time"
 
@@ -47,13 +48,16 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 	done := make(chan error)
 	go func() { done <- cmd.Wait() }()
 
+	var timeoutErr error
 	select {
 	case <-time.After(o.podmanCmdInitTimeout):
 		err = cmd.Process.Kill()
 		if err != nil {
 			klog.V(3).Infof("unable to kill podman version process: %s", err)
 		}
-		klog.V(3).Infof("timeout (%s) while waiting for Podman version", o.podmanCmdInitTimeout.Round(time.Second).String())
+		timeoutErr = fmt.Errorf("timeout (%s) while waiting for Podman version", o.podmanCmdInitTimeout.Round(time.Second).String())
+		klog.V(3).Infof(timeoutErr.Error())
+
 	case err = <-done:
 		if err != nil {
 			klog.V(3).Infof("Non-zero exit code for podman version: %v", err)
@@ -71,6 +75,9 @@ func (o *PodmanCli) Version(ctx context.Context) (SystemVersionReport, error) {
 	err = json.NewDecoder(outbuf).Decode(&result)
 	if err != nil {
 		klog.V(3).Infof("unable to decode output: %v", err)
+		if timeoutErr != nil {
+			return SystemVersionReport{}, timeoutErr
+		}
 		return SystemVersionReport{}, err
 	}
 
