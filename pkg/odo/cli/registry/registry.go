@@ -120,7 +120,7 @@ func NewCmdRegistry(name, fullName string, testClientset clientset.Clientset) *c
 	clientset.Add(listCmd, clientset.REGISTRY)
 
 	// Flags
-	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description or supported architecture of the component. Comma-separated list of search terms")
+	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Comma-separated list of terms for filtering. Search is done using a logical AND against the name or description or supported architectures of the component.")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of a Devfile, to be used only with --devfile")
