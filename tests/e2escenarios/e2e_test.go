@@ -69,6 +69,9 @@ var _ = Describe("E2E Test", func() {
 			command := []string{"odo", "init"}
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
+				helper.ExpectString(ctx, "Select architectures")
+				helper.SendLine(ctx, "")
+
 				helper.ExpectString(ctx, "Select language")
 				helper.SendLine(ctx, "JavaScript")
 

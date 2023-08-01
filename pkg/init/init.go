@@ -50,6 +50,7 @@ var _initFlags = []string{
 	backend.FLAG_DEVFILE_PATH,
 	backend.FLAG_DEVFILE_VERSION,
 	backend.FLAG_RUN_PORT,
+	backend.FLAG_ARCHITECTURE,
 }
 
 func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client, alizerClient alizer.Client) *InitClient {
@@ -137,7 +138,7 @@ func (o *InitClient) DownloadDevfile(ctx context.Context, devfileLocation *api.D
 		if devfileLocation.DevfileVersion != "" {
 			devfile = fmt.Sprintf("%s:%s", devfileLocation.Devfile, devfileLocation.DevfileVersion)
 		}
-		return destDevfile, o.downloadFromRegistry(ctx, devfileLocation.DevfileRegistry, devfile, destDir)
+		return destDevfile, o.downloadFromRegistry(ctx, devfileLocation.DevfileRegistry, devfile, destDir, devfileLocation.Architectures)
 	}
 }
 
@@ -185,10 +186,14 @@ func (o *InitClient) downloadDirect(URL string, dest string) error {
 
 // downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
 // If registryName is empty, will try to download the devfile from the list of registries in preferences
-func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName string, devfile string, dest string) error {
+// The architectures value indicates to download a Devfile compatible with all of these architectures
+func (o *InitClient) downloadFromRegistry(ctx context.Context, registryName string, devfile string, dest string, architectures []string) error {
 	// setting NewIndexSchema ensures that the Devfile library pulls registry based on the stack version
 	registryOptions := segment.GetRegistryOptions(ctx)
 	registryOptions.NewIndexSchema = true
+	if len(architectures) > 0 {
+		registryOptions.Filter.Architectures = architectures
+	}
 
 	var downloadSpinner *log.Status
 	var forceRegistry bool

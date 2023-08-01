@@ -32,6 +32,9 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 		It("Empty directory", func() {
 			args := []string{"odo", "init"}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
+				helper.ExpectString(ctx, "Select architectures")
+				helper.SendLine(ctx, "")
+
 				helper.ExpectString(ctx, "Select language")
 				helper.SendLine(ctx, "Java")
 

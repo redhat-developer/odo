@@ -45,6 +45,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 				Devfile:         "adevfile",
 				DevfilePath:     "apath",
 				DevfileRegistry: "aregistry",
+				Architectures:   []string{},
 			},
 		},
 	}

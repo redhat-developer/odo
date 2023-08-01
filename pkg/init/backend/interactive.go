@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
@@ -22,7 +23,8 @@ import (
 )
 
 const (
-	STATE_ASK_LANG = iota
+	STATE_ASK_ARCHITECTURES = iota
+	STATE_ASK_LANG
 	STATE_ASK_TYPE
 	STATE_ASK_VERSION
 	STATE_END
@@ -51,21 +53,35 @@ func (o *InteractiveBackend) Validate(flags map[string]string, fs filesystem.Fil
 
 func (o *InteractiveBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DetectionResult, error) {
 	result := &api.DetectionResult{}
-	devfileEntries, _ := o.registryClient.ListDevfileStacks(ctx, "", "", "", false, false)
-
-	langs := devfileEntries.GetLanguages()
-	state := STATE_ASK_LANG
+	var devfileEntries registry.DevfileStackList
+	state := STATE_ASK_ARCHITECTURES
 	var lang string
+	archs := []string{"amd64"}
 	var err error
 	var details api.DevfileStack
 loop:
 	for {
 		switch state {
 
-		case STATE_ASK_LANG:
-			lang, err = o.askerClient.AskLanguage(langs)
+		case STATE_ASK_ARCHITECTURES:
+			archs, err = o.askerClient.AskArchitectures(knownArchitectures, archs)
 			if err != nil {
 				return nil, err
+			}
+			state = STATE_ASK_LANG
+
+		case STATE_ASK_LANG:
+			filter := strings.Join(archs, ",")
+			devfileEntries, _ = o.registryClient.ListDevfileStacks(ctx, "", "", filter, false, false)
+			langs := devfileEntries.GetLanguages()
+			var back bool
+			back, lang, err = o.askerClient.AskLanguage(langs)
+			if err != nil {
+				return nil, err
+			}
+			if back {
+				state = STATE_ASK_ARCHITECTURES
+				continue loop
 			}
 			state = STATE_ASK_TYPE
 

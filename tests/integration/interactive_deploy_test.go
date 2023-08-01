@@ -159,7 +159,7 @@ var _ = Describe("odo deploy interactive command tests", func() {
 			It("should not fail but fallback to the interactive mode", func() {
 				_, err := helper.RunInteractive([]string{"odo", "deploy"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Could not determine a Devfile based on the files in the current directory")
-					helper.ExpectString(ctx, "Select language")
+					helper.ExpectString(ctx, "Select architectures")
 					ctx.StopCommand()
 				})
 				Expect(err).Should(HaveOccurred())

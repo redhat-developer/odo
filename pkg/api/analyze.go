@@ -19,4 +19,6 @@ type DetectionResult struct {
 	DevfileVersion   string `json:"devfileVersion,omitempty"`
 	// Name represents the project/application name as detected by alizer
 	Name string `json:"name,omitempty"`
+	// Architectures represent the architectures with which the Devfile must be compatible with.
+	Architectures []string `json:"architectures,omitempty"`
 }

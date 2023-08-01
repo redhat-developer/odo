@@ -35,6 +35,11 @@ func StripSpinner(docString string) (returnString string) {
 		line := sc.Text()
 		// trim any special character present in the line
 		line = strings.TrimFunc(line, unicode.IsSpace)
+
+		if len(line) == 0 {
+			continue
+		}
+
 		// This check is to avoid spinner statements in the cmd output
 		// currently it does so for init and dev
 		// e.g. " •  Syncing file changes ..."
@@ -92,6 +97,9 @@ func GetMDXContent(filePath string) (mdxContent string) {
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		line = strings.TrimFunc(line, unicode.IsSpace)
+		if len(line) == 0 {
+			continue
+		}
 		mdxContent += line + "\n"
 	}
 

@@ -165,6 +165,9 @@ var _ = Describe("odo dev interactive command tests", func() {
 				output, _ := helper.RunInteractive([]string{"odo", "dev", "--random-ports"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Could not determine a Devfile based on the files in the current directory")
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Python")
 

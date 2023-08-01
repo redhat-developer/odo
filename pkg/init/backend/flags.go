@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/registry"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/v2/pkg/util"
@@ -30,6 +31,7 @@ const (
 	FLAG_DEVFILE_PATH     = "devfile-path"
 	FLAG_DEVFILE_VERSION  = "devfile-version"
 	FLAG_RUN_PORT         = "run-port"
+	FLAG_ARCHITECTURE     = "architecture"
 )
 
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
@@ -38,6 +40,13 @@ type FlagsBackend struct {
 }
 
 var _ InitBackend = (*FlagsBackend)(nil)
+
+var knownArchitectures []string = []string{
+	string(devfile.AMD64),
+	string(devfile.ARM64),
+	string(devfile.PPC64LE),
+	string(devfile.S390X),
+}
 
 func NewFlagsBackend(registryClient registry.Client) *FlagsBackend {
 	return &FlagsBackend{
@@ -97,15 +106,37 @@ Please use 'odo preference <add/remove> registry'' command to configure devfile 
 		return errors.New("--starter parameter cannot be used when the directory is not empty")
 	}
 
+	archs, err := parseStringArrayFlagValue(flags[FLAG_ARCHITECTURE])
+	if err != nil {
+		return err
+	}
+	for _, arch := range archs {
+		if !isKnownArch(arch) {
+			return fmt.Errorf("value %q is not valid for flag --architecture. Possible values are: %s", arch, strings.Join(knownArchitectures, ", "))
+		}
+	}
+
 	return nil
 }
 
+func isKnownArch(arch string) bool {
+	for _, known := range knownArchitectures {
+		if known == arch {
+			return true
+		}
+	}
+	return false
+}
+
 func (o *FlagsBackend) SelectDevfile(ctx context.Context, flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DetectionResult, error) {
+	// This has been validated before
+	archs, _ := parseStringArrayFlagValue(flags[FLAG_ARCHITECTURE])
 	return &api.DetectionResult{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],
 		DevfilePath:     flags[FLAG_DEVFILE_PATH],
 		DevfileVersion:  flags[FLAG_DEVFILE_VERSION],
+		Architectures:   archs,
 	}, nil
 }
 
@@ -150,16 +181,16 @@ func (o FlagsBackend) HandleApplicationPorts(devfileobj parser.DevfileObj, _ []i
 
 func setPortsForFlag(devfileobj parser.DevfileObj, flags map[string]string, flagName string) (parser.DevfileObj, error) {
 	flagVal := flags[flagName]
-	// Repeatable flags are formatted as "[val1,val2]"
-	if !(strings.HasPrefix(flagVal, "[") && strings.HasSuffix(flagVal, "]")) {
+
+	split, err := parseStringArrayFlagValue(flagVal)
+	if err != nil || len(split) == 0 {
 		return devfileobj, nil
 	}
-	portsStr := flagVal[1 : len(flagVal)-1]
 
 	var ports []int
-	split := strings.Split(portsStr, ",")
 	for _, s := range split {
-		p, err := strconv.Atoi(s)
+		var p int
+		p, err = strconv.Atoi(s)
 		if err != nil {
 			return parser.DevfileObj{}, fmt.Errorf("invalid value for %s (%q): %w", flagName, s, err)
 		}
@@ -215,4 +246,16 @@ func setPortsForFlag(devfileobj parser.DevfileObj, flags map[string]string, flag
 		return parser.DevfileObj{}, err
 	}
 	return devfileobj, nil
+}
+
+func parseStringArrayFlagValue(flagVal string) ([]string, error) {
+	if flagVal == "" {
+		return []string{}, nil
+	}
+	// Repeatable flags are formatted as "[val1,val2]"
+	if !(strings.HasPrefix(flagVal, "[") && strings.HasSuffix(flagVal, "]")) {
+		return nil, fmt.Errorf("malformed value %q", flagVal)
+	}
+	portsStr := flagVal[1 : len(flagVal)-1]
+	return strings.Split(portsStr, ","), nil
 }

@@ -63,6 +63,9 @@ var initExample = templates.Examples(`
 
   # Bootstrap a new component and download a starter project
   %[1]s --name my-app --devfile nodejs --starter nodejs-starter
+
+  # Bootstrap a new component with a specific devfile from registry for a specific architecture
+  %[1]s --name my-app --devfile nodejs --architecture s390x
   `)
 
 type InitOptions struct {
@@ -285,6 +288,7 @@ func NewCmdInit(name, fullName string, testClientset clientset.Clientset) *cobra
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_VERSION, "", "version of the devfile stack; use \"latest\" to dowload the latest stack")
+	initCmd.Flags().StringArray(backend.FLAG_ARCHITECTURE, []string{}, "Architecture supported. Can be one or multiple values from amd64, arm64, ppc64le, s390x. Default is amd64.")
 	initCmd.Flags().StringArray(backend.FLAG_RUN_PORT, []string{}, "ports used by the application (via the 'run' command)")
 
 	commonflags.UseOutputFlag(initCmd)

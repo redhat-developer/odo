@@ -3,9 +3,10 @@ package backend
 import (
 	"context"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/log"
 	"strconv"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
@@ -34,6 +35,13 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 	return nil
 }
 
+func archList(archs []string) string {
+	if len(archs) == 0 {
+		return "all"
+	}
+	return strings.Join(archs, ", ")
+}
+
 // SelectDevfile calls the Alizer to detect the devfile and asks for confirmation to the user
 func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DetectionResult, error) {
 	type result struct {
@@ -47,12 +55,13 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 		location, err := func() (location *api.DetectionResult, err error) {
 			spinner := log.Spinnerf("Determining a Devfile for the current directory")
 			defer spinner.End(err == nil)
-			selected, defaultVersion, registry, err := o.alizerClient.DetectFramework(ctx, dir)
+			detected, err := o.alizerClient.DetectFramework(ctx, dir)
 			if err != nil {
 				return nil, err
 			}
 
-			msg := fmt.Sprintf("Based on the files in the current directory odo detected\nLanguage: %s\nProject type: %s", selected.Language, selected.ProjectType)
+			msg := fmt.Sprintf("Based on the files in the current directory odo detected\nSupported architectures: %s\nLanguage: %s\nProject type: %s",
+				archList(detected.Architectures), detected.Type.Language, detected.Type.ProjectType)
 
 			appPorts, err := o.alizerClient.DetectPorts(dir)
 			if err != nil {
@@ -68,7 +77,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 			}
 
 			fmt.Println(msg)
-			fmt.Printf("The devfile \"%s:%s\" from the registry %q will be downloaded.\n", selected.Name, defaultVersion, registry.Name)
+			fmt.Printf("The devfile \"%s:%s\" from the registry %q will be downloaded.\n", detected.Type.Name, detected.DefaultVersion, detected.Registry.Name)
 			confirm, err := o.askerClient.AskCorrect()
 			if err != nil {
 				return nil, err
@@ -76,7 +85,7 @@ func (o *AlizerBackend) SelectDevfile(ctx context.Context, flags map[string]stri
 			if !confirm {
 				return nil, nil
 			}
-			return alizer.NewDetectionResult(selected, registry, appPorts, defaultVersion, ""), nil
+			return alizer.NewDetectionResult(detected.Type, detected.Registry, appPorts, detected.DefaultVersion, ""), nil
 		}()
 		resultChan <- result{
 			location: location,
