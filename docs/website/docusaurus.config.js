@@ -117,6 +117,7 @@ module.exports = {
     prism: {
       theme: prismReactRenderer.themes.github,
       darkTheme: prismReactRenderer.themes.oceanicNext,
+      additionalLanguages: ['docker'],
     },
     algolia: {
       appId: '7RBQSTPIA4',
