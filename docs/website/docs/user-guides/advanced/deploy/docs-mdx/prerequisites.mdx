@@ -1,9 +1,7 @@
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-**Prerequisites:**
-
-In order to use `odo deploy` you must be able to build an image as well as push to a registry.
+In order to use `odo deploy`, you must be able to build an image as well as push to a registry.
 
 #### Step 1. Login to your container registry
 
@@ -58,7 +56,28 @@ Login Succeeded!
 
 </Tabs>
 
-#### Step 2. Set the appropriate container build platform
+
+#### Step 2. Let `odo` know where to push container images
+
+`odo` needs to know where to push non-absolute container images declared in the `devfile.yaml` file.
+
+You can configure `odo` with the `odo preference set` command, like so:
+
+```shell
+odo preference set ImageRegistry $registry
+```
+
+<details>
+<summary>Example Output</summary>
+
+```console
+$ odo preference set ImageRegistry quay.io/$USER
+ ✓  Value of 'imageregistry' preference was set to 'quay.io/user'
+```
+
+</details>
+
+#### Step 3. Set the appropriate container build platform
 
 Your container image build must match the same architecture as the cluster you are deploying to.
 
