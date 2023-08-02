@@ -92,11 +92,36 @@ $ odo preference set ImageRegistry quay.io/$USER
 
 </details>
 
-
-
 [//]: # (## Devfile issues)
 
 ## Dev Sessions issues
+
+### The Image Pull Policy of the dev container is `Always` and I cannot change it
+
+#### Description
+When starting `odo dev`, the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) of the dev container is currently hardcoded to `Always`,
+which may not be ideal for all platforms.
+
+#### Recommended Solution
+The image pull policy can be changed by declaring a [`container-overrides`](https://devfile.io/docs/2.2.0/overriding-pod-and-container-attributes#container-overrides) attribute in the `container` component in the Devfile, like so:
+
+```yaml
+components:
+- name: runtime
+# highlight-start
+  attributes:
+    container-overrides:
+      imagePullPolicy: IfNotPresent
+# highlight-end
+  container:
+    command: ['tail']
+    args: ['-f', '/dev/null']
+    endpoints:
+    - name: http-node
+      targetPort: 3000
+    image: registry.access.redhat.com/ubi8/nodejs-16:latest
+    mountSources: true
+```
 
 ### I'm getting "Permission denied" errors when `odo dev` is syncing files
 
