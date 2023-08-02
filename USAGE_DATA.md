@@ -30,6 +30,20 @@ The following tables describe the additional information collected by `odo` comm
 | odo deploy                        | Component Type, Devfile Name, Language, Project Type, Platform (kubernetes, openshift), Platform version        |
 | odo <create/set/delete> namespace | Cluster Type (Possible values: OpenShift 3, OpenShift 4, Kubernetes)                                            |
 
+**odo v3 GUI**
+
+The odo v3 GUI is accessible (by default at http://localhost:20000) when the command `odo dev` is running.
+
+| Page                 | Data
+|----------------------|-------------------------
+| YAML (main page)     | Page accessed, UI started, Devfile saved to disk, Devfile cleared, Devfile applied |
+| Metadata             | Page accessed, Metadata applied |
+| Commands             | Page accessed, Start create command, Create command |
+| Events               | Page accessed, Add event |
+| Containers           | Page accessed, Create container |
+| Images               | Page accessed, Create Image |
+| Resources            | Page accessed, Create Resource |
+
 **odo v2**
 
 | Command                  | Data                                                                 |
