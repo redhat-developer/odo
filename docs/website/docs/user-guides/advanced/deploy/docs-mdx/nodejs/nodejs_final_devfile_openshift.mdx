@@ -82,7 +82,7 @@ components:
       buildContext: ${PROJECT_SOURCE}
       rootRequired: false
       uri: ./Dockerfile
-    imageName: "{{CONTAINER_IMAGE}}"
+    imageName: "{{APP_NAME}}"
 # This will create a Deployment in order to run your container image across
 # the cluster.
 - name: outerloop-deployment
@@ -91,20 +91,20 @@ components:
       kind: Deployment
       apiVersion: apps/v1
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         replicas: 1
         selector:
           matchLabels:
-            app: {{RESOURCE_NAME}}
+            app: {{APP_NAME}}
         template:
           metadata:
             labels:
-              app: {{RESOURCE_NAME}}
+              app: {{APP_NAME}}
           spec:
             containers:
-              - name: {{RESOURCE_NAME}}
-                image: {{CONTAINER_IMAGE}}
+              - name: {{APP_NAME}}
+                image: {{APP_NAME}}
                 ports:
                   - name: http
                     containerPort: {{CONTAINER_PORT}}
@@ -123,7 +123,7 @@ components:
       apiVersion: v1
       kind: Service
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         ports:
         - name: "{{CONTAINER_PORT}}"
@@ -131,7 +131,7 @@ components:
           protocol: TCP
           targetPort: {{CONTAINER_PORT}}
         selector:
-          app: {{RESOURCE_NAME}}
+          app: {{APP_NAME}}
         type: NodePort
 - name: outerloop-url
   kubernetes:
@@ -139,12 +139,12 @@ components:
       apiVersion: route.openshift.io/v1
       kind: Route
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         path: /
         to:
           kind: Service
-          name: {{RESOURCE_NAME}}
+          name: {{APP_NAME}}
         port:
           targetPort: {{CONTAINER_PORT}}
 metadata:
@@ -166,10 +166,8 @@ starterProjects:
       origin: https://github.com/odo-devfiles/nodejs-ex.git
   name: nodejs-starter
 # Add the following variables code anywhere in devfile.yaml
-# This MUST be a container registry you are able to access
 variables:
-  CONTAINER_IMAGE: quay.io/MYUSERNAME/node-odo-example
-  RESOURCE_NAME: my-node-app
+  APP_NAME: my-node-app
   CONTAINER_PORT: "3000"
   DOMAIN_NAME: node.example.com
 ```

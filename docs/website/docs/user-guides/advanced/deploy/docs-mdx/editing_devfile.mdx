@@ -20,11 +20,9 @@ Add the `variables` and change them appropriately:
 <div>
 <CodeBlock language="yaml">
 {`
-# Add the following variables code anywhere in devfile.yaml
-# This MUST be a container registry you are able to access
+# Add the following variables section anywhere in devfile.yaml
 variables:
-  CONTAINER_IMAGE: quay.io/MYUSERNAME/`}{props.name}{`-odo-example
-  RESOURCE_NAME: my-`}{props.name}{`-app
+  APP_NAME: my-`}{props.name}{`-app
   CONTAINER_PORT: "`}{props.port}{`"
   DOMAIN_NAME: `}{props.name}{`.example.com
 `}
@@ -73,7 +71,7 @@ components:
       buildContext: ${PROJECT_SOURCE}
       rootRequired: false
       uri: ./Dockerfile
-    imageName: "{{CONTAINER_IMAGE}}"
+    imageName: "{{APP_NAME}}"
 
 # This will create a Deployment in order to run your container image across
 # the cluster.
@@ -83,20 +81,20 @@ components:
       kind: Deployment
       apiVersion: apps/v1
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         replicas: 1
         selector:
           matchLabels:
-            app: {{RESOURCE_NAME}}
+            app: {{APP_NAME}}
         template:
           metadata:
             labels:
-              app: {{RESOURCE_NAME}}
+              app: {{APP_NAME}}
           spec:
             containers:
-              - name: {{RESOURCE_NAME}}
-                image: {{CONTAINER_IMAGE}}
+              - name: {{APP_NAME}}
+                image: {{APP_NAME}}
                 ports:
                   - name: http
                     containerPort: {{CONTAINER_PORT}}
@@ -115,7 +113,7 @@ components:
       apiVersion: v1
       kind: Service
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         ports:
         - name: "{{CONTAINER_PORT}}"
@@ -123,7 +121,7 @@ components:
           protocol: TCP
           targetPort: {{CONTAINER_PORT}}
         selector:
-          app: {{RESOURCE_NAME}}
+          app: {{APP_NAME}}
         type: NodePort
 ```
 
@@ -140,7 +138,7 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
       apiVersion: networking.k8s.io/v1
       kind: Ingress
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         rules:
           - host: "{{DOMAIN_NAME}}"
@@ -150,7 +148,7 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
                   pathType: Prefix
                   backend:
                     service:
-                      name: {{RESOURCE_NAME}} 
+                      name: {{APP_NAME}}
                       port:
                         number: {{CONTAINER_PORT}}
 ```
@@ -164,12 +162,12 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
       apiVersion: route.openshift.io/v1
       kind: Route
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         path: /
         to:
           kind: Service
-          name: {{RESOURCE_NAME}}
+          name: {{APP_NAME}}
         port:
           targetPort: {{CONTAINER_PORT}}
 ```
