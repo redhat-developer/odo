@@ -18,6 +18,8 @@ commands:
       kind: run
     workingDir: ${PROJECT_SOURCE}
   id: run
+
+# highlight-start
 # This is the main "composite" command that will run all below commands
 - id: deploy
   composite:
@@ -42,6 +44,7 @@ commands:
 - id: k8s-url
   apply:
     component: outerloop-url
+# highlight-end
 components:
 - container:
     args:
@@ -63,6 +66,8 @@ components:
     image: registry.access.redhat.com/ubi8/dotnet-60:6.0
     mountSources: true
   name: dotnet
+
+# highlight-start
 # This will build the container image before deployment
 - name: outerloop-build
   image:
@@ -140,6 +145,7 @@ components:
                       name: {{APP_NAME}}
                       port:
                         number: {{CONTAINER_PORT}}
+# highlight-end
 metadata:
   description: Stack with .NET 6.0
   displayName: .NET 6.0
@@ -150,6 +156,7 @@ metadata:
   tags:
   - .NET
   version: 1.0.2
+# highlight-next-line
 schemaVersion: 2.2.0
 starterProjects:
 - git:
@@ -160,9 +167,10 @@ starterProjects:
       origin: https://github.com/redhat-developer/s2i-dotnetcore-ex
   name: dotnet60-example
   subDir: app
-# Add the following variables code anywhere in devfile.yaml
+# highlight-start
 variables:
   APP_NAME: my-dotnet-app
   CONTAINER_PORT: "8080"
   DOMAIN_NAME: dotnet.example.com
+# highlight-end
 ```

@@ -36,6 +36,7 @@ Add the commands used to deploy:
 ```yaml
 # This is the main "composite" command that will run all below commands
 commands:
+# highlight-start
 - id: deploy
   composite:
     commands:
@@ -60,12 +61,14 @@ commands:
 - id: k8s-url
   apply:
     component: outerloop-url
+# highlight-end
 ```
 
 Add the Docker image location as well as Kubernetes Deployment and Service resources to `components`:
 ```yaml
 components:
 
+# highlight-start
 # This will build the container image before deployment
 - name: outerloop-build
   image:
@@ -125,6 +128,8 @@ components:
         selector:
           app: {{APP_NAME}}
         type: NodePort
+
+# highlight-end
 ```
 
 To be able to access our application we need to add one more `component` to the Devfile.

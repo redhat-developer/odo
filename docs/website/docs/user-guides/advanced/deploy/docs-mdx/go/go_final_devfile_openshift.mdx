@@ -21,6 +21,7 @@ commands:
       kind: run
     workingDir: ${PROJECT_SOURCE}
   id: run
+# highlight-start
 # This is the main "composite" command that will run all below commands
 - id: deploy
   composite:
@@ -45,6 +46,7 @@ commands:
 - id: k8s-url
   apply:
     component: outerloop-url
+# highlight-end
 components:
 - container:
     args:
@@ -58,6 +60,7 @@ components:
     memoryLimit: 1024Mi
     mountSources: true
   name: runtime
+# highlight-start
 # This will build the container image before deployment
 - name: outerloop-build
   image:
@@ -129,6 +132,7 @@ components:
           name: {{APP_NAME}}
         port:
           targetPort: {{CONTAINER_PORT}}
+# highlight-end
 metadata:
   description: Go is an open source programming language that makes it easy to build
     simple, reliable, and efficient software.
@@ -141,7 +145,7 @@ metadata:
   tags:
   - Go
   version: 1.0.2
-# Deploy "kind" ID's use schema 2.2.0+
+# highlight-next-line
 schemaVersion: 2.2.0
 starterProjects:
 - description: A Go project with a simple HTTP server
@@ -151,8 +155,9 @@ starterProjects:
     remotes:
       origin: https://github.com/devfile-samples/devfile-stack-go.git
   name: go-starter
-# Add the following variables code anywhere in devfile.yaml
+# highlight-start
 variables:
   APP_NAME: my-go-app
   CONTAINER_PORT: "8080"
+# highlight-end
 ```
