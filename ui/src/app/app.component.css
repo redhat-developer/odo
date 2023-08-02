@@ -33,3 +33,7 @@ div.error-message {
     font-size: large;
     margin: 16px;
 }
+
+.toplink {
+    color: white;
+}
