@@ -21,6 +21,7 @@ commands:
       kind: run
     workingDir: ${PROJECT_SOURCE}
   id: run
+# highlight-start
 # This is the main "composite" command that will run all below commands
 - id: deploy
   composite:
@@ -45,6 +46,7 @@ commands:
 - id: k8s-url
   apply:
     component: outerloop-url
+# highlight-end
 components:
 - container:
     args:
@@ -58,6 +60,7 @@ components:
     memoryLimit: 1024Mi
     mountSources: true
   name: runtime
+# highlight-start
 # This will build the container image before deployment
 - name: outerloop-build
   image:
@@ -65,7 +68,7 @@ components:
       buildContext: ${PROJECT_SOURCE}
       rootRequired: false
       uri: ./Dockerfile
-    imageName: "{{CONTAINER_IMAGE}}"
+    imageName: "{{APP_NAME}}"
 # This will create a Deployment in order to run your container image across
 # the cluster.
 - name: outerloop-deployment
@@ -74,20 +77,20 @@ components:
       kind: Deployment
       apiVersion: apps/v1
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         replicas: 1
         selector:
           matchLabels:
-            app: {{RESOURCE_NAME}}
+            app: {{APP_NAME}}
         template:
           metadata:
             labels:
-              app: {{RESOURCE_NAME}}
+              app: {{APP_NAME}}
           spec:
             containers:
-              - name: {{RESOURCE_NAME}}
-                image: {{CONTAINER_IMAGE}}
+              - name: {{APP_NAME}}
+                image: {{APP_NAME}}
                 ports:
                   - name: http
                     containerPort: {{CONTAINER_PORT}}
@@ -105,7 +108,7 @@ components:
       apiVersion: v1
       kind: Service
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         ports:
         - name: "{{CONTAINER_PORT}}"
@@ -113,7 +116,7 @@ components:
           protocol: TCP
           targetPort: {{CONTAINER_PORT}}
         selector:
-          app: {{RESOURCE_NAME}}
+          app: {{APP_NAME}}
         type: NodePort
 - name: outerloop-url
   kubernetes:
@@ -121,14 +124,15 @@ components:
       apiVersion: route.openshift.io/v1
       kind: Route
       metadata:
-        name: {{RESOURCE_NAME}}
+        name: {{APP_NAME}}
       spec:
         path: /
         to:
           kind: Service
-          name: {{RESOURCE_NAME}}
+          name: {{APP_NAME}}
         port:
           targetPort: {{CONTAINER_PORT}}
+# highlight-end
 metadata:
   description: Go is an open source programming language that makes it easy to build
     simple, reliable, and efficient software.
@@ -141,7 +145,7 @@ metadata:
   tags:
   - Go
   version: 1.0.2
-# Deploy "kind" ID's use schema 2.2.0+
+# highlight-next-line
 schemaVersion: 2.2.0
 starterProjects:
 - description: A Go project with a simple HTTP server
@@ -151,10 +155,9 @@ starterProjects:
     remotes:
       origin: https://github.com/devfile-samples/devfile-stack-go.git
   name: go-starter
-# Add the following variables code anywhere in devfile.yaml
-# This MUST be a container registry you are able to access
+# highlight-start
 variables:
-  CONTAINER_IMAGE: quay.io/MYUSERNAME/go-odo-example
-  RESOURCE_NAME: my-go-app
+  APP_NAME: my-go-app
   CONTAINER_PORT: "8080"
+# highlight-end
 ```

@@ -1,9 +1,8 @@
-```dockerfile
+```docker
 FROM registry.access.redhat.com/ubi8/dotnet-60:6.0 as builder
 WORKDIR /opt/app-root/src
 COPY --chown=1001 . .
 RUN dotnet publish -c Release
-
 
 FROM registry.access.redhat.com/ubi8/dotnet-60:6.0
 EXPOSE 8080
