@@ -24,6 +24,8 @@ Add the `variables` and change them appropriately:
 variables:
   APP_NAME: my-`}{props.name}{`-app
   CONTAINER_PORT: "`}{props.port}{`"
+  # The ingress domain name is not necessary when deploying to an OpenShift Cluster.
+  # OpenShift will provide us with a dynamic URL to access the application.
   DOMAIN_NAME: `}{props.name}{`.example.com
 `}
 </CodeBlock>
