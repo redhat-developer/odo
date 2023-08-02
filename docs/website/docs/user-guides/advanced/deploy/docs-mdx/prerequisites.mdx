@@ -19,8 +19,11 @@ values={[
 <TabItem value="podman">
 
 ```shell
-podman login
+podman login $registry
 ```
+
+<details>
+<summary>Example Output</summary>
 
 ```console
 $ podman login quay.io
@@ -29,13 +32,18 @@ Password:
 Login Succeeded!
 ```
 
+</details>
+
 </TabItem>
 
 <TabItem value="docker">
 
 ```shell
-docker login
+docker login $registry
 ```
+
+<details>
+<summary>Example Output</summary>
 
 ```console
 $ docker login docker.io
@@ -43,6 +51,8 @@ Username:
 Password:
 Login Succeeded!
 ```
+
+</details>
 
 </TabItem>
 
