@@ -1,5 +1,6 @@
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import CodeBlock from '@theme/CodeBlock';
 
 You can now determine how to access the application by running `odo describe component`:
 
@@ -20,3 +21,41 @@ Check for _Kubernetes Ingresses_ if you are on a Kubernetes cluster or _OpenShif
         </TabItem>
     </Tabs>
 </details>
+
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+Since we are using Ingress, we can check if an IP address has been set.
+
+<div>
+<CodeBlock language="console">
+{`
+$ kubectl get ingress my-`}{props.name}{`-app
+NAME            CLASS     HOSTS                ADDRESS      PORTS   AGE
+my-`}{props.name}{`-app   traefik   `}{props.name}{`.example.com   172.19.0.2   80      2m2s
+`}
+</CodeBlock>
+</div>
+
+Once the IP address appears, you can now access the application, like so:
+
+<div>
+<CodeBlock language="console">
+{`curl --resolve "`}{props.name}{`.example.com:80:172.19.0.2" -i http://`}{props.name}{`.example.com/`}
+</CodeBlock>
+</div>
+
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+We can directly access the application by using the OpenShift Route displayed in the `odo describe component` output above:
+
+<div>
+<CodeBlock language="console">
+{`curl -i http://my-`}{props.name}{`-app-user-crt-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com/`}
+</CodeBlock>
+</div>
+
+</TabItem>
+</Tabs>

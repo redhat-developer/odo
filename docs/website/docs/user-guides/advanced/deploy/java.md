@@ -55,7 +55,7 @@ import AccessingApplicationDescription from './docs-mdx/accessing_application.md
 import KubernetesDescribeOutput from './docs-mdx/java/java_describe_component_kubernetes_output.mdx';
 import OpenShiftDescribeOutput from './docs-mdx/java/java_describe_component_openshift_output.mdx';
 
-<AccessingApplicationDescription k8sdata=<KubernetesDescribeOutput /> ocdata=<OpenShiftDescribeOutput />/>
+<AccessingApplicationDescription name="java" k8sdata=<KubernetesDescribeOutput /> ocdata=<OpenShiftDescribeOutput />/>
 
 ## Step 6. Delete the resources
 
