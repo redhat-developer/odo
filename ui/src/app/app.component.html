@@ -3,6 +3,7 @@
     <span class="spacer"></span>
     <span class="topright">Work in progress</span>
     <a mat-icon-button href="https://github.com/feloy/devfile-builder" target="_blank"><mat-icon svgIcon="github"></mat-icon></a>
+    <button style="top: -8px" data-cy="yaml-send" matTooltip="Save Devfile to disk" mat-flat-button color="warn" disabled="{{!(state.modified|async)}}" (click)="onSave(input.value)">Save</button>    
 </mat-toolbar>
 <main>
 
@@ -13,13 +14,11 @@
 
                 <mat-tab data-cy="tab-yaml" label="{{tabNames[0]}}">
                     <div class="tab-content">
-                        <div *ngIf="errorMessage" data-cy="yaml-error" class="error-message">{{errorMessage}}</div>
                         <mat-form-field appearance="outline" class="full-width">
                             <mat-label>Devfile YAML</mat-label>
                             <textarea data-cy="yaml-input" matInput #input id="input" rows="20" [value]="devfileYaml"></textarea>
                         </mat-form-field>
-                        <button data-cy="yaml-send" matTooltip="Save Devfile to disk" mat-flat-button color="primary" (click)="onSave(input.value)">Save</button>
-                        <button data-cy="yaml-save" matTooltip="Apply changes to other tabs" mat-flat-button color="normal" (click)="onApply(input.value)">Apply</button>
+                        <button data-cy="yaml-save" matTooltip="Apply changes to other tabs" mat-flat-button color="primary" (click)="onApply(input.value)">Apply</button>
                         <button data-cy="yaml-clear" matTooltip="Clear Devfile content" mat-flat-button color="normal" (click)="clear()">Clear</button>
                     </div>
                 </mat-tab>

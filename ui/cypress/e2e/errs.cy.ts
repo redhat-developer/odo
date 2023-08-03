@@ -5,7 +5,7 @@ describe('devfile editor errors handling', () => {
     it('fails when YAML is not valid', () => {
         cy.init();
         cy.setDevfile("wrong yaml content");
-        cy.getByDataCy("yaml-error").should('contain.text', 'error parsing devfile YAML');
+        cy.get(".cdk-overlay-container").should('contain.text', 'error parsing devfile YAML');
       });
 
     it('fails when adding a container with an already used name', () => {
