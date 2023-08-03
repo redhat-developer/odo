@@ -11,7 +11,7 @@ You have the option of developing and iterating locally against local [Podman](h
 A recommended way to get started with `odo` is to iterate on the application locally with Podman, as it does not require any additional clusters to be setup or available.
 Later on, you can seamlessly run and iterate on the same application against a Kubernetes or OpenShift cluster.
 
-This quickstart guide will show you how easy it can be get started with `odo`. You have the option of choosing from the following frameworks:
+This quickstart guide will show you how easy it can be to get started with `odo`. You have the option of choosing from the following frameworks:
 * [Node.js](nodejs)
 * [.NET](dotnet)
 * [Java (Spring Boot)](java)
