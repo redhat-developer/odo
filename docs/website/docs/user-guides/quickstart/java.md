@@ -26,11 +26,11 @@ Finally, extract the downloaded source code archive in the 'quickstart-demo' dir
 
 Your source code has now been generated and created in the directory.
 
-## Step 1. Connect to your cluster and create a new namespace or project
+## Step 1. Preparing the target platform
 
-import ConnectingToCluster from './docs-mdx/connecting_to_the_cluster_description.mdx';
+import PreparingTargetPlatform from './docs-mdx/preparing_the_target_platform.mdx';
 
-<ConnectingToCluster/>
+<PreparingTargetPlatform/>
 
 ## Step 2. Initializing your application (`odo init`)
 
