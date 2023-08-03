@@ -32,6 +32,10 @@ export class StateService {
     }    
   }
 
+  isUpdated(devfile: string): boolean {
+    return devfile != this.savedDevfile;
+  }
+
   getDragAndDropEnabled(): boolean {
     return localStorage.getItem("dragAndDropEnabled") == "true";
   }

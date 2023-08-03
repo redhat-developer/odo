@@ -87,6 +87,10 @@ export class AppComponent implements OnInit {
     });
 
     this.sse.subscribeTo(['DevfileUpdated']).subscribe(event => {
+      const newDevfile: DevfileContent = JSON.parse(event.data);
+      if (!this.state.isUpdated(newDevfile.content)) {
+        return;
+      }
       if (this.snackBarRef != null) {
         this.snackBarRef.afterDismissed().subscribe(() => {});
         this.snackBarRef.dismiss();
@@ -97,7 +101,6 @@ export class AppComponent implements OnInit {
         yesLabel: "Update"
       }});
       this.snackBarRef.onAction().subscribe(() => {
-        let newDevfile: DevfileContent = JSON.parse(event.data);
         if (newDevfile.content != undefined) {
           this.propagateChange(newDevfile.content, false, true);
         }
