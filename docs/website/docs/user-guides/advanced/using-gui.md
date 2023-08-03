@@ -1,5 +1,5 @@
 ---
-title: Using the GUI to edit the Devfile
+title: Using the Web UI to edit the Devfile
 sidebar_position: 3
 ---
 
@@ -31,11 +31,11 @@ The only supported Devfile Schema version is 2.2.0.
 
 When you create an object (either a command, a container or an image) from the graphical representation, you can fill in a limited number of parameters for the object, as only the more common parameters are presented in the creation form.
 
-You can add parameters to the object after is has been created by editing it from the YAML representation.
+You can add parameters to the object after it has been created by editing it from the YAML representation.
 
 ### Limited support for parent devfile
 
-When the current Devfile is defining a parent Devfile (using the `.parent` field into the YAML), this parent is not represented into the GUI.
+When the current Devfile is referencing a parent Devfile (using the `.parent` field into the YAML), this parent is not represented into the GUI.
 
 It is still possible to add a parent information to the YAML representation. It will be taken into account by the `odo dev` session once saved.
 
