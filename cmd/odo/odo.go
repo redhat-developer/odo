@@ -58,8 +58,9 @@ func main() {
 
 	// add the completion flags to the root command, though they won't appear in completions
 	root.Flags().AddGoFlagSet(flag.CommandLine)
+
 	// override usage so that flag.Parse uses root command's usage instead of default one when invoked with -h
-	flag.Usage = func() {
+	flag.CommandLine.Usage = func() {
 		_ = root.Help()
 	}
 
