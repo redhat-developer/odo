@@ -4,9 +4,14 @@ title: Quickstart Guide
 
 # Quickstart Guide
 
-In this guide, we will be using `odo` to create a "Hello World" application.
+In this guide, we will be using `odo` to create a "Hello World" application, and then start a container-based development session using `odo`.
 
-You have the option of choosing from the following frameworks for the quickstart guide:
+You have the option of developing and iterating locally against local [Podman](https://podman.io/) containers or any Kubernetes or OpenShift cluster.
+
+A recommended way to get started with `odo` is to iterate on the application locally with Podman, as it does not require any additional clusters to be setup or available.
+Later on, you can seamlessly run and iterate on the same application against a Kubernetes or OpenShift cluster.
+
+This quickstart guide will show you how easy it can be get started with `odo`. You have the option of choosing from the following frameworks:
 * [Node.js](nodejs)
 * [.NET](dotnet)
 * [Java (Spring Boot)](java)
