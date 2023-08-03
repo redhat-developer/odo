@@ -42,7 +42,7 @@ export class AppComponent implements OnInit {
     private wasmGo: DevstateService,
     private odoApi: OdoapiService,
     private mermaid: MermaidService,
-    private state: StateService,
+    protected state: StateService,
     private sse: SseService,
     private telemetry: TelemetryService,
     private snackbar: MatSnackBar
@@ -63,7 +63,7 @@ export class AppComponent implements OnInit {
     devfile.subscribe({
       next: (devfile) => {
         if (devfile.content != undefined) {
-          this.propagateChange(devfile.content, false);
+          this.propagateChange(devfile.content, false, true);
         }
       }
     });
@@ -100,7 +100,7 @@ export class AppComponent implements OnInit {
       this.snackBarRef.onAction().subscribe(() => {
         let newDevfile: DevfileContent = JSON.parse(event.data);
         if (newDevfile.content != undefined) {
-          this.propagateChange(newDevfile.content, false);
+          this.propagateChange(newDevfile.content, false, true);
         }
         this.snackBarRef = null;
       });
@@ -123,12 +123,12 @@ export class AppComponent implements OnInit {
     })
   }
 
-  propagateChange(content: string, saveToApi: boolean){
+  propagateChange(content: string, saveToApi: boolean, fromApi: boolean){
     const result = this.wasmGo.setDevfileContent(content);
     result.subscribe({
       next: (value) => {
         this.errorMessage = '';
-        this.state.changeDevfileYaml(value);
+        this.state.changeDevfileYaml(value, fromApi);
         if (saveToApi) {
           this.odoApi.saveDevfile(value.content).subscribe({
             next: () => {},
@@ -146,12 +146,12 @@ export class AppComponent implements OnInit {
 
   onSave(content: string) {
     this.telemetry.track("[ui] save devfile to disk");
-    this.propagateChange(content, true);
+    this.propagateChange(content, true, true);
   }
 
   onApply(content: string) {
     this.telemetry.track("[ui] change devfile from textarea");
-    this.propagateChange(content, false);
+    this.propagateChange(content, false, false);
   }
 
   clear() {
@@ -159,7 +159,7 @@ export class AppComponent implements OnInit {
       this.telemetry.track("[ui] clear devfile");
       this.wasmGo.clearDevfileContent().subscribe({
         next: (value) => {
-          this.propagateChange(value.content, false);
+          this.propagateChange(value.content, false, false);
         }
       });
     }

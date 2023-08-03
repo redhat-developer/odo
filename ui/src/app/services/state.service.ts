@@ -8,11 +8,28 @@ import { DevfileContent } from '../api-gen';
 })
 export class StateService {
 
+  private savedDevfile: string = "";
+
   private _state = new BehaviorSubject<DevfileContent | null>(null);
   public state = this._state.asObservable(); 
 
-  changeDevfileYaml(newValue: DevfileContent) {
+  private _modified = new BehaviorSubject<boolean | null>(null);
+  public modified = this._modified.asObservable(); 
+
+  changeDevfileYaml(newValue: DevfileContent, fromDisk: boolean = false) {
     this._state.next(newValue);
+
+    if (fromDisk) {
+      this.savedDevfile = newValue.content;
+    }
+    if (this.savedDevfile == "") {
+      this.savedDevfile = newValue.content;
+    }
+    if (this.savedDevfile == newValue.content) {
+      this._modified.next(false);
+    } else {
+      this._modified.next(true);
+    }    
   }
 
   getDragAndDropEnabled(): boolean {
