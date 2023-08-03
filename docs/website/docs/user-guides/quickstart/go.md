@@ -65,10 +65,11 @@ import InitDescription from './docs-mdx/odo_init_description.mdx';
 ## Step 3. Developing your application continuously (`odo dev`)
 
 import DevSampleOutput from './docs-mdx/go/go_odo_dev_output.mdx';
+import DevPodmanSampleOutput from './docs-mdx/go/go_odo_dev_podman_output.mdx';
 
 import DevDescription from './docs-mdx/odo_dev_description.mdx';
 
-<DevDescription framework="Go" devout=<DevSampleOutput/> />
+<DevDescription framework="Go" devout=<DevSampleOutput/> devpodmanout=<DevPodmanSampleOutput/> />
 
 
 _You can now follow the [advanced guide](../advanced/deploy/go.md) to deploy the application to production._

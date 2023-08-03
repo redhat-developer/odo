@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 Now that we've generated our code as well as our Devfile, let's start on development.
 
 `odo` uses [inner loop development](/docs/introduction#what-is-inner-loop-and-outer-loop) and allows you to code,
@@ -7,16 +10,47 @@ Once you run `odo dev`, you can freely edit code in your favourite IDE and watch
 
 <p>Let's run <code>odo dev</code> to start development on your <span>{props.framework}</span> application:</p>
 
-```console
-odo dev
-```
+<Tabs groupId="quickstart">
 
-Then wait a few seconds until `odo dev` displays `Forwarding from 127.0.0.1:...` in its output,
-meaning that `odo` has successfully set up the port forwarding to reach the application running in the container.
+  <TabItem value="podman" label="Podman">
 
+  ```console
+  odo dev --platform podman
+  ```
+<details>
+    <summary>Sample Output</summary>
+    {props.devpodmanout}
+</details>
+
+  </TabItem>
+
+  <TabItem value="kubernetes" label="Kubernetes">
+
+  ```console
+  odo dev
+  ```
 <details>
     <summary>Sample Output</summary>
     {props.devout}
 </details>
 
-You can now access the application via the local port displayed by `odo dev` ([127.0.0.1:20001](http://127.0.0.1:20001) in the sample output above) and start your development loop. `odo` will watch for changes and push the code for real-time updates.
+  </TabItem>
+
+  <TabItem value="openshift" label="OpenShift">
+
+  ```console
+  odo dev
+  ```
+<details>
+    <summary>Sample Output</summary>
+    {props.devout}
+</details>
+
+  </TabItem>
+</Tabs>
+
+Then wait a few seconds until `odo dev` displays `Forwarding from 127.0.0.1:...` in its output,
+meaning that `odo` has successfully set up port forwarding to reach the application running in the container.
+
+You can now access the application via the local port displayed by `odo dev` ([127.0.0.1:20001](http://127.0.0.1:20001) in the sample output above) and start your development loop.
+`odo` will watch for changes and push the code for real-time updates.

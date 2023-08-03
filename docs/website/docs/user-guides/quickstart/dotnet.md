@@ -64,10 +64,11 @@ When you first run `odo init`, it will detect the required devfile to be 'dotnet
 ## Step 3. Developing your application continuously (`odo dev`)
 
 import DevSampleOutput from './docs-mdx/dotnet/dotnet_odo_dev_output.mdx';
+import DevPodmanSampleOutput from './docs-mdx/dotnet/dotnet_odo_dev_podman_output.mdx';
 
 import DevDescription from './docs-mdx/odo_dev_description.mdx';
 
-<DevDescription framework=".NET" devout=<DevSampleOutput/> />
+<DevDescription framework=".NET" devout=<DevSampleOutput/> devpodmanout=<DevPodmanSampleOutput/> />
 
 
 _You can now follow the [advanced guide](../advanced/deploy/dotnet.md) to deploy the application to production._
