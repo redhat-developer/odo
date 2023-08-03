@@ -2,7 +2,6 @@ package list
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -23,8 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
-	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -62,15 +59,6 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete ...
 func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-
-	// Check to see if KUBECONFIG exists, and if not, error the user that we would not be able to get cluster information
-	// Do this before anything else, or else we will just error out with the:
-	// invalid configuration: no configuration has been provided, try setting KUBERNETES_MASTER environment variable
-	// instead
-	if !dfutil.CheckKubeConfigExist() {
-		return errors.New("KUBECONFIG not found. Unable to retrieve cluster information. Please set your Kubernetes configuration via KUBECONFIG env variable or ~/.kube/config")
-	}
-
 	// If the namespace flag has been passed, we will search there.
 	// if it hasn't, we will search from the default project / namespace.
 	if lo.namespaceFlag != "" {
