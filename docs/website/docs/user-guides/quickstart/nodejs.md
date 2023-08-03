@@ -43,6 +43,7 @@ $ npx express-generator
   warning: the default view engine will not be jade in future releases
   warning: use `--view=jade' or `--help' for additional options
 
+destination is not empty, continue? [y/N] y
 
    create : public/
    create : public/javascripts/
