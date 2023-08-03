@@ -33,7 +33,6 @@ export class AppComponent implements OnInit {
   ];
   protected mermaidContent: string = "";
   protected devfileYaml: string = "";
-  protected errorMessage: string  = "";
   private snackBarRef: MatSnackBarRef<ConfirmComponent> | null = null;
 
   constructor(
@@ -127,19 +126,18 @@ export class AppComponent implements OnInit {
     const result = this.wasmGo.setDevfileContent(content);
     result.subscribe({
       next: (value) => {
-        this.errorMessage = '';
         this.state.changeDevfileYaml(value, fromApi);
         if (saveToApi) {
           this.odoApi.saveDevfile(value.content).subscribe({
             next: () => {},
             error: (error) => {
-              this.errorMessage = error.error.message;
+              this.snackbar.open(error.error.message, "ok");
             }
           });
         }
       },
       error: (error) => {
-        this.errorMessage = error.error.message;
+        this.snackbar.open(error.error.message, "ok");
       }
     });
   }
