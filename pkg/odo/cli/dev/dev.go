@@ -203,10 +203,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		componentName = odocontext.GetComponentName(ctx)
 		variables     = fcontext.GetVariables(ctx)
 		platform      = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
+		dest          string
+		deployingTo   string
 	)
 
-	var dest string
-	var deployingTo string
 	switch platform {
 	case commonflags.PlatformPodman:
 		dest = "Platform: podman"
@@ -286,6 +286,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			o.clientset.PodmanClient,
 			o.clientset.StateClient,
 			o.clientset.PreferenceClient,
+			o.clientset.InformerClient,
 		)
 		if err != nil {
 			return err
@@ -297,6 +298,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			_ = o.followLogs(ctx)
 		}()
 	}
+
+	o.clientset.InformerClient.AppendInfo(log.Sbold("Keyboard Commands:") + "\n" +
+		"[Ctrl+c] - Exit and delete resources from " + deployingTo + "\n" +
+		"     [p] - Manually apply local changes to the application on " + deployingTo + "\n")
 
 	return o.clientset.DevClient.Start(
 		o.ctx,
@@ -426,6 +431,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		clientset.DEV,
 		clientset.EXEC,
 		clientset.FILESYSTEM,
+		clientset.INFORMER,
 		clientset.INIT,
 		clientset.KUBERNETES_NULLABLE,
 		clientset.LOGS,

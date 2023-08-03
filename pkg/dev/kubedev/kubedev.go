@@ -24,13 +24,6 @@ import (
 	"k8s.io/klog"
 )
 
-const (
-	promptMessage = `
-[Ctrl+c] - Exit and delete resources from the cluster
-     [p] - Manually apply local changes to the application on the cluster
-`
-)
-
 type DevClient struct {
 	kubernetesClient      kclient.ClientInterface
 	prefClient            preference.Client
@@ -97,7 +90,6 @@ func (o *DevClient) Start(
 		StartOptions:        options,
 		DevfileWatchHandler: o.regenerateAdapterAndPush,
 		WatchCluster:        true,
-		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)

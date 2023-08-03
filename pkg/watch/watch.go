@@ -12,6 +12,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/dev/common"
+	"github.com/redhat-developer/odo/pkg/informer"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
@@ -36,7 +37,8 @@ const (
 )
 
 type WatchClient struct {
-	kubeClient kclient.ClientInterface
+	kubeClient     kclient.ClientInterface
+	informerClient *informer.InformerClient
 
 	sourcesWatcher    *fsnotify.Watcher
 	deploymentWatcher watch.Interface
@@ -55,9 +57,13 @@ type WatchClient struct {
 
 var _ Client = (*WatchClient)(nil)
 
-func NewWatchClient(kubeClient kclient.ClientInterface) *WatchClient {
+func NewWatchClient(
+	kubeClient kclient.ClientInterface,
+	informerClient *informer.InformerClient,
+) *WatchClient {
 	return &WatchClient{
-		kubeClient: kubeClient,
+		kubeClient:     kubeClient,
+		informerClient: informerClient,
 	}
 }
 
@@ -76,8 +82,6 @@ type WatchParameters struct {
 
 	// WatchCluster indicates to watch Cluster-related objects (Deployment, Pod, etc)
 	WatchCluster bool
-	// PromptMessage
-	PromptMessage string
 }
 
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
@@ -444,14 +448,14 @@ func (o *WatchClient) processEvents(
 			}
 		} else {
 			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-			PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
+			o.printInfoMessage(out, path, parameters.StartOptions.WatchFiles)
 		}
 		return nil
 	}
 	if oldStatus.GetState() != StateReady && componentStatus.GetState() == StateReady ||
 		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
 
-		PrintInfoMessage(out, path, parameters.StartOptions.WatchFiles, parameters.PromptMessage)
+		o.printInfoMessage(out, path, parameters.StartOptions.WatchFiles)
 	}
 	return nil
 }
@@ -497,7 +501,7 @@ func removeDuplicates(input []string) []string {
 	return result
 }
 
-func PrintInfoMessage(out io.Writer, path string, watchFiles bool, promptMessage string) {
+func (o *WatchClient) printInfoMessage(out io.Writer, path string, watchFiles bool) {
 	log.Sectionf("Dev mode")
 	if watchFiles {
 		fmt.Fprintf(
@@ -507,11 +511,9 @@ func PrintInfoMessage(out io.Writer, path string, watchFiles bool, promptMessage
 			path,
 		)
 	}
-	fmt.Fprintf(
+	fmt.Fprint(
 		out,
-		" %s%s",
-		log.Sbold("Keyboard Commands:"),
-		promptMessage,
+		o.informerClient.GetInfo(),
 	)
 }
 
