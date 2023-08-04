@@ -42,3 +42,8 @@ It is still possible to add a parent information to the YAML representation. It 
 ### Experimental Chart representation
 
 The chart representation is experimental. It is possible that, for some complex Devfile, the chart is not accurate or is not displayed.
+
+### Comments in YAML are not supported
+
+Comments are generally supported in YAML. In the case of a Devfile, the library used to validate the contents of a Devfile discards these comments.
+This results in that comments are removed from the YAML when you save it.
