@@ -13,9 +13,34 @@ You can edit any representation independently, the other representations will be
 
 The YAML representation reflects exactly the content of the `devfile.yaml` file found into the directory where the `odo dev` session is running.
 
+<figure>
+    <img
+        src={require('/static/img/ui-textual-representation.png').default}
+        alt="Textual Representation of a Devfile in Devfile Builder"
+    />
+    <figcaption>A Textual Representation of a Devfile</figcaption>
+</figure>
+
+
 The page *Chart* contains a chart describing the different steps of the `odo dev` session.
 
+<figure>
+    <img
+        src={require('/static/img/ui-chart-representation.png').default}
+        alt="Chart Representation of a Devfile in Devfile Builder"
+    />
+    <figcaption>A Chart Representation of a Devfile</figcaption>
+</figure>
+
 The following pages of the UI contain a graphical representation of the Devfile. From these pages, you can edit the Devfile by adding and deleting objects (commands, events, containers, images, resources and volumes). From the *Commands* page, it is possible to change the *Kind* (Build, Run, Test, Debug or Deploy) of each command. 
+
+<figure>
+    <img
+        src={require('/static/img/ui-graphical-representation.png').default}
+        alt="Graphical Representation of a Devfile in Devfile Builder"
+    />
+    <figcaption>A Graphical Representation of a Devfile</figcaption>
+</figure>
 
 When you *Save* the Devfile, the content of the YAML representation is saved to the disk, replacing the previous version of the Devfile. The `odo dev` session will react accordingly, depending on the changes done into the Devfile.
 
