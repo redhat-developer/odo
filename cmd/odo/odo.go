@@ -25,6 +25,10 @@ import (
 )
 
 func main() {
+	// We need to reinitialize this global variable in case flags are defined by third-party packages
+	// (for example vendor/sigs.k8s.io/controller-runtime/pkg/client/config/config.go)
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
 	// Create a context ready for receiving telemetry data
 	// and save into it configuration based on environment variables
 	ctx := segment.NewContext(context.Background())
@@ -54,8 +58,9 @@ func main() {
 
 	// add the completion flags to the root command, though they won't appear in completions
 	root.Flags().AddGoFlagSet(flag.CommandLine)
+
 	// override usage so that flag.Parse uses root command's usage instead of default one when invoked with -h
-	flag.Usage = func() {
+	flag.CommandLine.Usage = func() {
 		_ = root.Help()
 	}
 
