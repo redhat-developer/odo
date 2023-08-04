@@ -21,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/informer"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -63,6 +64,8 @@ const (
 	EXEC = "DEP_EXEC"
 	// FILESYSTEM instantiates client for pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
+	// INFORMER instantiates client for pkg/informer
+	INFORMER = "DEP_INFORMER"
 	// INIT instantiates client for pkg/init
 	INIT = "DEP_INIT"
 	// KUBERNETES_NULLABLE instantiates client for pkg/kclient, can be nil
@@ -121,7 +124,7 @@ var subdeps map[string][]string = map[string][]string{
 	REGISTRY:     {FILESYSTEM, PREFERENCE, KUBERNETES_NULLABLE},
 	STATE:        {FILESYSTEM},
 	SYNC:         {EXEC},
-	WATCH:        {KUBERNETES_NULLABLE},
+	WATCH:        {INFORMER, KUBERNETES_NULLABLE},
 	BINDING:      {PROJECT, KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
@@ -138,6 +141,7 @@ type Clientset struct {
 	DevClient             dev.Client
 	ExecClient            exec.Client
 	FS                    filesystem.Filesystem
+	InformerClient        *informer.InformerClient
 	InitClient            _init.Client
 	KubernetesClient      kclient.ClientInterface
 	LogsClient            logs.Client
@@ -196,6 +200,9 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 		} else {
 			dep.FS = filesystem.DefaultFs{}
 		}
+	}
+	if isDefined(command, INFORMER) {
+		dep.InformerClient = informer.NewInformerClient()
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		if testClientset.KubernetesClient != nil {
@@ -293,7 +300,7 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 		}
 	}
 	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient)
+		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.InformerClient)
 	}
 	if isDefined(command, BINDING) {
 		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)

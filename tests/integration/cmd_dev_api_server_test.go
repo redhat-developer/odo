@@ -105,44 +105,6 @@ var _ = Describe("odo dev command with api server tests", func() {
 						Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusOK))
 					})
 
-					It("should describe the API Server port in the experimental mode", func() {
-						args := []string{"describe", "component"}
-						if podman {
-							args = append(args, "--platform", "podman")
-						}
-						stdout := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
-						Expect(stdout).To(ContainSubstring("Dev Control Plane"))
-						Expect(stdout).To(ContainSubstring("API: http://%s", devSession.APIServerEndpoint))
-						if customPort {
-							Expect(stdout).To(ContainSubstring("Web UI: http://localhost:%d/", localPort))
-						} else {
-							Expect(stdout).To(MatchRegexp("Web UI: http:\\/\\/localhost:[0-9]+\\/"))
-						}
-					})
-
-					It("should describe the API Server port in the experimental mode (JSON)", func() {
-						args := []string{"describe", "component", "-o", "json"}
-						if podman {
-							args = append(args, "--platform", "podman")
-						}
-						stdout := helper.Cmd("odo", args...).AddEnv("ODO_EXPERIMENTAL_MODE=true").ShouldPass().Out()
-						helper.IsJSON(stdout)
-						helper.JsonPathExist(stdout, "devControlPlane")
-						plt := "cluster"
-						if podman {
-							plt = "podman"
-						}
-						helper.JsonPathContentHasLen(stdout, "devControlPlane", 1)
-						helper.JsonPathContentIs(stdout, "devControlPlane.0.platform", plt)
-						if customPort {
-							helper.JsonPathContentIs(stdout, "devControlPlane.0.localPort", strconv.Itoa(localPort))
-						} else {
-							helper.JsonPathContentIsValidUserPort(stdout, "devControlPlane.0.localPort")
-						}
-						helper.JsonPathContentIs(stdout, "devControlPlane.0.apiServerPath", "/api/v1/")
-						helper.JsonPathContentIs(stdout, "devControlPlane.0.webInterfacePath", "/")
-					})
-
 					It("should describe the API Server port", func() {
 						args := []string{"describe", "component"}
 						if podman {
@@ -151,7 +113,11 @@ var _ = Describe("odo dev command with api server tests", func() {
 						stdout := helper.Cmd("odo", args...).ShouldPass().Out()
 						Expect(stdout).To(ContainSubstring("Dev Control Plane"))
 						Expect(stdout).To(ContainSubstring("API: http://%s", devSession.APIServerEndpoint))
-						Expect(stdout).ToNot(ContainSubstring("Web UI: http://localhost:%d/", localPort))
+						if customPort {
+							Expect(stdout).To(ContainSubstring("Web UI: http://localhost:%d/", localPort))
+						} else {
+							Expect(stdout).To(MatchRegexp("Web UI: http:\\/\\/localhost:[0-9]+\\/"))
+						}
 					})
 
 					It("should describe the API Server port (JSON)", func() {
@@ -174,7 +140,7 @@ var _ = Describe("odo dev command with api server tests", func() {
 							helper.JsonPathContentIsValidUserPort(stdout, "devControlPlane.0.localPort")
 						}
 						helper.JsonPathContentIs(stdout, "devControlPlane.0.apiServerPath", "/api/v1/")
-						helper.JsonPathDoesNotExist(stdout, "devControlPlane.0.webInterfacePath")
+						helper.JsonPathContentIs(stdout, "devControlPlane.0.webInterfacePath", "/")
 					})
 				})
 			}

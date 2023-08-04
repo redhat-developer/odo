@@ -83,6 +83,7 @@ func (o *ApiServerOptions) Run(ctx context.Context) (err error) {
 		nil,
 		o.clientset.StateClient,
 		o.clientset.PreferenceClient,
+		o.clientset.InformerClient,
 	)
 	if err != nil {
 		return err
@@ -119,6 +120,7 @@ func NewCmdApiServer(ctx context.Context, name, fullName string, testClientset c
 	}
 	clientset.Add(apiserverCmd,
 		clientset.FILESYSTEM,
+		clientset.INFORMER,
 		clientset.STATE,
 		clientset.PREFERENCE,
 	)

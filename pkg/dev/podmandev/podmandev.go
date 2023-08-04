@@ -27,13 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	promptMessage = `
-[Ctrl+c] - Exit and delete resources from podman
-     [p] - Manually apply local changes to the application on podman
-`
-)
-
 type DevClient struct {
 	fs filesystem.Filesystem
 
@@ -91,7 +84,6 @@ func (o *DevClient) Start(
 		StartOptions:        options,
 		DevfileWatchHandler: o.watchHandler,
 		WatchCluster:        false,
-		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)

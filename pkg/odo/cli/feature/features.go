@@ -19,7 +19,7 @@ var (
 	}
 
 	UIServer = OdoFeature{
-		isExperimental: true,
+		isExperimental: false,
 	}
 )
 

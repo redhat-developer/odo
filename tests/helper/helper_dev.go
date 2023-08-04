@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/ActiveState/termtest/expect"
@@ -206,8 +205,7 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	result.ErrOut = string(errContents)
 	result.Endpoints = getPorts(string(outContents), options.CustomAddress)
 	if options.StartAPIServer {
-		// errContents because the server message is still printed as a log/warning
-		result.APIServerEndpoint = getAPIServerPort(string(errContents))
+		result.APIServerEndpoint = getAPIServerPort(string(outContents))
 	}
 	return result, nil
 
@@ -395,10 +393,8 @@ func getPorts(s, address string) map[string]string {
 }
 
 // getAPIServerPort returns the address at which api server is running
-//
-// `I0617 11:40:44.124391   49578 starterserver.go:36] API Server started at localhost:20000/api/v1`
 func getAPIServerPort(s string) string {
-	re := regexp.MustCompile(`(API Server started at localhost:[0-9]+\/api\/v1)`)
-	matches := re.FindString(s)
-	return strings.Split(matches, "at ")[1]
+	re := regexp.MustCompile(`API Server started at http://(localhost:[0-9]+\/api\/v1)`)
+	matches := re.FindStringSubmatch(s)
+	return matches[1]
 }

@@ -12,7 +12,9 @@ import (
 
 	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/apiserver-impl/sse"
+	"github.com/redhat-developer/odo/pkg/informer"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -45,6 +47,7 @@ func StartServer(
 	podmanClient podman.Client,
 	stateClient state.Client,
 	preferenceClient preference.Client,
+	informerClient *informer.InformerClient,
 ) (ApiServer, error) {
 	pushWatcher := make(chan struct{})
 	defaultApiService := NewDefaultApiService(
@@ -129,7 +132,13 @@ func StartServer(
 		cancelFunc()
 	}
 
-	klog.V(0).Infof("API Server started at localhost:%d/api/v1", listeningPort)
+	if feature.IsEnabled(ctx, feature.UIServer) {
+		info := fmt.Sprintf("Web console accessible at http://localhost:%d/", listeningPort)
+		log.Spinner(info).End(true)
+		informerClient.AppendInfo(info + "\n")
+	}
+	log.Spinner(fmt.Sprintf("API Server started at http://localhost:%d/api/v1", listeningPort)).End(true)
+	log.Spinner(fmt.Sprintf("API documentation accessible at http://localhost:%d/swagger-ui/", listeningPort)).End(true)
 
 	go func() {
 		select {
