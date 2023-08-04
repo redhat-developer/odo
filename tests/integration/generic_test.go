@@ -35,10 +35,13 @@ var _ = Describe("odo generic", func() {
 				BeforeEach(func() {
 					output = helper.Cmd("odo", "--help").ShouldPass().Out()
 				})
-				It("retuns full help contents including usage, examples, commands, utility commands, component shortcuts, and flags sections", func() {
+				It("returns full help contents including usage, examples, commands, utility commands, component shortcuts, and flags sections", func() {
 					helper.MatchAllInOutput(output, []string{"Usage:", "Examples:", "Main Commands:", "OpenShift Commands:", "Utility Commands:", "Flags:"})
+					helper.DontMatchAllInOutput(output, []string{"--kubeconfig"})
 				})
-
+				It("does not support the --kubeconfig flag", func() {
+					helper.DontMatchAllInOutput(output, []string{"--kubeconfig"})
+				})
 			})
 
 			When("running odo without subcommand and flags", func() {
