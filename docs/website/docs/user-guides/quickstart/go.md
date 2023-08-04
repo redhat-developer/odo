@@ -49,11 +49,11 @@ go: to add module requirements and sums:
 
 Your source code has now been generated and created in the directory.
 
-## Step 1. Connect to your cluster and create a new namespace or project
+## Step 1. Preparing the target platform
 
-import ConnectingToCluster from './docs-mdx/connecting_to_the_cluster_description.mdx';
+import PreparingTargetPlatform from './docs-mdx/preparing_the_target_platform.mdx';
 
-<ConnectingToCluster/>
+<PreparingTargetPlatform/>
 
 ## Step 2. Initializing your application (`odo init`)
 
@@ -65,10 +65,11 @@ import InitDescription from './docs-mdx/odo_init_description.mdx';
 ## Step 3. Developing your application continuously (`odo dev`)
 
 import DevSampleOutput from './docs-mdx/go/go_odo_dev_output.mdx';
+import DevPodmanSampleOutput from './docs-mdx/go/go_odo_dev_podman_output.mdx';
 
 import DevDescription from './docs-mdx/odo_dev_description.mdx';
 
-<DevDescription framework="Go" devout=<DevSampleOutput/> />
+<DevDescription framework="Go" devout=<DevSampleOutput/> devpodmanout=<DevPodmanSampleOutput/> />
 
 
 _You can now follow the [advanced guide](../advanced/deploy/go.md) to deploy the application to production._

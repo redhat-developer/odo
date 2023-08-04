@@ -5,9 +5,38 @@ import CreateProjectOutput from './create_project_output.mdx';
 
 
 <Tabs groupId="quickstart">
+
+  <TabItem value="podman" label="Podman">
+
+Before starting on Podman, you should have Podman installed and configured properly on your machine.
+See [Podman installation instructions](https://podman.io/docs/installation) for further details.
+
+You also need `odo` [3.8.0](/blog/odo-v3.8.0#odo-on-podman-out-of-experimental-mode) or later.
+
+To make sure that `odo` has the appropriate version and detects your local Podman,
+run the command below and check that it reports the Podman Client version.
+
+```console
+odo version
+```
+<details>
+    <summary>Sample Output</summary>
+
+```console
+$ odo version
+ ⚠  unable to fetch the cluster server version
+odo v3.13.0 (6c1c8b2a1)
+
+Podman Client: 4.6.0
+```
+
+</details>
+
+  </TabItem>
+
   <TabItem value="kubernetes" label="Kubernetes">
 
-Before starting you should make sure that odo is connected to your cluster and that you have created a new namespace.
+Before starting, you should make sure that odo is connected to your cluster and that you have created a new namespace.
 
 ### Creating a new namespace
 
@@ -26,7 +55,7 @@ odo create namespace odo-dev
   </TabItem>
   <TabItem value="openshift" label="OpenShift">
 
-Before starting you should make sure that odo is connected to your cluster and that you have created a new project.
+Before starting, you should make sure that odo is connected to your cluster and that you have created a new project.
 
 ### Login to OpenShift Cluster
 
