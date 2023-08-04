@@ -12,14 +12,17 @@
 
 ### Overview
 
-`odo` is a fast, and iterative CLI tool for developers who write, build, and deploy applications on Kubernetes and OpenShift.
+`odo` is a fast, and iterative CLI tool for container-based application development.
+It is an implementation of the open [Devfile](https://devfile.io/) standard, supporting [Podman](https://podman.io/), [Kubernetes](https://kubernetes.io/) and [OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift).
 
-Why use `odo`?
+**Why use `odo`?**
 
+* **Easy onboarding:** By auto-detecting the project source code, you can easily get started with `odo`.
+* **No cluster needed:**: With Podman support, having a Kubernetes cluster is not required to get started with `odo`. Using a common abstraction, `odo` can run your application on Podman, Kubernetes or OpenShift.
 * **Fast:** Spend less time maintaining your application deployment infrastructure and more time coding. Immediately have your application running each time you save.
-* **Standalone:** `odo` is a standalone tool that communicates directly with the Kubernetes API. There is no requirement for a daemon or server process.
-* **No configuration needed:** There is no need to dive into complex Kubernetes yaml configuration files. `odo` abstracts those concepts away and lets you focus on what matters most: code.
-* **Containers first:** We provide first class support for both Kubernetes and OpenShift. Choose your favourite container orchestrator and develop your application.
+* **Standalone:** `odo` is a standalone tool that communicates directly with the container orchestrator API.
+* **No configuration needed:** There is no need to dive into complex Kubernetes YAML configuration files. `odo` abstracts those concepts away and lets you focus on what matters most: code.
+* **Containers first:** We provide first class support for Podman, Kubernetes and OpenShift. Choose your favourite container orchestrator and develop your application.
 * **Easy to learn:** Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
 
 Learn more about the features provided by `odo` on [odo.dev](https://odo.dev/docs/overview/features).
@@ -75,6 +78,6 @@ Unless otherwise stated (ex. `/vendor` files), all code is licensed under the [A
 
 #### Usage data
 
-When `odo` is ran for the first time, you will be asked to opt-in to Red Hat's telemetry collection program.
+When `odo` is ran for the first time, you will be asked to opt in to Red Hat's telemetry collection program.
 
 With your approval, `odo` will collect pseudonymized usage data and send it to Red Hat servers to help improve our products and services. Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection) to learn more about it. For the specific data being collected and to configure this data collection process, see [Usage data](USAGE_DATA.md).
