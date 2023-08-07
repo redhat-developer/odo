@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatChipInputEvent } from '@angular/material/chips';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
@@ -17,10 +17,12 @@ export class ChipsEventsComponent {
 
   separatorKeysCodes: number[] = [ENTER, COMMA];
   commandCtrl = new FormControl('');
-  filteredCommands: Observable<string[]>;
+  filteredCommands = new (Observable<string[]>);
   
   
-  constructor(public commandInput :ElementRef<HTMLInputElement>) {
+  constructor(public commandInput :ElementRef<HTMLInputElement>) {}
+
+  ngOnChanges(changes: SimpleChanges) {
     this.filteredCommands = this.commandCtrl.valueChanges.pipe(
       startWith(null),
       map((cmd: string | null) => (cmd ? this._filter(cmd) : this.allCommands.slice())),
@@ -44,7 +46,7 @@ export class ChipsEventsComponent {
 
   remove(command: string): void {
     const index = this.commands.indexOf(command);
-
+    
     if (index >= 0) {
       this.commands.splice(index, 1);
       this.updated.emit(this.commands);

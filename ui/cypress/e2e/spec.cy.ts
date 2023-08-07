@@ -1,4 +1,4 @@
-import {TAB_COMMANDS, TAB_CONTAINERS, TAB_IMAGES, TAB_METADATA, TAB_RESOURCES} from './consts';
+import {TAB_YAML, TAB_COMMANDS, TAB_CONTAINERS, TAB_IMAGES, TAB_METADATA, TAB_RESOURCES, TAB_EVENTS} from './consts';
 
 describe('devfile editor spec', () => {
 
@@ -223,5 +223,20 @@ describe('devfile editor spec', () => {
         .should('contain.text', 'some-image:latest')
         .should('contain.text', 'some command')
         .should('contain.text', 'some arg');
+  });
+
+  it('adds an event with an existing command', () => {
+    cy.init();
+    cy.fixture('input/with-exec-command.yaml').then(yaml => {
+      cy.setDevfile(yaml);
+    });
+    cy.selectTab(TAB_EVENTS);
+    cy.get('[data-cy="prestop"] [data-cy="input"]').click().type("{downArrow}{enter}");
+    cy.selectTab(TAB_YAML);
+    cy.get('[data-cy="yaml-input"]').should("contain.value", "events:\n  preStop:\n  - command1");
+    cy.selectTab(TAB_EVENTS);
+    cy.get('[data-cy="prestop"] button.mat-mdc-chip-remove').click();
+    cy.selectTab(TAB_YAML);
+    cy.get('[data-cy="yaml-input"]').should("contain.value", "events: {}");
   });
 });
