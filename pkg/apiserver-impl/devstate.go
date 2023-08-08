@@ -90,6 +90,30 @@ func (s *DevstateApiService) DevstateResourceResourceNameDelete(ctx context.Cont
 	return openapi.Response(http.StatusOK, newContent), nil
 }
 
+func (s *DevstateApiService) DevstateVolumePost(ctx context.Context, volume openapi.DevstateVolumePostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.AddVolume(
+		volume.Name,
+		volume.Ephemeral,
+		volume.Size,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error adding the volume: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DevstateApiService) DevstateVolumeVolumeNameDelete(ctx context.Context, volumeName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteVolume(volumeName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the volume: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
 func (s *DevstateApiService) DevstateApplyCommandPost(ctx context.Context, command openapi.DevstateApplyCommandPostRequest) (openapi.ImplResponse, error) {
 	newContent, err := s.devfileState.AddApplyCommand(
 		command.Name,

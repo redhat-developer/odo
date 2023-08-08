@@ -39,6 +39,7 @@ schemaVersion: 2.2.0
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Events: Events{
 					PreStart: []string{"command1"},
 				},
@@ -70,6 +71,7 @@ schemaVersion: 2.2.0
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Events: Events{
 					PreStart:  []string{"command1"},
 					PostStart: []string{"command2"},

@@ -29,6 +29,7 @@ model/devstateExecCommandPostRequest.ts
 model/devstateImagePostRequest.ts
 model/devstateQuantityValidPostRequest.ts
 model/devstateResourcePostRequest.ts
+model/devstateVolumePostRequest.ts
 model/events.ts
 model/execCommand.ts
 model/generalError.ts

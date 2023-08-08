@@ -19,6 +19,7 @@ export * from './devstateExecCommandPostRequest';
 export * from './devstateImagePostRequest';
 export * from './devstateQuantityValidPostRequest';
 export * from './devstateResourcePostRequest';
+export * from './devstateVolumePostRequest';
 export * from './events';
 export * from './execCommand';
 export * from './generalError';

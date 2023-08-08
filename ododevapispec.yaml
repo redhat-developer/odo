@@ -813,6 +813,101 @@ paths:
               example:
                 message: "Error deleting the resource"
 
+  /devstate/volume:
+    post:
+      tags:
+      - devstate
+      description: Add a new Volume to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the volume
+                  type: string
+                size:
+                  description: Minimal size of the volume
+                  type: string
+                ephemeral:
+                  description: True if the Volume is Ephemeral
+                  type: boolean
+      responses:
+        '200':
+          description: volume was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the volume"
+
+  /devstate/volume/{volumeName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete a volume from the Devfile"
+      parameters:
+        - name: volumeName
+          in: path
+          description: Volume name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Volume has been deleted"
+          description: "Volume has been deleted"
+        '500':
+          description: Error deleting the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the volume"
+
   /devstate/applyCommand:
     post:
       tags:
