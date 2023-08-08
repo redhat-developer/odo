@@ -1315,6 +1315,7 @@ components:
       - containers
       - images
       - resources
+      - volumes
       - events
       - metadata
       properties:
@@ -1336,6 +1337,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Resource'
+        volumes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Volume'
         events:
           $ref: '#/components/schemas/Events'
         metadata:
@@ -1471,6 +1476,17 @@ components:
         inlined:
           type: string
         uri:
+          type: string
+    Volume:
+      type: object
+      required:
+      - name      
+      properties:
+        name:
+          type: string
+        ephemeral:
+          type: boolean
+        size:
           type: string
     Events:
       type: object

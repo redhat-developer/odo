@@ -137,12 +137,18 @@ func (o *DevfileState) GetContent() (DevfileContent, error) {
 		return DevfileContent{}, errors.New("error getting Kubernetes resources")
 	}
 
+	volumes, err := o.getVolumes()
+	if err != nil {
+		return DevfileContent{}, errors.New("error getting volumes")
+	}
+
 	return DevfileContent{
 		Content:    string(result),
 		Commands:   commands,
 		Containers: containers,
 		Images:     images,
 		Resources:  resources,
+		Volumes:    volumes,
 		Events:     o.getEvents(),
 		Metadata:   o.getMetadata(),
 	}, nil
@@ -298,6 +304,26 @@ func (o *DevfileState) getResources() ([]Resource, error) {
 			Name:    resource.Name,
 			Inlined: resource.ComponentUnion.Kubernetes.Inlined,
 			Uri:     resource.ComponentUnion.Kubernetes.Uri,
+		})
+	}
+	return result, nil
+}
+
+func (o *DevfileState) getVolumes() ([]Volume, error) {
+	volumes, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1alpha2.VolumeComponentType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]Volume, 0, len(volumes))
+	for _, volume := range volumes {
+		result = append(result, Volume{
+			Name:      volume.Name,
+			Ephemeral: *volume.Volume.Ephemeral,
+			Size:      volume.Volume.Size,
 		})
 	}
 	return result, nil
