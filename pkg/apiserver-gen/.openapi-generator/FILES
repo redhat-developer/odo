@@ -38,3 +38,4 @@ go/model_metadata.go
 go/model_metadata_request.go
 go/model_resource.go
 go/model_telemetry_response.go
+go/model_volume.go

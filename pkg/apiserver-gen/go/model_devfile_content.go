@@ -20,6 +20,8 @@ type DevfileContent struct {
 
 	Resources []Resource `json:"resources"`
 
+	Volumes []Volume `json:"volumes"`
+
 	Events Events `json:"events"`
 
 	Metadata Metadata `json:"metadata"`
@@ -33,6 +35,7 @@ func AssertDevfileContentRequired(obj DevfileContent) error {
 		"containers": obj.Containers,
 		"images":     obj.Images,
 		"resources":  obj.Resources,
+		"volumes":    obj.Volumes,
 		"events":     obj.Events,
 		"metadata":   obj.Metadata,
 	}
@@ -59,6 +62,11 @@ func AssertDevfileContentRequired(obj DevfileContent) error {
 	}
 	for _, el := range obj.Resources {
 		if err := AssertResourceRequired(el); err != nil {
+			return err
+		}
+	}
+	for _, el := range obj.Volumes {
+		if err := AssertVolumeRequired(el); err != nil {
 			return err
 		}
 	}
