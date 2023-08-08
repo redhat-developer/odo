@@ -45,6 +45,8 @@ import { MultiCommandComponent } from './controls/multi-command/multi-command.co
 import { EventsComponent } from './tabs/events/events.component';
 import { ChipsEventsComponent } from './controls/chips-events/chips-events.component';
 import { ConfirmComponent } from './components/confirm/confirm.component';
+import { VolumesComponent } from './tabs/volumes/volumes.component';
+import { VolumeComponent } from './forms/volume/volume.component';
 
 @NgModule({
   declarations: [
@@ -68,6 +70,8 @@ import { ConfirmComponent } from './components/confirm/confirm.component';
     EventsComponent,
     ChipsEventsComponent,
     ConfirmComponent,
+    VolumesComponent,
+    VolumeComponent,
   ],
   imports: [
     BrowserModule,

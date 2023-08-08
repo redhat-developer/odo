@@ -1,4 +1,4 @@
-import {TAB_YAML, TAB_COMMANDS, TAB_CONTAINERS, TAB_IMAGES, TAB_METADATA, TAB_RESOURCES, TAB_EVENTS} from './consts';
+import {TAB_YAML, TAB_COMMANDS, TAB_CONTAINERS, TAB_IMAGES, TAB_METADATA, TAB_RESOURCES, TAB_EVENTS, TAB_VOLUMES} from './consts';
 
 describe('devfile editor spec', () => {
 
@@ -95,6 +95,21 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'created-resource')
       .should('contain.text', 'URI')
       .should('contain.text', '/my/manifest.yaml');
+  });
+
+  it.only('displays a created volume', () => {
+    cy.init();
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-name').type('created-volume');
+    cy.getByDataCy('volume-size').type('512Mi');
+    cy.getByDataCy('volume-ephemeral').click();
+    cy.getByDataCy('volume-create').click();
+
+    cy.getByDataCy('volume-info').first()
+      .should('contain.text', 'created-volume')
+      .should('contain.text', '512Mi')
+      .should('contain.text', 'Yes')
   });
 
   it('creates an exec command with a new container', () => {
