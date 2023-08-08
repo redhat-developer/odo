@@ -25,6 +25,8 @@ type Container struct {
 	CpuRequest string `json:"cpuRequest"`
 
 	CpuLimit string `json:"cpuLimit"`
+
+	VolumeMounts []VolumeMount `json:"volumeMounts"`
 }
 
 // AssertContainerRequired checks if the required fields are not zero-ed
@@ -38,6 +40,7 @@ func AssertContainerRequired(obj Container) error {
 		"memoryLimit":   obj.MemoryLimit,
 		"cpuRequest":    obj.CpuRequest,
 		"cpuLimit":      obj.CpuLimit,
+		"volumeMounts":  obj.VolumeMounts,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {
@@ -45,6 +48,11 @@ func AssertContainerRequired(obj Container) error {
 		}
 	}
 
+	for _, el := range obj.VolumeMounts {
+		if err := AssertVolumeMountRequired(el); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

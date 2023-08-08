@@ -32,3 +32,4 @@ export * from './metadataRequest';
 export * from './resource';
 export * from './telemetryResponse';
 export * from './volume';
+export * from './volumeMount';

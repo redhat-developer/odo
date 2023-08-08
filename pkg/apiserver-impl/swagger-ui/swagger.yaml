@@ -1516,6 +1516,7 @@ components:
       - memoryLimit
       - cpuRequest
       - cpuLimit
+      - volumeMounts
       properties:
         name:
           type: string
@@ -1536,6 +1537,20 @@ components:
         cpuRequest:
           type: string
         cpuLimit:
+          type: string
+        volumeMounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeMount'
+    VolumeMount:
+      type: object
+      required:
+      - name
+      - path
+      properties:
+        name:
+          type: string
+        path:
           type: string
     Image:
       type: object

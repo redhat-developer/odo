@@ -43,5 +43,6 @@ model/models.ts
 model/resource.ts
 model/telemetryResponse.ts
 model/volume.ts
+model/volumeMount.ts
 param.ts
 variables.ts
