@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { ApplyCommand, CompositeCommand, Container, DevfileContent, DevstateChartGet200Response, ExecCommand, Image, Metadata, Resource } from '../api-gen';
+import { Observable, catchError, map, of } from 'rxjs';
+import { ApplyCommand, CompositeCommand, Container, DevfileContent, DevstateChartGet200Response, ExecCommand, Image, Metadata, Resource, Volume } from '../api-gen';
+import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
 
 @Injectable({
   providedIn: 'root'
@@ -41,6 +42,14 @@ export class DevstateService {
       name: resource.name,
       inlined: resource.inlined,
       uri: resource.uri,
+    });
+  }
+
+  addVolume(volume: Volume): Observable<DevfileContent> {
+    return this.http.post<DevfileContent>(this.base+"/volume", {
+      name: volume.name,
+      ephemeral: volume.ephemeral,
+      size: volume.size,
     });
   }
 
@@ -145,6 +154,10 @@ export class DevstateService {
     return this.http.delete<DevfileContent>(this.base+"/resource/"+resource);
   }
 
+  deleteVolume(volume: string): Observable<DevfileContent> {
+    return this.http.delete<DevfileContent>(this.base+"/volume/"+volume);
+  }
+
   updateEvents(event: "preStart"|"postStart"|"preStop"|"postStop", commands: string[]): Observable<DevfileContent> {
     return this.http.put<DevfileContent>(this.base+"/events", {
       eventName: event,
@@ -157,4 +170,18 @@ export class DevstateService {
       quantity: quantity
     });
   }
+
+  isQuantity():  AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      const val = control.value;
+      if (val == '') {
+        return of(null);
+      }
+      const valid = this.isQuantityValid(val);
+      return valid.pipe(
+        map(() => null),
+        catchError(() => of({"isQuantity": false}))
+      );
+    };
+  }  
 }

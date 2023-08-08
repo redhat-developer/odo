@@ -1,8 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 import { DevstateService } from 'src/app/services/devstate.service';
-import { Observable, of, map, catchError } from 'rxjs';
 import { Container } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
 
@@ -30,10 +29,10 @@ export class ContainerComponent {
       image: new FormControl("", [Validators.required]),
       command: new FormControl([]),
       args: new FormControl([]),
-      memoryRequest: new FormControl("", null, [this.isQuantity()]),
-      memoryLimit: new FormControl("", null, [this.isQuantity()]),
-      cpuRequest: new FormControl("", null, [this.isQuantity()]),
-      cpuLimit: new FormControl("", null, [this.isQuantity()]),
+      memoryRequest: new FormControl("", null, [this.devstate.isQuantity()]),
+      memoryLimit: new FormControl("", null, [this.devstate.isQuantity()]),
+      cpuRequest: new FormControl("", null, [this.devstate.isQuantity()]),
+      cpuLimit: new FormControl("", null, [this.devstate.isQuantity()]),
     })
   }
 
@@ -45,18 +44,4 @@ export class ContainerComponent {
   cancel() {
     this.canceled.emit();
   }
-
-  isQuantity():  AsyncValidatorFn {
-    return (control: AbstractControl): Observable<ValidationErrors | null> => {
-      const val = control.value;
-      if (val == '') {
-        return of(null);
-      }
-      const valid = this.devstate.isQuantityValid(val);
-      return valid.pipe(
-        map(() => null),
-        catchError(() => of({"isQuantity": false}))
-      );
-    };
-  }   
 }
