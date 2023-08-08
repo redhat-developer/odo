@@ -34,6 +34,16 @@
                     <td>CPU Limit:</td>
                     <td><code>{{container.cpuLimit}}</code></td>
                 </tr>
+                <tr *ngIf="container.volumeMounts.length > 0">
+                    <td>Volume Mounts:</td>
+                    <td>
+                        <div class="volume-mount" *ngFor="let vm of container.volumeMounts">
+                            <mat-chip disableRipple>
+                                <mat-icon matChipAvatar class="material-icons-outlined">storage</mat-icon>
+                                {{vm.name}}
+                            </mat-chip><span> in <code>{{vm.path}}</code></span></div>
+                    </td>
+                </tr>
             </table>
 
         </mat-card-content>
