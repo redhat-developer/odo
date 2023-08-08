@@ -233,7 +233,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions, dev
 	spinner := log.Spinner("Deploying pod")
 	defer spinner.End(false)
 
-	pod, fwPorts, err := createPodFromComponent(
+	pod, fwPorts, err := o.createPodFromComponent(
 		ctx,
 		options.Debug,
 		options.BuildCommand,
