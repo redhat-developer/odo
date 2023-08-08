@@ -51,6 +51,8 @@ type DevstateApiRouter interface {
 	DevstateQuantityValidPost(http.ResponseWriter, *http.Request)
 	DevstateResourcePost(http.ResponseWriter, *http.Request)
 	DevstateResourceResourceNameDelete(http.ResponseWriter, *http.Request)
+	DevstateVolumePost(http.ResponseWriter, *http.Request)
+	DevstateVolumeVolumeNameDelete(http.ResponseWriter, *http.Request)
 }
 
 // DefaultApiServicer defines the api actions for the DefaultApi service
@@ -92,4 +94,6 @@ type DevstateApiServicer interface {
 	DevstateQuantityValidPost(context.Context, DevstateQuantityValidPostRequest) (ImplResponse, error)
 	DevstateResourcePost(context.Context, DevstateResourcePostRequest) (ImplResponse, error)
 	DevstateResourceResourceNameDelete(context.Context, string) (ImplResponse, error)
+	DevstateVolumePost(context.Context, DevstateVolumePostRequest) (ImplResponse, error)
+	DevstateVolumeVolumeNameDelete(context.Context, string) (ImplResponse, error)
 }

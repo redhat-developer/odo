@@ -73,6 +73,7 @@ schemaVersion: 2.2.0
 				},
 				Images:    []Image{},
 				Resources: []Resource{},
+				Volumes:   []Volume{},
 				Events:    Events{},
 			},
 		},
@@ -137,6 +138,7 @@ schemaVersion: 2.2.0
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Events:     Events{},
 			},
 		},
@@ -242,6 +244,7 @@ schemaVersion: 2.2.0
 					},
 				},
 				Resources: []Resource{},
+				Volumes:   []Volume{},
 				Events:    Events{},
 			},
 		},
@@ -304,6 +307,7 @@ schemaVersion: 2.2.0
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Events:     Events{},
 			},
 		},
@@ -389,7 +393,8 @@ schemaVersion: 2.2.0
 						Uri:  "an-uri",
 					},
 				},
-				Events: Events{},
+				Volumes: []Volume{},
+				Events:  Events{},
 			},
 		},
 		{
@@ -418,7 +423,8 @@ schemaVersion: 2.2.0
 						Inlined: "inline resource...",
 					},
 				},
-				Events: Events{},
+				Volumes: []Volume{},
+				Events:  Events{},
 			},
 		},
 		// TODO: Add test cases.
@@ -477,6 +483,7 @@ schemaVersion: 2.2.0
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Events:     Events{},
 			},
 		},
@@ -515,6 +522,151 @@ schemaVersion: 2.2.0
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("DevfileState.DeleteResource() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDevfileState_AddVolume(t *testing.T) {
+	type args struct {
+		name      string
+		size      string
+		ephemeral bool
+	}
+	tests := []struct {
+		name    string
+		state   func() DevfileState
+		args    args
+		want    DevfileContent
+		wantErr bool
+	}{
+		{
+			name: "Add a volume",
+			state: func() DevfileState {
+				return NewDevfileState()
+			},
+			args: args{
+				name:      "a-name",
+				size:      "1Gi",
+				ephemeral: true,
+			},
+			want: DevfileContent{
+				Content: `components:
+- name: a-name
+  volume:
+    ephemeral: true
+    size: 1Gi
+metadata: {}
+schemaVersion: 2.2.0
+`,
+				Commands:   []Command{},
+				Containers: []Container{},
+				Images:     []Image{},
+				Resources:  []Resource{},
+				Volumes: []Volume{
+					{
+						Name:      "a-name",
+						Size:      "1Gi",
+						Ephemeral: true,
+					},
+				},
+				Events: Events{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := tt.state()
+			got, err := o.AddVolume(tt.args.name, tt.args.ephemeral, tt.args.size)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DevfileState.AddVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want.Content, got.Content); diff != "" {
+				t.Errorf("DevfileState.AddVolume() mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileState.AddVolume() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDevfileState_DeleteVolume(t *testing.T) {
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name    string
+		state   func(t *testing.T) DevfileState
+		args    args
+		want    DevfileContent
+		wantErr bool
+	}{
+		{
+			name: "Delete an existing volume",
+			state: func(t *testing.T) DevfileState {
+				state := NewDevfileState()
+				_, err := state.AddVolume(
+					"a-name",
+					true,
+					"1Gi",
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return state
+			},
+			args: args{
+				name: "a-name",
+			},
+			want: DevfileContent{
+				Content: `metadata: {}
+schemaVersion: 2.2.0
+`,
+				Commands:   []Command{},
+				Containers: []Container{},
+				Images:     []Image{},
+				Resources:  []Resource{},
+				Volumes:    []Volume{},
+				Events:     Events{},
+			},
+		},
+		{
+			name: "Delete a non existing resource",
+			state: func(t *testing.T) DevfileState {
+				state := NewDevfileState()
+				_, err := state.AddVolume(
+					"a-name",
+					true,
+					"1Gi",
+				)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return state
+			},
+			args: args{
+				name: "another-name",
+			},
+			want:    DevfileContent{},
+			wantErr: true,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := tt.state(t)
+			got, err := o.DeleteVolume(tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DevfileState.DeleteVolume() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want.Content, got.Content); diff != "" {
+				t.Errorf("DevfileState.DeleteVolume() mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("DevfileState.DeleteVolume() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
