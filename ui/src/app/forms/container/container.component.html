@@ -11,12 +11,15 @@
             <mat-label><span>Image</span></mat-label>
             <input placeholder="Image to start the container" data-cy="container-image" matInput formControlName="image">
         </mat-form-field>
-        <app-multi-text formControlName="command" title="Command" label="Command" addLabel="Add command"></app-multi-text>
-        <app-multi-text formControlName="args" title="Arguments to command" label="Arg" addLabel="Add arg"></app-multi-text>
+        <h3>Command and Arguments</h3>
+        <app-multi-text formControlName="command" label="Command" addLabel="Add command"></app-multi-text>
+        <app-multi-text formControlName="args" label="Arg" addLabel="Add arg"></app-multi-text>
         <app-volume-mounts
             [volumes]="volumeNames"
             formControlName="volumeMounts"
             (createNewVolume)="onCreateNewVolume($event)"></app-volume-mounts>
+        
+        <h3>Resource Usage</h3>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Memory Request</span></mat-label>
             <mat-error>{{quantityErrMsgMemory}}</mat-error>

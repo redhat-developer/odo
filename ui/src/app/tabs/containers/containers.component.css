@@ -5,5 +5,12 @@ mat-card-content { padding: 16px; }
     margin-top: 4px;
 }
 .volume-mount > mat-chip {
-    top: 4px;
+    top: -11px;
+}
+.volume-mount > span.path {
+    position: relative;
+    top: -14px;
+}
+table.aligned > tr > td {
+    vertical-align: top;
 }
