@@ -6,6 +6,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func TestDevfileState_AddExecCommand(t *testing.T) {
@@ -36,6 +37,7 @@ func TestDevfileState_AddExecCommand(t *testing.T) {
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -96,6 +98,7 @@ schemaVersion: 2.2.0
 						MemoryLimit:   "2Gi",
 						CpuRequest:    "100m",
 						CpuLimit:      "200m",
+						VolumeMounts:  []openapi.VolumeMount{},
 					},
 				},
 				Images:    []Image{},
@@ -237,6 +240,7 @@ func TestDevfileState_AddCompositeCommand(t *testing.T) {
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -315,6 +319,7 @@ schemaVersion: 2.2.0
 						MemoryLimit:   "2Gi",
 						CpuRequest:    "100m",
 						CpuLimit:      "200m",
+						VolumeMounts:  []openapi.VolumeMount{},
 					},
 				},
 				Images:    []Image{},
@@ -367,6 +372,7 @@ func TestDevfileState_DeleteCommand(t *testing.T) {
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -415,6 +421,7 @@ schemaVersion: 2.2.0
 						MemoryLimit:   "2Gi",
 						CpuRequest:    "100m",
 						CpuLimit:      "200m",
+						VolumeMounts:  []openapi.VolumeMount{},
 					},
 				},
 				Images:    []Image{},

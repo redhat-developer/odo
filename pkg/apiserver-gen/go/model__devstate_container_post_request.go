@@ -34,10 +34,18 @@ type DevstateContainerPostRequest struct {
 
 	// CPU limit for the deployed container
 	CpuLimit string `json:"cpuLimit,omitempty"`
+
+	// Volume to mount into the container filesystem
+	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // AssertDevstateContainerPostRequestRequired checks if the required fields are not zero-ed
 func AssertDevstateContainerPostRequestRequired(obj DevstateContainerPostRequest) error {
+	for _, el := range obj.VolumeMounts {
+		if err := AssertVolumeMountRequired(el); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -543,6 +543,11 @@ paths:
                 cpuLimit:
                   description: CPU limit for the deployed container
                   type: string
+                volumeMounts:
+                  description: Volume to mount into the container filesystem
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/VolumeMount'
       responses:
         '200':
           description: container was successfully added to the devfile
