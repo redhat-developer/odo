@@ -1,0 +1,18 @@
+<h3>Volume Mounts</h3>
+<div class="group">
+    <div *ngFor="let vm of volumeMounts; let i=index">
+        <mat-form-field appearance="fill">
+            <mat-select [value]="vm.name" (selectionChange)="onNameChange(i, $event.value)">
+                <mat-option *ngFor="let volume of volumes" [value]="volume">{{volume}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field class="inline" appearance="outline">
+            <mat-label><span>Mount Path</span></mat-label>
+            <input matInput [value]="vm.path" (change)="onPathChange(i, $event)">
+        </mat-form-field>    
+    </div>
+    <button *ngIf="volumeMounts.length > 0" mat-icon-button (click)="add()">
+        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
+    </button>                
+    <button *ngIf="volumeMounts.length == 0" mat-flat-button (click)="add()">Add Volume Mount</button>
+</div>

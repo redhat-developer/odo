@@ -3,7 +3,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
-import { Container } from 'src/app/api-gen';
+import { Container, Volume } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
@@ -18,6 +18,7 @@ export class CommandExecComponent {
   containerList: string[] = [];
   showNewContainer: boolean = false;
   containerToCreate: Container | null = null;
+  volumeNames: string[] | undefined = [];
 
   constructor(
     private devstate: DevstateService,
@@ -33,6 +34,7 @@ export class CommandExecComponent {
     });
 
     this.state.state.subscribe(async newContent => {
+      this.volumeNames = newContent?.volumes.map((v: Volume) => v.name);
       const containers = newContent?.containers;
       if (containers == null) {
         return

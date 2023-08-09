@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
-import { Container } from 'src/app/api-gen';
+import { Container, Volume } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-containers',
@@ -12,6 +12,7 @@ export class ContainersComponent implements OnInit {
   
   forceDisplayAdd: boolean = false;
   containers: Container[] | undefined = [];
+  volumeNames: string[] | undefined = [];
 
   constructor(
     private state: StateService,
@@ -21,6 +22,7 @@ export class ContainersComponent implements OnInit {
   ngOnInit() {
     const that = this;
     this.state.state.subscribe(async newContent => {
+      this.volumeNames = newContent?.volumes.map((v: Volume) => v.name);
       that.containers = newContent?.containers;
       if (this.containers == null) {
         return

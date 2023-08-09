@@ -28,6 +28,7 @@
 
     <app-container
         *ngIf="showNewContainer"
+        [volumeNames]="volumeNames ?? []"
         (created)="onNewContainerCreated($event)"
         ></app-container>
 
