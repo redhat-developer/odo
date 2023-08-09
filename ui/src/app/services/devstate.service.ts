@@ -23,6 +23,7 @@ export class DevstateService {
       memLimit: container.memoryLimit,
       cpuReq: container.cpuRequest,
       cpuLimit: container.cpuLimit,
+      volumeMounts: container.volumeMounts,
     });
   }
 

@@ -47,6 +47,7 @@ import { ChipsEventsComponent } from './controls/chips-events/chips-events.compo
 import { ConfirmComponent } from './components/confirm/confirm.component';
 import { VolumesComponent } from './tabs/volumes/volumes.component';
 import { VolumeComponent } from './forms/volume/volume.component';
+import { VolumeMountsComponent } from './controls/volume-mounts/volume-mounts.component';
 
 @NgModule({
   declarations: [
@@ -72,6 +73,7 @@ import { VolumeComponent } from './forms/volume/volume.component';
     ConfirmComponent,
     VolumesComponent,
     VolumeComponent,
+    VolumeMountsComponent,
   ],
   imports: [
     BrowserModule,

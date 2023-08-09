@@ -11,6 +11,7 @@ import { TelemetryService } from 'src/app/services/telemetry.service';
   styleUrls: ['./container.component.css']
 })
 export class ContainerComponent {
+  @Input() volumeNames: string[] = [];
   @Input() cancelable: boolean = false;
   @Output() canceled = new EventEmitter<void>();
   @Output() created = new EventEmitter<Container>();
@@ -33,6 +34,7 @@ export class ContainerComponent {
       memoryLimit: new FormControl("", null, [this.devstate.isQuantity()]),
       cpuRequest: new FormControl("", null, [this.devstate.isQuantity()]),
       cpuLimit: new FormControl("", null, [this.devstate.isQuantity()]),
+      volumeMounts: new FormControl([]),
     })
   }
 
