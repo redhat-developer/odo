@@ -13,7 +13,10 @@
         </mat-form-field>
         <app-multi-text formControlName="command" title="Command" label="Command" addLabel="Add command"></app-multi-text>
         <app-multi-text formControlName="args" title="Arguments to command" label="Arg" addLabel="Add arg"></app-multi-text>
-        <app-volume-mounts [volumes]="volumeNames" formControlName="volumeMounts"></app-volume-mounts>
+        <app-volume-mounts
+            [volumes]="volumeNames"
+            formControlName="volumeMounts"
+            (createNewVolume)="onCreateNewVolume($event)"></app-volume-mounts>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Memory Request</span></mat-label>
             <mat-error>{{quantityErrMsgMemory}}</mat-error>

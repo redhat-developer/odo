@@ -1,18 +1,26 @@
 <h3>Volume Mounts</h3>
 <div class="group">
     <div *ngFor="let vm of volumeMounts; let i=index">
-        <mat-form-field appearance="fill">
-            <mat-select data-cy="volume-mount-name" [value]="vm.name" (selectionChange)="onNameChange(i, $event.value)">
+        <mat-form-field class="inline" appearance="outline">
+            <mat-label><span>Volume</span></mat-label>
+            <mat-select [attr.data-cy]="'volume-mount-name-'+i" [value]="vm.name" (selectionChange)="onNameChange(i, $event.value)">
                 <mat-option *ngFor="let volume of volumes" [value]="volume">{{volume}}</mat-option>
+                <mat-option value="!">(New Volume)</mat-option>
             </mat-select>
         </mat-form-field>
         <mat-form-field class="inline" appearance="outline">
             <mat-label><span>Mount Path</span></mat-label>
-            <input data-cy="volume-mount-path" matInput [value]="vm.path" (change)="onPathChange(i, $event)">
+            <input (input)="onPathChange(i, $event)" [attr.data-cy]="'volume-mount-path-'+i" matInput [value]="vm.path" (change)="onPathChange(i, $event)">
         </mat-form-field>    
+
+        <app-volume
+            *ngIf="showNewVolume[i]"
+            (created)="onNewVolumeCreated(i, $event)"
+        ></app-volume>
     </div>
     <button data-cy="volume-mount-add" *ngIf="volumeMounts.length > 0" mat-icon-button (click)="add()">
         <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
     </button>                
     <button data-cy="volume-mount-add" *ngIf="volumeMounts.length == 0" mat-flat-button (click)="add()">Add Volume Mount</button>
 </div>
+
