@@ -1,6 +1,6 @@
-import { Component, Input } from '@angular/core';
-import { NG_VALUE_ACCESSOR } from '@angular/forms';
-import { VolumeMount } from 'src/app/api-gen';
+import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import { AbstractControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator } from '@angular/forms';
+import { Volume, VolumeMount } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-volume-mounts',
@@ -11,16 +11,25 @@ import { VolumeMount } from 'src/app/api-gen';
       provide: NG_VALUE_ACCESSOR,
       multi: true,
       useExisting: VolumeMountsComponent
-    }
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => VolumeMountsComponent),
+      multi: true,
+  },
   ]
 })
-export class VolumeMountsComponent {
+export class VolumeMountsComponent implements Validator {
 
   @Input() volumes: string[] = [];
   
+  @Output() createNewVolume = new EventEmitter<Volume>();
+
   volumeMounts: VolumeMount[] = [];
+  showNewVolume: boolean[] = [];
 
   onChange = (_: VolumeMount[]) => {};
+  onValidatorChange = () => {};
 
   writeValue(value: any) {
     this.volumeMounts = value;
@@ -44,7 +53,34 @@ export class VolumeMountsComponent {
   }
 
   onNameChange(i: number, name: string) {
-    this.volumeMounts[i].name = name;
-    this.onChange(this.volumeMounts);
+    if (name != "!") {
+      this.volumeMounts[i].name = name;
+      this.onChange(this.volumeMounts);
+    } 
+
+    this.showNewVolume[i] = name == "!";
+  }
+
+  onNewVolumeCreated(i: number, v: Volume) {
+    this.volumes.push(v.name);
+    this.volumeMounts[i].name = v.name;
+    this.createNewVolume.next(v);
+    this.showNewVolume[i] = false;
+    this.onValidatorChange();
+  }
+
+  /* Validator implementation */
+  validate(control: AbstractControl): ValidationErrors | null {
+    for (let i=0; i<this.volumeMounts.length; i++) {
+      const vm = this.volumeMounts[i];
+      if (vm.name == "" || vm.path == "") {
+        return {'internal': true};
+      }
+    }
+    return null;
+  }
+
+  registerOnValidatorChange?(onValidatorChange: () => void): void {
+    this.onValidatorChange = onValidatorChange;
   }
 }

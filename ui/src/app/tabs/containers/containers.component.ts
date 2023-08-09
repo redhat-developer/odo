@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { Container, Volume } from 'src/app/api-gen';
+import { ToCreate } from 'src/app/forms/container/container.component';
 
 @Component({
   selector: 'app-containers',
@@ -56,16 +57,36 @@ export class ContainersComponent implements OnInit {
     }
   }
 
-  onCreated(container: Container) {
-    const result = this.devstate.addContainer(container);
-    result.subscribe({
-      next: value => {
-        this.state.changeDevfileYaml(value);
-      },
-      error: error => {
-        alert(error.error.message);
-      }
-    });      
+  createVolumes(volumes: Volume[], i: number, next: () => any) {
+    if (volumes.length == i) {
+      next();
+      return;
+    }
+    const res = this.devstate.addVolume(volumes[i]);
+      res.subscribe({
+        next: value => {
+          this.createVolumes(volumes, i+1, next);
+        },
+        error: error => {
+          alert(error.error.message);
+        }
+      });
+  }
+
+  onCreated(toCreate: ToCreate) {
+    const container = toCreate.container;
+    this.createVolumes(toCreate.volumes, 0, () => {
+      const result = this.devstate.addContainer(container);
+      result.subscribe({
+        next: value => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: error => {
+          alert(error.error.message);
+        }
+      });  
+    });
+
   }
 
   scrollToBottom() {

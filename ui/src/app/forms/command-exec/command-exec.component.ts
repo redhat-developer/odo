@@ -5,6 +5,7 @@ import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
 import { Container, Volume } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
+import { ToCreate } from '../container/container.component';
 
 @Component({
   selector: 'app-command-exec',
@@ -18,6 +19,7 @@ export class CommandExecComponent {
   containerList: string[] = [];
   showNewContainer: boolean = false;
   containerToCreate: Container | null = null;
+  volumesToCreate: Volume[] = [];
   volumeNames: string[] | undefined = [];
 
   constructor(
@@ -43,6 +45,21 @@ export class CommandExecComponent {
     });
   }
 
+  createVolumes(volumes: Volume[], i: number, next: () => any) {
+    if (volumes.length == i) {
+      next();
+      return;
+    }
+    const res = this.devstate.addVolume(volumes[i]);
+      res.subscribe({
+        next: value => {
+          this.createVolumes(volumes, i+1, next);
+        },
+        error: error => {
+          alert(error.error.message);
+        }
+      });
+  }
 
   create() {
     this.telemetry.track("[ui] create exec command");
@@ -58,7 +75,8 @@ export class CommandExecComponent {
       });
     }
 
-    if (this.containerToCreate != null && 
+    this.createVolumes(this.volumesToCreate, 0, () => {
+      if (this.containerToCreate != null && 
         this.containerToCreate?.name == this.form.controls["component"].value) {
         const res = this.devstate.addContainer(this.containerToCreate);
         res.subscribe({
@@ -69,9 +87,10 @@ export class CommandExecComponent {
             alert(error.error.message);
           }
         });
-    } else {
-      subcreate();
-    }
+      } else {
+        subcreate();
+      }
+    });
   }
 
   cancel() {
@@ -86,10 +105,12 @@ export class CommandExecComponent {
     this.showNewContainer = v;
   }
 
-  onNewContainerCreated(container: Container) {
+  onNewContainerCreated(toCreate: ToCreate) {
+    const container = toCreate.container;
     this.containerList.push(container.name);
     this.form.controls["component"].setValue(container.name);
     this.showNewContainer = false;
     this.containerToCreate = container;
+    this.volumesToCreate.push(...toCreate.volumes);
   }
 }

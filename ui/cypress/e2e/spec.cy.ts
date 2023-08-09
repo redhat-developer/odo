@@ -51,16 +51,30 @@ describe('devfile editor spec', () => {
     cy.selectTab(TAB_CONTAINERS);
     cy.getByDataCy('container-name').type('created-container');
     cy.getByDataCy('container-image').type('an-image');
+
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path').type("/mnt/vol1");
-    cy.getByDataCy('volume-mount-name').click().get('mat-option').contains('volume1').click();
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
+    cy.getByDataCy('volume-name').type('volume2');
+    cy.getByDataCy('volume-create').click();
+
     cy.getByDataCy('container-create').click();
 
     cy.getByDataCy('container-info').first()
       .should('contain.text', 'created-container')
       .should('contain.text', 'an-image')
       .should('contain.text', 'volume1')
-      .should('contain.text', '/mnt/vol1');
+      .should('contain.text', '/mnt/vol1')
+      .should('contain.text', 'volume2')
+      .should('contain.text', '/mnt/vol2');
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-info').eq(1)
+    .should('contain.text', 'volume2');
   });
 
   it('displays a created image', () => {
@@ -142,9 +156,17 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('select-container').click().get('mat-option').contains('(New Container)').click();
     cy.getByDataCy('container-name').type('a-created-container');
     cy.getByDataCy('container-image').type('an-image');
+    
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path').type("/mnt/vol1");
-    cy.getByDataCy('volume-mount-name').click().get('mat-option').contains('volume1').click();
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
+    cy.getByDataCy('volume-name').type('volume2');
+    cy.getByDataCy('volume-create').click();
+    
     cy.getByDataCy('container-create').click();
 
     cy.getByDataCy('select-container').should('contain', 'a-created-container');
@@ -161,7 +183,13 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'a-created-container')
       .should('contain.text', 'an-image')
       .should('contain.text', 'volume1')
-      .should('contain.text', '/mnt/vol1');
+      .should('contain.text', '/mnt/vol1')
+      .should('contain.text', 'volume2')
+      .should('contain.text', '/mnt/vol2');
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-info').eq(1)
+      .should('contain.text', 'volume2');
   });
 
   it('creates an apply image command with a new image', () => {
