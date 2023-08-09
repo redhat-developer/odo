@@ -1,4 +1,4 @@
-<h3>{{title}}</h3>
+<h3 *ngIf="title">{{title}}</h3>
 <div class="group">
     <span *ngFor="let text of texts; let i=index">
         <mat-form-field class="inline" appearance="outline">
