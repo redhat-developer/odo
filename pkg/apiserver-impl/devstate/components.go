@@ -9,7 +9,24 @@ import (
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
-func (o *DevfileState) AddContainer(name string, image string, command []string, args []string, memRequest string, memLimit string, cpuRequest string, cpuLimit string) (DevfileContent, error) {
+func (o *DevfileState) AddContainer(
+	name string,
+	image string,
+	command []string,
+	args []string,
+	memRequest string,
+	memLimit string,
+	cpuRequest string,
+	cpuLimit string,
+	volumeMounts []VolumeMount,
+) (DevfileContent, error) {
+	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
+	for _, vm := range volumeMounts {
+		v1alpha2VolumeMounts = append(v1alpha2VolumeMounts, v1alpha2.VolumeMount{
+			Name: vm.Name,
+			Path: vm.Path,
+		})
+	}
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -22,6 +39,7 @@ func (o *DevfileState) AddContainer(name string, image string, command []string,
 					MemoryLimit:   memLimit,
 					CpuRequest:    cpuRequest,
 					CpuLimit:      cpuLimit,
+					VolumeMounts:  v1alpha2VolumeMounts,
 				},
 			},
 		},

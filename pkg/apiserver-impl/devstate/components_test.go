@@ -5,18 +5,20 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	openapi "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
 func TestDevfileState_AddContainer(t *testing.T) {
 	type args struct {
-		name       string
-		image      string
-		command    []string
-		args       []string
-		memRequest string
-		memLimit   string
-		cpuRequest string
-		cpuLimit   string
+		name         string
+		image        string
+		command      []string
+		args         []string
+		memRequest   string
+		memLimit     string
+		cpuRequest   string
+		cpuLimit     string
+		volumeMounts []openapi.VolumeMount
 	}
 	tests := []struct {
 		name    string
@@ -39,6 +41,12 @@ func TestDevfileState_AddContainer(t *testing.T) {
 				memLimit:   "2Gi",
 				cpuRequest: "100m",
 				cpuLimit:   "200m",
+				volumeMounts: []openapi.VolumeMount{
+					{
+						Name: "vol1",
+						Path: "/mnt/volume1",
+					},
+				},
 			},
 			want: DevfileContent{
 				Content: `components:
@@ -54,6 +62,9 @@ func TestDevfileState_AddContainer(t *testing.T) {
     image: an-image
     memoryLimit: 2Gi
     memoryRequest: 1Gi
+    volumeMounts:
+    - name: vol1
+      path: /mnt/volume1
   name: a-name
 metadata: {}
 schemaVersion: 2.2.0
@@ -69,6 +80,12 @@ schemaVersion: 2.2.0
 						MemoryLimit:   "2Gi",
 						CpuRequest:    "100m",
 						CpuLimit:      "200m",
+						VolumeMounts: []openapi.VolumeMount{
+							{
+								Name: "vol1",
+								Path: "/mnt/volume1",
+							},
+						},
 					},
 				},
 				Images:    []Image{},
@@ -82,7 +99,7 @@ schemaVersion: 2.2.0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := tt.state()
-			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit)
+			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DevfileState.AddContainer() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -121,6 +138,7 @@ func TestDevfileState_DeleteContainer(t *testing.T) {
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -155,6 +173,7 @@ schemaVersion: 2.2.0
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
