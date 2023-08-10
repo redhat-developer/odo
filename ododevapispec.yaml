@@ -1522,6 +1522,11 @@ components:
       - cpuRequest
       - cpuLimit
       - volumeMounts
+      - annotation
+      - endpoints
+      - env
+      - mountSources
+      - sourceMapping
       properties:
         name:
           type: string
@@ -1547,6 +1552,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VolumeMount'
+        annotation:
+          $ref: '#/components/schemas/Annotation'
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/Endpoint'
+        env:
+          type: array
+          items:
+            $ref: '#/components/schemas/Env'
+        mountSources:
+          type: boolean
+        sourceMapping:
+          type: string
     VolumeMount:
       type: object
       required:
@@ -1556,6 +1575,50 @@ components:
         name:
           type: string
         path:
+          type: string
+    Annotation:
+      type: object
+      required:
+      - deployment
+      - service
+      properties:
+        deployment:
+          type: object
+          additionalProperties:
+            type: string
+        service:
+          type: object
+          additionalProperties:
+            type: string
+    Endpoint:
+      type: object
+      required:
+      - name
+      - targetPort
+      properties:
+        name: 
+          type: string
+        exposure:
+          type: string
+          enum: [public,internal,none]
+        path:
+          type: string
+        protocol:
+          type: string
+          enum: [http,https,ws,wss,tcp,udp]
+        secure:
+          type: boolean
+        targetPort: 
+          type: integer
+    Env:
+      type: object
+      required:
+      - name
+      - value
+      properties:
+        name:
+          type: string
+        value:
           type: string
     Image:
       type: object

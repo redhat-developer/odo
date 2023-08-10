@@ -22,6 +22,7 @@ go/model__devstate_quantity_valid_post_request.go
 go/model__devstate_resource_post_request.go
 go/model__devstate_volume_post_request.go
 go/model__instance_get_200_response.go
+go/model_annotation.go
 go/model_apply_command.go
 go/model_command.go
 go/model_composite_command.go
@@ -29,6 +30,8 @@ go/model_container.go
 go/model_devfile_content.go
 go/model_devfile_put_request.go
 go/model_devstate_devfile_put_request.go
+go/model_endpoint.go
+go/model_env.go
 go/model_events.go
 go/model_exec_command.go
 go/model_general_error.go

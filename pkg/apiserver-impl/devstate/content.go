@@ -171,6 +171,11 @@ func (o *DevfileState) getContainers() ([]Container, error) {
 			CpuRequest:    container.ComponentUnion.Container.CpuRequest,
 			CpuLimit:      container.ComponentUnion.Container.CpuLimit,
 			VolumeMounts:  o.getVolumeMounts(container.Container.Container),
+			Annotation:    o.getAnnotation(container.Container.Annotation),
+			Endpoints:     o.getEndpoints(container.Container.Endpoints),
+			Env:           o.getEnv(container.Container.Env),
+			MountSources:  pointer.BoolDeref(container.Container.MountSources, true),
+			SourceMapping: container.Container.SourceMapping,
 		})
 	}
 	return result, nil
@@ -182,6 +187,42 @@ func (o *DevfileState) getVolumeMounts(container v1alpha2.Container) []VolumeMou
 		result = append(result, VolumeMount{
 			Name: vm.Name,
 			Path: vm.Path,
+		})
+	}
+	return result
+}
+
+func (o *DevfileState) getAnnotation(annotation *v1alpha2.Annotation) Annotation {
+	if annotation == nil {
+		return Annotation{}
+	}
+	return Annotation{
+		Deployment: annotation.Deployment,
+		Service:    annotation.Service,
+	}
+}
+
+func (o *DevfileState) getEndpoints(endpoints []v1alpha2.Endpoint) []Endpoint {
+	result := make([]Endpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		result = append(result, Endpoint{
+			Name:       ep.Name,
+			Exposure:   string(ep.Exposure),
+			Path:       ep.Path,
+			Protocol:   string(ep.Protocol),
+			Secure:     pointer.BoolDeref(ep.Secure, false),
+			TargetPort: int32(ep.TargetPort),
+		})
+	}
+	return result
+}
+
+func (o *DevfileState) getEnv(envs []v1alpha2.EnvVar) []Env {
+	result := make([]Env, 0, len(envs))
+	for _, env := range envs {
+		result = append(result, Env{
+			Name:  env.Name,
+			Value: env.Value,
 		})
 	}
 	return result

@@ -27,6 +27,16 @@ type Container struct {
 	CpuLimit string `json:"cpuLimit"`
 
 	VolumeMounts []VolumeMount `json:"volumeMounts"`
+
+	Annotation Annotation `json:"annotation"`
+
+	Endpoints []Endpoint `json:"endpoints"`
+
+	Env []Env `json:"env"`
+
+	MountSources bool `json:"mountSources"`
+
+	SourceMapping string `json:"sourceMapping"`
 }
 
 // AssertContainerRequired checks if the required fields are not zero-ed
@@ -41,6 +51,11 @@ func AssertContainerRequired(obj Container) error {
 		"cpuRequest":    obj.CpuRequest,
 		"cpuLimit":      obj.CpuLimit,
 		"volumeMounts":  obj.VolumeMounts,
+		"annotation":    obj.Annotation,
+		"endpoints":     obj.Endpoints,
+		"env":           obj.Env,
+		"mountSources":  obj.MountSources,
+		"sourceMapping": obj.SourceMapping,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {
@@ -50,6 +65,19 @@ func AssertContainerRequired(obj Container) error {
 
 	for _, el := range obj.VolumeMounts {
 		if err := AssertVolumeMountRequired(el); err != nil {
+			return err
+		}
+	}
+	if err := AssertAnnotationRequired(obj.Annotation); err != nil {
+		return err
+	}
+	for _, el := range obj.Endpoints {
+		if err := AssertEndpointRequired(el); err != nil {
+			return err
+		}
+	}
+	for _, el := range obj.Env {
+		if err := AssertEnvRequired(el); err != nil {
 			return err
 		}
 	}

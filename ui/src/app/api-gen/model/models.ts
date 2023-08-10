@@ -1,3 +1,4 @@
+export * from './annotation';
 export * from './applyCommand';
 export * from './command';
 export * from './componentCommandPostRequest';
@@ -20,6 +21,8 @@ export * from './devstateImagePostRequest';
 export * from './devstateQuantityValidPostRequest';
 export * from './devstateResourcePostRequest';
 export * from './devstateVolumePostRequest';
+export * from './endpoint';
+export * from './env';
 export * from './events';
 export * from './execCommand';
 export * from './generalError';
