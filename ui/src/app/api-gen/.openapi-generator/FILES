@@ -8,6 +8,7 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/annotation.ts
 model/applyCommand.ts
 model/command.ts
 model/componentCommandPostRequest.ts
@@ -30,6 +31,8 @@ model/devstateImagePostRequest.ts
 model/devstateQuantityValidPostRequest.ts
 model/devstateResourcePostRequest.ts
 model/devstateVolumePostRequest.ts
+model/endpoint.ts
+model/env.ts
 model/events.ts
 model/execCommand.ts
 model/generalError.ts
