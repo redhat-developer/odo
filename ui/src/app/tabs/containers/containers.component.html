@@ -18,6 +18,14 @@
                     <td>Args:</td>
                     <td><code>{{container.args.join(" ")}}</code></td>
                 </tr>
+                <tr *ngIf="container.env">
+                    <td>Environment variables:</td>
+                    <td>
+                        <div *ngFor="let env of container.env">
+                            {{env.name}}: {{env.value}}
+                        </div>
+                    </td>
+                </tr>
                 <tr *ngIf="container.volumeMounts.length > 0">
                     <td>Volume Mounts:</td>
                     <td>
@@ -43,6 +51,47 @@
                 <tr *ngIf="container.cpuLimit != null && container.cpuLimit.length > 0">
                     <td>CPU Limit:</td>
                     <td><code>{{container.cpuLimit}}</code></td>
+                </tr>
+                <tr *ngIf="container.annotation.deployment">
+                    <td>Deployment Annotations:</td>
+                    <td>
+                        <div *ngFor="let anno of container.annotation.deployment | keyvalue">
+                            {{anno.key}}: {{anno.value}}
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="container.annotation.service">
+                    <td>Service Annotations:</td>
+                    <td>
+                        <div *ngFor="let anno of container.annotation.service | keyvalue">
+                            {{anno.key}}: {{anno.value}}
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Mount Sources:</td>
+                    <td><code>{{container.mountSources ? "Yes" : "No"}}</code></td>
+                </tr>
+                <tr *ngIf="container.mountSources && container.sourceMapping">
+                    <td>Mount Sources Into:</td>
+                    <td><code>{{container.sourceMapping}}</code></td>
+                </tr>
+                <tr *ngIf="container.endpoints">
+                    <td>Endpoints:</td>
+                    <td class="container-list">
+                        <mat-card class="endpoint" *ngFor="let ep of container.endpoints">
+                            <mat-card-header>
+                                <mat-card-title>{{ep.name}}</mat-card-title>
+                                <mat-card-subtitle>{{ep.targetPort}}</mat-card-subtitle>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <div>exposure: {{ep.exposure ?? 'public'}}</div>
+                                <div>protocol: {{ep.protocol ?? 'http'}}</div>
+                                <div *ngIf="ep.secure">secure</div>
+                                <div *ngIf="ep.path">path: {{ep.path}}</div>
+                            </mat-card-content>
+                        </mat-card>
+                    </td>
                 </tr>
             </table>
 
