@@ -34,6 +34,8 @@ type Container struct {
 
 	Env []Env `json:"env"`
 
+	ConfigureSources bool `json:"configureSources"`
+
 	MountSources bool `json:"mountSources"`
 
 	SourceMapping string `json:"sourceMapping"`
@@ -42,20 +44,21 @@ type Container struct {
 // AssertContainerRequired checks if the required fields are not zero-ed
 func AssertContainerRequired(obj Container) error {
 	elements := map[string]interface{}{
-		"name":          obj.Name,
-		"image":         obj.Image,
-		"command":       obj.Command,
-		"args":          obj.Args,
-		"memoryRequest": obj.MemoryRequest,
-		"memoryLimit":   obj.MemoryLimit,
-		"cpuRequest":    obj.CpuRequest,
-		"cpuLimit":      obj.CpuLimit,
-		"volumeMounts":  obj.VolumeMounts,
-		"annotation":    obj.Annotation,
-		"endpoints":     obj.Endpoints,
-		"env":           obj.Env,
-		"mountSources":  obj.MountSources,
-		"sourceMapping": obj.SourceMapping,
+		"name":             obj.Name,
+		"image":            obj.Image,
+		"command":          obj.Command,
+		"args":             obj.Args,
+		"memoryRequest":    obj.MemoryRequest,
+		"memoryLimit":      obj.MemoryLimit,
+		"cpuRequest":       obj.CpuRequest,
+		"cpuLimit":         obj.CpuLimit,
+		"volumeMounts":     obj.VolumeMounts,
+		"annotation":       obj.Annotation,
+		"endpoints":        obj.Endpoints,
+		"env":              obj.Env,
+		"configureSources": obj.ConfigureSources,
+		"mountSources":     obj.MountSources,
+		"sourceMapping":    obj.SourceMapping,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {

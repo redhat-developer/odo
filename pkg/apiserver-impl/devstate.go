@@ -20,6 +20,9 @@ func (s *DevstateApiService) DevstateContainerPost(ctx context.Context, containe
 		container.CpuReq,
 		container.CpuLimit,
 		container.VolumeMounts,
+		container.ConfigureSources,
+		container.MountSources,
+		container.SourceMapping,
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{

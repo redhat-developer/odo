@@ -162,20 +162,21 @@ func (o *DevfileState) getContainers() ([]Container, error) {
 	result := make([]Container, 0, len(containers))
 	for _, container := range containers {
 		result = append(result, Container{
-			Name:          container.Name,
-			Image:         container.ComponentUnion.Container.Image,
-			Command:       container.ComponentUnion.Container.Command,
-			Args:          container.ComponentUnion.Container.Args,
-			MemoryRequest: container.ComponentUnion.Container.MemoryRequest,
-			MemoryLimit:   container.ComponentUnion.Container.MemoryLimit,
-			CpuRequest:    container.ComponentUnion.Container.CpuRequest,
-			CpuLimit:      container.ComponentUnion.Container.CpuLimit,
-			VolumeMounts:  o.getVolumeMounts(container.Container.Container),
-			Annotation:    o.getAnnotation(container.Container.Annotation),
-			Endpoints:     o.getEndpoints(container.Container.Endpoints),
-			Env:           o.getEnv(container.Container.Env),
-			MountSources:  pointer.BoolDeref(container.Container.MountSources, true),
-			SourceMapping: container.Container.SourceMapping,
+			Name:             container.Name,
+			Image:            container.ComponentUnion.Container.Image,
+			Command:          container.ComponentUnion.Container.Command,
+			Args:             container.ComponentUnion.Container.Args,
+			MemoryRequest:    container.ComponentUnion.Container.MemoryRequest,
+			MemoryLimit:      container.ComponentUnion.Container.MemoryLimit,
+			CpuRequest:       container.ComponentUnion.Container.CpuRequest,
+			CpuLimit:         container.ComponentUnion.Container.CpuLimit,
+			VolumeMounts:     o.getVolumeMounts(container.Container.Container),
+			Annotation:       o.getAnnotation(container.Container.Annotation),
+			Endpoints:        o.getEndpoints(container.Container.Endpoints),
+			Env:              o.getEnv(container.Container.Env),
+			ConfigureSources: container.Container.MountSources != nil,
+			MountSources:     pointer.BoolDeref(container.Container.MountSources, true), // TODO(feloy) default value will depend on dedicatedPod
+			SourceMapping:    container.Container.SourceMapping,
 		})
 	}
 	return result, nil
