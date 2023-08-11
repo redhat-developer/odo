@@ -37,12 +37,41 @@ export class ContainerComponent {
       image: new FormControl("", [Validators.required]),
       command: new FormControl([]),
       args: new FormControl([]),
+      volumeMounts: new FormControl([]),
       memoryRequest: new FormControl("", null, [this.devstate.isQuantity()]),
       memoryLimit: new FormControl("", null, [this.devstate.isQuantity()]),
       cpuRequest: new FormControl("", null, [this.devstate.isQuantity()]),
       cpuLimit: new FormControl("", null, [this.devstate.isQuantity()]),
-      volumeMounts: new FormControl([]),
-    })
+      configureSources: new FormControl(false),
+      mountSources: new FormControl(true),
+      _specificDir: new FormControl(false),
+      sourceMapping: new FormControl(""),
+    });
+
+    this.form.valueChanges.subscribe((value: any) => {
+      this.updateSourceFields(value);
+    });
+    this.updateSourceFields(this.form.value);
+  }
+
+  updateSourceFields(value: any) {
+    const sourceMappingEnabled = value.mountSources && value._specificDir;
+    if (!sourceMappingEnabled && !this.form.get('sourceMapping')?.disabled) {
+      this.form.get('sourceMapping')?.disable();
+      this.form.get('sourceMapping')?.setValue('');
+      this.form.get('_specificDir')?.setValue(false);
+    }       
+    if (sourceMappingEnabled && !this.form.get('sourceMapping')?.enabled ) {
+      this.form.get('sourceMapping')?.enable();
+    }
+
+    const specificDirEnabled = value.mountSources;
+    if (!specificDirEnabled && !this.form.get('_specificDir')?.disabled) {
+      this.form.get('_specificDir')?.disable();
+    }       
+    if (specificDirEnabled && !this.form.get('_specificDir')?.enabled ) {
+      this.form.get('_specificDir')?.enable();
+    }
   }
 
   create() {

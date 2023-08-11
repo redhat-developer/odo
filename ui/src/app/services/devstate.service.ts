@@ -24,6 +24,9 @@ export class DevstateService {
       cpuReq: container.cpuRequest,
       cpuLimit: container.cpuLimit,
       volumeMounts: container.volumeMounts,
+      configureSources: container.configureSources,
+      mountSources: container.mountSources,
+      sourceMapping: container.sourceMapping,
     });
   }
 
