@@ -15,6 +15,7 @@ func (s *DevstateApiService) DevstateContainerPost(ctx context.Context, containe
 		container.Image,
 		container.Command,
 		container.Args,
+		container.Env,
 		container.MemReq,
 		container.MemLimit,
 		container.CpuReq,

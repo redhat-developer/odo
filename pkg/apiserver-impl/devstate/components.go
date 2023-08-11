@@ -14,6 +14,7 @@ func (o *DevfileState) AddContainer(
 	image string,
 	command []string,
 	args []string,
+	envs []Env,
 	memRequest string,
 	memLimit string,
 	cpuRequest string,
@@ -31,6 +32,13 @@ func (o *DevfileState) AddContainer(
 		})
 	}
 
+	v1alpha2Envs := make([]v1alpha2.EnvVar, 0, len(envs))
+	for _, env := range envs {
+		v1alpha2Envs = append(v1alpha2Envs, v1alpha2.EnvVar{
+			Name:  env.Name,
+			Value: env.Value,
+		})
+	}
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -39,6 +47,7 @@ func (o *DevfileState) AddContainer(
 					Image:         image,
 					Command:       command,
 					Args:          args,
+					Env:           v1alpha2Envs,
 					MemoryRequest: memRequest,
 					MemoryLimit:   memLimit,
 					CpuRequest:    cpuRequest,

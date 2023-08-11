@@ -23,6 +23,9 @@ type DevstateContainerPostRequest struct {
 	// Args passed to the Container entrypoint
 	Args []string `json:"args,omitempty"`
 
+	// Environment variables to define
+	Env []Env `json:"env,omitempty"`
+
 	// Requested memory for the deployed container
 	MemReq string `json:"memReq,omitempty"`
 
@@ -60,6 +63,11 @@ func AssertDevstateContainerPostRequestRequired(obj DevstateContainerPostRequest
 		}
 	}
 
+	for _, el := range obj.Env {
+		if err := AssertEnvRequired(el); err != nil {
+			return err
+		}
+	}
 	for _, el := range obj.VolumeMounts {
 		if err := AssertVolumeMountRequired(el); err != nil {
 			return err

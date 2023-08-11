@@ -14,6 +14,10 @@
         <h3>Command and Arguments</h3>
         <app-multi-text formControlName="command" label="Command" addLabel="Add command"></app-multi-text>
         <app-multi-text formControlName="args" label="Arg" addLabel="Add arg"></app-multi-text>
+
+        <h3>Environment Variables</h3>
+        <app-multi-key-value dataCyPrefix="container-env" addLabel="Add Environment Variable" formControlName="env"></app-multi-key-value>
+
         <app-volume-mounts
             [volumes]="volumeNames"
             formControlName="volumeMounts"
