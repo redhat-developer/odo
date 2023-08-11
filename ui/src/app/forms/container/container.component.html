@@ -40,6 +40,19 @@
             <mat-error>{{quantityErrMsgCPU}}</mat-error>
             <input placeholder="CPU limit for the container. Ex: 1" data-cy="container-cpu-limit" matInput formControlName="cpuLimit">
         </mat-form-field>
+
+        <h3>Sources</h3>
+        <div><mat-checkbox formControlName="configureSources">Configure Source mount</mat-checkbox></div>
+        <div *ngIf="form.get('configureSources')?.value" class="source-configuration-details">
+            <div style="display: inline-flex" class="mid-width">
+                <mat-checkbox formControlName="mountSources">Mount sources into container</mat-checkbox>
+                <mat-checkbox matTooltip="${PROJECTS_ROOT} or /projects by default" formControlName="_specificDir">Into specific directory</mat-checkbox>
+            </div>
+            <mat-form-field appearance="outline" class="mid-width">
+                <mat-label><span>Mount sources into</span></mat-label>
+                <input placeholder="Container's directory on which to mount sources" data-cy="container-source-mapping" matInput formControlName="sourceMapping">
+            </mat-form-field>
+        </div>
     </form>
 
     <button data-cy="container-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new container" (click)="create()">Create</button>
