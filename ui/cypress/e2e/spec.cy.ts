@@ -39,7 +39,7 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'with arg');
   });
 
-  it('displays a created container', () => {
+  it('displays a created container without source configuration', () => {
     cy.init();
 
     cy.selectTab(TAB_VOLUMES);
@@ -70,7 +70,51 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'volume1')
       .should('contain.text', '/mnt/vol1')
       .should('contain.text', 'volume2')
-      .should('contain.text', '/mnt/vol2');
+      .should('contain.text', '/mnt/vol2')
+      .should('not.contain.text', 'Mount Sources');
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-info').eq(1)
+    .should('contain.text', 'volume2');
+  });
+
+  it('displays a created container with source configuration', () => {
+    cy.init();
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-name').type('volume1');
+    cy.getByDataCy('volume-size').type('512Mi');
+    cy.getByDataCy('volume-ephemeral').click();
+    cy.getByDataCy('volume-create').click();
+
+    cy.selectTab(TAB_CONTAINERS);
+    cy.getByDataCy('container-name').type('created-container');
+    cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-sources-configuration').click();
+    cy.getByDataCy('container-sources-specific-directory').click();
+    cy.getByDataCy('container-source-mapping').type('/mnt/sources');
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
+    cy.getByDataCy('volume-name').type('volume2');
+    cy.getByDataCy('volume-create').click();
+
+    cy.getByDataCy('container-create').click();
+
+    cy.getByDataCy('container-info').first()
+      .should('contain.text', 'created-container')
+      .should('contain.text', 'an-image')
+      .should('contain.text', 'volume1')
+      .should('contain.text', '/mnt/vol1')
+      .should('contain.text', 'volume2')
+      .should('contain.text', '/mnt/vol2')
+      .should('contain.text', 'Mount Sources')
+      .should('contain.text', '/mnt/sources');
 
     cy.selectTab(TAB_VOLUMES);
     cy.getByDataCy('volume-info').eq(1)
