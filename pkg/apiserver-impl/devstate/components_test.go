@@ -14,6 +14,7 @@ func TestDevfileState_AddContainer(t *testing.T) {
 		image            string
 		command          []string
 		args             []string
+		envs             []Env
 		memRequest       string
 		memLimit         string
 		cpuRequest       string
@@ -181,7 +182,7 @@ schemaVersion: 2.2.0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := tt.state()
-			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts, tt.args.configureSources, tt.args.mountSources, tt.args.sourceMapping)
+			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.envs, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts, tt.args.configureSources, tt.args.mountSources, tt.args.sourceMapping)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DevfileState.AddContainer() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -216,6 +217,7 @@ func TestDevfileState_DeleteContainer(t *testing.T) {
 					"an-image",
 					[]string{"run", "command"},
 					[]string{"arg1", "arg2"},
+					nil,
 					"1Gi",
 					"2Gi",
 					"100m",
@@ -254,6 +256,7 @@ schemaVersion: 2.2.0
 					"an-image",
 					[]string{"run", "command"},
 					[]string{"arg1", "arg2"},
+					nil,
 					"1Gi",
 					"2Gi",
 					"100m",

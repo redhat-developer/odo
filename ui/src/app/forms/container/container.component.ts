@@ -37,6 +37,7 @@ export class ContainerComponent {
       image: new FormControl("", [Validators.required]),
       command: new FormControl([]),
       args: new FormControl([]),
+      env: new FormControl([]),
       volumeMounts: new FormControl([]),
       memoryRequest: new FormControl("", null, [this.devstate.isQuantity()]),
       memoryLimit: new FormControl("", null, [this.devstate.isQuantity()]),

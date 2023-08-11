@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 import { VolumeMount } from './volumeMount';
+import { Env } from './env';
 
 
 export interface DevstateContainerPostRequest { 
@@ -29,6 +30,10 @@ export interface DevstateContainerPostRequest {
      * Args passed to the Container entrypoint
      */
     args?: Array<string>;
+    /**
+     * Environment variables to define
+     */
+    env?: Array<Env>;
     /**
      * Requested memory for the deployed container
      */

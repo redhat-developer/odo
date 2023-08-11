@@ -534,6 +534,11 @@ paths:
                   items: {
                         type: string
                   }
+                env: 
+                  description: Environment variables to define
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Env'
                 memReq: 
                   description: Requested memory for the deployed container
                   type: string

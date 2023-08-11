@@ -12,7 +12,6 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       useExisting: MultiTextComponent
     }
   ]
-
 })
 export class MultiTextComponent implements ControlValueAccessor {
 

@@ -19,6 +19,7 @@ export class DevstateService {
       image: container.image,
       command: container.command,
       args: container.args,
+      env: container.env,
       memReq: container.memoryRequest,
       memLimit: container.memoryLimit,
       cpuReq: container.cpuRequest,

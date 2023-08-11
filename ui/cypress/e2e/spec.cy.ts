@@ -51,6 +51,15 @@ describe('devfile editor spec', () => {
     cy.selectTab(TAB_CONTAINERS);
     cy.getByDataCy('container-name').type('created-container');
     cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-env-add').click();
+    cy.getByDataCy('container-env-name-0').type("VAR1");
+    cy.getByDataCy('container-env-value-0').type("val1");
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-1').type("VAR2");
+    cy.getByDataCy('container-env-value-1').type("val2");
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-2').type("VAR3");
+    cy.getByDataCy('container-env-value-2').type("val3");
 
     cy.getByDataCy('volume-mount-add').click();
     cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
@@ -67,6 +76,9 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('container-info').first()
       .should('contain.text', 'created-container')
       .should('contain.text', 'an-image')
+      .should('contain.text', 'VAR1: val1')
+      .should('contain.text', 'VAR2: val2')
+      .should('contain.text', 'VAR3: val3')
       .should('contain.text', 'volume1')
       .should('contain.text', '/mnt/vol1')
       .should('contain.text', 'volume2')
