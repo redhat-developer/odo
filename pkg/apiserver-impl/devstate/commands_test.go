@@ -38,6 +38,9 @@ func TestDevfileState_AddExecCommand(t *testing.T) {
 					"100m",
 					"200m",
 					nil,
+					true,
+					true,
+					"",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -72,6 +75,7 @@ components:
     image: an-image
     memoryLimit: 2Gi
     memoryRequest: 1Gi
+    mountSources: true
   name: a-container
 metadata: {}
 schemaVersion: 2.2.0
@@ -90,18 +94,19 @@ schemaVersion: 2.2.0
 				},
 				Containers: []Container{
 					{
-						Name:          "a-container",
-						Image:         "an-image",
-						Command:       []string{"run", "command"},
-						Args:          []string{"arg1", "arg2"},
-						MemoryRequest: "1Gi",
-						MemoryLimit:   "2Gi",
-						CpuRequest:    "100m",
-						CpuLimit:      "200m",
-						VolumeMounts:  []openapi.VolumeMount{},
-						Endpoints:     []openapi.Endpoint{},
-						Env:           []openapi.Env{},
-						MountSources:  true,
+						Name:             "a-container",
+						Image:            "an-image",
+						Command:          []string{"run", "command"},
+						Args:             []string{"arg1", "arg2"},
+						MemoryRequest:    "1Gi",
+						MemoryLimit:      "2Gi",
+						CpuRequest:       "100m",
+						CpuLimit:         "200m",
+						VolumeMounts:     []openapi.VolumeMount{},
+						Endpoints:        []openapi.Endpoint{},
+						Env:              []openapi.Env{},
+						ConfigureSources: true,
+						MountSources:     true,
 					},
 				},
 				Images:    []Image{},
@@ -244,6 +249,9 @@ func TestDevfileState_AddCompositeCommand(t *testing.T) {
 					"100m",
 					"200m",
 					nil,
+					true,
+					true,
+					"",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -291,6 +299,7 @@ components:
     image: an-image
     memoryLimit: 2Gi
     memoryRequest: 1Gi
+    mountSources: true
   name: a-container
 metadata: {}
 schemaVersion: 2.2.0
@@ -314,18 +323,19 @@ schemaVersion: 2.2.0
 				},
 				Containers: []Container{
 					{
-						Name:          "a-container",
-						Image:         "an-image",
-						Command:       []string{"run", "command"},
-						Args:          []string{"arg1", "arg2"},
-						MemoryRequest: "1Gi",
-						MemoryLimit:   "2Gi",
-						CpuRequest:    "100m",
-						CpuLimit:      "200m",
-						VolumeMounts:  []openapi.VolumeMount{},
-						Endpoints:     []openapi.Endpoint{},
-						Env:           []openapi.Env{},
-						MountSources:  true,
+						Name:             "a-container",
+						Image:            "an-image",
+						Command:          []string{"run", "command"},
+						Args:             []string{"arg1", "arg2"},
+						MemoryRequest:    "1Gi",
+						MemoryLimit:      "2Gi",
+						CpuRequest:       "100m",
+						CpuLimit:         "200m",
+						VolumeMounts:     []openapi.VolumeMount{},
+						Endpoints:        []openapi.Endpoint{},
+						Env:              []openapi.Env{},
+						ConfigureSources: true,
+						MountSources:     true,
 					},
 				},
 				Images:    []Image{},
@@ -379,6 +389,9 @@ func TestDevfileState_DeleteCommand(t *testing.T) {
 					"100m",
 					"200m",
 					nil,
+					true,
+					true,
+					"",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -412,6 +425,7 @@ func TestDevfileState_DeleteCommand(t *testing.T) {
     image: an-image
     memoryLimit: 2Gi
     memoryRequest: 1Gi
+    mountSources: true
   name: a-container
 metadata: {}
 schemaVersion: 2.2.0
@@ -419,18 +433,19 @@ schemaVersion: 2.2.0
 				Commands: []Command{},
 				Containers: []Container{
 					{
-						Name:          "a-container",
-						Image:         "an-image",
-						Command:       []string{"run", "command"},
-						Args:          []string{"arg1", "arg2"},
-						MemoryRequest: "1Gi",
-						MemoryLimit:   "2Gi",
-						CpuRequest:    "100m",
-						CpuLimit:      "200m",
-						VolumeMounts:  []openapi.VolumeMount{},
-						Endpoints:     []openapi.Endpoint{},
-						Env:           []openapi.Env{},
-						MountSources:  true,
+						Name:             "a-container",
+						Image:            "an-image",
+						Command:          []string{"run", "command"},
+						Args:             []string{"arg1", "arg2"},
+						MemoryRequest:    "1Gi",
+						MemoryLimit:      "2Gi",
+						CpuRequest:       "100m",
+						CpuLimit:         "200m",
+						VolumeMounts:     []openapi.VolumeMount{},
+						Endpoints:        []openapi.Endpoint{},
+						Env:              []openapi.Env{},
+						ConfigureSources: true,
+						MountSources:     true,
 					},
 				},
 				Images:    []Image{},

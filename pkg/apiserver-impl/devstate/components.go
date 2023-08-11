@@ -19,6 +19,9 @@ func (o *DevfileState) AddContainer(
 	cpuRequest string,
 	cpuLimit string,
 	volumeMounts []VolumeMount,
+	configureSources bool,
+	mountSources bool,
+	sourceMapping string,
 ) (DevfileContent, error) {
 	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
 	for _, vm := range volumeMounts {
@@ -27,6 +30,7 @@ func (o *DevfileState) AddContainer(
 			Path: vm.Path,
 		})
 	}
+
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -43,6 +47,10 @@ func (o *DevfileState) AddContainer(
 				},
 			},
 		},
+	}
+	if configureSources {
+		container.Container.MountSources = &mountSources
+		container.Container.SourceMapping = sourceMapping
 	}
 	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
 	if err != nil {

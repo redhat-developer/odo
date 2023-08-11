@@ -16,11 +16,11 @@ export interface DevstateContainerPostRequest {
     /**
      * Name of the container
      */
-    name?: string;
+    name: string;
     /**
      * Container image
      */
-    image?: string;
+    image: string;
     /**
      * Entrypoint of the container
      */
@@ -49,5 +49,17 @@ export interface DevstateContainerPostRequest {
      * Volume to mount into the container filesystem
      */
     volumeMounts?: Array<VolumeMount>;
+    /**
+     * If false, mountSources and sourceMapping values are not considered
+     */
+    configureSources?: boolean;
+    /**
+     * If true, sources are mounted into container\'s filesystem
+     */
+    mountSources?: boolean;
+    /**
+     * Specific directory on which to mount sources
+     */
+    sourceMapping?: string;
 }
 

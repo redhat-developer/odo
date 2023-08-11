@@ -28,6 +28,7 @@ export interface Container {
     annotation: Annotation;
     endpoints: Array<Endpoint>;
     env: Array<Env>;
+    configureSources: boolean;
     mountSources: boolean;
     sourceMapping: string;
 }

@@ -512,6 +512,9 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+              - name
+              - image
               properties:
                 name:
                   description: Name of the container
@@ -548,6 +551,15 @@ paths:
                   type: array
                   items:
                     $ref: '#/components/schemas/VolumeMount'
+                configureSources:
+                  description: If false, mountSources and sourceMapping values are not considered
+                  type: boolean                
+                mountSources:
+                  description: If true, sources are mounted into container's filesystem
+                  type: boolean
+                sourceMapping:
+                  description: Specific directory on which to mount sources
+                  type: string
       responses:
         '200':
           description: container was successfully added to the devfile
@@ -1525,6 +1537,7 @@ components:
       - annotation
       - endpoints
       - env
+      - configureSources
       - mountSources
       - sourceMapping
       properties:
@@ -1562,6 +1575,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Env'
+        configureSources:
+          type: boolean
         mountSources:
           type: boolean
         sourceMapping:
