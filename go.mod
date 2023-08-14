@@ -41,7 +41,7 @@ require (
 	github.com/posener/complete v1.2.3
 	github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
-	github.com/securego/gosec/v2 v2.15.0
+	github.com/securego/gosec/v2 v2.16.0
 	github.com/segmentio/backo-go v1.0.1
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/afero v1.6.0
@@ -128,7 +128,7 @@ require (
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gookit/color v1.5.2 // indirect
+	github.com/gookit/color v1.5.3 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
