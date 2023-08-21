@@ -22,7 +22,7 @@
     "@segment/snippet": "^4.16.2",
     "@svgr/webpack": "^8.0.1",
     "browserslist": "^4.21.9",
-    "clsx": "^1.1.1",
+    "clsx": "^2.0.0",
     "css-what": "^6.1.0",
     "docusaurus-odo-plugin-segment": "file:docusaurus-odo-plugin-segment",
     "file-loader": "^6.2.0",
