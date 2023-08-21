@@ -9,6 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { VolumeMount } from './volumeMount';
 
 
 export interface DevstateContainerPostRequest { 
@@ -44,5 +45,9 @@ export interface DevstateContainerPostRequest {
      * CPU limit for the deployed container
      */
     cpuLimit?: string;
+    /**
+     * Volume to mount into the container filesystem
+     */
+    volumeMounts?: Array<VolumeMount>;
 }
 

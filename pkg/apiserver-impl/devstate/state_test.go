@@ -75,6 +75,7 @@ schemaVersion: 2.2.0
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Metadata: Metadata{
 					Name:              "a-name",
 					Version:           "v1.1.1",

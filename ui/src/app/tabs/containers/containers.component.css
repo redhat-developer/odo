@@ -1,3 +1,16 @@
 .main { padding: 16px; }
 mat-card { margin-bottom: 16px; }
 mat-card-content { padding: 16px; }
+.volume-mount {
+    margin-top: 4px;
+}
+.volume-mount > mat-chip {
+    top: -11px;
+}
+.volume-mount > span.path {
+    position: relative;
+    top: -14px;
+}
+table.aligned > tr > td {
+    vertical-align: top;
+}

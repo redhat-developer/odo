@@ -9,18 +9,10 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-import { VolumeMount } from './volumeMount';
 
 
-export interface Container { 
+export interface VolumeMount { 
     name: string;
-    image: string;
-    command: Array<string>;
-    args: Array<string>;
-    memoryRequest: string;
-    memoryLimit: string;
-    cpuRequest: string;
-    cpuLimit: string;
-    volumeMounts: Array<VolumeMount>;
+    path: string;
 }
 

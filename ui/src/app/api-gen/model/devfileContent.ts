@@ -12,6 +12,7 @@
 import { Container } from './container';
 import { Command } from './command';
 import { Events } from './events';
+import { Volume } from './volume';
 import { Metadata } from './metadata';
 import { Resource } from './resource';
 import { Image } from './image';
@@ -23,6 +24,7 @@ export interface DevfileContent {
     containers: Array<Container>;
     images: Array<Image>;
     resources: Array<Resource>;
+    volumes: Array<Volume>;
     events: Events;
     metadata: Metadata;
 }

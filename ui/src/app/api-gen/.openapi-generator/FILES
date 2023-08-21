@@ -29,6 +29,7 @@ model/devstateExecCommandPostRequest.ts
 model/devstateImagePostRequest.ts
 model/devstateQuantityValidPostRequest.ts
 model/devstateResourcePostRequest.ts
+model/devstateVolumePostRequest.ts
 model/events.ts
 model/execCommand.ts
 model/generalError.ts
@@ -41,5 +42,7 @@ model/metadataRequest.ts
 model/models.ts
 model/resource.ts
 model/telemetryResponse.ts
+model/volume.ts
+model/volumeMount.ts
 param.ts
 variables.ts
