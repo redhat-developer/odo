@@ -86,6 +86,17 @@ github.com/blang/semver
 # github.com/blang/semver/v4 v4.0.0
 ## explicit; go 1.14
 github.com/blang/semver/v4
+# github.com/ccojocar/zxcvbn-go v1.0.1
+## explicit; go 1.20
+github.com/ccojocar/zxcvbn-go
+github.com/ccojocar/zxcvbn-go/adjacency
+github.com/ccojocar/zxcvbn-go/data
+github.com/ccojocar/zxcvbn-go/entropy
+github.com/ccojocar/zxcvbn-go/frequency
+github.com/ccojocar/zxcvbn-go/match
+github.com/ccojocar/zxcvbn-go/matching
+github.com/ccojocar/zxcvbn-go/scoring
+github.com/ccojocar/zxcvbn-go/utils/math
 # github.com/cespare/xxhash/v2 v2.2.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
@@ -437,8 +448,8 @@ github.com/google/shlex
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid
-# github.com/gookit/color v1.5.2
-## explicit; go 1.16
+# github.com/gookit/color v1.5.4
+## explicit; go 1.18
 github.com/gookit/color
 # github.com/gorilla/mux v1.8.0
 ## explicit; go 1.12
@@ -572,17 +583,6 @@ github.com/morikuni/aec
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354
-## explicit; go 1.14
-github.com/nbutton23/zxcvbn-go
-github.com/nbutton23/zxcvbn-go/adjacency
-github.com/nbutton23/zxcvbn-go/data
-github.com/nbutton23/zxcvbn-go/entropy
-github.com/nbutton23/zxcvbn-go/frequency
-github.com/nbutton23/zxcvbn-go/match
-github.com/nbutton23/zxcvbn-go/matching
-github.com/nbutton23/zxcvbn-go/scoring
-github.com/nbutton23/zxcvbn-go/utils/math
 # github.com/olekukonko/tablewriter v0.0.5
 ## explicit; go 1.12
 github.com/olekukonko/tablewriter
@@ -615,7 +615,7 @@ github.com/onsi/ginkgo/v2/internal/parallel_support
 github.com/onsi/ginkgo/v2/internal/testingtproxy
 github.com/onsi/ginkgo/v2/reporters
 github.com/onsi/ginkgo/v2/types
-# github.com/onsi/gomega v1.27.8
+# github.com/onsi/gomega v1.27.10
 ## explicit; go 1.18
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -769,12 +769,14 @@ github.com/russross/blackfriday
 # github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 ## explicit; go 1.13
 github.com/sabhiram/go-gitignore
-# github.com/securego/gosec/v2 v2.15.0
-## explicit; go 1.19
+# github.com/securego/gosec/v2 v2.17.0
+## explicit; go 1.20
 github.com/securego/gosec/v2
+github.com/securego/gosec/v2/analyzers
 github.com/securego/gosec/v2/cmd/gosec
 github.com/securego/gosec/v2/cmd/vflag
 github.com/securego/gosec/v2/cwe
+github.com/securego/gosec/v2/issue
 github.com/securego/gosec/v2/report
 github.com/securego/gosec/v2/report/csv
 github.com/securego/gosec/v2/report/golint
@@ -869,7 +871,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.10.0
+# golang.org/x/crypto v0.12.0
 ## explicit; go 1.17
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
@@ -887,13 +889,13 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
-# golang.org/x/mod v0.11.0
+# golang.org/x/mod v0.12.0
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.11.0
+# golang.org/x/net v0.14.0
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -914,7 +916,7 @@ golang.org/x/oauth2/internal
 ## explicit; go 1.17
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.10.0
+# golang.org/x/sys v0.11.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -923,10 +925,10 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.9.0
+# golang.org/x/term v0.11.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.10.0
+# golang.org/x/text v0.12.0
 ## explicit; go 1.17
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -954,13 +956,19 @@ golang.org/x/text/width
 # golang.org/x/time v0.3.0
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.10.0
+# golang.org/x/tools v0.12.0
 ## explicit; go 1.18
 golang.org/x/tools/cmd/stringer
+golang.org/x/tools/go/analysis
+golang.org/x/tools/go/analysis/passes/buildssa
+golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/ast/inspector
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/go/packages
+golang.org/x/tools/go/ssa
+golang.org/x/tools/go/types/objectpath
+golang.org/x/tools/go/types/typeutil
 golang.org/x/tools/internal/event
 golang.org/x/tools/internal/event/core
 golang.org/x/tools/internal/event/keys
