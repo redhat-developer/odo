@@ -39,4 +39,7 @@ type Client interface {
 	ListAllComponents() ([]api.ComponentAbstract, error)
 
 	Version(ctx context.Context) (SystemVersionReport, error)
+
+	// GetCapabilities returns the capabilities of the underlying system
+	GetCapabilities() (Capabilities, error)
 }

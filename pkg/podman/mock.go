@@ -97,6 +97,21 @@ func (mr *MockClientMockRecorder) GetAllResourcesFromSelector(selector, ns inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResourcesFromSelector", reflect.TypeOf((*MockClient)(nil).GetAllResourcesFromSelector), selector, ns)
 }
 
+// GetCapabilities mocks base method.
+func (m *MockClient) GetCapabilities() (Capabilities, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapabilities")
+	ret0, _ := ret[0].(Capabilities)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCapabilities indicates an expected call of GetCapabilities.
+func (mr *MockClientMockRecorder) GetCapabilities() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilities", reflect.TypeOf((*MockClient)(nil).GetCapabilities))
+}
+
 // GetPodLogs mocks base method.
 func (m *MockClient) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()

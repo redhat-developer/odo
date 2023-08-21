@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/version"
 
 	corev1 "k8s.io/api/core/v1"
@@ -143,11 +145,12 @@ func Test_createPodFromComponent(t *testing.T) {
 		customAddress        string
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantPod     func(basePod *corev1.Pod) *corev1.Pod
-		wantFwPorts []api.ForwardedPort
-		wantErr     bool
+		name         string
+		capabilities podman.Capabilities
+		args         args
+		wantPod      func(basePod *corev1.Pod) *corev1.Pod
+		wantFwPorts  []api.ForwardedPort
+		wantErr      bool
 	}{
 		{
 			name: "basic component without command / forwardLocalhost=false",
@@ -237,7 +240,10 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + memory limit / forwardLocalhost=false",
+			name: "basic component + memory limit / forwardLocalhost=false, cgroup=v2",
+			capabilities: podman.Capabilities{
+				Cgroupv2: true,
+			},
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -261,7 +267,34 @@ func Test_createPodFromComponent(t *testing.T) {
 			},
 		},
 		{
-			name: "basic component + memory limit / forwardLocalhost=true",
+			name: "basic component + memory limit / forwardLocalhost=false, cgroup=v1",
+			capabilities: podman.Capabilities{
+				Cgroupv2: false,
+			},
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{command})
+					cmp := baseComponent.DeepCopy()
+					cmp.Container.MemoryLimit = "1Gi"
+					_ = data.AddComponents([]v1alpha2.Component{*cmp})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				componentName: devfileName,
+				appName:       appName,
+			},
+			wantPod: func(basePod *corev1.Pod) *corev1.Pod {
+				pod := basePod.DeepCopy()
+				return pod
+			},
+		},
+		{
+			name: "basic component + memory limit / forwardLocalhost=true, cgroup=v2",
+			capabilities: podman.Capabilities{
+				Cgroupv2: true,
+			},
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -1412,7 +1445,13 @@ func Test_createPodFromComponent(t *testing.T) {
 			ctx = odocontext.WithApplication(ctx, tt.args.appName)
 			ctx = odocontext.WithComponentName(ctx, tt.args.componentName)
 			ctx = odocontext.WithWorkingDirectory(ctx, "/tmp/dir")
-			got, gotFwPorts, err := createPodFromComponent(
+			ctrl := gomock.NewController(t)
+			podmanClient := podman.NewMockClient(ctrl)
+			podmanClient.EXPECT().GetCapabilities().Return(tt.capabilities, nil)
+			client := NewDevClient(
+				nil, podmanClient, nil, nil, nil, nil, nil, nil,
+			)
+			got, gotFwPorts, err := client.createPodFromComponent(
 				ctx,
 				tt.args.debug,
 				tt.args.buildCommand,

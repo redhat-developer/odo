@@ -32,7 +32,7 @@ const (
 	portForwardingHelperImage         = "quay.io/devfile/base-developer-image@sha256:27d5ce66a259decb84770ea0d1ce8058a806f39dfcfeed8387f9cf2f29e76480"
 )
 
-func createPodFromComponent(
+func (o *DevClient) createPodFromComponent(
 	ctx context.Context,
 	debug bool,
 	buildCommand string,
@@ -55,6 +55,18 @@ func createPodFromComponent(
 	if err != nil {
 		return nil, nil, err
 	}
+
+	podmanCaps, err := o.podmanClient.GetCapabilities()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !podmanCaps.Cgroupv2 {
+		for i := range podTemplate.Spec.Containers {
+			delete(podTemplate.Spec.Containers[i].Resources.Limits, corev1.ResourceMemory)
+		}
+	}
+
 	containers := podTemplate.Spec.Containers
 	if len(containers) == 0 {
 		return nil, nil, fmt.Errorf("no valid components found in the devfile")
