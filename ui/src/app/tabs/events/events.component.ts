@@ -23,6 +23,21 @@ export class EventsComponent {
   ngOnInit() {
     this.state.state.subscribe(async newContent => {
       this.events = newContent?.events;
+      if (this.events == undefined) {
+        this.events = {};
+      }
+      if (this.events.preStart == undefined) {
+        this.events.preStart = [];
+      }
+      if (this.events.preStop == undefined) {
+        this.events.preStop = [];
+      }
+      if (this.events.postStart == undefined) {
+        this.events.postStart = [];
+      }
+      if (this.events.postStop == undefined) {
+        this.events.postStop = [];
+      }
       this.allCommands = newContent?.commands?.map(c => c.name);
     });
   }

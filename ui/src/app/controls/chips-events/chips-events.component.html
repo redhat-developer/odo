@@ -8,7 +8,7 @@
       </button>
     </mat-chip-row>
   </mat-chip-grid>
-  <input placeholder="New command..." #commandInput [formControl]="commandCtrl"
+  <input data-cy="input" placeholder="New command..." #commandInput [formControl]="commandCtrl"
     [matChipInputFor]="chipGrid" [matAutocomplete]="auto"
     [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
     (matChipInputTokenEnd)="add($event)"/>
