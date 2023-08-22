@@ -18,7 +18,7 @@ It is an implementation of the open [Devfile](https://devfile.io/) standard, sup
 **Why use `odo`?**
 
 * **Easy onboarding:** By auto-detecting the project source code, you can easily get started with `odo`.
-* **No cluster needed:**: With Podman support, having a Kubernetes cluster is not required to get started with `odo`. Using a common abstraction, `odo` can run your application on Podman, Kubernetes or OpenShift.
+* **No cluster needed**: With Podman support, having a Kubernetes cluster is not required to get started with `odo`. Using a common abstraction, `odo` can run your application on Podman, Kubernetes or OpenShift.
 * **Fast:** Spend less time maintaining your application deployment infrastructure and more time coding. Immediately have your application running each time you save.
 * **Standalone:** `odo` is a standalone tool that communicates directly with the container orchestrator API.
 * **No configuration needed:** There is no need to dive into complex Kubernetes YAML configuration files. `odo` abstracts those concepts away and lets you focus on what matters most: code.
