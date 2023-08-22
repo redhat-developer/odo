@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 import { DevstateService } from 'src/app/services/devstate.service';
-import { Container, Volume } from 'src/app/api-gen';
+import { Annotation, Container, Volume } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
 
 export interface ToCreate {
@@ -27,6 +27,7 @@ export class ContainerComponent {
   quantityErrMsgCPU = 'Numeric value, with optional unit m, k, M, G, T, P, E';
 
   volumesToCreate: Volume[] = [];
+  seeMore: boolean = false;
 
   constructor(
     private devstate: DevstateService,
@@ -47,6 +48,8 @@ export class ContainerComponent {
       mountSources: new FormControl(true),
       _specificDir: new FormControl(false),
       sourceMapping: new FormControl(""),
+      deployAnnotations: new FormControl([]),
+      svcAnnotations: new FormControl([]),
     });
 
     this.form.valueChanges.subscribe((value: any) => {
@@ -77,6 +80,16 @@ export class ContainerComponent {
 
   create() {
     this.telemetry.track("[ui] create container");
+
+    const toObject = (o: {name: string, value: string}[]) => {
+      return o.reduce((acc: any, val: {name: string, value: string}) => { acc[val.name] = val.value; return acc; }, {});
+    };
+
+    const container = this.form.value;
+    container.annotation = {
+      deployment: toObject(container.deployAnnotations),
+      service: toObject(container.svcAnnotations),
+    };
     this.created.emit({
       container: this.form.value,
       volumes: this.volumesToCreate,
@@ -89,5 +102,12 @@ export class ContainerComponent {
 
   onCreateNewVolume(v: Volume) {
     this.volumesToCreate.push(v);
+  }
+
+  more() {
+    this.seeMore = true;
+  }
+  less() {
+    this.seeMore = false;
   }
 }

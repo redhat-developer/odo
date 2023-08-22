@@ -16,7 +16,7 @@ import { Volume, VolumeMount } from 'src/app/api-gen';
       provide: NG_VALIDATORS,
       useExisting: forwardRef(() => VolumeMountsComponent),
       multi: true,
-  },
+    },
   ]
 })
 export class VolumeMountsComponent implements Validator {

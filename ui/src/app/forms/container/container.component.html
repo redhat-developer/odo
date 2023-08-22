@@ -12,18 +12,23 @@
             <input placeholder="Image to start the container" data-cy="container-image" matInput formControlName="image">
         </mat-form-field>
         <h3>Command and Arguments</h3>
+        <div class="description">Command and Arguments can be used to override the entrypoint of the image</div>
         <app-multi-text formControlName="command" label="Command" addLabel="Add command"></app-multi-text>
         <app-multi-text formControlName="args" label="Arg" addLabel="Add arg"></app-multi-text>
 
         <h3>Environment Variables</h3>
+        <div class="description">Environment Variables to define in the running container</div>
         <app-multi-key-value dataCyPrefix="container-env" addLabel="Add Environment Variable" formControlName="env"></app-multi-key-value>
 
+        <h3>Volume Mounts</h3>
+        <div class="description">Volumes to mount into the container's filesystem</div>
         <app-volume-mounts
             [volumes]="volumeNames"
             formControlName="volumeMounts"
             (createNewVolume)="onCreateNewVolume($event)"></app-volume-mounts>
         
         <h3>Resource Usage</h3>
+        <div class="description">CPU and Memory resources necessary for container's execution</div>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Memory Request</span></mat-label>
             <mat-error>{{quantityErrMsgMemory}}</mat-error>
@@ -45,20 +50,38 @@
             <input placeholder="CPU limit for the container. Ex: 1" data-cy="container-cpu-limit" matInput formControlName="cpuLimit">
         </mat-form-field>
 
-        <h3>Sources</h3>
-        <div><mat-checkbox data-cy="container-sources-configuration" formControlName="configureSources">Configure Source mount</mat-checkbox></div>
-        <div *ngIf="form.get('configureSources')?.value" class="source-configuration-details">
-            <div style="display: inline-flex" class="mid-width">
-                <mat-checkbox data-cy="container-mount-sources" formControlName="mountSources">Mount sources into container</mat-checkbox>
-                <mat-checkbox data-cy="container-sources-specific-directory" matTooltip="${PROJECTS_ROOT} or /projects by default" formControlName="_specificDir">Into specific directory</mat-checkbox>
+        <div class="outbutton"><button data-cy="container-more-params" *ngIf="!seeMore" mat-flat-button (click)="more()">More parameters...</button></div>
+        
+        <div *ngIf="seeMore">
+
+            <h3>Sources</h3>
+            <div class="description">Declare if and how sources are mounted into the container's filesystem. By default, sources are automatically mounted into $PROJECTS_ROOT or /projects directory</div>
+            <div><mat-checkbox data-cy="container-sources-configuration" formControlName="configureSources">Configure Source mount</mat-checkbox></div>
+            <div *ngIf="form.get('configureSources')?.value" class="source-configuration-details">
+                <div style="display: inline-flex" class="mid-width">
+                    <mat-checkbox data-cy="container-mount-sources" formControlName="mountSources">Mount sources into container</mat-checkbox>
+                    <mat-checkbox data-cy="container-sources-specific-directory" matTooltip="${PROJECTS_ROOT} or /projects by default" formControlName="_specificDir">Into specific directory</mat-checkbox>
+                </div>
+                <mat-form-field appearance="outline" class="mid-width">
+                    <mat-label><span>Mount sources into</span></mat-label>
+                    <input placeholder="Container's directory on which to mount sources" data-cy="container-source-mapping" matInput formControlName="sourceMapping">
+                </mat-form-field>
             </div>
-            <mat-form-field appearance="outline" class="mid-width">
-                <mat-label><span>Mount sources into</span></mat-label>
-                <input placeholder="Container's directory on which to mount sources" data-cy="container-source-mapping" matInput formControlName="sourceMapping">
-            </mat-form-field>
+
+            <h3>Deployment Annotations</h3>
+            <div class="description">Annotations added to the Kubernetes Deployment created for running this container</div>
+            <app-multi-key-value dataCyPrefix="container-deploy-anno" addLabel="Add Annotation" formControlName="deployAnnotations"></app-multi-key-value>
+
+            <h3>Service Annotations</h3>
+            <div class="description">Annotations added to the Kubernetes Service created for accessing this container</div>
+            <app-multi-key-value dataCyPrefix="container-svc-anno" addLabel="Add Annotation" formControlName="svcAnnotations"></app-multi-key-value>
         </div>
+
+        <div class="outbutton"><button data-cy="container-less-params" *ngIf="seeMore" mat-flat-button (click)="less()">Less parameters...</button></div>
     </form>
 
-    <button data-cy="container-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new container" (click)="create()">Create</button>
-    <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>
+    <div class="buttonbar">
+        <button data-cy="container-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new container" (click)="create()">Create</button>
+        <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>    
+    </div>
 </div>

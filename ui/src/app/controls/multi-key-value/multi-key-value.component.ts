@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { NG_VALUE_ACCESSOR } from '@angular/forms';
+import { Component, Input, forwardRef } from '@angular/core';
+import { AbstractControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator, Validators } from '@angular/forms';
 
 interface KeyValue {
   name: string;
@@ -15,15 +15,21 @@ interface KeyValue {
       provide: NG_VALUE_ACCESSOR,
       multi: true,
       useExisting: MultiKeyValueComponent
-    }
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => MultiKeyValueComponent),
+      multi: true,
+    },
   ]
 })
-export class MultiKeyValueComponent {
+export class MultiKeyValueComponent implements Validator {
 
   @Input() dataCyPrefix: string = "";
   @Input() addLabel: string = "";
 
   onChange = (_: KeyValue[]) => {};
+  onValidatorChange = () => {};
 
   entries: KeyValue[] = [];
 
@@ -52,5 +58,20 @@ export class MultiKeyValueComponent {
     const target = e.target as HTMLInputElement;
     this.entries[i].value = target.value;
     this.onChange(this.entries);
+  }
+
+  /* Validator implementation */
+  validate(control: AbstractControl): ValidationErrors | null {
+    for (let i=0; i<this.entries.length; i++) {
+      const entry = this.entries[i];
+      if (entry.name == "" || entry.value == "") {
+        return {'internal': true};
+      }
+    }
+    return null;
+  }
+
+  registerOnValidatorChange?(onValidatorChange: () => void): void {
+    this.onValidatorChange = onValidatorChange;
   }
 }

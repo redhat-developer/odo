@@ -25,6 +25,10 @@ h2:has(+.description) {
     margin-bottom: 0;
 }
 
+h3:has(+.description) {
+    margin-bottom: 0;
+}
+
 .description {
     font-style: italic;
     font-size: smaller;

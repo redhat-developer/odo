@@ -39,7 +39,7 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'with arg');
   });
 
-  it('displays a created container without source configuration', () => {
+  it.only('displays a created container without source configuration', () => {
     cy.init();
 
     cy.selectTab(TAB_VOLUMES);
@@ -71,6 +71,20 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('volume-name').type('volume2');
     cy.getByDataCy('volume-create').click();
 
+    cy.getByDataCy('container-more-params').click();
+    cy.getByDataCy('container-deploy-anno-add').click();
+    cy.getByDataCy('container-deploy-anno-name-0').type("DEPANNO1");
+    cy.getByDataCy('container-deploy-anno-value-0').type("depval1");
+    cy.getByDataCy('container-deploy-anno-plus').click();
+    cy.getByDataCy('container-deploy-anno-name-1').type("DEPANNO2");
+    cy.getByDataCy('container-deploy-anno-value-1').type("depval2");
+    cy.getByDataCy('container-svc-anno-add').click();
+    cy.getByDataCy('container-svc-anno-name-0').type("SVCANNO1");
+    cy.getByDataCy('container-svc-anno-value-0').type("svcval1");
+    cy.getByDataCy('container-svc-anno-plus').click();
+    cy.getByDataCy('container-svc-anno-name-1').type("SVCANNO2");
+    cy.getByDataCy('container-svc-anno-value-1').type("svcval2");
+
     cy.getByDataCy('container-create').click();
 
     cy.getByDataCy('container-info').first()
@@ -82,8 +96,14 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'volume1')
       .should('contain.text', '/mnt/vol1')
       .should('contain.text', 'volume2')
-      .should('contain.text', '/mnt/vol2')
-      .should('not.contain.text', 'Mount Sources');
+      .should('contain.text', '/mnt/vol2')      
+      .should('not.contain.text', 'Mount Sources')
+      .should('contain.text', 'Deployment Annotations')
+      .should('contain.text', 'DEPANNO1: depval1')
+      .should('contain.text', 'DEPANNO2: depval2')
+      .should('contain.text', 'Service Annotations')
+      .should('contain.text', 'SVCANNO1: svcval1')
+      .should('contain.text', 'SVCANNO2: svcval2');
 
     cy.selectTab(TAB_VOLUMES);
     cy.getByDataCy('volume-info').eq(1)
@@ -102,6 +122,7 @@ describe('devfile editor spec', () => {
     cy.selectTab(TAB_CONTAINERS);
     cy.getByDataCy('container-name').type('created-container');
     cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-more-params').click();
     cy.getByDataCy('container-sources-configuration').click();
     cy.getByDataCy('container-sources-specific-directory').click();
     cy.getByDataCy('container-source-mapping').type('/mnt/sources');

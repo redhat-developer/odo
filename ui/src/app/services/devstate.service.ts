@@ -28,6 +28,10 @@ export class DevstateService {
       configureSources: container.configureSources,
       mountSources: container.mountSources,
       sourceMapping: container.sourceMapping,
+      annotation: {
+        deployment: container.annotation.deployment,
+        service: container.annotation.service
+      }
     });
   }
 
