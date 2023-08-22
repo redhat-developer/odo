@@ -49,6 +49,8 @@ type DevstateContainerPostRequest struct {
 
 	// Specific directory on which to mount sources
 	SourceMapping string `json:"sourceMapping,omitempty"`
+
+	Annotation Annotation `json:"annotation,omitempty"`
 }
 
 // AssertDevstateContainerPostRequestRequired checks if the required fields are not zero-ed
@@ -72,6 +74,9 @@ func AssertDevstateContainerPostRequestRequired(obj DevstateContainerPostRequest
 		if err := AssertVolumeMountRequired(el); err != nil {
 			return err
 		}
+	}
+	if err := AssertAnnotationRequired(obj.Annotation); err != nil {
+		return err
 	}
 	return nil
 }

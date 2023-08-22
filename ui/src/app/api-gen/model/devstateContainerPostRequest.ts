@@ -11,6 +11,7 @@
  */
 import { VolumeMount } from './volumeMount';
 import { Env } from './env';
+import { Annotation } from './annotation';
 
 
 export interface DevstateContainerPostRequest { 
@@ -66,5 +67,6 @@ export interface DevstateContainerPostRequest {
      * Specific directory on which to mount sources
      */
     sourceMapping?: string;
+    annotation?: Annotation;
 }
 

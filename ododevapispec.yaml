@@ -565,6 +565,10 @@ paths:
                 sourceMapping:
                   description: Specific directory on which to mount sources
                   type: string
+                annotation:
+                  description: Annotations added to the resources created for this container
+                  $ref: '#/components/schemas/Annotation'
+
       responses:
         '200':
           description: container was successfully added to the devfile
