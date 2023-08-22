@@ -23,6 +23,7 @@ func (o *DevfileState) AddContainer(
 	configureSources bool,
 	mountSources bool,
 	sourceMapping string,
+	annotation Annotation,
 ) (DevfileContent, error) {
 	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
 	for _, vm := range volumeMounts {
@@ -39,6 +40,16 @@ func (o *DevfileState) AddContainer(
 			Value: env.Value,
 		})
 	}
+	var annotations *v1alpha2.Annotation
+	if len(annotation.Deployment) > 0 || len(annotation.Service) > 0 {
+		annotations = &v1alpha2.Annotation{}
+		if len(annotation.Deployment) > 0 {
+			annotations.Deployment = annotation.Deployment
+		}
+		if len(annotation.Service) > 0 {
+			annotations.Service = annotation.Service
+		}
+	}
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -53,6 +64,7 @@ func (o *DevfileState) AddContainer(
 					CpuRequest:    cpuRequest,
 					CpuLimit:      cpuLimit,
 					VolumeMounts:  v1alpha2VolumeMounts,
+					Annotation:    annotations,
 				},
 			},
 		},

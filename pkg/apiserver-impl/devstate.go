@@ -24,6 +24,7 @@ func (s *DevstateApiService) DevstateContainerPost(ctx context.Context, containe
 		container.ConfigureSources,
 		container.MountSources,
 		container.SourceMapping,
+		container.Annotation,
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{

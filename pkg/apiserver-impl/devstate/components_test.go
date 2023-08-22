@@ -23,6 +23,7 @@ func TestDevfileState_AddContainer(t *testing.T) {
 		configureSources bool
 		mountSources     bool
 		sourceMapping    string
+		annotation       Annotation
 	}
 	tests := []struct {
 		name    string
@@ -182,7 +183,7 @@ schemaVersion: 2.2.0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := tt.state()
-			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.envs, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts, tt.args.configureSources, tt.args.mountSources, tt.args.sourceMapping)
+			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.envs, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts, tt.args.configureSources, tt.args.mountSources, tt.args.sourceMapping, tt.args.annotation)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DevfileState.AddContainer() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -226,6 +227,7 @@ func TestDevfileState_DeleteContainer(t *testing.T) {
 					true,
 					false,
 					"",
+					Annotation{},
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -265,6 +267,7 @@ schemaVersion: 2.2.0
 					true,
 					false,
 					"",
+					Annotation{},
 				)
 				if err != nil {
 					t.Fatal(err)
