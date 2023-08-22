@@ -8,8 +8,6 @@
 
 ![logo](/docs/website/static/img/logo_small.png)
 
-----
-
 ### Overview
 
 `odo` is a fast, and iterative CLI tool for container-based application development.
@@ -33,13 +31,9 @@ Learn more about the features provided by `odo` on [odo.dev](https://odo.dev/doc
 
 Please check the [installation guide on odo.dev](https://odo.dev/docs/overview/installation/).
 
-----
-
 ### Official documentation
 
 Visit [odo.dev](https://odo.dev/) to learn more about odo.
-
-----
 
 ### Community, discussion, contribution, and support
 
@@ -67,8 +61,6 @@ We are an open community who welcomes any concerns, changes or ideas for `odo`! 
 All our calls are open to public. You are welcome to join any of our calls.
 
 You can find the exact dates of all scheduled team calls together with sprint dates in the [google calendar](https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com) ([iCal format](https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics)).
-
-----
 
 ### Legal
 
