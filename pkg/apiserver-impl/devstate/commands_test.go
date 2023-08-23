@@ -43,6 +43,7 @@ func TestDevfileState_AddExecCommand(t *testing.T) {
 					true,
 					"",
 					openapi.Annotation{},
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -256,6 +257,7 @@ func TestDevfileState_AddCompositeCommand(t *testing.T) {
 					true,
 					"",
 					openapi.Annotation{},
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -398,6 +400,7 @@ func TestDevfileState_DeleteCommand(t *testing.T) {
 					true,
 					"",
 					openapi.Annotation{},
+					nil,
 				)
 				if err != nil {
 					t.Fatal(err)

@@ -568,6 +568,11 @@ paths:
                 annotation:
                   description: Annotations added to the resources created for this container
                   $ref: '#/components/schemas/Annotation'
+                endpoints:
+                  description: Endpoints exposed by the container
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Endpoint'
 
       responses:
         '200':

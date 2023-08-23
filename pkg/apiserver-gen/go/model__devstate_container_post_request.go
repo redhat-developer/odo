@@ -51,6 +51,9 @@ type DevstateContainerPostRequest struct {
 	SourceMapping string `json:"sourceMapping,omitempty"`
 
 	Annotation Annotation `json:"annotation,omitempty"`
+
+	// Endpoints exposed by the container
+	Endpoints []Endpoint `json:"endpoints,omitempty"`
 }
 
 // AssertDevstateContainerPostRequestRequired checks if the required fields are not zero-ed
@@ -77,6 +80,11 @@ func AssertDevstateContainerPostRequestRequired(obj DevstateContainerPostRequest
 	}
 	if err := AssertAnnotationRequired(obj.Annotation); err != nil {
 		return err
+	}
+	for _, el := range obj.Endpoints {
+		if err := AssertEndpointRequired(el); err != nil {
+			return err
+		}
 	}
 	return nil
 }

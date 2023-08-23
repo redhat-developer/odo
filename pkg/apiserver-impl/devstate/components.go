@@ -24,6 +24,7 @@ func (o *DevfileState) AddContainer(
 	mountSources bool,
 	sourceMapping string,
 	annotation Annotation,
+	endpoints []Endpoint,
 ) (DevfileContent, error) {
 	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
 	for _, vm := range volumeMounts {
@@ -50,6 +51,20 @@ func (o *DevfileState) AddContainer(
 			annotations.Service = annotation.Service
 		}
 	}
+
+	v1alpha2Endpoints := make([]v1alpha2.Endpoint, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpoint := endpoint
+		v1alpha2Endpoints = append(v1alpha2Endpoints, v1alpha2.Endpoint{
+			Name:       endpoint.Name,
+			TargetPort: int(endpoint.TargetPort),
+			Exposure:   v1alpha2.EndpointExposure(endpoint.Exposure),
+			Protocol:   v1alpha2.EndpointProtocol(endpoint.Protocol),
+			Secure:     &endpoint.Secure,
+			Path:       endpoint.Path,
+		})
+	}
+
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -66,6 +81,7 @@ func (o *DevfileState) AddContainer(
 					VolumeMounts:  v1alpha2VolumeMounts,
 					Annotation:    annotations,
 				},
+				Endpoints: v1alpha2Endpoints,
 			},
 		},
 	}

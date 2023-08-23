@@ -9,6 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { Endpoint } from './endpoint';
 import { VolumeMount } from './volumeMount';
 import { Env } from './env';
 import { Annotation } from './annotation';
@@ -68,5 +69,9 @@ export interface DevstateContainerPostRequest {
      */
     sourceMapping?: string;
     annotation?: Annotation;
+    /**
+     * Endpoints exposed by the container
+     */
+    endpoints?: Array<Endpoint>;
 }
 
