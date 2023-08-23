@@ -27,32 +27,37 @@
             formControlName="volumeMounts"
             (createNewVolume)="onCreateNewVolume($event)"></app-volume-mounts>
         
-        <h3>Resource Usage</h3>
-        <div class="description">CPU and Memory resources necessary for container's execution</div>
-        <mat-form-field appearance="outline" class="mid-width">
-            <mat-label><span>Memory Request</span></mat-label>
-            <mat-error>{{quantityErrMsgMemory}}</mat-error>
-            <input placeholder="memory requested for the container. Ex: 1Gi" data-cy="container-memory-request" matInput formControlName="memoryRequest">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="mid-width">
-            <mat-label><span>Memory Limit</span></mat-label>
-            <mat-error>{{quantityErrMsgMemory}}</mat-error>
-            <input placeholder="memory limit for the container. Ex: 1Gi" data-cy="container-memory-limit" matInput formControlName="memoryLimit">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="mid-width">
-            <mat-label><span>CPU Request</span></mat-label>
-            <mat-error>{{quantityErrMsgCPU}}</mat-error>
-            <input placeholder="CPU requested for the container. Ex: 500m" data-cy="container-cpu-request" matInput formControlName="cpuRequest">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="mid-width">
-            <mat-label><span>CPU Limit</span></mat-label>
-            <mat-error>{{quantityErrMsgCPU}}</mat-error>
-            <input placeholder="CPU limit for the container. Ex: 1" data-cy="container-cpu-limit" matInput formControlName="cpuLimit">
-        </mat-form-field>
+    
+        <h3>Endpoints</h3>
+        <div class="description">Endpoints exposed by the container</div>
+        <app-endpoints formControlName="endpoints"></app-endpoints>
 
         <div class="outbutton"><button data-cy="container-more-params" *ngIf="!seeMore" mat-flat-button (click)="more()">More parameters...</button></div>
-        
+
         <div *ngIf="seeMore">
+    
+            <h3>Resource Usage</h3>
+            <div class="description">CPU and Memory resources necessary for container's execution</div>
+            <mat-form-field appearance="outline" class="mid-width">
+                <mat-label><span>Memory Request</span></mat-label>
+                <mat-error>{{quantityErrMsgMemory}}</mat-error>
+                <input placeholder="memory requested for the container. Ex: 1Gi" data-cy="container-memory-request" matInput formControlName="memoryRequest">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="mid-width">
+                <mat-label><span>Memory Limit</span></mat-label>
+                <mat-error>{{quantityErrMsgMemory}}</mat-error>
+                <input placeholder="memory limit for the container. Ex: 1Gi" data-cy="container-memory-limit" matInput formControlName="memoryLimit">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="mid-width">
+                <mat-label><span>CPU Request</span></mat-label>
+                <mat-error>{{quantityErrMsgCPU}}</mat-error>
+                <input placeholder="CPU requested for the container. Ex: 500m" data-cy="container-cpu-request" matInput formControlName="cpuRequest">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="mid-width">
+                <mat-label><span>CPU Limit</span></mat-label>
+                <mat-error>{{quantityErrMsgCPU}}</mat-error>
+                <input placeholder="CPU limit for the container. Ex: 1" data-cy="container-cpu-limit" matInput formControlName="cpuLimit">
+            </mat-form-field>
 
             <h3>Sources</h3>
             <div class="description">Declare if and how sources are mounted into the container's filesystem. By default, sources are automatically mounted into $PROJECTS_ROOT or /projects directory</div>

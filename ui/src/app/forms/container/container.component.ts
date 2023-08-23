@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { PATTERN_COMPONENT_ID } from '../patterns';
 import { DevstateService } from 'src/app/services/devstate.service';
-import { Annotation, Container, Volume } from 'src/app/api-gen';
+import { Container, Volume } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
 
 export interface ToCreate {
@@ -50,6 +50,7 @@ export class ContainerComponent {
       sourceMapping: new FormControl(""),
       deployAnnotations: new FormControl([]),
       svcAnnotations: new FormControl([]),
+      endpoints: new FormControl([]),
     });
 
     this.form.valueChanges.subscribe((value: any) => {

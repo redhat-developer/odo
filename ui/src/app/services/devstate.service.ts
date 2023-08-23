@@ -31,7 +31,8 @@ export class DevstateService {
       annotation: {
         deployment: container.annotation.deployment,
         service: container.annotation.service
-      }
+      },
+      endpoints: container.endpoints,
     });
   }
 

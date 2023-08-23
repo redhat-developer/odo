@@ -1,5 +1,5 @@
 import { Component, Input, forwardRef } from '@angular/core';
-import { AbstractControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator, Validators } from '@angular/forms';
+import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator, Validators } from '@angular/forms';
 
 interface KeyValue {
   name: string;
@@ -23,7 +23,7 @@ interface KeyValue {
     },
   ]
 })
-export class MultiKeyValueComponent implements Validator {
+export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
 
   @Input() dataCyPrefix: string = "";
   @Input() addLabel: string = "";

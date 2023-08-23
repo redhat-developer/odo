@@ -49,6 +49,7 @@ import { VolumesComponent } from './tabs/volumes/volumes.component';
 import { VolumeComponent } from './forms/volume/volume.component';
 import { VolumeMountsComponent } from './controls/volume-mounts/volume-mounts.component';
 import { MultiKeyValueComponent } from './controls/multi-key-value/multi-key-value.component';
+import { EndpointsComponent } from './controls/endpoints/endpoints.component';
 
 @NgModule({
   declarations: [
@@ -76,6 +77,7 @@ import { MultiKeyValueComponent } from './controls/multi-key-value/multi-key-val
     VolumeComponent,
     VolumeMountsComponent,
     MultiKeyValueComponent,
+    EndpointsComponent,
   ],
   imports: [
     BrowserModule,

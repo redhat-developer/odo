@@ -39,7 +39,7 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'with arg');
   });
 
-  it.only('displays a created container without source configuration', () => {
+  it('displays a created container without source configuration', () => {
     cy.init();
 
     cy.selectTab(TAB_VOLUMES);
@@ -65,6 +65,10 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
     cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
 
+    cy.getByDataCy('endpoints-add').click();
+    cy.getByDataCy('endpoint-name-0').type("ep1");
+    cy.getByDataCy('endpoint-targetPort-0').type("4001");
+    
     cy.getByDataCy('volume-mount-add').click();
     cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
     cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
@@ -96,8 +100,10 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'volume1')
       .should('contain.text', '/mnt/vol1')
       .should('contain.text', 'volume2')
-      .should('contain.text', '/mnt/vol2')      
+      .should('contain.text', '/mnt/vol2')
       .should('not.contain.text', 'Mount Sources')
+      .should('contain.text', 'ep1')
+      .should('contain.text', '4001')
       .should('contain.text', 'Deployment Annotations')
       .should('contain.text', 'DEPANNO1: depval1')
       .should('contain.text', 'DEPANNO2: depval2')
