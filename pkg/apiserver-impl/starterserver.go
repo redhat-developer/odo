@@ -96,15 +96,16 @@ func StartServer(
 		router.PathPrefix("/").Handler(staticServer)
 	}
 
+	addr := "127.0.0.1"
 	if port == 0 && !randomPort {
-		port, err = util.NextFreePort(20000, 30001, nil, "")
+		port, err = util.NextFreePort(20000, 30001, nil, addr)
 		if err != nil {
 			klog.V(0).Infof("Unable to start the API server; encountered error: %v", err)
 			cancelFunc()
 		}
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", addr, port))
 	if err != nil {
 		return ApiServer{}, fmt.Errorf("unable to start API Server listener on port %d: %w", port, err)
 	}
