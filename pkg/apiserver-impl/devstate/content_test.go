@@ -24,6 +24,7 @@ func TestDevfileState_GetContent(t *testing.T) {
 				Containers: []Container{},
 				Images:     []Image{},
 				Resources:  []Resource{},
+				Volumes:    []Volume{},
 				Events:     Events{},
 			},
 		},

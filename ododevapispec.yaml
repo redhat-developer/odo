@@ -543,6 +543,11 @@ paths:
                 cpuLimit:
                   description: CPU limit for the deployed container
                   type: string
+                volumeMounts:
+                  description: Volume to mount into the container filesystem
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/VolumeMount'
       responses:
         '200':
           description: container was successfully added to the devfile
@@ -812,6 +817,101 @@ paths:
                 $ref: '#/components/schemas/GeneralError'
               example:
                 message: "Error deleting the resource"
+
+  /devstate/volume:
+    post:
+      tags:
+      - devstate
+      description: Add a new Volume to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the volume
+                  type: string
+                size:
+                  description: Minimal size of the volume
+                  type: string
+                ephemeral:
+                  description: True if the Volume is Ephemeral
+                  type: boolean
+      responses:
+        '200':
+          description: volume was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the volume"
+
+  /devstate/volume/{volumeName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete a volume from the Devfile"
+      parameters:
+        - name: volumeName
+          in: path
+          description: Volume name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Volume has been deleted"
+          description: "Volume has been deleted"
+        '500':
+          description: Error deleting the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the volume"
 
   /devstate/applyCommand:
     post:
@@ -1315,6 +1415,7 @@ components:
       - containers
       - images
       - resources
+      - volumes
       - events
       - metadata
       properties:
@@ -1336,6 +1437,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Resource'
+        volumes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Volume'
         events:
           $ref: '#/components/schemas/Events'
         metadata:
@@ -1416,6 +1521,7 @@ components:
       - memoryLimit
       - cpuRequest
       - cpuLimit
+      - volumeMounts
       properties:
         name:
           type: string
@@ -1436,6 +1542,20 @@ components:
         cpuRequest:
           type: string
         cpuLimit:
+          type: string
+        volumeMounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeMount'
+    VolumeMount:
+      type: object
+      required:
+      - name
+      - path
+      properties:
+        name:
+          type: string
+        path:
           type: string
     Image:
       type: object
@@ -1471,6 +1591,17 @@ components:
         inlined:
           type: string
         uri:
+          type: string
+    Volume:
+      type: object
+      required:
+      - name      
+      properties:
+        name:
+          type: string
+        ephemeral:
+          type: boolean
+        size:
           type: string
     Events:
       type: object

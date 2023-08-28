@@ -9,6 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { VolumeMount } from './volumeMount';
 
 
 export interface Container { 
@@ -20,5 +21,6 @@ export interface Container {
     memoryLimit: string;
     cpuRequest: string;
     cpuLimit: string;
+    volumeMounts: Array<VolumeMount>;
 }
 

@@ -18,6 +18,16 @@
                     <td>Args:</td>
                     <td><code>{{container.args.join(" ")}}</code></td>
                 </tr>
+                <tr *ngIf="container.volumeMounts.length > 0">
+                    <td>Volume Mounts:</td>
+                    <td>
+                        <div class="volume-mount" *ngFor="let vm of container.volumeMounts">
+                            <mat-chip disableRipple>
+                                <mat-icon matChipAvatar class="material-icons-outlined">storage</mat-icon>
+                                {{vm.name}}
+                            </mat-chip><span class="path"> in <code>{{vm.path}}</code></span></div>
+                    </td>
+                </tr>
                 <tr *ngIf="container.memoryRequest != null && container.memoryRequest.length > 0">
                     <td>Memory Request:</td>
                     <td><code>{{container.memoryRequest}}</code></td>
@@ -46,6 +56,7 @@
 
     <app-container 
         *ngIf="forceDisplayAdd || containers == undefined || containers.length == 0"
+        [volumeNames]="volumeNames ?? []"
         [cancelable]="forceDisplayAdd"
         (canceled)="undisplayAddForm()"
         (created)="onCreated($event)"

@@ -19,6 +19,7 @@ func (s *DevstateApiService) DevstateContainerPost(ctx context.Context, containe
 		container.MemLimit,
 		container.CpuReq,
 		container.CpuLimit,
+		container.VolumeMounts,
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -85,6 +86,30 @@ func (s *DevstateApiService) DevstateResourceResourceNameDelete(ctx context.Cont
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
 			Message: fmt.Sprintf("Error deleting the resource: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DevstateApiService) DevstateVolumePost(ctx context.Context, volume openapi.DevstateVolumePostRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.AddVolume(
+		volume.Name,
+		volume.Ephemeral,
+		volume.Size,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error adding the volume: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DevstateApiService) DevstateVolumeVolumeNameDelete(ctx context.Context, volumeName string) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.DeleteVolume(volumeName)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error deleting the volume: %s", err),
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil

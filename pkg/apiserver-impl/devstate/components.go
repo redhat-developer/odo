@@ -9,7 +9,24 @@ import (
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 )
 
-func (o *DevfileState) AddContainer(name string, image string, command []string, args []string, memRequest string, memLimit string, cpuRequest string, cpuLimit string) (DevfileContent, error) {
+func (o *DevfileState) AddContainer(
+	name string,
+	image string,
+	command []string,
+	args []string,
+	memRequest string,
+	memLimit string,
+	cpuRequest string,
+	cpuLimit string,
+	volumeMounts []VolumeMount,
+) (DevfileContent, error) {
+	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
+	for _, vm := range volumeMounts {
+		v1alpha2VolumeMounts = append(v1alpha2VolumeMounts, v1alpha2.VolumeMount{
+			Name: vm.Name,
+			Path: vm.Path,
+		})
+	}
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -22,6 +39,7 @@ func (o *DevfileState) AddContainer(name string, image string, command []string,
 					MemoryLimit:   memLimit,
 					CpuRequest:    cpuRequest,
 					CpuLimit:      cpuLimit,
+					VolumeMounts:  v1alpha2VolumeMounts,
 				},
 			},
 		},
@@ -180,6 +198,59 @@ func (o *DevfileState) checkResourceUsed(name string) error {
 	for _, command := range commands {
 		if command.Apply.Component == name {
 			return fmt.Errorf("resource %q is used by Apply Command %q", name, command.Id)
+		}
+	}
+	return nil
+}
+
+func (o *DevfileState) AddVolume(name string, ephemeral bool, size string) (DevfileContent, error) {
+	volume := v1alpha2.Component{
+		Name: name,
+		ComponentUnion: v1alpha2.ComponentUnion{
+			Volume: &v1alpha2.VolumeComponent{
+				Volume: v1alpha2.Volume{
+					Ephemeral: &ephemeral,
+					Size:      size,
+				},
+			},
+		},
+	}
+	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{volume})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) DeleteVolume(name string) (DevfileContent, error) {
+
+	err := o.checkVolumeUsed(name)
+	if err != nil {
+		return DevfileContent{}, fmt.Errorf("error deleting volume %q: %w", name, err)
+	}
+	// TODO check if it is a Volume, not another component
+
+	err = o.Devfile.Data.DeleteComponent(name)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) checkVolumeUsed(name string) error {
+	containers, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1alpha2.ContainerComponentType,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	for _, container := range containers {
+		for _, mount := range container.Container.VolumeMounts {
+			if mount.Name == name {
+				return fmt.Errorf("volume %q is mounted by Container %q", name, container.Name)
+			}
 		}
 	}
 	return nil

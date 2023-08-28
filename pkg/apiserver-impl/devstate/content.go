@@ -16,97 +16,6 @@ const (
 	SEPARATOR = ","
 )
 
-/*
-type DevfileContent struct {
-	Content    string      `json:"content"`
-	Commands   []Command   `json:"commands"`
-	Containers []Container `json:"containers"`
-	Images     []Image     `json:"images"`
-	Resources  []Resource  `json:"resources"`
-	Events     Events      `json:"events"`
-	Metadata   Metadata    `json:"metadata"`
-}
-
-type Metadata struct {
-	Name              string `json:"name"`
-	Version           string `json:"version"`
-	DisplayName       string `json:"displayName"`
-	Description       string `json:"description"`
-	Tags              string `json:"tags"`
-	Architectures     string `json:"architectures"`
-	Icon              string `json:"icon"`
-	GlobalMemoryLimit string `json:"globalMemoryLimit"`
-	ProjectType       string `json:"projectType"`
-	Language          string `json:"language"`
-	Website           string `json:"website"`
-	Provider          string `json:"provider"`
-	SupportUrl        string `json:"supportUrl"`
-}
-
-type Command struct {
-	Name      string            `json:"name"`
-	Group     string            `json:"group"`
-	Default   bool              `json:"default"`
-	Type      string            `json:"type"`
-	Exec      *ExecCommand      `json:"exec"`
-	Apply     *ApplyCommand     `json:"apply"`
-	Image     *ImageCommand     `json:"image"`
-	Composite *CompositeCommand `json:"composite"`
-}
-
-type ExecCommand struct {
-	Component        string `json:"component"`
-	CommandLine      string `json:"commandLine"`
-	WorkingDir       string `json:"workingDir"`
-	HotReloadCapable bool   `json:"hotReloadCapable"`
-}
-
-type ApplyCommand struct {
-	Component string `json:"component"`
-}
-
-type ImageCommand struct {
-	Component string `json:"component"`
-}
-
-type CompositeCommand struct {
-	Commands []string `json:"commands"`
-	Parallel bool     `json:"parallel"`
-}
-
-type Container struct {
-	Name          string   `json:"name"`
-	Image         string   `json:"image"`
-	Command       []string `json:"command"`
-	Args          []string `json:"args"`
-	MemoryRequest string   `json:"memoryRequest"`
-	MemoryLimit   string   `json:"memoryLimit"`
-	CpuRequest    string   `json:"cpuRequest"`
-	CpuLimit      string   `json:"cpuLimit"`
-}
-
-type Image struct {
-	Name         string   `json:"name"`
-	ImageName    string   `json:"imageName"`
-	Args         []string `json:"args"`
-	BuildContext string   `json:"buildContext"`
-	RootRequired bool     `json:"rootRequired"`
-	URI          string   `json:"uri"`
-}
-
-type Resource struct {
-	Name    string `json:"name"`
-	Inlined string `json:"inlined"`
-	URI     string `json:"uri"`
-}
-
-type Events struct {
-	PreStart  []string `json:"preStart"`
-	PostStart []string `json:"postStart"`
-	PreStop   []string `json:"preStop"`
-	PostStop  []string `json:"postStop"`
-}
-*/
 // getContent returns the YAML content of the global devfile as string
 func (o *DevfileState) GetContent() (DevfileContent, error) {
 	err := o.Devfile.WriteYamlDevfile()
@@ -137,12 +46,18 @@ func (o *DevfileState) GetContent() (DevfileContent, error) {
 		return DevfileContent{}, errors.New("error getting Kubernetes resources")
 	}
 
+	volumes, err := o.getVolumes()
+	if err != nil {
+		return DevfileContent{}, errors.New("error getting volumes")
+	}
+
 	return DevfileContent{
 		Content:    string(result),
 		Commands:   commands,
 		Containers: containers,
 		Images:     images,
 		Resources:  resources,
+		Volumes:    volumes,
 		Events:     o.getEvents(),
 		Metadata:   o.getMetadata(),
 	}, nil
@@ -255,9 +170,21 @@ func (o *DevfileState) getContainers() ([]Container, error) {
 			MemoryLimit:   container.ComponentUnion.Container.MemoryLimit,
 			CpuRequest:    container.ComponentUnion.Container.CpuRequest,
 			CpuLimit:      container.ComponentUnion.Container.CpuLimit,
+			VolumeMounts:  o.getVolumeMounts(container.Container.Container),
 		})
 	}
 	return result, nil
+}
+
+func (o *DevfileState) getVolumeMounts(container v1alpha2.Container) []VolumeMount {
+	result := make([]VolumeMount, 0, len(container.VolumeMounts))
+	for _, vm := range container.VolumeMounts {
+		result = append(result, VolumeMount{
+			Name: vm.Name,
+			Path: vm.Path,
+		})
+	}
+	return result
 }
 
 func (o *DevfileState) getImages() ([]Image, error) {
@@ -298,6 +225,26 @@ func (o *DevfileState) getResources() ([]Resource, error) {
 			Name:    resource.Name,
 			Inlined: resource.ComponentUnion.Kubernetes.Inlined,
 			Uri:     resource.ComponentUnion.Kubernetes.Uri,
+		})
+	}
+	return result, nil
+}
+
+func (o *DevfileState) getVolumes() ([]Volume, error) {
+	volumes, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1alpha2.VolumeComponentType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]Volume, 0, len(volumes))
+	for _, volume := range volumes {
+		result = append(result, Volume{
+			Name:      volume.Name,
+			Ephemeral: *volume.Volume.Ephemeral,
+			Size:      volume.Volume.Size,
 		})
 	}
 	return result, nil

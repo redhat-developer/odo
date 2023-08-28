@@ -20,6 +20,7 @@ go/model__devstate_exec_command_post_request.go
 go/model__devstate_image_post_request.go
 go/model__devstate_quantity_valid_post_request.go
 go/model__devstate_resource_post_request.go
+go/model__devstate_volume_post_request.go
 go/model__instance_get_200_response.go
 go/model_apply_command.go
 go/model_command.go
@@ -38,3 +39,5 @@ go/model_metadata.go
 go/model_metadata_request.go
 go/model_resource.go
 go/model_telemetry_response.go
+go/model_volume.go
+go/model_volume_mount.go
