@@ -26,6 +26,7 @@ import (
 
 	"github.com/securego/gosec/v2"
 	"github.com/securego/gosec/v2/cmd/vflag"
+	"github.com/securego/gosec/v2/issue"
 	"github.com/securego/gosec/v2/report"
 	"github.com/securego/gosec/v2/rules"
 )
@@ -142,7 +143,10 @@ var (
 	// output suppression information for auditing purposes
 	flagTrackSuppressions = flag.Bool("track-suppressions", false, "Output suppression information, including its kind and justification")
 
-	// exlude the folders from scan
+	// flagTerse shows only the summary of scan discarding all the logs
+	flagTerse = flag.Bool("terse", false, "Shows only the results and summary")
+
+	// exclude the folders from scan
 	flagDirsExclude arrayFlags
 
 	logger *log.Logger
@@ -265,22 +269,22 @@ func saveReport(filename, format string, rootPaths []string, reportInfo *gosec.R
 	return nil
 }
 
-func convertToScore(value string) (gosec.Score, error) {
+func convertToScore(value string) (issue.Score, error) {
 	value = strings.ToLower(value)
 	switch value {
 	case "low":
-		return gosec.Low, nil
+		return issue.Low, nil
 	case "medium":
-		return gosec.Medium, nil
+		return issue.Medium, nil
 	case "high":
-		return gosec.High, nil
+		return issue.High, nil
 	default:
-		return gosec.Low, fmt.Errorf("provided value '%s' not valid. Valid options: low, medium, high", value)
+		return issue.Low, fmt.Errorf("provided value '%s' not valid. Valid options: low, medium, high", value)
 	}
 }
 
-func filterIssues(issues []*gosec.Issue, severity gosec.Score, confidence gosec.Score) ([]*gosec.Issue, int) {
-	result := make([]*gosec.Issue, 0)
+func filterIssues(issues []*issue.Issue, severity issue.Score, confidence issue.Score) ([]*issue.Issue, int) {
+	result := make([]*issue.Issue, 0)
 	trueIssues := 0
 	for _, issue := range issues {
 		if issue.Severity >= severity && issue.Confidence >= confidence {
@@ -293,7 +297,7 @@ func filterIssues(issues []*gosec.Issue, severity gosec.Score, confidence gosec.
 	return result, trueIssues
 }
 
-func exit(issues []*gosec.Issue, errors map[string][]gosec.Error, noFail bool) {
+func exit(issues []*issue.Issue, errors map[string][]gosec.Error, noFail bool) {
 	nsi := 0
 	for _, issue := range issues {
 		if len(issue.Suppressions) == 0 {
@@ -353,7 +357,7 @@ func main() {
 		}
 	}
 
-	if *flagQuiet {
+	if *flagQuiet || *flagTerse {
 		logger = log.New(io.Discard, "", 0)
 	} else {
 		logger = log.New(logWriter, "[gosec] ", log.LstdFlags)

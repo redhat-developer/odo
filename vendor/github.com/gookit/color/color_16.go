@@ -41,15 +41,27 @@ func (o Opts) String() string {
  * Basic 16 color definition
  *************************************************************/
 
-// Base value for foreground/background color
-// base: fg 30~37, bg 40~47
-// light: fg 90~97, bg 100~107
+const (
+	// OptMax max option value. range: 0 - 9
+	OptMax = 10
+	// DiffFgBg diff foreground and background color
+	DiffFgBg = 10
+)
+
+// Boundary value for foreground/background color 16
+//
+//   - base: fg 30~37, bg 40~47
+//   - light: fg 90~97, bg 100~107
 const (
 	FgBase uint8 = 30
+	FgMax  uint8 = 37
 	BgBase uint8 = 40
+	BgMax  uint8 = 47
 
 	HiFgBase uint8 = 90
+	HiFgMax  uint8 = 97
 	HiBgBase uint8 = 100
+	HiBgMax  uint8 = 107
 )
 
 // Foreground colors. basic foreground colors 30 - 37
@@ -94,7 +106,7 @@ const (
 	BgDefault Color = 49
 )
 
-// Extra background color 100 - 107(非标准)
+// Extra background color 100 - 107 (non-standard)
 const (
 	BgDarkGray Color = iota + 100
 	BgLightRed
@@ -108,7 +120,7 @@ const (
 	BgGray Color = 100
 )
 
-// Option settings
+// Option settings. range: 0 - 9
 const (
 	OpReset         Color = iota // 0 重置所有设置
 	OpBold                       // 1 加粗
@@ -188,61 +200,69 @@ func (c Color) Text(message string) string { return RenderString(c.String(), mes
 // Render messages by color setting
 //
 // Usage:
-// 		green := color.FgGreen.Render
-// 		fmt.Println(green("message"))
-func (c Color) Render(a ...interface{}) string { return RenderCode(c.String(), a...) }
+//
+//	green := color.FgGreen.Render
+//	fmt.Println(green("message"))
+func (c Color) Render(a ...any) string { return RenderCode(c.String(), a...) }
 
 // Renderln messages by color setting.
 // like Println, will add spaces for each argument
 //
 // Usage:
-// 		green := color.FgGreen.Renderln
-// 		fmt.Println(green("message"))
-func (c Color) Renderln(a ...interface{}) string { return RenderWithSpaces(c.String(), a...) }
+//
+//	green := color.FgGreen.Renderln
+//	fmt.Println(green("message"))
+func (c Color) Renderln(a ...any) string { return RenderWithSpaces(c.String(), a...) }
 
 // Sprint render messages by color setting. is alias of the Render()
-func (c Color) Sprint(a ...interface{}) string { return RenderCode(c.String(), a...) }
+func (c Color) Sprint(a ...any) string { return RenderCode(c.String(), a...) }
 
 // Sprintf format and render message.
 //
 // Usage:
-// 	green := color.Green.Sprintf
-//  colored := green("message")
-func (c Color) Sprintf(format string, args ...interface{}) string {
+//
+//		green := color.Green.Sprintf
+//	 colored := green("message")
+func (c Color) Sprintf(format string, args ...any) string {
 	return RenderString(c.String(), fmt.Sprintf(format, args...))
 }
 
 // Print messages.
 //
 // Usage:
-// 		color.Green.Print("message")
+//
+//	color.Green.Print("message")
+//
 // OR:
-// 		green := color.FgGreen.Print
-// 		green("message")
-func (c Color) Print(args ...interface{}) {
+//
+//	green := color.FgGreen.Print
+//	green("message")
+func (c Color) Print(args ...any) {
 	doPrintV2(c.Code(), fmt.Sprint(args...))
 }
 
 // Printf format and print messages.
 //
 // Usage:
-// 		color.Cyan.Printf("string %s", "arg0")
-func (c Color) Printf(format string, a ...interface{}) {
+//
+//	color.Cyan.Printf("string %s", "arg0")
+func (c Color) Printf(format string, a ...any) {
 	doPrintV2(c.Code(), fmt.Sprintf(format, a...))
 }
 
 // Println messages with new line
-func (c Color) Println(a ...interface{}) { doPrintlnV2(c.String(), a) }
+func (c Color) Println(a ...any) { doPrintlnV2(c.String(), a) }
 
 // Light current color. eg: 36(FgCyan) -> 96(FgLightCyan).
 //
 // Usage:
-// 	lightCyan := Cyan.Light()
-// 	lightCyan.Print("message")
+//
+//	lightCyan := Cyan.Light()
+//	lightCyan.Print("message")
 func (c Color) Light() Color {
-	val := int(c)
+	val := uint8(c)
 	if val >= 30 && val <= 47 {
-		return Color(uint8(c) + 60)
+		return Color(val + 60)
 	}
 
 	// don't change
@@ -252,12 +272,13 @@ func (c Color) Light() Color {
 // Darken current color. eg. 96(FgLightCyan) -> 36(FgCyan)
 //
 // Usage:
-// 	cyan := LightCyan.Darken()
-// 	cyan.Print("message")
+//
+//	cyan := LightCyan.Darken()
+//	cyan.Print("message")
 func (c Color) Darken() Color {
-	val := int(c)
+	val := uint8(c)
 	if val >= 90 && val <= 107 {
-		return Color(uint8(c) - 60)
+		return Color(val - 60)
 	}
 
 	// don't change
@@ -315,7 +336,7 @@ func (c Color) RGB() RGBColor {
 		return emptyRGBColor
 	}
 
-	return HEX(Basic2hex(val))
+	return HEX(Basic2hex(val), c.IsBg())
 }
 
 // Code convert to code string. eg "35"
@@ -328,8 +349,23 @@ func (c Color) String() string {
 	return strconv.FormatInt(int64(c), 10)
 }
 
+// IsBg check is background color
+func (c Color) IsBg() bool {
+	val := uint8(c)
+	return val >= BgBase && val <= BgMax || val >= HiBgBase && val <= HiBgMax
+}
+
+// IsFg check is foreground color
+func (c Color) IsFg() bool {
+	val := uint8(c)
+	return val >= FgBase && val <= FgMax || val >= HiFgBase && val <= HiFgMax
+}
+
+// IsOption check is option code: 0-9
+func (c Color) IsOption() bool { return uint8(c) < OptMax }
+
 // IsValid color value
-func (c Color) IsValid() bool { return c < 107 }
+func (c Color) IsValid() bool { return uint8(c) < HiBgMax }
 
 /*************************************************************
  * basic color maps
@@ -461,9 +497,7 @@ func Fg2Bg(val uint8) uint8 {
 }
 
 // Basic2nameMap data
-func Basic2nameMap() map[uint8]string {
-	return basic2nameMap
-}
+func Basic2nameMap() map[uint8]string { return basic2nameMap }
 
 // func initName2basicMap() map[string]uint8 {
 // 	n2b := make(map[string]uint8, len(basic2nameMap))

@@ -145,6 +145,8 @@ func getDefaultCommand(devfileObj parser.DevfileObj, groupType v1alpha2.CommandG
 	if len(defaultCmds) > 1 {
 		return v1alpha2.Command{}, false, NewMoreThanOneDefaultCommandFoundError(groupType)
 	}
+	// #nosec
+	// gosec:G602 -> This is safe since we checked the length before
 	return defaultCmds[0], true, nil
 }
 
