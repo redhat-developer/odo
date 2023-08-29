@@ -19,11 +19,20 @@ export class DevstateService {
       image: container.image,
       command: container.command,
       args: container.args,
+      env: container.env,
       memReq: container.memoryRequest,
       memLimit: container.memoryLimit,
       cpuReq: container.cpuRequest,
       cpuLimit: container.cpuLimit,
       volumeMounts: container.volumeMounts,
+      configureSources: container.configureSources,
+      mountSources: container.mountSources,
+      sourceMapping: container.sourceMapping,
+      annotation: {
+        deployment: container.annotation.deployment,
+        service: container.annotation.service
+      },
+      endpoints: container.endpoints,
     });
   }
 

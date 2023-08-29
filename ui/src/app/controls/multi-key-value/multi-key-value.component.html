@@ -1,0 +1,16 @@
+<div class="group">
+    <span *ngFor="let entry of entries; let i=index">
+        <mat-form-field class="mid-width" appearance="outline">
+            <mat-label><span>Name</span></mat-label>
+            <input [attr.data-cy]="dataCyPrefix+'-name-'+i" matInput [value]="entry.name" (change)="onKeyChange(i, $event)" (input)="onKeyChange(i, $event)">
+        </mat-form-field>    
+        <mat-form-field class="mid-width" appearance="outline">
+            <mat-label><span>Value</span></mat-label>
+            <input [attr.data-cy]="dataCyPrefix+'-value-'+i" matInput [value]="entry.value" (change)="onValueChange(i, $event)" (input)="onValueChange(i, $event)">
+        </mat-form-field>    
+    </span>
+    <button [attr.data-cy]="dataCyPrefix+'-plus'" *ngIf="entries.length > 0" mat-icon-button (click)="addEntry()">
+        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
+    </button>                
+    <button [attr.data-cy]="dataCyPrefix+'-add'" *ngIf="entries.length == 0" mat-flat-button (click)="addEntry()">{{addLabel}}</button>
+</div>

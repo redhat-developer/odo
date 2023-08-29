@@ -27,6 +27,7 @@ export class ContainerComponent {
   quantityErrMsgCPU = 'Numeric value, with optional unit m, k, M, G, T, P, E';
 
   volumesToCreate: Volume[] = [];
+  seeMore: boolean = false;
 
   constructor(
     private devstate: DevstateService,
@@ -37,16 +38,59 @@ export class ContainerComponent {
       image: new FormControl("", [Validators.required]),
       command: new FormControl([]),
       args: new FormControl([]),
+      env: new FormControl([]),
+      volumeMounts: new FormControl([]),
       memoryRequest: new FormControl("", null, [this.devstate.isQuantity()]),
       memoryLimit: new FormControl("", null, [this.devstate.isQuantity()]),
       cpuRequest: new FormControl("", null, [this.devstate.isQuantity()]),
       cpuLimit: new FormControl("", null, [this.devstate.isQuantity()]),
-      volumeMounts: new FormControl([]),
-    })
+      configureSources: new FormControl(false),
+      mountSources: new FormControl(true),
+      _specificDir: new FormControl(false),
+      sourceMapping: new FormControl(""),
+      deployAnnotations: new FormControl([]),
+      svcAnnotations: new FormControl([]),
+      endpoints: new FormControl([]),
+    });
+
+    this.form.valueChanges.subscribe((value: any) => {
+      this.updateSourceFields(value);
+    });
+    this.updateSourceFields(this.form.value);
+  }
+
+  updateSourceFields(value: any) {
+    const sourceMappingEnabled = value.mountSources && value._specificDir;
+    if (!sourceMappingEnabled && !this.form.get('sourceMapping')?.disabled) {
+      this.form.get('sourceMapping')?.disable();
+      this.form.get('sourceMapping')?.setValue('');
+      this.form.get('_specificDir')?.setValue(false);
+    }       
+    if (sourceMappingEnabled && !this.form.get('sourceMapping')?.enabled ) {
+      this.form.get('sourceMapping')?.enable();
+    }
+
+    const specificDirEnabled = value.mountSources;
+    if (!specificDirEnabled && !this.form.get('_specificDir')?.disabled) {
+      this.form.get('_specificDir')?.disable();
+    }       
+    if (specificDirEnabled && !this.form.get('_specificDir')?.enabled ) {
+      this.form.get('_specificDir')?.enable();
+    }
   }
 
   create() {
     this.telemetry.track("[ui] create container");
+
+    const toObject = (o: {name: string, value: string}[]) => {
+      return o.reduce((acc: any, val: {name: string, value: string}) => { acc[val.name] = val.value; return acc; }, {});
+    };
+
+    const container = this.form.value;
+    container.annotation = {
+      deployment: toObject(container.deployAnnotations),
+      service: toObject(container.svcAnnotations),
+    };
     this.created.emit({
       container: this.form.value,
       volumes: this.volumesToCreate,
@@ -59,5 +103,12 @@ export class ContainerComponent {
 
   onCreateNewVolume(v: Volume) {
     this.volumesToCreate.push(v);
+  }
+
+  more() {
+    this.seeMore = true;
+  }
+  less() {
+    this.seeMore = false;
   }
 }

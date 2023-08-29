@@ -9,18 +9,21 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { Endpoint } from './endpoint';
 import { VolumeMount } from './volumeMount';
+import { Env } from './env';
+import { Annotation } from './annotation';
 
 
 export interface DevstateContainerPostRequest { 
     /**
      * Name of the container
      */
-    name?: string;
+    name: string;
     /**
      * Container image
      */
-    image?: string;
+    image: string;
     /**
      * Entrypoint of the container
      */
@@ -29,6 +32,10 @@ export interface DevstateContainerPostRequest {
      * Args passed to the Container entrypoint
      */
     args?: Array<string>;
+    /**
+     * Environment variables to define
+     */
+    env?: Array<Env>;
     /**
      * Requested memory for the deployed container
      */
@@ -49,5 +56,22 @@ export interface DevstateContainerPostRequest {
      * Volume to mount into the container filesystem
      */
     volumeMounts?: Array<VolumeMount>;
+    /**
+     * If false, mountSources and sourceMapping values are not considered
+     */
+    configureSources?: boolean;
+    /**
+     * If true, sources are mounted into container\'s filesystem
+     */
+    mountSources?: boolean;
+    /**
+     * Specific directory on which to mount sources
+     */
+    sourceMapping?: string;
+    annotation?: Annotation;
+    /**
+     * Endpoints exposed by the container
+     */
+    endpoints?: Array<Endpoint>;
 }
 

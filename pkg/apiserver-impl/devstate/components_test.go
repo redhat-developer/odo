@@ -10,15 +10,21 @@ import (
 
 func TestDevfileState_AddContainer(t *testing.T) {
 	type args struct {
-		name         string
-		image        string
-		command      []string
-		args         []string
-		memRequest   string
-		memLimit     string
-		cpuRequest   string
-		cpuLimit     string
-		volumeMounts []openapi.VolumeMount
+		name             string
+		image            string
+		command          []string
+		args             []string
+		envs             []Env
+		memRequest       string
+		memLimit         string
+		cpuRequest       string
+		cpuLimit         string
+		volumeMounts     []openapi.VolumeMount
+		configureSources bool
+		mountSources     bool
+		sourceMapping    string
+		annotation       Annotation
+		endpoints        []Endpoint
 	}
 	tests := []struct {
 		name    string
@@ -28,7 +34,7 @@ func TestDevfileState_AddContainer(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Add a container",
+			name: "Add a container, with sources configured",
 			state: func() DevfileState {
 				return NewDevfileState()
 			},
@@ -47,6 +53,81 @@ func TestDevfileState_AddContainer(t *testing.T) {
 						Path: "/mnt/volume1",
 					},
 				},
+				configureSources: true,
+				mountSources:     false,
+			},
+			want: DevfileContent{
+				Content: `components:
+- container:
+    args:
+    - arg1
+    - arg2
+    command:
+    - run
+    - command
+    cpuLimit: 200m
+    cpuRequest: 100m
+    image: an-image
+    memoryLimit: 2Gi
+    memoryRequest: 1Gi
+    mountSources: false
+    volumeMounts:
+    - name: vol1
+      path: /mnt/volume1
+  name: a-name
+metadata: {}
+schemaVersion: 2.2.0
+`,
+				Commands: []Command{},
+				Containers: []Container{
+					{
+						Name:          "a-name",
+						Image:         "an-image",
+						Command:       []string{"run", "command"},
+						Args:          []string{"arg1", "arg2"},
+						MemoryRequest: "1Gi",
+						MemoryLimit:   "2Gi",
+						CpuRequest:    "100m",
+						CpuLimit:      "200m",
+						VolumeMounts: []openapi.VolumeMount{
+							{
+								Name: "vol1",
+								Path: "/mnt/volume1",
+							},
+						},
+						Endpoints:        []openapi.Endpoint{},
+						Env:              []openapi.Env{},
+						ConfigureSources: true,
+						MountSources:     false,
+					},
+				},
+				Images:    []Image{},
+				Resources: []Resource{},
+				Volumes:   []Volume{},
+				Events:    Events{},
+			},
+		},
+		{
+			name: "Add a container, without sources configured",
+			state: func() DevfileState {
+				return NewDevfileState()
+			},
+			args: args{
+				name:       "a-name",
+				image:      "an-image",
+				command:    []string{"run", "command"},
+				args:       []string{"arg1", "arg2"},
+				memRequest: "1Gi",
+				memLimit:   "2Gi",
+				cpuRequest: "100m",
+				cpuLimit:   "200m",
+				volumeMounts: []openapi.VolumeMount{
+					{
+						Name: "vol1",
+						Path: "/mnt/volume1",
+					},
+				},
+				configureSources: false,
 			},
 			want: DevfileContent{
 				Content: `components:
@@ -86,6 +167,10 @@ schemaVersion: 2.2.0
 								Path: "/mnt/volume1",
 							},
 						},
+						Endpoints:        []openapi.Endpoint{},
+						Env:              []openapi.Env{},
+						ConfigureSources: false,
+						MountSources:     true,
 					},
 				},
 				Images:    []Image{},
@@ -99,7 +184,7 @@ schemaVersion: 2.2.0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := tt.state()
-			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts)
+			got, err := o.AddContainer(tt.args.name, tt.args.image, tt.args.command, tt.args.args, tt.args.envs, tt.args.memRequest, tt.args.memLimit, tt.args.cpuRequest, tt.args.cpuLimit, tt.args.volumeMounts, tt.args.configureSources, tt.args.mountSources, tt.args.sourceMapping, tt.args.annotation, tt.args.endpoints)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DevfileState.AddContainer() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -134,10 +219,16 @@ func TestDevfileState_DeleteContainer(t *testing.T) {
 					"an-image",
 					[]string{"run", "command"},
 					[]string{"arg1", "arg2"},
+					nil,
 					"1Gi",
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
+					true,
+					false,
+					"",
+					Annotation{},
 					nil,
 				)
 				if err != nil {
@@ -169,10 +260,16 @@ schemaVersion: 2.2.0
 					"an-image",
 					[]string{"run", "command"},
 					[]string{"arg1", "arg2"},
+					nil,
 					"1Gi",
 					"2Gi",
 					"100m",
 					"200m",
+					nil,
+					true,
+					false,
+					"",
+					Annotation{},
 					nil,
 				)
 				if err != nil {

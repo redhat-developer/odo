@@ -39,7 +39,7 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'with arg');
   });
 
-  it('displays a created container', () => {
+  it('displays a created container without source configuration', () => {
     cy.init();
 
     cy.selectTab(TAB_VOLUMES);
@@ -51,6 +51,87 @@ describe('devfile editor spec', () => {
     cy.selectTab(TAB_CONTAINERS);
     cy.getByDataCy('container-name').type('created-container');
     cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-env-add').click();
+    cy.getByDataCy('container-env-name-0').type("VAR1");
+    cy.getByDataCy('container-env-value-0').type("val1");
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-1').type("VAR2");
+    cy.getByDataCy('container-env-value-1').type("val2");
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-2').type("VAR3");
+    cy.getByDataCy('container-env-value-2').type("val3");
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
+
+    cy.getByDataCy('endpoints-add').click();
+    cy.getByDataCy('endpoint-name-0').type("ep1");
+    cy.getByDataCy('endpoint-targetPort-0').type("4001");
+    
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
+    cy.getByDataCy('volume-name').type('volume2');
+    cy.getByDataCy('volume-create').click();
+
+    cy.getByDataCy('container-more-params').click();
+    cy.getByDataCy('container-deploy-anno-add').click();
+    cy.getByDataCy('container-deploy-anno-name-0').type("DEPANNO1");
+    cy.getByDataCy('container-deploy-anno-value-0').type("depval1");
+    cy.getByDataCy('container-deploy-anno-plus').click();
+    cy.getByDataCy('container-deploy-anno-name-1').type("DEPANNO2");
+    cy.getByDataCy('container-deploy-anno-value-1').type("depval2");
+    cy.getByDataCy('container-svc-anno-add').click();
+    cy.getByDataCy('container-svc-anno-name-0').type("SVCANNO1");
+    cy.getByDataCy('container-svc-anno-value-0').type("svcval1");
+    cy.getByDataCy('container-svc-anno-plus').click();
+    cy.getByDataCy('container-svc-anno-name-1').type("SVCANNO2");
+    cy.getByDataCy('container-svc-anno-value-1').type("svcval2");
+
+    cy.getByDataCy('container-create').click();
+
+    cy.getByDataCy('container-info').first()
+      .should('contain.text', 'created-container')
+      .should('contain.text', 'an-image')
+      .should('contain.text', 'VAR1: val1')
+      .should('contain.text', 'VAR2: val2')
+      .should('contain.text', 'VAR3: val3')
+      .should('contain.text', 'volume1')
+      .should('contain.text', '/mnt/vol1')
+      .should('contain.text', 'volume2')
+      .should('contain.text', '/mnt/vol2')
+      .should('not.contain.text', 'Mount Sources')
+      .should('contain.text', 'ep1')
+      .should('contain.text', '4001')
+      .should('contain.text', 'Deployment Annotations')
+      .should('contain.text', 'DEPANNO1: depval1')
+      .should('contain.text', 'DEPANNO2: depval2')
+      .should('contain.text', 'Service Annotations')
+      .should('contain.text', 'SVCANNO1: svcval1')
+      .should('contain.text', 'SVCANNO2: svcval2');
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-info').eq(1)
+    .should('contain.text', 'volume2');
+  });
+
+  it('displays a created container with source configuration', () => {
+    cy.init();
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-name').type('volume1');
+    cy.getByDataCy('volume-size').type('512Mi');
+    cy.getByDataCy('volume-ephemeral').click();
+    cy.getByDataCy('volume-create').click();
+
+    cy.selectTab(TAB_CONTAINERS);
+    cy.getByDataCy('container-name').type('created-container');
+    cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-more-params').click();
+    cy.getByDataCy('container-sources-configuration').click();
+    cy.getByDataCy('container-sources-specific-directory').click();
+    cy.getByDataCy('container-source-mapping').type('/mnt/sources');
 
     cy.getByDataCy('volume-mount-add').click();
     cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
@@ -70,7 +151,9 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'volume1')
       .should('contain.text', '/mnt/vol1')
       .should('contain.text', 'volume2')
-      .should('contain.text', '/mnt/vol2');
+      .should('contain.text', '/mnt/vol2')
+      .should('contain.text', 'Mount Sources')
+      .should('contain.text', '/mnt/sources');
 
     cy.selectTab(TAB_VOLUMES);
     cy.getByDataCy('volume-info').eq(1)

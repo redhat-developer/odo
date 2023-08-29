@@ -1,3 +1,12 @@
 .main { padding: 16px; }
 mat-form-field.full-width { width: 100%; }
-mat-form-field.mid-width { width: 50%; }
+.mid-width { width: 50%; }
+.source-configuration-details {
+    margin-left: 16px;
+}
+div.buttonbar {
+    margin-top: 16px;
+}
+.outbutton {
+    text-align: right;
+}

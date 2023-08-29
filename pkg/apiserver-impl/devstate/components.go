@@ -14,11 +14,17 @@ func (o *DevfileState) AddContainer(
 	image string,
 	command []string,
 	args []string,
+	envs []Env,
 	memRequest string,
 	memLimit string,
 	cpuRequest string,
 	cpuLimit string,
 	volumeMounts []VolumeMount,
+	configureSources bool,
+	mountSources bool,
+	sourceMapping string,
+	annotation Annotation,
+	endpoints []Endpoint,
 ) (DevfileContent, error) {
 	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
 	for _, vm := range volumeMounts {
@@ -27,6 +33,38 @@ func (o *DevfileState) AddContainer(
 			Path: vm.Path,
 		})
 	}
+
+	v1alpha2Envs := make([]v1alpha2.EnvVar, 0, len(envs))
+	for _, env := range envs {
+		v1alpha2Envs = append(v1alpha2Envs, v1alpha2.EnvVar{
+			Name:  env.Name,
+			Value: env.Value,
+		})
+	}
+	var annotations *v1alpha2.Annotation
+	if len(annotation.Deployment) > 0 || len(annotation.Service) > 0 {
+		annotations = &v1alpha2.Annotation{}
+		if len(annotation.Deployment) > 0 {
+			annotations.Deployment = annotation.Deployment
+		}
+		if len(annotation.Service) > 0 {
+			annotations.Service = annotation.Service
+		}
+	}
+
+	v1alpha2Endpoints := make([]v1alpha2.Endpoint, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpoint := endpoint
+		v1alpha2Endpoints = append(v1alpha2Endpoints, v1alpha2.Endpoint{
+			Name:       endpoint.Name,
+			TargetPort: int(endpoint.TargetPort),
+			Exposure:   v1alpha2.EndpointExposure(endpoint.Exposure),
+			Protocol:   v1alpha2.EndpointProtocol(endpoint.Protocol),
+			Secure:     &endpoint.Secure,
+			Path:       endpoint.Path,
+		})
+	}
+
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -35,14 +73,21 @@ func (o *DevfileState) AddContainer(
 					Image:         image,
 					Command:       command,
 					Args:          args,
+					Env:           v1alpha2Envs,
 					MemoryRequest: memRequest,
 					MemoryLimit:   memLimit,
 					CpuRequest:    cpuRequest,
 					CpuLimit:      cpuLimit,
 					VolumeMounts:  v1alpha2VolumeMounts,
+					Annotation:    annotations,
 				},
+				Endpoints: v1alpha2Endpoints,
 			},
 		},
+	}
+	if configureSources {
+		container.Container.MountSources = &mountSources
+		container.Container.SourceMapping = sourceMapping
 	}
 	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
 	if err != nil {
