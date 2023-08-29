@@ -81,6 +81,12 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 					Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
 				})
 
+				AfterEach(func() {
+					if commonVar.CliRunner.HasNamespaceProject(namespace) {
+						commonVar.CliRunner.DeleteNamespaceProject(namespace, false)
+					}
+				})
+
 				checkNsDeletionFunc := func(wait bool, nsCheckerFunc func()) {
 					args := []string{"delete", commandName, namespace, "--force"}
 					if wait {
