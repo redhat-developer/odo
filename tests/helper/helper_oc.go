@@ -324,7 +324,7 @@ func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 
 // CreateAndSetRandNamespaceProject create and set new project
 func (oc OcRunner) CreateAndSetRandNamespaceProject() string {
-	projectName := GetProjectName()
+	projectName := GenerateProjectName()
 	oc.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }

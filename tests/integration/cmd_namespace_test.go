@@ -30,7 +30,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 		// Ref: https://github.com/redhat-developer/odo/issues/6827
 		var namespace string
 		BeforeEach(func() {
-			namespace = helper.GetProjectName()
+			namespace = helper.GenerateProjectName()
 			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
 		})
 
