@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/pkg/podman"
 )
 
@@ -28,7 +29,7 @@ func GenerateAndSetContainersConf(dir string) {
 	if !useNamespaces {
 		return
 	}
-	ns := GetProjectName()
+	ns := GenerateProjectName()
 	containersConfPath := filepath.Join(dir, "containers.conf")
 	err := CreateFileWithContent(containersConfPath, fmt.Sprintf(`
 [engine]

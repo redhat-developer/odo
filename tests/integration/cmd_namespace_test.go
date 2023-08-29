@@ -30,9 +30,14 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 		// Ref: https://github.com/redhat-developer/odo/issues/6827
 		var namespace string
 		BeforeEach(func() {
-			namespace = helper.GetProjectName()
+			namespace = helper.GenerateProjectName()
 			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
 		})
+
+		AfterEach(func() {
+			commonVar.CliRunner.DeleteNamespaceProject(namespace, false)
+		})
+
 		It("should list the new namespace when listing namespace", func() {
 			out := helper.Cmd("odo", "list", "namespace").ShouldPass().Out()
 			Expect(out).To(ContainSubstring(namespace))
@@ -74,6 +79,12 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 				BeforeEach(func() {
 					namespace = helper.CreateRandProject()
 					Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
+				})
+
+				AfterEach(func() {
+					if commonVar.CliRunner.HasNamespaceProject(namespace) {
+						commonVar.CliRunner.DeleteNamespaceProject(namespace, false)
+					}
 				})
 
 				checkNsDeletionFunc := func(wait bool, nsCheckerFunc func()) {
