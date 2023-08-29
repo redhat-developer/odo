@@ -523,9 +523,9 @@ For Java, we will use the [Spring Initializr](https://start.spring.io/) to gener
 1. Navigate to [start.spring.io](https://start.spring.io/).
 2. Select **Maven** under **Project**.
 3. Under **Spring Boot** select **2.7.\*** version.
-:::caution
-For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devfile.io](https://registry.devfile.io/) with Java 17.
-:::
+
+> For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devfile.io](https://registry.devfile.io/) with Java 17.
+
 4. Select **11** under **Java**.
 5. Click on "Add" under "Dependencies".
 6. Select "Spring Web".
@@ -617,19 +617,9 @@ To start editing your component, use 'odo dev' and open this folder in your favo
 Changes will be directly reflected on the cluster.
 ```
 
-:::note
-If you skipped Step 0 and selected "starter project", your output will be slightly different.
-:::
-
-</details>
-
+> If you skipped Step 0 and selected "starter project", your output will be slightly different.
 
 ### Step 3. Developing your application continuously (`odo dev`)
-
-import DevSampleOutput from './docs-mdx/java/java_odo_dev_output.mdx';
-import DevPodmanSampleOutput from './docs-mdx/java/java_odo_dev_podman_output.mdx';
-
-import DevDescription from './docs-mdx/odo_dev_description.mdx';
 
 Now that we've generated our code as well as our Devfile, let's start on development.
 
