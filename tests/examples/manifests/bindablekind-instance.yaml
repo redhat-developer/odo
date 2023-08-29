@@ -3,6 +3,7 @@ kind: Cluster
 metadata:
   name: cluster-sample
 spec:
+  imageName: quay.io/enterprisedb/postgresql:15.3-multiarch
   logLevel: info
   startDelay: 30
   stopDelay: 30
