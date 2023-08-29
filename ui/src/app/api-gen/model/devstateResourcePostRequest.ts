@@ -18,5 +18,6 @@ export interface DevstateResourcePostRequest {
     name?: string;
     inlined?: string;
     uri?: string;
+    deployByDefault?: boolean;
 }
 

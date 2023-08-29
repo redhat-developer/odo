@@ -157,7 +157,7 @@ func TestDevfileState_AddApplyCommand(t *testing.T) {
 				_, err := state.AddImage(
 					"an-image",
 					"an-image-name",
-					nil, "/context", false, "",
+					nil, "/context", false, "", false,
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -175,6 +175,7 @@ func TestDevfileState_AddApplyCommand(t *testing.T) {
   id: an-apply-command
 components:
 - image:
+    autoBuild: false
     dockerfile:
       buildContext: /context
       rootRequired: false

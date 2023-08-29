@@ -2,6 +2,9 @@
     <h2>Add a new resource</h2>
     <div class="description">A Resource defines a Kubernetes resource. Its definition can be given either by a URI pointing to a manifest file or by an inlined YAML manifest.</div>
     <form [formGroup]="form">
+        <div>
+            <mat-checkbox formControlName="deployByDefault">Deploy at Startup</mat-checkbox>
+        </div>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Name</span></mat-label>
             <mat-error>Lowercase words separated by dashes. Ex: my-resource</mat-error>

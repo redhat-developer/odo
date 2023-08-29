@@ -53,6 +53,7 @@ func (s *DevstateApiService) DevstateImagePost(ctx context.Context, image openap
 		image.BuildContext,
 		image.RootRequired,
 		image.Uri,
+		image.AutoBuild,
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
@@ -77,6 +78,7 @@ func (s *DevstateApiService) DevstateResourcePost(ctx context.Context, resource 
 		resource.Name,
 		resource.Inlined,
 		resource.Uri,
+		resource.DeployByDefault,
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{

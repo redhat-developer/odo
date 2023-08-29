@@ -43,7 +43,8 @@ export class DevstateService {
       args: image.args,
       buildContext: image.buildContext,
       rootRequired: image.rootRequired,
-      uri: image.uri
+      uri: image.uri,
+      autoBuild: image.autoBuild,
     });
   }
 
@@ -52,6 +53,7 @@ export class DevstateService {
       name: resource.name,
       inlined: resource.inlined,
       uri: resource.uri,
+      deployByDefault: resource.deployByDefault,
     });
   }
 

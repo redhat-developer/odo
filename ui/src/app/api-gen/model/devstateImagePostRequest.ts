@@ -21,5 +21,6 @@ export interface DevstateImagePostRequest {
     buildContext?: string;
     rootRequired?: boolean;
     uri?: string;
+    autoBuild?: boolean;
 }
 
