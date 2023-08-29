@@ -337,9 +337,15 @@ func (oc OcRunner) CreateAndSetRandNamespaceProjectOfLength(i int) string {
 }
 
 func (oc OcRunner) createAndSetRandNamespaceProject(projectName string) string {
-	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := Cmd(oc.path, "new-project", projectName).ShouldPass().Out()
-	Expect(session).To(ContainSubstring(projectName))
+	if oc.HasNamespaceProject(projectName) {
+		fmt.Fprintf(GinkgoWriter, "Project %q already exists\n", projectName)
+	} else {
+		fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
+		session := Cmd(oc.path, "new-project", projectName).ShouldPass().Out()
+		Expect(session).To(ContainSubstring(projectName))
+	}
+	// ListNamespaceProject makes sure that project eventually appears in the list of all namespaces/projects.
+	oc.ListNamespaceProject(projectName)
 	oc.addConfigMapForCleanup(projectName)
 	return projectName
 }
