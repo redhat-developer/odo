@@ -33,6 +33,11 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 			namespace = helper.GetProjectName()
 			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
 		})
+
+		AfterEach(func() {
+			commonVar.CliRunner.DeleteNamespaceProject(namespace, false)
+		})
+
 		It("should list the new namespace when listing namespace", func() {
 			out := helper.Cmd("odo", "list", "namespace").ShouldPass().Out()
 			Expect(out).To(ContainSubstring(namespace))
