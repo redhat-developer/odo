@@ -1699,6 +1699,7 @@ components:
       - buildContext
       - rootRequired
       - uri
+      - autoBuild
       properties:
         name:
           type: string
@@ -1714,10 +1715,13 @@ components:
           type: boolean
         uri:
           type: string
+        autoBuild:
+          type: boolean
     Resource:
       type: object
       required:
       - name      
+      - deployByDefault
       properties:
         name:
           type: string
@@ -1725,6 +1729,8 @@ components:
           type: string
         uri:
           type: string
+        deployByDefault:
+          type: boolean
     Volume:
       type: object
       required:

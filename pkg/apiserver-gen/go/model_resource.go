@@ -15,12 +15,15 @@ type Resource struct {
 	Inlined string `json:"inlined,omitempty"`
 
 	Uri string `json:"uri,omitempty"`
+
+	DeployByDefault bool `json:"deployByDefault"`
 }
 
 // AssertResourceRequired checks if the required fields are not zero-ed
 func AssertResourceRequired(obj Resource) error {
 	elements := map[string]interface{}{
-		"name": obj.Name,
+		"name":            obj.Name,
+		"deployByDefault": obj.DeployByDefault,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {

@@ -18,5 +18,6 @@ export interface Image {
     buildContext: string;
     rootRequired: boolean;
     uri: string;
+    autoBuild: boolean;
 }
 

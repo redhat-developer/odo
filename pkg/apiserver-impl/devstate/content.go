@@ -247,6 +247,7 @@ func (o *DevfileState) getImages() ([]Image, error) {
 			BuildContext: image.Image.Dockerfile.BuildContext,
 			RootRequired: pointer.BoolDeref(image.Image.Dockerfile.RootRequired, false),
 			Uri:          image.Image.Dockerfile.Uri,
+			AutoBuild:    pointer.BoolDeref(image.Image.AutoBuild, false),
 		})
 	}
 	return result, nil
@@ -264,9 +265,10 @@ func (o *DevfileState) getResources() ([]Resource, error) {
 	result := make([]Resource, 0, len(resources))
 	for _, resource := range resources {
 		result = append(result, Resource{
-			Name:    resource.Name,
-			Inlined: resource.ComponentUnion.Kubernetes.Inlined,
-			Uri:     resource.ComponentUnion.Kubernetes.Uri,
+			Name:            resource.Name,
+			Inlined:         resource.ComponentUnion.Kubernetes.Inlined,
+			Uri:             resource.ComponentUnion.Kubernetes.Uri,
+			DeployByDefault: pointer.BoolDeref(resource.ComponentUnion.Kubernetes.DeployByDefault, false),
 		})
 	}
 	return result, nil

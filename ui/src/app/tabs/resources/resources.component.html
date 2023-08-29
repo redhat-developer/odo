@@ -5,7 +5,13 @@
             <mat-card-subtitle>Cluster Resource</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-            <div *ngIf="resource.uri">URI: <code>{{resource.uri}}</code></div>
+            <table class="aligned">
+                <tr>
+                    <td>Deploy at Startup:</td>
+                    <td><code>{{resource.deployByDefault ? "Yes" : "No"}}</code></td>
+                </tr>
+        </table>
+        <div *ngIf="resource.uri">URI: <code>{{resource.uri}}</code></div>
             <div *ngIf="resource.inlined"><pre>{{resource.inlined}}</pre></div>
         </mat-card-content>
 

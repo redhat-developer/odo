@@ -15,5 +15,6 @@ export interface Resource {
     name: string;
     inlined?: string;
     uri?: string;
+    deployByDefault: boolean;
 }
 

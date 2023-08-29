@@ -21,6 +21,8 @@ type Image struct {
 	RootRequired bool `json:"rootRequired"`
 
 	Uri string `json:"uri"`
+
+	AutoBuild bool `json:"autoBuild"`
 }
 
 // AssertImageRequired checks if the required fields are not zero-ed
@@ -32,6 +34,7 @@ func AssertImageRequired(obj Image) error {
 		"buildContext": obj.BuildContext,
 		"rootRequired": obj.RootRequired,
 		"uri":          obj.Uri,
+		"autoBuild":    obj.AutoBuild,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {
