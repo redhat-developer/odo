@@ -298,7 +298,7 @@ func CommonAfterEach(commonVar CommonVar) {
 		}
 	}
 
-	if commonVar.Project != "" {
+	if commonVar.Project != "" && commonVar.CliRunner.HasNamespaceProject(commonVar.Project) {
 		// delete the random project/namespace created in CommonBeforeEach
 		commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project, false)
 	}
