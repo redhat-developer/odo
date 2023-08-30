@@ -8,7 +8,9 @@
             <table class="aligned">
                 <tr>
                     <td>Deploy at Startup:</td>
-                    <td><code>{{resource.deployByDefault ? "Yes" : "No"}}</code></td>
+                    <td *ngIf="resource.deployByDefault"><code>Yes, forced</code></td>
+                    <td *ngIf="!resource.deployByDefault && resource.orphan"><code>Yes, the resource is not referenced by any command</code></td>
+                    <td *ngIf="!resource.deployByDefault && !resource.orphan"><code>No</code></td>
                 </tr>
         </table>
         <div *ngIf="resource.uri">URI: <code>{{resource.uri}}</code></div>

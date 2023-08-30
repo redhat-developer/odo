@@ -8,7 +8,9 @@
             <table class="aligned">
                 <tr>
                     <td>Build at Startup:</td>
-                    <td><code>{{image.autoBuild ? "Yes" : "No"}}</code></td>
+                    <td *ngIf="image.autoBuild"><code>Yes, forced</code></td>
+                    <td *ngIf="!image.autoBuild && image.orphan"><code>Yes, the image is not referenced by any command</code></td>
+                    <td *ngIf="!image.autoBuild && !image.orphan"><code>No</code></td>
                 </tr>
                 <tr>
                     <td>Image Name:</td>

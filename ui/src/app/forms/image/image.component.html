@@ -3,7 +3,7 @@
     <div class="description">An Image defines how to build a container image.</div>
     <form [formGroup]="form">
         <div>
-            <mat-checkbox formControlName="autoBuild">Build at Startup</mat-checkbox>
+            <mat-checkbox matTooltip="Images referenced in commands won't be built at startup. You can force to build this image at startup, even if it is referenced in a command" formControlName="autoBuild">Force build at Startup</mat-checkbox>
         </div>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Name</span></mat-label>
