@@ -939,6 +939,47 @@ paths:
               example:
                 message: "Error deleting the volume"
 
+    patch:
+      tags:
+      - devstate
+      description: "Update a volume"
+      parameters:
+        - name: volumeName
+          in: path
+          description: Volume name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  description: Minimal size of the volume
+                  type: string
+                ephemeral:
+                  description: True if the Volume is Ephemeral
+                  type: boolean
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Volume has been updated"
+          description: "Volume has been updated"
+        '500':
+          description: Error updating the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the volume"
+
   /devstate/applyCommand:
     post:
       tags:

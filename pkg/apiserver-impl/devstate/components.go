@@ -267,8 +267,32 @@ func (o *DevfileState) AddVolume(name string, ephemeral bool, size string) (Devf
 	return o.GetContent()
 }
 
-func (o *DevfileState) DeleteVolume(name string) (DevfileContent, error) {
+func (o *DevfileState) PatchVolume(name string, ephemeral bool, size string) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1alpha2.VolumeComponentType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Volume found with name %q", len(found), name)
+	}
 
+	volume := found[0]
+	volume.Volume.Ephemeral = &ephemeral
+	volume.Volume.Size = size
+
+	err = o.Devfile.Data.UpdateComponent(volume)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) DeleteVolume(name string) (DevfileContent, error) {
 	err := o.checkVolumeUsed(name)
 	if err != nil {
 		return DevfileContent{}, fmt.Errorf("error deleting volume %q: %w", name, err)

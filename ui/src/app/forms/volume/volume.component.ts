@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Volume } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
@@ -12,8 +12,11 @@ import { DevstateService } from 'src/app/services/devstate.service';
 })
 export class VolumeComponent {
   @Input() cancelable: boolean = false;
+  @Input() volume: Volume | undefined;
+  
   @Output() canceled = new EventEmitter<void>();
   @Output() created = new EventEmitter<Volume>();
+  @Output() saved = new EventEmitter<Volume>();
 
   form: FormGroup;
 
@@ -33,7 +36,28 @@ export class VolumeComponent {
     this.created.emit(this.form.value);
   }
 
+  save() {
+    const newValue = this.form.value;
+    newValue.name = this.volume?.name;
+    this.telemetry.track("[ui] edit volume");
+    this.saved.emit(this.form.value);
+  }
+
   cancel() {
     this.canceled.emit();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['volume']) {
+      return;
+    }
+    const vol = changes['volume'].currentValue;
+    if (vol == undefined) {
+      this.form.get('name')?.enable();
+    } else {
+      this.form.reset();
+      this.form.patchValue(vol);
+      this.form.get('name')?.disable();
+    }
   }
 }

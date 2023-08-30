@@ -63,6 +63,13 @@ export class DevstateService {
     });
   }
 
+  saveVolume(volume: Volume): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/volume/"+volume.name, {
+      ephemeral: volume.ephemeral,
+      size: volume.size,
+    });
+  }
+
   addExecCommand(name: string, cmd: ExecCommand): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/execCommand", {
       name: name,

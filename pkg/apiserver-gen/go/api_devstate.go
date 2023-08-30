@@ -182,6 +182,12 @@ func (c *DevstateApiController) Routes() Routes {
 			"/api/v1/devstate/volume/{volumeName}",
 			c.DevstateVolumeVolumeNameDelete,
 		},
+		{
+			"DevstateVolumeVolumeNamePatch",
+			strings.ToUpper("Patch"),
+			"/api/v1/devstate/volume/{volumeName}",
+			c.DevstateVolumeVolumeNamePatch,
+		},
 	}
 }
 
@@ -620,6 +626,32 @@ func (c *DevstateApiController) DevstateVolumeVolumeNameDelete(w http.ResponseWr
 	params := mux.Vars(r)
 	volumeNameParam := params["volumeName"]
 	result, err := c.service.DevstateVolumeVolumeNameDelete(r.Context(), volumeNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateVolumeVolumeNamePatch -
+func (c *DevstateApiController) DevstateVolumeVolumeNamePatch(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	volumeNameParam := params["volumeName"]
+	devstateVolumeVolumeNamePatchRequestParam := DevstateVolumeVolumeNamePatchRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateVolumeVolumeNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateVolumeVolumeNamePatchRequestRequired(devstateVolumeVolumeNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateVolumeVolumeNamePatch(r.Context(), volumeNameParam, devstateVolumeVolumeNamePatchRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

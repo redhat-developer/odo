@@ -31,6 +31,7 @@ model/devstateImagePostRequest.ts
 model/devstateQuantityValidPostRequest.ts
 model/devstateResourcePostRequest.ts
 model/devstateVolumePostRequest.ts
+model/devstateVolumeVolumeNamePatchRequest.ts
 model/endpoint.ts
 model/env.ts
 model/events.ts
