@@ -359,6 +359,7 @@ schemaVersion: 2.2.0
 						BuildContext: "path/to/context",
 						RootRequired: true,
 						Uri:          "an-uri",
+						Orphan:       true,
 					},
 				},
 				Resources: []Resource{},
@@ -511,8 +512,9 @@ schemaVersion: 2.2.0
 				Images:     []Image{},
 				Resources: []Resource{
 					{
-						Name: "a-name",
-						Uri:  "an-uri",
+						Name:   "a-name",
+						Uri:    "an-uri",
+						Orphan: true,
 					},
 				},
 				Volumes: []Volume{},
@@ -544,6 +546,7 @@ schemaVersion: 2.2.0
 					{
 						Name:    "a-name",
 						Inlined: "inline resource...",
+						Orphan:  true,
 					},
 				},
 				Volumes: []Volume{},
