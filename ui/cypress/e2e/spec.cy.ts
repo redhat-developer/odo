@@ -220,6 +220,31 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'Yes')
   });
 
+  it('displays a modified volume', () => {
+    cy.init();
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-name').type('created-volume');
+    cy.getByDataCy('volume-size').type('512Mi');
+    cy.getByDataCy('volume-ephemeral').click();
+    cy.getByDataCy('volume-create').click();
+
+    cy.getByDataCy('volume-info').first()
+      .should('contain.text', 'created-volume')
+      .should('contain.text', '512Mi')
+      .should('contain.text', 'Yes');
+
+    cy.getByDataCy('volume-edit').click();
+    cy.getByDataCy('volume-size').type('{selectAll}{del}1Gi');
+    cy.getByDataCy('volume-ephemeral').click();
+    cy.getByDataCy('volume-save').click();
+
+    cy.getByDataCy('volume-info').first()
+      .should('contain.text', 'created-volume')
+      .should('contain.text', '1Gi')
+      .should('contain.text', 'No');
+  });
+
   it('creates an exec command with a new container', () => {
     cy.init();
 
