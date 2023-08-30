@@ -1704,6 +1704,7 @@ components:
       - rootRequired
       - uri
       - autoBuild
+      - orphan
       properties:
         name:
           type: string
@@ -1721,11 +1722,15 @@ components:
           type: string
         autoBuild:
           type: boolean
+        orphan:
+          description: true if the image is not referenced in any command
+          type: boolean
     Resource:
       type: object
       required:
       - name      
       - deployByDefault
+      - orphan
       properties:
         name:
           type: string
@@ -1734,6 +1739,9 @@ components:
         uri:
           type: string
         deployByDefault:
+          type: boolean
+        orphan:
+          description: true if the resource is not referenced in any command
           type: boolean
     Volume:
       type: object

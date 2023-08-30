@@ -19,5 +19,9 @@ export interface Image {
     rootRequired: boolean;
     uri: string;
     autoBuild: boolean;
+    /**
+     * true if the image is not referenced in any command
+     */
+    orphan: boolean;
 }
 

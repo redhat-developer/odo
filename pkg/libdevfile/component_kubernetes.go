@@ -68,11 +68,11 @@ func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) 
 			k = comp.Openshift.K8sLikeComponent
 		}
 		var add bool
-		if allowApply && isComponentReferenced(allApplyCommands, comp.Name) {
+		if allowApply && IsComponentReferenced(allApplyCommands, comp.Name) {
 			add = true
 		} else if k.DeployByDefault == nil {
 			// auto-created only if not referenced by any apply command
-			if !isComponentReferenced(allApplyCommands, comp.Name) {
+			if !IsComponentReferenced(allApplyCommands, comp.Name) {
 				add = true
 			}
 		} else if *k.DeployByDefault {

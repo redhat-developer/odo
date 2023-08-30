@@ -52,7 +52,7 @@ func GetImageComponentsToPushAutomatically(devfileObj parser.DevfileObj) ([]v1al
 		var add bool
 		if comp.Image.AutoBuild == nil {
 			// auto-created only if not referenced by any apply command
-			if !isComponentReferenced(allApplyCommands, comp.Name) {
+			if !IsComponentReferenced(allApplyCommands, comp.Name) {
 				add = true
 			}
 		} else if *comp.Image.AutoBuild {

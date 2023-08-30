@@ -23,6 +23,9 @@ type Image struct {
 	Uri string `json:"uri"`
 
 	AutoBuild bool `json:"autoBuild"`
+
+	// true if the image is not referenced in any command
+	Orphan bool `json:"orphan"`
 }
 
 // AssertImageRequired checks if the required fields are not zero-ed
@@ -35,6 +38,7 @@ func AssertImageRequired(obj Image) error {
 		"rootRequired": obj.RootRequired,
 		"uri":          obj.Uri,
 		"autoBuild":    obj.AutoBuild,
+		"orphan":       obj.Orphan,
 	}
 	for name, el := range elements {
 		if isZero := IsZeroValue(el); isZero {

@@ -16,5 +16,9 @@ export interface Resource {
     inlined?: string;
     uri?: string;
     deployByDefault: boolean;
+    /**
+     * true if the resource is not referenced in any command
+     */
+    orphan: boolean;
 }
 
