@@ -6,7 +6,7 @@
         </mat-card-header>
         <mat-card-content>
             <table class="aligned">
-                <tr>
+                <tr data-cy="image-build-startup">
                     <td>Build at Startup:</td>
                     <td *ngIf="image.autoBuild"><code>Yes, forced</code></td>
                     <td *ngIf="!image.autoBuild && image.orphan"><code>Yes, the image is not referenced by any command</code></td>

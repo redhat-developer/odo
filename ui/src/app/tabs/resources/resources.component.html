@@ -6,7 +6,7 @@
         </mat-card-header>
         <mat-card-content>
             <table class="aligned">
-                <tr>
+                <tr data-cy="resource-deploy-startup">
                     <td>Deploy at Startup:</td>
                     <td *ngIf="resource.deployByDefault"><code>Yes, forced</code></td>
                     <td *ngIf="!resource.deployByDefault && resource.orphan"><code>Yes, the resource is not referenced by any command</code></td>

@@ -3,7 +3,7 @@
     <div class="description">A Resource defines a Kubernetes resource. Its definition can be given either by a URI pointing to a manifest file or by an inlined YAML manifest.</div>
     <form [formGroup]="form">
         <div>
-            <mat-checkbox matTooltip="Resources referenced in commands won't be deployed at startup. You can force to deploy this resource at startup, even if it is referenced in a command" formControlName="deployByDefault">Force Deployment at Startup</mat-checkbox>
+            <mat-checkbox data-cy="resource-deploy-by-default" matTooltip="Resources referenced in commands won't be deployed at startup. You can force to deploy this resource at startup, even if it is referenced in a command" formControlName="deployByDefault">Force Deployment at Startup</mat-checkbox>
         </div>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Name</span></mat-label>
