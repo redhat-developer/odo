@@ -257,14 +257,14 @@ func (o *DevfileState) getImages() ([]Image, error) {
 			BuildContext: image.Image.Dockerfile.BuildContext,
 			RootRequired: pointer.BoolDeref(image.Image.Dockerfile.RootRequired, false),
 			Uri:          image.Image.Dockerfile.Uri,
-			AutoBuild:    getAutoBuild(image.Image.AutoBuild),
+			AutoBuild:    getThreeState(image.Image.AutoBuild),
 			Orphan:       !libdevfile.IsComponentReferenced(allApplyCommands, image.Name),
 		})
 	}
 	return result, nil
 }
 
-func getAutoBuild(v *bool) string {
+func getThreeState(v *bool) string {
 	if v == nil {
 		return "undefined"
 	}
@@ -298,7 +298,7 @@ func (o *DevfileState) getResources() ([]Resource, error) {
 			Name:            resource.Name,
 			Inlined:         resource.ComponentUnion.Kubernetes.Inlined,
 			Uri:             resource.ComponentUnion.Kubernetes.Uri,
-			DeployByDefault: pointer.BoolDeref(resource.ComponentUnion.Kubernetes.DeployByDefault, false),
+			DeployByDefault: getThreeState(resource.ComponentUnion.Kubernetes.DeployByDefault),
 			Orphan:          !libdevfile.IsComponentReferenced(allApplyCommands, resource.Name),
 		})
 	}

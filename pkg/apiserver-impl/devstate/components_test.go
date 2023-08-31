@@ -481,7 +481,7 @@ func TestDevfileState_AddResource(t *testing.T) {
 		name            string
 		inline          string
 		uri             string
-		deployByDefault bool
+		deployByDefault string
 	}
 	tests := []struct {
 		name    string
@@ -502,7 +502,6 @@ func TestDevfileState_AddResource(t *testing.T) {
 			want: DevfileContent{
 				Content: `components:
 - kubernetes:
-    deployByDefault: false
     uri: an-uri
   name: a-name
 metadata: {}
@@ -513,9 +512,10 @@ schemaVersion: 2.2.0
 				Images:     []Image{},
 				Resources: []Resource{
 					{
-						Name:   "a-name",
-						Uri:    "an-uri",
-						Orphan: true,
+						Name:            "a-name",
+						Uri:             "an-uri",
+						Orphan:          true,
+						DeployByDefault: "undefined",
 					},
 				},
 				Volumes: []Volume{},
@@ -534,7 +534,6 @@ schemaVersion: 2.2.0
 			want: DevfileContent{
 				Content: `components:
 - kubernetes:
-    deployByDefault: false
     inlined: inline resource...
   name: a-name
 metadata: {}
@@ -545,9 +544,10 @@ schemaVersion: 2.2.0
 				Images:     []Image{},
 				Resources: []Resource{
 					{
-						Name:    "a-name",
-						Inlined: "inline resource...",
-						Orphan:  true,
+						Name:            "a-name",
+						Inlined:         "inline resource...",
+						Orphan:          true,
+						DeployByDefault: "undefined",
 					},
 				},
 				Volumes: []Volume{},
@@ -593,7 +593,7 @@ func TestDevfileState_Deleteresource(t *testing.T) {
 					"a-name",
 					"",
 					"an-uri",
-					false,
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -623,7 +623,7 @@ schemaVersion: 2.2.0
 					"a-name",
 					"",
 					"an-uri",
-					false,
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)

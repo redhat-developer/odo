@@ -24,7 +24,7 @@ export class ResourceComponent {
       name: new FormControl("", [Validators.required, Validators.pattern(PATTERN_COMPONENT_ID)]),
       uri: new FormControl("", [Validators.required]),
       inlined: new FormControl("", []),
-      deployByDefault: new FormControl(false),
+      deployByDefault: new FormControl("undefined"),
     })
   }
 

@@ -198,7 +198,7 @@ func (o *DevfileState) checkImageUsed(name string) error {
 	return nil
 }
 
-func (o *DevfileState) AddResource(name string, inlined string, uri string, deployByDefault bool) (DevfileContent, error) {
+func (o *DevfileState) AddResource(name string, inlined string, uri string, deployByDefault string) (DevfileContent, error) {
 	if inlined != "" && uri != "" {
 		return DevfileContent{}, errors.New("both inlined and uri cannot be set at the same time")
 	}
@@ -207,7 +207,6 @@ func (o *DevfileState) AddResource(name string, inlined string, uri string, depl
 		ComponentUnion: v1alpha2.ComponentUnion{
 			Kubernetes: &v1alpha2.KubernetesComponent{
 				K8sLikeComponent: v1alpha2.K8sLikeComponent{
-					DeployByDefault: &deployByDefault,
 					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
 						Inlined: inlined,
 						Uri:     uri,
@@ -216,6 +215,12 @@ func (o *DevfileState) AddResource(name string, inlined string, uri string, depl
 			},
 		},
 	}
+	if deployByDefault == "never" {
+		container.Kubernetes.DeployByDefault = pointer.Bool(false)
+	} else if deployByDefault == "always" {
+		container.Kubernetes.DeployByDefault = pointer.Bool(true)
+	}
+
 	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
 	if err != nil {
 		return DevfileContent{}, err

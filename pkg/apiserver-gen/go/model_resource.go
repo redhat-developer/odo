@@ -16,7 +16,7 @@ type Resource struct {
 
 	Uri string `json:"uri,omitempty"`
 
-	DeployByDefault bool `json:"deployByDefault"`
+	DeployByDefault string `json:"deployByDefault"`
 
 	// true if the resource is not referenced in any command
 	Orphan bool `json:"orphan"`

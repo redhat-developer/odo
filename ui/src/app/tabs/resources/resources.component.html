@@ -8,12 +8,13 @@
             <table class="aligned">
                 <tr data-cy="resource-deploy-startup">
                     <td>Deploy at Startup:</td>
-                    <td *ngIf="resource.deployByDefault"><code>Yes, forced</code></td>
-                    <td *ngIf="!resource.deployByDefault && resource.orphan"><code>Yes, the resource is not referenced by any command</code></td>
-                    <td *ngIf="!resource.deployByDefault && !resource.orphan"><code>No</code></td>
+                    <td *ngIf="resource.deployByDefault == 'always'"><code>Yes, forced</code></td>
+                    <td *ngIf="resource.deployByDefault == 'undefined' && resource.orphan"><code>Yes, the resource is not referenced by any command</code></td>
+                    <td *ngIf="resource.deployByDefault == 'undefined' && !resource.orphan"><code>No, the resource is referenced by a command</code></td>
+                    <td *ngIf="resource.deployByDefault == 'never'"><code>No, disabled</code></td>
                 </tr>
-        </table>
-        <div *ngIf="resource.uri">URI: <code>{{resource.uri}}</code></div>
+            </table>
+            <div *ngIf="resource.uri">URI: <code>{{resource.uri}}</code></div>
             <div *ngIf="resource.inlined"><pre>{{resource.inlined}}</pre></div>
         </mat-card-content>
 

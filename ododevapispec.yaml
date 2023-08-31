@@ -776,7 +776,11 @@ paths:
                 uri:
                   type: string
                 deployByDefault:
-                  type: boolean
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
       responses:
         '200':
           description: resource was successfully added to the devfile
@@ -1747,7 +1751,11 @@ components:
         uri:
           type: string
         deployByDefault:
-          type: boolean
+          type: string
+          enum:
+          - never
+          - undefined
+          - always
         orphan:
           description: true if the resource is not referenced in any command
           type: boolean

@@ -248,7 +248,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('resource-name').type('created-resource');
     cy.getByDataCy('resource-toggle-inlined').click();
     cy.getByDataCy('resource-manifest').type('a-resource-manifest');
-    cy.getByDataCy('resource-deploy-by-default').click();
+    cy.getByDataCy('resource-auto-deploy-always').click();
     cy.getByDataCy('resource-create').click();
 
     cy.getByDataCy('resource-info').first()
@@ -257,7 +257,25 @@ describe('devfile editor spec', () => {
 
     cy.getByDataCy('resource-deploy-startup').first()
       .should('contain.text', 'Yes, forced');
-    });
+  });
+
+  it('displays a created resource, with disabled deploy', () => {
+    cy.init();
+
+    cy.selectTab(TAB_RESOURCES);
+    cy.getByDataCy('resource-name').type('created-resource');
+    cy.getByDataCy('resource-toggle-inlined').click();
+    cy.getByDataCy('resource-manifest').type('a-resource-manifest');
+    cy.getByDataCy('resource-auto-deploy-never').click();
+    cy.getByDataCy('resource-create').click();
+
+    cy.getByDataCy('resource-info').first()
+      .should('contain.text', 'created-resource')
+      .should('contain.text', 'a-resource-manifest');
+
+    cy.getByDataCy('resource-deploy-startup').first()
+      .should('contain.text', 'No, disabled');
+  });
 
   it('displays a created volume', () => {
     cy.init();
@@ -412,7 +430,7 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'spec: {}');
 
     cy.getByDataCy('resource-deploy-startup').first()
-      .should('contain.text', 'No');
+      .should('contain.text', 'No, the resource is referenced by a command');
   });
 
   it('creates an apply resource command with a new resource using uri (default)', () => {

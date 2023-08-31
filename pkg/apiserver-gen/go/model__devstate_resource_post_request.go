@@ -18,7 +18,7 @@ type DevstateResourcePostRequest struct {
 
 	Uri string `json:"uri,omitempty"`
 
-	DeployByDefault bool `json:"deployByDefault,omitempty"`
+	DeployByDefault string `json:"deployByDefault,omitempty"`
 }
 
 // AssertDevstateResourcePostRequestRequired checks if the required fields are not zero-ed

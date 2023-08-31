@@ -18,6 +18,15 @@ export interface DevstateResourcePostRequest {
     name?: string;
     inlined?: string;
     uri?: string;
-    deployByDefault?: boolean;
+    deployByDefault?: DevstateResourcePostRequest.DeployByDefaultEnum;
 }
+export namespace DevstateResourcePostRequest {
+    export type DeployByDefaultEnum = 'never' | 'undefined' | 'always';
+    export const DeployByDefaultEnum = {
+        Never: 'never' as DeployByDefaultEnum,
+        Undefined: 'undefined' as DeployByDefaultEnum,
+        Always: 'always' as DeployByDefaultEnum
+    };
+}
+
 
