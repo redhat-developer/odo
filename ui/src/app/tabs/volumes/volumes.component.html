@@ -19,19 +19,22 @@
 
         <mat-card-actions>
             <button mat-button color="warn" (click)="delete(volume.name)">Delete</button>
+            <button data-cy="volume-edit" mat-button (click)="edit(volume)">Edit</button>
         </mat-card-actions>
 
     </mat-card>
 
     <app-volume
-        *ngIf="forceDisplayAdd || volumes == undefined || volumes.length == 0"
-        [cancelable]="forceDisplayAdd"
+        *ngIf="forceDisplayForm || volumes == undefined || volumes.length == 0"
+        [cancelable]="forceDisplayForm"
         (canceled)="undisplayAddForm()"
         (created)="onCreated($event)"
+        [volume]="editingVolume"
+        (saved)="onSaved($event)"
     ></app-volume>
 </div>
 
-<ng-container *ngIf="!forceDisplayAdd && volumes != undefined && volumes.length > 0">
+<ng-container *ngIf="!forceDisplayForm && volumes != undefined && volumes.length > 0">
     <button class="fab" mat-fab color="primary" (click)="displayAddForm()">
         <mat-icon class="material-icons-outlined">add</mat-icon>
     </button>

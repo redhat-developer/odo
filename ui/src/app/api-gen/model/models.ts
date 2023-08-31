@@ -21,6 +21,7 @@ export * from './devstateImagePostRequest';
 export * from './devstateQuantityValidPostRequest';
 export * from './devstateResourcePostRequest';
 export * from './devstateVolumePostRequest';
+export * from './devstateVolumeVolumeNamePatchRequest';
 export * from './endpoint';
 export * from './env';
 export * from './events';

@@ -10,8 +10,9 @@ import { StateService } from 'src/app/services/state.service';
 })
 export class VolumesComponent {
 
-  forceDisplayAdd: boolean = false;
+  forceDisplayForm: boolean = false;
   volumes: Volume[] | undefined = [];
+  editingVolume: Volume | undefined;
 
   constructor(
     private state: StateService,
@@ -25,19 +26,24 @@ export class VolumesComponent {
       if (this.volumes == null) {
         return
       }
-      that.forceDisplayAdd = false;
+      that.forceDisplayForm = false;
     });
   }
 
   displayAddForm() {
-    this.forceDisplayAdd = true;
+    this.editingVolume = undefined;
+    this.displayForm();
+  }
+
+  displayForm() {
+    this.forceDisplayForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
   undisplayAddForm() {
-    this.forceDisplayAdd = false;
+    this.forceDisplayForm = false;
   }
 
   delete(name: string) {
@@ -54,8 +60,25 @@ export class VolumesComponent {
     }
   }
 
+  edit(volume: Volume) {
+    this.editingVolume = volume;
+    this.displayForm();
+  }
+
   onCreated(volume: Volume) {
     const result = this.devstate.addVolume(volume);
+    result.subscribe({
+      next: value => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: error => {
+        alert(error.error.message);
+      }
+    });
+  }
+
+  onSaved(volume: Volume) {
+    const result = this.devstate.saveVolume(volume);
     result.subscribe({
       next: value => {
         this.state.changeDevfileYaml(value);

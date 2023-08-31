@@ -297,3 +297,18 @@ func (s *DevstateApiService) DevstateDevfileDelete(context.Context) (openapi.Imp
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DevstateApiService) DevstateVolumeVolumeNamePatch(ctx context.Context, name string, patch openapi.DevstateVolumeVolumeNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchVolume(
+		name,
+		patch.Ephemeral,
+		patch.Size,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the volume: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+
+}
