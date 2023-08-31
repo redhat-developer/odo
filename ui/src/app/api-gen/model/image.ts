@@ -18,10 +18,19 @@ export interface Image {
     buildContext: string;
     rootRequired: boolean;
     uri: string;
-    autoBuild: boolean;
+    autoBuild: Image.AutoBuildEnum;
     /**
      * true if the image is not referenced in any command
      */
     orphan: boolean;
 }
+export namespace Image {
+    export type AutoBuildEnum = 'never' | 'undefined' | 'always';
+    export const AutoBuildEnum = {
+        Never: 'never' as AutoBuildEnum,
+        Undefined: 'undefined' as AutoBuildEnum,
+        Always: 'always' as AutoBuildEnum
+    };
+}
+
 

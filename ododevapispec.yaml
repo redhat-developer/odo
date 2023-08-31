@@ -677,7 +677,11 @@ paths:
                 uri:
                   type: string
                 autoBuild:
-                  type: boolean
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
       responses:
         '200':
           description: image was successfully added to the devfile
@@ -1721,7 +1725,11 @@ components:
         uri:
           type: string
         autoBuild:
-          type: boolean
+          type: string
+          enum:
+          - never
+          - undefined
+          - always
         orphan:
           description: true if the image is not referenced in any command
           type: boolean

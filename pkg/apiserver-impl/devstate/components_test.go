@@ -311,7 +311,7 @@ func TestDevfileState_AddImage(t *testing.T) {
 		buildContext string
 		rootRequired bool
 		uri          string
-		autoBuild    bool
+		autoBuild    string
 	}
 	tests := []struct {
 		name    string
@@ -332,11 +332,11 @@ func TestDevfileState_AddImage(t *testing.T) {
 				buildContext: "path/to/context",
 				rootRequired: true,
 				uri:          "an-uri",
+				autoBuild:    "undefined",
 			},
 			want: DevfileContent{
 				Content: `components:
 - image:
-    autoBuild: false
     dockerfile:
       args:
       - start
@@ -360,6 +360,7 @@ schemaVersion: 2.2.0
 						RootRequired: true,
 						Uri:          "an-uri",
 						Orphan:       true,
+						AutoBuild:    "undefined",
 					},
 				},
 				Resources: []Resource{},
@@ -409,7 +410,7 @@ func TestDevfileState_DeleteImage(t *testing.T) {
 					"path/to/context",
 					true,
 					"an-uri",
-					false,
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -442,7 +443,7 @@ schemaVersion: 2.2.0
 					"path/to/context",
 					true,
 					"an-uri",
-					false,
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)

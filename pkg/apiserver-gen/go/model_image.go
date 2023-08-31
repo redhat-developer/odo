@@ -22,7 +22,7 @@ type Image struct {
 
 	Uri string `json:"uri"`
 
-	AutoBuild bool `json:"autoBuild"`
+	AutoBuild string `json:"autoBuild"`
 
 	// true if the image is not referenced in any command
 	Orphan bool `json:"orphan"`

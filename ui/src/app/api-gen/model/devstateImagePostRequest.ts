@@ -21,6 +21,15 @@ export interface DevstateImagePostRequest {
     buildContext?: string;
     rootRequired?: boolean;
     uri?: string;
-    autoBuild?: boolean;
+    autoBuild?: DevstateImagePostRequest.AutoBuildEnum;
 }
+export namespace DevstateImagePostRequest {
+    export type AutoBuildEnum = 'never' | 'undefined' | 'always';
+    export const AutoBuildEnum = {
+        Never: 'never' as AutoBuildEnum,
+        Undefined: 'undefined' as AutoBuildEnum,
+        Always: 'always' as AutoBuildEnum
+    };
+}
+
 

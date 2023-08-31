@@ -34,6 +34,7 @@ func (o *DevfileState) SetDevfileContent(content string) (DevfileContent, error)
 	parserArgs := parser.ParserArgs{
 		Data:                          []byte(content),
 		ConvertKubernetesContentInUri: pointer.Bool(false),
+		SetBooleanDefaults:            pointer.Bool(false),
 	}
 	var err error
 	devfile, _, err := devfile.ParseDevfileAndValidate(parserArgs)

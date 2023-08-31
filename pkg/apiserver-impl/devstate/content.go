@@ -257,11 +257,21 @@ func (o *DevfileState) getImages() ([]Image, error) {
 			BuildContext: image.Image.Dockerfile.BuildContext,
 			RootRequired: pointer.BoolDeref(image.Image.Dockerfile.RootRequired, false),
 			Uri:          image.Image.Dockerfile.Uri,
-			AutoBuild:    pointer.BoolDeref(image.Image.AutoBuild, false),
+			AutoBuild:    getAutoBuild(image.Image.AutoBuild),
 			Orphan:       !libdevfile.IsComponentReferenced(allApplyCommands, image.Name),
 		})
 	}
 	return result, nil
+}
+
+func getAutoBuild(v *bool) string {
+	if v == nil {
+		return "undefined"
+	}
+	if *v {
+		return "always"
+	}
+	return "never"
 }
 
 func (o *DevfileState) getResources() ([]Resource, error) {

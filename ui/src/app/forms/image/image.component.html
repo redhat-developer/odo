@@ -2,8 +2,12 @@
     <h2>Add a new image</h2>
     <div class="description">An Image defines how to build a container image.</div>
     <form [formGroup]="form">
-        <div>
-            <mat-checkbox data-cy="image-auto-build" matTooltip="Images referenced in commands won't be built at startup. You can force to build this image at startup, even if it is referenced in a command" formControlName="autoBuild">Force build at Startup</mat-checkbox>
+        <div class="toggle-group-div">
+            Build at Startup: <mat-button-toggle-group formControlName="autoBuild">
+                <mat-button-toggle data-cy="image-auto-build-never" matTooltip="Do not build the image at startup" value="never">Never</mat-button-toggle>
+                <mat-button-toggle data-cy="image-auto-build-undefined" matTooltip="Build at startup only if the image is not referenced in any command" value="undefined">If Orphan</mat-button-toggle>
+                <mat-button-toggle data-cy="image-auto-build-always" matTooltip="Force building the image at startup" value="always">Always</mat-button-toggle>
+            </mat-button-toggle-group>
         </div>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Name</span></mat-label>

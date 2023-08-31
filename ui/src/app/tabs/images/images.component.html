@@ -8,9 +8,10 @@
             <table class="aligned">
                 <tr data-cy="image-build-startup">
                     <td>Build at Startup:</td>
-                    <td *ngIf="image.autoBuild"><code>Yes, forced</code></td>
-                    <td *ngIf="!image.autoBuild && image.orphan"><code>Yes, the image is not referenced by any command</code></td>
-                    <td *ngIf="!image.autoBuild && !image.orphan"><code>No</code></td>
+                    <td *ngIf="image.autoBuild == 'always'"><code>Yes, forced</code></td>
+                    <td *ngIf="image.autoBuild == 'undefined' && image.orphan"><code>Yes, the image is not referenced by any command</code></td>
+                    <td *ngIf="image.autoBuild == 'undefined' && !image.orphan"><code>No, the image is referenced by a command</code></td>
+                    <td *ngIf="image.autoBuild == 'never'"><code>No, disabled</code></td>
                 </tr>
                 <tr>
                     <td>Image Name:</td>

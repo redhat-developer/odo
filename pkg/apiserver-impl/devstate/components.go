@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"k8s.io/utils/pointer"
 )
 
 func (o *DevfileState) AddContainer(
@@ -129,7 +130,7 @@ func (o *DevfileState) checkContainerUsed(name string) error {
 	return nil
 }
 
-func (o *DevfileState) AddImage(name string, imageName string, args []string, buildContext string, rootRequired bool, uri string, autoBuild bool) (DevfileContent, error) {
+func (o *DevfileState) AddImage(name string, imageName string, args []string, buildContext string, rootRequired bool, uri string, autoBuild string) (DevfileContent, error) {
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -137,7 +138,6 @@ func (o *DevfileState) AddImage(name string, imageName string, args []string, bu
 				Image: v1alpha2.Image{
 					ImageName: imageName,
 					ImageUnion: v1alpha2.ImageUnion{
-						AutoBuild: &autoBuild,
 						Dockerfile: &v1alpha2.DockerfileImage{
 							Dockerfile: v1alpha2.Dockerfile{
 								Args:         args,
@@ -152,6 +152,11 @@ func (o *DevfileState) AddImage(name string, imageName string, args []string, bu
 				},
 			},
 		},
+	}
+	if autoBuild == "never" {
+		container.Image.AutoBuild = pointer.Bool(false)
+	} else if autoBuild == "always" {
+		container.Image.AutoBuild = pointer.Bool(true)
 	}
 	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
 	if err != nil {

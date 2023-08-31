@@ -188,11 +188,26 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('image-image-name').type('an-image-name');
     cy.getByDataCy('image-build-context').type('/path/to/build/context');
     cy.getByDataCy('image-dockerfile-uri').type('/path/to/dockerfile');
-    cy.getByDataCy('image-auto-build').click();
+    cy.getByDataCy('image-auto-build-always').click();
     cy.getByDataCy('image-create').click();
 
     cy.getByDataCy('image-build-startup').first()
       .should('contain.text', 'Yes, forced');
+  });
+
+  it('displays a created image with disabled build', () => {
+    cy.init();
+
+    cy.selectTab(TAB_IMAGES);
+    cy.getByDataCy('image-name').type('created-image');
+    cy.getByDataCy('image-image-name').type('an-image-name');
+    cy.getByDataCy('image-build-context').type('/path/to/build/context');
+    cy.getByDataCy('image-dockerfile-uri').type('/path/to/dockerfile');
+    cy.getByDataCy('image-auto-build-never').click();
+    cy.getByDataCy('image-create').click();
+
+    cy.getByDataCy('image-build-startup').first()
+      .should('contain.text', 'No, disabled');
   });
 
   it('displays a created resource, with manifest', () => {
@@ -368,7 +383,7 @@ describe('devfile editor spec', () => {
       .should('contain.text', '/path/to/Dockerfile');
 
     cy.getByDataCy('image-build-startup').first()
-      .should('contain.text', 'No');
+      .should('contain.text', 'No, the image is referenced by a command');
   });
 
   it('creates an apply resource command with a new resource using manifest', () => {

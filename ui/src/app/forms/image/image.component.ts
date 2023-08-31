@@ -26,7 +26,7 @@ export class ImageComponent {
       buildContext: new FormControl(""),
       rootRequired: new FormControl(false),
       uri: new FormControl("", [Validators.required]),
-      autoBuild: new FormControl(false),
+      autoBuild: new FormControl("undefined"),
     })
   }
 
