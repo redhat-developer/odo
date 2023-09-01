@@ -1,5 +1,12 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {Component, EventEmitter, forwardRef, Input, Output} from '@angular/core';
+import {
+  AbstractControl,
+  ControlValueAccessor,
+  FormArray, FormControl,
+  FormGroup, NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors, Validator, Validators
+} from '@angular/forms';
 
 @Component({
   selector: 'app-select-container',
@@ -10,21 +17,30 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       provide: NG_VALUE_ACCESSOR,
       multi: true,
       useExisting: SelectContainerComponent
-    }
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => SelectContainerComponent),
+      multi: true,
+    },
   ]
 })
-export class SelectContainerComponent implements ControlValueAccessor {
-  
+export class SelectContainerComponent implements ControlValueAccessor, Validator {
+
   @Input() containers: string[] = [];
   @Input() label: string = "";
   @Output() createNew = new EventEmitter<boolean>();
 
-  container: string = "";
+  formCtrl: FormControl;
 
   onChange = (_: string) => {};
 
-  writeValue(value: any) {
-    this.container = value;
+  constructor() {
+    this.formCtrl = new FormControl('', [Validators.required]);
+  }
+
+  writeValue(value: string) {
+    this.formCtrl.setValue(value);
   }
 
   registerOnChange(onChange: any) {
@@ -38,5 +54,13 @@ export class SelectContainerComponent implements ControlValueAccessor {
       this.onChange(v);
     }
     this.createNew.emit(v == "!");
+  }
+
+  /* Validator implementation */
+  validate(control: AbstractControl): ValidationErrors | null {
+    if (!this.formCtrl.valid) {
+      return {'internal': true};
+    }
+    return null;
   }
 }
