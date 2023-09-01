@@ -83,6 +83,7 @@ components:
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version: "2.2.0",
 				Commands: []Command{
 					{
 						Name: "an-exec-command",
@@ -183,6 +184,7 @@ components:
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version: "2.2.0",
 				Commands: []Command{
 					{
 						Name: "an-apply-command",
@@ -311,6 +313,7 @@ components:
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version: "2.2.0",
 				Commands: []Command{
 					{
 						Name: "an-exec-command",
@@ -440,6 +443,7 @@ func TestDevfileState_DeleteCommand(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:  "2.2.0",
 				Commands: []Command{},
 				Containers: []Container{
 					{
@@ -655,6 +659,7 @@ func TestDevfileState_MoveCommand(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version: "2.2.0",
 				Commands: []Command{
 					{
 						Name:    "an-exec-command",
@@ -742,6 +747,7 @@ func TestDevfileState_SetDefaultCommand(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version: "2.2.0",
 				Commands: []Command{
 					{
 						Name:    "an-exec-command",
@@ -831,6 +837,7 @@ func TestDevfileState_UnsetDefaultCommand(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version: "2.2.0",
 				Commands: []Command{
 					{
 						Name:    "an-exec-command",

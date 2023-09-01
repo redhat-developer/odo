@@ -78,6 +78,7 @@ func TestDevfileState_AddContainer(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:  "2.2.0",
 				Commands: []Command{},
 				Containers: []Container{
 					{
@@ -150,6 +151,7 @@ schemaVersion: 2.2.0
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:  "2.2.0",
 				Commands: []Command{},
 				Containers: []Container{
 					{
@@ -243,6 +245,7 @@ func TestDevfileState_DeleteContainer(t *testing.T) {
 				Content: `metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -349,6 +352,7 @@ func TestDevfileState_AddImage(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images: []Image{
@@ -424,6 +428,7 @@ func TestDevfileState_DeleteImage(t *testing.T) {
 				Content: `metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -507,6 +512,7 @@ func TestDevfileState_AddResource(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -539,6 +545,7 @@ schemaVersion: 2.2.0
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -607,6 +614,7 @@ func TestDevfileState_Deleteresource(t *testing.T) {
 				Content: `metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -688,6 +696,7 @@ func TestDevfileState_AddVolume(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -753,6 +762,7 @@ func TestDevfileState_DeleteVolume(t *testing.T) {
 				Content: `metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
