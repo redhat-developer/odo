@@ -20,6 +20,7 @@ import { Image } from './image';
 
 export interface DevfileContent { 
     content: string;
+    version: string;
     commands: Array<Command>;
     containers: Array<Container>;
     images: Array<Image>;

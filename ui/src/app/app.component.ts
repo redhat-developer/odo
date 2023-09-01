@@ -84,6 +84,10 @@ export class AppComponent implements OnInit {
           console.log(error);
         }
       });
+
+      if (newContent.version != "2.2.0") {
+        this.snackbar.open("The version of the Devfile is "+newContent.version+".\nOnly version 2.2.0 is supported", "ok")
+      }
     });
 
     this.sse.subscribeTo(['DevfileUpdated']).subscribe(event => {
