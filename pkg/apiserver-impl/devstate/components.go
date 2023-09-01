@@ -228,7 +228,7 @@ func (o *DevfileState) AddResource(name string, inlined string, uri string, depl
 	return o.GetContent()
 }
 
-func (o *DevfileState) PatchResource(name string, inlined string, uri string) (DevfileContent, error) {
+func (o *DevfileState) PatchResource(name string, inlined string, uri string, deployByDefault string) (DevfileContent, error) {
 	if inlined != "" && uri != "" {
 		return DevfileContent{}, errors.New("both inlined and uri cannot be set at the same time")
 	}
@@ -248,6 +248,12 @@ func (o *DevfileState) PatchResource(name string, inlined string, uri string) (D
 	resource := found[0]
 	resource.Kubernetes.Inlined = inlined
 	resource.Kubernetes.Uri = uri
+	resource.Kubernetes.DeployByDefault = nil
+	if deployByDefault == "never" {
+		resource.Kubernetes.DeployByDefault = pointer.Bool(false)
+	} else if deployByDefault == "always" {
+		resource.Kubernetes.DeployByDefault = pointer.Bool(true)
+	}
 
 	err = o.Devfile.Data.UpdateComponent(resource)
 	if err != nil {

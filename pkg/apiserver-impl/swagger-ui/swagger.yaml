@@ -877,6 +877,12 @@ paths:
                   type: string
                 uri:
                   type: string
+                deployByDefault:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
       responses:
         '200':
           description: resource was successfully updated

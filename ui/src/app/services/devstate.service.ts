@@ -61,6 +61,7 @@ export class DevstateService {
     return this.http.patch<DevfileContent>(this.base+"/resource/"+resource.name, {
       inlined: resource.inlined,
       uri: resource.uri,
+      deployByDefault: resource.deployByDefault,
     });
   }
 

@@ -14,5 +14,15 @@
 export interface DevstateResourceResourceNamePatchRequest { 
     inlined?: string;
     uri?: string;
+    deployByDefault?: DevstateResourceResourceNamePatchRequest.DeployByDefaultEnum;
 }
+export namespace DevstateResourceResourceNamePatchRequest {
+    export type DeployByDefaultEnum = 'never' | 'undefined' | 'always';
+    export const DeployByDefaultEnum = {
+        Never: 'never' as DeployByDefaultEnum,
+        Undefined: 'undefined' as DeployByDefaultEnum,
+        Always: 'always' as DeployByDefaultEnum
+    };
+}
+
 

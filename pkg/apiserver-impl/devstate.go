@@ -319,6 +319,7 @@ func (s *DevstateApiService) DevstateResourceResourceNamePatch(ctx context.Conte
 		name,
 		patch.Inlined,
 		patch.Uri,
+		patch.DeployByDefault,
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{

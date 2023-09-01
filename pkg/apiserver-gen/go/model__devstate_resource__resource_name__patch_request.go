@@ -13,6 +13,8 @@ type DevstateResourceResourceNamePatchRequest struct {
 	Inlined string `json:"inlined,omitempty"`
 
 	Uri string `json:"uri,omitempty"`
+
+	DeployByDefault string `json:"deployByDefault,omitempty"`
 }
 
 // AssertDevstateResourceResourceNamePatchRequestRequired checks if the required fields are not zero-ed
