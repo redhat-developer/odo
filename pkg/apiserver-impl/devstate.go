@@ -312,5 +312,19 @@ func (s *DevstateApiService) DevstateVolumeVolumeNamePatch(ctx context.Context, 
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
+}
 
+func (s *DevstateApiService) DevstateResourceResourceNamePatch(ctx context.Context, name string, patch openapi.DevstateResourceResourceNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchResource(
+		name,
+		patch.Inlined,
+		patch.Uri,
+		patch.DeployByDefault,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the resource: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
 }

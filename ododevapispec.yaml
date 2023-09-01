@@ -856,6 +856,78 @@ paths:
               example:
                 message: "Error deleting the resource"
 
+    patch:
+      tags:
+      - devstate
+      description: Update a Kubernetes resource
+      parameters:
+        - name: resourceName
+          in: path
+          description: Resource name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inlined:
+                  type: string
+                uri:
+                  type: string
+                deployByDefault:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
+      responses:
+        '200':
+          description: resource was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the resource"
+
   /devstate/volume:
     post:
       tags:

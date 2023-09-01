@@ -57,6 +57,14 @@ export class DevstateService {
     });
   }
 
+  saveResource(resource: Resource): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/resource/"+resource.name, {
+      inlined: resource.inlined,
+      uri: resource.uri,
+      deployByDefault: resource.deployByDefault,
+    });
+  }
+
   addVolume(volume: Volume): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/volume", {
       name: volume.name,

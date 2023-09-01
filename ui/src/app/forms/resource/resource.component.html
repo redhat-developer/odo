@@ -1,5 +1,6 @@
 <div class="main">
-    <h2>Add a new resource</h2>
+    <h2 *ngIf="!resource">Add a new resource</h2>
+    <h2 *ngIf="resource">Edit resource <i>{{resource.name}}</i></h2>
     <div class="description">A Resource defines a Kubernetes resource. Its definition can be given either by a URI pointing to a manifest file or by an inlined YAML manifest.</div>
     <form [formGroup]="form">
         <div class="toggle-group-div">
@@ -16,7 +17,7 @@
         </mat-form-field>
     
         <span class="toggleUriInlined">
-            <mat-button-toggle-group (change)="changeUriOrInlined($event.value)">
+            <mat-button-toggle-group formControlName="_choice" (change)="changeUriOrInlined($event.value)">
                 <mat-button-toggle data-cy="resource-toogle-uri" value="uri" checked>Specify URI</mat-button-toggle>
                 <mat-button-toggle data-cy="resource-toggle-inlined" value="inlined">Inlined content</mat-button-toggle>
             </mat-button-toggle-group>
@@ -34,6 +35,7 @@
     
     </form>
 
-    <button data-cy="resource-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new resource" (click)="create()">Create</button>
+    <button *ngIf="!resource" data-cy="resource-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new resource" (click)="create()">Create</button>
+    <button *ngIf="resource" data-cy="resource-save" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="save resource" (click)="save()">Save</button>
     <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>
 </div>
