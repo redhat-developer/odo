@@ -23,6 +23,8 @@ type DevstateImagePostRequest struct {
 	RootRequired bool `json:"rootRequired,omitempty"`
 
 	Uri string `json:"uri,omitempty"`
+
+	AutoBuild string `json:"autoBuild,omitempty"`
 }
 
 // AssertDevstateImagePostRequestRequired checks if the required fields are not zero-ed

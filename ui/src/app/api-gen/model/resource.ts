@@ -15,5 +15,19 @@ export interface Resource {
     name: string;
     inlined?: string;
     uri?: string;
+    deployByDefault: Resource.DeployByDefaultEnum;
+    /**
+     * true if the resource is not referenced in any command
+     */
+    orphan: boolean;
 }
+export namespace Resource {
+    export type DeployByDefaultEnum = 'never' | 'undefined' | 'always';
+    export const DeployByDefaultEnum = {
+        Never: 'never' as DeployByDefaultEnum,
+        Undefined: 'undefined' as DeployByDefaultEnum,
+        Always: 'always' as DeployByDefaultEnum
+    };
+}
+
 

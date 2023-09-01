@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"k8s.io/utils/pointer"
 )
 
 func (o *DevfileState) AddContainer(
@@ -129,7 +130,7 @@ func (o *DevfileState) checkContainerUsed(name string) error {
 	return nil
 }
 
-func (o *DevfileState) AddImage(name string, imageName string, args []string, buildContext string, rootRequired bool, uri string) (DevfileContent, error) {
+func (o *DevfileState) AddImage(name string, imageName string, args []string, buildContext string, rootRequired bool, uri string, autoBuild string) (DevfileContent, error) {
 	container := v1alpha2.Component{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -151,6 +152,11 @@ func (o *DevfileState) AddImage(name string, imageName string, args []string, bu
 				},
 			},
 		},
+	}
+	if autoBuild == "never" {
+		container.Image.AutoBuild = pointer.Bool(false)
+	} else if autoBuild == "always" {
+		container.Image.AutoBuild = pointer.Bool(true)
 	}
 	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
 	if err != nil {
@@ -192,7 +198,7 @@ func (o *DevfileState) checkImageUsed(name string) error {
 	return nil
 }
 
-func (o *DevfileState) AddResource(name string, inlined string, uri string) (DevfileContent, error) {
+func (o *DevfileState) AddResource(name string, inlined string, uri string, deployByDefault string) (DevfileContent, error) {
 	if inlined != "" && uri != "" {
 		return DevfileContent{}, errors.New("both inlined and uri cannot be set at the same time")
 	}
@@ -209,6 +215,12 @@ func (o *DevfileState) AddResource(name string, inlined string, uri string) (Dev
 			},
 		},
 	}
+	if deployByDefault == "never" {
+		container.Kubernetes.DeployByDefault = pointer.Bool(false)
+	} else if deployByDefault == "always" {
+		container.Kubernetes.DeployByDefault = pointer.Bool(true)
+	}
+
 	err := o.Devfile.Data.AddComponents([]v1alpha2.Component{container})
 	if err != nil {
 		return DevfileContent{}, err

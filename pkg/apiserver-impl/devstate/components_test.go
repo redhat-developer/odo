@@ -311,6 +311,7 @@ func TestDevfileState_AddImage(t *testing.T) {
 		buildContext string
 		rootRequired bool
 		uri          string
+		autoBuild    string
 	}
 	tests := []struct {
 		name    string
@@ -331,6 +332,7 @@ func TestDevfileState_AddImage(t *testing.T) {
 				buildContext: "path/to/context",
 				rootRequired: true,
 				uri:          "an-uri",
+				autoBuild:    "undefined",
 			},
 			want: DevfileContent{
 				Content: `components:
@@ -357,6 +359,8 @@ schemaVersion: 2.2.0
 						BuildContext: "path/to/context",
 						RootRequired: true,
 						Uri:          "an-uri",
+						Orphan:       true,
+						AutoBuild:    "undefined",
 					},
 				},
 				Resources: []Resource{},
@@ -369,7 +373,7 @@ schemaVersion: 2.2.0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := tt.state()
-			got, err := o.AddImage(tt.args.name, tt.args.imageName, tt.args.args, tt.args.buildContext, tt.args.rootRequired, tt.args.uri)
+			got, err := o.AddImage(tt.args.name, tt.args.imageName, tt.args.args, tt.args.buildContext, tt.args.rootRequired, tt.args.uri, tt.args.autoBuild)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DevfileState.AddImage() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -406,6 +410,7 @@ func TestDevfileState_DeleteImage(t *testing.T) {
 					"path/to/context",
 					true,
 					"an-uri",
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -438,6 +443,7 @@ schemaVersion: 2.2.0
 					"path/to/context",
 					true,
 					"an-uri",
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -472,9 +478,10 @@ schemaVersion: 2.2.0
 
 func TestDevfileState_AddResource(t *testing.T) {
 	type args struct {
-		name   string
-		inline string
-		uri    string
+		name            string
+		inline          string
+		uri             string
+		deployByDefault string
 	}
 	tests := []struct {
 		name    string
@@ -505,8 +512,10 @@ schemaVersion: 2.2.0
 				Images:     []Image{},
 				Resources: []Resource{
 					{
-						Name: "a-name",
-						Uri:  "an-uri",
+						Name:            "a-name",
+						Uri:             "an-uri",
+						Orphan:          true,
+						DeployByDefault: "undefined",
 					},
 				},
 				Volumes: []Volume{},
@@ -535,8 +544,10 @@ schemaVersion: 2.2.0
 				Images:     []Image{},
 				Resources: []Resource{
 					{
-						Name:    "a-name",
-						Inlined: "inline resource...",
+						Name:            "a-name",
+						Inlined:         "inline resource...",
+						Orphan:          true,
+						DeployByDefault: "undefined",
 					},
 				},
 				Volumes: []Volume{},
@@ -548,7 +559,7 @@ schemaVersion: 2.2.0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := tt.state()
-			got, err := o.AddResource(tt.args.name, tt.args.inline, tt.args.uri)
+			got, err := o.AddResource(tt.args.name, tt.args.inline, tt.args.uri, tt.args.deployByDefault)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DevfileState.AddResource() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -582,6 +593,7 @@ func TestDevfileState_Deleteresource(t *testing.T) {
 					"a-name",
 					"",
 					"an-uri",
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)
@@ -611,6 +623,7 @@ schemaVersion: 2.2.0
 					"a-name",
 					"",
 					"an-uri",
+					"undefined",
 				)
 				if err != nil {
 					t.Fatal(err)

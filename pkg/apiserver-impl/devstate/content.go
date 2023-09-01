@@ -9,6 +9,7 @@ import (
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"k8s.io/utils/pointer"
 )
 
@@ -230,6 +231,15 @@ func (o *DevfileState) getEnv(envs []v1alpha2.EnvVar) []Env {
 }
 
 func (o *DevfileState) getImages() ([]Image, error) {
+	allApplyCommands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ApplyCommandType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	images, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{
 			ComponentType: v1alpha2.ImageComponentType,
@@ -247,12 +257,33 @@ func (o *DevfileState) getImages() ([]Image, error) {
 			BuildContext: image.Image.Dockerfile.BuildContext,
 			RootRequired: pointer.BoolDeref(image.Image.Dockerfile.RootRequired, false),
 			Uri:          image.Image.Dockerfile.Uri,
+			AutoBuild:    getThreeState(image.Image.AutoBuild),
+			Orphan:       !libdevfile.IsComponentReferenced(allApplyCommands, image.Name),
 		})
 	}
 	return result, nil
 }
 
+func getThreeState(v *bool) string {
+	if v == nil {
+		return "undefined"
+	}
+	if *v {
+		return "always"
+	}
+	return "never"
+}
+
 func (o *DevfileState) getResources() ([]Resource, error) {
+	allApplyCommands, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ApplyCommandType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	resources, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{
 			ComponentType: v1alpha2.KubernetesComponentType,
@@ -264,9 +295,11 @@ func (o *DevfileState) getResources() ([]Resource, error) {
 	result := make([]Resource, 0, len(resources))
 	for _, resource := range resources {
 		result = append(result, Resource{
-			Name:    resource.Name,
-			Inlined: resource.ComponentUnion.Kubernetes.Inlined,
-			Uri:     resource.ComponentUnion.Kubernetes.Uri,
+			Name:            resource.Name,
+			Inlined:         resource.ComponentUnion.Kubernetes.Inlined,
+			Uri:             resource.ComponentUnion.Kubernetes.Uri,
+			DeployByDefault: getThreeState(resource.ComponentUnion.Kubernetes.DeployByDefault),
+			Orphan:          !libdevfile.IsComponentReferenced(allApplyCommands, resource.Name),
 		})
 	}
 	return result, nil
