@@ -277,6 +277,28 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'No, disabled');
   });
 
+  it('displays an updated resource, with manifest', () => {
+    cy.init();
+
+    cy.selectTab(TAB_RESOURCES);
+    cy.getByDataCy('resource-name').type('created-resource');
+    cy.getByDataCy('resource-toggle-inlined').click();
+    cy.getByDataCy('resource-manifest').type('a-resource-manifest');
+    cy.getByDataCy('resource-create').click();
+
+    cy.getByDataCy('resource-info').first()
+      .should('contain.text', 'created-resource')
+      .should('contain.text', 'a-resource-manifest');
+
+    cy.getByDataCy('resource-edit').click();
+    cy.getByDataCy('resource-manifest').type('{selectAll}{del}another-resource-manifest');
+    cy.getByDataCy('resource-save').click();
+
+    cy.getByDataCy('resource-info').first()
+    .should('contain.text', 'created-resource')
+    .should('contain.text', 'another-resource-manifest');
+  });
+
   it('displays a created volume', () => {
     cy.init();
 

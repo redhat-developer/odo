@@ -10,8 +10,9 @@ import { Resource } from 'src/app/api-gen';
 })
 export class ResourcesComponent implements OnInit {
 
-  forceDisplayAdd: boolean = false;
+  forceDisplayForm: boolean = false;
   resources: Resource[] | undefined = [];
+  editingResource: Resource | undefined;
 
   constructor(
     private state: StateService,
@@ -25,19 +26,24 @@ export class ResourcesComponent implements OnInit {
       if (this.resources == null) {
         return
       }
-      that.forceDisplayAdd = false;
+      that.forceDisplayForm = false;
     });
   }
 
   displayAddForm() {
-    this.forceDisplayAdd = true;
+    this.editingResource = undefined;
+    this.displayForm();
+  }
+
+  displayForm() {
+    this.forceDisplayForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
   undisplayAddForm() {
-    this.forceDisplayAdd = false;
+    this.forceDisplayForm = false;
   }
 
   delete(name: string) {
@@ -54,6 +60,11 @@ export class ResourcesComponent implements OnInit {
     }
   }
 
+  edit(resource: Resource) {
+    this.editingResource = resource;
+    this.displayForm();
+  }
+
   onCreated(resource: Resource) {
     const result = this.devstate.addResource(resource);
     result.subscribe({
@@ -65,7 +76,19 @@ export class ResourcesComponent implements OnInit {
       }
     });
   }
-
+  
+  onSaved(resource: Resource) {
+    const result = this.devstate.saveResource(resource);
+    result.subscribe({
+      next: value => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: error => {
+        alert(error.error.message);
+      }
+    });
+  }
+  
   scrollToBottom() {
     window.scrollTo(0,document.body.scrollHeight);
   }

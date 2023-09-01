@@ -20,6 +20,7 @@ export * from './devstateExecCommandPostRequest';
 export * from './devstateImagePostRequest';
 export * from './devstateQuantityValidPostRequest';
 export * from './devstateResourcePostRequest';
+export * from './devstateResourceResourceNamePatchRequest';
 export * from './devstateVolumePostRequest';
 export * from './devstateVolumeVolumeNamePatchRequest';
 export * from './endpoint';

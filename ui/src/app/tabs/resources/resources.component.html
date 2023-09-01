@@ -20,20 +20,23 @@
 
         <mat-card-actions>
             <button mat-button color="warn" (click)="delete(resource.name)">Delete</button>
+            <button data-cy="resource-edit" mat-button (click)="edit(resource)">Edit</button>
         </mat-card-actions>
 
     </mat-card>
 
     <app-resource 
-        *ngIf="forceDisplayAdd || resources == undefined || resources.length == 0"
-        [cancelable]="forceDisplayAdd"
+        *ngIf="forceDisplayForm || resources == undefined || resources.length == 0"
+        [cancelable]="forceDisplayForm"
         (canceled)="undisplayAddForm()"
         (created)="onCreated($event)"
+        [resource]="editingResource"
+        (saved)="onSaved($event)"
     ></app-resource>
 </div>
 
 
-<ng-container *ngIf="!forceDisplayAdd && resources != undefined && resources.length > 0">
+<ng-container *ngIf="!forceDisplayForm && resources != undefined && resources.length > 0">
     <button class="fab" mat-fab color="primary" (click)="displayAddForm()">
         <mat-icon class="material-icons-outlined">add</mat-icon>
     </button>

@@ -171,6 +171,12 @@ func (c *DevstateApiController) Routes() Routes {
 			c.DevstateResourceResourceNameDelete,
 		},
 		{
+			"DevstateResourceResourceNamePatch",
+			strings.ToUpper("Patch"),
+			"/api/v1/devstate/resource/{resourceName}",
+			c.DevstateResourceResourceNamePatch,
+		},
+		{
 			"DevstateVolumePost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/volume",
@@ -587,6 +593,32 @@ func (c *DevstateApiController) DevstateResourceResourceNameDelete(w http.Respon
 	params := mux.Vars(r)
 	resourceNameParam := params["resourceName"]
 	result, err := c.service.DevstateResourceResourceNameDelete(r.Context(), resourceNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateResourceResourceNamePatch -
+func (c *DevstateApiController) DevstateResourceResourceNamePatch(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	resourceNameParam := params["resourceName"]
+	devstateResourceResourceNamePatchRequestParam := DevstateResourceResourceNamePatchRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateResourceResourceNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateResourceResourceNamePatchRequestRequired(devstateResourceResourceNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateResourceResourceNamePatch(r.Context(), resourceNameParam, devstateResourceResourceNamePatchRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

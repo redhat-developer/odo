@@ -30,6 +30,7 @@ model/devstateExecCommandPostRequest.ts
 model/devstateImagePostRequest.ts
 model/devstateQuantityValidPostRequest.ts
 model/devstateResourcePostRequest.ts
+model/devstateResourceResourceNamePatchRequest.ts
 model/devstateVolumePostRequest.ts
 model/devstateVolumeVolumeNamePatchRequest.ts
 model/endpoint.ts

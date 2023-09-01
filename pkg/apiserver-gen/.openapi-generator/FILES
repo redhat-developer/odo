@@ -19,6 +19,7 @@ go/model__devstate_events_put_request.go
 go/model__devstate_exec_command_post_request.go
 go/model__devstate_image_post_request.go
 go/model__devstate_quantity_valid_post_request.go
+go/model__devstate_resource__resource_name__patch_request.go
 go/model__devstate_resource_post_request.go
 go/model__devstate_volume__volume_name__patch_request.go
 go/model__devstate_volume_post_request.go
