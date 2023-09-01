@@ -62,7 +62,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('container-env-value-2').type("val3");
 
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1", {force: true});
     cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
 
     cy.getByDataCy('endpoints-add').click();
@@ -70,7 +70,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('endpoint-targetPort-0').type("4001");
     
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2", {force: true});
     cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
     cy.getByDataCy('volume-name').type('volume2');
     cy.getByDataCy('volume-create').click();
@@ -134,11 +134,11 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('container-source-mapping').type('/mnt/sources');
 
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1", {force: true});
     cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
 
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2", {force: true});
     cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
     cy.getByDataCy('volume-name').type('volume2');
     cy.getByDataCy('volume-create').click();
@@ -397,11 +397,11 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('container-image').type('an-image');
     
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1");
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1", {force: true});
     cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
 
     cy.getByDataCy('volume-mount-add').click();
-    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2");
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2", {force: true});
     cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
     cy.getByDataCy('volume-name').type('volume2');
     cy.getByDataCy('volume-create').click();
