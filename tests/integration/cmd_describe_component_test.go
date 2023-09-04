@@ -69,6 +69,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with default cluster mode", func() {
 		By("running odo describe component -o json with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -77,6 +78,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
@@ -86,6 +88,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with cluster", func() {
 		By("running odo describe component -o json with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "cluster", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -94,6 +97,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "cluster").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
@@ -103,6 +107,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with podman", Label(helper.LabelPodman), func() {
 		By("running odo describe component -o json with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman", "-o", "json").
 				ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
@@ -112,6 +117,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			stderr := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman").
 				ShouldFail().Err()
 			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\""))
@@ -257,8 +263,10 @@ var _ = Describe("odo describe component command tests", func() {
 
 		It("should not describe the component from another directory, with default cluster mode", func() {
 			By("running with json output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -267,8 +275,10 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 
 			By("running with default output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stdout).To(BeEmpty())
@@ -278,8 +288,10 @@ var _ = Describe("odo describe component command tests", func() {
 
 		It("should not describe the component from another directory, with cluster", func() {
 			By("running with json output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json", "--platform", "cluster").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -288,8 +300,10 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 
 			By("running with default output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "--platform", "cluster").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stdout).To(BeEmpty())
@@ -547,10 +561,12 @@ var _ = Describe("odo describe component command tests", func() {
 						}
 					})
 					By("checking the human readable output with component name", func() {
+						helper.CreateInvalidDevfile(commonVar.Context)
 						out := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
 						helper.MatchAllInOutput(out, ctx.matchOutput)
 					})
 					By("checking the machine readable output with component name", func() {
+						helper.CreateInvalidDevfile(commonVar.Context)
 						out := helper.Cmd("odo", "describe", "component", "--name", componentName, "-o", "json").ShouldPass().Out()
 						for key, value := range ctx.matchJSONOutput {
 							helper.JsonPathContentContain(out, key, value)

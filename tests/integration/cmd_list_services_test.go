@@ -36,6 +36,9 @@ var _ = Describe("odo list services tests", func() {
 		commonVar.CliRunner.EnsurePodIsUp(randomProject, "cluster-sample-1")
 		Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 		helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+
+		helper.CreateInvalidDevfile(commonVar.Context)
+		helper.Chdir(commonVar.Context)
 	})
 
 	AfterEach(func() {

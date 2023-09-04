@@ -20,6 +20,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
+		helper.CreateInvalidDevfile(commonVar.Context)
 	})
 
 	// This is run after every Spec (It)
@@ -182,6 +183,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 				})
 
 				It("should pass, when doing odo init with --devfile-registry flag", func() {
+					helper.DeleteInvalidDevfile(commonVar.Context)
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", registryName).ShouldPass()
 				})
 
@@ -194,6 +196,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 				})
 
 				It("deleting registry and creating component with registry flag ", func() {
+					helper.DeleteInvalidDevfile(commonVar.Context)
 					helper.Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile", "java-maven", "--devfile-registry", registryName).ShouldFail()
 				})
