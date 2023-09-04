@@ -56,6 +56,10 @@ func (o *ServiceListOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *ServiceListOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
 	if o.namespaceFlag == "" && !o.allNamespacesFlag {
 		o.namespaceFlag = odocontext.GetNamespace(ctx)

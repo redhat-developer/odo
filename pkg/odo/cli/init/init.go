@@ -88,6 +88,10 @@ func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *InitOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete will build the parameters for init, using different backends based on the flags set,
 // either by using flags or interactively if no flag is passed
 // Complete will return an error immediately if the current working directory is not empty

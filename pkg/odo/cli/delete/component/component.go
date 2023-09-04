@@ -84,6 +84,10 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *ComponentOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return o.name == ""
+}
+
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	switch api.RunningMode(o.runningInFlag) {
 	case api.RunningModeDev:

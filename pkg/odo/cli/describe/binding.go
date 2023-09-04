@@ -51,6 +51,10 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *BindingOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return o.nameFlag == ""
+}
+
 func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
 		devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
