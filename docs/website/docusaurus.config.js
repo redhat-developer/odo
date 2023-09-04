@@ -8,7 +8,7 @@ module.exports = {
   url: 'https://odo.dev',
   baseUrl: '/',
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenMarkdownLinks: 'throw',
   favicon: 'img/favicon.ico',
   organizationName: 'redhat-developer', // Usually your GitHub org/user name.
   projectName: 'odo', // Usually your repo name.
