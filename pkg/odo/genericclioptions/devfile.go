@@ -15,17 +15,6 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 )
 
-// MarkDevfileNotNeeded annotates the provided command such that it does not require a valid Devfile
-// to be present in the current directory.
-// A corollary to this is that commands annotated as such will not have any Devfile parsed in their root context,
-// even if there is a local "devfile.yaml" in the current directory.
-func MarkDevfileNotNeeded(cmd *cobra.Command) {
-	if cmd.Annotations == nil {
-		cmd.Annotations = map[string]string{}
-	}
-	cmd.Annotations["devfile-not-needed"] = "true"
-}
-
 func getDevfileInfo(cmd *cobra.Command, fsys filesystem.Filesystem, workingDir string, variables map[string]string, imageRegistry string) (
 	devfilePath string,
 	devfileObj *parser.DevfileObj,
@@ -34,8 +23,7 @@ func getDevfileInfo(cmd *cobra.Command, fsys filesystem.Filesystem, workingDir s
 ) {
 	devfilePath = location.DevfileLocation(fsys, workingDir)
 	isDevfile := odoutil.CheckPathExists(fsys, devfilePath)
-	requiresValidDevfile := cmd.Annotations["devfile-not-needed"] != "true"
-	if requiresValidDevfile && isDevfile {
+	if isDevfile {
 		devfilePath, err = dfutil.GetAbsPath(devfilePath)
 		if err != nil {
 			return "", nil, "", err

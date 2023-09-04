@@ -84,7 +84,6 @@ func NewCmdAlizer(name, fullName string, testClientset clientset.Clientset) *cob
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)
 	util.SetCommandGroup(alizerCmd, util.UtilityGroup)
-	genericclioptions.MarkDevfileNotNeeded(alizerCmd)
 	commonflags.UseOutputFlag(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return alizerCmd
