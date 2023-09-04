@@ -48,6 +48,17 @@ export class DevstateService {
     });
   }
 
+  saveImage(image: Image): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/image/"+image.name, {
+      imageName: image.imageName,
+      args: image.args,
+      buildContext: image.buildContext,
+      rootRequired: image.rootRequired,
+      uri: image.uri,
+      autoBuild: image.autoBuild,
+    });
+  }
+
   addResource(resource: Resource): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/resource", {
       name: resource.name,

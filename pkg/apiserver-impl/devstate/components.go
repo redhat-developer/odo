@@ -165,6 +165,45 @@ func (o *DevfileState) AddImage(name string, imageName string, args []string, bu
 	return o.GetContent()
 }
 
+func (o *DevfileState) PatchImage(name string, imageName string, args []string, buildContext string, rootRequired bool, uri string, autoBuild string) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1alpha2.ImageComponentType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Image found with name %q", len(found), name)
+	}
+
+	image := found[0]
+	if image.Image == nil {
+		image.Image = &v1alpha2.ImageComponent{}
+	}
+	image.Image.ImageName = imageName
+	if image.Image.Dockerfile == nil {
+		image.Image.Dockerfile = &v1alpha2.DockerfileImage{}
+	}
+	image.Image.Dockerfile.Args = args
+	image.Image.Dockerfile.BuildContext = buildContext
+	image.Image.Dockerfile.RootRequired = &rootRequired
+	image.Image.Dockerfile.DockerfileSrc.Uri = uri
+	image.Image.AutoBuild = nil
+	if autoBuild == "never" {
+		image.Image.AutoBuild = pointer.Bool(false)
+	} else if autoBuild == "always" {
+		image.Image.AutoBuild = pointer.Bool(true)
+	}
+	err = o.Devfile.Data.UpdateComponent(image)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
 func (o *DevfileState) DeleteImage(name string) (DevfileContent, error) {
 
 	err := o.checkImageUsed(name)

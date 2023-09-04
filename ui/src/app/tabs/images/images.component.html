@@ -38,19 +38,22 @@
 
         <mat-card-actions>
             <button mat-button color="warn" (click)="delete(image.name)">Delete</button>
+            <button data-cy="image-edit" mat-button (click)="edit(image)">Edit</button>
         </mat-card-actions>
 
     </mat-card>
 
     <app-image
-        *ngIf="forceDisplayAdd || images == undefined || images.length == 0"
-        [cancelable]="forceDisplayAdd"
+        *ngIf="forceDisplayForm || images == undefined || images.length == 0"
+        [cancelable]="forceDisplayForm"
         (canceled)="undisplayAddForm()"
         (created)="onCreated($event)"
+        [image]="editingImage"
+        (saved)="onSaved($event)"
     ></app-image>
 </div>
 
-<ng-container *ngIf="!forceDisplayAdd && images != undefined && images.length > 0">
+<ng-container *ngIf="!forceDisplayForm && images != undefined && images.length > 0">
     <button class="fab" mat-fab color="primary" (click)="displayAddForm()">
         <mat-icon class="material-icons-outlined">add</mat-icon>
     </button>

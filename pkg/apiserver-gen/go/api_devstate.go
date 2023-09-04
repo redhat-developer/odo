@@ -141,6 +141,12 @@ func (c *DevstateApiController) Routes() Routes {
 			c.DevstateImageImageNameDelete,
 		},
 		{
+			"DevstateImageImageNamePatch",
+			strings.ToUpper("Patch"),
+			"/api/v1/devstate/image/{imageName}",
+			c.DevstateImageImageNamePatch,
+		},
+		{
 			"DevstateImagePost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/image",
@@ -482,6 +488,32 @@ func (c *DevstateApiController) DevstateImageImageNameDelete(w http.ResponseWrit
 	params := mux.Vars(r)
 	imageNameParam := params["imageName"]
 	result, err := c.service.DevstateImageImageNameDelete(r.Context(), imageNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateImageImageNamePatch -
+func (c *DevstateApiController) DevstateImageImageNamePatch(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	imageNameParam := params["imageName"]
+	devstateImageImageNamePatchRequestParam := DevstateImageImageNamePatchRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateImageImageNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateImageImageNamePatchRequestRequired(devstateImageImageNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateImageImageNamePatch(r.Context(), imageNameParam, devstateImageImageNamePatchRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

@@ -1,5 +1,6 @@
 <div class="main">
-    <h2>Add a new image</h2>
+    <h2 *ngIf="!image">Add a new image</h2>
+    <h2 *ngIf="image">Edit image <i>{{image.name}}</i></h2>
     <div class="description">An Image defines how to build a container image.</div>
     <form [formGroup]="form">
         <div class="toggle-group-div">
@@ -31,6 +32,7 @@
 
     </form>
 
-    <button data-cy="image-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new image" (click)="create()">Create</button>
+    <button *ngIf="!image" data-cy="image-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new image" (click)="create()">Create</button>
+    <button *ngIf="image" data-cy="image-save" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="save image" (click)="save()">Save</button>
     <button *ngIf="cancelable" mat-flat-button (click)="cancel()">Cancel</button>
 </div>

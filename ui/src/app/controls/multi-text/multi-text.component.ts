@@ -24,6 +24,9 @@ export class MultiTextComponent implements ControlValueAccessor {
   texts: string[] = [];
 
   writeValue(value: any) {
+    if (value == null) {
+      value = [];
+    }
     this.texts = value;
   }
 

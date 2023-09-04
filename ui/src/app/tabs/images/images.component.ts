@@ -10,8 +10,9 @@ import { Image } from 'src/app/api-gen';
 })
 export class ImagesComponent implements OnInit {
 
-  forceDisplayAdd: boolean = false;
+  forceDisplayForm: boolean = false;
   images: Image[] | undefined = [];
+  editingImage: Image | undefined;
 
   constructor(
     private state: StateService,
@@ -25,19 +26,24 @@ export class ImagesComponent implements OnInit {
       if (this.images == null) {
         return
       }
-      that.forceDisplayAdd = false;
+      that.forceDisplayForm = false;
     });
   }
 
   displayAddForm() {
-    this.forceDisplayAdd = true;
+    this.editingImage = undefined;
+    this.displayForm();
+  }
+
+  displayForm() {
+    this.forceDisplayForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
   undisplayAddForm() {
-    this.forceDisplayAdd = false;
+    this.forceDisplayForm = false;
   }
 
   delete(name: string) {
@@ -54,8 +60,25 @@ export class ImagesComponent implements OnInit {
     }
   }
 
+  edit(image: Image) {
+    this.editingImage = image;
+    this.displayForm();
+  }
+
   onCreated(image: Image) {
     const result = this.devstate.addImage(image);
+    result.subscribe({
+      next: value => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: error => {
+        alert(error.error.message);
+      }
+    });
+  }
+
+  onSaved(image: Image) {
+    const result = this.devstate.saveImage(image);
     result.subscribe({
       next: value => {
         this.state.changeDevfileYaml(value);

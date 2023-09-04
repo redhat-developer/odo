@@ -180,6 +180,43 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'Yes, the image is not referenced by any command');
   });
 
+  it('displays a modified image', () => {
+    cy.init();
+
+    cy.selectTab(TAB_IMAGES);
+    cy.getByDataCy('image-name').type('created-image');
+    cy.getByDataCy('image-image-name').type('an-image-name');
+    cy.getByDataCy('image-build-context').type('/path/to/build/context');
+    cy.getByDataCy('image-dockerfile-uri').type('/path/to/dockerfile');
+    cy.getByDataCy('image-create').click();
+
+    cy.getByDataCy('image-info').first()
+      .should('contain.text', 'created-image')
+      .should('contain.text', 'an-image-name')
+      .should('contain.text', '/path/to/build/context')
+      .should('contain.text', '/path/to/dockerfile');
+
+    cy.getByDataCy('image-build-startup').first()
+      .should('contain.text', 'Yes, the image is not referenced by any command');
+
+    cy.getByDataCy('image-edit').click();
+    cy.getByDataCy('image-auto-build-always').click();
+    cy.getByDataCy('image-image-name').type('{selectAll}{del}another-image-name');
+    cy.getByDataCy('image-build-context').type('/new/path/to/build/context');
+    cy.getByDataCy('image-dockerfile-uri').type('/new/path/to/dockerfile');
+    cy.getByDataCy('image-save').click();
+    
+    cy.getByDataCy('image-info').first()
+      .should('contain.text', 'created-image')
+      .should('contain.text', 'another-image-name')
+      .should('contain.text', '/new/path/to/build/context')
+      .should('contain.text', '/new/path/to/dockerfile');
+
+    cy.getByDataCy('image-build-startup').first()
+      .should('contain.text', 'Yes, forced');
+
+    });
+
   it('displays a created image with forced build', () => {
     cy.init();
 

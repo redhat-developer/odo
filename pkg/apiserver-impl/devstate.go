@@ -328,3 +328,22 @@ func (s *DevstateApiService) DevstateResourceResourceNamePatch(ctx context.Conte
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DevstateApiService) DevstateImageImageNamePatch(ctx context.Context, name string, patch openapi.DevstateImageImageNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchImage(
+		name,
+		patch.ImageName,
+		patch.Args,
+		patch.BuildContext,
+		patch.RootRequired,
+		patch.Uri,
+		patch.AutoBuild,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the image: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+
+}
