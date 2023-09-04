@@ -78,6 +78,9 @@ export class ResourceComponent {
       if (res['inlined']) {
         this.form.get('_choice')?.setValue('inlined');
         this.changeUriOrInlined('inlined');
+      } else {
+        this.form.get('_choice')?.setValue('uri');
+        this.changeUriOrInlined('uri');
       }
       this.form.get('name')?.disable();
     }
