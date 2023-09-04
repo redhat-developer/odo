@@ -52,6 +52,10 @@ func (o *UnsetOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *UnsetOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = strings.ToLower(args[0])

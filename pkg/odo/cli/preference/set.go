@@ -53,6 +53,10 @@ func (o *SetOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *SetOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = strings.ToLower(args[0])
