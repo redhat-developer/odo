@@ -39,6 +39,8 @@ import { DevstateEventsPutRequest } from '../model/devstateEventsPutRequest';
 // @ts-ignore
 import { DevstateExecCommandPostRequest } from '../model/devstateExecCommandPostRequest';
 // @ts-ignore
+import { DevstateImageImageNamePatchRequest } from '../model/devstateImageImageNamePatchRequest';
+// @ts-ignore
 import { DevstateImagePostRequest } from '../model/devstateImagePostRequest';
 // @ts-ignore
 import { DevstateQuantityValidPostRequest } from '../model/devstateQuantityValidPostRequest';
@@ -1040,6 +1042,75 @@ export class DevstateService {
         return this.httpClient.request<GeneralSuccess>('delete', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                responseType: <any>responseType_,
+                withCredentials: this.configuration.withCredentials,
+                headers: localVarHeaders,
+                observe: observe,
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Update an image
+     * @param imageName Image name to update
+     * @param devstateImageImageNamePatchRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public devstateImageImageNamePatch(imageName: string, devstateImageImageNamePatchRequest?: DevstateImageImageNamePatchRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<DevfileContent>;
+    public devstateImageImageNamePatch(imageName: string, devstateImageImageNamePatchRequest?: DevstateImageImageNamePatchRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<DevfileContent>>;
+    public devstateImageImageNamePatch(imageName: string, devstateImageImageNamePatchRequest?: DevstateImageImageNamePatchRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<DevfileContent>>;
+    public devstateImageImageNamePatch(imageName: string, devstateImageImageNamePatchRequest?: DevstateImageImageNamePatchRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
+        if (imageName === null || imageName === undefined) {
+            throw new Error('Required parameter imageName was null or undefined when calling devstateImageImageNamePatch.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        let localVarHttpHeaderAcceptSelected: string | undefined = options && options.httpHeaderAccept;
+        if (localVarHttpHeaderAcceptSelected === undefined) {
+            // to determine the Accept header
+            const httpHeaderAccepts: string[] = [
+                'application/json'
+            ];
+            localVarHttpHeaderAcceptSelected = this.configuration.selectHeaderAccept(httpHeaderAccepts);
+        }
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        let localVarHttpContext: HttpContext | undefined = options && options.context;
+        if (localVarHttpContext === undefined) {
+            localVarHttpContext = new HttpContext();
+        }
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/devstate/image/${this.configuration.encodeParam({name: "imageName", value: imageName, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
+        return this.httpClient.request<DevfileContent>('patch', `${this.configuration.basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: devstateImageImageNamePatchRequest,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,

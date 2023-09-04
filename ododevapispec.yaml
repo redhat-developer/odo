@@ -757,6 +757,86 @@ paths:
               example:
                 message: "Error deleting the image"
 
+    patch:
+      tags:
+      - devstate
+      description: Update an image
+      parameters:
+        - name: imageName
+          in: path
+          description: Image name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageName:
+                  type: string
+                args:
+                  type: array
+                  items:
+                    type: string
+                buildContext:
+                  type: string
+                rootRequired:
+                  type: boolean
+                uri:
+                  type: string
+                autoBuild:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
+      responses:
+        '200':
+          description: image was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the image
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the image"
+
   /devstate/resource:
     post:
       tags:
