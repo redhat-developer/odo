@@ -26,6 +26,8 @@ var _ = Describe("odo preference and config command tests", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
+		helper.CreateInvalidDevfile(commonVar.Context)
+		helper.Chdir(commonVar.Context)
 	})
 
 	// Clean up after the test
@@ -199,6 +201,7 @@ OdoSettings:
 					helper.Chdir(workingDir)
 				})
 				It("should not prompt the user", func() {
+					helper.DeleteInvalidDevfile(commonVar.Context)
 					helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "-f").ShouldPass()
 					output := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
 					Expect(output).ToNot(ContainSubstring(promptMessageSubString))

@@ -149,6 +149,8 @@ var _ = Describe("odo delete command tests", func() {
 										Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
 									})
 									It("should output that there are no resources to be deleted", func() {
+										helper.CreateInvalidDevfile(commonVar.Context)
+										helper.Chdir(commonVar.Context)
 										args := []string{"delete", "component", "--name", cmpName, "--namespace", commonVar.Project}
 										if runningIn != "" {
 											args = append(args, "--running-in", runningIn)

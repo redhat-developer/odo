@@ -56,6 +56,10 @@ func (so *SetOptions) SetClientset(clientset *clientset.Clientset) {
 	so.clientset = clientset
 }
 
+func (o *SetOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes SetOptions after they've been created
 func (so *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	so.namespaceName = args[0]

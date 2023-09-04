@@ -319,3 +319,15 @@ func AppendToFile(filepath string, s string) error {
 	}
 	return nil
 }
+
+func CreateInvalidDevfile(dir string) {
+	devfilePath := filepath.Join(dir, "devfile.yaml")
+	err := CreateFileWithContent(devfilePath, "invalid")
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func DeleteInvalidDevfile(dir string) {
+	devfilePath := filepath.Join(dir, "devfile.yaml")
+	err := os.Remove(devfilePath)
+	Expect(err).ToNot(HaveOccurred())
+}

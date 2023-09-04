@@ -71,6 +71,14 @@ type JsonOutputter interface {
 	RunForJsonOutput(ctx context.Context) (result interface{}, err error)
 }
 
+// DevfileUser must be implemented by commands that use Devfile depending on arguments, or
+// commands that depend on FS but do not use Devfile.
+// If the interface is not implemented and the command depends on FS, the command is expected to use Devfile
+type DevfileUser interface {
+	// UseDevfile returns true if the command with the specified cmdline and args needs to have access to the Devfile
+	UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool
+}
+
 const (
 	// defaultAppName is the default name of the application when an application name is not provided
 	defaultAppName = "app"
@@ -248,16 +256,23 @@ func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Comman
 			}
 		}
 
-		var devfilePath, componentName string
-		var devfileObj *parser.DevfileObj
-		devfilePath, devfileObj, componentName, err = getDevfileInfo(cmd, deps.FS, cwd, variables, userConfig.GetImageRegistry())
-		if err != nil {
-			startTelemetry(cmd, err, startTime)
-			return err
+		useDevfile := true
+		if devfileUser, ok := o.(DevfileUser); ok {
+			useDevfile = devfileUser.UseDevfile(ctx, cmdLineObj, args)
 		}
-		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
-		ctx = odocontext.WithEffectiveDevfileObj(ctx, devfileObj)
-		ctx = odocontext.WithComponentName(ctx, componentName)
+
+		if useDevfile {
+			var devfilePath, componentName string
+			var devfileObj *parser.DevfileObj
+			devfilePath, devfileObj, componentName, err = getDevfileInfo(cmd, deps.FS, cwd, variables, userConfig.GetImageRegistry())
+			if err != nil {
+				startTelemetry(cmd, err, startTime)
+				return err
+			}
+			ctx = odocontext.WithDevfilePath(ctx, devfilePath)
+			ctx = odocontext.WithEffectiveDevfileObj(ctx, devfileObj)
+			ctx = odocontext.WithComponentName(ctx, componentName)
+		}
 	}
 
 	// Run completion, validation and run.

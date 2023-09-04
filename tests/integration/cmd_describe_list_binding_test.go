@@ -737,9 +737,11 @@ var _ = Describe("odo describe/list binding command tests", func() {
 								ctx.assertDescribeAllHumanReadableOutput(stdout, stderr)
 							})
 
-							By("JSON output from another directory with name flag", func() {
-								err := os.Chdir("/")
-								Expect(err).ToNot(HaveOccurred())
+							By("JSON output from another directory with name flag and invalid devfile", func() {
+								otherDir := filepath.Join(commonVar.Context, "tmp")
+								helper.MakeDir(otherDir)
+								helper.Chdir(otherDir)
+								helper.CreateInvalidDevfile(otherDir)
 								res := helper.Cmd("odo", "describe", "binding", "--name", "my-nodejs-app-cluster-sample-k8s", "-o", "json").ShouldPass()
 								stdout, stderr := res.Out(), res.Err()
 								ctx.assertDescribeNamedJsonOutput(stdout, stderr, "my-nodejs-app-cluster-sample-k8s")
@@ -748,9 +750,11 @@ var _ = Describe("odo describe/list binding command tests", func() {
 								stdout, stderr = res.Out(), res.Err()
 								ctx.assertDescribeNamedJsonOutput(stdout, stderr, "my-nodejs-app-cluster-sample-ocp")
 							})
-							By("human readable output from another directory with name flag", func() {
-								err := os.Chdir("/")
-								Expect(err).ToNot(HaveOccurred())
+							By("human readable output from another directory with name flag and invalid devfile", func() {
+								otherDir := filepath.Join(commonVar.Context, "tmp")
+								helper.MakeDir(otherDir)
+								helper.Chdir(otherDir)
+								helper.CreateInvalidDevfile(otherDir)
 								res := helper.Cmd("odo", "describe", "binding", "--name", "my-nodejs-app-cluster-sample-k8s").ShouldPass()
 								stdout, stderr := res.Out(), res.Err()
 								ctx.assertDescribeNamedHumanReadableOutput(stdout, stderr, "my-nodejs-app-cluster-sample-k8s")

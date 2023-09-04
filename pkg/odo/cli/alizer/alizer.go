@@ -35,6 +35,10 @@ func (o *AlizerOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *AlizerOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 func (o *AlizerOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	return nil
 }
@@ -80,7 +84,6 @@ func NewCmdAlizer(name, fullName string, testClientset clientset.Clientset) *cob
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)
 	util.SetCommandGroup(alizerCmd, util.UtilityGroup)
-	genericclioptions.MarkDevfileNotNeeded(alizerCmd)
 	commonflags.UseOutputFlag(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return alizerCmd

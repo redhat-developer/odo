@@ -61,6 +61,10 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *ComponentOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return o.nameFlag == ""
+}
+
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
 
@@ -329,7 +333,7 @@ func NewCmdComponent(ctx context.Context, name, fullName string, testClientset c
 	}
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
-	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE)
+	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE, clientset.FILESYSTEM)
 	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
 	}
