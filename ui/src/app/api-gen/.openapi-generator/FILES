@@ -26,6 +26,7 @@ model/devstateCompositeCommandPostRequest.ts
 model/devstateContainerPostRequest.ts
 model/devstateDevfilePutRequest.ts
 model/devstateEventsPutRequest.ts
+model/devstateExecCommandCommandNamePatchRequest.ts
 model/devstateExecCommandPostRequest.ts
 model/devstateImageImageNamePatchRequest.ts
 model/devstateImagePostRequest.ts

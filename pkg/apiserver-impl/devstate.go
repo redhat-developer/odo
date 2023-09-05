@@ -345,5 +345,20 @@ func (s *DevstateApiService) DevstateImageImageNamePatch(ctx context.Context, na
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
+}
 
+func (s *DevstateApiService) DevstateExecCommandCommandNamePatch(ctx context.Context, name string, patch openapi.DevstateExecCommandCommandNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchExecCommand(
+		name,
+		patch.Component,
+		patch.CommandLine,
+		patch.WorkingDir,
+		patch.HotReloadCapable,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the Exec Command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
 }

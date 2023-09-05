@@ -1485,6 +1485,77 @@ paths:
               example:
                 message: "Error adding the Exec command"
 
+  /devstate/execCommand/{commandName}:
+    patch:
+      tags:
+      - devstate
+      description: Update an Exec Command
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                component:
+                  type: string
+                commandLine:
+                  type: string
+                workingDir:
+                  type: string
+                hotReloadCapable:
+                  type: boolean
+      responses:
+        '200':
+          description: Exec command was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Exec command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Exec command"
+
   /devstate/events:
     put:
       tags:

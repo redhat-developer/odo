@@ -37,6 +37,8 @@ import { DevstateDevfilePutRequest } from '../model/devstateDevfilePutRequest';
 // @ts-ignore
 import { DevstateEventsPutRequest } from '../model/devstateEventsPutRequest';
 // @ts-ignore
+import { DevstateExecCommandCommandNamePatchRequest } from '../model/devstateExecCommandCommandNamePatchRequest';
+// @ts-ignore
 import { DevstateExecCommandPostRequest } from '../model/devstateExecCommandPostRequest';
 // @ts-ignore
 import { DevstateImageImageNamePatchRequest } from '../model/devstateImageImageNamePatchRequest';
@@ -919,6 +921,75 @@ export class DevstateService {
             {
                 context: localVarHttpContext,
                 body: devstateEventsPutRequest,
+                responseType: <any>responseType_,
+                withCredentials: this.configuration.withCredentials,
+                headers: localVarHeaders,
+                observe: observe,
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Update an Exec Command
+     * @param commandName Command name to update
+     * @param devstateExecCommandCommandNamePatchRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public devstateExecCommandCommandNamePatch(commandName: string, devstateExecCommandCommandNamePatchRequest?: DevstateExecCommandCommandNamePatchRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<DevfileContent>;
+    public devstateExecCommandCommandNamePatch(commandName: string, devstateExecCommandCommandNamePatchRequest?: DevstateExecCommandCommandNamePatchRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<DevfileContent>>;
+    public devstateExecCommandCommandNamePatch(commandName: string, devstateExecCommandCommandNamePatchRequest?: DevstateExecCommandCommandNamePatchRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<DevfileContent>>;
+    public devstateExecCommandCommandNamePatch(commandName: string, devstateExecCommandCommandNamePatchRequest?: DevstateExecCommandCommandNamePatchRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
+        if (commandName === null || commandName === undefined) {
+            throw new Error('Required parameter commandName was null or undefined when calling devstateExecCommandCommandNamePatch.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        let localVarHttpHeaderAcceptSelected: string | undefined = options && options.httpHeaderAccept;
+        if (localVarHttpHeaderAcceptSelected === undefined) {
+            // to determine the Accept header
+            const httpHeaderAccepts: string[] = [
+                'application/json'
+            ];
+            localVarHttpHeaderAcceptSelected = this.configuration.selectHeaderAccept(httpHeaderAccepts);
+        }
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        let localVarHttpContext: HttpContext | undefined = options && options.context;
+        if (localVarHttpContext === undefined) {
+            localVarHttpContext = new HttpContext();
+        }
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/devstate/execCommand/${this.configuration.encodeParam({name: "commandName", value: commandName, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
+        return this.httpClient.request<DevfileContent>('patch', `${this.configuration.basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: devstateExecCommandCommandNamePatchRequest,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,

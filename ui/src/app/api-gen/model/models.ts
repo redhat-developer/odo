@@ -16,6 +16,7 @@ export * from './devstateCompositeCommandPostRequest';
 export * from './devstateContainerPostRequest';
 export * from './devstateDevfilePutRequest';
 export * from './devstateEventsPutRequest';
+export * from './devstateExecCommandCommandNamePatchRequest';
 export * from './devstateExecCommandPostRequest';
 export * from './devstateImageImageNamePatchRequest';
 export * from './devstateImagePostRequest';
