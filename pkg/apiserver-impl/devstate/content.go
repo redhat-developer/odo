@@ -54,6 +54,7 @@ func (o *DevfileState) GetContent() (DevfileContent, error) {
 
 	return DevfileContent{
 		Content:    string(result),
+		Version:    o.Devfile.Data.GetSchemaVersion(),
 		Commands:   commands,
 		Containers: containers,
 		Images:     images,

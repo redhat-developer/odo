@@ -71,6 +71,7 @@ func TestDevfileState_SetMetadata(t *testing.T) {
   website: http://example.com
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},

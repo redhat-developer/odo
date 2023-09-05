@@ -12,6 +12,8 @@ package openapi
 type DevfileContent struct {
 	Content string `json:"content"`
 
+	Version string `json:"version"`
+
 	Commands []Command `json:"commands"`
 
 	Containers []Container `json:"containers"`
@@ -31,6 +33,7 @@ type DevfileContent struct {
 func AssertDevfileContentRequired(obj DevfileContent) error {
 	elements := map[string]interface{}{
 		"content":    obj.Content,
+		"version":    obj.Version,
 		"commands":   obj.Commands,
 		"containers": obj.Containers,
 		"images":     obj.Images,

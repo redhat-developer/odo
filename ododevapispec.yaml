@@ -1642,6 +1642,7 @@ components:
       type: object
       required:
       - content
+      - version
       - commands
       - containers
       - images
@@ -1651,6 +1652,8 @@ components:
       - metadata
       properties:
         content:
+          type: string
+        version:
           type: string
         commands:
           type: array

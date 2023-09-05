@@ -35,6 +35,7 @@ func TestDevfileState_UpdateEvents(t *testing.T) {
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
@@ -67,6 +68,7 @@ schemaVersion: 2.2.0
 metadata: {}
 schemaVersion: 2.2.0
 `,
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},

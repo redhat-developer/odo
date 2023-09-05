@@ -20,6 +20,7 @@ func TestDevfileState_GetContent(t *testing.T) {
 			},
 			want: DevfileContent{
 				Content:    "metadata: {}\nschemaVersion: 2.2.0\n",
+				Version:    "2.2.0",
 				Commands:   []Command{},
 				Containers: []Container{},
 				Images:     []Image{},
