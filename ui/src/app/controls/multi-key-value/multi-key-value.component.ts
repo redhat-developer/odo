@@ -1,5 +1,16 @@
-import { Component, Input, forwardRef } from '@angular/core';
-import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator, Validators } from '@angular/forms';
+import {Component, forwardRef, Input} from '@angular/core';
+import {
+  AbstractControl,
+  ControlValueAccessor,
+  FormArray,
+  FormControl,
+  FormGroup,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
+  Validators
+} from '@angular/forms';
 
 interface KeyValue {
   name: string;
@@ -28,13 +39,19 @@ export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
   @Input() dataCyPrefix: string = "";
   @Input() addLabel: string = "";
 
+  form = new FormArray<FormGroup>([]);
+
   onChange = (_: KeyValue[]) => {};
   onValidatorChange = () => {};
 
-  entries: KeyValue[] = [];
+  constructor() {
+    this.form.valueChanges.subscribe(value => {
+      this.onChange(value);
+    });
+  }
 
   writeValue(value: KeyValue[]) {
-    this.entries = value;
+    value.forEach(v => this.addEntry(v.name, v.value));
   }
 
   registerOnChange(onChange: any) {
@@ -43,30 +60,21 @@ export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
 
   registerOnTouched(_: any) {}
 
-  addEntry() {
-    this.entries.push({name: "", value: ""});
-    this.onChange(this.entries);
+  newKeyValueForm(kv: KeyValue): FormGroup {
+    return new FormGroup({
+      name: new FormControl(kv.name, [Validators.required]),
+      value: new FormControl(kv.value, [Validators.required]),
+    });
   }
 
-  onKeyChange(i: number, e: Event) {
-    const target = e.target as HTMLInputElement;
-    this.entries[i].name = target.value;
-    this.onChange(this.entries);
-  }
-
-  onValueChange(i: number, e: Event) {
-    const target = e.target as HTMLInputElement;
-    this.entries[i].value = target.value;
-    this.onChange(this.entries);
+  addEntry(name: string, value: string) {
+    this.form.push(this.newKeyValueForm({name, value}));
   }
 
   /* Validator implementation */
   validate(control: AbstractControl): ValidationErrors | null {
-    for (let i=0; i<this.entries.length; i++) {
-      const entry = this.entries[i];
-      if (entry.name == "" || entry.value == "") {
-        return {'internal': true};
-      }
+    if (!this.form.valid) {
+      return {'internal': true};
     }
     return null;
   }

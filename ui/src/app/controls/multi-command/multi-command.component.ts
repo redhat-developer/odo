@@ -1,5 +1,14 @@
-import { Component, Input } from '@angular/core';
-import { NG_VALUE_ACCESSOR } from '@angular/forms';
+import {Component, forwardRef, Input} from '@angular/core';
+import {
+  AbstractControl,
+  ControlValueAccessor,
+  FormArray,
+  FormControl,
+  FormGroup,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR, ValidationErrors, Validator,
+  Validators
+} from '@angular/forms';
 
 @Component({
   selector: 'app-multi-command',
@@ -10,10 +19,15 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
       provide: NG_VALUE_ACCESSOR,
       multi: true,
       useExisting: MultiCommandComponent
-    }
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => MultiCommandComponent),
+      multi: true,
+    },
   ]
 })
-export class MultiCommandComponent {
+export class MultiCommandComponent implements ControlValueAccessor, Validator {
 
   @Input() addLabel: string = "";
   @Input() commandList: string[] = [];
@@ -21,10 +35,16 @@ export class MultiCommandComponent {
 
   onChange = (_: string[]) => {};
 
-  commands: string[] = [];
+  form = new FormArray<FormControl>([]);
 
-  writeValue(value: any) {
-    this.commands = value;
+  constructor() {
+    this.form.valueChanges.subscribe(value => {
+      this.onChange(value);
+    });
+  }
+
+  writeValue(value: string[]) {
+    value.forEach(v => this.addCommand(v));
   }
 
   registerOnChange(onChange: any) {
@@ -33,13 +53,19 @@ export class MultiCommandComponent {
 
   registerOnTouched(_: any) {}
 
-  addCommand() {
-    this.commands.push("");
-    this.onChange(this.commands);
+  newCommand(cmdName : string) {
+    return new FormControl(cmdName, [Validators.required]);
   }
 
-  onCommandChange(i: number, cmd: string) {
-    this.commands[i] = cmd;
-    this.onChange(this.commands);
+  addCommand(cmdName: string) {
+    this.form.push(this.newCommand(cmdName));
+  }
+
+  /* Validator implementation */
+  validate(control: AbstractControl): ValidationErrors | null {
+    if (!this.form.valid) {
+      return {'internal': true};
+    }
+    return null;
   }
 }

@@ -1,13 +1,13 @@
 <h3 *ngIf="title">{{title}}</h3>
 <div class="group">
-    <span *ngFor="let text of texts; let i=index">
+    <span *ngFor="let control of form.controls; index as i">
         <mat-form-field class="inline" appearance="outline">
             <mat-label><span>{{label}}</span></mat-label>
-            <input matInput [value]="text" (change)="onTextChange(i, $event)">
-        </mat-form-field>    
+            <input matInput [formControl]="control">
+        </mat-form-field>
     </span>
-    <button *ngIf="texts.length > 0" mat-icon-button (click)="addText()">
+    <button *ngIf="form.controls.length > 0" mat-icon-button (click)="addText('')">
         <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
     </button>                
-    <button *ngIf="texts.length == 0" mat-flat-button (click)="addText()">{{addLabel}}</button>
+    <button *ngIf="form.controls.length == 0" mat-flat-button (click)="addText('')">{{addLabel}}</button>
 </div>

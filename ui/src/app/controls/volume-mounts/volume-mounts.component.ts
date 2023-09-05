@@ -1,6 +1,17 @@
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
-import { AbstractControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator } from '@angular/forms';
-import { Volume, VolumeMount } from 'src/app/api-gen';
+import {Component, EventEmitter, forwardRef, Input, Output} from '@angular/core';
+import {
+  AbstractControl,
+  ControlValueAccessor,
+  FormArray,
+  FormControl,
+  FormGroup,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
+  Validators
+} from '@angular/forms';
+import {Volume, VolumeMount} from 'src/app/api-gen';
 
 @Component({
   selector: 'app-volume-mounts',
@@ -19,20 +30,27 @@ import { Volume, VolumeMount } from 'src/app/api-gen';
     },
   ]
 })
-export class VolumeMountsComponent implements Validator {
+export class VolumeMountsComponent implements ControlValueAccessor, Validator {
 
   @Input() volumes: string[] = [];
   
   @Output() createNewVolume = new EventEmitter<Volume>();
 
-  volumeMounts: VolumeMount[] = [];
+  form = new FormArray<FormGroup>([]);
+
   showNewVolume: boolean[] = [];
 
   onChange = (_: VolumeMount[]) => {};
   onValidatorChange = () => {};
 
-  writeValue(value: any) {
-    this.volumeMounts = value;
+  constructor() {
+    this.form.valueChanges.subscribe(value => {
+      this.onChange(value);
+    });
+  }
+
+  writeValue(value: VolumeMount[]) {
+    value.forEach(v => this.add(v.name, v.path));
   }
 
   registerOnChange(onChange: any) {
@@ -41,29 +59,24 @@ export class VolumeMountsComponent implements Validator {
 
   registerOnTouched(_: any) {}
 
-  add() {
-    this.volumeMounts.push({name: "", path: ""});
-    this.onChange(this.volumeMounts);  
+  newVolumeMount(vol: VolumeMount): FormGroup {
+    return new FormGroup({
+      name: new FormControl(vol.name, [Validators.required]),
+      path: new FormControl(vol.path, [Validators.required]),
+    });
   }
 
-  onPathChange(i: number, e: Event) {
-    const target = e.target as HTMLInputElement;
-    this.volumeMounts[i].path = target.value;
-    this.onChange(this.volumeMounts);
+  add(name: string, path: string) {
+    this.form.push(this.newVolumeMount({name, path}));
   }
 
   onNameChange(i: number, name: string) {
-    if (name != "!") {
-      this.volumeMounts[i].name = name;
-      this.onChange(this.volumeMounts);
-    } 
-
     this.showNewVolume[i] = name == "!";
   }
 
   onNewVolumeCreated(i: number, v: Volume) {
     this.volumes.push(v.name);
-    this.volumeMounts[i].name = v.name;
+    this.form.at(i).get('name')?.setValue(v.name);
     this.createNewVolume.next(v);
     this.showNewVolume[i] = false;
     this.onValidatorChange();
@@ -71,11 +84,8 @@ export class VolumeMountsComponent implements Validator {
 
   /* Validator implementation */
   validate(control: AbstractControl): ValidationErrors | null {
-    for (let i=0; i<this.volumeMounts.length; i++) {
-      const vm = this.volumeMounts[i];
-      if (vm.name == "" || vm.path == "") {
-        return {'internal': true};
-      }
+    if (!this.form.valid) {
+      return {'internal': true};
     }
     return null;
   }

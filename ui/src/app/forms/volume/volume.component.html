@@ -10,6 +10,7 @@
         </mat-form-field>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Size</span></mat-label>
+            <mat-error>Example of valid quantities: 300k (300*1000), 30Mi(30*1024²), 3Gi (3*1024³), 3G (3*1000³)</mat-error>
             <input placeholder="Minimal size of the volume" data-cy="volume-size" matInput formControlName="size">
         </mat-form-field>
         <mat-checkbox data-cy="volume-ephemeral" formControlName="ephemeral">Volume is Ephemeral</mat-checkbox>

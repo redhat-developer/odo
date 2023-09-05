@@ -1,5 +1,15 @@
-import { Component, Input } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {Component, forwardRef, Input} from '@angular/core';
+import {
+  AbstractControl,
+  ControlValueAccessor,
+  FormArray,
+  FormControl,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
+  Validators
+} from '@angular/forms';
 
 @Component({
   selector: 'app-multi-text',
@@ -10,10 +20,15 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       provide: NG_VALUE_ACCESSOR,
       multi: true,
       useExisting: MultiTextComponent
-    }
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => MultiTextComponent),
+      multi: true,
+    },
   ]
 })
-export class MultiTextComponent implements ControlValueAccessor {
+export class MultiTextComponent implements ControlValueAccessor, Validator {
 
   @Input() label: string = "";
   @Input() addLabel: string = "";
@@ -21,13 +36,20 @@ export class MultiTextComponent implements ControlValueAccessor {
 
   onChange = (_: string[]) => {};
 
-  texts: string[] = [];
+  form = new FormArray<FormControl>([]);
 
-  writeValue(value: any) {
-    if (value == null) {
-      value = [];
-    }
-    this.texts = value;
+  constructor() {
+    this.form.valueChanges.subscribe(value => {
+      this.onChange(value);
+    });
+  }
+
+  newText(text: string): FormControl {
+    return new FormControl(text, [Validators.required]);
+  }
+
+  writeValue(value: string[]) {
+    value?.forEach(v => this.addText(v));
   }
 
   registerOnChange(onChange: any) {
@@ -36,14 +58,15 @@ export class MultiTextComponent implements ControlValueAccessor {
 
   registerOnTouched(_: any) {}
 
-  addText() {
-    this.texts.push("");
-    this.onChange(this.texts);
+  addText(text: string) {
+    this.form.push(this.newText(text));
   }
 
-  onTextChange(i: number, e: Event) {
-    const target = e.target as HTMLInputElement;
-    this.texts[i] = target.value;
-    this.onChange(this.texts);
+  /* Validator implementation */
+  validate(control: AbstractControl): ValidationErrors | null {
+    if (!this.form.valid) {
+      return {'internal': true};
+    }
+    return null;
   }
 }
