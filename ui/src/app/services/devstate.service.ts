@@ -101,6 +101,15 @@ export class DevstateService {
     });
   }
 
+  updateExecCommand(name: string, cmd: ExecCommand): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/execCommand/"+name, {
+      component: cmd.component,
+      commandLine: cmd.commandLine,
+      workingDir: cmd.workingDir,
+      hotReloadCapable: cmd.hotReloadCapable,
+    });
+  }
+
   addApplyCommand(name: string, cmd: ApplyCommand): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/applyCommand", {
       name: name,
