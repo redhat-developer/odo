@@ -1,9 +1,9 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
-import { Resource } from 'src/app/api-gen';
+import { Command, Resource } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
@@ -12,6 +12,8 @@ import { TelemetryService } from 'src/app/services/telemetry.service';
   styleUrls: ['./command-apply.component.css']
 })
 export class CommandApplyComponent {
+  @Input() command: Command | undefined;
+
   @Output() canceled = new EventEmitter<void>();
 
   form: FormGroup;

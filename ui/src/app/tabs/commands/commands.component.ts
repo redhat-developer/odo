@@ -19,6 +19,8 @@ export class CommandsComponent {
 
   commands: Command[] | undefined = [];
 
+  editingCommand: Command | undefined;
+
   constructor(
     private state: StateService,
     private devstate: DevstateService,
@@ -40,32 +42,52 @@ export class CommandsComponent {
     });
   }
 
-  displayExecForm() {
+  displayAddExecForm() {
     this.telemetry.track("[ui] start create exec command");
+    this.editingCommand = undefined;
+    this.displayExecForm();
+  }
+
+  displayExecForm() {
     this.forceDisplayExecForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
-  displayApplyForm() {
+  displayAddApplyForm() {
     this.telemetry.track("[ui] start create apply command");
+    this.editingCommand = undefined;
+    this.displayApplyForm();  
+  }
+
+  displayApplyForm() {
     this.forceDisplayApplyForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
-  displayImageForm() {
+  displayAddImageForm() {
     this.telemetry.track("[ui] start create image command");
+    this.editingCommand = undefined;
+    this.displayImageForm();
+  }
+
+  displayImageForm() {
     this.forceDisplayImageForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
-  displayCompositeForm() {
+  displayAddCompositeForm() {
     this.telemetry.track("[ui] start create composite command");
+    this.editingCommand = undefined;
+    this.displayCompositeForm();
+  }
+
+  displayCompositeForm() {
     this.forceDisplayCompositeForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
@@ -117,4 +139,26 @@ export class CommandsComponent {
     window.scrollTo(0,document.body.scrollHeight);
   }
   
+  edit(command: Command) {
+    this.editingCommand = command;
+    this.undisplayExecForm();
+    this.undisplayApplyForm();
+    this.undisplayImageForm();
+    this.undisplayCompositeForm();
+    switch (command.type) {
+      case 'exec':
+        this.displayExecForm();
+        break;
+        case 'apply':
+          this.displayApplyForm();
+          break;
+        case 'image':
+        this.displayImageForm();
+        break;      
+        case 'composite':
+          this.displayCompositeForm();
+          break;
+      }
+
+  }
 }
