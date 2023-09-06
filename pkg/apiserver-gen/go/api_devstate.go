@@ -51,6 +51,12 @@ func NewDevstateApiController(s DevstateApiServicer, opts ...DevstateApiOption) 
 func (c *DevstateApiController) Routes() Routes {
 	return Routes{
 		{
+			"DevstateApplyCommandCommandNamePatch",
+			strings.ToUpper("Patch"),
+			"/api/v1/devstate/applyCommand/{commandName}",
+			c.DevstateApplyCommandCommandNamePatch,
+		},
+		{
 			"DevstateApplyCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/applyCommand",
@@ -207,6 +213,32 @@ func (c *DevstateApiController) Routes() Routes {
 			c.DevstateVolumeVolumeNamePatch,
 		},
 	}
+}
+
+// DevstateApplyCommandCommandNamePatch -
+func (c *DevstateApiController) DevstateApplyCommandCommandNamePatch(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	devstateApplyCommandCommandNamePatchRequestParam := DevstateApplyCommandCommandNamePatchRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateApplyCommandCommandNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateApplyCommandCommandNamePatchRequestRequired(devstateApplyCommandCommandNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateApplyCommandCommandNamePatch(r.Context(), commandNameParam, devstateApplyCommandCommandNamePatchRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
 }
 
 // DevstateApplyCommandPost -

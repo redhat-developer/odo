@@ -362,3 +362,16 @@ func (s *DevstateApiService) DevstateExecCommandCommandNamePatch(ctx context.Con
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DevstateApiService) DevstateApplyCommandCommandNamePatch(ctx context.Context, name string, patch openapi.DevstateApplyCommandCommandNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchApplyCommand(
+		name,
+		patch.Component,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the Apply Command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

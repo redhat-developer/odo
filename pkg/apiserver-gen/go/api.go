@@ -31,6 +31,7 @@ type DefaultApiRouter interface {
 // The DevstateApiRouter implementation should parse necessary information from the http request,
 // pass the data to a DevstateApiServicer to perform the required actions, then write the service results to the http response.
 type DevstateApiRouter interface {
+	DevstateApplyCommandCommandNamePatch(http.ResponseWriter, *http.Request)
 	DevstateApplyCommandPost(http.ResponseWriter, *http.Request)
 	DevstateChartGet(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameDelete(http.ResponseWriter, *http.Request)
@@ -78,6 +79,7 @@ type DefaultApiServicer interface {
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
 type DevstateApiServicer interface {
+	DevstateApplyCommandCommandNamePatch(context.Context, string, DevstateApplyCommandCommandNamePatchRequest) (ImplResponse, error)
 	DevstateApplyCommandPost(context.Context, DevstateApplyCommandPostRequest) (ImplResponse, error)
 	DevstateChartGet(context.Context) (ImplResponse, error)
 	DevstateCommandCommandNameDelete(context.Context, string) (ImplResponse, error)

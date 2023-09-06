@@ -9,6 +9,7 @@ go/impl.go
 go/model__component_command_post_request.go
 go/model__component_get_200_response.go
 go/model__devfile_get_200_response.go
+go/model__devstate_apply_command__command_name__patch_request.go
 go/model__devstate_apply_command_post_request.go
 go/model__devstate_chart_get_200_response.go
 go/model__devstate_command__command_name__move_post_request.go

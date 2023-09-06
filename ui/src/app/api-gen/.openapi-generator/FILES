@@ -18,6 +18,7 @@ model/container.ts
 model/devfileContent.ts
 model/devfileGet200Response.ts
 model/devfilePutRequest.ts
+model/devstateApplyCommandCommandNamePatchRequest.ts
 model/devstateApplyCommandPostRequest.ts
 model/devstateChartGet200Response.ts
 model/devstateCommandCommandNameMovePostRequest.ts

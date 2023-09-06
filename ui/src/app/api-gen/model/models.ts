@@ -8,6 +8,7 @@ export * from './container';
 export * from './devfileContent';
 export * from './devfileGet200Response';
 export * from './devfilePutRequest';
+export * from './devstateApplyCommandCommandNamePatchRequest';
 export * from './devstateApplyCommandPostRequest';
 export * from './devstateChartGet200Response';
 export * from './devstateCommandCommandNameMovePostRequest';
