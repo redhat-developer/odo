@@ -68,7 +68,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('endpoints-add').click();
     cy.getByDataCy('endpoint-name-0').type("ep1");
     cy.getByDataCy('endpoint-targetPort-0').type("4001");
-    
+
     cy.getByDataCy('volume-mount-add').click();
     cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2", {force: true});
     cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
@@ -113,7 +113,7 @@ describe('devfile editor spec', () => {
 
     cy.selectTab(TAB_VOLUMES);
     cy.getByDataCy('volume-info').eq(1)
-    .should('contain.text', 'volume2');
+      .should('contain.text', 'volume2');
   });
 
   it('displays a created container with source configuration', () => {
@@ -157,7 +157,7 @@ describe('devfile editor spec', () => {
 
     cy.selectTab(TAB_VOLUMES);
     cy.getByDataCy('volume-info').eq(1)
-    .should('contain.text', 'volume2');
+      .should('contain.text', 'volume2');
   });
 
   it('displays a created image', () => {
@@ -205,7 +205,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('image-build-context').type('/new/path/to/build/context');
     cy.getByDataCy('image-dockerfile-uri').type('/new/path/to/dockerfile');
     cy.getByDataCy('image-save').click();
-    
+
     cy.getByDataCy('image-info').first()
       .should('contain.text', 'created-image')
       .should('contain.text', 'another-image-name')
@@ -215,7 +215,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('image-build-startup').first()
       .should('contain.text', 'Yes, forced');
 
-    });
+  });
 
   it('displays a created image with forced build', () => {
     cy.init();
@@ -262,7 +262,7 @@ describe('devfile editor spec', () => {
 
     cy.getByDataCy('resource-deploy-startup').first()
       .should('contain.text', 'Yes, the resource is not referenced by any command');
-    });
+  });
 
   it('displays a created resource, with uri (default)', () => {
     cy.init();
@@ -332,8 +332,8 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('resource-save').click();
 
     cy.getByDataCy('resource-info').first()
-    .should('contain.text', 'created-resource')
-    .should('contain.text', 'another-resource-manifest');
+      .should('contain.text', 'created-resource')
+      .should('contain.text', 'another-resource-manifest');
   });
 
   it('displays a created volume', () => {
@@ -395,7 +395,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('select-container').click().get('mat-option').contains('(New Container)').click();
     cy.getByDataCy('container-name').type('a-created-container');
     cy.getByDataCy('container-image').type('an-image');
-    
+
     cy.getByDataCy('volume-mount-add').click();
     cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1", {force: true});
     cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
@@ -405,7 +405,7 @@ describe('devfile editor spec', () => {
     cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
     cy.getByDataCy('volume-name').type('volume2');
     cy.getByDataCy('volume-create').click();
-    
+
     cy.getByDataCy('container-create').click();
 
     cy.getByDataCy('select-container').should('contain', 'a-created-container');
@@ -429,6 +429,36 @@ describe('devfile editor spec', () => {
     cy.selectTab(TAB_VOLUMES);
     cy.getByDataCy('volume-info').eq(1)
       .should('contain.text', 'volume2');
+  });
+
+  it('updates an exec command', () => {
+    cy.init();
+
+    cy.selectTab(TAB_COMMANDS);
+    cy.getByDataCy('add').click();
+    cy.getByDataCy('new-command-exec').click();
+
+    cy.getByDataCy('command-exec-name').type('created-command');
+    cy.getByDataCy('command-exec-command-line').type('a-cmdline');
+    cy.getByDataCy('command-exec-working-dir').type('/path/to/working/dir');
+
+    cy.getByDataCy('select-container').click().get('mat-option').contains('(New Container)').click();
+    cy.getByDataCy('container-name').type('a-created-container');
+    cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-create').click();
+
+    cy.getByDataCy('command-exec-create').click();
+
+    cy.getByDataCy('command-edit').click();
+
+    cy.getByDataCy('command-exec-command-line').type('{selectAll}{del}another-cmdline');
+    cy.getByDataCy('command-exec-working-dir').type('{selectAll}{del}/another/path/to/working/dir');
+    cy.getByDataCy('command-exec-save').click();
+
+    cy.getByDataCy('command-info').first()
+      .should('contain.text', 'created-command')
+      .should('contain.text', 'another-cmdline')
+      .should('contain.text', '/another/path/to/working/dir');
   });
 
   it('creates an apply image command with a new image', () => {
@@ -461,6 +491,44 @@ describe('devfile editor spec', () => {
 
     cy.getByDataCy('image-build-startup').first()
       .should('contain.text', 'No, the image is referenced by a command');
+  });
+
+  it('upates an apply image command', () => {
+    cy.init();
+
+    cy.selectTab(TAB_COMMANDS);
+    cy.getByDataCy('add').click();
+    cy.getByDataCy('new-command-image').click();
+    cy.getByDataCy('command-image-name').type('created-command');
+    cy.getByDataCy('select-container').click().get('mat-option').contains('(New Image)').click();
+    cy.getByDataCy('image-name').type('a-created-image');
+    cy.getByDataCy('image-image-name').type('an-image-name');
+    cy.getByDataCy('image-build-context').type('/context/dir');
+    cy.getByDataCy('image-dockerfile-uri').type('/path/to/Dockerfile');
+    cy.getByDataCy('image-create').click();
+
+    cy.getByDataCy('command-image-create').click();
+
+    cy.getByDataCy('command-edit').click();
+
+    cy.getByDataCy('select-container').click().get('mat-option').contains('(New Image)').click();
+    cy.getByDataCy('image-name').type('another-created-image');
+    cy.getByDataCy('image-image-name').type('another-image-name');
+    cy.getByDataCy('image-build-context').type('/another/context/dir');
+    cy.getByDataCy('image-dockerfile-uri').type('/another/path/to/Dockerfile');
+    cy.getByDataCy('image-create').click();
+    cy.getByDataCy('command-image-save').click();
+
+    cy.getByDataCy('command-info').first()
+      .should('contain.text', 'created-command')
+      .should('contain.text', 'another-created-image');
+
+    cy.selectTab(TAB_IMAGES);
+    cy.getByDataCy('image-info').eq(1)
+      .should('contain.text', 'another-created-image')
+      .should('contain.text', 'another-image-name')
+      .should('contain.text', '/another/context/dir')
+      .should('contain.text', '/another/path/to/Dockerfile');
   });
 
   it('creates an apply resource command with a new resource using manifest', () => {
@@ -518,6 +586,44 @@ describe('devfile editor spec', () => {
       .should('contain.text', '/my/manifest.yaml');
   });
 
+  it('updates an apply resource command', () => {
+    cy.init();
+
+    cy.selectTab(TAB_COMMANDS);
+    cy.getByDataCy('add').click();
+    cy.getByDataCy('new-command-apply').click();
+    cy.getByDataCy('command-apply-name').type('created-command');
+    cy.getByDataCy('select-container').click().get('mat-option').contains('(New Resource)').click();
+    cy.getByDataCy('resource-name').type('a-created-resource');
+    cy.getByDataCy('resource-toggle-inlined').click();
+    cy.getByDataCy('resource-manifest').type('spec: {}');
+    cy.getByDataCy('resource-create').click();
+
+    cy.getByDataCy('command-apply-create').click();
+
+    cy.getByDataCy('command-edit').click();
+
+    cy.getByDataCy('select-container').click().get('mat-option').contains('(New Resource)').click();
+    cy.getByDataCy('resource-name').type('another-created-resource');
+    cy.getByDataCy('resource-toggle-inlined').click();
+    cy.getByDataCy('resource-manifest').type('spec: {{} field: value }');
+    cy.getByDataCy('resource-create').click();
+
+    cy.getByDataCy('command-apply-save').click();
+
+    cy.getByDataCy('command-info').first()
+      .should('contain.text', 'created-command')
+      .should('contain.text', 'another-created-resource');
+
+    cy.selectTab(TAB_RESOURCES);
+    cy.getByDataCy('resource-info').eq(1)
+      .should('contain.text', 'another-created-resource')
+      .should('contain.text', 'spec: { field: value }');
+
+    cy.getByDataCy('resource-deploy-startup').eq(1)
+          .should('contain.text', 'No, the resource is referenced by a command');
+  });
+
   it('reloads the Devfile upon changes in the filesystem', () => {
     cy.init();
     cy.fixture('input/devfile-new-version.yaml').then(yaml => {
@@ -529,10 +635,10 @@ describe('devfile editor spec', () => {
 
     cy.selectTab(TAB_CONTAINERS);
     cy.getByDataCy('container-info').first()
-        .should('contain.text', 'my-cont1')
-        .should('contain.text', 'some-image:latest')
-        .should('contain.text', 'some command')
-        .should('contain.text', 'some arg');
+      .should('contain.text', 'my-cont1')
+      .should('contain.text', 'some-image:latest')
+      .should('contain.text', 'some command')
+      .should('contain.text', 'some arg');
   });
 
   it('adds an event with an existing command', () => {
