@@ -131,6 +131,13 @@ export class DevstateService {
     });
   }
 
+  updateCompositeCommand(name: string, cmd: CompositeCommand): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/compositeCommand/"+name, {
+      parallel: cmd.parallel,
+      commands: cmd.commands,
+    });
+  }
+
   // getFlowChart calls the wasm module to get the lifecycle of the Devfile in mermaid chart format
   getFlowChart(): Observable<DevstateChartGet200Response> {
     return this.http.get<DevstateChartGet200Response>(this.base+"/chart");

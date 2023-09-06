@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
@@ -55,5 +55,37 @@ export class CommandCompositeComponent {
  
   cancel() {
     this.canceled.emit();
+  }
+
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['command']) {
+      return;
+    }
+    const cmd = changes['command'].currentValue;
+    if (cmd == undefined) {
+      this.form.get('name')?.enable();
+    } else {
+      this.form.reset();
+      this.form.patchValue(cmd);
+      this.form.patchValue(cmd.composite);
+      this.form.get('name')?.disable();
+    }
+  }
+
+  save() {
+    this.telemetry.track("[ui] update composite command");
+    if (this.command == undefined) {
+      return;
+    }
+    const result = this.devstate.updateCompositeCommand(this.command.name, this.form.value);
+    result.subscribe({
+      next: (value) => {
+        this.state.changeDevfileYaml(value);
+      },
+      error: (error) => {
+        alert(error.error.message);
+      }
+    });
   }
 }
