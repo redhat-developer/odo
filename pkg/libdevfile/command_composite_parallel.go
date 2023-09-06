@@ -52,7 +52,7 @@ func (o *parallelCompositeCommand) Execute(ctx context.Context, handler Handler,
 	}
 	commandExecs := util.NewConcurrentTasks(len(o.command.Composite.Commands))
 	for _, devfileCmd := range o.command.Composite.Commands {
-		cmd, err2 := newCommand(o.devfileObj, allCommands[devfileCmd])
+		cmd, err2 := newCommand(o.devfileObj, allCommands[strings.ToLower(devfileCmd)])
 		if err2 != nil {
 			return err2
 		}

@@ -230,7 +230,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 	)
 	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, handler)
 	if err != nil {
-		klog.V(4).Infof("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
+		log.Warningf("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
 	}
 
 	return nil

@@ -33,8 +33,9 @@ func newCommand(devfileObj parser.DevfileObj, devfileCmd v1alpha2.Command) (comm
 	case v1alpha2.CompositeCommandType:
 		if util.SafeGetBool(devfileCmd.Composite.Parallel) {
 			cmd = newParallelCompositeCommand(devfileObj, devfileCmd)
+		} else {
+			cmd = newCompositeCommand(devfileObj, devfileCmd)
 		}
-		cmd = newCompositeCommand(devfileObj, devfileCmd)
 
 	case v1alpha2.ExecCommandType:
 		cmd = newExecCommand(devfileObj, devfileCmd)
