@@ -21,11 +21,22 @@ const (
 	unicodeSpinnerFrames = "◓◐◑◒"
 )
 
+var (
+	// Matches versions like "vX.Y.Z (6721c668b)" or "vX.Y.Z (6721c668b-dirty)" or "vX.Y.Z-rc (6721c668b-broken)"
+	reOdoVersion = regexp.MustCompile(`(v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?)\s*\(\w+(-\w+)?\)`)
+)
+
 // ReplaceAllTimeInString replaces the time taken to download a Devfile or a starter project for an odo command with a custom value;
 // this function is helpful because the time value is variable and replacing it with the value in mdx content helps in comparing.
 func ReplaceAllTimeInString(docString string, timeString string) string {
 	reg := regexp.MustCompile(timePatternInOdo)
 	return reg.ReplaceAllString(docString, timeString)
+}
+
+// StripGitCommitFromVersion removes any git commit hash from the full odo version string.
+// For example, given a version string like "vX.Y.Z (6721c668b)", it will simply return "vX.Y.Z"
+func StripGitCommitFromVersion(docString string) string {
+	return reOdoVersion.ReplaceAllString(docString, "$1")
 }
 
 // StripSpinner strips the cmd out string of spaces, spinner statements and spinner frames
@@ -105,7 +116,8 @@ func GetMDXContent(filePath string) (mdxContent string) {
 
 	// replace all instances of time to [1s], this is also done for cmd out
 	mdxContent = ReplaceAllTimeInString(mdxContent, staticTimeValue)
-	return
+	mdxContent = StripGitCommitFromVersion(mdxContent)
+	return mdxContent
 }
 
 // StripAnsi strips the cmd out of ansi values used for fomatting(underline, colored line, etc.) the cmd out;

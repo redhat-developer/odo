@@ -2,7 +2,7 @@ PROJECT := github.com/redhat-developer/odo
 ifdef GITCOMMIT
         GITCOMMIT := $(GITCOMMIT)
 else
-        GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
+        GITCOMMIT := $(shell git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
 endif
 
 COMMON_GOFLAGS := -mod=vendor

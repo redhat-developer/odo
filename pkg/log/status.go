@@ -36,6 +36,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/redhat-developer/odo/pkg/log/fidget"
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // Spacing for logging
@@ -339,28 +340,41 @@ More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
 	}
 }
 
-// Title Prints the logo as well as the first line being BLUE (indicator of the command information)
-// the second and third lines are optional and provide information with regards to what is being ran
+// Title Prints the logo as well as the first line being BLUE (indicator of the command information);
+// the second line is optional and provides information in regard to what is being run.
+// The last line displays information about the current odo version.
 //
-//		 __
-//	 /  \__     **First line**
-//	 \__/  \    Second line
-//	 /  \__/    Third line
-//	 \__/
-func Title(firstLine, secondLine, thirdLine string) {
+//	 __
+//	/  \__     **First line**
+//	\__/  \    Second line
+//	/  \__/    odo version: <VERSION>
+//	\__/
+func Title(firstLine, secondLine string) {
 	if !IsJSON() {
-		fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine, thirdLine))
+		fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine))
 	}
 }
 
 // Stitle is the same as Title but returns the string instead
-func Stitle(firstLine, secondLine, thirdLine string) string {
+func Stitle(firstLine, secondLine string) string {
+	var versionMsg string
+	if version.VERSION != "" {
+		versionMsg = "odo version: " + version.VERSION
+	}
+	if version.GITCOMMIT != "" {
+		versionMsg += " (" + version.GITCOMMIT + ")"
+	}
+	return StitleWithVersion(firstLine, secondLine, versionMsg)
+}
+
+// StitleWithVersion is the same as Stitle, but it allows to customize the version message line
+func StitleWithVersion(firstLine, secondLine, versionLine string) string {
 	blue := color.New(color.FgBlue).SprintFunc()
 	return fmt.Sprintf(`  __
  /  \__     %s
  \__/  \    %s
  /  \__/    %s
- \__/%s`, blue(firstLine), secondLine, thirdLine, "\n")
+ \__/%s`, blue(firstLine), secondLine, versionLine, "\n")
 }
 
 // Sectionf outputs a title in BLUE and underlined for separating a section (such as building a container, deploying files, etc.)

@@ -38,7 +38,6 @@ import (
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -219,9 +218,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	}
 
 	// Output what the command is doing / information
-	log.Title("Developing using the \""+componentName+"\" Devfile",
-		dest,
-		"odo version: "+version.VERSION)
+	log.Title("Developing using the \""+componentName+"\" Devfile", dest)
 	if platform == commonflags.PlatformCluster {
 		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	}
