@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
@@ -84,5 +84,54 @@ export class CommandApplyComponent {
     this.form.controls["component"].setValue(resource.name);
     this.showNewResource = false;
     this.resourceToCreate = resource;
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['command']) {
+      return;
+    }
+    const cmd = changes['command'].currentValue;
+    if (cmd == undefined) {
+      this.form.get('name')?.enable();
+    } else {
+      this.form.reset();
+      this.form.patchValue(cmd);
+      this.form.patchValue(cmd.apply);
+      this.form.get('name')?.disable();
+    }
+  }
+
+  save() {
+    this.telemetry.track("[ui] update apply command");
+    const subcreate = () => {
+      if (this.command == undefined) {
+        return;
+      }
+      const result = this.devstate.updateApplyCommand(this.command.name, this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });  
+    }
+
+    if (this.resourceToCreate != null && 
+      this.resourceToCreate?.name == this.form.controls["component"].value) {
+      const result = this.devstate.addResource(this.resourceToCreate);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+          subcreate();
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });        
+    } else {
+      subcreate();
+    }
   }
 }

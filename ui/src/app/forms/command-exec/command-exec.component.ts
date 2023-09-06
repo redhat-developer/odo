@@ -117,7 +117,6 @@ export class CommandExecComponent {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log("changes", changes);
     if (!changes['command']) {
       return;
     }
@@ -135,7 +134,6 @@ export class CommandExecComponent {
   save() {
     this.telemetry.track("[ui] update exec command");
     const subcreate = () => {
-      console.log("value", this.form.value);
       if (this.command == undefined) {
         return;
       }

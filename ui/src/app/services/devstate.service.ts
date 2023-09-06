@@ -117,6 +117,12 @@ export class DevstateService {
     });
   }
 
+  updateApplyCommand(name: string, cmd: ApplyCommand): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/applyCommand/"+name, {
+      component: cmd.component,
+    });
+  }
+
   addCompositeCommand(name: string, cmd: CompositeCommand): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/compositeCommand", {
       name: name,
