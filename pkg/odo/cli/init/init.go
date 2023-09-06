@@ -12,6 +12,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 
+	"k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -30,9 +32,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/version"
-
-	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -212,7 +211,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 	} else if len(o.flags) == 0 {
 		infoOutput = messages.SourceCodeDetected
 	}
-	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Title(messages.InitializingNewComponent, infoOutput)
 	log.Println()
 	if len(o.flags) == 0 {
 		log.Info(messages.InteractiveModeEnabled)
