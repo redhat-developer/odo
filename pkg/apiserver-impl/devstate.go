@@ -375,3 +375,17 @@ func (s *DevstateApiService) DevstateApplyCommandCommandNamePatch(ctx context.Co
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
 }
+
+func (s *DevstateApiService) DevstateCompositeCommandCommandNamePatch(ctx context.Context, name string, patch openapi.DevstateCompositeCommandCommandNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchCompositeCommand(
+		name,
+		patch.Parallel,
+		patch.Commands,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the Image Command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}

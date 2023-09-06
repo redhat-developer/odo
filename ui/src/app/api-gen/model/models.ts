@@ -13,6 +13,7 @@ export * from './devstateApplyCommandPostRequest';
 export * from './devstateChartGet200Response';
 export * from './devstateCommandCommandNameMovePostRequest';
 export * from './devstateCommandCommandNameSetDefaultPostRequest';
+export * from './devstateCompositeCommandCommandNamePatchRequest';
 export * from './devstateCompositeCommandPostRequest';
 export * from './devstateContainerPostRequest';
 export * from './devstateDevfilePutRequest';

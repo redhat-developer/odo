@@ -1483,6 +1483,76 @@ paths:
               example:
                 message: "Error adding the Composite command"
 
+  /devstate/compositeCommand/{commandName}:
+    patch:
+      tags:
+      - devstate
+      description: Update a Composite Command
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parallel:
+                  type: boolean
+                commands:
+                  type: array
+                  items:
+                    type: string
+
+      responses:
+        '200':
+          description: Composite command was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Composite command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Composite command"
+
   /devstate/execCommand:
     post:
       tags:

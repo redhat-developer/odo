@@ -93,6 +93,12 @@ func (c *DevstateApiController) Routes() Routes {
 			c.DevstateCommandCommandNameUnsetDefaultPost,
 		},
 		{
+			"DevstateCompositeCommandCommandNamePatch",
+			strings.ToUpper("Patch"),
+			"/api/v1/devstate/compositeCommand/{commandName}",
+			c.DevstateCompositeCommandCommandNamePatch,
+		},
+		{
 			"DevstateCompositeCommandPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/compositeCommand",
@@ -350,6 +356,32 @@ func (c *DevstateApiController) DevstateCommandCommandNameUnsetDefaultPost(w htt
 	params := mux.Vars(r)
 	commandNameParam := params["commandName"]
 	result, err := c.service.DevstateCommandCommandNameUnsetDefaultPost(r.Context(), commandNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateCompositeCommandCommandNamePatch -
+func (c *DevstateApiController) DevstateCompositeCommandCommandNamePatch(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	commandNameParam := params["commandName"]
+	devstateCompositeCommandCommandNamePatchRequestParam := DevstateCompositeCommandCommandNamePatchRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateCompositeCommandCommandNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateCompositeCommandCommandNamePatchRequestRequired(devstateCompositeCommandCommandNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateCompositeCommandCommandNamePatch(r.Context(), commandNameParam, devstateCompositeCommandCommandNamePatchRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

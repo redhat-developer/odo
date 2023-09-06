@@ -109,6 +109,30 @@ func (o *DevfileState) AddCompositeCommand(name string, parallel bool, commands 
 	return o.GetContent()
 }
 
+func (o *DevfileState) PatchCompositeCommand(name string, parallel bool, commands []string) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.CompositeCommandType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Composite Command found with name %q", len(found), name)
+	}
+
+	command := found[0]
+	command.Composite.Parallel = &parallel
+	command.Composite.Commands = commands
+	err = o.Devfile.Data.UpdateCommand(command)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
 func (o *DevfileState) DeleteCommand(name string) (DevfileContent, error) {
 	err := o.checkCommandUsed(name)
 	if err != nil {
