@@ -8,7 +8,7 @@ echo "Reading ODO_VERSION, ODO_RELEASE and GIT_COMMIT env, if they are set"
 export ODO_VERSION=${ODO_VERSION:=3.14.0}
 export ODO_RELEASE=${ODO_RELEASE:=1}
 
-export GIT_COMMIT=${GIT_COMMIT:=$(git rev-parse --short HEAD 2>/dev/null)}
+export GIT_COMMIT=${GIT_COMMIT:=$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)}
 
 ODO_RPM_VERSION=$(echo $ODO_VERSION | tr '-' '~')
 export ODO_RPM_VERSION
