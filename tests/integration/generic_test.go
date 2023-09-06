@@ -117,7 +117,7 @@ var _ = Describe("odo generic", func() {
 
 	Context("executing odo version command", func() {
 		const (
-			reOdoVersion        = `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
+			reOdoVersion        = `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+(-\w+)?\)`
 			reKubernetesVersion = `Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
 			rePodmanVersion     = `Podman Client:\s*[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
 			reJSONVersion       = `^v{0,1}[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`

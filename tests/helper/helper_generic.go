@@ -411,3 +411,8 @@ func GetDevfileRegistryURL() string {
 	}
 	return registryURL
 }
+
+func GetOdoVersion() (version string, gitCommit string) {
+	odoVersion := Cmd("odo", "version", "--client", "-o", "json").ShouldPass().Out()
+	return gjson.Get(odoVersion, "version").String(), gjson.Get(odoVersion, "gitCommit").String()
+}

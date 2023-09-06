@@ -13,14 +13,13 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/utils/pointer"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
-	"github.com/redhat-developer/odo/pkg/util"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
+	"github.com/redhat-developer/odo/pkg/util"
+
 	odolog "github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -413,8 +412,12 @@ var _ = Describe("odo init interactive command tests", func() {
 						language := "java"
 
 						// The first output is welcoming message / paragraph / banner output
-						welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.NoSourceCodeDetected, "odo version: "+version.VERSION), "\n")
-
+						odoVersion, gitCommit := helper.GetOdoVersion()
+						welcomingMsgs := strings.Split(
+							odolog.StitleWithVersion(messages.InitializingNewComponent,
+								messages.NoSourceCodeDetected,
+								fmt.Sprintf("odo version: %s (%s)", odoVersion, gitCommit)),
+							"\n")
 						output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 							helper.ExpectString(ctx, "Select architectures")
 							helper.SendLine(ctx, "")
@@ -455,7 +458,12 @@ var _ = Describe("odo init interactive command tests", func() {
 						language := "Python"
 						projectType := "Python"
 						versionedDevfileName := "python:2.1.0"
-						welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
+						odoVersion, gitCommit := helper.GetOdoVersion()
+						welcomingMsgs := strings.Split(
+							odolog.StitleWithVersion(messages.InitializingNewComponent,
+								messages.SourceCodeDetected,
+								fmt.Sprintf("odo version: %s (%s)", odoVersion, gitCommit)),
+							"\n")
 
 						output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 							helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
