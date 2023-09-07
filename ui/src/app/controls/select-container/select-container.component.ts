@@ -5,7 +5,7 @@ import {
   FormArray, FormControl,
   FormGroup, NG_VALIDATORS,
   NG_VALUE_ACCESSOR,
-  ValidationErrors, Validator, Validators
+  ValidationErrors, Validator, ValidatorFn, Validators
 } from '@angular/forms';
 
 @Component({
@@ -34,9 +34,19 @@ export class SelectContainerComponent implements ControlValueAccessor, Validator
   formCtrl: FormControl;
 
   onChange = (_: string) => {};
+  onValidatorChange = () => {};
 
   constructor() {
-    this.formCtrl = new FormControl('', [Validators.required]);
+    this.formCtrl = new FormControl('', [Validators.required, this.validatorIsNotNew()]);
+  }
+
+  validatorIsNotNew(): ValidatorFn {
+    return (control:AbstractControl) : ValidationErrors | null => {
+      if (control.value == '!') {
+        return {'internal': true};
+      }
+      return null;
+    };
   }
 
   writeValue(value: string) {
@@ -50,6 +60,7 @@ export class SelectContainerComponent implements ControlValueAccessor, Validator
   registerOnTouched(_: any) {}
 
   onSelectChange(v: string) {
+    this.onValidatorChange();
     if (v != "!") {
       this.onChange(v);
     }
@@ -57,6 +68,10 @@ export class SelectContainerComponent implements ControlValueAccessor, Validator
   }
 
   /* Validator implementation */
+  registerOnValidatorChange?(onValidatorChange: () => void): void {
+    this.onValidatorChange = onValidatorChange;
+  }
+
   validate(control: AbstractControl): ValidationErrors | null {
     if (!this.formCtrl.valid) {
       return {'internal': true};

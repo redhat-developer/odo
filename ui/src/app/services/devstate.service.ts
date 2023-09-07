@@ -101,6 +101,15 @@ export class DevstateService {
     });
   }
 
+  updateExecCommand(name: string, cmd: ExecCommand): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/execCommand/"+name, {
+      component: cmd.component,
+      commandLine: cmd.commandLine,
+      workingDir: cmd.workingDir,
+      hotReloadCapable: cmd.hotReloadCapable,
+    });
+  }
+
   addApplyCommand(name: string, cmd: ApplyCommand): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/applyCommand", {
       name: name,
@@ -108,9 +117,22 @@ export class DevstateService {
     });
   }
 
+  updateApplyCommand(name: string, cmd: ApplyCommand): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/applyCommand/"+name, {
+      component: cmd.component,
+    });
+  }
+
   addCompositeCommand(name: string, cmd: CompositeCommand): Observable<DevfileContent> {
     return this.http.post<DevfileContent>(this.base+"/compositeCommand", {
       name: name,
+      parallel: cmd.parallel,
+      commands: cmd.commands,
+    });
+  }
+
+  updateCompositeCommand(name: string, cmd: CompositeCommand): Observable<DevfileContent> {
+    return this.http.patch<DevfileContent>(this.base+"/compositeCommand/"+name, {
       parallel: cmd.parallel,
       commands: cmd.commands,
     });

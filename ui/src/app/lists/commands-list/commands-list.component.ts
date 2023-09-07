@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
@@ -13,6 +13,8 @@ export class CommandsListComponent {
   @Input() commands: Command[] | undefined;
   @Input() kind: string = "";
   @Input() dragDisabled: boolean = true;
+
+  @Output() onEdit = new EventEmitter<Command>();
 
   constructor(
     private devstate: DevstateService,
@@ -67,5 +69,9 @@ export class CommandsListComponent {
         }
       });
     }
+  }
+
+  edit(command: Command) {
+    this.onEdit.next(command);
   }
 }

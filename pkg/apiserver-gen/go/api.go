@@ -31,12 +31,14 @@ type DefaultApiRouter interface {
 // The DevstateApiRouter implementation should parse necessary information from the http request,
 // pass the data to a DevstateApiServicer to perform the required actions, then write the service results to the http response.
 type DevstateApiRouter interface {
+	DevstateApplyCommandCommandNamePatch(http.ResponseWriter, *http.Request)
 	DevstateApplyCommandPost(http.ResponseWriter, *http.Request)
 	DevstateChartGet(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameDelete(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameMovePost(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameSetDefaultPost(http.ResponseWriter, *http.Request)
 	DevstateCommandCommandNameUnsetDefaultPost(http.ResponseWriter, *http.Request)
+	DevstateCompositeCommandCommandNamePatch(http.ResponseWriter, *http.Request)
 	DevstateCompositeCommandPost(http.ResponseWriter, *http.Request)
 	DevstateContainerContainerNameDelete(http.ResponseWriter, *http.Request)
 	DevstateContainerPost(http.ResponseWriter, *http.Request)
@@ -44,6 +46,7 @@ type DevstateApiRouter interface {
 	DevstateDevfileGet(http.ResponseWriter, *http.Request)
 	DevstateDevfilePut(http.ResponseWriter, *http.Request)
 	DevstateEventsPut(http.ResponseWriter, *http.Request)
+	DevstateExecCommandCommandNamePatch(http.ResponseWriter, *http.Request)
 	DevstateExecCommandPost(http.ResponseWriter, *http.Request)
 	DevstateImageImageNameDelete(http.ResponseWriter, *http.Request)
 	DevstateImageImageNamePatch(http.ResponseWriter, *http.Request)
@@ -77,12 +80,14 @@ type DefaultApiServicer interface {
 // while the service implementation can be ignored with the .openapi-generator-ignore file
 // and updated with the logic required for the API.
 type DevstateApiServicer interface {
+	DevstateApplyCommandCommandNamePatch(context.Context, string, DevstateApplyCommandCommandNamePatchRequest) (ImplResponse, error)
 	DevstateApplyCommandPost(context.Context, DevstateApplyCommandPostRequest) (ImplResponse, error)
 	DevstateChartGet(context.Context) (ImplResponse, error)
 	DevstateCommandCommandNameDelete(context.Context, string) (ImplResponse, error)
 	DevstateCommandCommandNameMovePost(context.Context, string, DevstateCommandCommandNameMovePostRequest) (ImplResponse, error)
 	DevstateCommandCommandNameSetDefaultPost(context.Context, string, DevstateCommandCommandNameSetDefaultPostRequest) (ImplResponse, error)
 	DevstateCommandCommandNameUnsetDefaultPost(context.Context, string) (ImplResponse, error)
+	DevstateCompositeCommandCommandNamePatch(context.Context, string, DevstateCompositeCommandCommandNamePatchRequest) (ImplResponse, error)
 	DevstateCompositeCommandPost(context.Context, DevstateCompositeCommandPostRequest) (ImplResponse, error)
 	DevstateContainerContainerNameDelete(context.Context, string) (ImplResponse, error)
 	DevstateContainerPost(context.Context, DevstateContainerPostRequest) (ImplResponse, error)
@@ -90,6 +95,7 @@ type DevstateApiServicer interface {
 	DevstateDevfileGet(context.Context) (ImplResponse, error)
 	DevstateDevfilePut(context.Context, DevstateDevfilePutRequest) (ImplResponse, error)
 	DevstateEventsPut(context.Context, DevstateEventsPutRequest) (ImplResponse, error)
+	DevstateExecCommandCommandNamePatch(context.Context, string, DevstateExecCommandCommandNamePatchRequest) (ImplResponse, error)
 	DevstateExecCommandPost(context.Context, DevstateExecCommandPostRequest) (ImplResponse, error)
 	DevstateImageImageNameDelete(context.Context, string) (ImplResponse, error)
 	DevstateImageImageNamePatch(context.Context, string, DevstateImageImageNamePatchRequest) (ImplResponse, error)

@@ -1,9 +1,9 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { StateService } from 'src/app/services/state.service';
 import { DevstateService } from 'src/app/services/devstate.service';
 import { PATTERN_COMMAND_ID } from '../patterns';
-import { Image } from 'src/app/api-gen';
+import { Command, Image } from 'src/app/api-gen';
 import { TelemetryService } from 'src/app/services/telemetry.service';
 
 @Component({
@@ -12,6 +12,8 @@ import { TelemetryService } from 'src/app/services/telemetry.service';
   styleUrls: ['./command-image.component.css']
 })
 export class CommandImageComponent {
+  @Input() command: Command | undefined;
+
   @Output() canceled = new EventEmitter<void>();
 
   form: FormGroup;
@@ -81,5 +83,55 @@ export class CommandImageComponent {
     this.form.controls["component"].setValue(image.name);
     this.showNewImage = false;
     this.imageToCreate = image;
+  }
+
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (!changes['command']) {
+      return;
+    }
+    const cmd = changes['command'].currentValue;
+    if (cmd == undefined) {
+      this.form.get('name')?.enable();
+    } else {
+      this.form.reset();
+      this.form.patchValue(cmd);
+      this.form.patchValue(cmd.image);
+      this.form.get('name')?.disable();
+    }
+  }
+
+  save() {
+    this.telemetry.track("[ui] update image command");
+    const subcreate = () => {
+      if (this.command == undefined) {
+        return;
+      }
+      const result = this.devstate.updateApplyCommand(this.command.name, this.form.value);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });  
+    }
+
+    if (this.imageToCreate != null && 
+      this.imageToCreate?.name == this.form.controls["component"].value) {
+      const result = this.devstate.addImage(this.imageToCreate);
+      result.subscribe({
+        next: (value) => {
+          this.state.changeDevfileYaml(value);
+          subcreate();
+        },
+        error: (error) => {
+          alert(error.error.message);
+        }
+      });        
+    } else {
+      subcreate();
+    }
   }
 }

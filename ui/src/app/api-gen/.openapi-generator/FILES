@@ -18,14 +18,17 @@ model/container.ts
 model/devfileContent.ts
 model/devfileGet200Response.ts
 model/devfilePutRequest.ts
+model/devstateApplyCommandCommandNamePatchRequest.ts
 model/devstateApplyCommandPostRequest.ts
 model/devstateChartGet200Response.ts
 model/devstateCommandCommandNameMovePostRequest.ts
 model/devstateCommandCommandNameSetDefaultPostRequest.ts
+model/devstateCompositeCommandCommandNamePatchRequest.ts
 model/devstateCompositeCommandPostRequest.ts
 model/devstateContainerPostRequest.ts
 model/devstateDevfilePutRequest.ts
 model/devstateEventsPutRequest.ts
+model/devstateExecCommandCommandNamePatchRequest.ts
 model/devstateExecCommandPostRequest.ts
 model/devstateImageImageNamePatchRequest.ts
 model/devstateImagePostRequest.ts

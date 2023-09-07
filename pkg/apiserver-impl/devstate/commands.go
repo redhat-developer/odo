@@ -27,6 +27,32 @@ func (o *DevfileState) AddExecCommand(name string, component string, commandLine
 	return o.GetContent()
 }
 
+func (o *DevfileState) PatchExecCommand(name string, component string, commandLine string, workingDir string, hotReloadCapable bool) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ExecCommandType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Exec Command found with name %q", len(found), name)
+	}
+
+	command := found[0]
+	command.Exec.Component = component
+	command.Exec.CommandLine = commandLine
+	command.Exec.WorkingDir = workingDir
+	command.Exec.HotReloadCapable = &hotReloadCapable
+	err = o.Devfile.Data.UpdateCommand(command)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
 func (o *DevfileState) AddApplyCommand(name string, component string) (DevfileContent, error) {
 	command := v1alpha2.Command{
 		Id: name,
@@ -37,6 +63,29 @@ func (o *DevfileState) AddApplyCommand(name string, component string) (DevfileCo
 		},
 	}
 	err := o.Devfile.Data.AddCommands([]v1alpha2.Command{command})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) PatchApplyCommand(name string, component string) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.ApplyCommandType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Apply Command found with name %q", len(found), name)
+	}
+
+	command := found[0]
+	command.Apply.Component = component
+	err = o.Devfile.Data.UpdateCommand(command)
 	if err != nil {
 		return DevfileContent{}, err
 	}
@@ -54,6 +103,30 @@ func (o *DevfileState) AddCompositeCommand(name string, parallel bool, commands 
 		},
 	}
 	err := o.Devfile.Data.AddCommands([]v1alpha2.Command{command})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func (o *DevfileState) PatchCompositeCommand(name string, parallel bool, commands []string) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandType: v1alpha2.CompositeCommandType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Composite Command found with name %q", len(found), name)
+	}
+
+	command := found[0]
+	command.Composite.Parallel = &parallel
+	command.Composite.Commands = commands
+	err = o.Devfile.Data.UpdateCommand(command)
 	if err != nil {
 		return DevfileContent{}, err
 	}
