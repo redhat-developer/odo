@@ -649,6 +649,126 @@ paths:
               example:
                 message: "Error deleting the container"
 
+    patch:
+      tags:
+      - devstate
+      description: Update a container
+      parameters:
+        - name: containerName
+          in: path
+          description: Container name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - image
+              properties:
+                image: 
+                  description: Container image
+                  type: string
+                command: 
+                  description: Entrypoint of the container
+                  type: array
+                  items: {
+                        type: string
+                  }
+                args: 
+                  description: Args passed to the Container entrypoint
+                  type: array
+                  items: {
+                        type: string
+                  }
+                env: 
+                  description: Environment variables to define
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Env'
+                memReq: 
+                  description: Requested memory for the deployed container
+                  type: string
+                memLimit:
+                  description: Memory limit for the deployed container
+                  type: string
+                cpuReq:
+                  description: Requested CPU for the deployed container
+                  type: string
+                cpuLimit:
+                  description: CPU limit for the deployed container
+                  type: string
+                volumeMounts:
+                  description: Volume to mount into the container filesystem
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/VolumeMount'
+                configureSources:
+                  description: If false, mountSources and sourceMapping values are not considered
+                  type: boolean                
+                mountSources:
+                  description: If true, sources are mounted into container's filesystem
+                  type: boolean
+                sourceMapping:
+                  description: Specific directory on which to mount sources
+                  type: string
+                annotation:
+                  description: Annotations added to the resources created for this container
+                  $ref: '#/components/schemas/Annotation'
+                endpoints:
+                  description: Endpoints exposed by the container
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Endpoint'
+
+      responses:
+        '200':
+          description: container was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the container"
+
   /devstate/image:
     post:
       tags:

@@ -111,6 +111,12 @@ func (c *DevstateApiController) Routes() Routes {
 			c.DevstateContainerContainerNameDelete,
 		},
 		{
+			"DevstateContainerContainerNamePatch",
+			strings.ToUpper("Patch"),
+			"/api/v1/devstate/container/{containerName}",
+			c.DevstateContainerContainerNamePatch,
+		},
+		{
 			"DevstateContainerPost",
 			strings.ToUpper("Post"),
 			"/api/v1/devstate/container",
@@ -421,6 +427,32 @@ func (c *DevstateApiController) DevstateContainerContainerNameDelete(w http.Resp
 	params := mux.Vars(r)
 	containerNameParam := params["containerName"]
 	result, err := c.service.DevstateContainerContainerNameDelete(r.Context(), containerNameParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+// DevstateContainerContainerNamePatch -
+func (c *DevstateApiController) DevstateContainerContainerNamePatch(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	containerNameParam := params["containerName"]
+	devstateContainerContainerNamePatchRequestParam := DevstateContainerContainerNamePatchRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&devstateContainerContainerNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertDevstateContainerContainerNamePatchRequestRequired(devstateContainerContainerNamePatchRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.DevstateContainerContainerNamePatch(r.Context(), containerNameParam, devstateContainerContainerNamePatchRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

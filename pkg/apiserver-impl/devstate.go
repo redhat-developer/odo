@@ -384,7 +384,33 @@ func (s *DevstateApiService) DevstateCompositeCommandCommandNamePatch(ctx contex
 	)
 	if err != nil {
 		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
-			Message: fmt.Sprintf("Error updating the Image Command: %s", err),
+			Message: fmt.Sprintf("Error updating the Composite Command: %s", err),
+		}), nil
+	}
+	return openapi.Response(http.StatusOK, newContent), nil
+}
+
+func (s *DevstateApiService) DevstateContainerContainerNamePatch(ctx context.Context, name string, patch openapi.DevstateContainerContainerNamePatchRequest) (openapi.ImplResponse, error) {
+	newContent, err := s.devfileState.PatchContainer(
+		name,
+		patch.Image,
+		patch.Command,
+		patch.Args,
+		patch.Env,
+		patch.MemReq,
+		patch.MemLimit,
+		patch.CpuReq,
+		patch.CpuLimit,
+		patch.VolumeMounts,
+		patch.ConfigureSources,
+		patch.MountSources,
+		patch.SourceMapping,
+		patch.Annotation,
+		patch.Endpoints,
+	)
+	if err != nil {
+		return openapi.Response(http.StatusInternalServerError, openapi.GeneralError{
+			Message: fmt.Sprintf("Error updating the container: %s", err),
 		}), nil
 	}
 	return openapi.Response(http.StatusOK, newContent), nil
