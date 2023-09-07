@@ -11,9 +11,11 @@ import { ToCreate } from 'src/app/forms/container/container.component';
 })
 export class ContainersComponent implements OnInit {
   
-  forceDisplayAdd: boolean = false;
+  forceDisplayForm: boolean = false;
   containers: Container[] | undefined = [];
   volumeNames: string[] | undefined = [];
+
+  editingContainer: Container | undefined;
 
   constructor(
     private state: StateService,
@@ -28,19 +30,24 @@ export class ContainersComponent implements OnInit {
       if (this.containers == null) {
         return
       }
-      that.forceDisplayAdd = false;
+      that.forceDisplayForm = false;
     });
   }
 
   displayAddForm() {
-    this.forceDisplayAdd = true;
+    this.editingContainer = undefined;
+    this.displayForm();
+  }
+
+  displayForm() {
+    this.forceDisplayForm = true;
     setTimeout(() => {
       this.scrollToBottom();      
     }, 0);
   }
 
   undisplayAddForm() {
-    this.forceDisplayAdd = false;
+    this.forceDisplayForm = false;
   }
 
   delete(name: string) {
@@ -73,6 +80,11 @@ export class ContainersComponent implements OnInit {
       });
   }
 
+  edit(container: Container) {
+    this.editingContainer = container;
+    this.displayForm();
+  }
+
   onCreated(toCreate: ToCreate) {
     const container = toCreate.container;
     this.createVolumes(toCreate.volumes, 0, () => {
@@ -86,7 +98,21 @@ export class ContainersComponent implements OnInit {
         }
       });  
     });
+  }
 
+  onSaved(toCreate: ToCreate) {
+    const container = toCreate.container;
+    this.createVolumes(toCreate.volumes, 0, () => {
+      const result = this.devstate.saveContainer(container);
+      result.subscribe({
+        next: value => {
+          this.state.changeDevfileYaml(value);
+        },
+        error: error => {
+          alert(error.error.message);
+        }
+      });
+    });
   }
 
   scrollToBottom() {
