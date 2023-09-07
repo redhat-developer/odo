@@ -116,6 +116,118 @@ describe('devfile editor spec', () => {
       .should('contain.text', 'volume2');
   });
 
+
+  it.only('displays a modified container', () => {
+    cy.init();
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-name').type('volume1');
+    cy.getByDataCy('volume-size').type('512Mi');
+    cy.getByDataCy('volume-ephemeral').click();
+    cy.getByDataCy('volume-create').click();
+
+    cy.selectTab(TAB_CONTAINERS);
+    cy.getByDataCy('container-name').type('created-container');
+    cy.getByDataCy('container-image').type('an-image');
+    cy.getByDataCy('container-env-add').click();
+    cy.getByDataCy('container-env-name-0').type("VAR1");
+    cy.getByDataCy('container-env-value-0').type("val1");
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-1').type("VAR2");
+    cy.getByDataCy('container-env-value-1').type("val2");
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-2').type("VAR3");
+    cy.getByDataCy('container-env-value-2').type("val3");
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-0').type("/mnt/vol1", {force: true});
+    cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
+
+    cy.getByDataCy('endpoints-add').click();
+    cy.getByDataCy('endpoint-name-0').type("ep1");
+    cy.getByDataCy('endpoint-targetPort-0').type("4001");
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-1').type("/mnt/vol2", {force: true});
+    cy.getByDataCy('volume-mount-name-1').click().get('mat-option').contains('(New Volume)').click();
+    cy.getByDataCy('volume-name').type('volume2');
+    cy.getByDataCy('volume-create').click();
+
+    cy.getByDataCy('container-more-params').click();
+    cy.getByDataCy('container-deploy-anno-add').click();
+    cy.getByDataCy('container-deploy-anno-name-0').type("DEPANNO1");
+    cy.getByDataCy('container-deploy-anno-value-0').type("depval1");
+    cy.getByDataCy('container-deploy-anno-plus').click();
+    cy.getByDataCy('container-deploy-anno-name-1').type("DEPANNO2");
+    cy.getByDataCy('container-deploy-anno-value-1').type("depval2");
+    cy.getByDataCy('container-svc-anno-add').click();
+    cy.getByDataCy('container-svc-anno-name-0').type("SVCANNO1");
+    cy.getByDataCy('container-svc-anno-value-0').type("svcval1");
+    cy.getByDataCy('container-svc-anno-plus').click();
+    cy.getByDataCy('container-svc-anno-name-1').type("SVCANNO2");
+    cy.getByDataCy('container-svc-anno-value-1').type("svcval2");
+
+    cy.getByDataCy('container-create').click();
+
+    cy.getByDataCy('container-edit').click();
+
+    cy.getByDataCy('container-image').type('{selectAll}{del}another-image');
+    cy.getByDataCy('container-env-plus').click();
+    cy.getByDataCy('container-env-name-3').type("VAR4");
+    cy.getByDataCy('container-env-value-3').type("val4");
+
+    cy.getByDataCy('volume-mount-path-0').type("{selectAll}{del}/mnt/other/vol1", {force: true});
+    cy.getByDataCy('volume-mount-name-0').click().get('mat-option').contains('volume1').click();
+
+    cy.getByDataCy('endpoint-targetPort-0').type("{selectAll}{del}4002");
+
+    cy.getByDataCy('volume-mount-add').click();
+    cy.getByDataCy('volume-mount-path-2').type("/mnt/vol3", {force: true});
+    cy.getByDataCy('volume-mount-name-2').click().get('mat-option').contains('(New Volume)').click();
+    cy.getByDataCy('volume-name').type('volume3');
+    cy.getByDataCy('volume-create').click();
+
+    cy.getByDataCy('container-more-params').click();
+    cy.getByDataCy('container-deploy-anno-name-0').type("{selectAll}{del}DEPANNO1b");
+    cy.getByDataCy('container-deploy-anno-value-0').type("{selectAll}{del}depval1b");
+    cy.getByDataCy('container-deploy-anno-plus').click();
+    cy.getByDataCy('container-deploy-anno-name-2').type("DEPANNO3");
+    cy.getByDataCy('container-deploy-anno-value-2').type("depval3");
+    cy.getByDataCy('container-svc-anno-name-0').type("{selectAll}{del}SVCANNO1b");
+    cy.getByDataCy('container-svc-anno-value-0').type("{selectAll}{del}svcval1b");
+    cy.getByDataCy('container-svc-anno-plus').click();
+    cy.getByDataCy('container-svc-anno-name-2').type("SVCANNO3");
+    cy.getByDataCy('container-svc-anno-value-2').type("svcval3");
+
+    cy.getByDataCy('container-save').click();
+
+    cy.getByDataCy('container-info').first()
+      .should('contain.text', 'another-image')
+      .should('contain.text', 'VAR1: val1')
+      .should('contain.text', 'VAR2: val2')
+      .should('contain.text', 'VAR3: val3')
+      .should('contain.text', 'VAR4: val4')
+      .should('contain.text', 'volume1')
+      .should('contain.text', '/mnt/other/vol1')
+      .should('contain.text', 'volume2')
+      .should('contain.text', '/mnt/vol2')
+      .should('not.contain.text', 'Mount Sources')
+      .should('contain.text', 'ep1')
+      .should('contain.text', '4002')
+      .should('contain.text', 'Deployment Annotations')
+      .should('contain.text', 'DEPANNO1b: depval1b')
+      .should('contain.text', 'DEPANNO2: depval2')
+      .should('contain.text', 'DEPANNO3: depval3')
+      .should('contain.text', 'Service Annotations')
+      .should('contain.text', 'SVCANNO1b: svcval1b')
+      .should('contain.text', 'SVCANNO2: svcval2')
+      .should('contain.text', 'SVCANNO3: svcval3');
+
+    cy.selectTab(TAB_VOLUMES);
+    cy.getByDataCy('volume-info').eq(1)
+      .should('contain.text', 'volume2');
+  });
+
   it('displays a created container with source configuration', () => {
     cy.init();
 
