@@ -34,8 +34,11 @@
             <mat-label>Icon</mat-label>
             <input placeholder="Can be a URI or a relative path in the project" matInput formControlName="icon">
         </mat-form-field>
+        <span class="icon-display width-10">
+            <img width="56" [src]="form.controls['icon'].value">
+        </span>
 
-        <mat-form-field appearance="outline" class="mid-width">
+        <mat-form-field appearance="outline" class="width-40">
             <mat-label>Global Memory Limit</mat-label>
             <input placeholder="Informative limit of memory used by the devfile. Ex: 1Gi" matInput formControlName="globalMemoryLimit">
         </mat-form-field>
