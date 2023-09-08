@@ -1,3 +1,7 @@
 .main { padding: 16px; }
 mat-form-field.full-width { width: 100%; }
 mat-form-field.mid-width { width: 50%; }
+.quart-width { width: 25%; }
+.icon-display { display: inline-flex; position: relative; left: 16px; top: 22px; }
+.width-10 { width: 10%; }
+.width-40 { width: 40%; }
