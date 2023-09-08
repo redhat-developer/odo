@@ -8,9 +8,10 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
+	"k8s.io/utils/pointer"
+
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"k8s.io/utils/pointer"
 )
 
 const (
@@ -319,7 +320,7 @@ func (o *DevfileState) getVolumes() ([]Volume, error) {
 	for _, volume := range volumes {
 		result = append(result, Volume{
 			Name:      volume.Name,
-			Ephemeral: *volume.Volume.Ephemeral,
+			Ephemeral: pointer.BoolDeref(volume.Volume.Ephemeral, false),
 			Size:      volume.Volume.Size,
 		})
 	}
