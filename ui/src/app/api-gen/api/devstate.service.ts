@@ -35,6 +35,8 @@ import { DevstateCompositeCommandCommandNamePatchRequest } from '../model/devsta
 // @ts-ignore
 import { DevstateCompositeCommandPostRequest } from '../model/devstateCompositeCommandPostRequest';
 // @ts-ignore
+import { DevstateContainerContainerNamePatchRequest } from '../model/devstateContainerContainerNamePatchRequest';
+// @ts-ignore
 import { DevstateContainerPostRequest } from '../model/devstateContainerPostRequest';
 // @ts-ignore
 import { DevstateDevfilePutRequest } from '../model/devstateDevfilePutRequest';
@@ -760,6 +762,75 @@ export class DevstateService {
         return this.httpClient.request<GeneralSuccess>('delete', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                responseType: <any>responseType_,
+                withCredentials: this.configuration.withCredentials,
+                headers: localVarHeaders,
+                observe: observe,
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Update a container
+     * @param containerName Container name to update
+     * @param devstateContainerContainerNamePatchRequest 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public devstateContainerContainerNamePatch(containerName: string, devstateContainerContainerNamePatchRequest?: DevstateContainerContainerNamePatchRequest, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<DevfileContent>;
+    public devstateContainerContainerNamePatch(containerName: string, devstateContainerContainerNamePatchRequest?: DevstateContainerContainerNamePatchRequest, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<DevfileContent>>;
+    public devstateContainerContainerNamePatch(containerName: string, devstateContainerContainerNamePatchRequest?: DevstateContainerContainerNamePatchRequest, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<DevfileContent>>;
+    public devstateContainerContainerNamePatch(containerName: string, devstateContainerContainerNamePatchRequest?: DevstateContainerContainerNamePatchRequest, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
+        if (containerName === null || containerName === undefined) {
+            throw new Error('Required parameter containerName was null or undefined when calling devstateContainerContainerNamePatch.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        let localVarHttpHeaderAcceptSelected: string | undefined = options && options.httpHeaderAccept;
+        if (localVarHttpHeaderAcceptSelected === undefined) {
+            // to determine the Accept header
+            const httpHeaderAccepts: string[] = [
+                'application/json'
+            ];
+            localVarHttpHeaderAcceptSelected = this.configuration.selectHeaderAccept(httpHeaderAccepts);
+        }
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        let localVarHttpContext: HttpContext | undefined = options && options.context;
+        if (localVarHttpContext === undefined) {
+            localVarHttpContext = new HttpContext();
+        }
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/devstate/container/${this.configuration.encodeParam({name: "containerName", value: containerName, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
+        return this.httpClient.request<DevfileContent>('patch', `${this.configuration.basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: devstateContainerContainerNamePatchRequest,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,

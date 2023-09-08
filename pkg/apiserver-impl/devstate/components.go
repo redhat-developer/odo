@@ -27,44 +27,6 @@ func (o *DevfileState) AddContainer(
 	annotation Annotation,
 	endpoints []Endpoint,
 ) (DevfileContent, error) {
-	v1alpha2VolumeMounts := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
-	for _, vm := range volumeMounts {
-		v1alpha2VolumeMounts = append(v1alpha2VolumeMounts, v1alpha2.VolumeMount{
-			Name: vm.Name,
-			Path: vm.Path,
-		})
-	}
-
-	v1alpha2Envs := make([]v1alpha2.EnvVar, 0, len(envs))
-	for _, env := range envs {
-		v1alpha2Envs = append(v1alpha2Envs, v1alpha2.EnvVar{
-			Name:  env.Name,
-			Value: env.Value,
-		})
-	}
-	var annotations *v1alpha2.Annotation
-	if len(annotation.Deployment) > 0 || len(annotation.Service) > 0 {
-		annotations = &v1alpha2.Annotation{}
-		if len(annotation.Deployment) > 0 {
-			annotations.Deployment = annotation.Deployment
-		}
-		if len(annotation.Service) > 0 {
-			annotations.Service = annotation.Service
-		}
-	}
-
-	v1alpha2Endpoints := make([]v1alpha2.Endpoint, 0, len(endpoints))
-	for _, endpoint := range endpoints {
-		endpoint := endpoint
-		v1alpha2Endpoints = append(v1alpha2Endpoints, v1alpha2.Endpoint{
-			Name:       endpoint.Name,
-			TargetPort: int(endpoint.TargetPort),
-			Exposure:   v1alpha2.EndpointExposure(endpoint.Exposure),
-			Protocol:   v1alpha2.EndpointProtocol(endpoint.Protocol),
-			Secure:     &endpoint.Secure,
-			Path:       endpoint.Path,
-		})
-	}
 
 	container := v1alpha2.Component{
 		Name: name,
@@ -74,15 +36,15 @@ func (o *DevfileState) AddContainer(
 					Image:         image,
 					Command:       command,
 					Args:          args,
-					Env:           v1alpha2Envs,
+					Env:           tov1alpha2EnvVars(envs),
 					MemoryRequest: memRequest,
 					MemoryLimit:   memLimit,
 					CpuRequest:    cpuRequest,
 					CpuLimit:      cpuLimit,
-					VolumeMounts:  v1alpha2VolumeMounts,
-					Annotation:    annotations,
+					VolumeMounts:  tov1alpha2VolumeMounts(volumeMounts),
+					Annotation:    tov1alpha2Annotation(annotation),
 				},
-				Endpoints: v1alpha2Endpoints,
+				Endpoints: tov1alpha2Endpoints(endpoints),
 			},
 		},
 	}
@@ -95,6 +57,115 @@ func (o *DevfileState) AddContainer(
 		return DevfileContent{}, err
 	}
 	return o.GetContent()
+}
+
+func (o *DevfileState) PatchContainer(
+	name string,
+	image string,
+	command []string,
+	args []string,
+	envs []Env,
+	memRequest string,
+	memLimit string,
+	cpuRequest string,
+	cpuLimit string,
+	volumeMounts []VolumeMount,
+	configureSources bool,
+	mountSources bool,
+	sourceMapping string,
+	annotation Annotation,
+	endpoints []Endpoint,
+) (DevfileContent, error) {
+	found, err := o.Devfile.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: v1alpha2.ContainerComponentType,
+		},
+		FilterByName: name,
+	})
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	if len(found) != 1 {
+		return DevfileContent{}, fmt.Errorf("%d Container found with name %q", len(found), name)
+	}
+
+	container := found[0]
+	container.Container.Image = image
+	container.Container.Command = command
+	container.Container.Args = args
+	container.Container.Env = tov1alpha2EnvVars(envs)
+	container.Container.MemoryRequest = memRequest
+	container.Container.MemoryLimit = memLimit
+	container.Container.CpuRequest = cpuRequest
+	container.Container.CpuLimit = cpuLimit
+	container.Container.VolumeMounts = tov1alpha2VolumeMounts(volumeMounts)
+
+	container.Container.MountSources = nil
+	container.Container.SourceMapping = ""
+	if configureSources {
+		container.Container.MountSources = &mountSources
+		container.Container.SourceMapping = sourceMapping
+	}
+	container.Container.Annotation = tov1alpha2Annotation(annotation)
+	container.Container.Endpoints = tov1alpha2Endpoints(endpoints)
+
+	err = o.Devfile.Data.UpdateComponent(container)
+	if err != nil {
+		return DevfileContent{}, err
+	}
+	return o.GetContent()
+}
+
+func tov1alpha2EnvVars(envs []Env) []v1alpha2.EnvVar {
+	result := make([]v1alpha2.EnvVar, 0, len(envs))
+	for _, env := range envs {
+		result = append(result, v1alpha2.EnvVar{
+			Name:  env.Name,
+			Value: env.Value,
+		})
+	}
+	return result
+}
+
+func tov1alpha2VolumeMounts(volumeMounts []VolumeMount) []v1alpha2.VolumeMount {
+	result := make([]v1alpha2.VolumeMount, 0, len(volumeMounts))
+	for _, vm := range volumeMounts {
+		result = append(result, v1alpha2.VolumeMount{
+			Name: vm.Name,
+			Path: vm.Path,
+		})
+	}
+	return result
+}
+
+func tov1alpha2Annotation(annotation Annotation) *v1alpha2.Annotation {
+	var result *v1alpha2.Annotation
+	if len(annotation.Deployment) > 0 || len(annotation.Service) > 0 {
+		result = &v1alpha2.Annotation{}
+		if len(annotation.Deployment) > 0 {
+			result.Deployment = annotation.Deployment
+		}
+		if len(annotation.Service) > 0 {
+			result.Service = annotation.Service
+		}
+	}
+	return result
+}
+
+func tov1alpha2Endpoints(endpoints []Endpoint) []v1alpha2.Endpoint {
+	result := make([]v1alpha2.Endpoint, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpoint := endpoint
+		result = append(result, v1alpha2.Endpoint{
+			Name:       endpoint.Name,
+			TargetPort: int(endpoint.TargetPort),
+			Exposure:   v1alpha2.EndpointExposure(endpoint.Exposure),
+			Protocol:   v1alpha2.EndpointProtocol(endpoint.Protocol),
+			Secure:     &endpoint.Secure,
+			Path:       endpoint.Path,
+		})
+	}
+	return result
 }
 
 func (o *DevfileState) DeleteContainer(name string) (DevfileContent, error) {

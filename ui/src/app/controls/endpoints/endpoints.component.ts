@@ -1,9 +1,6 @@
 import { Component, forwardRef } from '@angular/core';
 import { AbstractControl, ControlValueAccessor, FormArray, FormControl, FormGroup, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator, Validators } from '@angular/forms';
-
-interface Endpoint {
-
-}
+import { Endpoint } from 'src/app/api-gen';
 
 @Component({
   selector: 'app-endpoints',
@@ -35,23 +32,29 @@ export class EndpointsComponent implements ControlValueAccessor, Validator {
     });
   }
 
-  newEndpoint(): FormGroup {
+  newEndpoint(ep: Endpoint): FormGroup {
     return new FormGroup({
-      name: new FormControl("", [Validators.required]),
-      targetPort: new FormControl("", [Validators.required, Validators.pattern("^[0-9]*$")]),
-      exposure: new FormControl(""),
-      path: new FormControl(""),
-      protocol: new FormControl(""),
-      secure: new FormControl(false),
+      name: new FormControl(ep.name, [Validators.required]),
+      targetPort: new FormControl(ep.targetPort, [Validators.required, Validators.pattern("^[0-9]*$")]),
+      exposure: new FormControl(ep.exposure),
+      path: new FormControl(ep.path),
+      protocol: new FormControl(ep.protocol),
+      secure: new FormControl(ep.secure),
     });
   }
 
   addEndpoint() {
-    this.form.push(this.newEndpoint());
+    this.form.push(this.newEndpoint({
+      name: '',
+      targetPort: 0,
+    }));
   }
 
   /* ControlValueAccessor implementation */
   writeValue(value: Endpoint[]) {
+    value.forEach(ep => {
+      this.form.push(this.newEndpoint(ep));
+    });
   }
 
   registerOnChange(onChange: any) {

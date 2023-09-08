@@ -15,6 +15,7 @@ export * from './devstateCommandCommandNameMovePostRequest';
 export * from './devstateCommandCommandNameSetDefaultPostRequest';
 export * from './devstateCompositeCommandCommandNamePatchRequest';
 export * from './devstateCompositeCommandPostRequest';
+export * from './devstateContainerContainerNamePatchRequest';
 export * from './devstateContainerPostRequest';
 export * from './devstateDevfilePutRequest';
 export * from './devstateEventsPutRequest';

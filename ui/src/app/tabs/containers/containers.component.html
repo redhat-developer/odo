@@ -99,21 +99,24 @@
 
         <mat-card-actions>
             <button mat-button color="warn" (click)="delete(container.name)">Delete</button>
+            <button data-cy="container-edit" mat-button (click)="edit(container)">Edit</button>
         </mat-card-actions>
 
     </mat-card>
 
     <app-container 
-        *ngIf="forceDisplayAdd || containers == undefined || containers.length == 0"
+        *ngIf="forceDisplayForm || containers == undefined || containers.length == 0"
         [volumeNames]="volumeNames ?? []"
-        [cancelable]="forceDisplayAdd"
+        [cancelable]="forceDisplayForm"
         (canceled)="undisplayAddForm()"
         (created)="onCreated($event)"
+        [container]="editingContainer"
+        (saved)="onSaved($event)"
         ></app-container>
 </div>
 
 
-<ng-container *ngIf="!forceDisplayAdd && containers != undefined && containers.length > 0">
+<ng-container *ngIf="!forceDisplayForm && containers != undefined && containers.length > 0">
     <button data-cy="add" class="fab" mat-fab color="primary" (click)="displayAddForm()">
         <mat-icon class="material-icons-outlined">add</mat-icon>
     </button>

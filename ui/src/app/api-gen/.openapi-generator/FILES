@@ -25,6 +25,7 @@ model/devstateCommandCommandNameMovePostRequest.ts
 model/devstateCommandCommandNameSetDefaultPostRequest.ts
 model/devstateCompositeCommandCommandNamePatchRequest.ts
 model/devstateCompositeCommandPostRequest.ts
+model/devstateContainerContainerNamePatchRequest.ts
 model/devstateContainerPostRequest.ts
 model/devstateDevfilePutRequest.ts
 model/devstateEventsPutRequest.ts
