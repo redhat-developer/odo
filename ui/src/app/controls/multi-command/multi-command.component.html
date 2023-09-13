@@ -3,13 +3,15 @@
     <span *ngFor="let control of form.controls; index as i">
         <mat-form-field appearance="fill">
             <mat-label><span>Command</span></mat-label>
-            <mat-select [formControl]="control">
+            <mat-select [attr.data-cy]="'command-selector-'+i" [formControl]="control">
                 <mat-option *ngFor="let commandElement of commandList" [value]="commandElement">{{commandElement}}</mat-option>
             </mat-select>
         </mat-form-field>
+        <button [attr.data-cy]="'command-minus-'+i"  mat-icon-button (click)="removeCommand(i)">
+            <mat-icon class="tab-icon material-icons-outlined">remove</mat-icon>
+        </button>
     </span>
-    <button *ngIf="form.controls.length > 0" mat-icon-button (click)="addCommand('')">
-        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
-    </button>                
-    <button *ngIf="form.controls.length == 0" mat-flat-button (click)="addCommand('')">{{addLabel}}</button>
+    <div>
+        <button [attr.data-cy]="'add-command'" mat-flat-button (click)="addCommand('')">{{addLabel}}</button>
+    </div>
 </div>
