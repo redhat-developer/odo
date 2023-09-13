@@ -3,11 +3,13 @@
     <span *ngFor="let control of form.controls; index as i">
         <mat-form-field class="inline" appearance="outline">
             <mat-label><span>{{label}}</span></mat-label>
-            <input matInput [formControl]="control">
+            <input [attr.data-cy]="dataCyPrefix+'-text-'+i" matInput [formControl]="control">
         </mat-form-field>
+        <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" mat-icon-button (click)="removeText(i)">
+            <mat-icon class="tab-icon material-icons-outlined">remove</mat-icon>
+        </button>
     </span>
-    <button *ngIf="form.controls.length > 0" mat-icon-button (click)="addText('')">
-        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
-    </button>                
-    <button *ngIf="form.controls.length == 0" mat-flat-button (click)="addText('')">{{addLabel}}</button>
+    <div>
+        <button [attr.data-cy]="'add-text'" mat-flat-button (click)="addText('')">{{addLabel}}</button>
+    </div>
 </div>
