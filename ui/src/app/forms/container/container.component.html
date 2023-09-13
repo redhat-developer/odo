@@ -14,8 +14,8 @@
         </mat-form-field>
         <h3>Command and Arguments</h3>
         <div class="description">Command and Arguments can be used to override the entrypoint of the image</div>
-        <app-multi-text formControlName="command" label="Command" addLabel="Add command"></app-multi-text>
-        <app-multi-text formControlName="args" label="Arg" addLabel="Add arg"></app-multi-text>
+        <app-multi-text dataCyPrefix="container-command" formControlName="command" label="Command" addLabel="Add command"></app-multi-text>
+        <app-multi-text dataCyPrefix="container-arg" formControlName="args" label="Arg" addLabel="Add arg"></app-multi-text>
 
         <h3>Environment Variables</h3>
         <div class="description">Environment Variables to define in the running container</div>
