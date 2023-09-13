@@ -71,6 +71,10 @@ export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
     this.form.push(this.newKeyValueForm({name, value}));
   }
 
+  removeEntry(index: number) {
+    this.form.removeAt(index);
+  }
+
   /* Validator implementation */
   validate(control: AbstractControl): ValidationErrors | null {
     if (!this.form.valid) {
