@@ -13,8 +13,8 @@
                 <input formControlName="path" [attr.data-cy]="'volume-mount-path-'+i" matInput>
             </mat-form-field>
 
-            <button [attr.data-cy]="'volume-mount-minus-'+i" mat-icon-button (click)="remove(i)">
-                <mat-icon class="tab-icon material-icons-outlined">remove</mat-icon>
+            <button [attr.data-cy]="'volume-mount-minus-'+i" mat-icon-button matTooltip="Delete Volume Mount" (click)="remove(i)">
+                <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
             </button>
 
             <app-volume

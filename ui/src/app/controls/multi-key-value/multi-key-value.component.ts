@@ -38,6 +38,7 @@ export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
 
   @Input() dataCyPrefix: string = "";
   @Input() addLabel: string = "";
+  @Input() deleteLabel: string = "";
 
   form = new FormArray<FormGroup>([]);
 

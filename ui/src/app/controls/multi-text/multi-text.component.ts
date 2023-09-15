@@ -33,6 +33,7 @@ export class MultiTextComponent implements ControlValueAccessor, Validator {
   @Input() dataCyPrefix: string = "";
   @Input() label: string = "";
   @Input() addLabel: string = "";
+  @Input() deleteLabel: string = "";
   @Input() title: string = "";
 
   onChange = (_: string[]) => {};

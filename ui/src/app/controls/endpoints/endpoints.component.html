@@ -38,8 +38,8 @@
             <mat-checkbox [attr.data-cy]="'endpoint-secure-'+i" formControlName="secure">Protocol Is Secure</mat-checkbox>
         </mat-card-content>
         <mat-card-actions>
-            <button [attr.data-cy]="'endpoint-minus-'+i" mat-icon-button (click)="removeEndpoint(i)">
-                <mat-icon class="tab-icon material-icons-outlined">remove</mat-icon>
+            <button [attr.data-cy]="'endpoint-minus-'+i" mat-icon-button matTooltip="Delete endpoint" (click)="removeEndpoint(i)">
+                <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
             </button>
         </mat-card-actions>
     </mat-card>

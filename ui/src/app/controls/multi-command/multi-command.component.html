@@ -7,8 +7,8 @@
                 <mat-option *ngFor="let commandElement of commandList" [value]="commandElement">{{commandElement}}</mat-option>
             </mat-select>
         </mat-form-field>
-        <button [attr.data-cy]="'command-minus-'+i"  mat-icon-button (click)="removeCommand(i)">
-            <mat-icon class="tab-icon material-icons-outlined">remove</mat-icon>
+        <button [attr.data-cy]="'command-minus-'+i"  mat-icon-button matTooltip="Delete command"  (click)="removeCommand(i)">
+            <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
         </button>
     </span>
     <div>
