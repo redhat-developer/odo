@@ -9,7 +9,7 @@
                     <mat-label><span>Value</span></mat-label>
                     <input [attr.data-cy]="dataCyPrefix+'-value-'+i" matInput formControlName="value">
                 </mat-form-field>
-                <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" mat-icon-button [matTooltip]="deleteLabel" (click)="removeEntry(i)">
+                <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" class="adjust-position" mat-icon-button [matTooltip]="deleteLabel" (click)="removeEntry(i)">
                     <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
                 </button>
         </ng-container>

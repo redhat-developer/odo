@@ -11,3 +11,7 @@ mat-card-content{
     flex-grow: 1;
     overflow: auto;
 }
+
+button.adjust-position {
+    right: 6px;
+}

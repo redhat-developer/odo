@@ -1,2 +1,8 @@
 div.group { margin-bottom: 16px; }
 .kv-width { width: 45%; }
+
+button.adjust-position {
+    right: 6px;
+    top: 6px;
+}
+

@@ -7,7 +7,7 @@
                 <mat-label><span>{{label}}</span></mat-label>
                 <input [attr.data-cy]="dataCyPrefix+'-text-'+i" matInput [formControl]="control">
             </mat-form-field>
-            <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" mat-icon-button [matTooltip]="deleteLabel" (click)="removeText(i)">
+            <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" class="adjust-position" mat-icon-button [matTooltip]="deleteLabel" (click)="removeText(i)">
                 <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
             </button>
         </span>
