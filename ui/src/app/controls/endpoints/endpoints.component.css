@@ -11,9 +11,3 @@ mat-card-content{
     flex-grow: 1;
     overflow: auto;
 }
-
-mat-card-actions button{
-    position: relative;
-    left: 4px;
-    bottom: 4px;
-}
