@@ -1,0 +1,12 @@
+schemaVersion: 2.2.0
+metadata: {}
+components:
+- name: volume1
+  volume: {}
+- name: volume2
+  volume:
+    size: 2Gi
+- name: volume3
+  volume:
+    ephemeral: true
+    size: 3G

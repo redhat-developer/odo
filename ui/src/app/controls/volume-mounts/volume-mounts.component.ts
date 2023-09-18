@@ -70,6 +70,10 @@ export class VolumeMountsComponent implements ControlValueAccessor, Validator {
     this.form.push(this.newVolumeMount({name, path}));
   }
 
+  remove(i: number) {
+    this.form.removeAt(i);
+  }
+
   onNameChange(i: number, name: string) {
     this.showNewVolume[i] = name == "!";
   }

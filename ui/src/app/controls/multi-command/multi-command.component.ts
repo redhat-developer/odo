@@ -61,6 +61,10 @@ export class MultiCommandComponent implements ControlValueAccessor, Validator {
     this.form.push(this.newCommand(cmdName));
   }
 
+  removeCommand(index: number) {
+    this.form.removeAt(index);
+  }
+
   /* Validator implementation */
   validate(control: AbstractControl): ValidationErrors | null {
     if (!this.form.valid) {

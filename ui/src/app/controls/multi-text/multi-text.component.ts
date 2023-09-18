@@ -30,8 +30,10 @@ import {
 })
 export class MultiTextComponent implements ControlValueAccessor, Validator {
 
+  @Input() dataCyPrefix: string = "";
   @Input() label: string = "";
   @Input() addLabel: string = "";
+  @Input() deleteLabel: string = "";
   @Input() title: string = "";
 
   onChange = (_: string[]) => {};
@@ -60,6 +62,10 @@ export class MultiTextComponent implements ControlValueAccessor, Validator {
 
   addText(text: string) {
     this.form.push(this.newText(text));
+  }
+
+  removeText(index: number) {
+    this.form.removeAt(index);
   }
 
   /* Validator implementation */

@@ -19,7 +19,7 @@
             <mat-label><span>Image Name</span></mat-label>
             <input placeholder="Reference to a container image" data-cy="image-image-name" matInput formControlName="imageName">
         </mat-form-field>
-        <app-multi-text formControlName="args" title="Build Args" label="Arg" addLabel="Add Build Arg"></app-multi-text>
+        <app-multi-text dataCyPrefix="image-arg" formControlName="args" title="Build Args" label="Arg" addLabel="Add Build Arg" deleteLabel="Delete Build Args"></app-multi-text>
         <mat-form-field appearance="outline" class="mid-width">
             <mat-label><span>Build Context</span></mat-label>
             <input placeholder="Directory from which the build will be executed" data-cy="image-build-context" matInput formControlName="buildContext">

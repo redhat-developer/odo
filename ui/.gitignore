@@ -42,5 +42,6 @@ testem.log
 Thumbs.db
 
 /cypress/videos
+/cypress/screenshots
 
 .odo

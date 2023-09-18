@@ -1,18 +1,18 @@
 <div class="group">
     <div *ngFor="let control of form.controls; index as i">
         <ng-container [formGroup]="control">
-                <mat-form-field class="mid-width" appearance="outline">
+                <mat-form-field class="kv-width" appearance="outline">
                     <mat-label><span>Name</span></mat-label>
                     <input [attr.data-cy]="dataCyPrefix+'-name-'+i" matInput formControlName="name">
                 </mat-form-field>
-                <mat-form-field class="mid-width" appearance="outline">
+                <mat-form-field class="kv-width" appearance="outline">
                     <mat-label><span>Value</span></mat-label>
                     <input [attr.data-cy]="dataCyPrefix+'-value-'+i" matInput formControlName="value">
                 </mat-form-field>
+                <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" class="adjust-position" mat-icon-button [matTooltip]="deleteLabel" (click)="removeEntry(i)">
+                    <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
+                </button>
         </ng-container>
     </div>
-    <button [attr.data-cy]="dataCyPrefix+'-plus'" *ngIf="form.controls.length > 0" mat-icon-button (click)="addEntry('', '')">
-        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
-    </button>                
-    <button [attr.data-cy]="dataCyPrefix+'-add'" *ngIf="form.controls.length == 0" mat-flat-button (click)="addEntry('', '')">{{addLabel}}</button>
+    <button [attr.data-cy]="dataCyPrefix+'-add'" mat-flat-button (click)="addEntry('', '')">{{addLabel}}</button>
 </div>

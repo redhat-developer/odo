@@ -13,15 +13,16 @@
                 <input formControlName="path" [attr.data-cy]="'volume-mount-path-'+i" matInput>
             </mat-form-field>
 
+            <button [attr.data-cy]="'volume-mount-minus-'+i" class="adjust-position" mat-icon-button matTooltip="Delete Volume Mount" (click)="remove(i)">
+                <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
+            </button>
+
             <app-volume
                 *ngIf="showNewVolume[i]"
                 (created)="onNewVolumeCreated(i, $event)"
             ></app-volume>
         </ng-container>
     </div>
-    <button data-cy="volume-mount-add" *ngIf="form.controls.length > 0" mat-icon-button (click)="add('', '')">
-        <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
-    </button>                
-    <button data-cy="volume-mount-add" *ngIf="form.controls.length == 0" mat-flat-button (click)="add('', '')">Add Volume Mount</button>
+    <button data-cy="volume-mount-add" mat-flat-button (click)="add('', '')">Add Volume Mount</button>
 </div>
 

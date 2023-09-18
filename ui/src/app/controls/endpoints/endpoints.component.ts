@@ -50,6 +50,10 @@ export class EndpointsComponent implements ControlValueAccessor, Validator {
     }));
   }
 
+  removeEndpoint(index: number) {
+    this.form.removeAt(index);
+  }
+
   /* ControlValueAccessor implementation */
   writeValue(value: Endpoint[]) {
     value.forEach(ep => {

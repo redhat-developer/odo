@@ -38,6 +38,7 @@ export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
 
   @Input() dataCyPrefix: string = "";
   @Input() addLabel: string = "";
+  @Input() deleteLabel: string = "";
 
   form = new FormArray<FormGroup>([]);
 
@@ -69,6 +70,10 @@ export class MultiKeyValueComponent implements ControlValueAccessor, Validator {
 
   addEntry(name: string, value: string) {
     this.form.push(this.newKeyValueForm({name, value}));
+  }
+
+  removeEntry(index: number) {
+    this.form.removeAt(index);
   }
 
   /* Validator implementation */

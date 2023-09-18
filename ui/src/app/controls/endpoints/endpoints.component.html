@@ -1,43 +1,49 @@
-<div *ngFor="let control of form.controls; index as i">
-    <ng-container [formGroup]="control">
-        <mat-form-field class="mid-width" appearance="outline">
-            <mat-label><span>Name</span></mat-label>
-            <input [attr.data-cy]="'endpoint-name-'+i" matInput formControlName="name">
-        </mat-form-field>    
-        <mat-form-field class="quart-width" appearance="outline">
-            <mat-label><span>Target Port</span></mat-label>
-            <input [attr.data-cy]="'endpoint-targetPort-'+i" type="number" matInput formControlName="targetPort">
-        </mat-form-field>
-        <mat-form-field class="quart-width" appearance="outline">
-            <mat-label>Exposure</mat-label>
-            <mat-select [attr.data-cy]="'endpoint-exposure-'+i" formControlName="exposure">
-                <mat-option value="">(default, public)</mat-option>
-                <mat-option value="public">public</mat-option>
-                <mat-option value="internal">internal</mat-option>
-                <mat-option value="none">none</mat-option>
-            </mat-select>
-        </mat-form-field>
+<div class="group">
+    <mat-card *ngFor="let control of form.controls; index as i">
+        <mat-card-content [formGroup]="control">
+            <mat-form-field class="mid-width" appearance="outline">
+                <mat-label><span>Name</span></mat-label>
+                <input [attr.data-cy]="'endpoint-name-'+i" matInput formControlName="name">
+            </mat-form-field>
+            <mat-form-field class="quart-width" appearance="outline">
+                <mat-label><span>Target Port</span></mat-label>
+                <input [attr.data-cy]="'endpoint-targetPort-'+i" type="number" matInput formControlName="targetPort">
+            </mat-form-field>
+            <mat-form-field class="quart-width" appearance="outline">
+                <mat-label>Exposure</mat-label>
+                <mat-select [attr.data-cy]="'endpoint-exposure-'+i" formControlName="exposure">
+                    <mat-option value="">(default, public)</mat-option>
+                    <mat-option value="public">public</mat-option>
+                    <mat-option value="internal">internal</mat-option>
+                    <mat-option value="none">none</mat-option>
+                </mat-select>
+            </mat-form-field>
 
-        <mat-form-field class="mid-width" appearance="outline">
-            <mat-label><span>Path</span></mat-label>
-            <input [attr.data-cy]="'endpoint-path-'+i" matInput formControlName="path">
-        </mat-form-field>    
-        <mat-form-field class="quart-width" appearance="outline">
-            <mat-label>Protocol</mat-label>
-            <mat-select [attr.data-cy]="'endpoint-protocol-'+i" formControlName="protocol">
-                <mat-option value="">(default, http)</mat-option>
-                <mat-option value="http">http</mat-option>
-                <mat-option value="https">https</mat-option>
-                <mat-option value="ws">ws</mat-option>
-                <mat-option value="wss">wss</mat-option>
-                <mat-option value="tcp">tcp</mat-option>
-                <mat-option value="udp">udp</mat-option>
-            </mat-select>
-        </mat-form-field>
-        <mat-checkbox [attr.data-cy]="'endpoint-secure-'+i" formControlName="secure">Protocol Is Secure</mat-checkbox>
-    </ng-container>
+            <mat-form-field class="mid-width" appearance="outline">
+                <mat-label><span>Path</span></mat-label>
+                <input [attr.data-cy]="'endpoint-path-'+i" matInput formControlName="path">
+            </mat-form-field>
+            <mat-form-field class="quart-width" appearance="outline">
+                <mat-label>Protocol</mat-label>
+                <mat-select [attr.data-cy]="'endpoint-protocol-'+i" formControlName="protocol">
+                    <mat-option value="">(default, http)</mat-option>
+                    <mat-option value="http">http</mat-option>
+                    <mat-option value="https">https</mat-option>
+                    <mat-option value="ws">ws</mat-option>
+                    <mat-option value="wss">wss</mat-option>
+                    <mat-option value="tcp">tcp</mat-option>
+                    <mat-option value="udp">udp</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-checkbox [attr.data-cy]="'endpoint-secure-'+i" formControlName="secure">Protocol Is Secure</mat-checkbox>
+        </mat-card-content>
+        <mat-card-actions>
+            <button [attr.data-cy]="'endpoint-minus-'+i" class="adjust-position" mat-icon-button matTooltip="Delete endpoint" (click)="removeEndpoint(i)">
+                <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
+    <div>
+        <button data-cy="endpoints-add" mat-flat-button (click)="addEndpoint()">Add an Endpoint</button>
+    </div>
 </div>
-<button data-cy="endpoints-plus" *ngIf="form.value.length > 0" mat-icon-button (click)="addEndpoint()">
-    <mat-icon class="tab-icon material-icons-outlined">add</mat-icon>
-</button>                
-<button data-cy="endpoints-add" *ngIf="form.value.length == 0" mat-flat-button (click)="addEndpoint()">Add an Endpoint</button>
