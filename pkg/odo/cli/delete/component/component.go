@@ -310,9 +310,14 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 		hasPodmanResources = len(podmanPods) != 0
 	}
 
+	orphans, err := o.getOrphanDevstateFiles(o.clientset.FS, ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	if !(hasClusterResources || hasPodmanResources) {
 		log.Finfof(o.clientset.Stdout, messageWithPlatforms(o.clientset.KubernetesClient != nil, o.clientset.PodmanClient != nil, componentName, namespace))
-		if !o.withFilesFlag {
+		if !o.withFilesFlag && len(orphans) == 0 {
 			// check for resources here
 			return remainingResources, nil
 		}
@@ -328,10 +333,6 @@ func (o *ComponentOptions) deleteDevfileComponent(ctx context.Context) ([]unstru
 		}
 	}
 
-	orphans, err := o.getOrphanDevstateFiles(o.clientset.FS, ctx)
-	if err != nil {
-		return nil, err
-	}
 	filesToDelete = append(filesToDelete, orphans...)
 
 	hasFilesToDelete := len(filesToDelete) != 0
