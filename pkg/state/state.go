@@ -316,3 +316,78 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (o *State) GetOrphanFiles(ctx context.Context) ([]string, error) {
+	var (
+		pid    = odocontext.GetPID(ctx)
+		result []string
+	)
+
+	re := regexp.MustCompile(`^devstate\.?[0-9]*\.json$`)
+	entries, err := o.fs.ReadDir(_dirpath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// No file found => no orphan files
+			return nil, nil
+		}
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !re.MatchString(entry.Name()) {
+			continue
+		}
+		filename, err := getFullFilename(entry)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonContent, err := o.fs.ReadFile(filepath.Join(_dirpath, entry.Name()))
+		if err != nil {
+			return nil, err
+		}
+		var content Content
+		// Ignore error, to handle empty file
+		_ = json.Unmarshal(jsonContent, &content)
+
+		if content.PID == pid {
+			continue
+		}
+		if content.PID == 0 {
+			// This is devstate.json with pid=0
+			continue
+		}
+		exists, err := pidExists(content.PID)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			var process ps.Process
+			process, err = ps.FindProcess(content.PID)
+			if err != nil {
+				klog.V(4).Infof("process %d exists but is not accessible => orphan", content.PID)
+				result = append(result, filename)
+				continue
+			}
+			if process == nil {
+				klog.V(4).Infof("process %d does not exist => orphan", content.PID)
+				result = append(result, filename)
+				continue
+			}
+			if process.Executable() != "odo" && process.Executable() != "odo.exe" {
+				klog.V(4).Infof("process %d exists but is not odo => orphan", content.PID)
+				result = append(result, filename)
+				continue
+			}
+			// Process exists => not orphan
+			klog.V(4).Infof("process %d exists and is odo => not orphan", content.PID)
+			continue
+		}
+		klog.V(4).Infof("process %d does not exist => orphan", content.PID)
+		result = append(result, filename)
+	}
+	return result, nil
+}
+
+func getFullFilename(entry fs.FileInfo) (string, error) {
+	return filepath.Abs(filepath.Join(_dirpath, entry.Name()))
+}

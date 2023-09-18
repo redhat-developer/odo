@@ -24,4 +24,6 @@ type Client interface {
 
 	// GetAPIServerPorts returns the port where the API servers are listening, possibly per platform.
 	GetAPIServerPorts(ctx context.Context) ([]api.DevControlPlane, error)
+
+	GetOrphanFiles(ctx context.Context) ([]string, error)
 }
