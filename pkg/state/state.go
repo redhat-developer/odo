@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/mitchellh/go-ps"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -297,6 +300,16 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 			return err
 		}
 		if exists {
+			var process ps.Process
+			process, err = ps.FindProcess(content.PID)
+			if err != nil {
+				klog.V(4).Infof("process %d exists but is not accessible, ignoring", content.PID)
+				continue
+			}
+			if process.Executable() != "odo" && process.Executable() != "odo.exe" {
+				klog.V(4).Infof("process %d exists but is not odo, ignoring", content.PID)
+				continue
+			}
 			// Process exists => problem
 			return NewErrAlreadyRunningOnPlatform(platform, content.PID)
 		}
