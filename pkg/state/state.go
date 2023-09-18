@@ -19,18 +19,21 @@ import (
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/system"
 )
 
 type State struct {
 	content Content
 	fs      filesystem.Filesystem
+	system  system.System
 }
 
 var _ Client = (*State)(nil)
 
-func NewStateClient(fs filesystem.Filesystem) *State {
+func NewStateClient(fs filesystem.Filesystem, system system.System) *State {
 	return &State{
-		fs: fs,
+		fs:     fs,
+		system: system,
 	}
 }
 
@@ -301,7 +304,7 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 		}
 		if exists {
 			var process ps.Process
-			process, err = ps.FindProcess(content.PID)
+			process, err = o.system.FindProcess(content.PID)
 			if err != nil {
 				klog.V(4).Infof("process %d exists but is not accessible, ignoring", content.PID)
 				continue
@@ -362,7 +365,7 @@ func (o *State) GetOrphanFiles(ctx context.Context) ([]string, error) {
 		}
 		if exists {
 			var process ps.Process
-			process, err = ps.FindProcess(content.PID)
+			process, err = o.system.FindProcess(content.PID)
 			if err != nil {
 				klog.V(4).Infof("process %d exists but is not accessible => orphan", content.PID)
 				result = append(result, filename)

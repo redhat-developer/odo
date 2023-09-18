@@ -25,6 +25,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/system"
 )
 
 func TestComponentOptions_deleteNamedComponent(t *testing.T) {
@@ -437,7 +438,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -458,7 +460,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -480,7 +483,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -500,7 +504,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -521,7 +526,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -537,7 +543,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -553,7 +560,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -570,7 +578,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -588,7 +597,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: false,
@@ -605,7 +615,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: false,
@@ -623,7 +634,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: false,
@@ -642,7 +654,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -660,7 +673,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -679,7 +693,8 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			},
 			stateClient: func(ctrl *gomock.Controller) state.Client {
 				fs := filesystem.NewFakeFs()
-				return state.NewStateClient(fs)
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
