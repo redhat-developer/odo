@@ -597,11 +597,12 @@ ComponentSettings:
 					devSession.Kill()
 					devSession.WaitEnd()
 					devstate := fmt.Sprintf(".odo/devstate.%d.json", pid)
+					newdevstate := fmt.Sprintf(".odo/devstate.%d.json", helper.GetFirstProcess())
 					helper.ReplaceString(
 						devstate,
 						fmt.Sprintf("\"pid\": %d", pid),
-						"\"pid\": 1")
-					err := os.Rename(devstate, ".odo/devstate.1.json")
+						fmt.Sprintf("\"pid\": %d", helper.GetFirstProcess()))
+					err := os.Rename(devstate, newdevstate)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -611,7 +612,8 @@ ComponentSettings:
 						VerboseLevel: "4",
 					})
 					Expect(err).ToNot(HaveOccurred())
-					Expect(newDevSession.ErrOut).Should(ContainSubstring("process 1 exists but is not odo, ignoring"))
+					logMsg := fmt.Sprintf("process %d exists but is not odo, ignoring", helper.GetFirstProcess())
+					Expect(newDevSession.ErrOut).Should(ContainSubstring(logMsg))
 
 					newDevSession.Stop()
 					newDevSession.WaitEnd()

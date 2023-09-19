@@ -15,3 +15,7 @@ func terminateProc(session *gexec.Session) error {
 }
 
 func setSysProcAttr(command *exec.Cmd) {}
+
+func GetFirstProcess() int {
+	return 1
+}
