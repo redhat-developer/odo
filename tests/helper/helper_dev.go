@@ -133,6 +133,7 @@ type DevSessionOpts struct {
 	APIServerPort    int
 	SyncGitDir       bool
 	ShowLogs         bool
+	VerboseLevel     string
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -173,6 +174,9 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	}
 	if options.ShowLogs {
 		args = append(args, "--logs")
+	}
+	if options.VerboseLevel != "" {
+		args = append(args, "-v", options.VerboseLevel)
 	}
 	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)
@@ -218,6 +222,10 @@ func (o DevSession) Kill() {
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	}
 	o.session.Kill()
+}
+
+func (o DevSession) PID() int {
+	return o.session.Command.Process.Pid
 }
 
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
