@@ -226,3 +226,58 @@ export PODMAN_CMD_INIT_TIMEOUT=10s
 ```
 
 Please [file an issue](https://github.com/redhat-developer/odo/issues/new/choose) if the problem persists.
+
+### I am using the remote Podman client and I am unable to reach the ports forwarded by `odo`
+
+#### Description
+
+Your local Podman is configured as a [remote client](https://github.com/containers/podman/blob/main/docs/tutorials/remote_client.md), interacting with another Podman Backend node via SSH.
+For example, you are using the `podman-remote` binary, or are calling Podman with the `--remote` option.
+
+The Podman remote client works fine, and you can start an `odo` Dev session leveraging it, e.g.:
+
+```shell
+$ odo dev --platform podman
+
+[...]
+ ✓  Waiting for the application to be ready [1s]
+ -  Forwarding from 127.0.0.1:20001 -> 3000
+
+↪ Dev mode
+ Status:
+ Watching for changes in the current directory /path/to/project
+
+Web console accessible at http://localhost:20000/
+
+Keyboard Commands:
+[Ctrl+c] - Exit and delete resources from podman
+     [p] - Manually apply local changes to the application on podman
+```
+
+However, the port forwarded by `odo dev` seems unreachable, e.g.:
+```shell
+$ curl http://127.0.0.1:20001
+
+curl: (7) Failed to connect to localhost port 20001 after 0 ms: Connection refused
+```
+
+#### Possible causes
+
+Podman provides the ability to use a local client interacting with a Podman backend node through an SSH connection.
+However, as explained in [this discussion](https://github.com/containers/podman/discussions/20027#discussioncomment-7046636), all resources are only created on the backend node.
+This includes any ports that might need to be forwarded.
+
+#### Recommended Solution
+
+Since you have already configured the SSH connection between the Podman remote client and the backend node, one possible workaround
+could be to manually open up an SSH tunnel (using the same credentials) right after starting the `odo dev` session.
+This way, SSH will do the work of forwarding ports between the machine running `odo dev` (along with the Podman remote client) and the Podman backend node.
+
+Example:
+```shell
+$ ssh -v -i /path/to/ssh/key -NL 20001:127.0.0.1:20001 -l $user $podman_backend_host
+```
+
+Right after creating the SSH Tunnel in a separate terminal , you will be able to reach the port displayed by `odo` for port forwarding.
+
+More details on [SSH Tunneling](https://www.ssh.com/academy/ssh/tunneling).
