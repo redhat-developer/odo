@@ -34,3 +34,8 @@ func (o Fake) FindProcess(pid int) (ps.Process, error) {
 	}
 	return nil, errors.New("no process found")
 }
+
+func (o Fake) PidExists(pid int) (bool, error) {
+	_, found := o.PidTable[pid]
+	return found, nil
+}

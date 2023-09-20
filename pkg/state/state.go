@@ -252,7 +252,7 @@ func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 		return true, nil
 	}
 
-	exists, err := pidExists(savedContent.PID)
+	exists, err := o.system.PidExists(savedContent.PID)
 	if err != nil {
 		return false, err
 	}
@@ -298,7 +298,7 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 		if content.PID == pid {
 			continue
 		}
-		exists, err := pidExists(content.PID)
+		exists, err := o.system.PidExists(content.PID)
 		if err != nil {
 			return err
 		}
@@ -359,7 +359,7 @@ func (o *State) GetOrphanFiles(ctx context.Context) ([]string, error) {
 			// This is devstate.json with pid=0
 			continue
 		}
-		exists, err := pidExists(content.PID)
+		exists, err := o.system.PidExists(content.PID)
 		if err != nil {
 			return nil, err
 		}
