@@ -39,6 +39,11 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		path        = filepath.Dir(devfilePath)
 	)
 
+	_, err := libdevfile.ValidateAndGetCommand(*devfileObj, "", v1alpha2.DeployCommandGroupKind)
+	if err != nil {
+		return err
+	}
+
 	handler := component.NewRunHandler(
 		ctx,
 		o.kubeClient,
@@ -52,7 +57,7 @@ func (o *DeployClient) Deploy(ctx context.Context) error {
 		},
 	)
 
-	err := o.buildPushAutoImageComponents(handler, *devfileObj)
+	err = o.buildPushAutoImageComponents(handler, *devfileObj)
 	if err != nil {
 		return err
 	}
