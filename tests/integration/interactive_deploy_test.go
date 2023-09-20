@@ -64,11 +64,11 @@ var _ = Describe("odo deploy interactive command tests", func() {
 						helper.ExpectString(ctx, "Enter component name")
 						helper.SendLine(ctx, "my-app")
 
-						helper.ExpectString(ctx, "no default deploy command found in devfile")
+						helper.ExpectString(ctx, "no deploy command found in devfile")
 					})
 
 				Expect(err).To(Not(BeNil()))
-				Expect(output).To(ContainSubstring("no default deploy command found in devfile"))
+				Expect(output).To(ContainSubstring("no deploy command found in devfile"))
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
@@ -98,11 +98,11 @@ var _ = Describe("odo deploy interactive command tests", func() {
 						helper.ExpectString(ctx, "Enter component name")
 						helper.SendLine(ctx, "my-app")
 
-						helper.ExpectString(ctx, "no default deploy command found in devfile")
+						helper.ExpectString(ctx, "no deploy command found in devfile")
 					})
 
 				Expect(err).To(Not(BeNil()))
-				Expect(output).To(ContainSubstring("no default deploy command found in devfile"))
+				Expect(output).To(ContainSubstring("no deploy command found in devfile"))
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
@@ -139,7 +139,7 @@ var _ = Describe("odo deploy interactive command tests", func() {
 						helper.ExpectString(ctx, "Enter component name")
 						helper.SendLine(ctx, "my-app")
 
-						helper.ExpectString(ctx, "no default deploy command found in devfile")
+						helper.ExpectString(ctx, "no deploy command found in devfile")
 					})
 
 				Expect(err).To(Not(BeNil()))
