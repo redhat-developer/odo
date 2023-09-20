@@ -1,0 +1,151 @@
+commands:
+  - exec:
+      commandLine: npm install
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+  - exec:
+      commandLine: npm run start
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: start-app
+  - exec:
+      commandLine: npm run debug
+      component: runtime
+      group:
+        isDefault: true
+        kind: debug
+      workingDir: ${PROJECT_SOURCE}
+    id: start-app-debug
+
+components:
+  - container:
+      command: [ 'tail' ]
+      args: [ '-f', '/dev/null' ]
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+        - name: "debug"
+          targetPort: 5858
+          exposure: none
+      env:
+        - name: DEBUG_PORT_PROJECT
+          value: "5858"
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+
+  #######################
+  # Kubernetes components
+  #######################
+
+  # deployByDefault true, not referenced in apply command => automatically created on startup
+  - kubernetes:
+      deployByDefault: true
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-true-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-true-and-not-referenced
+
+  # deployByDefault not set, not referenced in apply command => automatically created on startup
+  - kubernetes:
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: k8s-deploybydefault-not-set-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: k8s-deploybydefault-not-set-and-not-referenced
+
+  #######################
+  # OpenShift components
+  #######################
+
+  # deployByDefault true, not referenced in apply command => automatically created on startup
+  - openshift:
+      deployByDefault: true
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-true-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-true-and-not-referenced
+
+  # deployByDefault not set, not referenced in apply command => automatically created on startup
+  - openshift:
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: ocp-deploybydefault-not-set-and-not-referenced
+        spec:
+          containers:
+          - name: main
+            image: busybox
+            command: ["/bin/sh", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+    name: ocp-deploybydefault-not-set-and-not-referenced
+
+  #######################
+  # Image components
+  #######################
+
+  # autoBuild true, not referenced in apply command => automatically created on startup
+  - image:
+      autoBuild: true
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-true-and-not-referenced"
+    name: autobuild-true-and-not-referenced
+
+  # autoBuild not set, not referenced in apply command => automatically created on startup
+  - image:
+      dockerfile:
+        buildContext: .
+        uri: Dockerfile
+      imageName: "{{ CONTAINER_IMAGE_REPO }}:autobuild-not-set-and-not-referenced"
+    name: autobuild-not-set-and-not-referenced
+
+metadata:
+  description: Stack with Node.js 14
+  displayName: Node.js Runtime
+  icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+  language: javascript
+  name: my-node-app
+  projectType: nodejs
+  tags:
+    - NodeJS
+    - Express
+    - ubi8
+  version: 1.0.0
+schemaVersion: 2.2.0
+starterProjects:
+  - git:
+      remotes:
+        origin: https://github.com/odo-devfiles/nodejs-ex.git
+    name: nodejs-starter
+variables:
+  CONTAINER_IMAGE_REPO: localhost:5000/odo-dev/node
