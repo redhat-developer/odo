@@ -44,6 +44,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/system"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -90,6 +91,8 @@ const (
 	STATE = "DEP_STATE"
 	// SYNC instantiates client for pkg/sync
 	SYNC = "DEP_SYNC"
+	// SYSTEM instantiates client for pkg/testingutil/system
+	SYSTEM = "DEP_SYSTEM"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
 	/* Add key for new package here */
@@ -122,7 +125,7 @@ var subdeps map[string][]string = map[string][]string{
 	PORT_FORWARD: {KUBERNETES_NULLABLE, EXEC, STATE},
 	PROJECT:      {KUBERNETES},
 	REGISTRY:     {FILESYSTEM, PREFERENCE, KUBERNETES_NULLABLE},
-	STATE:        {FILESYSTEM},
+	STATE:        {FILESYSTEM, SYSTEM},
 	SYNC:         {EXEC},
 	WATCH:        {INFORMER, KUBERNETES_NULLABLE},
 	BINDING:      {PROJECT, KUBERNETES_NULLABLE},
@@ -152,6 +155,7 @@ type Clientset struct {
 	RegistryClient        registry.Client
 	StateClient           state.Client
 	SyncClient            sync.Client
+	systemClient          system.System
 	WatchClient           watch.Client
 	/* Add client by alphabetic order */
 }
@@ -199,6 +203,13 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 			dep.FS = testClientset.FS
 		} else {
 			dep.FS = filesystem.DefaultFs{}
+		}
+	}
+	if isDefined(command, SYSTEM) {
+		if testClientset.systemClient != nil {
+			dep.systemClient = testClientset.systemClient
+		} else {
+			dep.systemClient = system.Default{}
 		}
 	}
 	if isDefined(command, INFORMER) {
@@ -289,7 +300,7 @@ func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*C
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
 	if isDefined(command, STATE) {
-		dep.StateClient = state.NewStateClient(dep.FS)
+		dep.StateClient = state.NewStateClient(dep.FS, dep.systemClient)
 	}
 	if isDefined(command, SYNC) {
 		switch platform {

@@ -590,6 +590,36 @@ ComponentSettings:
 				})
 			})
 
+			When("killing odo dev and another process replaces it", func() {
+				var newDevSession helper.DevSession
+				BeforeEach(func() {
+					pid := devSession.PID()
+					devSession.Kill()
+					devSession.WaitEnd()
+					devstate := fmt.Sprintf(".odo/devstate.%d.json", pid)
+					newdevstate := fmt.Sprintf(".odo/devstate.%d.json", helper.GetFirstProcess())
+					helper.ReplaceString(
+						devstate,
+						fmt.Sprintf("\"pid\": %d", pid),
+						fmt.Sprintf("\"pid\": %d", helper.GetFirstProcess()))
+					err := os.Rename(devstate, newdevstate)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should restart a new session successfully", func() {
+					var err error
+					newDevSession, err = helper.StartDevMode(helper.DevSessionOpts{
+						VerboseLevel: "4",
+					})
+					Expect(err).ToNot(HaveOccurred())
+					logMsg := fmt.Sprintf("process %d exists but is not odo, ignoring", helper.GetFirstProcess())
+					Expect(newDevSession.ErrOut).Should(ContainSubstring(logMsg))
+
+					newDevSession.Stop()
+					newDevSession.WaitEnd()
+				})
+			})
+
 			When("stopping odo dev normally", func() {
 				BeforeEach(func() {
 					devSession.Stop()

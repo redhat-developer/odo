@@ -188,6 +188,30 @@ Various factors are responsible for this:
 
 Please refer to [Troubleshoot Storage Permission issues on managed cloud providers clusters](./user-guides/advanced/using-odo-with-other-clusters.md) for possible solutions to fix this.
 
+### Orphan Devstate files
+
+An `odo dev` session creates a `.odo/devstate.<PID>.json` file when the session starts, and deletes it at the end of the session.
+
+If the session terminates abrupty, the state file won't be deleted, and will remain in the `.odo` directory.
+
+You can delete such orphan devstate files using the command `odo delete component`.
+
+<details>
+    <summary>Example output</summary>
+
+```shell
+$ odo delete component
+Searching resources to delete, please wait...
+This will delete "go" from podman.
+ •  The following pods and associated volumes will get deleted from podman:
+ •  	- go-app
+
+This will delete the following files and directories:
+	- /home/user/projects/go/.odo/devstate.83932.json
+	- /home/user/projects/go/.odo/devstate.json
+```
+</details>
+
 ## Podman Issues
 
 ### `odo` says it cannot access Podman

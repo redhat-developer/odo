@@ -35,3 +35,7 @@ func setSysProcAttr(command *exec.Cmd) {
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
 }
+
+func GetFirstProcess() int {
+	return 4
+}

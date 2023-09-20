@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/devfile/library/v2/pkg/devfile/parser"
-	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +22,10 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/system"
 )
 
 func TestComponentOptions_deleteNamedComponent(t *testing.T) {
@@ -420,6 +422,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 		remainingResources []unstructured.Unstructured
 		wantErr            bool
 		deleteClient       func(ctrl *gomock.Controller) _delete.Client
+		stateClient        func(ctrl *gomock.Controller) state.Client
 	}{
 		{
 			name: "deleting a component with access to devfile",
@@ -432,6 +435,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -449,6 +457,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -468,6 +481,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
 			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
+			},
 			fields: fields{
 				forceFlag: true,
 				runningIn: labels.ComponentDeployMode,
@@ -483,6 +501,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), compName, projectName, labels.ComponentDeployMode).
 					Return(resources, nil)
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -501,6 +524,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
 			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
+			},
 			fields: fields{
 				forceFlag: true,
 			},
@@ -512,6 +540,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(false, nil, errors.New("some error"))
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -525,6 +558,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDevMode).Return(false, nil, errors.New("some error"))
 				return deleteClient
 			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
+			},
 			fields: fields{
 				forceFlag: true,
 				runningIn: labels.ComponentDevMode,
@@ -537,6 +575,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDeployMode).Return(false, nil, errors.New("some error"))
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -552,6 +595,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), gomock.Any(), gomock.Any(), labels.ComponentAnyMode)
 				return deleteClient
 			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
+			},
 			fields: fields{
 				forceFlag: false,
 			},
@@ -564,6 +612,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDevMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), gomock.Any(), gomock.Any(), labels.ComponentDevMode)
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: false,
@@ -578,6 +631,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListClusterResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentDeployMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), gomock.Any(), gomock.Any(), labels.ComponentDeployMode)
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: false,
@@ -594,6 +652,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), gomock.Any(), gomock.Any(), labels.ComponentAnyMode)
 				return deleteClient
 			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
+			},
 			fields: fields{
 				forceFlag: true,
 			},
@@ -607,6 +670,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					Return(false, nil, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), gomock.Any(), gomock.Any(), labels.ComponentDevMode)
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -622,6 +690,11 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					Return(false, nil, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(gomock.Any(), gomock.Any(), gomock.Any(), labels.ComponentDeployMode)
 				return deleteClient
+			},
+			stateClient: func(ctrl *gomock.Controller) state.Client {
+				fs := filesystem.NewFakeFs()
+				system := system.Default{}
+				return state.NewStateClient(fs, system)
 			},
 			fields: fields{
 				forceFlag: true,
@@ -640,6 +713,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := prepareKubeClient(ctrl, projectName)
 			deleteClient := tt.deleteClient(ctrl)
+			stateClient := tt.stateClient(ctrl)
 			o := &ComponentOptions{
 				name:      tt.fields.name,
 				forceFlag: tt.fields.forceFlag,
@@ -649,6 +723,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 					Stderr:           os.Stderr,
 					KubernetesClient: kubeClient,
 					DeleteClient:     deleteClient,
+					StateClient:      stateClient,
 				},
 			}
 			ctx := odocontext.WithNamespace(context.Background(), projectName)
@@ -656,6 +731,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			ctx = odocontext.WithWorkingDirectory(ctx, workingDir)
 			ctx = odocontext.WithComponentName(ctx, compName)
 			ctx = odocontext.WithEffectiveDevfileObj(ctx, &info)
+			ctx = odocontext.WithPID(ctx, 101)
 			remainingResources, err := o.deleteDevfileComponent(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("deleteDevfileComponent() error = %v, wantErr %v", err, tt.wantErr)

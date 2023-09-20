@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,8 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/podman"
+	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/tests/helper"
@@ -95,8 +99,9 @@ var nodeJsSourcesFsContent fscontentFunc = func(fs filesystem.Filesystem) error 
 }
 
 type fsOptions struct {
-	dotOdoExists bool
-	generated    []string
+	dotOdoExists  bool
+	generated     []string
+	devstateFiles []state.Content
 }
 
 var nodeJsSourcesAndDevfileFsContent = func(devfilePath string, options fsOptions) fscontentFunc {
@@ -113,6 +118,21 @@ var nodeJsSourcesAndDevfileFsContent = func(devfilePath string, options fsOption
 			err := helper.CreateFileWithContent(filepath.Join(util.DotOdoDirectory, "generated"), strings.Join(options.generated, "\n"))
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
+		}
+		for _, devstateFile := range options.devstateFiles {
+			jsonContent, err := json.MarshalIndent(devstateFile, "", " ")
+			if err != nil {
+				return err
+			}
+			dir := filepath.Dir(util.DotOdoDirectory)
+			err = os.MkdirAll(dir, 0750)
+			if err != nil {
+				return err
+			}
+			err = fs.WriteFile(fmt.Sprintf("./.odo/devstate.%d.json", devstateFile.PID), jsonContent, 0644)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -250,9 +270,9 @@ func TestOdoDeleteMatrix(t *testing.T) {
 		nameOptions      map[string]nameOption
 
 		wantErr     string
-		checkOutput func(t *testing.T, s string)
+		checkOutput func(t *testing.T, testContext testContext, s string)
 		checkFS     func(t *testing.T, fs filesystem.Filesystem)
-		checkCalls  func(t *testing.T, clientset clientset.Clientset, tetsContext testContext)
+		checkCalls  func(t *testing.T, clientset clientset.Clientset, testContext testContext)
 	}{
 		{
 			name: "delete component when Devfile is not present in the directory",
@@ -324,7 +344,7 @@ func TestOdoDeleteMatrix(t *testing.T) {
 				"no": noNameOptions,
 			},
 
-			checkOutput: func(t *testing.T, s string) {
+			checkOutput: func(t *testing.T, testContext testContext, s string) {
 				gomega.Expect(s).ToNot(gomega.ContainSubstring("devfile.yaml"), "should not list the devfile.yaml")
 			},
 			checkFS: func(t *testing.T, fs filesystem.Filesystem) {
@@ -353,7 +373,7 @@ func TestOdoDeleteMatrix(t *testing.T) {
 				"no": noNameOptions,
 			},
 
-			checkOutput: func(t *testing.T, s string) {
+			checkOutput: func(t *testing.T, testContext testContext, s string) {
 				gomega.Expect(s).To(gomega.ContainSubstring("devfile.yaml"), "should list the devfile.yaml")
 			},
 			checkFS: func(t *testing.T, fs filesystem.Filesystem) {
@@ -379,6 +399,17 @@ func TestOdoDeleteMatrix(t *testing.T) {
 					fsOptions{
 						generated: []string{"devfile.yaml"},
 					}),
+				"nodeJS sources, Devfile and orphan devstate file": nodeJsSourcesAndDevfileFsContent(
+					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					fsOptions{
+						dotOdoExists: true,
+						devstateFiles: []state.Content{
+							{
+								PID:      43,
+								Platform: commonflags.PlatformPodman,
+							},
+						},
+					}),
 			},
 			runningInOptions: allRunningInOptions,
 			filesOptions:     allFilesOptions,
@@ -386,8 +417,14 @@ func TestOdoDeleteMatrix(t *testing.T) {
 				"no": noNameOptions,
 			},
 
-			checkOutput: func(t *testing.T, s string) {
+			checkOutput: func(t *testing.T, testContext testContext, s string) {
 				gomega.Expect(s).To(gomega.ContainSubstring("No resource found for component %q", "my-component"))
+				if testContext.fscontent == "nodeJS sources, Devfile and orphan devstate file" &&
+					testContext.runningInOption != "deploy" {
+					gomega.Expect(s).To(gomega.ContainSubstring("devstate.43.json"))
+				} else {
+					gomega.Expect(s).To(gomega.Not(gomega.ContainSubstring("devstate.43.json")))
+				}
 			},
 			checkCalls: checkCallsNonDeployedComponent,
 		},
@@ -411,6 +448,17 @@ func TestOdoDeleteMatrix(t *testing.T) {
 					fsOptions{
 						generated: []string{"devfile.yaml"},
 					}),
+				"nodeJS sources, Devfile and orphan devstate file": nodeJsSourcesAndDevfileFsContent(
+					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					fsOptions{
+						dotOdoExists: true,
+						devstateFiles: []state.Content{
+							{
+								PID:      43,
+								Platform: commonflags.PlatformPodman,
+							},
+						},
+					}),
 			},
 			runningInOptions: map[string]runningInOption{
 				"no":  noRunningInOption,
@@ -421,9 +469,15 @@ func TestOdoDeleteMatrix(t *testing.T) {
 				"no": noNameOptions,
 			},
 
-			checkOutput: func(t *testing.T, s string) {
+			checkOutput: func(t *testing.T, testContext testContext, s string) {
 				gomega.Expect(s).To(gomega.ContainSubstring("The following pods and associated volumes will get deleted from podman"))
 				gomega.Expect(s).To(gomega.ContainSubstring("- my-component-app"))
+				if testContext.fscontent == "nodeJS sources, Devfile and orphan devstate file" &&
+					testContext.runningInOption != "deploy" {
+					gomega.Expect(s).To(gomega.ContainSubstring("devstate.43.json"))
+				} else {
+					gomega.Expect(s).To(gomega.Not(gomega.ContainSubstring("devstate.43.json")))
+				}
 			},
 			checkCalls: checkCallsDeployedComponent,
 		},
@@ -447,6 +501,17 @@ func TestOdoDeleteMatrix(t *testing.T) {
 					fsOptions{
 						generated: []string{"devfile.yaml"},
 					}),
+				"nodeJS sources, Devfile and orphan devstate file": nodeJsSourcesAndDevfileFsContent(
+					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					fsOptions{
+						dotOdoExists: true,
+						devstateFiles: []state.Content{
+							{
+								PID:      43,
+								Platform: commonflags.PlatformPodman,
+							},
+						},
+					}),
 			},
 			runningInOptions: map[string]runningInOption{
 				"no":  noRunningInOption,
@@ -457,9 +522,15 @@ func TestOdoDeleteMatrix(t *testing.T) {
 				"no": noNameOptions,
 			},
 
-			checkOutput: func(t *testing.T, s string) {
+			checkOutput: func(t *testing.T, testContext testContext, s string) {
 				gomega.Expect(s).To(gomega.ContainSubstring("The following resources will get deleted from cluster"))
 				gomega.Expect(s).To(gomega.ContainSubstring("- Deployment: my-component-app"))
+				if testContext.fscontent == "nodeJS sources, Devfile and orphan devstate file" &&
+					testContext.runningInOption != "deploy" {
+					gomega.Expect(s).To(gomega.ContainSubstring("devstate.43.json"))
+				} else {
+					gomega.Expect(s).To(gomega.Not(gomega.ContainSubstring("devstate.43.json")))
+				}
 			},
 			checkCalls: checkCallsDeployedComponent,
 		},
@@ -514,6 +585,7 @@ func TestOdoDeleteMatrix(t *testing.T) {
 										t.Fatalf(message)
 									})
 									clientset := clientset.Clientset{}
+									clientset.FS = filesystem.DefaultFs{}
 									env := map[string]string{}
 									config := map[string]string{}
 									platformFunc(t, env, config, &clientset)
@@ -535,7 +607,7 @@ func TestOdoDeleteMatrix(t *testing.T) {
 											}
 										}
 										if tt.checkOutput != nil {
-											tt.checkOutput(t, stdout)
+											tt.checkOutput(t, testCtx, stdout)
 										}
 
 										if tt.checkFS != nil {

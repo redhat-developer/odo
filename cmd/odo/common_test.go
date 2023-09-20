@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
+	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -67,6 +68,7 @@ func runCommand(
 		t.Fatal(err)
 	}
 	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
+	ctx = odocontext.WithPID(ctx, 101)
 
 	for k, v := range options.env {
 		t.Setenv(k, v)
