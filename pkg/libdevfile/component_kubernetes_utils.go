@@ -8,9 +8,9 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
-	"github.com/ghodss/yaml"
 	yaml3 "gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 )
 
 // GetK8sComponentAsUnstructuredList parses the Inlined/URI K8s of the Devfile K8s component and returns a list of unstructured.Unstructured objects;
@@ -42,7 +42,7 @@ func GetK8sComponentAsUnstructuredList(devfileObj parser.DevfileObj, componentNa
 			return nil, err
 		}
 
-		// Use "github.com/ghodss/yaml" pkg to correctly unmarshal the data into an unstructured object;
+		// Use "sigs.k8s.io/yaml" pkg to correctly unmarshal the data into an unstructured object;
 		var u unstructured.Unstructured
 		if err = yaml.Unmarshal(rawData, &u.Object); err != nil {
 			return nil, err

@@ -27,8 +27,6 @@ exceptions:
   # go-digest contains common digest package used across the container ecosystem
   # This is OpenShift dependency, ODO do not use this directly
   - github.com/opencontainers/go-digest
-  # MIT licence - wwhrd is not detecting it correctly
-  - github.com/ghodss/yaml
   # Apache License 2.0 - wwhrd is not detecting it correctly
   - github.com/prometheus/common/...
   # Apache License 2.0 - wwhrd is not detecting it correctly
