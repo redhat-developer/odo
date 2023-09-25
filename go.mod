@@ -27,6 +27,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.7
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/mattn/go-colorable v0.1.13
+	github.com/mitchellh/go-ps v1.0.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.11.0
@@ -46,7 +47,7 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
-	github.com/tidwall/gjson v1.16.0
+	github.com/tidwall/gjson v1.17.0
 	github.com/zalando/go-keyring v0.2.3
 	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.12.0
@@ -150,7 +151,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
-	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/moby/buildkit v0.11.6 // indirect
