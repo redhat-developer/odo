@@ -67,6 +67,9 @@ func StripSpinner(docString string) (returnString string) {
 		if strings.HasPrefix(line, "⚠") && !strings.Contains(line, "Pod is Pending") {
 			continue
 		}
+		if strings.HasPrefix(line, "===") {
+			continue
+		}
 
 		// for some reason, splitting the docString by \n does not split the spinner frames,
 		// so we perform a side operation to remove the extra spinner frames that are not present in the final output

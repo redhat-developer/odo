@@ -292,8 +292,7 @@ func Warning(a ...interface{}) {
 //	⚠ <message>
 func Fwarning(out io.Writer, a ...interface{}) {
 	if !IsJSON() {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(out, "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+		Fwarningf(out, "%s", a...)
 	}
 }
 
@@ -301,10 +300,7 @@ func Fwarning(out io.Writer, a ...interface{}) {
 //
 //	⚠ <message>
 func Warningf(format string, a ...interface{}) {
-	if !IsJSON() {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
-	}
+	Fwarningf(GetStderr(), format, a...)
 }
 
 // Fwarningf will output in an appropriate "warning" manner
@@ -313,8 +309,26 @@ func Warningf(format string, a ...interface{}) {
 func Fwarningf(w io.Writer, format string, a ...interface{}) {
 	if !IsJSON() {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(w, " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+		fullMessage := fmt.Sprintf("%s%s%s", getWarningString(), suffixSpacing, fmt.Sprintf(format, a...))
+		fmt.Fprintln(w, yellow(wrapWarningMessage(fullMessage)))
 	}
+}
+
+func wrapWarningMessage(fullMessage string) string {
+	if fullMessage == "" || strings.TrimSpace(fullMessage) == "" {
+		return fullMessage
+	}
+	split := strings.Split(fullMessage, "\n")
+	max := 0
+	for _, s := range split {
+		if len(s) > max {
+			max = len(s)
+		}
+	}
+	h := strings.Repeat("=", max)
+	return fmt.Sprintf(`%[1]s
+%[2]s
+%[1]s`, h, fullMessage, h)
 }
 
 // Fsuccess will output in an appropriate "progress" manner in out writer
@@ -330,13 +344,9 @@ func Fsuccess(out io.Writer, a ...interface{}) {
 // DisplayExperimentalWarning displays the experimental mode warning message.
 func DisplayExperimentalWarning() {
 	if !IsJSON() {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		h := "============================================================================"
-		fmt.Fprintln(GetStdout(), yellow(fmt.Sprintf(`%[1]s
-%s Experimental mode enabled. Use at your own risk.
-More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
-%[1]s
-`, h, getWarningString())))
+		msg := `Experimental mode enabled. Use at your own risk.
+More details on https://odo.dev/docs/user-guides/advanced/experimental-mode`
+		Fwarningf(GetStdout(), msg)
 	}
 }
 
