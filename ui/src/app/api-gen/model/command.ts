@@ -18,7 +18,7 @@ import { CompositeCommand } from './compositeCommand';
 export interface Command { 
     name: string;
     group: string;
-    _default?: boolean;
+    default?: boolean;
     type: string;
     exec?: ExecCommand;
     apply?: ApplyCommand;

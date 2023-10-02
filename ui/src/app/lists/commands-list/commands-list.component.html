@@ -9,7 +9,7 @@
                     </mat-card-title>
                     <mat-checkbox 
                         *ngIf="command.group != ''" 
-                        [checked]="command._default" 
+                        [checked]="command.default"
                         (change)="toggleDefault($event, command.name, command.group)"
                     >Default {{kind}} command</mat-checkbox>
                 </div>
@@ -22,7 +22,6 @@
         </mat-card-header>
 
         <mat-card-content>
-            
 
             <ng-container *ngIf="command.type == 'exec'">
                 <table class="aligned">
