@@ -16,7 +16,7 @@
   "dependencies": {
     "@algolia/client-search": "^4.20.0",
     "@docusaurus/core": "^2.4.1",
-    "@docusaurus/preset-classic": "^2.4.1",
+    "@docusaurus/preset-classic": "^2.4.3",
     "@docusaurus/theme-search-algolia": "^2.4.1",
     "@mdx-js/react": "^1.6.21",
     "@segment/snippet": "^4.16.2",
