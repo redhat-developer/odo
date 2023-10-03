@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
@@ -12,6 +14,11 @@ var _ = Describe("odo list services tests", func() {
 	var randomProject string
 
 	BeforeEach(func() {
+		skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+		if skipLogin == "true" {
+			Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+		}
+
 		commonVar = helper.CommonBeforeEach()
 
 		// Ensure that the operators are installed
@@ -29,6 +36,9 @@ var _ = Describe("odo list services tests", func() {
 		commonVar.CliRunner.EnsurePodIsUp(randomProject, "cluster-sample-1")
 		Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 		helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+
+		helper.CreateInvalidDevfile(commonVar.Context)
+		helper.Chdir(commonVar.Context)
 	})
 
 	AfterEach(func() {

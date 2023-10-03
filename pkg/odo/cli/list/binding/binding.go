@@ -103,7 +103,7 @@ func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error)
 }
 
 // NewCmdBindingList implements the odo list binding command.
-func NewCmdBindingList(name, fullName string) *cobra.Command {
+func NewCmdBindingList(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewBindingListOptions()
 	bindingListCmd := &cobra.Command{
 		Use:     name,
@@ -112,7 +112,7 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"bindings"},
 	}

@@ -247,7 +247,11 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 
 	case "remove":
 		if !forceFlag {
-			if !ui.Proceed(fmt.Sprintf("Are you sure you want to %s registry %q", operation, registryName)) {
+			proceed, err := ui.Proceed(fmt.Sprintf("Are you sure you want to %s registry %q", operation, registryName))
+			if err != nil {
+				return nil, err
+			}
+			if !proceed {
 				log.Info("Aborted by the user")
 				return registryList, nil
 			}

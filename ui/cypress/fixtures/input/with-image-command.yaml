@@ -1,0 +1,14 @@
+schemaVersion: 2.2.0
+metadata: {}
+commands:
+- apply:
+    component: image1
+  id: command1
+components:
+- image:
+    autoBuild: false
+    dockerfile:
+      rootRequired: false
+      uri: dockerfile
+    imageName: nginx
+  name: image1

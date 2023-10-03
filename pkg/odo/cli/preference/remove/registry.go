@@ -56,6 +56,10 @@ func (o *RegistryOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *RegistryOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes RegistryOptions after they've been created
 func (o *RegistryOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "remove"
@@ -89,7 +93,7 @@ func (o *RegistryOptions) Run(ctx context.Context) (err error) {
 }
 
 // NewCmdRegistry implements the "odo preference remove registry" command
-func NewCmdRegistry(name, fullName string) *cobra.Command {
+func NewCmdRegistry(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewRegistryOptions()
 	registryDeleteCmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <registry name>", name),
@@ -98,7 +102,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint(removeExample), fullName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(registryDeleteCmd, clientset.PREFERENCE)

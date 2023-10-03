@@ -71,7 +71,11 @@ var _ = Describe("odo dev command tests", func() {
 	When("a component is bootstrapped", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			devfile := "devfile.yaml"
+			if os.Getenv("KUBERNETES") == "true" {
+				devfile = "devfile-fsgroup.yaml"
+			}
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", devfile)).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 
@@ -96,18 +100,10 @@ var _ = Describe("odo dev command tests", func() {
 			// odo dev on cluster should not wait for the Podman client to initialize properly, if this client takes very long.
 			// See https://github.com/redhat-developer/odo/issues/6575.
 			// StartDevMode will time out if Podman client takes too long to initialize.
-			delayer := filepath.Join(commonVar.Context, "podman-cmd-delayer")
-			err = helper.CreateFileWithContentAndPerm(delayer, `#!/bin/bash
-
-echo Delaying command execution... >&2
-sleep 10
-echo "$@"
-`, 0755)
-			Expect(err).ShouldNot(HaveOccurred())
+			delayer := helper.GenerateDelayedPodman(commonVar.Context, 10)
 
 			var devSession helper.DevSession
-			var stderrBytes []byte
-			devSession, _, stderrBytes, _, err = helper.StartDevMode(helper.DevSessionOpts{
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 				RunOnPodman: false,
 				CmdlineArgs: []string{"-v", "3"},
 				EnvVars: []string{
@@ -121,7 +117,7 @@ echo "$@"
 				devSession.WaitEnd()
 			}()
 
-			Expect(string(stderrBytes)).Should(MatchRegexp("timeout \\([^()]+\\) while waiting for Podman version"))
+			Expect(devSession.ErrOut).Should(MatchRegexp("timeout \\([^()]+\\) while waiting for Podman version"))
 		})
 
 		When("using a default namespace", func() {
@@ -136,16 +132,21 @@ echo "$@"
 				if helper.IsKubernetesCluster() {
 					namespace = "namespace"
 				}
-				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-					Expect(string(errContents)).To(ContainSubstring(fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace)))
-				})
-				Expect(err).ToNot(HaveOccurred())
+				// Resources might not pass the security requirements on the default namespace on certain clusters (case of OpenShift 4.14),
+				// but this is not important here, as we just want to make sure that the warning message is displayed (even if the Dev Session does not start correctly).
+				devSession, err := helper.WaitForDevModeToContain(helper.DevSessionOpts{}, "Running on the cluster in Dev mode", false, false)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				}()
+				Expect(devSession.ErrOut).To(ContainSubstring(fmt.Sprintf("You are using \"default\" %[1]s, odo may not work as expected in the default %[1]s.", namespace)))
 			})
 		})
 
 		It("should add annotation to use ImageStreams", func() {
 			// #6376
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(cmpName, "app", commonVar.Project)
 				Expect(annotations["alpha.image.policy.openshift.io/resolve-names"]).To(Equal("*"))
 			})
@@ -153,7 +154,7 @@ echo "$@"
 		})
 
 		It("should show validation errors if the devfile is incorrect", func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
 			})
@@ -162,13 +163,47 @@ echo "$@"
 
 		for _, podman := range []bool{true, false} {
 			podman := podman
+			It("should not sync .git directory", helper.LabelPodmanIf(podman, func() {
+				helper.MakeDir(".git")
+				err := helper.CreateFileWithContent(filepath.Join(commonVar.Context, ".git", "file.txt"), "aze")
+				Expect(err).ToNot(HaveOccurred())
+				helper.MakeDir("notgit")
+				err = helper.CreateFileWithContent(filepath.Join(commonVar.Context, "notgit", "otherfile.txt"), "aze")
+				Expect(err).ToNot(HaveOccurred())
+				err = helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+				}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", []string{"ls", "/projects/.git/file.txt"}, pointer.Bool(false))
+					component.Exec("runtime", []string{"ls", "/projects/notgit/otherfile.txt"}, pointer.Bool(true))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}))
+			It("should sync .git directory and subfiles with --sync-git-dir", helper.LabelPodmanIf(podman, func() {
+				gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
+				if err := helper.CreateFileWithContent(gitignorePath, `file.txt`); err != nil {
+					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
+				}
+				helper.MakeDir(".git")
+				err := helper.CreateFileWithContent(filepath.Join(commonVar.Context, ".git", "file.txt"), "aze")
+				Expect(err).ToNot(HaveOccurred())
+				err = helper.RunDevMode(helper.DevSessionOpts{
+					RunOnPodman: podman,
+					SyncGitDir:  true,
+				}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
+					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+					component.Exec("runtime", []string{"ls", "/projects/.git/file.txt"}, pointer.Bool(true))
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}))
+
 			It("should use the index information from previous push operation", helper.LabelPodmanIf(podman, func() {
 				// Create a new file A
 				fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 				// watch that project
 				err := helper.RunDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
-				}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
 					// Change some other file B
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
@@ -188,10 +223,87 @@ echo "$@"
 				errOut := helper.Cmd("odo", args...).ShouldFail().Err()
 				Expect(errOut).To(ContainSubstring("--random-ports and --port-forward cannot be used together"))
 			}))
+
+			for _, opts := range [][]string{
+				{"--build-command", "my-build-cmd"},
+				{"--run-command", "my-run-cmd"},
+				{"--build-command", "my-build-cmd", "--run-command", "my-run-cmd"},
+			} {
+				opts := opts
+				It("should fail when using --no-commands and --build-command and/or --run-command together", helper.LabelPodmanIf(podman, func() {
+					args := []string{"dev", "--no-commands"}
+					args = append(args, opts...)
+					if podman {
+						args = append(args, "--platform", "podman")
+					}
+					errOut := helper.Cmd("odo", args...).ShouldFail().Err()
+					Expect(errOut).To(ContainSubstring("--no-commands cannot be used with --build-command or --run-command"))
+				}))
+			}
+
+			for _, debug := range []bool{false, true} {
+				debug := debug
+				When(fmt.Sprintf("running with --no-commands (debug=%v)", debug), helper.LabelPodmanIf(podman, func() {
+					var devSession helper.DevSession
+					BeforeEach(func() {
+						args := []string{"--no-commands"}
+						if debug {
+							args = append(args, "--debug")
+						}
+						opts := helper.DevSessionOpts{
+							RunOnPodman: podman,
+							CmdlineArgs: args,
+						}
+
+						var err error
+						devSession, err = helper.StartDevMode(opts)
+						Expect(err).ShouldNot(HaveOccurred())
+					})
+
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					})
+
+					It("should start the dev session", func() {
+
+						By("not executing the build command", func() {
+							for _, out := range []string{devSession.StdOut, devSession.ErrOut} {
+								Expect(out).ShouldNot(ContainSubstring("Building your application in container on cluster"))
+							}
+						})
+
+						By("not executing the run command", func() {
+							for _, out := range []string{devSession.StdOut, devSession.ErrOut} {
+								Expect(out).ShouldNot(ContainSubstring("Executing the application"))
+							}
+						})
+
+						By("syncing the files", func() {
+							Expect(devSession.StdOut).Should(ContainSubstring("Syncing files into the container"))
+
+							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+							execResult, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
+							for _, fileName := range []string{"server.js", "package.json"} {
+								Expect(execResult).Should(ContainSubstring(fileName))
+							}
+
+							execResult, _ = component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
+							Expect(execResult).Should(ContainSubstring("App started"))
+						})
+
+						By("setting up port forwarding", func() {
+							Expect(devSession.Endpoints).ShouldNot(BeEmpty())
+							_, ok := devSession.Endpoints["3000"]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("missing port forwarded for 3000: %v", devSession.Endpoints))
+						})
+					})
+				}))
+			}
 		}
 
 		It("ensure that index information is updated", func() {
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
 				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
 				Expect(err).ToNot(HaveOccurred())
 
@@ -281,7 +393,7 @@ echo "$@"
 			if os.Getenv("KUBERNETES") != "true" {
 				Skip("This is a Kubernetes specific scenario, skipping")
 			}
-			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
 				component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 				podDef := component.GetPodDef()
 				Expect(podDef.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
@@ -303,7 +415,7 @@ echo "$@"
 				if os.Getenv("KUBERNETES") != "true" {
 					Skip("This is a Kubernetes specific scenario, skipping")
 				}
-				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+				err := helper.RunDevMode(helper.DevSessionOpts{}, func(session *gexec.Session, outContents, errContents string, ports map[string]string) {
 					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					podDef := component.GetPodDef()
 					Expect(*podDef.Spec.SecurityContext.RunAsNonRoot).To(BeTrue())
@@ -334,11 +446,11 @@ echo "$@"
 			When("recording telemetry data", helper.LabelPodmanIf(podman, func() {
 				BeforeEach(func() {
 					helper.EnableTelemetryDebug()
-					session, _, _, _, _ := helper.StartDevMode(helper.DevSessionOpts{
+					devSession, _ := helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 				AfterEach(func() {
 					helper.ResetTelemetry()
@@ -346,10 +458,7 @@ echo "$@"
 				It("should record the telemetry data correctly", func() {
 					td := helper.GetTelemetryDebugData()
 					Expect(td.Event).To(ContainSubstring("odo dev"))
-					if !podman {
-						// TODO(feloy) what should be the correct exit code for odo dev after pressing ctrl-c?
-						Expect(td.Properties.Success).To(BeFalse())
-					}
+					Expect(td.Properties.Success).To(BeTrue())
 					Expect(td.Properties.Error).ToNot(ContainSubstring("user interrupted"))
 					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
 					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
@@ -383,7 +492,7 @@ echo "$@"
 
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ToNot(HaveOccurred())
@@ -395,9 +504,14 @@ echo "$@"
 						devSession.WaitEnd()
 					})
 
-					It("should delete component from the cluster", func() {
-						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						component.ExpectIsNotDeployed()
+					It("should delete the component from the platform", func() {
+						By("deleting the component", func() {
+							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+							component.ExpectIsNotDeployed()
+						})
+						By("exiting successfully", func() {
+							Expect(devSession.GetExitCode()).Should(Equal(0), "unexpected exit code for the dev session")
+						})
 					})
 				})
 			}))
@@ -421,7 +535,7 @@ ComponentSettings:
 
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -449,7 +563,7 @@ ComponentSettings:
 				}
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -473,6 +587,36 @@ ComponentSettings:
 						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
 						Expect(pods).To(BeEmpty())
 					})
+				})
+			})
+
+			When("killing odo dev and another process replaces it", func() {
+				var newDevSession helper.DevSession
+				BeforeEach(func() {
+					pid := devSession.PID()
+					devSession.Kill()
+					devSession.WaitEnd()
+					devstate := fmt.Sprintf(".odo/devstate.%d.json", pid)
+					newdevstate := fmt.Sprintf(".odo/devstate.%d.json", helper.GetFirstProcess())
+					helper.ReplaceString(
+						devstate,
+						fmt.Sprintf("\"pid\": %d", pid),
+						fmt.Sprintf("\"pid\": %d", helper.GetFirstProcess()))
+					err := os.Rename(devstate, newdevstate)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should restart a new session successfully", func() {
+					var err error
+					newDevSession, err = helper.StartDevMode(helper.DevSessionOpts{
+						VerboseLevel: "4",
+					})
+					Expect(err).ToNot(HaveOccurred())
+					logMsg := fmt.Sprintf("process %d exists but is not odo, ignoring", helper.GetFirstProcess())
+					Expect(newDevSession.ErrOut).Should(ContainSubstring(logMsg))
+
+					newDevSession.Stop()
+					newDevSession.WaitEnd()
 				})
 			})
 
@@ -508,7 +652,7 @@ ComponentSettings:
 				}
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -554,64 +698,75 @@ ComponentSettings:
 
 		for _, podman := range []bool{true, false} {
 			podman := podman
-			When("odo is executed with --no-watch flag", helper.LabelPodmanIf(podman, func() {
+			for _, noCommandsFlag := range []string{"", "--no-commands", "--no-commands=false"} {
+				noCommandsFlag := noCommandsFlag
+				suffix := "without --no-commands"
+				if noCommandsFlag != "" {
+					suffix = "with " + noCommandsFlag
+				}
 
-				var devSession helper.DevSession
+				When("odo is executed with --no-watch flag and "+suffix, helper.LabelPodmanIf(podman, func() {
 
-				BeforeEach(func() {
-					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
-						CmdlineArgs: []string{"--no-watch"},
-						RunOnPodman: podman,
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				AfterEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				When("a file in component directory is modified", func() {
+					var devSession helper.DevSession
 
 					BeforeEach(func() {
-						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+						var err error
+						args := []string{"--no-watch"}
+						if noCommandsFlag != "" {
+							args = append(args, noCommandsFlag)
+						}
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
+							CmdlineArgs: args,
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
 					})
 
-					It("should not trigger a push", func() {
-						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
-						execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
-						Expect(execResult).To(ContainSubstring("App started"))
-						Expect(execResult).ToNot(ContainSubstring("App is super started"))
-
+					AfterEach(func() {
+						devSession.Stop()
+						devSession.WaitEnd()
 					})
 
-					When("p is pressed", func() {
+					When("a file in component directory is modified", func() {
 
 						BeforeEach(func() {
-							if os.Getenv("SKIP_KEY_PRESS") == "true" {
-								Skip("This is a unix-terminal specific scenario, skipping")
-							}
-
-							devSession.PressKey('p')
+							helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 						})
 
-						It("should trigger a push", func() {
-							_, _, _, err := devSession.WaitSync()
-							Expect(err).ToNot(HaveOccurred())
+						It("should not trigger a push", func() {
 							component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 							execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
-							Expect(execResult).To(ContainSubstring("App is super started"))
+							Expect(execResult).To(ContainSubstring("App started"))
+							Expect(execResult).ToNot(ContainSubstring("App is super started"))
+
+						})
+
+						When("p is pressed", func() {
+
+							BeforeEach(func() {
+								if os.Getenv("SKIP_KEY_PRESS") == "true" {
+									Skip("This is a unix-terminal specific scenario, skipping")
+								}
+
+								devSession.PressKey('p')
+							})
+
+							It("should trigger a push", func() {
+								err := devSession.WaitSync()
+								Expect(err).ToNot(HaveOccurred())
+								component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+								execResult, _ := component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
+								Expect(execResult).To(ContainSubstring("App is super started"))
+							})
 						})
 					})
-				})
-			}))
+				}))
+			}
 		}
 
 		When("a delay is necessary for the component to start and running odo dev", func() {
 
 			var devSession helper.DevSession
-			var ports map[string]string
 
 			BeforeEach(func() {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"),
@@ -622,7 +777,7 @@ ComponentSettings:
 					"sleep 80 ; npm start")
 
 				var err error
-				devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -632,7 +787,7 @@ ComponentSettings:
 			})
 
 			It("should first fail then succeed querying endpoint", func() {
-				url := fmt.Sprintf("http://%s", ports["3000"])
+				url := fmt.Sprintf("http://%s", devSession.Endpoints["3000"])
 				_, err := http.Get(url)
 				Expect(err).To(HaveOccurred())
 
@@ -643,9 +798,9 @@ ComponentSettings:
 				}, 180, 10).Should(Equal(true))
 
 				// Get new random port after restart
-				_, _, ports, err = devSession.GetInfo()
+				err = devSession.UpdateInfo()
 				Expect(err).ToNot(HaveOccurred())
-				url = fmt.Sprintf("http://%s", ports["3000"])
+				url = fmt.Sprintf("http://%s", devSession.Endpoints["3000"])
 
 				resp, err := http.Get(url)
 				Expect(err).ToNot(HaveOccurred())
@@ -666,7 +821,7 @@ ComponentSettings:
 
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -827,7 +982,7 @@ ComponentSettings:
 					opts := helper.DevSessionOpts{
 						RunOnPodman: podman,
 					}
-					devSession, _, _, err := helper.WaitForDevModeToContain(opts, "Building your application in container", false, false)
+					devSession, err := helper.WaitForDevModeToContain(opts, "Building your application in container", false, false)
 					Expect(err).ShouldNot(HaveOccurred())
 
 					// Build is taking long => it should be cancellable
@@ -849,7 +1004,7 @@ ComponentSettings:
 						RunOnPodman: podman,
 					}
 					// Run command is launched in the background
-					devSession, _, _, err := helper.WaitForDevModeToContain(opts, "Waiting for the application to be ready", false, false)
+					devSession, err := helper.WaitForDevModeToContain(opts, "Waiting for the application to be ready", false, false)
 					Expect(err).ShouldNot(HaveOccurred())
 
 					// Build is taking long => it should be cancellable
@@ -898,8 +1053,8 @@ ComponentSettings:
 						helper.CopyExampleDevFile(
 							filepath.Join("source", "devfiles", "nodejs", devfile.devfileName),
 							filepath.Join(commonVar.Context, "devfile.yaml"),
-							helper.DevfileMetadataNameSetter(cmpName))
-						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							cmpName)
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							EnvVars: devfile.envvars,
 						})
 						Expect(err).To(BeNil())
@@ -911,7 +1066,7 @@ ComponentSettings:
 
 						helper.ReplaceStrings(filepath.Join(commonVar.Context, "devfile.yaml"), devfile.deploymentName, devfile.newDeploymentName)
 
-						_, _, _, err := devSession.WaitSync()
+						err := devSession.WaitSync()
 						Expect(err).To(BeNil())
 					})
 				AfterEach(func() {
@@ -950,7 +1105,6 @@ ComponentSettings:
 		When(ctx.title, func() {
 			var (
 				devSession    helper.DevSession
-				out           []byte
 				err           error
 				getDeployArgs = []string{"get", "deployments", "-n", commonVar.Project}
 			)
@@ -960,8 +1114,8 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
-				devSession, out, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					cmpName)
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).To(BeNil())
 			})
 
@@ -972,7 +1126,7 @@ ComponentSettings:
 
 			It("should have created the necessary k8s resources", func() {
 				By("checking the output for the resources", func() {
-					helper.MatchAllInOutput(string(out), ctx.matchResources)
+					helper.MatchAllInOutput(devSession.StdOut, ctx.matchResources)
 				})
 				By("fetching the resources from the cluster", func() {
 					helper.MatchAllInOutput(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), ctx.matchResources)
@@ -993,7 +1147,6 @@ ComponentSettings:
 			var (
 				nodejsProject, goProject       string
 				nodejsDevSession, goDevSession helper.DevSession
-				nodejsPorts, goPorts           map[string]string
 				nodejsLocalPort                = helper.GetCustomStartPort()
 				goLocalPort                    = nodejsLocalPort + 1
 
@@ -1007,9 +1160,15 @@ ComponentSettings:
 				nodejsProject = helper.CreateNewContext()
 				goProject = helper.CreateNewContext()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), nodejsProject)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(nodejsProject, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+					filepath.Join(nodejsProject, "devfile.yaml"),
+					cmpName+"-nodejs",
+				)
 				helper.CopyExample(filepath.Join("source", "go"), goProject)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"), filepath.Join(goProject, "devfile.yaml"))
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "go-devfiles", "devfile.yaml"),
+					filepath.Join(goProject, "devfile.yaml"),
+					cmpName+"-go",
+				)
 			})
 			AfterEach(func() {
 				helper.DeleteDir(nodejsProject)
@@ -1019,7 +1178,7 @@ ComponentSettings:
 				BeforeEach(func() {
 					helper.Chdir(nodejsProject)
 					var err error
-					nodejsDevSession, _, _, nodejsPorts, err = helper.StartDevMode(helper.DevSessionOpts{
+					nodejsDevSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						CmdlineArgs:      []string{"--port-forward", fmt.Sprintf("%d:%s", nodejsLocalPort, nodejsContainerPort)},
 						RunOnPodman:      podman,
 						TimeoutInSeconds: 0,
@@ -1037,7 +1196,7 @@ ComponentSettings:
 					BeforeEach(func() {
 						helper.Chdir(goProject)
 						var err error
-						goDevSession, _, _, goPorts, err = helper.StartDevMode(helper.DevSessionOpts{
+						goDevSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							CmdlineArgs:      []string{"--port-forward", fmt.Sprintf("%d:%s", goLocalPort, goContainerPort)},
 							RunOnPodman:      podman,
 							TimeoutInSeconds: 0,
@@ -1052,8 +1211,8 @@ ComponentSettings:
 						helper.Chdir(commonVar.Context)
 					})
 					It("should be able to run both the sessions", func() {
-						Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
-						Expect(goPorts[goContainerPort]).To(BeEquivalentTo(goURL))
+						Expect(nodejsDevSession.Endpoints[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
+						Expect(goDevSession.Endpoints[goContainerPort]).To(BeEquivalentTo(goURL))
 						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", nodejsURL), "Hello from Node.js Starter Application!", 1, 0, 200)
 						helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", goURL), "Hello, !", 1, 0, 200)
 					})
@@ -1063,12 +1222,12 @@ ComponentSettings:
 							wg.Add(2)
 							go func() {
 								defer wg.Done()
-								_, _, _, err := nodejsDevSession.WaitSync()
+								err := nodejsDevSession.WaitSync()
 								Expect(err).ToNot(HaveOccurred())
 							}()
 							go func() {
 								defer wg.Done()
-								_, _, _, err := goDevSession.WaitSync()
+								err := goDevSession.WaitSync()
 								Expect(err).ToNot(HaveOccurred())
 							}()
 							helper.ReplaceString(filepath.Join(goProject, "main.go"), "Hello, %s!", "H3110, %s!")
@@ -1076,8 +1235,8 @@ ComponentSettings:
 							wg.Wait()
 						})
 						It("should be possible to access both the projects on same address and port", func() {
-							Expect(nodejsPorts[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
-							Expect(goPorts[goContainerPort]).To(BeEquivalentTo(goURL))
+							Expect(nodejsDevSession.Endpoints[nodejsContainerPort]).To(BeEquivalentTo(nodejsURL))
+							Expect(goDevSession.Endpoints[goContainerPort]).To(BeEquivalentTo(goURL))
 							helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", nodejsURL), "H3110 from Node.js Starter Application!", 1, 0, 200)
 							helper.HttpWaitForWithStatus(fmt.Sprintf("http://%s", goURL), "H3110, !", 1, 0, 200)
 						})
@@ -1102,14 +1261,13 @@ ComponentSettings:
 
 					When("running odo dev", func() {
 						var devSession helper.DevSession
-						var ports map[string]string
 						BeforeEach(func() {
 							var err error
 							opts := []string{}
 							if manual {
 								opts = append(opts, "--no-watch")
 							}
-							devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+							devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 								CmdlineArgs: opts,
 								RunOnPodman: podman,
 							})
@@ -1122,7 +1280,7 @@ ComponentSettings:
 						})
 
 						It(fmt.Sprintf("should have no endpoint forwarded (podman=%v, manual=%v)", podman, manual), func() {
-							Expect(ports).To(BeEmpty())
+							Expect(devSession.Endpoints).To(BeEmpty())
 						})
 					})
 				})
@@ -1153,7 +1311,6 @@ ComponentSettings:
 
 							When("running odo dev", func() {
 								var devSession helper.DevSession
-								var ports map[string]string
 								BeforeEach(func() {
 									var err error
 									opts := []string{}
@@ -1163,7 +1320,7 @@ ComponentSettings:
 									if manual {
 										opts = append(opts, "--no-watch")
 									}
-									devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+									devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 										CmdlineArgs:   opts,
 										NoRandomPorts: NoRandomPorts,
 										RunOnPodman:   podman,
@@ -1179,7 +1336,7 @@ ComponentSettings:
 								})
 
 								It(fmt.Sprintf("should expose the endpoint on localhost (podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
-									url := fmt.Sprintf("http://%s", ports[containerPort])
+									url := fmt.Sprintf("http://%s", devSession.Endpoints[containerPort])
 									if customPortForwarding {
 										Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
 									}
@@ -1193,8 +1350,6 @@ ComponentSettings:
 								})
 
 								When("modifying name for container in Devfile", func() {
-									var stdout string
-									var stderr string
 									BeforeEach(func() {
 										if manual {
 											if os.Getenv("SKIP_KEY_PRESS") == "true" {
@@ -1202,18 +1357,15 @@ ComponentSettings:
 											}
 										}
 										var (
-											wg          sync.WaitGroup
-											err         error
-											stdoutBytes []byte
-											stderrBytes []byte
+											wg  sync.WaitGroup
+											err error
 										)
 										wg.Add(1)
 										go func() {
 											defer wg.Done()
-											stdoutBytes, stderrBytes, ports, err = devSession.WaitSync()
+											err = devSession.WaitSync()
 											Expect(err).Should(Succeed())
-											stdout = string(stdoutBytes)
-											stderr = string(stderrBytes)
+
 										}()
 										src := "runtime"
 										dst := "other"
@@ -1227,8 +1379,8 @@ ComponentSettings:
 									It(fmt.Sprintf("should react on the Devfile modification (podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
 										By("not warning users that odo dev needs to be restarted", func() {
 											warning := "Please restart 'odo dev'"
-											Expect(stdout).ShouldNot(ContainSubstring(warning))
-											Expect(stderr).ShouldNot(ContainSubstring(warning))
+											Expect(devSession.StdOut).ShouldNot(ContainSubstring(warning))
+											Expect(devSession.ErrOut).ShouldNot(ContainSubstring(warning))
 										})
 										By("updating the pod", func() {
 											component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
@@ -1239,7 +1391,7 @@ ComponentSettings:
 
 										By("exposing the endpoint", func() {
 											Eventually(func(g Gomega) {
-												url := fmt.Sprintf("http://%s", ports[containerPort])
+												url := fmt.Sprintf("http://%s", devSession.Endpoints[containerPort])
 												if customPortForwarding {
 													Expect(url).To(ContainSubstring(strconv.Itoa(localPort)))
 												}
@@ -1285,7 +1437,6 @@ ComponentSettings:
 
 							When("running odo dev", func() {
 								var devSession helper.DevSession
-								var ports map[string]string
 								BeforeEach(func() {
 									opts := []string{}
 									if customPortForwarding {
@@ -1295,7 +1446,7 @@ ComponentSettings:
 										opts = append(opts, "--no-watch")
 									}
 									var err error
-									devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+									devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 										CmdlineArgs:   opts,
 										NoRandomPorts: NoRandomPorts,
 										RunOnPodman:   podman,
@@ -1312,13 +1463,13 @@ ComponentSettings:
 								It(fmt.Sprintf("should expose all endpoints on localhost regardless of exposure(podman=%v, manual=%v, customPortForwarding=%v, customAddress=%v)", podman, manual, customPortForwarding, customAddress), func() {
 									By("not exposing debug endpoints", func() {
 										for _, p := range []int{5005, 5006} {
-											_, found := ports[strconv.Itoa(p)]
+											_, found := devSession.Endpoints[strconv.Itoa(p)]
 											Expect(found).To(BeFalse(), fmt.Sprintf("debug port %d should not be forwarded", p))
 										}
 									})
 
 									getServerResponse := func(containerPort, localPort string) (string, error) {
-										url := fmt.Sprintf("http://%s", ports[containerPort])
+										url := fmt.Sprintf("http://%s", devSession.Endpoints[containerPort])
 										if customPortForwarding {
 											Expect(url).To(ContainSubstring(localPort))
 										}
@@ -1357,15 +1508,13 @@ ComponentSettings:
 										devSession.PressKey('p')
 									}
 
-									var stdout, stderr []byte
-									var err error
-									stdout, stderr, _, err = devSession.WaitSync()
+									err := devSession.WaitSync()
 									Expect(err).Should(Succeed())
 
 									By("not warning users that odo dev needs to be restarted because the Devfile has not changed", func() {
 										warning := "Please restart 'odo dev'"
-										Expect(stdout).ShouldNot(ContainSubstring(warning))
-										Expect(stderr).ShouldNot(ContainSubstring(warning))
+										Expect(devSession.StdOut).ShouldNot(ContainSubstring(warning))
+										Expect(devSession.ErrOut).ShouldNot(ContainSubstring(warning))
 									})
 
 									for i := range containerPorts {
@@ -1417,24 +1566,24 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
 				})
 
 				When("doing odo dev", func() {
-					var session helper.DevSession
+					var devSession helper.DevSession
 					BeforeEach(func() {
 						var err error
-						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							RunOnPodman: podman,
 						})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {
-						session.Stop()
-						session.WaitEnd()
+						devSession.Stop()
+						devSession.WaitEnd()
 					})
 
 					It("3. should check if the env variable has a correct value", func() {
@@ -1446,18 +1595,18 @@ ComponentSettings:
 				})
 
 				When("doing odo dev with --var flag", func() {
-					var session helper.DevSession
+					var devSession helper.DevSession
 					BeforeEach(func() {
 						var err error
-						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							CmdlineArgs: []string{"--var", "VALUE_TEST=baz"},
 							RunOnPodman: podman,
 						})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {
-						session.Stop()
-						session.WaitEnd()
+						devSession.Stop()
+						devSession.WaitEnd()
 					})
 
 					It("should check if the env variable has a correct value", func() {
@@ -1469,21 +1618,21 @@ ComponentSettings:
 				})
 
 				When("doing odo dev with --var-file flag", func() {
-					var session helper.DevSession
+					var devSession helper.DevSession
 					varfilename := "vars.txt"
 					BeforeEach(func() {
 						var err error
 						err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
 						Expect(err).ToNot(HaveOccurred())
-						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							CmdlineArgs: []string{"--var-file", "vars.txt"},
 							RunOnPodman: podman,
 						})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {
-						session.Stop()
-						session.WaitEnd()
+						devSession.Stop()
+						devSession.WaitEnd()
 						helper.DeleteFile(varfilename)
 					})
 
@@ -1496,22 +1645,22 @@ ComponentSettings:
 				})
 
 				When("doing odo dev with --var-file flag and setting value in env", func() {
-					var session helper.DevSession
+					var devSession helper.DevSession
 					varfilename := "vars.txt"
 					BeforeEach(func() {
 						var err error
 						_ = os.Setenv("VALUE_TEST", "baz")
 						err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
 						Expect(err).ToNot(HaveOccurred())
-						session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							CmdlineArgs: []string{"--var-file", "vars.txt"},
 							RunOnPodman: podman,
 						})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {
-						session.Stop()
-						session.WaitEnd()
+						devSession.Stop()
+						devSession.WaitEnd()
 						helper.DeleteFile(varfilename)
 						_ = os.Unsetenv("VALUE_TEST")
 					})
@@ -1533,7 +1682,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-single-env.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1542,7 +1691,7 @@ ComponentSettings:
 				It("should be able to exec command", func() {
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
-					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+					}, func(session *gexec.Session, out, err string, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						output, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
 						helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
@@ -1559,7 +1708,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-multiple-envs.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1568,7 +1717,7 @@ ComponentSettings:
 				It("should be able to exec command", func() {
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
-					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+					}, func(session *gexec.Session, out, err string, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						output, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
 						helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
@@ -1585,7 +1734,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-env-with-space.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1594,7 +1743,7 @@ ComponentSettings:
 				It("should be able to exec command", func() {
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
-					}, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+					}, func(session *gexec.Session, out, err string, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						output, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
 						helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
@@ -1606,7 +1755,7 @@ ComponentSettings:
 
 		When("creating local files and dir and running odo dev - "+devfileHandlerCtx.name, func() {
 			var newDirPath, newFilePath, stdOut, podName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			var devfileCmpName string
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
@@ -1616,7 +1765,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1627,13 +1776,13 @@ ComponentSettings:
 				// Create a new directory
 				helper.MakeDir(newDirPath)
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should correctly propagate changes to the container", func() {
@@ -1650,7 +1799,7 @@ ComponentSettings:
 					// Now we delete the file and dir and push
 					helper.DeleteDir(newFilePath)
 					helper.DeleteDir(newDirPath)
-					_, _, _, err := session.WaitSync()
+					err := devSession.WaitSync()
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("should not list deleted dir and file in container", func() {
@@ -1664,6 +1813,11 @@ ComponentSettings:
 
 		When("Starting a PostgreSQL service", func() {
 			BeforeEach(func() {
+				skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+				if skipLogin == "true" {
+					Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+				}
+
 				// Ensure that the operators are installed
 				commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
 				commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
@@ -1678,7 +1832,7 @@ ComponentSettings:
 
 			When("creating local files and dir and running odo dev - "+devfileHandlerCtx.name, func() {
 				var newDirPath, newFilePath, stdOut, podName string
-				var session helper.DevSession
+				var devSession helper.DevSession
 				var devfileCmpName string
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
@@ -1688,7 +1842,7 @@ ComponentSettings:
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
@@ -1699,13 +1853,13 @@ ComponentSettings:
 					// Create a new directory
 					helper.MakeDir(newDirPath)
 					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should correctly propagate changes to the container", func() {
@@ -1722,7 +1876,7 @@ ComponentSettings:
 						// Now we delete the file and dir and push
 						helper.DeleteDir(newFilePath)
 						helper.DeleteDir(newDirPath)
-						_, _, _, err := session.WaitSync()
+						err := devSession.WaitSync()
 						Expect(err).ToNot(HaveOccurred())
 					})
 					It("should not list deleted dir and file in container", func() {
@@ -1737,7 +1891,7 @@ ComponentSettings:
 
 		When("adding local files to gitignore and running odo dev", func() {
 			var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, newFilePath4, newFilePath5, stdOut, podName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			var devfileCmpName string
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
@@ -1752,7 +1906,7 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1779,12 +1933,12 @@ ComponentSettings:
 					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			checkSyncedFiles := func(podName string) {
@@ -1809,7 +1963,7 @@ ComponentSettings:
 				})
 
 				It("should synchronize it only", func() {
-					_, _, _, _ = session.WaitSync()
+					_ = devSession.WaitSync()
 					podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 					checkSyncedFiles(podName)
 				})
@@ -1821,7 +1975,7 @@ ComponentSettings:
 				})
 
 				It("should not synchronize it", func() {
-					session.CheckNotSynced(10 * time.Second)
+					devSession.CheckNotSynced(10 * time.Second)
 				})
 			})
 
@@ -1831,32 +1985,32 @@ ComponentSettings:
 				})
 
 				It("should not synchronize it", func() {
-					session.CheckNotSynced(10 * time.Second)
+					devSession.CheckNotSynced(10 * time.Second)
 				})
 			})
 		})
 
 		When("devfile has sourcemappings and running odo dev - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should sync files to the correct location", func() {
@@ -1879,7 +2033,7 @@ ComponentSettings:
 
 		When("project and clonePath is present in devfile and running odo dev - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -1887,18 +2041,18 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should sync to the correct dir in container", func() {
@@ -1917,14 +2071,14 @@ ComponentSettings:
 
 		When("devfile project field is present and running odo dev - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
@@ -1932,12 +2086,12 @@ ComponentSettings:
 				// reset clonePath and change the workdir accordingly, it should sync to project name
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should sync to the correct dir in container", func() {
@@ -1952,25 +2106,25 @@ ComponentSettings:
 
 		When("multiple projects are present - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should sync to the correct dir in container", func() {
@@ -1987,24 +2141,24 @@ ComponentSettings:
 
 		When("no project is present - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should sync to the correct dir in container", func() {
@@ -2020,24 +2174,24 @@ ComponentSettings:
 
 		When("running odo dev with devfile contain volume - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = helper.RandString(6)
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should create pvc and reuse if it shares the same devfile volume name", func() {
@@ -2095,7 +2249,7 @@ ComponentSettings:
 
 		When("running odo dev with devfile containing volume-component - "+devfileHandlerCtx.name, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				if os.Getenv("KUBERNETES") == "true" {
 					Skip("This is a OpenShift specific scenario, skipping")
@@ -2105,20 +2259,20 @@ ComponentSettings:
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(devfileCmpName))
+					devfileCmpName)
 				if devfileHandlerCtx.sourceHandler != nil {
 					devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 				}
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
 				if os.Getenv("KUBERNETES") == "true" {
 					return
 				}
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should successfully use the volume components in container components", func() {
@@ -2142,16 +2296,15 @@ ComponentSettings:
 			openshiftDeploymentName = "my-openshift-component"
 			DEVFILEPORT             = "8080"
 		)
-		var session helper.DevSession
-		var sessionOut, sessionErr []byte
-		var err error
-		var ports map[string]string
-
+		var (
+			devSession helper.DevSession
+			err        error
+		)
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 		})
 
 		for _, tt := range []struct {
@@ -2224,7 +2377,7 @@ ComponentSettings:
 							// Increasing verbosity to check that extra args are being passed to the "podman" commands
 							cmdLineArgs = append(cmdLineArgs, "-v=4")
 						}
-						session, sessionOut, sessionErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							RunOnPodman: podman,
 							EnvVars:     env,
 							CmdlineArgs: cmdLineArgs,
@@ -2253,14 +2406,14 @@ ComponentSettings:
 								filepath.Join(commonVar.Context, "Dockerfile"), commonVar.Context)
 
 							if podman {
-								Expect(string(sessionErr)).To(ContainSubstring(substring))
+								Expect(devSession.ErrOut).To(ContainSubstring(substring))
 							} else {
-								Expect(string(sessionOut)).To(ContainSubstring(substring))
-								Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+								Expect(devSession.StdOut).To(ContainSubstring(substring))
+								Expect(devSession.StdOut).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 							}
 						}
 						checkEndpointAccessible := func(message []string) {
-							url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
+							url := fmt.Sprintf("http://%s", devSession.Endpoints[DEVFILEPORT])
 							resp, e := http.Get(url)
 							Expect(e).ToNot(HaveOccurred())
 							defer resp.Body.Close()
@@ -2283,7 +2436,7 @@ ComponentSettings:
 							}
 							expected += "-"
 							By("checking that extra args are passed to the podman play kube command", func() {
-								Expect(string(sessionErr)).Should(ContainSubstring(expected))
+								Expect(devSession.ErrOut).Should(ContainSubstring(expected))
 							})
 						}
 
@@ -2296,14 +2449,14 @@ ComponentSettings:
 								checkDeploymentsExist()
 							})
 							By("ensuring multiple deployments exist for selector error is not occurred", func() {
-								Expect(string(sessionErr)).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
+								Expect(devSession.ErrOut).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
 							})
 						}
 
 						By("checking odo dev watches correctly", func() {
 							// making changes to the project again
 							helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "world from node.js", "from the new Node.js Starter Application")
-							_, _, _, err = session.WaitSync()
+							err = devSession.WaitSync()
 							Expect(err).ToNot(HaveOccurred())
 							if !podman {
 								checkDeploymentsExist()
@@ -2313,8 +2466,8 @@ ComponentSettings:
 						})
 
 						By("cleaning up the resources on ending the session", func() {
-							session.Stop()
-							session.WaitEnd()
+							devSession.Stop()
+							devSession.WaitEnd()
 							if !podman {
 								out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
 								Expect(string(out)).ToNot(ContainSubstring(k8sDeploymentName))
@@ -2358,23 +2511,23 @@ CMD ["npm", "start"]
 						url = server.URL
 
 						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
-						session, sessionOut, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							EnvVars: env,
 						})
 						Expect(err).ToNot(HaveOccurred())
 					})
 
 					AfterEach(func() {
-						session.Stop()
-						session.WaitEnd()
+						devSession.Stop()
+						devSession.WaitEnd()
 						server.Close()
 					})
 
 					It("should build and push image when odo dev is run", func() {
-						lines, _ := helper.ExtractLines(string(sessionOut))
+						lines, _ := helper.ExtractLines(devSession.StdOut)
 						_, ok := helper.FindFirstElementIndexMatchingRegExp(lines, buildRegexp)
 						Expect(ok).To(BeTrue(), "build regexp not found in output: "+buildRegexp)
-						Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+						Expect(devSession.StdOut).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 					})
 				})
 				When(fmt.Sprintf("%v remote server returns an error when odo dev is run", env), func() {
@@ -2394,7 +2547,7 @@ CMD ["npm", "start"]
 					})
 
 					It("should not build images when odo dev is run", func() {
-						_, sessionOut, _, err := helper.WaitForDevModeToContain(
+						devSession, err := helper.WaitForDevModeToContain(
 							helper.DevSessionOpts{
 								EnvVars: env,
 							},
@@ -2402,8 +2555,8 @@ CMD ["npm", "start"]
 							true,
 							false)
 						Expect(err).To(BeNil())
-						Expect(sessionOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
-						Expect(sessionOut).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
+						Expect(devSession.StdOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
+						Expect(devSession.StdOut).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
 					})
 				})
 			}
@@ -2432,26 +2585,26 @@ CMD ["npm", "start"]
 
 			When("running odo dev and devfile with composite command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
-				var session helper.DevSession
+				var devSession helper.DevSession
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
 					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should execute all commands in composite command", func() {
@@ -2465,25 +2618,25 @@ CMD ["npm", "start"]
 
 			When("running odo dev and composite command is marked as parallel:true - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
-				var session helper.DevSession
+				var devSession helper.DevSession
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
 					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should execute all commands in composite command", func() {
@@ -2497,25 +2650,25 @@ CMD ["npm", "start"]
 
 			When("running odo dev and composite command are nested - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
-				var session helper.DevSession
+				var devSession helper.DevSession
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
 					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should execute all commands in composite commmand", func() {
@@ -2529,35 +2682,36 @@ CMD ["npm", "start"]
 			}))
 
 			When("running odo dev and composite command is used as a run command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
-				var session helper.DevSession
-				var stdout []byte
-				var stderr []byte
+				var devSession helper.DevSession
 				var devfileCmpName string
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
 					var err error
-					session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should run successfully", func() {
+					By("telling the user that odo is synchronizing the files", func() {
+						Expect(string(devSession.StdOut)).Should(ContainSubstring("Syncing files into the container"))
+					})
 					By("verifying from the output that all commands have been executed", func() {
-						helper.MatchAllInOutput(string(stdout), []string{
+						helper.MatchAllInOutput(devSession.StdOut, []string{
 							"Building your application in container",
 							"Executing the application (command: mkdir)",
 							"Executing the application (command: echo)",
@@ -2567,17 +2721,17 @@ CMD ["npm", "start"]
 					})
 
 					By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-						helper.MatchAllInOutput(string(stderr), []string{
+						helper.MatchAllInOutput(devSession.ErrOut, []string{
 							"Devfile command \"echo\" exited with an error status",
 							"intentional-error-message",
 						})
 					})
 
 					By("building the application only once", func() {
-						// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
+						// Because of the Spinner, the "Building your application in container" is printed twice in the captured devSession.StdOut.
 						// The bracket allows to match the last occurrence with the command execution timing information.
-						Expect(strings.Count(string(stdout), "Building your application in container (command: install) [")).
-							To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+						Expect(strings.Count(devSession.StdOut, "Building your application in container (command: install) [")).
+							To(BeNumerically("==", 1), "\nOUTPUT: "+devSession.StdOut+"\n")
 					})
 
 					By("verifying that the command did run successfully", func() {
@@ -2591,35 +2745,33 @@ CMD ["npm", "start"]
 
 			// This test does not pass on podman. There are flaky permissions issues on source volume mounted by both components sleeper-run and runtime
 			When("running build and run commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
-				var session helper.DevSession
-				var stdout []byte
-				var stderr []byte
+				var devSession helper.DevSession
 				var devfileCmpName string
 				BeforeEach(func() {
 					devfileCmpName = helper.RandString(6)
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
 					var err error
-					session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should run successfully", func() {
 					By("verifying from the output that all commands have been executed", func() {
-						helper.MatchAllInOutput(string(stdout), []string{
+						helper.MatchAllInOutput(devSession.StdOut, []string{
 							"Building your application in container (command: mkdir)",
 							"Building your application in container (command: sleep-cmd-build)",
 							"Building your application in container (command: build-cmd)",
@@ -2631,19 +2783,19 @@ CMD ["npm", "start"]
 					})
 
 					By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-						helper.MatchAllInOutput(string(stderr), []string{
+						helper.MatchAllInOutput(devSession.ErrOut, []string{
 							"Devfile command \"echo-with-error\" exited with an error status",
 							"intentional-error-message",
 						})
 					})
 
 					By("building the application only once per exec command in the build command", func() {
-						// Because of the Spinner, the "Building your application in container" is printed twice in the captured stdout.
+						// Because of the Spinner, the "Building your application in container" is printed twice in the captured devSession.StdOut.
 						// The bracket allows to match the last occurrence with the command execution timing information.
-						out := string(stdout)
+						out := devSession.StdOut
 						for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
 							Expect(strings.Count(out, fmt.Sprintf("Building your application in container (command: %s) [", cmd))).
-								To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+								To(BeNumerically("==", 1), "\nOUTPUT: "+devSession.StdOut+"\n")
 						}
 					})
 
@@ -2665,7 +2817,7 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 			})
 
 			It("should not correctly execute PreStart commands", func() {
@@ -2685,27 +2837,26 @@ CMD ["npm", "start"]
 	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("running odo dev and run command throws an error", helper.LabelPodmanIf(podman, func() {
-			var session helper.DevSession
-			var initErr []byte
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
 				var err error
-				session, _, initErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should error out with some log", func() {
-				helper.MatchAllInOutput(string(initErr), []string{
+				helper.MatchAllInOutput(devSession.ErrOut, []string{
 					"exited with an error status in",
 					"Did you mean one of these?",
 				})
@@ -2723,17 +2874,16 @@ CMD ["npm", "start"]
 			}
 			title := fmt.Sprintf("running odo dev%s and build command throws an error", noWatchFlag)
 			When(title, helper.LabelPodmanIf(podman, func() {
-				var session helper.DevSession
-				var stdout, stderr []byte
+				var devSession helper.DevSession
 				BeforeEach(func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
 
 					var err error
-					session, stdout, stderr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 						NoWatch:     noWatch,
 					})
@@ -2741,15 +2891,15 @@ CMD ["npm", "start"]
 				})
 
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should error out with some log", func() {
-					helper.MatchAllInOutput(string(stdout), []string{
+					helper.MatchAllInOutput(devSession.StdOut, []string{
 						"unable to exec command",
 					})
-					helper.MatchAllInOutput(string(stderr), []string{
+					helper.MatchAllInOutput(devSession.ErrOut, []string{
 						"Usage: npm <command>",
 						"Did you mean one of these?",
 					})
@@ -2762,20 +2912,20 @@ CMD ["npm", "start"]
 		podman := podman
 		When("Create and dev java-springboot component", helper.LabelPodmanIf(podman, func() {
 			var devfileCmpName string
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				devfileCmpName = "javaspringboot-" + helper.RandString(6)
 				helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should execute default build and run commands correctly", func() {
@@ -2817,7 +2967,7 @@ CMD ["npm", "start"]
 				helper.LabelPodmanIf(podman, func() {
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
-					}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+					}, func(session *gexec.Session, outContents string, errContents string, ports map[string]string) {
 						component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 						annotations := component.GetAnnotations()
 						var valueFound bool
@@ -2867,12 +3017,13 @@ CMD ["npm", "start"]
 					err := helper.RunDevMode(helper.DevSessionOpts{
 						CmdlineArgs: tt.devAdditionalOpts,
 						RunOnPodman: podman,
-					}, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-						stdout := string(outContents)
-						stderr := string(errContents)
+					}, func(session *gexec.Session, outContents string, errContents string, ports map[string]string) {
+						stdout := outContents
+						stderr := errContents
 
 						By("checking the output of the command", func() {
 							helper.MatchAllInOutput(stdout, []string{
+								"Syncing files into the container",
 								fmt.Sprintf("Building your application in container (command: %s)", tt.buildCmd),
 								fmt.Sprintf("Executing the application (command: %s)", tt.runCmd),
 							})
@@ -2907,7 +3058,7 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile-with-alternative-commands.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
@@ -2929,32 +3080,32 @@ CMD ["npm", "start"]
 					It("should error out on an invalid command", func() {
 						By("calling with an invalid build command", func() {
 
-							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+							devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 								RunOnPodman: podman,
 								CmdlineArgs: []string{"--build-command", "build-command-does-not-exist"},
 							})
 							Expect(err).ToNot(HaveOccurred())
 							defer func() {
-								session.Stop()
-								session.WaitEnd()
+								devSession.Stop()
+								devSession.WaitEnd()
 							}()
 
-							Expect(string(stdout)).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
+							Expect(string(devSession.StdOut)).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
 						})
 
 						By("calling with a command of another kind (not build)", func() {
 							// devrun is a valid run command, not a build command
-							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+							devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 								RunOnPodman: podman,
 								CmdlineArgs: []string{"--build-command", "devrun"},
 							})
 							Expect(err).ToNot(HaveOccurred())
 							defer func() {
-								session.Stop()
-								session.WaitEnd()
+								devSession.Stop()
+								devSession.WaitEnd()
 							}()
 
-							Expect(string(stdout)).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
+							Expect(string(devSession.StdOut)).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 						})
 					})
 
@@ -2998,32 +3149,32 @@ CMD ["npm", "start"]
 
 					It("should error out on an invalid command", func() {
 						By("calling with an invalid run command", func() {
-							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+							devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 								RunOnPodman: podman,
 								CmdlineArgs: []string{"--run-command", "run-command-does-not-exist"},
 							})
 							Expect(err).ToNot(HaveOccurred())
 							defer func() {
-								session.Stop()
-								session.WaitEnd()
+								devSession.Stop()
+								devSession.WaitEnd()
 							}()
 
-							Expect(string(stdout)).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
+							Expect(string(devSession.StdOut)).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
 						})
 
 						By("calling with a command of another kind (not run)", func() {
 							// devbuild is a valid build command, not a run command
-							session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+							devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 								RunOnPodman: podman,
 								CmdlineArgs: []string{"--run-command", "devbuild"},
 							})
 							Expect(err).ToNot(HaveOccurred())
 							defer func() {
-								session.Stop()
-								session.WaitEnd()
+								devSession.Stop()
+								devSession.WaitEnd()
 							}()
 
-							Expect(string(stdout)).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
+							Expect(string(devSession.StdOut)).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
 						})
 					})
 
@@ -3089,30 +3240,29 @@ CMD ["npm", "start"]
 	for _, podman := range []bool{true, false} {
 		podman := podman
 		When("java-springboot application is created and running odo dev", helper.LabelPodmanIf(podman, func() {
-			var session helper.DevSession
+			var devSession helper.DevSession
 			var component helper.Component
 			BeforeEach(func() {
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 				component = helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					CmdlineArgs: []string{"-v", "4"},
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			When("Update the devfile.yaml", func() {
 
 				BeforeEach(func() {
 					helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 767Mi")
-					var err error
-					_, _, _, err = session.WaitSync()
+					err := devSession.WaitSync()
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -3205,21 +3355,21 @@ CMD ["npm", "start"]
 				}
 			}
 
-			var session helper.DevSession
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			})
 
 			It("should check memory Request and Limit", func() {
@@ -3230,9 +3380,11 @@ CMD ["npm", "start"]
 				When("Update the devfile.yaml, and waiting synchronization", func() {
 
 					BeforeEach(func() {
-						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-						var err error
-						_, _, _, err = session.WaitSync()
+						helper.CopyExampleDevFile(
+							filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"),
+							filepath.Join(commonVar.Context, "devfile.yaml"),
+							cmpName)
+						err := devSession.WaitSync()
 						Expect(err).ToNot(HaveOccurred())
 					})
 
@@ -3247,7 +3399,7 @@ CMD ["npm", "start"]
 	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
-			var session helper.DevSession
+			var devSession helper.DevSession
 			var devStarted bool
 			BeforeEach(func() {
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
@@ -3260,7 +3412,7 @@ CMD ["npm", "start"]
 
 				helper.ReplaceString("package.json", "node server.js", "node server/server.js")
 				var err error
-				session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -3268,8 +3420,8 @@ CMD ["npm", "start"]
 			})
 			AfterEach(func() {
 				if devStarted {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				}
 			})
 
@@ -3299,7 +3451,7 @@ CMD ["npm", "start"]
 				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 
@@ -3359,7 +3511,6 @@ CMD ["npm", "start"]
 			podman := podman
 			When("a container component defines a Command or Args - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
-				var stdoutBytes, stderrBytes []byte
 				var devSession helper.DevSession
 				var err error
 
@@ -3369,11 +3520,11 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(devfileCmpName))
+						devfileCmpName)
 					if devfileHandlerCtx.sourceHandler != nil {
 						devfileHandlerCtx.sourceHandler(commonVar.Context, devfileCmpName)
 					}
-					devSession, stdoutBytes, stderrBytes, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ShouldNot(HaveOccurred())
@@ -3386,8 +3537,8 @@ CMD ["npm", "start"]
 
 				It("should run odo dev successfully (#5620)", func() {
 					const errorMessage = "Failed to create the component:"
-					Expect(string(stdoutBytes)).ToNot(ContainSubstring(errorMessage))
-					Expect(string(stderrBytes)).ToNot(ContainSubstring(errorMessage))
+					Expect(devSession.StdOut).ToNot(ContainSubstring(errorMessage))
+					Expect(devSession.ErrOut).ToNot(ContainSubstring(errorMessage))
 
 					component := helper.NewComponent(devfileCmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					component.Exec("runtime",
@@ -3417,7 +3568,7 @@ CMD ["npm", "start"]
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 				Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -3449,7 +3600,7 @@ CMD ["npm", "start"]
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 				Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -3462,7 +3613,7 @@ CMD ["npm", "start"]
 			})
 
 			It("should fail running a second session on the same platform", func() {
-				_, _, _, err := helper.WaitForDevModeToContain(helper.DevSessionOpts{
+				_, err := helper.WaitForDevModeToContain(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				}, "unable to save state file", true, true)
 				Expect(err).To(HaveOccurred())
@@ -3515,14 +3666,14 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-child.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-parent.yaml"),
 					filepath.Join(commonVar.Context, "devfile-parent.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName+"-parent")
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -3545,9 +3696,9 @@ CMD ["npm", "start"]
 
 				It("should update the component", func() {
 					Eventually(func() string {
-						stdout, _, _, err := devSession.GetInfo()
+						err := devSession.UpdateInfo()
 						Expect(err).ToNot(HaveOccurred())
-						return string(stdout)
+						return devSession.StdOut
 					}, 180, 10).Should(ContainSubstring("Updating Component"))
 				})
 			})
@@ -3560,37 +3711,36 @@ CMD ["npm", "start"]
 		)
 		var customImgName string
 
-		var session helper.DevSession
-		var outContents, errContents []byte
+		var devSession helper.DevSession
 		BeforeEach(func() {
 			customImgName = fmt.Sprintf("%s:%s", imgName, cmpName)
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-different-commandgk.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName),
+				cmpName,
 			)
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), imgName, customImgName)
 			var err error
-			session, outContents, errContents, _, err = helper.StartDevMode(
+			devSession, err = helper.StartDevMode(
 				helper.DevSessionOpts{RunOnPodman: true, EnvVars: []string{"ODO_PUSH_IMAGES=false"}},
 			)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
+			devSession.Stop()
+			devSession.WaitEnd()
 		})
 		It("should show warning about being unable to create the resource when running odo dev on podman", func() {
-			Expect(string(errContents)).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
-			Expect(string(errContents)).To(ContainSubstring("Apply Kubernetes components are not supported on Podman. Skipping: "))
-			helper.MatchAllInOutput(string(errContents), []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource"})
+			Expect(devSession.ErrOut).To(ContainSubstring("Kubernetes components are not supported on Podman. Skipping: "))
+			Expect(devSession.ErrOut).To(ContainSubstring("Apply Kubernetes/Openshift components are not supported on Podman. Skipping: "))
+			helper.MatchAllInOutput(devSession.ErrOut, []string{"deploy-k8s-resource", "deploy-a-third-k8s-resource"})
 		})
 
 		It("should build the images when running odo dev on podman", func() {
 			// we do not test push because then it becomes complex to setup image registry credentials to pull the image
 			// all pods created by odo have a `PullAlways` image policy.
-			Expect(string(outContents)).To(ContainSubstring("Building Image: %s", customImgName))
+			Expect(devSession.StdOut).To(ContainSubstring("Building Image: %s", customImgName))
 			component := helper.NewPodmanComponent(cmpName, "app")
 			Expect(component.ListImages()).To(ContainSubstring(customImgName))
 		})
@@ -3600,14 +3750,13 @@ CMD ["npm", "start"]
 		podman := podman
 		When("a hotReload capable Run command is used with odo dev", helper.LabelPodmanIf(podman, func() {
 			var devSession helper.DevSession
-			var stdout []byte
 			var executeRunCommand = "Executing the application (command: dev-run)"
 			var executeBuildCommand = "Building your application"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "java-quarkus"), commonVar.Context)
 				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(cmpName)})
 				var err error
-				devSession, stdout, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -3620,35 +3769,41 @@ CMD ["npm", "start"]
 			})
 
 			It("should execute the build and run commands", func() {
-				Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
-				Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
+				Expect(string(devSession.StdOut)).To(ContainSubstring(executeBuildCommand))
+				Expect(string(devSession.StdOut)).To(ContainSubstring(executeRunCommand))
+
+				By("telling the user that odo is synchronizing the files", func() {
+					Expect(string(devSession.StdOut)).Should(ContainSubstring("Syncing files into the container"))
+				})
 			})
 
 			When("a source file is modified", func() {
 				BeforeEach(func() {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "org", "acme", "GreetingResource.java"), "Hello RESTEasy", "Hi RESTEasy")
-					var err error
-					stdout, _, _, err = devSession.WaitSync()
-					Expect(err).Should(Succeed(), stdout)
+					err := devSession.WaitSync()
+					Expect(err).Should(Succeed(), devSession.StdOut)
 				})
 
 				It("should not re-execute the run command", func() {
-					Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
-					Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
+					Expect(string(devSession.StdOut)).To(ContainSubstring(executeBuildCommand))
+					Expect(string(devSession.StdOut)).ToNot(ContainSubstring(executeRunCommand))
+
+					By("telling the user that odo is synchronizing the files", func() {
+						Expect(string(devSession.StdOut)).Should(ContainSubstring("Syncing files into the container"))
+					})
 				})
 			})
 		}))
 
 		When("hotReload capable Build and Run commands are used with odo dev", helper.LabelPodmanIf(podman, func() {
 			var devSession helper.DevSession
-			var stdout []byte
 			var executeRunCommand = "Executing the application (command: run)"
 			var executeBuildCommand = "Building your application"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "angular"), commonVar.Context)
 				helper.UpdateDevfileContent(filepath.Join(commonVar.Context, "devfile.yaml"), []helper.DevfileUpdater{helper.DevfileMetadataNameSetter(cmpName)})
 				var err error
-				devSession, stdout, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: podman,
 				})
 				Expect(err).ToNot(HaveOccurred())
@@ -3661,21 +3816,28 @@ CMD ["npm", "start"]
 			})
 
 			It("should execute the build and run commands", func() {
-				Expect(string(stdout)).To(ContainSubstring(executeBuildCommand))
-				Expect(string(stdout)).To(ContainSubstring(executeRunCommand))
+				Expect(string(devSession.StdOut)).To(ContainSubstring(executeBuildCommand))
+				Expect(string(devSession.StdOut)).To(ContainSubstring(executeRunCommand))
+
+				By("telling the user that odo is synchronizing the files", func() {
+					Expect(string(devSession.StdOut)).Should(ContainSubstring("Syncing files into the container"))
+				})
 			})
 
 			When("a source file is modified", func() {
 				BeforeEach(func() {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "src", "index.html"), "DevfileStackNodejsAngular", "Devfile Stack Nodejs Angular")
-					var err error
-					stdout, _, _, err = devSession.WaitSync()
-					Expect(err).Should(Succeed(), stdout)
+					err := devSession.WaitSync()
+					Expect(err).Should(Succeed(), devSession.StdOut)
 				})
 
 				It("should not re-execute the run command", func() {
-					Expect(string(stdout)).ToNot(ContainSubstring(executeBuildCommand))
-					Expect(string(stdout)).ToNot(ContainSubstring(executeRunCommand))
+					Expect(string(devSession.StdOut)).ToNot(ContainSubstring(executeBuildCommand))
+					Expect(string(devSession.StdOut)).ToNot(ContainSubstring(executeRunCommand))
+
+					By("telling the user that odo is synchronizing the files", func() {
+						Expect(string(devSession.StdOut)).Should(ContainSubstring("Syncing files into the container"))
+					})
 				})
 			})
 		}))
@@ -3689,6 +3851,7 @@ CMD ["npm", "start"]
 				helper.CopyExampleDevFile(
 					filepath.Join("source", "devfiles", "nodejs", "devfile-no-metadata-name.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName,
 					helper.DevfileMetadataNameRemover)
 			})
 
@@ -3696,7 +3859,7 @@ CMD ["npm", "start"]
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 					})
 					Expect(err).ToNot(HaveOccurred())
@@ -3905,14 +4068,14 @@ CMD ["npm", "start"]
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", t.devfile),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 				})
 
 				When("running odo dev", func() {
 					var devSession helper.DevSession
 					BeforeEach(func() {
 						var err error
-						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 							RunOnPodman: podman,
 						})
 						Expect(err).ToNot(HaveOccurred())
@@ -3975,12 +4138,15 @@ CMD ["npm", "start"]
 		Context("Devfile contains pod-overrides and container-overrides attributes", helper.LabelPodmanIf(ctx.podman, func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfile), filepath.Join(commonVar.Context, "devfile.yaml"), helper.DevfileMetadataNameSetter(cmpName))
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
 			})
 			It("should override the content in the pod it creates for the component on the cluster", func() {
 				err := helper.RunDevMode(helper.DevSessionOpts{
 					RunOnPodman: ctx.podman,
-				}, func(session *gexec.Session, outContents, _ []byte, _ map[string]string) {
+				}, func(session *gexec.Session, outContents, _ string, _ map[string]string) {
 					component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
 					podOut := component.GetPodDef()
 					ctx.checkFunc(podOut)
@@ -3995,7 +4161,7 @@ CMD ["npm", "start"]
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 		})
 		It("should fail to run odo dev", func() {
 			errOut := helper.Cmd("odo", "dev", "--platform", "podman").WithEnv("PODMAN_CMD=echo").ShouldFail().Err()
@@ -4007,20 +4173,20 @@ CMD ["npm", "start"]
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "registry.access.redhat.com/ubi8/nodejs", "registry.access.redhat.com/ubi8/nose")
 		})
 		It("should fail with an error", func() {
-			session, stdout, _, _, err := helper.StartDevMode(helper.DevSessionOpts{
+			devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 				RunOnPodman: true,
 			})
 			Expect(err).ToNot(HaveOccurred())
 			defer func() {
-				session.Stop()
-				session.WaitEnd()
+				devSession.Stop()
+				devSession.WaitEnd()
 			}()
 
-			helper.MatchAllInOutput(string(stdout), []string{"Complete Podman output", "registry.access.redhat.com/ubi8/nose", "Repo not found"})
+			helper.MatchAllInOutput(devSession.StdOut, []string{"Complete Podman output", "registry.access.redhat.com/ubi8/nose", "Repo not found"})
 		})
 	})
 
@@ -4030,7 +4196,7 @@ CMD ["npm", "start"]
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-endpoint-on-loopback"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-endpoint-on-loopback.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(cmpName))
+				cmpName)
 		})
 
 		haveHttpResponse := func(status int, body string) types.GomegaMatcher {
@@ -4063,16 +4229,11 @@ CMD ["npm", "start"]
 
 		When("running on default cluster platform", func() {
 			var devSession helper.DevSession
-			var stdout, stderr string
-			var ports map[string]string
 
 			BeforeEach(func() {
-				var bOut, bErr []byte
 				var err error
-				devSession, bOut, bErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+				devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 				Expect(err).ShouldNot(HaveOccurred())
-				stdout = string(bOut)
-				stderr = string(bErr)
 			})
 
 			AfterEach(func() {
@@ -4082,16 +4243,16 @@ CMD ["npm", "start"]
 
 			It("should port-forward successfully", func() {
 				By("not displaying warning message for loopback port", func() {
-					Expect(stderr).ShouldNot(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface"))
+					Expect(devSession.ErrOut).ShouldNot(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface"))
 				})
 				By("forwarding both loopback and non-loopback ports", func() {
-					Expect(ports).Should(HaveLen(2))
-					Expect(ports).Should(SatisfyAll(HaveKey("3000"), HaveKey("3001")))
+					Expect(devSession.Endpoints).Should(HaveLen(2))
+					Expect(devSession.Endpoints).Should(SatisfyAll(HaveKey("3000"), HaveKey("3001")))
 				})
 				By("displaying both loopback and non-loopback ports as forwarded", func() {
-					Expect(stdout).Should(SatisfyAll(
-						ContainSubstring("Forwarding from %s -> 3000", ports["3000"]),
-						ContainSubstring("Forwarding from %s -> 3001", ports["3001"])))
+					Expect(devSession.StdOut).Should(SatisfyAll(
+						ContainSubstring("Forwarding from %s -> 3000", devSession.Endpoints["3000"]),
+						ContainSubstring("Forwarding from %s -> 3001", devSession.Endpoints["3001"])))
 				})
 				By("reaching both loopback and non-loopback ports via port-forwarding", func() {
 					for port, body := range map[int]string{
@@ -4099,7 +4260,7 @@ CMD ["npm", "start"]
 						3001: "Hello from Node.js Admin Application!",
 					} {
 						Eventually(func(g Gomega) {
-							g.Expect(ports[strconv.Itoa(port)]).Should(haveHttpResponse(http.StatusOK, body))
+							g.Expect(devSession.Endpoints[strconv.Itoa(port)]).Should(haveHttpResponse(http.StatusOK, body))
 						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 					}
 				})
@@ -4116,32 +4277,27 @@ CMD ["npm", "start"]
 			})
 
 			It("should error out if not ignoring localhost", func() {
-				session, _, stderr, _, err := helper.StartDevMode(helper.DevSessionOpts{
+				devSession, err := helper.StartDevMode(helper.DevSessionOpts{
 					RunOnPodman: true,
 				})
 				Expect(err).ToNot(HaveOccurred())
 				defer func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				}()
-				Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
+				Expect(devSession.ErrOut).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
 			})
 
 			When("ignoring localhost", func() {
 
 				var devSession helper.DevSession
-				var stderr string
-				var ports map[string]string
-
 				BeforeEach(func() {
-					var bErr []byte
 					var err error
-					devSession, _, bErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: true,
 						CmdlineArgs: []string{"--ignore-localhost"},
 					})
 					Expect(err).ShouldNot(HaveOccurred())
-					stderr = string(bErr)
 				})
 
 				AfterEach(func() {
@@ -4151,7 +4307,7 @@ CMD ["npm", "start"]
 
 				It("should port-forward successfully", func() {
 					By("displaying warning message for loopback port", func() {
-						Expect(stderr).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
+						Expect(devSession.ErrOut).Should(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface: admin (3001)"))
 					})
 					By("creating a pod with a single container pod because --forward-localhost is false", func() {
 						podDef := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner).GetPodDef()
@@ -4160,14 +4316,14 @@ CMD ["npm", "start"]
 					})
 					By("reaching the local port for the non-loopback interface", func() {
 						Eventually(func(g Gomega) {
-							g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Application!"))
+							g.Expect(devSession.Endpoints["3000"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Application!"))
 						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 					})
 					By("not succeeding to reach the local port for the loopback interface", func() {
 						// By design, Podman will not forward to container apps listening on localhost.
 						// See https://github.com/redhat-developer/odo/issues/6510 and https://github.com/containers/podman/issues/17353
 						Consistently(func() error {
-							_, err := http.Get("http://" + ports["3001"])
+							_, err := http.Get("http://" + devSession.Endpoints["3001"])
 							return err
 						}).Should(HaveOccurred())
 					})
@@ -4176,22 +4332,21 @@ CMD ["npm", "start"]
 				When("making changes in the project source code during the dev session", func() {
 					BeforeEach(func() {
 						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello from", "Hiya from the updated")
-						var err error
-						_, _, ports, err = devSession.WaitSync()
+						err := devSession.WaitSync()
 						Expect(err).ShouldNot(HaveOccurred())
 					})
 
 					It("should port-forward successfully", func() {
 						By("reaching the local port for the non-loopback interface", func() {
 							Eventually(func(g Gomega) {
-								g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Application!"))
+								g.Expect(devSession.Endpoints["3000"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Application!"))
 							}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 						})
 						By("not succeeding to reach the local port for the loopback interface", func() {
 							// By design, Podman will not forward to container apps listening on localhost.
 							// See https://github.com/redhat-developer/odo/issues/6510 and https://github.com/containers/podman/issues/17353
 							Consistently(func() error {
-								_, err := http.Get("http://" + ports["3001"])
+								_, err := http.Get("http://" + devSession.Endpoints["3001"])
 								return err
 							}).Should(HaveOccurred())
 						})
@@ -4201,19 +4356,13 @@ CMD ["npm", "start"]
 
 			When("forwarding localhost", func() {
 				var devSession helper.DevSession
-				var stdout, stderr string
-				var ports map[string]string
-
 				BeforeEach(func() {
-					var bOut, bErr []byte
 					var err error
-					devSession, bOut, bErr, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: true,
 						CmdlineArgs: []string{"--forward-localhost"},
 					})
 					Expect(err).ShouldNot(HaveOccurred())
-					stdout = string(bOut)
-					stderr = string(bErr)
 				})
 
 				AfterEach(func() {
@@ -4223,7 +4372,7 @@ CMD ["npm", "start"]
 
 				It("should port-forward successfully", func() {
 					By("not displaying warning message for loopback port", func() {
-						for _, output := range []string{stdout, stderr} {
+						for _, output := range []string{devSession.StdOut, devSession.ErrOut} {
 							Expect(output).ShouldNot(ContainSubstring("Detected that the following port(s) can be reached only via the container loopback interface"))
 						}
 					})
@@ -4244,12 +4393,12 @@ CMD ["npm", "start"]
 					})
 					By("reaching the local port for the non-loopback interface", func() {
 						Eventually(func(g Gomega) {
-							g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Application!"))
+							g.Expect(devSession.Endpoints["3000"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Application!"))
 						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 					})
 					By("reaching the local port for the loopback interface", func() {
 						Eventually(func(g Gomega) {
-							g.Expect(ports["3001"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Admin Application!"))
+							g.Expect(devSession.Endpoints["3001"]).Should(haveHttpResponse(http.StatusOK, "Hello from Node.js Admin Application!"))
 						}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 					})
 				})
@@ -4257,20 +4406,19 @@ CMD ["npm", "start"]
 				When("making changes in the project source code during the dev session", func() {
 					BeforeEach(func() {
 						helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello from", "Hiya from the updated")
-						var err error
-						_, _, ports, err = devSession.WaitSync()
+						err := devSession.WaitSync()
 						Expect(err).ShouldNot(HaveOccurred())
 					})
 
 					It("should port-forward successfully", func() {
 						By("reaching the local port for the non-loopback interface", func() {
 							Eventually(func(g Gomega) {
-								g.Expect(ports["3000"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Application!"))
+								g.Expect(devSession.Endpoints["3000"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Application!"))
 							}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 						})
 						By("reaching the local port for the loopback interface", func() {
 							Eventually(func(g Gomega) {
-								g.Expect(ports["3001"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Admin Application!"))
+								g.Expect(devSession.Endpoints["3001"]).Should(haveHttpResponse(http.StatusOK, "Hiya from the updated Node.js Admin Application!"))
 							}).WithTimeout(60 * time.Second).WithPolling(3 * time.Second).Should(Succeed())
 						})
 					})
@@ -4288,15 +4436,12 @@ CMD ["npm", "start"]
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
 					filepath.Join(commonVar.Context, "devfile.yaml"),
-					helper.DevfileMetadataNameSetter(cmpName))
+					cmpName)
 			})
 
 			When("running odo dev with some components not referenced in the Devfile", func() {
 				var devSession helper.DevSession
-				var stdout, stderr string
-
 				BeforeEach(func() {
-					var bOut, bErr []byte
 					var err error
 					var envvars []string
 					if podman {
@@ -4304,13 +4449,11 @@ CMD ["npm", "start"]
 					} else {
 						envvars = append(envvars, "PODMAN_CMD=echo")
 					}
-					devSession, bOut, bErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						RunOnPodman: podman,
 						EnvVars:     envvars,
 					})
 					Expect(err).ShouldNot(HaveOccurred())
-					stdout = string(bOut)
-					stderr = string(bErr)
 				})
 
 				AfterEach(func() {
@@ -4322,7 +4465,7 @@ CMD ["npm", "start"]
 
 				It("should create the appropriate resources", func() {
 					if podman {
-						k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(stderr)
+						k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(devSession.ErrOut)
 						By("handling Kubernetes/OpenShift components that would have been created automatically", func() {
 							Expect(k8sOcComponents).Should(ContainElements(
 								"k8s-deploybydefault-true-and-referenced",
@@ -4352,7 +4495,7 @@ CMD ["npm", "start"]
 								"ocp-deploybydefault-true-and-referenced",
 								"ocp-deploybydefault-true-and-not-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 						By("automatically applying non-referenced Kubernetes/OpenShift components with deployByDefault not set", func() {
@@ -4360,7 +4503,7 @@ CMD ["npm", "start"]
 								"k8s-deploybydefault-not-set-and-not-referenced",
 								"ocp-deploybydefault-not-set-and-not-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 						By("not applying Kubernetes/OpenShift components with deployByDefault=false", func() {
@@ -4370,11 +4513,11 @@ CMD ["npm", "start"]
 								"ocp-deploybydefault-false-and-referenced",
 								"ocp-deploybydefault-false-and-not-referenced",
 							} {
-								Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 						By("not applying referenced Kubernetes/OpenShift components with deployByDefault unset", func() {
-							Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/k8s-deploybydefault-not-set-and-referenced"))
+							Expect(devSession.StdOut).ShouldNot(ContainSubstring("Creating resource Pod/k8s-deploybydefault-not-set-and-referenced"))
 						})
 					}
 
@@ -4388,32 +4531,29 @@ CMD ["npm", "start"]
 							"autobuild-true-and-referenced",
 							"autobuild-true-and-not-referenced",
 						} {
-							Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
+							Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
 						}
 					})
 					By("automatically applying non-referenced Image components with autoBuild not set", func() {
-						Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
+						Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
 					})
 					By("not applying image components with autoBuild=false", func() {
 						for _, tag := range []string{
 							"autobuild-false-and-referenced",
 							"autobuild-false-and-not-referenced",
 						} {
-							Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:%s", tag))
+							Expect(devSession.StdOut).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:%s", tag))
 						}
 					})
 					By("not applying referenced Image components with deployByDefault unset", func() {
-						Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-not-set-and-referenced"))
+						Expect(devSession.StdOut).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-not-set-and-referenced"))
 					})
 				})
 			})
 
 			When("running odo dev with some components referenced in the Devfile", func() {
 				var devSession helper.DevSession
-				var stdout, stderr string
-
 				BeforeEach(func() {
-					var bOut, bErr []byte
 					var err error
 					var envvars []string
 					if podman {
@@ -4421,14 +4561,12 @@ CMD ["npm", "start"]
 					} else {
 						envvars = append(envvars, "PODMAN_CMD=echo")
 					}
-					devSession, bOut, bErr, _, err = helper.StartDevMode(helper.DevSessionOpts{
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 						CmdlineArgs: []string{"--run-command", "run-with-referenced-components"},
 						EnvVars:     envvars,
 						RunOnPodman: podman,
 					})
 					Expect(err).ShouldNot(HaveOccurred())
-					stdout = string(bOut)
-					stderr = string(bErr)
 				})
 
 				AfterEach(func() {
@@ -4440,7 +4578,7 @@ CMD ["npm", "start"]
 
 				It("should create the appropriate resources", func() {
 					if podman {
-						k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(stderr)
+						k8sOcComponents := helper.ExtractK8sAndOcComponentsFromOutputOnPodman(devSession.ErrOut)
 						By("handling Kubernetes/OpenShift components that would have been created automatically", func() {
 							Expect(k8sOcComponents).Should(ContainElements(
 								"k8s-deploybydefault-true-and-referenced",
@@ -4479,7 +4617,7 @@ CMD ["npm", "start"]
 								"ocp-deploybydefault-false-and-referenced",
 								"ocp-deploybydefault-not-set-and-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 
@@ -4490,7 +4628,7 @@ CMD ["npm", "start"]
 								"ocp-deploybydefault-true-and-referenced",
 								"ocp-deploybydefault-true-and-not-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 						By("automatically applying non-referenced Kubernetes/OpenShift components with deployByDefault not set", func() {
@@ -4498,7 +4636,7 @@ CMD ["npm", "start"]
 								"k8s-deploybydefault-not-set-and-not-referenced",
 								"ocp-deploybydefault-not-set-and-not-referenced",
 							} {
-								Expect(stdout).Should(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).Should(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 
@@ -4507,7 +4645,7 @@ CMD ["npm", "start"]
 								"k8s-deploybydefault-false-and-not-referenced",
 								"ocp-deploybydefault-false-and-not-referenced",
 							} {
-								Expect(stdout).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
+								Expect(devSession.StdOut).ShouldNot(ContainSubstring("Creating resource Pod/%s", l))
 							}
 						})
 					}
@@ -4523,7 +4661,7 @@ CMD ["npm", "start"]
 							"autobuild-false-and-referenced",
 							"autobuild-not-set-and-referenced",
 						} {
-							Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
+							Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
 						}
 					})
 					By("automatically applying image components with autoBuild=true", func() {
@@ -4531,14 +4669,14 @@ CMD ["npm", "start"]
 							"autobuild-true-and-referenced",
 							"autobuild-true-and-not-referenced",
 						} {
-							Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
+							Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:%s", imageMessagePrefix, tag))
 						}
 					})
 					By("automatically applying non-referenced Image components with autoBuild not set", func() {
-						Expect(stdout).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
+						Expect(devSession.StdOut).Should(ContainSubstring("%s: localhost:5000/odo-dev/node:autobuild-not-set-and-not-referenced", imageMessagePrefix))
 					})
 					By("not applying non-referenced image components with autoBuild=false", func() {
-						Expect(stdout).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-false-and-not-referenced"))
+						Expect(devSession.StdOut).ShouldNot(ContainSubstring("localhost:5000/odo-dev/node:autobuild-false-and-not-referenced"))
 					})
 				})
 			})
@@ -4559,7 +4697,7 @@ CMD ["npm", "start"]
 						filepath.Join(commonVar.Context, "kubernetes", "devfile-image-names-as-selectors"))
 					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-image-names-as-selectors.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 				})
 
 				When("adding a local registry for images", func() {
@@ -4592,7 +4730,6 @@ CMD ["npm", "start"]
 
 					When("running odo dev", func() {
 						var devSession helper.DevSession
-						var stdout string
 
 						BeforeEach(func() {
 							var env []string
@@ -4601,14 +4738,12 @@ CMD ["npm", "start"]
 							} else {
 								env = append(env, "PODMAN_CMD=echo")
 							}
-							var outB []byte
 							var err error
-							devSession, outB, _, _, err = helper.StartDevMode(helper.DevSessionOpts{
+							devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 								RunOnPodman: podman,
 								EnvVars:     env,
 							})
 							Expect(err).ShouldNot(HaveOccurred())
-							stdout = string(outB)
 						})
 
 						AfterEach(func() {
@@ -4624,7 +4759,7 @@ CMD ["npm", "start"]
 								imageMessagePrefix = "Building Image"
 							}
 
-							lines, err := helper.ExtractLines(stdout)
+							lines, err := helper.ExtractLines(devSession.StdOut)
 							Expect(err).ShouldNot(HaveOccurred())
 
 							var replacementImageName string
@@ -4768,4 +4903,119 @@ CMD ["npm", "start"]
 		}))
 
 	}
+
+	for _, podman := range []bool{false, true} {
+		podman := podman
+
+		When("using a Devfile with no commands", helper.LabelPodmanIf(podman, func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-without-commands.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
+			})
+
+			for _, noCommands := range []bool{false, true} {
+				noCommands := noCommands
+				It(fmt.Sprintf("should start the Dev Session with --no-commands=%v", noCommands), func() {
+					devSession, err := helper.StartDevMode(helper.DevSessionOpts{
+						RunOnPodman: podman,
+						NoCommands:  noCommands,
+					})
+					Expect(err).ShouldNot(HaveOccurred())
+					defer func() {
+						devSession.Stop()
+						devSession.WaitEnd()
+					}()
+
+					By("syncing the files", func() {
+						Expect(devSession.StdOut).Should(ContainSubstring("Syncing files into the container"))
+
+						component := helper.NewComponent(cmpName, "app", labels.ComponentDevMode, commonVar.Project, commonVar.CliRunner)
+						execResult, _ := component.Exec("runtime", []string{"ls", "-lai", "/projects"}, pointer.Bool(true))
+						for _, fileName := range []string{"server.js", "package.json"} {
+							Expect(execResult).Should(ContainSubstring(fileName))
+						}
+
+						execResult, _ = component.Exec("runtime", []string{"cat", "/projects/server.js"}, pointer.Bool(true))
+						Expect(execResult).Should(ContainSubstring("App started"))
+					})
+
+					By("not executing any build command", func() {
+						for _, out := range []string{devSession.StdOut, devSession.ErrOut} {
+							Expect(string(out)).ShouldNot(ContainSubstring("Building your application in container on cluster"))
+						}
+					})
+
+					By("not executing any run command", func() {
+						for _, out := range []string{devSession.StdOut, devSession.ErrOut} {
+							Expect(string(out)).ShouldNot(ContainSubstring("Executing the application"))
+						}
+					})
+
+					if !noCommands {
+						By("warning about missing default run command", func() {
+							Expect(devSession.ErrOut).Should(ContainSubstring("Missing default run command"))
+						})
+					}
+
+					By("setting up port forwarding", func() {
+						Expect(devSession.Endpoints).ShouldNot(BeEmpty())
+						_, ok := devSession.Endpoints["3000"]
+						Expect(ok).To(BeTrue(), fmt.Sprintf("missing port forwarded for 3000: %v", devSession.Endpoints))
+					})
+				})
+			}
+		}))
+	}
+
+	Context("cleanup of resources is not successful", func() {
+		for _, podman := range []bool{false, true} {
+			podman := podman
+			When("using a Devfile with a Pod failing to delete before the cleanup timeout", helper.LabelPodmanIf(podman, func() {
+				BeforeEach(func() {
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "devfile-with-container-failing-to-terminate-before-cleanup-timeout.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"),
+						cmpName)
+				})
+
+				When("odo dev is executed", helper.LabelPodmanIf(podman, func() {
+
+					var devSession helper.DevSession
+
+					BeforeEach(func() {
+						if podman {
+							Skip("podman does not support container lifecycle hooks and pod termination grace period")
+						}
+						var err error
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{
+							RunOnPodman: podman,
+						})
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					When("odo dev is stopped", func() {
+						BeforeEach(func() {
+							devSession.Stop()
+							devSession.WaitEnd()
+							Expect(devSession.UpdateInfo()).ShouldNot(HaveOccurred())
+						})
+
+						It("should report that the component could not be deleted", func() {
+							By("deleting the component", func() {
+								Expect(devSession.ErrOut).Should(ContainSubstring("could not delete the following resource(s)"))
+								Expect(devSession.ErrOut).Should(ContainSubstring("- Deployment/%s-app", cmpName))
+							})
+							By("not exiting successfully", func() {
+								Expect(devSession.GetExitCode()).ShouldNot(Equal(0), "unexpected exit code for the dev session")
+							})
+						})
+					})
+				}))
+			}))
+		}
+	})
 })

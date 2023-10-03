@@ -5,22 +5,24 @@ import (
 
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/v2/pkg/util"
+	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 )
 
-func getDevfileInfo(workingDir string, variables map[string]string, imageRegistry string) (
+func getDevfileInfo(cmd *cobra.Command, fsys filesystem.Filesystem, workingDir string, variables map[string]string, imageRegistry string) (
 	devfilePath string,
 	devfileObj *parser.DevfileObj,
 	componentName string,
 	err error,
 ) {
-	devfilePath = location.DevfileLocation(workingDir)
-	isDevfile := odoutil.CheckPathExists(devfilePath)
+	devfilePath = location.DevfileLocation(fsys, workingDir)
+	isDevfile := odoutil.CheckPathExists(fsys, devfilePath)
 	if isDevfile {
 		devfilePath, err = dfutil.GetAbsPath(devfilePath)
 		if err != nil {

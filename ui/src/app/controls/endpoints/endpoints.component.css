@@ -1,0 +1,17 @@
+.mid-width { width: 50%; }
+.quart-width { width: 25%; }
+
+mat-card{
+    display:flex;
+    flex-direction: row;
+    margin-bottom: 16px;
+}
+
+mat-card-content{
+    flex-grow: 1;
+    overflow: auto;
+}
+
+button.adjust-position {
+    right: 6px;
+}

@@ -1,0 +1,96 @@
+<div class="main">
+    <div class="align-right"><mat-checkbox [(ngModel)]="enableDragAndDrop" (ngModelChange)="enableDragAndDropChange()">Enable Drag and Drop</mat-checkbox></div>
+    <div cdkDropListGroup>
+        <div
+            cdkDropList
+            cdkDropListData="build"
+            (cdkDropListDropped)="drop($event)">
+            <h2>Build Commands</h2>
+            <div class="description">When using odo, a Build command is the first command executed during the inner loop. The command is expected to terminate after the build is completed.</div>
+            <app-commands-list kind="build" [dragDisabled]="!enableDragAndDrop" [commands]="commands" (onEdit)="edit($event)"></app-commands-list>
+        </div>
+        <div 
+            cdkDropList
+            cdkDropListData="run"
+            (cdkDropListDropped)="drop($event)">
+            <h2>Run Commands</h2>
+            <div class="description">When using odo, a Run command is executed during the inner loop after the Build command terminates. The command is expected to not terminate.</div>
+            <app-commands-list kind="run" [dragDisabled]="!enableDragAndDrop" [commands]="commands" (onEdit)="edit($event)"></app-commands-list>
+        </div>
+        <div 
+            cdkDropList
+            cdkDropListData="test"
+            (cdkDropListDropped)="drop($event)">
+            <h2>Test Commands</h2>
+            <app-commands-list kind="test" [dragDisabled]="!enableDragAndDrop" [commands]="commands" (onEdit)="edit($event)"></app-commands-list>
+        </div>
+        <div 
+            cdkDropList
+            cdkDropListData="debug"
+            (cdkDropListDropped)="drop($event)">
+            <h2>Debug Commands</h2>
+            <div class="description">When using odo, a Debug command is executed during the inner loop after the Build command terminates. The command is expected to not terminate.</div>
+            <app-commands-list kind="debug" [dragDisabled]="!enableDragAndDrop" [commands]="commands" (onEdit)="edit($event)"></app-commands-list>
+        </div>
+        <div 
+            cdkDropList
+            cdkDropListData="deploy"
+            (cdkDropListDropped)="drop($event)">
+            <h2>Deploy Commands</h2>
+            <div class="description">When using odo, a Deploy command is executed with <code>odo deploy</code>.</div>
+            <app-commands-list kind="deploy" [dragDisabled]="!enableDragAndDrop" [commands]="commands" (onEdit)="edit($event)"></app-commands-list>
+        </div>
+        <div 
+            cdkDropList
+            cdkDropListData=""
+            (cdkDropListDropped)="drop($event)">
+            <h2>Generic Commands</h2>
+            <div class="description">Generic can be executed manually, or be part of composite commands and events.</div>
+            <app-commands-list kind="" [dragDisabled]="!enableDragAndDrop" [commands]="commands" (onEdit)="edit($event)"></app-commands-list>
+        </div>
+    </div>
+    <app-command-exec
+        (canceled)="undisplayExecForm()"
+        *ngIf="forceDisplayExecForm"
+        [command]="editingCommand"
+    ></app-command-exec>
+    <app-command-apply
+        (canceled)="undisplayApplyForm()"
+        *ngIf="forceDisplayApplyForm"
+        [command]="editingCommand"
+    ></app-command-apply>
+    <app-command-image
+        (canceled)="undisplayImageForm()"
+        *ngIf="forceDisplayImageForm"
+        [command]="editingCommand"
+    ></app-command-image>
+    <app-command-composite
+        (canceled)="undisplayCompositeForm()"
+        *ngIf="forceDisplayCompositeForm"
+        [command]="editingCommand"
+    ></app-command-composite>
+</div>
+
+<ng-container *ngIf="!forceDisplayExecForm && !forceDisplayApplyForm && !forceDisplayImageForm && !forceDisplayCompositeForm">
+    <button data-cy="add" class="fab" mat-fab color="primary" [matMenuTriggerFor]="menu">
+        <mat-icon class="material-icons-outlined">add</mat-icon>
+    </button>
+</ng-container>
+
+<mat-menu #menu="matMenu" yPosition="above" xPosition="before">
+    <button data-cy="new-command-exec" mat-menu-item (click)="displayAddExecForm()">
+        <mat-icon class="tab-icon material-icons-outlined">width_normal</mat-icon>
+        <span>Exec command</span>
+    </button>
+    <button data-cy="new-command-image" mat-menu-item (click)="displayAddImageForm()">
+        <mat-icon class="tab-icon material-icons-outlined">image</mat-icon>
+        <span>Image command</span>
+      </button>
+      <button data-cy="new-command-apply" mat-menu-item (click)="displayAddApplyForm()">
+        <mat-icon class="tab-icon material-icons-outlined">description</mat-icon>
+        <span>Apply command</span>
+    </button>
+    <button data-cy="new-command-composite" mat-menu-item (click)="displayAddCompositeForm()">
+        <span>Composite command</span>
+    </button>
+</mat-menu>

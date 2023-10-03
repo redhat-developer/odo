@@ -1,13 +1,33 @@
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-**Prerequisites:**
+In order to use `odo deploy`, you must be able to build an image as well as push to a registry.
 
-In order to use `odo deploy` you must be able to build an image as well as push to a registry.
+#### Step 1. Let `odo` know where to push container images
 
-#### Step 1. Login to your container registry
+`odo` needs to know where to push non-absolute container images declared in the `devfile.yaml` file.
 
-Login to a container registry that you will be pushing your application to:
+You can configure `odo` with the `odo preference set` command, like so:
+
+```shell
+odo preference set ImageRegistry $registry
+```
+
+<details>
+<summary>Example Output</summary>
+
+```console
+$ odo preference set ImageRegistry ttl.sh
+ ✓  Value of 'imageregistry' preference was set to 'ttl.sh'
+```
+
+</details>
+
+#### Step 2 (Optional). Login to your container registry
+
+If the container registry you registered requires some form of authentication, you will need to login to it.
+
+Note that the cluster you are deploying to also needs to be able to pull images from this registry in order for the application container to be started properly.
 
 <Tabs
 defaultValue="podman"
@@ -18,9 +38,12 @@ values={[
 
 <TabItem value="podman">
 
-```console
-podman login
+```shell
+podman login $registry
 ```
+
+<details>
+<summary>Example Output</summary>
 
 ```console
 $ podman login quay.io
@@ -29,13 +52,18 @@ Password:
 Login Succeeded!
 ```
 
+</details>
+
 </TabItem>
 
 <TabItem value="docker">
 
-```console
-docker login
+```shell
+docker login $registry
 ```
+
+<details>
+<summary>Example Output</summary>
 
 ```console
 $ docker login docker.io
@@ -44,11 +72,13 @@ Password:
 Login Succeeded!
 ```
 
+</details>
+
 </TabItem>
 
 </Tabs>
 
-#### Step 2. Set the appropriate container build platform
+#### Step 3. Set the appropriate container build platform
 
 Your container image build must match the same architecture as the cluster you are deploying to.
 
@@ -69,7 +99,7 @@ values={[
 
 <TabItem value="linuxamd64">
 
-```console
+```shell
 export ODO_IMAGE_BUILD_ARGS="--platform=linux/amd64"
 ```
 
@@ -77,7 +107,7 @@ export ODO_IMAGE_BUILD_ARGS="--platform=linux/amd64"
 
 <TabItem value="linuxarm64">
 
-```console
+```shell
 export ODO_IMAGE_BUILD_ARGS="--platform=linux/arm64"
 ```
 
@@ -85,7 +115,7 @@ export ODO_IMAGE_BUILD_ARGS="--platform=linux/arm64"
 
 <TabItem value="windowsamd64">
 
-```console
+```shell
 export ODO_IMAGE_BUILD_ARGS="--platform=windows/amd64"
 ```
 

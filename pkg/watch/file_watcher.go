@@ -7,9 +7,11 @@ import (
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/fsnotify/fsnotify"
-	"github.com/redhat-developer/odo/pkg/util"
 	gitignore "github.com/sabhiram/go-gitignore"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
@@ -38,6 +40,8 @@ func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher
 // ignores contains the glob rules for matching
 func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, ignores []string) error {
 
+	fsys := filesystem.DefaultFs{}
+
 	file, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -60,7 +64,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 			klog.V(4).Infof("adding watch on path %s", path)
 
 			// checking if the file exits before adding the watcher to it
-			if !util.CheckPathExists(path) {
+			if !util.CheckPathExists(fsys, path) {
 				return nil
 			}
 
@@ -76,7 +80,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 	err = filepath.Walk(path, func(newPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			// Ignore the error if it's a 'path does not exist' error, no need to walk a non-existent path
-			if !util.CheckPathExists(newPath) {
+			if !util.CheckPathExists(fsys, newPath) {
 				klog.V(4).Infof("Walk func received an error for path %s, but the path doesn't exist so this is likely not an error. err: %v", path, err)
 				return nil
 			}
@@ -119,7 +123,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 		}
 
 		// checking if the file exits before adding the watcher to it
-		if !util.CheckPathExists(path) {
+		if !util.CheckPathExists(fsys, path) {
 			continue
 		}
 

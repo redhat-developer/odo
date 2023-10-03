@@ -12,7 +12,7 @@ odo `${TAG_NAME}` is now out!
 
 <!--truncate-->
 
-To install `odo`, follow [the installation guide](../docs/overview/installation).
+To install `odo`, follow [the installation guide](/docs/overview/installation).
 
 ## Notable Changes
 Check this Playlist for an overview of the most notable changes in this release: [TODO Add Link to Youtube Playlist]

@@ -66,6 +66,21 @@ func (mr *MockAskerMockRecorder) AskAddPort() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskAddPort", reflect.TypeOf((*MockAsker)(nil).AskAddPort))
 }
 
+// AskArchitectures mocks base method.
+func (m *MockAsker) AskArchitectures(archs, selectedDefault []string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AskArchitectures", archs, selectedDefault)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AskArchitectures indicates an expected call of AskArchitectures.
+func (mr *MockAskerMockRecorder) AskArchitectures(archs, selectedDefault interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskArchitectures", reflect.TypeOf((*MockAsker)(nil).AskArchitectures), archs, selectedDefault)
+}
+
 // AskContainerName mocks base method.
 func (m *MockAsker) AskContainerName(containers []string) (string, error) {
 	m.ctrl.T.Helper()
@@ -97,12 +112,13 @@ func (mr *MockAskerMockRecorder) AskCorrect() *gomock.Call {
 }
 
 // AskLanguage mocks base method.
-func (m *MockAsker) AskLanguage(langs []string) (string, error) {
+func (m *MockAsker) AskLanguage(langs []string) (bool, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AskLanguage", langs)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // AskLanguage indicates an expected call of AskLanguage.

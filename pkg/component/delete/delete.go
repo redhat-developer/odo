@@ -15,6 +15,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/configAutomount"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -28,9 +29,10 @@ import (
 )
 
 type DeleteComponentClient struct {
-	kubeClient   kclient.ClientInterface
-	podmanClient podman.Client
-	execClient   exec.Client
+	kubeClient            kclient.ClientInterface
+	podmanClient          podman.Client
+	execClient            exec.Client
+	configAutomountClient configAutomount.Client
 }
 
 var _ Client = (*DeleteComponentClient)(nil)
@@ -39,11 +41,13 @@ func NewDeleteComponentClient(
 	kubeClient kclient.ClientInterface,
 	podmanClient podman.Client,
 	execClient exec.Client,
+	configAutomountClient configAutomount.Client,
 ) *DeleteComponentClient {
 	return &DeleteComponentClient{
-		kubeClient:   kubeClient,
-		podmanClient: podmanClient,
-		execClient:   execClient,
+		kubeClient:            kubeClient,
+		podmanClient:          podmanClient,
+		execClient:            execClient,
+		configAutomountClient: configAutomountClient,
 	}
 }
 
@@ -208,17 +212,25 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(ctx context.Context, devfi
 		return fmt.Errorf("unable to determine if component %s exists; cause: %v", componentName, err.Error())
 	}
 
-	// do not fail Delete operation if if the pod is not running or if the event execution fails
-	if pod.Status.Phase != corev1.PodRunning {
-		klog.V(4).Infof("unable to execute preStop events, pod for component %q is not running", componentName)
-		return nil
-	}
-
 	klog.V(4).Infof("Executing %q event commands for component %q", libdevfile.PreStop, componentName)
 	// ignore the failures if any; delete should not fail because preStop events failed to execute
-	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, component.NewExecHandler(do.kubeClient, do.execClient, appName, componentName, pod.Name, "Executing pre-stop command in container", false, false))
+	handler := component.NewRunHandler(
+		ctx,
+		do.kubeClient,
+		do.execClient,
+		do.configAutomountClient,
+		// TODO(feloy) set these values when we want to support Apply Image commands for PreStop events
+		nil, nil,
+
+		component.HandlerOptions{
+			PodName:           pod.Name,
+			ContainersRunning: component.GetContainersNames(pod),
+			Msg:               "Executing pre-stop command in container",
+		},
+	)
+	err = libdevfile.ExecPreStopEvents(ctx, devfileObj, handler)
 	if err != nil {
-		klog.V(4).Infof("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
+		log.Warningf("Failed to execute %q event commands for component %q, cause: %v", libdevfile.PreStop, componentName, err.Error())
 	}
 
 	return nil

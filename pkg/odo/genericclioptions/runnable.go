@@ -11,26 +11,23 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
-	"github.com/devfile/library/v2/pkg/devfile/parser"
-
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/version"
-
 	"gopkg.in/AlecAivazis/survey.v1"
-
-	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
 	"k8s.io/klog"
 	"k8s.io/utils/pointer"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
@@ -56,7 +53,7 @@ type SignalHandler interface {
 }
 
 type Cleanuper interface {
-	Cleanup(ctx context.Context, err error)
+	Cleanup(ctx context.Context, commandError error) error
 }
 
 // A PreIniter command is a command that will run `init` command if no file is present in current directory
@@ -74,12 +71,20 @@ type JsonOutputter interface {
 	RunForJsonOutput(ctx context.Context) (result interface{}, err error)
 }
 
+// DevfileUser must be implemented by commands that use Devfile depending on arguments, or
+// commands that depend on FS but do not use Devfile.
+// If the interface is not implemented and the command depends on FS, the command is expected to use Devfile
+type DevfileUser interface {
+	// UseDevfile returns true if the command with the specified cmdline and args needs to have access to the Devfile
+	UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool
+}
+
 const (
 	// defaultAppName is the default name of the application when an application name is not provided
 	defaultAppName = "app"
 )
 
-func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
+func GenericRun(o Runnable, testClientset clientset.Clientset, cmd *cobra.Command, args []string) error {
 	var (
 		err             error
 		startTime       = time.Now()
@@ -144,11 +149,12 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 				var consentTelemetry bool
 				prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
 				err = survey.AskOne(prompt, &consentTelemetry, nil)
-				ui.HandleError(err)
-				if err == nil {
-					if err1 := userConfig.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
-						klog.V(4).Info(err1.Error())
-					}
+				if err != nil {
+					return err
+				}
+				err = userConfig.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry))
+				if err != nil {
+					klog.V(4).Info(err.Error())
 				}
 			}
 		}
@@ -157,18 +163,21 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
+	isTelemetryEnabled := segment.IsTelemetryEnabled(userConfig, envcontext.GetEnvConfig(ctx))
+	scontext.SetTelemetryStatus(ctx, isTelemetryEnabled)
+
 	// We can dereference as there is a default value defined for this config field
-	err = scontext.SetCaller(cmd.Context(), envConfig.TelemetryCaller)
+	err = scontext.SetCaller(ctx, envConfig.TelemetryCaller)
 	if err != nil {
 		klog.V(3).Infof("error handling caller property for telemetry: %v", err)
 		err = nil
 	}
 
-	scontext.SetFlags(cmd.Context(), cmd.Flags())
+	scontext.SetFlags(ctx, cmd.Flags())
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(userConfig, envConfig))
+	scontext.SetPreviousTelemetryStatus(ctx, segment.IsTelemetryEnabled(userConfig, envConfig))
 
-	scontext.SetExperimentalMode(cmd.Context(), envConfig.OdoExperimentalMode)
+	scontext.SetExperimentalMode(ctx, envConfig.OdoExperimentalMode)
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
@@ -180,7 +189,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 				log.Errorf("error handling interrupt signal : %v", err)
 			}
 		}
-		scontext.SetSignal(cmd.Context(), receivedSignal)
+		scontext.SetSignal(ctx, receivedSignal)
 		startTelemetry(cmd, err, startTime)
 	})
 
@@ -199,7 +208,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 
 	cmdLineObj := cmdline.NewCobra(cmd)
 	platform := commonflags.GetPlatformValue(cmdLineObj)
-	deps, err := clientset.Fetch(cmd, platform)
+	deps, err := clientset.Fetch(cmd, platform, testClientset)
 	if err != nil {
 		return err
 
@@ -247,16 +256,23 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		var devfilePath, componentName string
-		var devfileObj *parser.DevfileObj
-		devfilePath, devfileObj, componentName, err = getDevfileInfo(cwd, variables, userConfig.GetImageRegistry())
-		if err != nil {
-			startTelemetry(cmd, err, startTime)
-			return err
+		useDevfile := true
+		if devfileUser, ok := o.(DevfileUser); ok {
+			useDevfile = devfileUser.UseDevfile(ctx, cmdLineObj, args)
 		}
-		ctx = odocontext.WithDevfilePath(ctx, devfilePath)
-		ctx = odocontext.WithEffectiveDevfileObj(ctx, devfileObj)
-		ctx = odocontext.WithComponentName(ctx, componentName)
+
+		if useDevfile {
+			var devfilePath, componentName string
+			var devfileObj *parser.DevfileObj
+			devfilePath, devfileObj, componentName, err = getDevfileInfo(cmd, deps.FS, cwd, variables, userConfig.GetImageRegistry())
+			if err != nil {
+				startTelemetry(cmd, err, startTime)
+				return err
+			}
+			ctx = odocontext.WithDevfilePath(ctx, devfilePath)
+			ctx = odocontext.WithEffectiveDevfileObj(ctx, devfileObj)
+			ctx = odocontext.WithComponentName(ctx, componentName)
+		}
 	}
 
 	// Run completion, validation and run.
@@ -277,14 +293,14 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 		var out interface{}
 		out, err = jsonOutputter.RunForJsonOutput(ctx)
 		if err == nil {
-			machineoutput.OutputSuccess(out)
+			machineoutput.OutputSuccess(testClientset.Stdout, testClientset.Stderr, out)
 		}
 	} else {
 		err = o.Run(ctx)
 	}
 	startTelemetry(cmd, err, startTime)
 	if cleanuper, ok := o.(Cleanuper); ok {
-		cleanuper.Cleanup(ctx, err)
+		err = cleanuper.Cleanup(ctx, err)
 	}
 	return err
 }
@@ -292,34 +308,47 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) error {
 // startTelemetry uploads the data to segment if user has consented to usage data collection and the command is not telemetry
 // TODO: move this function to a more suitable place, preferably pkg/segment
 func startTelemetry(cmd *cobra.Command, err error, startTime time.Time) {
-	if scontext.GetTelemetryStatus(cmd.Context()) && !strings.Contains(cmd.CommandPath(), "telemetry") {
-		uploadData := &segment.TelemetryData{
-			Event: cmd.CommandPath(),
-			Properties: segment.TelemetryProperties{
-				Duration:      time.Since(startTime).Milliseconds(),
-				Success:       err == nil,
-				Tty:           segment.RunningInTerminal(),
-				Version:       fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT),
-				CmdProperties: scontext.GetContextProperties(cmd.Context()),
-			},
-		}
-		if err != nil {
-			uploadData.Properties.Error = segment.SetError(err)
-			uploadData.Properties.ErrorType = segment.ErrorType(err)
-		}
-		data, err1 := json.Marshal(uploadData)
-		if err1 != nil {
-			klog.V(4).Infof("Failed to marshall telemetry data. %q", err1.Error())
-		}
-		command := exec.Command(os.Args[0], "telemetry", string(data))
-		if err1 = command.Start(); err1 != nil {
-			klog.V(4).Infof("Failed to start the telemetry process. Error: %q", err1.Error())
-			return
-		}
-		if err1 = command.Process.Release(); err1 != nil {
-			klog.V(4).Infof("Failed to release the process. %q", err1.Error())
-			return
-		}
+	if strings.Contains(cmd.CommandPath(), "telemetry") {
+		return
+	}
+	ctx := cmd.Context()
+	// Re-read the preferences, so that we can get the real settings in case a command updated the preferences file
+	currentUserConfig, prefErr := preference.NewClient(ctx)
+	if prefErr != nil {
+		klog.V(2).Infof("unable to build preferences client to get telemetry consent status: %v", prefErr)
+		return
+	}
+	isTelemetryEnabled := segment.IsTelemetryEnabled(currentUserConfig, envcontext.GetEnvConfig(ctx))
+	if !(scontext.GetPreviousTelemetryStatus(ctx) || isTelemetryEnabled) {
+		return
+	}
+	scontext.SetTelemetryStatus(ctx, isTelemetryEnabled)
+	uploadData := &segment.TelemetryData{
+		Event: cmd.CommandPath(),
+		Properties: segment.TelemetryProperties{
+			Duration:      time.Since(startTime).Milliseconds(),
+			Success:       err == nil,
+			Tty:           segment.RunningInTerminal(),
+			Version:       fmt.Sprintf("odo %v (%v)", version.VERSION, version.GITCOMMIT),
+			CmdProperties: scontext.GetContextProperties(ctx),
+		},
+	}
+	if err != nil {
+		uploadData.Properties.Error = segment.SetError(err)
+		uploadData.Properties.ErrorType = segment.ErrorType(err)
+	}
+	data, err1 := json.Marshal(uploadData)
+	if err1 != nil {
+		klog.V(4).Infof("Failed to marshall telemetry data. %q", err1.Error())
+	}
+	command := exec.Command(os.Args[0], "telemetry", string(data))
+	if err1 = command.Start(); err1 != nil {
+		klog.V(4).Infof("Failed to start the telemetry process. Error: %q", err1.Error())
+		return
+	}
+	if err1 = command.Process.Release(); err1 != nil {
+		klog.V(4).Infof("Failed to release the process. %q", err1.Error())
+		return
 	}
 }
 

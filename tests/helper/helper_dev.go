@@ -110,10 +110,14 @@ import (
 */
 
 type DevSession struct {
-	session *gexec.Session
-	stopped bool
-	console *expect.Console
-	address string
+	session           *gexec.Session
+	stopped           bool
+	console           *expect.Console
+	address           string
+	StdOut            string
+	ErrOut            string
+	Endpoints         map[string]string
+	APIServerEndpoint string
 }
 
 type DevSessionOpts struct {
@@ -123,23 +127,33 @@ type DevSessionOpts struct {
 	TimeoutInSeconds int
 	NoRandomPorts    bool
 	NoWatch          bool
+	NoCommands       bool
 	CustomAddress    string
+	StartAPIServer   bool
+	APIServerPort    int
+	SyncGitDir       bool
+	ShowLogs         bool
+	VerboseLevel     string
 }
 
 // StartDevMode starts a dev session with `odo dev`
 // It returns a session structure, the contents of the standard and error outputs
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, errOut []byte, endpoints map[string]string, err error) {
+func StartDevMode(options DevSessionOpts) (devSession DevSession, err error) {
 	if options.RunOnPodman {
 		options.CmdlineArgs = append(options.CmdlineArgs, "--platform", "podman")
 	}
 	c, err := expect.NewConsole(expect.WithStdout(os.Stdout))
 	if err != nil {
-		return DevSession{}, nil, nil, nil, err
+		return DevSession{}, err
 	}
 
+	env := append([]string{}, options.EnvVars...)
 	args := []string{"dev"}
+	if options.NoCommands {
+		args = append(args, "--no-commands")
+	}
 	if !options.NoRandomPorts {
 		args = append(args, "--random-ports")
 	}
@@ -149,13 +163,28 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 	if options.CustomAddress != "" {
 		args = append(args, "--address", options.CustomAddress)
 	}
+	if !options.StartAPIServer {
+		args = append(args, "--api-server=false")
+	}
+	if options.APIServerPort != 0 {
+		args = append(args, fmt.Sprintf("--api-server-port=%d", options.APIServerPort))
+	}
+	if options.SyncGitDir {
+		args = append(args, "--sync-git-dir")
+	}
+	if options.ShowLogs {
+		args = append(args, "--logs")
+	}
+	if options.VerboseLevel != "" {
+		args = append(args, "-v", options.VerboseLevel)
+	}
 	args = append(args, options.CmdlineArgs...)
 	cmd := Cmd("odo", args...)
 	cmd.Cmd.Stdin = c.Tty()
 	cmd.Cmd.Stdout = c.Tty()
 	cmd.Cmd.Stderr = c.Tty()
 
-	session := cmd.AddEnv(options.EnvVars...).Runner().session
+	session := cmd.AddEnv(env...).Runner().session
 	timeoutInSeconds := 420
 	if options.TimeoutInSeconds != 0 {
 		timeoutInSeconds = options.TimeoutInSeconds
@@ -170,13 +199,19 @@ func StartDevMode(options DevSessionOpts) (devSession DevSession, out []byte, er
 	errContents := session.Err.Contents()
 	err = session.Out.Clear()
 	if err != nil {
-		return DevSession{}, nil, nil, nil, err
+		return DevSession{}, err
 	}
 	err = session.Err.Clear()
 	if err != nil {
-		return DevSession{}, nil, nil, nil, err
+		return DevSession{}, err
 	}
-	return result, outContents, errContents, getPorts(string(outContents), options.CustomAddress), nil
+	result.StdOut = string(outContents)
+	result.ErrOut = string(errContents)
+	result.Endpoints = getPorts(string(outContents), options.CustomAddress)
+	if options.StartAPIServer {
+		result.APIServerEndpoint = getAPIServerPort(string(outContents))
+	}
+	return result, nil
 
 }
 
@@ -187,6 +222,10 @@ func (o DevSession) Kill() {
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	}
 	o.session.Kill()
+}
+
+func (o DevSession) PID() int {
+	return o.session.Command.Process.Pid
 }
 
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
@@ -224,36 +263,55 @@ func (o DevSession) WaitEnd() {
 	o.session.Wait(3 * time.Minute)
 }
 
+func (o DevSession) GetExitCode() int {
+	if o.session == nil {
+		return -1
+	}
+	return o.session.ExitCode()
+}
+
 // WaitSync waits for the synchronization of files to be finished
 // It returns the contents of the standard and error outputs
 // and the list of forwarded ports
-// since the end of the dev mode or the last time WaitSync/GetInfo has been called
-func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
+// since the end of the dev mode or the last time WaitSync/UpdateInfo has been called
+func (o *DevSession) WaitSync() error {
 	WaitForOutputToContainOne([]string{"Pushing files...", "Updating Component..."}, 180, 10, o.session)
 	WaitForOutputToContain("Dev mode", 240, 10, o.session)
-	return o.GetInfo()
+	return o.UpdateInfo()
 }
 
-func (o DevSession) WaitRestartPortforward() ([]byte, []byte, map[string]string, error) {
+func (o *DevSession) WaitRestartPortforward() error {
 	WaitForOutputToContain("Forwarding from", 240, 10, o.session)
-	return o.GetInfo()
+	return o.UpdateInfo()
 }
 
-// GetInfo returns the contents of the standard and error outputs
+// UpdateInfo returns the contents of the standard and error outputs
 // and the list of forwarded ports
-// since the end of the dev mode or the last time WaitSync/GetInfo has been called
-func (o DevSession) GetInfo() ([]byte, []byte, map[string]string, error) {
+// since the end of the dev mode or the last time WaitSync/UpdateInfo has been called
+func (o *DevSession) UpdateInfo() error {
 	outContents := o.session.Out.Contents()
 	errContents := o.session.Err.Contents()
-	err := o.session.Out.Clear()
-	if err != nil {
-		return nil, nil, nil, err
+	var err error
+	if !o.session.Out.Closed() {
+		err = o.session.Out.Clear()
+		if err != nil {
+			return err
+		}
 	}
-	err = o.session.Err.Clear()
-	if err != nil {
-		return nil, nil, nil, err
+	if !o.session.Err.Closed() {
+		err = o.session.Err.Clear()
+		if err != nil {
+			return err
+		}
 	}
-	return outContents, errContents, getPorts(string(outContents), o.address), nil
+	o.StdOut = string(outContents)
+	o.ErrOut = string(errContents)
+	endpoints := getPorts(o.StdOut, o.address)
+	if len(endpoints) != 0 {
+		// when pod was restarted and port forwarding is done again
+		o.Endpoints = endpoints
+	}
+	return nil
 }
 
 func (o DevSession) CheckNotSynced(timeout time.Duration) {
@@ -265,9 +323,9 @@ func (o DevSession) CheckNotSynced(timeout time.Duration) {
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
 // The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
 // and a slice of strings - ports - giving the redirections in the form localhost:<port_number> to access ports opened by component
-func RunDevMode(options DevSessionOpts, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
+func RunDevMode(options DevSessionOpts, inside func(session *gexec.Session, outContents string, errContents string, ports map[string]string)) error {
 
-	session, outContents, errContents, urls, err := StartDevMode(options)
+	session, err := StartDevMode(options)
 	if err != nil {
 		return err
 	}
@@ -275,7 +333,7 @@ func RunDevMode(options DevSessionOpts, inside func(session *gexec.Session, outC
 		session.Stop()
 		session.WaitEnd()
 	}()
-	inside(session.session, outContents, errContents, urls)
+	inside(session.session, session.StdOut, session.ErrOut, session.Endpoints)
 	return nil
 }
 
@@ -284,7 +342,7 @@ func RunDevMode(options DevSessionOpts, inside func(session *gexec.Session, outC
 // this function is helpful in such cases.
 // If stopSessionAfter is false, it is up to the caller to stop the DevSession returned.
 // TODO(pvala): Modify StartDevMode to take substring arg into account, and replace this method with it.
-func WaitForDevModeToContain(options DevSessionOpts, substring string, stopSessionAfter bool, checkErrOut bool) (DevSession, []byte, []byte, error) {
+func WaitForDevModeToContain(options DevSessionOpts, substring string, stopSessionAfter bool, checkErrOut bool) (DevSession, error) {
 	args := []string{"dev", "--random-ports"}
 	args = append(args, options.CmdlineArgs...)
 	if options.RunOnPodman {
@@ -314,13 +372,16 @@ func WaitForDevModeToContain(options DevSessionOpts, substring string, stopSessi
 	errContents := session.Err.Contents()
 	err := session.Out.Clear()
 	if err != nil {
-		return DevSession{}, nil, nil, err
+		return DevSession{}, err
 	}
 	err = session.Err.Clear()
 	if err != nil {
-		return DevSession{}, nil, nil, err
+		return DevSession{}, err
 	}
-	return result, outContents, errContents, nil
+	result.StdOut = string(outContents)
+	result.ErrOut = string(errContents)
+	result.Endpoints = getPorts(result.StdOut, options.CustomAddress)
+	return result, nil
 }
 
 // getPorts returns a map of ports redirected depending on the information in s
@@ -337,4 +398,11 @@ func getPorts(s, address string) map[string]string {
 		result[match[2]] = match[1]
 	}
 	return result
+}
+
+// getAPIServerPort returns the address at which api server is running
+func getAPIServerPort(s string) string {
+	re := regexp.MustCompile(`API Server started at http://(localhost:[0-9]+\/api\/v1)`)
+	matches := re.FindStringSubmatch(s)
+	return matches[1]
 }

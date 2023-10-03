@@ -1,0 +1,20 @@
+<h3 *ngIf="title">{{title}}</h3>
+<div class="group">
+    <mat-card *ngIf="form.controls.length > 0">
+        <mat-card-content>
+        <span *ngFor="let control of form.controls; index as i">
+            <mat-form-field class="inline" appearance="outline">
+                <mat-label><span>{{label}}</span></mat-label>
+                <input [attr.data-cy]="dataCyPrefix+'-text-'+i" matInput [formControl]="control">
+            </mat-form-field>
+            <button [attr.data-cy]="dataCyPrefix+'-minus-'+i" class="adjust-position" mat-icon-button [matTooltip]="deleteLabel" (click)="removeText(i)">
+                <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
+            </button>
+        </span>
+        </mat-card-content>
+        <mat-card-actions>
+            <button [attr.data-cy]="'add-text'" mat-flat-button (click)="addText('')">{{addLabel}}</button>
+        </mat-card-actions>
+    </mat-card>
+    <button *ngIf="form.controls.length == 0" [attr.data-cy]="'add-text'" mat-flat-button (click)="addText('')">{{addLabel}}</button>
+</div>

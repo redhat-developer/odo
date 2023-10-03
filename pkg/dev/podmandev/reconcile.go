@@ -35,7 +35,6 @@ func (o *DevClient) reconcile(
 	componentStatus *watch.ComponentStatus,
 ) error {
 	var (
-		appName       = odocontext.GetApplication(ctx)
 		componentName = odocontext.GetComponentName(ctx)
 		devfilePath   = odocontext.GetDevfilePath(ctx)
 		path          = filepath.Dir(devfilePath)
@@ -65,15 +64,18 @@ func (o *DevClient) reconcile(
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(devfileObj) {
-		execHandler := component.NewExecHandler(
+		execHandler := component.NewRunHandler(
+			ctx,
 			o.podmanClient,
 			o.execClient,
-			appName,
-			componentName,
-			pod.Name,
-			"Executing post-start command in container",
-			false, /* TODO */
-			false,
+			nil, // TODO(feloy) set this value when we want to support exec on new container on podman
+			// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PostStart commands
+			nil, nil,
+			component.HandlerOptions{
+				PodName:           pod.Name,
+				ContainersRunning: component.GetContainersNames(pod),
+				Msg:               "Executing post-start command in container",
+			},
 		)
 		err = libdevfile.ExecPostStartEvents(ctx, devfileObj, execHandler)
 		if err != nil {
@@ -82,57 +84,86 @@ func (o *DevClient) reconcile(
 	}
 	componentStatus.PostStartEventsDone = true
 
-	if execRequired {
-		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(
-				o.podmanClient,
-				o.execClient,
-				appName,
-				componentName,
-				pod.Name,
-				"Building your application in container",
-				false, /* TODO */
-				componentStatus.RunExecuted,
-			)
-			return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
-		}
+	innerLoopWithCommands := !parameters.StartOptions.SkipCommands
+	var hasRunOrDebugCmd bool
+	if innerLoopWithCommands {
+		if execRequired {
+			doExecuteBuildCommand := func() error {
+				execHandler := component.NewRunHandler(
+					ctx,
+					o.podmanClient,
+					o.execClient,
+					nil, // TODO(feloy) set this value when we want to support exec on new container on podman
 
-		err = doExecuteBuildCommand()
-		if err != nil {
-			return err
-		}
+					// TODO(feloy) set these values when we want to support Apply Image/Kubernetes/OpenShift commands for PreStop events
+					nil, nil, component.HandlerOptions{
+						PodName:           pod.Name,
+						ComponentExists:   componentStatus.RunExecuted,
+						ContainersRunning: component.GetContainersNames(pod),
+						Msg:               "Building your application in container",
+					},
+				)
+				return libdevfile.Build(ctx, devfileObj, options.BuildCommand, execHandler)
+			}
 
-		cmdKind := devfilev1.RunCommandGroupKind
-		cmdName := options.RunCommand
-		if options.Debug {
-			cmdKind = devfilev1.DebugCommandGroupKind
-			cmdName = options.DebugCommand
+			err = doExecuteBuildCommand()
+			if err != nil {
+				return err
+			}
+
+			cmdKind := devfilev1.RunCommandGroupKind
+			cmdName := options.RunCommand
+			if options.Debug {
+				cmdKind = devfilev1.DebugCommandGroupKind
+				cmdName = options.DebugCommand
+			}
+			_, hasRunOrDebugCmd, err = libdevfile.GetCommand(parameters.Devfile, cmdName, cmdKind)
+			if err != nil {
+				return err
+			}
+
+			if hasRunOrDebugCmd {
+				cmdHandler := component.NewRunHandler(
+					ctx,
+					o.podmanClient,
+					o.execClient,
+					nil, // TODO(feloy) set this value when we want to support exec on new container on podman
+
+					o.fs,
+					image.SelectBackend(ctx),
+
+					// TODO(feloy) set to deploy Kubernetes/Openshift components
+					component.HandlerOptions{
+						PodName:           pod.Name,
+						ComponentExists:   componentStatus.RunExecuted,
+						ContainersRunning: component.GetContainersNames(pod),
+					},
+				)
+				err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, cmdHandler, false)
+				if err != nil {
+					return err
+				}
+				componentStatus.RunExecuted = true
+			} else {
+				msg := fmt.Sprintf("Missing default %v command", cmdKind)
+				if cmdName != "" {
+					msg = fmt.Sprintf("Missing %v command with name %q", cmdKind, cmdName)
+				}
+				log.Warning(msg)
+			}
 		}
-		cmdHandler := commandHandler{
-			ctx:             ctx,
-			fs:              o.fs,
-			execClient:      o.execClient,
-			platformClient:  o.podmanClient,
-			componentExists: componentStatus.RunExecuted,
-			podName:         pod.Name,
-			appName:         appName,
-			componentName:   componentName,
-		}
-		err = libdevfile.ExecuteCommandByNameAndKind(ctx, devfileObj, cmdName, cmdKind, &cmdHandler, false)
-		if err != nil {
-			return err
-		}
-		componentStatus.RunExecuted = true
 	}
 
-	// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
-	appReadySpinner := log.Spinner("Waiting for the application to be ready")
-	err = o.checkAppPorts(ctx, pod.Name, fwPorts)
-	appReadySpinner.End(err == nil)
-	if err != nil {
-		log.Warningf("Port forwarding might not work correctly: %v", err)
-		log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
-		fmt.Fprintln(options.Out)
+	if innerLoopWithCommands && hasRunOrDebugCmd && len(fwPorts) != 0 {
+		// Check that the application is actually listening on the ports declared in the Devfile, so we are sure that port-forwarding will work
+		appReadySpinner := log.Spinner("Waiting for the application to be ready")
+		err = o.checkAppPorts(ctx, pod.Name, fwPorts)
+		appReadySpinner.End(err == nil)
+		if err != nil {
+			log.Warningf("Port forwarding might not work correctly: %v", err)
+			log.Warning("Running `odo logs --follow --platform podman` might help in identifying the problem.")
+			fmt.Fprintln(options.Out)
+		}
 	}
 
 	// By default, Podman will not forward to container applications listening on the loopback interface.
@@ -188,7 +219,7 @@ func (o *DevClient) buildPushAutoImageComponents(ctx context.Context, devfileObj
 	}
 
 	for _, c := range components {
-		err = image.BuildPushSpecificImage(ctx, o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
+		err = image.BuildPushSpecificImage(ctx, image.SelectBackend(ctx), o.fs, c, envcontext.GetEnvConfig(ctx).PushImages)
 		if err != nil {
 			return err
 		}
@@ -202,7 +233,7 @@ func (o *DevClient) deployPod(ctx context.Context, options dev.StartOptions, dev
 	spinner := log.Spinner("Deploying pod")
 	defer spinner.End(false)
 
-	pod, fwPorts, err := createPodFromComponent(
+	pod, fwPorts, err := o.createPodFromComponent(
 		ctx,
 		options.Debug,
 		options.BuildCommand,

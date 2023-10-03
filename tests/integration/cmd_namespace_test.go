@@ -25,6 +25,25 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
+
+	When("namespace is created with -w", func() {
+		// Ref: https://github.com/redhat-developer/odo/issues/6827
+		var namespace string
+		BeforeEach(func() {
+			namespace = helper.GenerateProjectName()
+			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
+		})
+
+		AfterEach(func() {
+			commonVar.CliRunner.DeleteNamespaceProject(namespace, false)
+		})
+
+		It("should list the new namespace when listing namespace", func() {
+			out := helper.Cmd("odo", "list", "namespace").ShouldPass().Out()
+			Expect(out).To(ContainSubstring(namespace))
+		})
+	})
+
 	for _, commandName := range []string{"namespace", "project"} {
 		// this is a workaround to ensure that the for loop works with `It` blocks
 		commandName := commandName
@@ -60,6 +79,12 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 				BeforeEach(func() {
 					namespace = helper.CreateRandProject()
 					Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
+				})
+
+				AfterEach(func() {
+					if commonVar.CliRunner.HasNamespaceProject(namespace) {
+						commonVar.CliRunner.DeleteNamespaceProject(namespace, false)
+					}
 				})
 
 				checkNsDeletionFunc := func(wait bool, nsCheckerFunc func()) {
@@ -149,7 +174,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
 						filepath.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(cmpName))
+						cmpName)
 					helper.Chdir(commonVar.Context)
 
 					// Bootstrap the component with a .odo/env/env.yaml file

@@ -1,0 +1,2349 @@
+openapi: '3.0.2'
+info:
+  title: odo dev
+  version: '0.1'
+  description: API interface for 'odo dev'
+servers:
+  - url: /api/v1
+paths:
+  /instance:
+    get:
+      description: Get information about the this 'odo dev' instance.
+      responses:
+        '200':
+          description: Information about the this 'odo dev' instance.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  componentDirectory:
+                    type: string
+                    description: Directory on which this 'odo dev' instance is running
+                  pid:
+                    type: integer
+                    description: PID of the this 'odo dev' instance.
+              example:
+                componentDirectory: "/Users/user/Documents/myproject"
+                pid: 42
+
+    delete:
+      description: "Stop this 'odo dev' instance"
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "'odo dev' instance with pid: 42 is shuting down."
+          description: "'odo dev' instance will shutdown."
+
+  /component:
+    get:
+      description: Get the Information about the component controlled by this 'odo dev' instance.
+      responses:
+        '200':
+          description: Information about the component.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  component:
+                    type: object
+                    description: Description of the component. This is the same as output of 'odo describe component -o json'
+              example:
+                {
+                  "devfilePath": "/home/tomas/Code/odo-examples/java-maven/devfile.yaml",
+                  "devfileData": {
+                          "devfile": {
+                                  "schemaVersion": "2.1.0",
+                                  "metadata": {
+                                          "name": "demo",
+                                          "version": "1.1.1",
+                                          "displayName": "Maven Java",
+                                          "description": "Upstream Maven and OpenJDK 11",
+                                          "tags": [
+                                                  "Java",
+                                                  "Maven"
+                                          ],
+                                          "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg",
+                                          "projectType": "Maven",
+                                          "language": "Java"
+                                  },
+                                  "components": [
+                                          {
+                                                  "name": "tools",
+                                                  "container": {
+                                                          "image": "quay.io/eclipse/che-java11-maven:next",
+                                                          "env": [
+                                                                  {
+                                                                          "name": "DEBUG_PORT",
+                                                                          "value": "5858"
+                                                                  }
+                                                          ],
+                                                          "volumeMounts": [
+                                                                  {
+                                                                          "name": "m2",
+                                                                          "path": "/home/user/.m2"
+                                                                  }
+                                                          ],
+                                                          "memoryLimit": "512Mi",
+                                                          "mountSources": true,
+                                                          "dedicatedPod": false,
+                                                          "endpoints": [
+                                                                  {
+                                                                          "name": "http-maven",
+                                                                          "targetPort": 8080,
+                                                                          "secure": false
+                                                                  }
+                                                          ]
+                                                  }
+                                          },
+                                          {
+                                                  "name": "m2",
+                                                  "volume": {
+                                                          "ephemeral": false
+                                                  }
+                                          }
+                                  ],
+                                  "starterProjects": [
+                                          {
+                                                  "name": "springbootproject",
+                                                  "git": {
+                                                          "remotes": {
+                                                                  "origin": "https://github.com/odo-devfiles/springboot-ex.git"
+                                                          }
+                                                  }
+                                          }
+                                  ],
+                                  "commands": [
+                                          {
+                                                  "id": "mvn-package",
+                                                  "exec": {
+                                                          "group": {
+                                                                  "kind": "build",
+                                                                  "isDefault": true
+                                                          },
+                                                          "commandLine": "mvn -Dmaven.repo.local=/home/user/.m2/repository package",
+                                                          "component": "tools",
+                                                          "workingDir": "${PROJECT_SOURCE}",
+                                                          "hotReloadCapable": false
+                                                  }
+                                          },
+                                          {
+                                                  "id": "run",
+                                                  "exec": {
+                                                          "group": {
+                                                                  "kind": "run",
+                                                                  "isDefault": true
+                                                          },
+                                                          "commandLine": "java -jar target/*.jar",
+                                                          "component": "tools",
+                                                          "workingDir": "${PROJECT_SOURCE}",
+                                                          "hotReloadCapable": false
+                                                  }
+                                          },
+                                          {
+                                                  "id": "debug",
+                                                  "exec": {
+                                                          "group": {
+                                                                  "kind": "debug",
+                                                                  "isDefault": true
+                                                          },
+                                                          "commandLine": "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar target/*.jar",
+                                                          "component": "tools",
+                                                          "workingDir": "${PROJECT_SOURCE}",
+                                                          "hotReloadCapable": false
+                                                  }
+                                          }
+                                  ]
+                          },
+                          "supportedOdoFeatures": {
+                                  "dev": true,
+                                  "deploy": false,
+                                  "debug": true
+                          }
+                  },
+                  "runningIn": {
+                          "deploy": false,
+                          "dev": true
+                  },
+                  "managedBy": "odo"
+               }
+        '500':
+          description: error getting the description of the component
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "error getting the description of the component"
+
+  /component/command:
+    post:
+      description: Instruct 'odo dev' to perform given command on the component
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command that should be executed
+                  type: string
+                  enum:
+                    - "push"
+              example:
+                name: push
+      responses:
+        '200':
+          description: command was successfully executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "push was successfully executed"
+        '400':
+          description: command name not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "command name 'unknown' not supported. Supported values are: \"push\""
+        '429':
+          description: a push operation is not possible at this time. Please retry later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "a push operation is not possible at this time. Please retry later"
+
+  /devfile:
+    put:
+      description: Updates the Devfile used by the current dev session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DevfilePutRequest"
+      responses:
+        '200':
+          description: Devfile content was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "The Devfile content has been updated successfully"
+
+        '500':
+          description: Error updating the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Devfile content"
+
+    get:
+      description: Get the raw content of the Devfile used by the current dev session
+      responses:
+        '200':
+          description: Devfile content was successfully returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                }
+        '500':
+          description: Error getting the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error getting the Devfile content"
+
+  /telemetry:
+    get:
+      description: Get the specific information for sending telemetry data
+      responses:
+        '200':
+          description: 'Specific information for sending telemetry data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryResponse'
+        '500':
+          description: Error getting the telemetry data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error getting the telemetry data"
+
+  /devstate/devfile:
+    put:
+      tags:
+      - devstate
+      description: Updates the complete Devfile content
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DevstateDevfilePutRequest"
+      responses:
+        '200':
+          description: Devfile content was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Devfile content"
+
+    get:
+      tags:
+      - devstate
+      description: Get the complete Devfile content
+      responses:
+        '200':
+          description: Devfile content was successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error getting the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error getting the Devfile content"
+
+    delete:
+      tags:
+      - devstate
+      description: Clear the Devfile content
+      responses:
+        '200':
+          description: Devfile content was successfully cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error clearing the Devfile content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error clearing the Devfile content"
+
+  /devstate/metadata:
+    put:
+      tags:
+      - devstate
+      description: Updates the metadata for the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetadataRequest'
+      responses:
+        '200':
+          description: metadata was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the metadata"
+
+  /devstate/container:
+    post:
+      tags:
+      - devstate
+      description: Add a new container to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - image
+              properties:
+                name:
+                  description: Name of the container
+                  type: string
+                image: 
+                  description: Container image
+                  type: string
+                command: 
+                  description: Entrypoint of the container
+                  type: array
+                  items: {
+                        type: string
+                  }
+                args: 
+                  description: Args passed to the Container entrypoint
+                  type: array
+                  items: {
+                        type: string
+                  }
+                env: 
+                  description: Environment variables to define
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Env'
+                memReq: 
+                  description: Requested memory for the deployed container
+                  type: string
+                memLimit:
+                  description: Memory limit for the deployed container
+                  type: string
+                cpuReq:
+                  description: Requested CPU for the deployed container
+                  type: string
+                cpuLimit:
+                  description: CPU limit for the deployed container
+                  type: string
+                volumeMounts:
+                  description: Volume to mount into the container filesystem
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/VolumeMount'
+                configureSources:
+                  description: If false, mountSources and sourceMapping values are not considered
+                  type: boolean                
+                mountSources:
+                  description: If true, sources are mounted into container's filesystem
+                  type: boolean
+                sourceMapping:
+                  description: Specific directory on which to mount sources
+                  type: string
+                annotation:
+                  description: Annotations added to the resources created for this container
+                  $ref: '#/components/schemas/Annotation'
+                endpoints:
+                  description: Endpoints exposed by the container
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Endpoint'
+
+      responses:
+        '200':
+          description: container was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the container"
+
+  /devstate/container/{containerName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete a container from the Devfile"
+      parameters:
+        - name: containerName
+          in: path
+          description: Container name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Container has been deleted"
+          description: "Container has been deleted"
+        '500':
+          description: Error deleting the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the container"
+
+    patch:
+      tags:
+      - devstate
+      description: Update a container
+      parameters:
+        - name: containerName
+          in: path
+          description: Container name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - image
+              properties:
+                image: 
+                  description: Container image
+                  type: string
+                command: 
+                  description: Entrypoint of the container
+                  type: array
+                  items: {
+                        type: string
+                  }
+                args: 
+                  description: Args passed to the Container entrypoint
+                  type: array
+                  items: {
+                        type: string
+                  }
+                env: 
+                  description: Environment variables to define
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Env'
+                memReq: 
+                  description: Requested memory for the deployed container
+                  type: string
+                memLimit:
+                  description: Memory limit for the deployed container
+                  type: string
+                cpuReq:
+                  description: Requested CPU for the deployed container
+                  type: string
+                cpuLimit:
+                  description: CPU limit for the deployed container
+                  type: string
+                volumeMounts:
+                  description: Volume to mount into the container filesystem
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/VolumeMount'
+                configureSources:
+                  description: If false, mountSources and sourceMapping values are not considered
+                  type: boolean                
+                mountSources:
+                  description: If true, sources are mounted into container's filesystem
+                  type: boolean
+                sourceMapping:
+                  description: Specific directory on which to mount sources
+                  type: string
+                annotation:
+                  description: Annotations added to the resources created for this container
+                  $ref: '#/components/schemas/Annotation'
+                endpoints:
+                  description: Endpoints exposed by the container
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Endpoint'
+
+      responses:
+        '200':
+          description: container was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the container
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the container"
+
+  /devstate/image:
+    post:
+      tags:
+      - devstate
+      description: Add a new image to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the image
+                  type: string
+                imageName:
+                  type: string
+                args:
+                  type: array
+                  items: {
+                    type: string
+                  }
+                buildContext:
+                  type: string
+                rootRequired:
+                  type: boolean
+                uri:
+                  type: string
+                autoBuild:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
+      responses:
+        '200':
+          description: image was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the image
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the image"
+
+  /devstate/image/{imageName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete an image from the Devfile"
+      parameters:
+        - name: imageName
+          in: path
+          description: Image name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Image has been deleted"
+          description: "Image has been deleted"
+        '500':
+          description: Error deleting the image
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the image"
+
+    patch:
+      tags:
+      - devstate
+      description: Update an image
+      parameters:
+        - name: imageName
+          in: path
+          description: Image name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageName:
+                  type: string
+                args:
+                  type: array
+                  items:
+                    type: string
+                buildContext:
+                  type: string
+                rootRequired:
+                  type: boolean
+                uri:
+                  type: string
+                autoBuild:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
+      responses:
+        '200':
+          description: image was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the image
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the image"
+
+  /devstate/resource:
+    post:
+      tags:
+      - devstate
+      description: Add a new Kubernetes resource to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the resource
+                  type: string
+                inlined:
+                  type: string
+                uri:
+                  type: string
+                deployByDefault:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
+      responses:
+        '200':
+          description: resource was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the resource"
+
+  /devstate/resource/{resourceName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete a resource from the Devfile"
+      parameters:
+        - name: resourceName
+          in: path
+          description: Resource name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Resource has been deleted"
+          description: "Resource has been deleted"
+        '500':
+          description: Error deleting the resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the resource"
+
+    patch:
+      tags:
+      - devstate
+      description: Update a Kubernetes resource
+      parameters:
+        - name: resourceName
+          in: path
+          description: Resource name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inlined:
+                  type: string
+                uri:
+                  type: string
+                deployByDefault:
+                  type: string
+                  enum:
+                  - never
+                  - undefined
+                  - always
+      responses:
+        '200':
+          description: resource was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the resource"
+
+  /devstate/volume:
+    post:
+      tags:
+      - devstate
+      description: Add a new Volume to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the volume
+                  type: string
+                size:
+                  description: Minimal size of the volume
+                  type: string
+                ephemeral:
+                  description: True if the Volume is Ephemeral
+                  type: boolean
+      responses:
+        '200':
+          description: volume was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the volume"
+
+  /devstate/volume/{volumeName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete a volume from the Devfile"
+      parameters:
+        - name: volumeName
+          in: path
+          description: Volume name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Volume has been deleted"
+          description: "Volume has been deleted"
+        '500':
+          description: Error deleting the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the volume"
+
+    patch:
+      tags:
+      - devstate
+      description: "Update a volume"
+      parameters:
+        - name: volumeName
+          in: path
+          description: Volume name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  description: Minimal size of the volume
+                  type: string
+                ephemeral:
+                  description: True if the Volume is Ephemeral
+                  type: boolean
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Volume has been updated"
+          description: "Volume has been updated"
+        '500':
+          description: Error updating the volume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the volume"
+
+  /devstate/applyCommand:
+    post:
+      tags:
+      - devstate
+      description: Add a new Apply Command to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command
+                  type: string
+                component:
+                  type: string
+      responses:
+        '200':
+          description: Apply command was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the Apply command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the Apply command"
+
+  /devstate/applyCommand/{commandName}:
+    patch:
+      tags:
+      - devstate
+      description: Update an Apply Command
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                component:
+                  type: string
+      responses:
+        '200':
+          description: Apply command was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Apply command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Apply command"
+
+  /devstate/command/{commandName}:
+    delete:
+      tags:
+      - devstate
+      description: "Delete a command from the Devfile"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been deleted"
+          description: "Command has been deleted"
+        '500':
+          description: Error deleting the command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error deleting the command"
+
+  /devstate/command/{commandName}/move:
+    post:
+      tags:
+      - devstate
+      description: "Move a command"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to move
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromGroup:
+                  description: Initial group of the command
+                  type: string
+                fromIndex:
+                  description: Initial index of the command in the group
+                  type: integer
+                toGroup:
+                  description: Target group of the command
+                  type: string
+                toIndex:
+                  description: Target index of the command in the group
+                  type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been moved to group NewGroup position 4"
+          description: "Command has been moved"
+        '500':
+          description: Error moving the command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error moving the command to group NewGroup position 4"
+
+  /devstate/command/{commandName}/setDefault:
+    post:
+      tags:
+      - devstate
+      description: "Set a command as default command for a group"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to set as default
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group:
+                  description: group of the command
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been set as default"
+          description: "Command has been set as default"
+        '500':
+          description: Error setting the command as default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error setting the command as default"
+
+  /devstate/command/{commandName}/unsetDefault:
+    post:
+      tags:
+      - devstate
+      description: "Unset a command as default command for its group"
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to set as default
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Command has been unset as default"
+          description: "Command has been unset as default"
+        '500':
+          description: Error unsetting the command as default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error unsetting the command as default"
+
+  /devstate/compositeCommand:
+    post:
+      tags:
+      - devstate
+      description: Add a new Composite Command to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command
+                  type: string
+                parallel:
+                  type: boolean
+                commands:
+                  type: array
+                  items: {
+                    type: string
+                  }
+      responses:
+        '200':
+          description: Composite command was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the Composite command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the Composite command"
+
+  /devstate/compositeCommand/{commandName}:
+    patch:
+      tags:
+      - devstate
+      description: Update a Composite Command
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parallel:
+                  type: boolean
+                commands:
+                  type: array
+                  items:
+                    type: string
+
+      responses:
+        '200':
+          description: Composite command was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Composite command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Composite command"
+
+  /devstate/execCommand:
+    post:
+      tags:
+      - devstate
+      description: Add a new Exec Command to the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Name of the command
+                  type: string
+                component:
+                  type: string
+                commandLine:
+                  type: string
+                workingDir:
+                  type: string
+                hotReloadCapable:
+                  type: boolean
+      responses:
+        '200':
+          description: Exec command was successfully added to the devfile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error adding the Exec command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error adding the Exec command"
+
+  /devstate/execCommand/{commandName}:
+    patch:
+      tags:
+      - devstate
+      description: Update an Exec Command
+      parameters:
+        - name: commandName
+          in: path
+          description: Command name to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                component:
+                  type: string
+                commandLine:
+                  type: string
+                workingDir:
+                  type: string
+                hotReloadCapable:
+                  type: boolean
+      responses:
+        '200':
+          description: Exec command was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the Exec command
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the Exec command"
+
+  /devstate/events:
+    put:
+      tags:
+      - devstate
+      description: Updates the Events for the Devfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventName:
+                  type: string
+                  enum: [postStart,postStop,preStart,preStop]
+                commands:
+                  type: array
+                  items: {
+                    type: string
+                  }
+      responses:
+        '200':
+          description: Events were successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevfileContent'
+              example:
+                {
+                    "content": "schemaVersion: 2.2.0\n",
+                    "commands": [],
+                    "containers": [],
+                    "images": [],
+                    "resources": [],
+                    "events": {
+                        "preStart": null,
+                        "postStart": null,
+                        "preStop": null,
+                        "postStop": null
+                    },
+                    "metadata": {
+                        "name": "",
+                        "version": "",
+                        "displayName": "",
+                        description": "",
+                        "tags": "",
+                        "architectures": "",
+                        "icon": "",
+                        "globalMemoryLimit": "",
+                        "projectType": "",
+                        "language": "",
+                        "website": "",
+                        "provider": "",
+                        "supportUrl": ""
+                    }
+                }
+        '500':
+          description: Error updating the events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Error updating the events"
+
+  /devstate/chart:
+    get:
+      tags:
+      - devstate
+      description: Get chart representing the Devfile cycle in mermaid format
+      responses:
+        '200':
+          description: Chart representing the Devfile cycle
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - chart
+                properties:
+                  chart:
+                    type: string
+                    description: chart in mermaid format
+
+  /devstate/quantityValid:
+    post:
+      tags:
+      - devstate
+      description: Check if a quantity is valid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - quantity
+              properties:
+                quantity:
+                  type: string
+      responses:
+        '200':
+          description: quantity is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSuccess'
+              example:
+                message: "Quantity \"1Gi\" is valid"
+        '400':
+          description: quantity is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralError'
+              example:
+                message: "Quantity \"aze\" is not valid"
+
+components:
+  schemas:
+    GeneralSuccess:
+      type: object
+      properties:
+        message:
+          type: string
+    GeneralError:
+      type: object
+      properties:
+        message:
+          type: string
+    DevfilePutRequest:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
+    TelemetryResponse:
+      type: object
+      required:
+      - enabled
+      properties:
+        enabled:
+          type: boolean
+        apikey:
+          type: string
+        userid:
+          type: string
+    DevstateDevfilePutRequest:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
+    DevfileContent:
+      type: object
+      required:
+      - content
+      - version
+      - commands
+      - containers
+      - images
+      - resources
+      - volumes
+      - events
+      - metadata
+      properties:
+        content:
+          type: string
+        version:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/Command'
+        containers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Container'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        volumes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Volume'
+        events:
+          $ref: '#/components/schemas/Events'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+    Command:
+      type: object
+      required:
+      - name
+      - group
+      - type
+      properties:
+        name:
+          type: string
+        group:
+          type: string
+        default:
+          type: boolean
+        type:
+          type: string
+        exec:
+          $ref: '#/components/schemas/ExecCommand'
+        apply:
+          $ref: '#/components/schemas/ApplyCommand'
+        image:
+          $ref: '#/components/schemas/ImageCommand'
+        composite:
+          $ref: '#/components/schemas/CompositeCommand'
+    ExecCommand:
+      type: object
+      required:
+      - component
+      - commandLine
+      - workingDir
+      - hotReloadCapable
+      properties:
+        component:
+          type: string
+        commandLine:
+          type: string
+        workingDir:
+          type: string
+        hotReloadCapable:
+          type: boolean
+    ApplyCommand:
+      type: object
+      required:
+      - component
+      properties:
+        component:
+          type: string
+    ImageCommand:
+      type: object
+      required:
+      - component
+      properties:
+        component:
+          type: string
+    CompositeCommand:
+      type: object
+      required:
+      - commands
+      - parallel
+      properties:
+        commands:
+          type: array
+          items:
+            type: string
+        parallel:
+          type: boolean
+    Container:
+      type: object
+      required:
+      - name
+      - image
+      - command
+      - args
+      - memoryRequest
+      - memoryLimit
+      - cpuRequest
+      - cpuLimit
+      - volumeMounts
+      - annotation
+      - endpoints
+      - env
+      - configureSources
+      - mountSources
+      - sourceMapping
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+        command:
+          type: array
+          items:
+            type: string
+        args:
+          type: array
+          items:
+            type: string
+        memoryRequest:
+          type: string
+        memoryLimit:
+          type: string
+        cpuRequest:
+          type: string
+        cpuLimit:
+          type: string
+        volumeMounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeMount'
+        annotation:
+          $ref: '#/components/schemas/Annotation'
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/Endpoint'
+        env:
+          type: array
+          items:
+            $ref: '#/components/schemas/Env'
+        configureSources:
+          type: boolean
+        mountSources:
+          type: boolean
+        sourceMapping:
+          type: string
+    VolumeMount:
+      type: object
+      required:
+      - name
+      - path
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+    Annotation:
+      type: object
+      required:
+      - deployment
+      - service
+      properties:
+        deployment:
+          type: object
+          additionalProperties:
+            type: string
+        service:
+          type: object
+          additionalProperties:
+            type: string
+    Endpoint:
+      type: object
+      required:
+      - name
+      - targetPort
+      properties:
+        name: 
+          type: string
+        exposure:
+          type: string
+          enum: [public,internal,none]
+        path:
+          type: string
+        protocol:
+          type: string
+          enum: [http,https,ws,wss,tcp,udp]
+        secure:
+          type: boolean
+        targetPort: 
+          type: integer
+    Env:
+      type: object
+      required:
+      - name
+      - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    Image:
+      type: object
+      required:
+      - name
+      - imageName
+      - args
+      - buildContext
+      - rootRequired
+      - uri
+      - autoBuild
+      - orphan
+      properties:
+        name:
+          type: string
+        imageName:
+          type: string
+        args:
+          type: array
+          items:
+            type: string
+        buildContext:
+          type: string
+        rootRequired:
+          type: boolean
+        uri:
+          type: string
+        autoBuild:
+          type: string
+          enum:
+          - never
+          - undefined
+          - always
+        orphan:
+          description: true if the image is not referenced in any command
+          type: boolean
+    Resource:
+      type: object
+      required:
+      - name      
+      - deployByDefault
+      - orphan
+      properties:
+        name:
+          type: string
+        inlined:
+          type: string
+        uri:
+          type: string
+        deployByDefault:
+          type: string
+          enum:
+          - never
+          - undefined
+          - always
+        orphan:
+          description: true if the resource is not referenced in any command
+          type: boolean
+    Volume:
+      type: object
+      required:
+      - name      
+      properties:
+        name:
+          type: string
+        ephemeral:
+          type: boolean
+        size:
+          type: string
+    Events:
+      type: object
+      properties:
+        preStart:
+          type: array
+          items:
+            type: string
+        postStart:
+          type: array
+          items:
+            type: string
+        preStop:
+          type: array
+          items:
+            type: string
+        postStop:
+          type: array
+          items:
+            type: string
+    Metadata:
+      type: object
+      required:
+      - name
+      - version
+      - displayName
+      - description
+      - tags
+      - architectures
+      - icon
+      - globalMemoryLimit
+      - projectType
+      - language
+      - website
+      - provider
+      - supportUrl
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+        architectures:
+          type: string
+        icon:
+          type: string
+        globalMemoryLimit:
+          type: string
+        projectType:
+          type: string
+        language:
+          type: string
+        website:
+          type: string
+        provider:
+          type: string
+        supportUrl:
+          type: string
+    MetadataRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+        architectures:
+          type: string
+        icon:
+          type: string
+        globalMemoryLimit:
+          type: string
+        projectType:
+          type: string
+        language:
+          type: string
+        website:
+          type: string
+        provider:
+          type: string
+        supportUrl:
+          type: string
+
+tags:
+- name: default
+- name: devstate
+  description: Devfile State manager, used by the UI

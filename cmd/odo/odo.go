@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -24,6 +25,10 @@ import (
 )
 
 func main() {
+	// We need to reinitialize this global variable in case flags are defined by third-party packages
+	// (for example vendor/sigs.k8s.io/controller-runtime/pkg/client/config/config.go)
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
 	// Create a context ready for receiving telemetry data
 	// and save into it configuration based on environment variables
 	ctx := segment.NewContext(context.Background())
@@ -37,7 +42,12 @@ func main() {
 	// create the complete command
 	klog.InitFlags(nil)
 
-	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName)
+	root, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, func(err error) {
+		util.LogErrorAndExit(err, "")
+	}, clientset.Clientset{})
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
 
@@ -48,8 +58,9 @@ func main() {
 
 	// add the completion flags to the root command, though they won't appear in completions
 	root.Flags().AddGoFlagSet(flag.CommandLine)
+
 	// override usage so that flag.Parse uses root command's usage instead of default one when invoked with -h
-	flag.Usage = func() {
+	flag.CommandLine.Usage = func() {
 		_ = root.Help()
 	}
 
@@ -58,7 +69,7 @@ func main() {
 	args := os.Args[1:]
 	if err = flag.CommandLine.Parse(args); err != nil {
 		if err == flag.ErrHelp {
-			os.Exit(0)
+			return
 		}
 	}
 

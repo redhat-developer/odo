@@ -17,6 +17,10 @@ var (
 	GenericPlatformFlag = OdoFeature{
 		isExperimental: false,
 	}
+
+	UIServer = OdoFeature{
+		isExperimental: false,
+	}
 )
 
 // IsEnabled returns whether the specified feature should be enabled or not.

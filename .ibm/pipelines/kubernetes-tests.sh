@@ -1,8 +1,11 @@
 #!/bin/bash
 
 LOGFILE="pr-${GIT_PR_NUMBER}-kubernetes-tests-${BUILD_NUMBER}"
+TEST_NAME="Kubernetes Tests"
 
 source .ibm/pipelines/functions.sh
+
+skip_if_only
 
 ibmcloud login --apikey "${API_KEY_QE}"
 ibmcloud target -r "${IBM_REGION}"
@@ -20,6 +23,6 @@ export SKIP_USER_LOGIN_TESTS=true
 
 RESULT=${PIPESTATUS[0]}
 
-save_logs "${LOGFILE}" "Kubernetes Tests" ${RESULT}
-
+save_logs "${LOGFILE}" "${TEST_NAME}" ${RESULT}
+save_results "${PWD}/test-integration.xml" "${LOGFILE}" "${TEST_NAME}" "${BUILD_NUMBER}"
 exit ${RESULT}

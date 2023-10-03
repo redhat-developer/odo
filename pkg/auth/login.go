@@ -35,7 +35,7 @@ func (o KubernetesClient) Login(server, username, password, token, caAuth string
 
 	a := login.LoginOptions{
 		Server:         server,
-		CommandName:    "odo",
+		CommandName:    "oc",
 		CAFile:         caAuth,
 		InsecureTLS:    skipTLS,
 		Username:       username,
@@ -143,9 +143,8 @@ func filteredInformation(s []byte) []byte {
 
 	// List of strings to correctly filter
 	s = bytes.Replace(s, []byte("oc new-project"), []byte("odo create project"), -1)
-	s = bytes.Replace(s, []byte("<projectname>"), []byte("<project-name>"), -1)
-	s = bytes.Replace(s, []byte("project <project-name>"), []byte("project set <project-name>"), -1)
-	s = bytes.Replace(s, []byte("odo projects"), []byte("odo list project"), -1)
+	s = bytes.Replace(s, []byte("oc project "), []byte("odo set project "), -1)
+	s = bytes.Replace(s, []byte("oc projects"), []byte("odo list project"), -1)
 
 	return s
 }

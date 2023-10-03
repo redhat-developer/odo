@@ -57,6 +57,7 @@ function Run-Test {
     [Environment]::SetEnvironmentVariable("TEST_EXEC_NODES", "$TEST_EXEC_NODES") 
     [Environment]::SetEnvironmentVariable("SKIP_USER_LOGIN_TESTS","true")
     [Environment]::SetEnvironmentVariable("SKIP_WELCOMING_MESSAGES","true")
+    [Environment]::SetEnvironmentVariable("SKIP_SERVICE_BINDING_TESTS","$SKIP_SERVICE_BINDING_TESTS" )
     # Integration tests detecting key press when running DevSession are not working on Windows
     [Environment]::SetEnvironmentVariable("SKIP_KEY_PRESS","true")
     [Environment]::SetEnvironmentVariable("DEVFILE_REGISTRY", "$DEVFILE_REGISTRY") 
@@ -82,11 +83,19 @@ function Run-Test {
     make install 
     Shout "Running test"
     make test-integration-no-cluster | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
-    Check-ExitCode $LASTEXITCODE
+    $EXITCODE=$LASTEXITCODE
+    Copy-Item test-integration-nc.xml -Destination C:/Users/Administrator.ANSIBLE-TEST-VS/AppData/Local/Temp
+    Check-ExitCode $EXITCODE
+
     make test-integration-cluster    | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
-    Check-ExitCode $LASTEXITCODE
+    $EXITCODE=$LASTEXITCODE
+    Copy-Item test-integration.xml -Destination C:/Users/Administrator.ANSIBLE-TEST-VS/AppData/Local/Temp
+    Check-ExitCode $EXITCODE
+
     make test-e2e                    | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
-    Check-ExitCode $LASTEXITCODE
+    $EXITCODE=$LASTEXITCODE
+    Copy-Item test-e2e.xml -Destination C:/Users/Administrator.ANSIBLE-TEST-VS/AppData/Local/Temp
+    Check-ExitCode $EXITCODE
 
     Pop-Location 
     Shout "Test Finished"
@@ -101,6 +110,7 @@ $REPO=$args[5]
 $CLUSTER_ID=$args[6]
 $TEST_EXEC_NODES=$args[7]
 $DEVFILE_REGISTRY=$args[8]
+$SKIP_SERVICE_BINDING_TESTS=$args[9]
 Shout "Args Recived"
 
 

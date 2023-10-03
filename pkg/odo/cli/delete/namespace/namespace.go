@@ -86,7 +86,14 @@ func (do *DeleteOptions) Run(ctx context.Context) error {
 	if !exists {
 		return fmt.Errorf("No %s named %q found", do.commandName, do.namespaceName)
 	}
-	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %s %q?", do.commandName, do.namespaceName)) {
+	proceed := do.forceFlag
+	if !proceed {
+		proceed, err = ui.Proceed(fmt.Sprintf("Are you sure you want to delete %s %q?", do.commandName, do.namespaceName))
+		if err != nil {
+			return err
+		}
+	}
+	if proceed {
 		// Create the "spinner"
 		s := &log.Status{}
 
@@ -116,7 +123,7 @@ func (do *DeleteOptions) Run(ctx context.Context) error {
 }
 
 // NewCmdNamespaceDelete implements the 'odo delete namespace' command.
-func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
+func NewCmdNamespaceDelete(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	do := NewDeleteOptions()
 	// To help the UI messages deal better with namespace vs project
 	do.commandName = name
@@ -130,7 +137,7 @@ func NewCmdNamespaceDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(do, cmd, args)
+			return genericclioptions.GenericRun(do, testClientset, cmd, args)
 		},
 		Aliases: []string{"project"},
 	}

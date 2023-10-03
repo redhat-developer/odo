@@ -145,13 +145,6 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(ctx context.Context, def
 // Then killing those children will exit the parent 'sh' process.
 func (k *kubeExecProcessHandler) StopProcessForCommand(ctx context.Context, def CommandDefinition, podName string, containerName string) error {
 	klog.V(4).Infof("StopProcessForCommand for %q", def.Id)
-	defer func() {
-		pidFile := getPidFileForCommand(def)
-		_, _, err := k.execClient.ExecuteCommand(ctx, []string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)}, podName, containerName, false, nil, nil)
-		if err != nil {
-			klog.V(2).Infof("Could not remove file %q: %v", pidFile, err)
-		}
-	}()
 
 	kill := func(p int) error {
 		_, _, err := k.execClient.ExecuteCommand(ctx, []string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)}, podName, containerName, false, nil, nil)
@@ -200,6 +193,12 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(ctx context.Context, def 
 	}
 
 	klog.V(3).Infof("Found %d children (either direct and indirect) for parent process %d: %v", len(children), ppid, children)
+
+	pidFile := getPidFileForCommand(def)
+	_, _, err = k.execClient.ExecuteCommand(ctx, []string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)}, podName, containerName, false, nil, nil)
+	if err != nil {
+		klog.V(2).Infof("Could not remove file %q: %v", pidFile, err)
+	}
 
 	for _, child := range children {
 		if err = kill(child); err != nil {

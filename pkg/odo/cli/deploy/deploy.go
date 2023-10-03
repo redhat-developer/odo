@@ -8,6 +8,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 
+	"github.com/spf13/cobra"
+	"k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
@@ -19,10 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/version"
-
-	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -87,9 +86,8 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devfileName)
 	// Output what the command is doing / information
-	log.Title("Running the application in Deploy mode using "+devfileName+" Devfile",
-		"Namespace: "+namespace,
-		"odo version: "+version.VERSION)
+	log.Title("Running the application in Deploy mode using the \""+devfileName+"\" Devfile",
+		"Namespace: "+namespace)
 
 	genericclioptions.WarnIfDefaultNamespace(namespace, o.clientset.KubernetesClient)
 
@@ -104,7 +102,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 }
 
 // NewCmdDeploy implements the odo command
-func NewCmdDeploy(name, fullName string) *cobra.Command {
+func NewCmdDeploy(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewDeployOptions()
 	deployCmd := &cobra.Command{
 		Use:     name,
@@ -113,7 +111,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deployExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY, clientset.FILESYSTEM, clientset.KUBERNETES)

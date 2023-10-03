@@ -1,10 +1,13 @@
 package kclient
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/kubectl/pkg/util/term"
-	"strings"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -13,9 +16,11 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -84,6 +89,10 @@ var _ platform.Client = (*Client)(nil)
 
 // New creates a new client
 func New() (*Client, error) {
+	// Inside a cluster (IBM Cloud CI for example), even if KUBECONFIG=/dev/null, the in-cluster connection would succeed
+	if os.Getenv("KUBECONFIG") == "/dev/null" {
+		return nil, errors.New("access to Kubernetes cluster is disabled by KUBECONFIG=/dev/null")
+	}
 	return NewForConfig(nil)
 }
 
@@ -218,6 +227,10 @@ func (c *Client) GeneratePortForwardReq(podName string) *rest.Request {
 
 func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
 	c.discoveryClient = client
+}
+
+func (c *Client) SetDynamicClient(scheme *runtime.Scheme, objects ...runtime.Object) {
+	c.DynamicClient = fake.NewSimpleDynamicClient(scheme, objects...)
 }
 
 func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {

@@ -1,0 +1,10 @@
+schemaVersion: 2.2.0
+metadata: {}
+commands:
+- apply:
+    component: resource1
+  id: command1
+components:
+- kubernetes:
+    uri: uri
+  name: resource1

@@ -92,7 +92,7 @@ func (plo *NamespaceListOptions) RunForJsonOutput(_ context.Context) (out interf
 }
 
 // NewCmdNamespaceList implements the odo list project command.
-func NewCmdNamespaceList(name, fullName string) *cobra.Command {
+func NewCmdNamespaceList(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewNamespaceListOptions()
 	// To help the UI messages deal better with namespace vs project
 	o.commandName = name
@@ -109,7 +109,7 @@ func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"namespaces", "project", "projects"},
 	}

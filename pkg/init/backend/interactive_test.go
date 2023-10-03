@@ -36,7 +36,8 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 			fields: fields{
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
-					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
+					client.EXPECT().AskArchitectures(knownArchitectures, []string{"amd64"}).Return([]string{"amd64"}, nil)
+					client.EXPECT().AskLanguage(gomock.Any()).Return(false, "java", nil)
 					client.EXPECT().AskType(gomock.Any()).Return(false, api.DevfileStack{
 						Name: "a-devfile-name",
 						Registry: api.Registry{
@@ -57,13 +58,14 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 			},
 		},
 		{
-			name: "selection with back",
+			name: "selection with back on language selection",
 			fields: fields{
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
-					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(true, api.DevfileStack{}, nil)
-					client.EXPECT().AskLanguage(gomock.Any()).Return("go", nil)
+					client.EXPECT().AskArchitectures(knownArchitectures, []string{"amd64"}).Return([]string{"amd64", "arm64"}, nil)
+					client.EXPECT().AskLanguage(gomock.Any()).Return(true, "", nil)
+					client.EXPECT().AskArchitectures(knownArchitectures, []string{"amd64", "arm64"}).Return([]string{"arm64"}, nil)
+					client.EXPECT().AskLanguage(gomock.Any()).Return(false, "go", nil)
 					client.EXPECT().AskType(gomock.Any()).Return(false, api.DevfileStack{
 						Name: "a-devfile-name",
 						Registry: api.Registry{
@@ -74,7 +76,35 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				},
 				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+					return client
+				},
+			},
+			want: &api.DetectionResult{
+				Devfile:         "a-devfile-name",
+				DevfileRegistry: "MyRegistry1",
+			},
+		},
+		{
+			name: "selection with back on type selection",
+			fields: fields{
+				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					client.EXPECT().AskArchitectures(knownArchitectures, []string{"amd64"}).Return([]string{"amd64"}, nil)
+					client.EXPECT().AskLanguage(gomock.Any()).Return(false, "java", nil)
+					client.EXPECT().AskType(gomock.Any()).Return(true, api.DevfileStack{}, nil)
+					client.EXPECT().AskLanguage(gomock.Any()).Return(false, "go", nil)
+					client.EXPECT().AskType(gomock.Any()).Return(false, api.DevfileStack{
+						Name: "a-devfile-name",
+						Registry: api.Registry{
+							Name: "MyRegistry1",
+						},
+					}, nil)
+					return client
+				},
+				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 					return client
 				},
 			},

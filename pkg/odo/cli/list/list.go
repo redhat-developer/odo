@@ -2,7 +2,6 @@ package list
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -23,8 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
-	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -62,21 +59,16 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete ...
 func (lo *ListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-
-	// Check to see if KUBECONFIG exists, and if not, error the user that we would not be able to get cluster information
-	// Do this before anything else, or else we will just error out with the:
-	// invalid configuration: no configuration has been provided, try setting KUBERNETES_MASTER environment variable
-	// instead
-	if !dfutil.CheckKubeConfigExist() {
-		return errors.New("KUBECONFIG not found. Unable to retrieve cluster information. Please set your Kubernetes configuration via KUBECONFIG env variable or ~/.kube/config")
-	}
-
 	// If the namespace flag has been passed, we will search there.
 	// if it hasn't, we will search from the default project / namespace.
 	if lo.namespaceFlag != "" {
 		lo.namespaceFilter = lo.namespaceFlag
 	} else if lo.clientset.KubernetesClient != nil {
 		lo.namespaceFilter = odocontext.GetNamespace(ctx)
+	}
+	// Set the namespace; this ensures we fetch resources from the given namespace
+	if lo.clientset.KubernetesClient != nil {
+		lo.clientset.KubernetesClient.SetNamespace(lo.namespaceFilter)
 	}
 
 	return nil
@@ -160,7 +152,7 @@ func (lo *ListOptions) run(ctx context.Context) (list api.ResourcesList, err err
 }
 
 // NewCmdList implements the list odo command
-func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdList(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -170,7 +162,7 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES_NULLABLE, clientset.BINDING, clientset.FILESYSTEM)
@@ -178,10 +170,10 @@ func NewCmdList(ctx context.Context, name, fullName string) *cobra.Command {
 		clientset.Add(listCmd, clientset.PODMAN_NULLABLE)
 	}
 
-	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
-	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
-	componentCmd := clicomponent.NewCmdComponentList(ctx, clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName))
-	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName))
+	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName), testClientset)
+	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName), testClientset)
+	componentCmd := clicomponent.NewCmdComponentList(ctx, clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName), testClientset)
+	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName), testClientset)
 	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd, servicesCmd)
 
 	util.SetCommandGroup(listCmd, util.ManagementGroup)

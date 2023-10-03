@@ -20,7 +20,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type MockGitUrl struct {
@@ -70,8 +69,8 @@ var mockExecute = func(baseDir string, cmd CommandType, args ...string) ([]byte,
 			return []byte(""), nil
 		}
 
-		if len(args) > 0 && args[0] == "switch" {
-			revision := strings.TrimPrefix(args[2], "origin/")
+		if len(args) > 0 && args[0] == "checkout" {
+			revision := args[1]
 			if revision != "invalid-revision" {
 				resourceFile, err := os.OpenFile(filepath.Clean(baseDir)+"/resource.file", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 				if err != nil {
@@ -122,7 +121,7 @@ func (m *MockGitUrl) CloneGitRepo(destDir string) error {
 	}
 
 	if m.Revision != "" {
-		_, err := mockExecute(destDir, "git", "switch", "--detach", "origin/"+m.Revision)
+		_, err := mockExecute(destDir, "git", "checkout", m.Revision)
 		if err != nil {
 			return fmt.Errorf("failed to switch repo to revision. repo dir: %v, revision: %v", destDir, m.Revision)
 		}

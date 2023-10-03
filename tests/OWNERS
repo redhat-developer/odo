@@ -1,12 +1,9 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-- anandrkskd
-- rnapoles-rh
+- feloy
+- rm3l
 
 reviewers:
-- rnapoles-rh
-- anandrkskd
-- valaparthvi
 - feloy
-- ritudes
+- rm3l

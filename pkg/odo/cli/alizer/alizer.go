@@ -35,6 +35,10 @@ func (o *AlizerOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *AlizerOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 func (o *AlizerOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	return nil
 }
@@ -50,7 +54,7 @@ func (o *AlizerOptions) Run(ctx context.Context) (err error) {
 // RunForJsonOutput contains the logic for the odo command
 func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
 	workingDir := odocontext.GetWorkingDirectory(ctx)
-	df, defaultVersion, reg, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
+	detected, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +66,11 @@ func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	result := alizer.NewDetectionResult(df, reg, appPorts, defaultVersion, name)
+	result := alizer.NewDetectionResult(detected.Type, detected.Registry, appPorts, detected.DefaultVersion, name)
 	return []api.DetectionResult{*result}, nil
 }
 
-func NewCmdAlizer(name, fullName string) *cobra.Command {
+func NewCmdAlizer(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewAlizerOptions()
 	alizerCmd := &cobra.Command{
 		Use:         name,
@@ -75,7 +79,7 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 		Args:        cobra.MaximumNArgs(0),
 		Annotations: map[string]string{},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER, clientset.FILESYSTEM)

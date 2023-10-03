@@ -3,11 +3,11 @@ package alizer
 import (
 	"context"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
 )
@@ -119,18 +119,18 @@ func TestDetectFramework(t *testing.T) {
 			registryClient.EXPECT().ListDevfileStacks(ctx, "", "", "", false, false).Return(list, nil)
 			alizerClient := NewAlizerClient(registryClient)
 			// Run function DetectFramework
-			detected, _, registry, err := alizerClient.DetectFramework(ctx, tt.args.path)
 
+			detected, err := alizerClient.DetectFramework(ctx, tt.args.path)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if detected.Name != tt.wantedDevfile {
+			if detected.Type.Name != tt.wantedDevfile {
 				t.Errorf("unexpected devfile %v, wantedDevfile %v", detected, tt.wantedDevfile)
 			}
-			if registry.Name != tt.wantedRegistry {
-				t.Errorf("unexpected registry %v, wantedRegistry %v", registry, tt.wantedRegistry)
+			if detected.Registry.Name != tt.wantedRegistry {
+				t.Errorf("unexpected registry %v, wantedRegistry %v", detected.Registry, tt.wantedRegistry)
 			}
 		})
 	}
@@ -196,6 +196,46 @@ func TestDetectName(t *testing.T) {
 
 			if name != tt.wantedName {
 				t.Errorf("unexpected name %q, wanted: %q", name, tt.wantedName)
+			}
+		})
+	}
+}
+
+func TestAlizer_DetectPorts(t *testing.T) {
+	type fields struct {
+		registryClient registry.Client
+	}
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []int
+		wantErr bool
+	}{
+		{
+			name: "Detect Node.JS example",
+			args: args{
+				path: GetTestProjectPath("nodejs"),
+			},
+			want:    []int{8080},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &Alizer{
+				registryClient: tt.fields.registryClient,
+			}
+			got, err := o.DetectPorts(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Alizer.DetectPorts() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Alizer.DetectPorts() = %v, want %v", got, tt.want)
 			}
 		})
 	}

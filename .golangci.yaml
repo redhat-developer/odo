@@ -17,6 +17,8 @@ run:
   # Allowed values: readonly|vendor|mod
   # By default, it isn't set.
   modules-download-mode: vendor
+  skip-dirs:
+    - pkg/apiserver-gen
 
 linters:
   # Note that some linters not listed below are enabled by default.

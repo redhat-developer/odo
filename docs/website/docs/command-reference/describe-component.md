@@ -33,6 +33,32 @@ Supported odo features:
 •  Deploy: true
 •  Debug: true
 
+Commands:
+ •  my-install
+      Type: exec
+      Group: build
+      Command Line: "npm install"
+      Component: runtime
+      Component Type: container
+ •  my-run
+      Type: exec
+      Group: run
+      Command Line: "npm start"
+      Component: runtime
+      Component Type: container
+ •  build-image
+      Type: apply
+      Component: prod-image
+      Component Type: image
+      Image Name: devfile-nodejs-deploy:latest
+ •  deploy-deployment
+      Type: apply
+      Component: outerloop-deploy
+      Component Type: kubernetes
+ •  deploy
+      Type: composite
+      Group: deploy
+
 Container components:
 •  runtime
 
@@ -55,6 +81,7 @@ Kubernetes Routes:
 This command returns information extracted from the Devfile:
 - metadata (name, display name, project type, language, version, description and tags)
 - supported odo features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
+- the list of commands, if any, along with some useful information about each command
 - the list of container components,
 - the list of Kubernetes components.
 - the list of forwarded ports if the component is running in Dev mode.

@@ -17,11 +17,12 @@ import PreReq from './docs-mdx/prerequisites.mdx';
 
 ## Step 1. Create the initial development application
 
-Complete the [Developing with .Net](/docs/user-guides/quickstart/dotnet) guide before continuing.
+Complete the [Developing with .NET](/docs/user-guides/quickstart/dotnet) guide before continuing.
 
 ## Step 2. Containerize the application
 
 In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
+
 import Dockerfile from './docs-mdx/dotnet/dotnet_Dockerfile.mdx';
 
 <Dockerfile />
@@ -54,7 +55,7 @@ import AccessingApplicationDescription from './docs-mdx/accessing_application.md
 import KubernetesDescribeOutput from './docs-mdx/dotnet/dotnet_describe_component_kubernetes_output.mdx';
 import OpenShiftDescribeOutput from './docs-mdx/dotnet/dotnet_describe_component_openshift_output.mdx';
 
-<AccessingApplicationDescription k8sdata=<KubernetesDescribeOutput /> ocdata=<OpenShiftDescribeOutput />/>
+<AccessingApplicationDescription name="dotnet" k8sdata=<KubernetesDescribeOutput /> ocdata=<OpenShiftDescribeOutput />/>
 
 ## Step 6. Delete the resources
 

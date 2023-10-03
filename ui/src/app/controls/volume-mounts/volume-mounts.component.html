@@ -1,0 +1,28 @@
+<div class="group">
+    <div *ngFor="let control of form.controls; index as i">
+        <ng-container [formGroup]="control">
+            <mat-form-field class="inline" appearance="outline">
+                <mat-label><span>Volume</span></mat-label>
+                <mat-select formControlName="name" [attr.data-cy]="'volume-mount-name-'+i" (selectionChange)="onNameChange(i, $event.value)">
+                    <mat-option *ngFor="let volume of volumes" [value]="volume">{{volume}}</mat-option>
+                    <mat-option value="!">(New Volume)</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field class="inline" appearance="outline">
+                <mat-label><span>Mount Path</span></mat-label>
+                <input formControlName="path" [attr.data-cy]="'volume-mount-path-'+i" matInput>
+            </mat-form-field>
+
+            <button [attr.data-cy]="'volume-mount-minus-'+i" class="adjust-position" mat-icon-button matTooltip="Delete Volume Mount" (click)="remove(i)">
+                <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
+            </button>
+
+            <app-volume
+                *ngIf="showNewVolume[i]"
+                (created)="onNewVolumeCreated(i, $event)"
+            ></app-volume>
+        </ng-container>
+    </div>
+    <button data-cy="volume-mount-add" mat-flat-button (click)="add('', '')">Add Volume Mount</button>
+</div>
+

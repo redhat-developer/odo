@@ -16,7 +16,7 @@
 global:
   ingress:
     class: 'public-iks-k8s-nginx'
-    domain: 'odo-test-kubernetes-clust-49529fc6e6a4a9fe7ebba9a3db5b55c4-0000.eu-de.containers.appdomain.cloud'
+    domain: 'odo-test-kubernete-449701-49529fc6e6a4a9fe7ebba9a3db5b55c4-0000.eu-de.containers.appdomain.cloud'
     secretName: ''
   isOpenShift: false
   tlsEnabled: false

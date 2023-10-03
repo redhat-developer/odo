@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/onsi/gomega/types"
+
 	"github.com/tidwall/gjson"
 
 	"github.com/redhat-developer/odo/pkg/config"
@@ -224,7 +226,7 @@ func CommonBeforeEach() CommonVar {
 				}
 				Expect(resetErr).ShouldNot(HaveOccurred())
 			})
-			Expect(os.Setenv("PODMAN_CMD_INIT_TIMEOUT", "10s")).ShouldNot(HaveOccurred())
+			Expect(os.Setenv("PODMAN_CMD_INIT_TIMEOUT", "30s")).ShouldNot(HaveOccurred())
 
 			// Generate a dedicated containers.conf with a specific namespace
 			GenerateAndSetContainersConf(commonVar.ConfigDir)
@@ -296,7 +298,7 @@ func CommonAfterEach(commonVar CommonVar) {
 		}
 	}
 
-	if commonVar.Project != "" {
+	if commonVar.Project != "" && commonVar.CliRunner.HasNamespaceProject(commonVar.Project) {
 		// delete the random project/namespace created in CommonBeforeEach
 		commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project, false)
 	}
@@ -324,6 +326,12 @@ func JsonPathContentContain(json string, path string, value string) {
 	Expect(result.String()).To(ContainSubstring(value), fmt.Sprintf("content of path %q should contain %q but is %q", path, value, result.String()))
 }
 
+// JsonPathSatisfiesAll expects content of the path to satisfy all the matchers passed to it
+func JsonPathSatisfiesAll(json string, path string, matchers ...types.GomegaMatcher) {
+	result := gjson.Get(json, path)
+	Expect(result.String()).Should(SatisfyAll(matchers...))
+}
+
 // JsonPathDoesNotExist expects that the content of the path does not exist in the JSON string
 func JsonPathDoesNotExist(json string, path string) {
 	result := gjson.Get(json, path)
@@ -347,8 +355,15 @@ func JsonPathContentIsValidUserPort(json string, path string) {
 	))
 }
 
-// GetProjectName sets projectNames based on the name of the test file name (without path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
-func GetProjectName() string {
+func JsonPathContentHasLen(json string, path string, len int) {
+	result := gjson.Get(json, path+".#")
+	intVal, err := strconv.Atoi(result.String())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(intVal).To(Equal(len), fmt.Sprintf("%q should contain exactly %d elements", path, len))
+}
+
+// GenerateProjectName generates a new projectName based on the name of the test file name (without path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
+func GenerateProjectName() string {
 	//Get current test filename and remove file path, file extension and replace undescores with hyphens
 	currGinkgoTestFileName := strings.Replace(strings.Split(strings.Split(CurrentSpecReport().
 		ContainerHierarchyLocations[0].FileName, "/")[len(strings.Split(CurrentSpecReport().ContainerHierarchyLocations[0].FileName, "/"))-1], ".")[0], "_", "-", -1)
@@ -395,4 +410,9 @@ func GetDevfileRegistryURL() string {
 		registryURL = customReg
 	}
 	return registryURL
+}
+
+func GetOdoVersion() (version string, gitCommit string) {
+	odoVersion := Cmd("odo", "version", "--client", "-o", "json").ShouldPass().Out()
+	return gjson.Get(odoVersion, "version").String(), gjson.Get(odoVersion, "gitCommit").String()
 }

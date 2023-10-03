@@ -139,13 +139,13 @@ func (g *GitUrl) CloneGitRepo(destDir string) error {
 	}
 
 	if g.Revision != "" {
-		_, err := execute(destDir, "git", "switch", "--detach", "origin/"+g.Revision)
+		_, err := execute(destDir, "git", "checkout", g.Revision)
 		if err != nil {
 			err = os.RemoveAll(destDir)
 			if err != nil {
 				return err
 			}
-			return fmt.Errorf("failed to switch repo to revision. repo dir: %v, revision: %v", destDir, g.Revision)
+			return fmt.Errorf("failed to switch repo to revision. repo dir: %v, revision: %v, error: %v", destDir, g.Revision, err)
 		}
 	}
 

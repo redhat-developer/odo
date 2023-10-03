@@ -1,0 +1,17 @@
+<h3>{{title}}</h3>
+<div class="group">
+    <span *ngFor="let control of form.controls; index as i">
+        <mat-form-field appearance="fill">
+            <mat-label><span>Command</span></mat-label>
+            <mat-select [attr.data-cy]="'command-selector-'+i" [formControl]="control">
+                <mat-option *ngFor="let commandElement of commandList" [value]="commandElement">{{commandElement}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <button [attr.data-cy]="'command-minus-'+i" class="adjust-position" mat-icon-button matTooltip="Delete command"  (click)="removeCommand(i)">
+            <mat-icon class="tab-icon material-icons-outlined">delete_forever</mat-icon>
+        </button>
+    </span>
+    <div>
+        <button [attr.data-cy]="'add-command'" mat-flat-button (click)="addCommand('')">{{addLabel}}</button>
+    </div>
+</div>

@@ -1,0 +1,20 @@
+<mat-form-field class="chip-list" appearance="fill">
+  <mat-label>Commands</mat-label>
+  <mat-chip-grid #chipGrid>
+    <mat-chip-row *ngFor="let cmd of commands" (removed)="remove(cmd)">
+      {{cmd}}
+      <button matChipRemove>
+        <mat-icon class="material-icons-outlined">cancel</mat-icon>
+      </button>
+    </mat-chip-row>
+  </mat-chip-grid>
+  <input data-cy="input" placeholder="New command..." #commandInput [formControl]="commandCtrl"
+    [matChipInputFor]="chipGrid" [matAutocomplete]="auto"
+    [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+    (matChipInputTokenEnd)="add($event)"/>
+  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
+    <mat-option *ngFor="let cmd of filteredCommands | async" [value]="cmd">
+      {{cmd}}
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>

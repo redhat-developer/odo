@@ -3,6 +3,10 @@ package version
 import (
 	"context"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	"github.com/redhat-developer/odo/pkg/podman"
 	"os"
 	"strings"
 
@@ -39,11 +43,12 @@ type VersionOptions struct {
 
 	// serverInfo contains the remote server information if the user asked for it, nil otherwise
 	serverInfo *kclient.ServerInfo
-
-	clientset *clientset.Clientset
+	podmanInfo podman.SystemVersionReport
+	clientset  *clientset.Clientset
 }
 
 var _ genericclioptions.Runnable = (*VersionOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*VersionOptions)(nil)
 
 // NewVersionOptions creates a new VersionOptions instance
 func NewVersionOptions() *VersionOptions {
@@ -56,16 +61,30 @@ func (o *VersionOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes VersionOptions after they have been created
 func (o *VersionOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
-	if !o.clientFlag {
-		// Let's fetch the info about the server, ignoring errors
-		client, err := kclient.New()
+	if o.clientFlag {
+		return nil
+	}
 
-		if err == nil {
-			o.serverInfo, err = client.GetServerVersion(o.clientset.PreferenceClient.GetTimeout())
-			if err != nil {
-				klog.V(4).Info("unable to fetch the server version: ", err)
-			}
+	// Fetch the info about the server, ignoring errors
+	if o.clientset.KubernetesClient != nil {
+		o.serverInfo, err = o.clientset.KubernetesClient.GetServerVersion(o.clientset.PreferenceClient.GetTimeout())
+		if err != nil {
+			klog.V(4).Info("unable to fetch the server version: ", err)
 		}
+	}
+
+	if o.clientset.PodmanClient != nil {
+		o.podmanInfo, err = o.clientset.PodmanClient.Version(ctx)
+		if err != nil {
+			klog.V(4).Info("unable to fetch the podman client version: ", err)
+		}
+	}
+
+	if o.serverInfo == nil {
+		log.Warning("unable to fetch the cluster server version")
+	}
+	if o.podmanInfo.Client == nil {
+		log.Warning("unable to fetch the podman client version")
 	}
 	return nil
 }
@@ -75,38 +94,81 @@ func (o *VersionOptions) Validate(ctx context.Context) (err error) {
 	return nil
 }
 
+func (o *VersionOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	return o.run(), nil
+}
+
+func (o *VersionOptions) run() api.OdoVersion {
+	result := api.OdoVersion{
+		Version:   odoversion.VERSION,
+		GitCommit: odoversion.GITCOMMIT,
+	}
+
+	if o.clientFlag {
+		return result
+	}
+
+	if o.serverInfo != nil {
+		clusterInfo := &api.ClusterInfo{
+			ServerURL:  o.serverInfo.Address,
+			Kubernetes: &api.ClusterClientInfo{Version: o.serverInfo.KubernetesVersion},
+		}
+		if o.serverInfo.OpenShiftVersion != "" {
+			clusterInfo.OpenShift = &api.ClusterClientInfo{Version: o.serverInfo.OpenShiftVersion}
+		}
+		result.Cluster = clusterInfo
+	}
+
+	if o.podmanInfo.Client != nil {
+		podmanInfo := &api.PodmanInfo{Client: &api.PodmanClientInfo{Version: o.podmanInfo.Client.Version}}
+		result.Podman = podmanInfo
+	}
+
+	return result
+}
+
 // Run contains the logic for the odo service create command
 func (o *VersionOptions) Run(ctx context.Context) (err error) {
-	// If verbose mode is enabled, dump all KUBECLT_* env variables
-	// this is usefull for debuging oc plugin integration
+	// If verbose mode is enabled, dump all KUBECTL_* env variables
+	// this is useful for debugging oc plugin integration
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "KUBECTL_") {
 			klog.V(4).Info(v)
 		}
 	}
 
-	fmt.Println("odo " + odoversion.VERSION + " (" + odoversion.GITCOMMIT + ")")
+	odoVersion := o.run()
+	fmt.Println("odo " + odoVersion.Version + " (" + odoVersion.GitCommit + ")")
 
-	if !o.clientFlag && o.serverInfo != nil {
-		// make sure we only include OpenShift info if we actually have it
-		openshiftStr := ""
-		if len(o.serverInfo.OpenShiftVersion) > 0 {
-			openshiftStr = fmt.Sprintf("OpenShift: %v\n", o.serverInfo.OpenShiftVersion)
-		}
-		fmt.Printf("\n"+
-			"Server: %v\n"+
-			"%v"+
-			"Kubernetes: %v\n",
-			o.serverInfo.Address,
-			openshiftStr,
-			o.serverInfo.KubernetesVersion)
+	if o.clientFlag {
+		return nil
 	}
+
+	message := "\n"
+	if odoVersion.Cluster != nil {
+		cluster := odoVersion.Cluster
+		message += fmt.Sprintf("Server: %v\n", cluster.ServerURL)
+
+		// make sure we only include OpenShift info if we actually have it
+		if cluster.OpenShift != nil && cluster.OpenShift.Version != "" {
+			message += fmt.Sprintf("OpenShift: %v\n", cluster.OpenShift.Version)
+		}
+		if cluster.Kubernetes != nil {
+			message += fmt.Sprintf("Kubernetes: %v\n", cluster.Kubernetes.Version)
+		}
+	}
+
+	if odoVersion.Podman != nil && odoVersion.Podman.Client != nil {
+		message += fmt.Sprintf("Podman Client: %v\n", odoVersion.Podman.Client.Version)
+	}
+
+	fmt.Print(message)
 
 	return nil
 }
 
 // NewCmdVersion implements the version odo command
-func NewCmdVersion(name, fullName string) *cobra.Command {
+func NewCmdVersion(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewVersionOptions()
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
@@ -115,10 +177,11 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 		Long:    versionLongDesc,
 		Example: fmt.Sprintf(versionExample, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
-	clientset.Add(versionCmd, clientset.PREFERENCE)
+	commonflags.UseOutputFlag(versionCmd)
+	clientset.Add(versionCmd, clientset.PREFERENCE, clientset.KUBERNETES_NULLABLE, clientset.PODMAN_NULLABLE)
 	util.SetCommandGroup(versionCmd, util.UtilityGroup)
 
 	versionCmd.SetUsageTemplate(util.CmdUsageTemplate)

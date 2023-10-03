@@ -69,6 +69,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with default cluster mode", func() {
 		By("running odo describe component -o json with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -77,6 +78,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
@@ -86,6 +88,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with cluster", func() {
 		By("running odo describe component -o json with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "cluster", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -94,6 +97,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "cluster").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
@@ -103,6 +107,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	It("should fail, with podman", Label(helper.LabelPodman), func() {
 		By("running odo describe component -o json with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			res := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman", "-o", "json").
 				ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
@@ -112,6 +117,7 @@ var _ = Describe("odo describe component command tests", func() {
 		})
 
 		By("running odo describe component with an unknown name", func() {
+			helper.CreateInvalidDevfile(commonVar.Context)
 			stderr := helper.Cmd("odo", "describe", "component", "--name", "unknown-name", "--platform", "podman").
 				ShouldFail().Err()
 			Expect(stderr).To(ContainSubstring("no component found with name \"unknown-name\""))
@@ -131,6 +137,26 @@ var _ = Describe("odo describe component command tests", func() {
 			helper.JsonPathContentIs(jsonContent, "devfileData.supportedOdoFeatures.deploy", "false")
 			helper.JsonPathContentIs(jsonContent, "devfileData.supportedOdoFeatures.debug", "true")
 			helper.JsonPathContentIs(jsonContent, "managedBy", "odo")
+
+			helper.JsonPathContentHasLen(jsonContent, "devfileData.commands", 4)
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.0.name", "install")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.0.group", "build")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.0.commandLine", "npm install")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.1.name", "run")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.1.group", "run")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.1.commandLine", "npm start")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.2.name", "debug")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.2.group", "debug")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.2.commandLine", "npm run debug")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.3.name", "test")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.3.group", "test")
+			helper.JsonPathContentIs(jsonContent, "devfileData.commands.3.commandLine", "npm test")
+			for i := 0; i <= 3; i++ {
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.type", i), "exec")
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.isDefault", i), "true")
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.component", i), "runtime")
+				helper.JsonPathContentIs(jsonContent, fmt.Sprintf("devfileData.commands.%d.componentType", i), "container")
+			}
 		}
 
 		checkDevfileDescription := func(content string, withUnknown bool) {
@@ -144,6 +170,7 @@ var _ = Describe("odo describe component command tests", func() {
 				Expect(content).To(ContainSubstring("Dev: Unknown"))
 				Expect(content).To(ContainSubstring("Debug: Unknown"))
 				Expect(content).To(ContainSubstring("Deploy: Unknown"))
+				Expect(content).ShouldNot(ContainSubstring("Commands:"))
 			} else {
 				Expect(content).To(ContainSubstring("Display Name: "))
 				Expect(content).To(ContainSubstring("Language: "))
@@ -153,6 +180,26 @@ var _ = Describe("odo describe component command tests", func() {
 				Expect(content).To(ContainSubstring("Dev: true"))
 				Expect(content).To(ContainSubstring("Debug: true"))
 				Expect(content).To(ContainSubstring("Deploy: false"))
+
+				Expect(content).To(ContainSubstring("Commands:"))
+				for _, c := range []string{"exec"} {
+					Expect(content).To(ContainSubstring("Type: " + c))
+				}
+				for _, c := range []string{"runtime"} {
+					Expect(content).To(ContainSubstring("Component: " + c))
+				}
+				for _, c := range []string{"container"} {
+					Expect(content).To(ContainSubstring("Component Type: " + c))
+				}
+				for _, c := range []string{"install", "run", "debug", "test"} {
+					Expect(content).To(ContainSubstring(c))
+				}
+				for _, c := range []string{"build", "run", "debug", "test"} {
+					Expect(content).To(ContainSubstring("Group: %s", c))
+				}
+				for _, c := range []string{"npm install", "npm start", "npm run debug", "npm test"} {
+					Expect(content).To(ContainSubstring("Command Line: %q", c))
+				}
 			}
 		}
 
@@ -216,8 +263,10 @@ var _ = Describe("odo describe component command tests", func() {
 
 		It("should not describe the component from another directory, with default cluster mode", func() {
 			By("running with json output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -226,8 +275,10 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 
 			By("running with default output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stdout).To(BeEmpty())
@@ -237,8 +288,10 @@ var _ = Describe("odo describe component command tests", func() {
 
 		It("should not describe the component from another directory, with cluster", func() {
 			By("running with json output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "-o", "json", "--platform", "cluster").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(helper.IsJSON(stderr)).To(BeTrue())
@@ -247,8 +300,10 @@ var _ = Describe("odo describe component command tests", func() {
 			})
 
 			By("running with default output", func() {
-				err := os.Chdir("/")
-				Expect(err).NotTo(HaveOccurred())
+				otherDir := filepath.Join(commonVar.Context, "tmp")
+				helper.MakeDir(otherDir)
+				helper.Chdir(otherDir)
+				helper.CreateInvalidDevfile(otherDir)
 				res := helper.Cmd("odo", "describe", "component", "--name", cmpName, "--platform", "cluster").ShouldFail()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stdout).To(BeEmpty())
@@ -262,7 +317,6 @@ var _ = Describe("odo describe component command tests", func() {
 				debug := debug
 				When(fmt.Sprintf("running odo dev (podman=%s,debug=%s)", strconv.FormatBool(podman), strconv.FormatBool(debug)), helper.LabelPodmanIf(podman, func() {
 					var devSession helper.DevSession
-					var ports map[string]string
 
 					BeforeEach(func() {
 						opts := helper.DevSessionOpts{RunOnPodman: podman}
@@ -274,7 +328,7 @@ var _ = Describe("odo describe component command tests", func() {
 							}
 						}
 						var err error
-						devSession, _, _, ports, err = helper.StartDevMode(opts)
+						devSession, err = helper.StartDevMode(opts)
 						Expect(err).NotTo(HaveOccurred())
 					})
 
@@ -296,19 +350,19 @@ var _ = Describe("odo describe component command tests", func() {
 								Expect(stdout).To(ContainSubstring("Running on:"))
 								Expect(stdout).To(ContainSubstring("Forwarded ports"))
 								if podman {
-									Expect(stdout).To(ContainSubstring("[podman] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", ports["3000"][len("127.0.0.1:"):]))
+									Expect(stdout).To(ContainSubstring("[podman] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", devSession.Endpoints["3000"][len("127.0.0.1:"):]))
 									if debug {
 										Expect(stdout).To(
 											ContainSubstring("127.0.0.1:%s -> runtime:5858\n    Name: debug\n    Exposure: none\n    Debug: true",
-												ports["5858"][len("127.0.0.1:"):]))
+												devSession.Endpoints["5858"][len("127.0.0.1:"):]))
 									}
 									Expect(stdout).NotTo(ContainSubstring("[cluster] 127.0.0.1:"))
 									Expect(stdout).To(ContainSubstring("podman: Dev"))
 									Expect(stdout).NotTo(ContainSubstring("cluster: "))
 								} else {
-									Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", ports["3000"][len("127.0.0.1:"):]))
+									Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:3000\n    Name: http-3000", devSession.Endpoints["3000"][len("127.0.0.1:"):]))
 									if debug {
-										Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:5858\n    Name: debug\n    Exposure: none\n    Debug: true", ports["5858"][len("127.0.0.1:"):]))
+										Expect(stdout).To(ContainSubstring("[cluster] 127.0.0.1:%s -> runtime:5858\n    Name: debug\n    Exposure: none\n    Debug: true", devSession.Endpoints["5858"][len("127.0.0.1:"):]))
 									}
 									Expect(stdout).NotTo(ContainSubstring("[podman] 127.0.0.1:"))
 									Expect(stdout).To(ContainSubstring("cluster: Dev"))
@@ -374,7 +428,7 @@ var _ = Describe("odo describe component command tests", func() {
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.portName", "http-3000")
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.isDebug", "false")
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localAddress", "127.0.0.1")
-								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", ports["3000"][len("127.0.0.1:"):])
+								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localPort", devSession.Endpoints["3000"][len("127.0.0.1:"):])
 								helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerPort", "3000")
 								helper.JsonPathDoesNotExist(stdout, "devForwardedPorts.0.exposure")
 								if debug {
@@ -382,7 +436,7 @@ var _ = Describe("odo describe component command tests", func() {
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.portName", "debug")
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.isDebug", "true")
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.localAddress", "127.0.0.1")
-									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.localPort", ports["5858"][len("127.0.0.1:"):])
+									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.localPort", devSession.Endpoints["5858"][len("127.0.0.1:"):])
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.containerPort", "5858")
 									helper.JsonPathContentIs(stdout, "devForwardedPorts.1.exposure", "none")
 								}
@@ -441,6 +495,7 @@ var _ = Describe("odo describe component command tests", func() {
 										helper.JsonPathContentIs(stdout, "runningOn.cluster.deploy", "false")
 										helper.JsonPathDoesNotExist(stdout, "runningOn.podman")
 									}
+									helper.JsonPathDoesNotExist(stdout, "devfileData.commands")
 								})
 							})
 						})
@@ -491,7 +546,7 @@ var _ = Describe("odo describe component command tests", func() {
 					helper.CopyExampleDevFile(
 						filepath.Join("source", "devfiles", "nodejs", ctx.devfile),
 						path.Join(commonVar.Context, "devfile.yaml"),
-						helper.DevfileMetadataNameSetter(componentName))
+						componentName)
 					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 				})
 				It(fmt.Sprintf("should show the %s in odo describe component output", ctx.title), func() {
@@ -506,10 +561,12 @@ var _ = Describe("odo describe component command tests", func() {
 						}
 					})
 					By("checking the human readable output with component name", func() {
+						helper.CreateInvalidDevfile(commonVar.Context)
 						out := helper.Cmd("odo", "describe", "component", "--name", componentName).ShouldPass().Out()
 						helper.MatchAllInOutput(out, ctx.matchOutput)
 					})
 					By("checking the machine readable output with component name", func() {
+						helper.CreateInvalidDevfile(commonVar.Context)
 						out := helper.Cmd("odo", "describe", "component", "--name", componentName, "-o", "json").ShouldPass().Out()
 						for key, value := range ctx.matchJSONOutput {
 							helper.JsonPathContentContain(out, key, value)
@@ -575,7 +632,7 @@ var _ = Describe("odo describe component command tests", func() {
 						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 						helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", ctx.devfile)).ShouldPass()
 						var err error
-						devSession, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{RunOnPodman: podman})
+						devSession, err = helper.StartDevMode(helper.DevSessionOpts{RunOnPodman: podman})
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {
@@ -650,6 +707,99 @@ var _ = Describe("odo describe component command tests", func() {
 					componentName + ": ",
 				})
 			}
+		})
+	})
+
+	Context("describe commands in Devfile", Label(helper.LabelUnauth), Label(helper.LabelNoCluster), func() {
+
+		When("initializing a component with different types of commands", func() {
+
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-functional-pods.yaml"),
+					path.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
+			})
+
+			It("should describe the Devfile commands in human-readable form", func() {
+				stdout := helper.Cmd("odo", "describe", "component").ShouldPass().Out()
+				Expect(stdout).To(ContainSubstring("Commands:"))
+				for _, c := range []string{"exec", "composite", "apply"} {
+					Expect(stdout).To(ContainSubstring("Type: " + c))
+				}
+				for _, c := range []string{"runtime", "innerloop-pod", "prod-image", "outerloop-deploy"} {
+					Expect(stdout).To(ContainSubstring("Component: " + c))
+				}
+				for _, c := range []string{"container", "kubernetes", "image"} {
+					Expect(stdout).To(ContainSubstring("Component Type: " + c))
+				}
+				for _, c := range []string{
+					"install",
+					"innerloop-pod-command",
+					"start",
+					"run",
+					"build-image",
+					"deploy-deployment",
+					"deploy-another-deployment",
+					"outerloop-pod-command",
+					"deploy",
+				} {
+					Expect(stdout).To(ContainSubstring(c))
+				}
+				for _, c := range []string{"build", "run", "deploy"} {
+					Expect(stdout).To(ContainSubstring("Group: %s", c))
+				}
+				for _, c := range []string{"npm install", "npm start"} {
+					Expect(stdout).To(ContainSubstring("Command Line: %q", c))
+				}
+				for _, c := range []string{"quay.io/tkral/devfile-nodejs-deploy:latest"} {
+					Expect(stdout).To(ContainSubstring("Image Name: %s", c))
+				}
+			})
+
+			It("should describe the Devfile commands in JSON output", func() {
+				stdout := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass().Out()
+				Expect(helper.IsJSON(stdout)).To(BeTrue(), fmt.Sprintf("invalid JSON output: %q", stdout))
+
+				helper.JsonPathContentHasLen(stdout, "devfileData.commands", 9)
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.name", "install")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.group", "build")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.commandLine", "npm install")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.type", "exec")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.isDefault", "true")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.component", "runtime")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.0.componentType", "container")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.0.imageName")
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.name", "innerloop-pod-command")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.type", "apply")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.component", "innerloop-pod")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.1.componentType", "kubernetes")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.group")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.commandLine")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.isDefault")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.1.imageName")
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.name", "build-image")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.type", "apply")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.component", "prod-image")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.componentType", "image")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.4.imageName", "quay.io/tkral/devfile-nodejs-deploy:latest")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.4.group")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.4.commandLine")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.4.isDefault")
+
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.name", "deploy")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.group", "deploy")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.type", "composite")
+				helper.JsonPathContentIs(stdout, "devfileData.commands.8.isDefault", "true")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.imageName")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.commandLine")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.component")
+				helper.JsonPathDoesNotExist(stdout, "devfileData.commands.8.componentType")
+			})
 		})
 	})
 })

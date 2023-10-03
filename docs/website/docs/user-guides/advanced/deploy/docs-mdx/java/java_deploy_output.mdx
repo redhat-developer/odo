@@ -3,15 +3,15 @@ $ odo deploy
   __
  /  \__     Deploying the application using my-java-app Devfile
  \__/  \    Namespace: odo-dev
- /  \__/    odo version: v3.10.0
+ /  \__/    odo version: v3.15.0
  \__/
 
-↪ Building & Pushing Container: quay.io/MYUSERNAME/java-odo-example
+↪ Building & Pushing Container: ttl.sh/my-java-app-my-java-app:611242
  •  Building image locally  ...
-build -t quay.io/MYUSERNAME/java-odo-example -f /home/user/quickstart-demo/java-demo/Dockerfile /home/user/quickstart-demo/java-demo
+build -t ttl.sh/my-java-app-my-java-app -f /home/user/quickstart-demo/java-demo/Dockerfile /home/user/quickstart-demo/java-demo
  ✓  Building image locally [5ms]
  •  Pushing image to container registry  ...
-push quay.io/MYUSERNAME/java-odo-example
+push ttl.sh/my-java-app-my-java-app
  ✓  Pushing image to container registry
 
 ↪ Deploying Kubernetes Component: my-java-app

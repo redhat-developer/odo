@@ -94,11 +94,7 @@ func Log(platformClient platform.Client, componentName string, appName string, f
 
 	pod, err := platformClient.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false))
 	if err != nil {
-		return nil, fmt.Errorf("the component %s doesn't exist on the cluster", componentName)
-	}
-
-	if pod.Status.Phase != corev1.PodRunning {
-		return nil, fmt.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+		return nil, fmt.Errorf("a running component %s doesn't exist on the cluster: %w", componentName, err)
 	}
 
 	containerName := command.Exec.Component
@@ -537,4 +533,12 @@ func ListRoutesAndIngresses(client kclient.ClientInterface, componentName, appNa
 	}
 
 	return ings, routes, nil
+}
+
+func GetContainersNames(pod *corev1.Pod) []string {
+	result := make([]string, 0, len(pod.Spec.Containers))
+	for _, container := range pod.Spec.Containers {
+		result = append(result, container.Name)
+	}
+	return result
 }

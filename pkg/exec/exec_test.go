@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 const (
@@ -42,6 +43,14 @@ func (o fakePlatform) GetAllPodsInNamespaceMatchingSelector(selector string, ns 
 
 func (o fakePlatform) GetRunningPodFromSelector(selector string) (*corev1.Pod, error) {
 	panic("not implemented yet")
+}
+
+func (o fakePlatform) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
+	panic("not implemented yet")
+}
+
+func (o fakePlatform) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	return nil, nil
 }
 
 func TestExecuteCommand(t *testing.T) {

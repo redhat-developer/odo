@@ -8,7 +8,7 @@ import (
 
 type component interface {
 	CheckValidity() error
-	Apply(handler Handler) error
+	Apply(handler Handler, kind v1alpha2.CommandGroupKind) error
 }
 
 // newComponent creates a concrete component, based on its type
@@ -43,7 +43,7 @@ func newComponent(devfileObj parser.DevfileObj, devfileCmp v1alpha2.Component) (
 	return cmp, nil
 }
 
-func isComponentReferenced(allApplyCommands []v1alpha2.Command, cmpName string) bool {
+func IsComponentReferenced(allApplyCommands []v1alpha2.Command, cmpName string) bool {
 	for _, cmd := range allApplyCommands {
 		if cmd.Apply == nil {
 			continue

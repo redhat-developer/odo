@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog"
@@ -40,27 +41,39 @@ func handleApplicationPorts(w io.Writer, devfileobj parser.DevfileObj, ports []i
 
 	component := components[0]
 
+	err = setPortsInContainerComponent(&devfileobj, &component, ports, true)
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	return devfileobj, nil
+}
+
+func setPortsInContainerComponent(devfileobj *parser.DevfileObj, component *v1alpha2.Component, ports []int, withDebug bool) error {
 	// Add the new ports at the beginning of the list (that is before any Debug endpoints).
 	// This way, application ports will be port-forwarded first.
 	portsToSet := make([]string, 0, len(ports))
 	for _, p := range ports {
 		portsToSet = append(portsToSet, strconv.Itoa(p))
 	}
-	debugEndpoints, err := libdevfile.GetDebugEndpointsForComponent(component)
+
+	debugEndpoints, err := libdevfile.GetDebugEndpointsForComponent(*component)
 	if err != nil {
-		return parser.DevfileObj{}, err
+		return err
 	}
+
 	// Clear the existing endpoint list
 	component.Container.Endpoints = nil
 
 	// Add the new application ports first
 	err = devfileobj.Data.SetPorts(map[string][]string{component.Name: portsToSet})
 	if err != nil {
-		return parser.DevfileObj{}, err
+		return err
 	}
 
 	// Append debug endpoints to the end of the list
-	component.Container.Endpoints = append(component.Container.Endpoints, debugEndpoints...)
+	if withDebug {
+		component.Container.Endpoints = append(component.Container.Endpoints, debugEndpoints...)
+	}
 
-	return devfileobj, nil
+	return nil
 }

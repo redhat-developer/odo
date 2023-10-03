@@ -64,11 +64,11 @@ func (o *BuildImagesOptions) Validate(ctx context.Context) (err error) {
 
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
-	return image.BuildPushImages(ctx, o.clientset.FS, o.pushFlag)
+	return image.BuildPushImages(ctx, image.SelectBackend(ctx), o.clientset.FS, o.pushFlag)
 }
 
 // NewCmdBuildImages implements the odo command
-func NewCmdBuildImages(name, fullName string) *cobra.Command {
+func NewCmdBuildImages(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewBuildImagesOptions()
 	buildImagesCmd := &cobra.Command{
 		Use:     name,
@@ -77,7 +77,7 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(buildImagesExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 

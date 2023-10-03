@@ -167,17 +167,21 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 
 // CreateAndSetRandNamespaceProject create and set new project
 func (kubectl KubectlRunner) CreateAndSetRandNamespaceProject() string {
-	projectName := GetProjectName()
+	projectName := GenerateProjectName()
 	kubectl.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }
 
 func (kubectl KubectlRunner) createAndSetRandNamespaceProject(projectName string) string {
-	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	Cmd("kubectl", "create", "namespace", projectName).ShouldPass()
+	if kubectl.HasNamespaceProject(projectName) {
+		fmt.Fprintf(GinkgoWriter, "Namespace %q already exists\n", projectName)
+	} else {
+		fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
+		Cmd("kubectl", "create", "namespace", projectName).ShouldPass()
+	}
 	Cmd("kubectl", "config", "set-context", "--current", "--namespace", projectName).ShouldPass()
-	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
-	Expect(session).To(ContainSubstring(projectName))
+	// ListNamespaceProject makes sure that project eventually appears in the list of all namespaces/projects.
+	kubectl.ListNamespaceProject(projectName)
 	kubectl.addConfigMapForCleanup(projectName) // add configmap for cleanup
 	return projectName
 }

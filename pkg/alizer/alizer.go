@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/model"
-	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
+	"github.com/devfile/alizer/pkg/apis/model"
+	"github.com/devfile/alizer/pkg/apis/recognizer"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -29,11 +29,11 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 
 // DetectFramework uses the alizer library in order to detect the devfile
 // to use depending on the files in the path
-func (o *Alizer) DetectFramework(ctx context.Context, path string) (_ model.DevFileType, defaultVersion string, _ api.Registry, _ error) {
+func (o *Alizer) DetectFramework(ctx context.Context, path string) (DetectedFramework, error) {
 	types := []model.DevFileType{}
 	components, err := o.registryClient.ListDevfileStacks(ctx, "", "", "", false, false)
 	if err != nil {
-		return model.DevFileType{}, defaultVersion, api.Registry{}, err
+		return DetectedFramework{}, err
 	}
 	for _, component := range components.Items {
 		types = append(types, model.DevFileType{
@@ -45,15 +45,21 @@ func (o *Alizer) DetectFramework(ctx context.Context, path string) (_ model.DevF
 	}
 	typ, err := recognizer.SelectDevFileFromTypes(path, types)
 	if err != nil {
-		return model.DevFileType{}, defaultVersion, api.Registry{}, err
+		return DetectedFramework{}, err
 	}
 	// Get the default stack version that will be downloaded
+	var defaultVersion string
 	for _, version := range components.Items[typ].Versions {
 		if version.IsDefault {
 			defaultVersion = version.Version
 		}
 	}
-	return types[typ], defaultVersion, components.Items[typ].Registry, nil
+	return DetectedFramework{
+		Type:           types[typ],
+		DefaultVersion: defaultVersion,
+		Registry:       components.Items[typ].Registry,
+		Architectures:  components.Items[typ].Architectures,
+	}, nil
 }
 
 // DetectName retrieves the name of the project (if available).

@@ -8,6 +8,8 @@ import (
 	odoFake "github.com/redhat-developer/odo/pkg/kclient/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery/cached/memory"
+	fakediscovery "k8s.io/client-go/discovery/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -47,7 +49,8 @@ func FakeNewWithIngressSupports(networkingv1Supported, extensionV1Supported bool
 	client.isExtensionV1Beta1IngressSupported = extensionV1Supported
 	client.isNetworkingV1IngressSupported = networkingv1Supported
 	client.checkIngressSupports = false
-	client.SetDiscoveryInterface(NewKubernetesFakedDiscovery(true, true))
+	client.discoveryClient = fkclientset.Kubernetes.Discovery().(*fakediscovery.FakeDiscovery)
+	client.cachedDiscoveryClient = memory.NewMemCacheClient(client.discoveryClient)
 
 	fkclientset.ProjClientset = fakeProjClientset.NewSimpleClientset()
 	client.projectClient = fkclientset.ProjClientset.ProjectV1()

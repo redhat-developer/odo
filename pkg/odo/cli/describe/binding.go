@@ -51,6 +51,10 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *BindingOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return o.nameFlag == ""
+}
+
 func (o *BindingOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
 		devfileObj := odocontext.GetEffectiveDevfileObj(ctx)
@@ -125,7 +129,7 @@ func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
 }
 
 // NewCmdBinding implements the binding odo sub-command
-func NewCmdBinding(name, fullName string) *cobra.Command {
+func NewCmdBinding(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewBindingOptions()
 
 	var bindingCmd = &cobra.Command{
@@ -135,7 +139,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(describeBindingExample, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	bindingCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the binding to describe, optional. By default, the bindings in the local devfile are described")

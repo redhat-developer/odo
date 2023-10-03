@@ -44,7 +44,6 @@ func (a SyncClient) CopyFile(ctx context.Context, localPath string, compInfo Com
 			log.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
 		}
-
 	}()
 
 	err := a.ExtractProjectToComponent(ctx, compInfo.ContainerName, compInfo.PodName, targetPath, reader)

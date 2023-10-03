@@ -139,6 +139,7 @@ When the `describe component` command is executed without parameter from a direc
   - the path of the Devfile,
   - the content of the Devfile,
   - supported `odo` features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
+  - the list of commands, if any, along with some useful information about each command
   - ingress or routes created in Deploy mode
 - the status of the component
   - the forwarded ports if odo is currently running in Dev mode,
@@ -155,6 +156,45 @@ odo describe component -o json
 			"schemaVersion": "2.0.0",
 			[ devfile.yaml file content ]
 		},
+		"commands": [
+            {
+                "name": "my-install",
+                "type": "exec",
+                "group": "build",
+                "isDefault": true,
+                "commandLine": "npm install",
+                "component": "runtime",
+                "componentType": "container"
+            },
+            {
+                "name": "my-run",
+                "type": "exec",
+                "group": "run",
+                "isDefault": true,
+                "commandLine": "npm start",
+                "component": "runtime",
+                "componentType": "container"
+            },
+            {
+                "name": "build-image",
+                "type": "apply",
+                "component": "prod-image",
+                "componentType": "image",
+                "imageName": "devfile-nodejs-deploy"
+            },
+            {
+                "name": "deploy-deployment",
+                "type": "apply",
+                "component": "outerloop-deploy",
+                "componentType": "kubernetes"
+            },
+            {
+                "name": "deploy",
+                "type": "composite",
+                "group": "deploy",
+                "isDefault": true
+            }
+        ],
 		"supportedOdoFeatures": {
 			"dev": true,
 			"deploy": false,
@@ -328,56 +368,45 @@ odo registry -o json
 ```json
 [
   {
-    "name": "python",
-    "displayName": "Python",
-    "description": "Python is an interpreted, object-oriented, high-level programming language with dynamic semantics. Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together.",
+    "name": "java-openliberty",
+    "displayName": "Open Liberty Maven",
+    "description": "Java application based on Java 11 and Maven 3.8, using the Open Liberty runtime 22.0.0.1",
     "registry": {
       "name": "DefaultDevfileRegistry",
       "url": "https://registry.devfile.io",
       "secure": false
     },
-    "language": "Python",
+    "language": "Java",
     "tags": [
-      "Python",
-      "Pip",
-      "Flask"
+      "Java",
+      "Maven"
     ],
-    "projectType": "Python",
-    "version": "2.1.0",
+    "projectType": "Open Liberty",
+    "version": "0.9.0",
     "versions": [
       {
-        "version": "2.1.0",
+        "version": "0.9.0",
         "isDefault": true,
         "schemaVersion": "2.1.0",
         "starterProjects": [
-          "flask-example"
+          "rest"
         ],
         "commandGroups": {
-            "build": true,
-            "debug": true,
-            "deploy": false,
-            "run": true,
-            "test": false
-        }
-      },
-      {
-        "version": "3.0.0",
-        "isDefault": false,
-        "schemaVersion": "2.2.0",
-        "starterProjects": [
-          "flask-example"
-        ],
-        "commandGroups": {
-            "build": true,
-            "debug": true,
-            "deploy": false,
-            "run": true,
-            "test": false
+          "build": false,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": true
         }
       }
     ],
     "starterProjects": [
-      "flask-example"
+      "rest"
+    ],
+    "architectures": [
+      "amd64",
+      "ppc64le",
+      "s390x"
     ]
   },
   [...]
@@ -906,4 +935,32 @@ If odo can't find any projects on the cluster that you have access to, it will s
 ```shell
 $ odo list projects -o json
 {}
+```
+
+## odo version -o json
+The `odo version -o json` returns the version information about `odo`, cluster server and podman client.
+Use `--client` flag to only obtain version information about `odo`.
+```shell
+odo version -o json [--client]
+```
+```shell
+$ odo version -o json
+{
+	"version": "v3.11.0",
+	"gitCommit": "ea2d256e8",
+	"cluster": {
+		"serverURL": "https://kubernetes.docker.internal:6443",
+		"kubernetes": {
+			"version": "v1.25.9"
+		},
+		"openshift": {
+		  "version": "4.13.0"
+		},
+	},
+	"podman": {
+		"client": {
+			"version": "4.5.1"
+		}
+	}
+}
 ```

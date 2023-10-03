@@ -26,11 +26,11 @@ Finally, extract the downloaded source code archive in the 'quickstart-demo' dir
 
 Your source code has now been generated and created in the directory.
 
-## Step 1. Connect to your cluster and create a new namespace or project
+## Step 1. Preparing the target platform
 
-import ConnectingToCluster from './docs-mdx/connecting_to_the_cluster_description.mdx';
+import PreparingTargetPlatform from './docs-mdx/preparing_the_target_platform.mdx';
 
-<ConnectingToCluster/>
+<PreparingTargetPlatform/>
 
 ## Step 2. Initializing your application (`odo init`)
 
@@ -43,9 +43,10 @@ import InitDescription from './docs-mdx/odo_init_description.mdx';
 ## Step 3. Developing your application continuously (`odo dev`)
 
 import DevSampleOutput from './docs-mdx/java/java_odo_dev_output.mdx';
+import DevPodmanSampleOutput from './docs-mdx/java/java_odo_dev_podman_output.mdx';
 
 import DevDescription from './docs-mdx/odo_dev_description.mdx';
 
-<DevDescription framework="Java (Spring Boot)" devout=<DevSampleOutput/> />
+<DevDescription framework="Java (Spring Boot)" devout=<DevSampleOutput/> devpodmanout=<DevPodmanSampleOutput/> />
 
 _You can now follow the [advanced guide](../advanced/deploy/java.md) to deploy the application to production._

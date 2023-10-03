@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"errors"
+
 	dbus "github.com/godbus/dbus/v5"
 )
 
@@ -189,6 +190,17 @@ func (s *SecretService) handlePrompt(prompt dbus.ObjectPath) (bool, dbus.Variant
 		if err != nil {
 			return false, dbus.MakeVariant(""), err
 		}
+
+		err = s.AddMatchSignal(dbus.WithMatchObjectPath(prompt),
+			dbus.WithMatchInterface(promptInterface),
+		)
+		if err != nil {
+			return false, dbus.MakeVariant(""), err
+		}
+
+		defer func(s *SecretService, options ...dbus.MatchOption) {
+			_ = s.RemoveMatchSignal(options...)
+		}(s, dbus.WithMatchObjectPath(prompt), dbus.WithMatchInterface(promptInterface))
 
 		promptSignal := make(chan *dbus.Signal, 1)
 		s.Signal(promptSignal)

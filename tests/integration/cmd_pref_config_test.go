@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tidwall/gjson"
 
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
+	segmentContext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -22,6 +26,8 @@ var _ = Describe("odo preference and config command tests", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
+		helper.CreateInvalidDevfile(commonVar.Context)
+		helper.Chdir(commonVar.Context)
 	})
 
 	// Clean up after the test
@@ -195,9 +201,174 @@ OdoSettings:
 					helper.Chdir(workingDir)
 				})
 				It("should not prompt the user", func() {
+					helper.DeleteInvalidDevfile(commonVar.Context)
 					helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "-f").ShouldPass()
 					output := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
 					Expect(output).ToNot(ContainSubstring(promptMessageSubString))
+				})
+			})
+
+			When("telemetry is enabled", func() {
+				var prefClient preference.Client
+
+				BeforeEach(func() {
+					prefClient = helper.EnableTelemetryDebug()
+				})
+
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+
+				for _, tt := range []struct {
+					prefParam                  string
+					value                      string
+					differentValueIfAnonymized string
+					clearText                  bool
+				}{
+					{"ConsentTelemetry", "true", "", true},
+					{"Ephemeral", "false", "", true},
+					{"UpdateNotification", "true", "", true},
+					{"PushTimeout", "1m", "", true},
+					{"RegistryCacheTime", "2s", "", true},
+					{"Timeout", "30s", "", true},
+					{"ImageRegistry", "quay.io/some-org", "ghcr.io/my-org", false},
+				} {
+					tt := tt
+					form := "hashed"
+					if tt.clearText {
+						form = "plain"
+					}
+
+					When("unsetting value for preference "+tt.prefParam, func() {
+						BeforeEach(func() {
+							helper.Cmd("odo", "preference", "unset", tt.prefParam, "--force").ShouldPass()
+						})
+
+						It("should track parameter that is unset without any value", func() {
+							helper.Cmd("odo", "preference", "unset", tt.prefParam, "--force").ShouldPass()
+							td := helper.GetTelemetryDebugData()
+							Expect(td.Event).To(ContainSubstring("odo preference unset"))
+							Expect(td.Properties.Success).To(BeTrue())
+							Expect(td.Properties.Error).To(BeEmpty())
+							Expect(td.Properties.ErrorType).To(BeEmpty())
+							Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(Equal("force"))
+							Expect(td.Properties.CmdProperties[segmentContext.PreferenceParameter]).To(Equal(strings.ToLower(tt.prefParam)))
+							valueRecorded, present := td.Properties.CmdProperties[segmentContext.PreferenceValue]
+							Expect(present).To(BeFalse(), fmt.Sprintf("no value should be recorded for preference %q, fot %q", tt.prefParam, valueRecorded))
+						})
+					})
+
+					When("setting value for preference "+tt.prefParam, func() {
+						BeforeEach(func() {
+							if !tt.clearText {
+								Expect(tt.differentValueIfAnonymized).ShouldNot(Equal(tt.value),
+									"test not written as expected. Values should be different for preference parameters declared as anonymized.")
+							}
+							helper.Cmd("odo", "preference", "set", tt.prefParam, tt.value, "--force").ShouldPass()
+						})
+
+						It(fmt.Sprintf("should track parameter that is set along with its %s value", form), func() {
+							td := helper.GetTelemetryDebugData()
+							Expect(td.Event).To(ContainSubstring("odo preference set"))
+							Expect(td.Properties.Success).To(BeTrue())
+							Expect(td.Properties.Error).To(BeEmpty())
+							Expect(td.Properties.ErrorType).To(BeEmpty())
+							Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(Equal("force"))
+							Expect(td.Properties.CmdProperties[segmentContext.PreferenceParameter]).To(Equal(strings.ToLower(tt.prefParam)))
+							Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).ShouldNot(BeEmpty())
+							if tt.clearText {
+								Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).Should(Equal(tt.value))
+							} else {
+								Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).ShouldNot(Equal(tt.value))
+							}
+						})
+
+						if !tt.clearText {
+							It("should anonymize values set such that same strings have same hash", func() {
+								td := helper.GetTelemetryDebugData()
+								Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).ShouldNot(BeEmpty())
+								pref1Val, ok := td.Properties.CmdProperties[segmentContext.PreferenceValue].(string)
+								Expect(ok).To(BeTrue(), fmt.Sprintf("value recorded in telemetry for preference %q is expected to be a string", tt.prefParam))
+
+								helper.ClearTelemetryFile()
+
+								helper.Cmd("odo", "preference", "set", tt.prefParam, tt.value, "--force").ShouldPass()
+								td = helper.GetTelemetryDebugData()
+								Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).ShouldNot(BeEmpty())
+								pref2Val, ok := td.Properties.CmdProperties[segmentContext.PreferenceValue].(string)
+								Expect(ok).To(BeTrue(), fmt.Sprintf("value recorded in telemetry for preference %q is expected to be a string", tt.prefParam))
+
+								Expect(pref1Val).To(Equal(pref2Val))
+							})
+
+							It("should anonymize values set such that different strings will not have same hash", func() {
+								td := helper.GetTelemetryDebugData()
+								Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).ShouldNot(BeEmpty())
+								pref1Val, ok := td.Properties.CmdProperties[segmentContext.PreferenceValue].(string)
+								Expect(ok).To(BeTrue(), fmt.Sprintf("value recorded in telemetry for preference %q is expected to be a string", tt.prefParam))
+
+								helper.ClearTelemetryFile()
+
+								helper.Cmd("odo", "preference", "set", tt.prefParam, tt.differentValueIfAnonymized, "--force").ShouldPass()
+								td = helper.GetTelemetryDebugData()
+								Expect(td.Properties.CmdProperties[segmentContext.PreferenceValue]).ShouldNot(BeEmpty())
+								pref2Val, ok := td.Properties.CmdProperties[segmentContext.PreferenceValue].(string)
+								Expect(ok).To(BeTrue(), fmt.Sprintf("value recorded in telemetry for preference %q is expected to be a string", tt.prefParam))
+
+								Expect(pref1Val).ToNot(Equal(pref2Val))
+							})
+						}
+					})
+				}
+
+				When("telemetry is enabled in preferences", func() {
+					BeforeEach(func() {
+						Expect(os.Unsetenv(segment.TrackingConsentEnv)).NotTo(HaveOccurred())
+						Expect(prefClient.SetConfiguration(preference.ConsentTelemetrySetting, "true")).ShouldNot(HaveOccurred())
+					})
+
+					When("setting ConsentTelemetry to false", func() {
+						BeforeEach(func() {
+							helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "--force").ShouldPass()
+						})
+
+						// https://github.com/redhat-developer/odo/issues/6790
+						It("should record the odo-preference-set command in telemetry", func() {
+							td := helper.GetTelemetryDebugData()
+							Expect(td.Event).To(ContainSubstring("odo preference set"))
+							Expect(td.Properties.Success).To(BeTrue())
+							Expect(td.Properties.Error).To(BeEmpty())
+							Expect(td.Properties.ErrorType).To(BeEmpty())
+							Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(Equal("force"))
+							Expect(td.Properties.CmdProperties[segmentContext.PreviousTelemetryStatus]).To(BeTrue())
+							Expect(td.Properties.CmdProperties[segmentContext.TelemetryStatus]).To(BeFalse())
+						})
+					})
+				})
+
+				When("Telemetry is disabled in preferences", func() {
+					BeforeEach(func() {
+						Expect(os.Unsetenv(segment.TrackingConsentEnv)).NotTo(HaveOccurred())
+						Expect(prefClient.SetConfiguration(preference.ConsentTelemetrySetting, "false")).ShouldNot(HaveOccurred())
+					})
+
+					When("setting ConsentTelemetry to true", func() {
+						BeforeEach(func() {
+							helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "true", "--force").ShouldPass()
+						})
+
+						// https://github.com/redhat-developer/odo/issues/6790
+						It("should record the odo-preference-set command in telemetry", func() {
+							td := helper.GetTelemetryDebugData()
+							Expect(td.Event).To(ContainSubstring("odo preference set"))
+							Expect(td.Properties.Success).To(BeTrue())
+							Expect(td.Properties.Error).To(BeEmpty())
+							Expect(td.Properties.ErrorType).To(BeEmpty())
+							Expect(td.Properties.CmdProperties[segmentContext.Flags]).To(Equal("force"))
+							Expect(td.Properties.CmdProperties[segmentContext.PreviousTelemetryStatus]).To(BeFalse())
+							Expect(td.Properties.CmdProperties[segmentContext.TelemetryStatus]).To(BeTrue())
+						})
+					})
 				})
 			})
 		})

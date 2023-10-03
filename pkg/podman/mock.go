@@ -13,6 +13,7 @@ import (
 	api "github.com/redhat-developer/odo/pkg/api"
 	v1 "k8s.io/api/core/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	watch "k8s.io/apimachinery/pkg/watch"
 )
 
 // MockClient is a mock of Client interface.
@@ -96,6 +97,21 @@ func (mr *MockClientMockRecorder) GetAllResourcesFromSelector(selector, ns inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResourcesFromSelector", reflect.TypeOf((*MockClient)(nil).GetAllResourcesFromSelector), selector, ns)
 }
 
+// GetCapabilities mocks base method.
+func (m *MockClient) GetCapabilities() (Capabilities, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapabilities")
+	ret0, _ := ret[0].(Capabilities)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCapabilities indicates an expected call of GetCapabilities.
+func (mr *MockClientMockRecorder) GetCapabilities() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilities", reflect.TypeOf((*MockClient)(nil).GetCapabilities))
+}
+
 // GetPodLogs mocks base method.
 func (m *MockClient) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
@@ -109,6 +125,21 @@ func (m *MockClient) GetPodLogs(podName, containerName string, followLog bool) (
 func (mr *MockClientMockRecorder) GetPodLogs(podName, containerName, followLog interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockClient)(nil).GetPodLogs), podName, containerName, followLog)
+}
+
+// GetPodUsingComponentName mocks base method.
+func (m *MockClient) GetPodUsingComponentName(componentName string) (*v1.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodUsingComponentName", componentName)
+	ret0, _ := ret[0].(*v1.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodUsingComponentName indicates an expected call of GetPodUsingComponentName.
+func (mr *MockClientMockRecorder) GetPodUsingComponentName(componentName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodUsingComponentName", reflect.TypeOf((*MockClient)(nil).GetPodUsingComponentName), componentName)
 }
 
 // GetPodsMatchingSelector mocks base method.
@@ -226,6 +257,21 @@ func (m *MockClient) PodStop(podname string) error {
 func (mr *MockClientMockRecorder) PodStop(podname interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodStop", reflect.TypeOf((*MockClient)(nil).PodStop), podname)
+}
+
+// PodWatcher mocks base method.
+func (m *MockClient) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PodWatcher indicates an expected call of PodWatcher.
+func (mr *MockClientMockRecorder) PodWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWatcher", reflect.TypeOf((*MockClient)(nil).PodWatcher), ctx, selector)
 }
 
 // Version mocks base method.

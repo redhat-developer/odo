@@ -160,7 +160,7 @@ func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, nil, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
 			ctx := odocontext.WithApplication(context.TODO(), "app")
 			got, err := do.ListClusterResourcesToDelete(ctx, tt.args.componentName, tt.args.namespace, tt.args.mode)
 			if (err != nil) != tt.wantErr {
@@ -277,7 +277,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, nil, execClient)
+			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
 			got := do.DeleteResources(tt.args.resources, false)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("DeleteComponentClient.DeleteResources() mismatch (-want +got):\n%s", diff)
@@ -686,30 +686,11 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
-					client.EXPECT().GetRunningPodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "mypod", "runtime"), nil)
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
-					client.EXPECT().ExecCMDInContainer(gomock.Any(), "runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(nil)
+					client.EXPECT().ExecCMDInContainer(gomock.Any(), "runtime", "mypod", cmd, gomock.Any(), gomock.Any(), nil, false).Return(nil)
 
-					return client
-				},
-			},
-			args: args{
-				devfileObj: devfileObjWithPreStopEvents,
-				appName:    appName,
-			},
-			wantErr: false,
-		},
-		{
-			name: "did not execute PreStopEvents because the pod is not in the running state",
-			fields: fields{
-				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
-					client := kclient.NewMockClientInterface(ctrl)
-
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
-					pod := odoTestingUtil.CreateFakePod(componentName, "runtime")
-					pod.Status.Phase = corev1.PodFailed
-					client.EXPECT().GetRunningPodFromSelector(selector).Return(pod, nil)
 					return client
 				},
 			},
@@ -726,14 +707,14 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
-					fakePod := odoTestingUtil.CreateFakePod(componentName, "runtime")
+					fakePod := odoTestingUtil.CreateFakePod(componentName, "mypod", "runtime")
 					// Expecting this method to be called twice because if the command execution fails, we try to get the pod logs by calling GetOnePodFromSelector again.
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(fakePod, nil).Times(2)
 
 					client.EXPECT().GetPodLogs(fakePod.Name, gomock.Any(), gomock.Any()).Return(nil, errors.New("an error"))
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
-					client.EXPECT().ExecCMDInContainer(gomock.Any(), "runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(errors.New("some error"))
+					client.EXPECT().ExecCMDInContainer(gomock.Any(), "runtime", "mypod", cmd, gomock.Any(), gomock.Any(), nil, false).Return(errors.New("some error"))
 
 					return client
 				},
@@ -750,8 +731,11 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := tt.fields.kubeClient(ctrl)
 			execClient := exec.NewExecClient(kubeClient)
-			do := NewDeleteComponentClient(kubeClient, nil, execClient)
-			if err := do.ExecutePreStopEvents(context.Background(), tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
+			do := NewDeleteComponentClient(kubeClient, nil, execClient, nil)
+			ctx := context.Background()
+			ctx = odocontext.WithApplication(ctx, appName)
+			ctx = odocontext.WithComponentName(ctx, componentName)
+			if err := do.ExecutePreStopEvents(ctx, tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

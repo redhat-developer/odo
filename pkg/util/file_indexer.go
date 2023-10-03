@@ -462,7 +462,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 
 		if stat.IsDir() {
 
-			if stat.Name() == DotOdoDirectory || stat.Name() == ".git" {
+			if stat.Name() == DotOdoDirectory {
 				return IndexerRet{}, nil
 			}
 

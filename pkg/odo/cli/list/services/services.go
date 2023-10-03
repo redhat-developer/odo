@@ -56,6 +56,10 @@ func (o *ServiceListOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *ServiceListOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 func (o *ServiceListOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, _ []string) error {
 	if o.namespaceFlag == "" && !o.allNamespacesFlag {
 		o.namespaceFlag = odocontext.GetNamespace(ctx)
@@ -152,7 +156,7 @@ func NewServicesListOptions() *ServiceListOptions {
 	return &ServiceListOptions{}
 }
 
-func NewCmdServicesList(name, fullName string) *cobra.Command {
+func NewCmdServicesList(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewServicesListOptions()
 	servicesListCmd := &cobra.Command{
 		Use:     name,
@@ -161,7 +165,7 @@ func NewCmdServicesList(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(listExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"service"},
 	}

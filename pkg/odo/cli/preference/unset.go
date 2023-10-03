@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -51,6 +52,10 @@ func (o *UnsetOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *UnsetOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = strings.ToLower(args[0])
@@ -68,7 +73,12 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 	if !o.forceFlag {
 
 		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {
-			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
+			var proceed bool
+			proceed, err = ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName))
+			if err != nil {
+				return err
+			}
+			if !proceed {
 				log.Infof("Aborted by the user")
 				return nil
 			}
@@ -83,12 +93,14 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 	}
 
 	log.Successf("Value of '%s' preference was removed from preferences. Its default value will be used.", o.paramName)
+
+	scontext.SetPreferenceParameter(ctx, o.paramName, nil)
 	return nil
 
 }
 
 // NewCmdUnset implements the preference unset odo command
-func NewCmdUnset(name, fullName string) *cobra.Command {
+func NewCmdUnset(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewUnsetOptions()
 	preferenceUnsetCmd := &cobra.Command{
 		Use:   name,
@@ -105,7 +117,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		}(unsetExample, fullName),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(preferenceUnsetCmd, clientset.PREFERENCE)

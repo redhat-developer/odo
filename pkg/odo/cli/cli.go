@@ -9,8 +9,12 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/apiserver"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logs"
+	"github.com/redhat-developer/odo/pkg/odo/cli/run"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/add"
@@ -102,8 +106,11 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 const pluginPrefix = "odo"
 
 // NewCmdOdo creates a new root command for odo
-func NewCmdOdo(ctx context.Context, name, fullName string) *cobra.Command {
-	rootCmd := odoRootCmd(ctx, name, fullName)
+func NewCmdOdo(ctx context.Context, name, fullName string, unknownCmdHandler func(error), testClientset clientset.Clientset) (*cobra.Command, error) {
+	rootCmd, err := odoRootCmd(ctx, name, fullName, unknownCmdHandler, testClientset)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(os.Args) > 1 {
 		cmdPathPieces := os.Args[1:]
@@ -111,17 +118,17 @@ func NewCmdOdo(ctx context.Context, name, fullName string) *cobra.Command {
 		// the specified command does not already exist
 		cmd, _, err := rootCmd.Find(cmdPathPieces)
 		if err == nil && cmd != rootCmd {
-			return rootCmd
+			return rootCmd, nil
 		}
 		handleErr := plugins.HandleCommand(plugins.NewExecHandler(pluginPrefix), cmdPathPieces)
 		if handleErr != nil {
-			return rootCmd
+			return rootCmd, handleErr
 		}
 	}
-	return rootCmd
+	return rootCmd, nil
 }
 
-func odoRootCmd(ctx context.Context, name, fullName string) *cobra.Command {
+func odoRootCmd(ctx context.Context, name, fullName string, unknownCmdHandler func(error), testClientset clientset.Clientset) (*cobra.Command, error) {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,
@@ -167,42 +174,46 @@ func odoRootCmd(ctx context.Context, name, fullName string) *cobra.Command {
 	helpCmd := rootCmd.HelpFunc()
 	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		// Simple way of checking to see if the command has a parent (if it doesn't, it does not exist)
-		if !command.HasParent() && len(args) > 0 {
-			fmt.Fprintf(log.GetStderr(), "unknown command '%s', type --help for a list of all commands\n", args[0])
-			os.Exit(1)
+		if unknownCmdHandler == nil || command.HasParent() || len(args) == 0 {
+			helpCmd(command, args)
+		} else {
+			unknownCmdHandler(fmt.Errorf("unknown command '%s', type --help for a list of all commands", args[0]))
 		}
-		helpCmd(command, args)
 	})
 
 	rootCmdList := append([]*cobra.Command{},
-		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
-		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
-		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
-		preference.NewCmdPreference(ctx, preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
-		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
-		list.NewCmdList(ctx, list.RecommendedCommandName, util.GetFullName(fullName, list.RecommendedCommandName)),
-		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
-		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
-		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),
-		_delete.NewCmdDelete(ctx, _delete.RecommendedCommandName, util.GetFullName(fullName, _delete.RecommendedCommandName)),
-		add.NewCmdAdd(add.RecommendedCommandName, util.GetFullName(fullName, add.RecommendedCommandName)),
-		remove.NewCmdRemove(remove.RecommendedCommandName, util.GetFullName(fullName, remove.RecommendedCommandName)),
-		dev.NewCmdDev(dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName)),
-		alizer.NewCmdAlizer(alizer.RecommendedCommandName, util.GetFullName(fullName, alizer.RecommendedCommandName)),
-		describe.NewCmdDescribe(ctx, describe.RecommendedCommandName, util.GetFullName(fullName, describe.RecommendedCommandName)),
-		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
-		create.NewCmdCreate(create.RecommendedCommandName, util.GetFullName(fullName, create.RecommendedCommandName)),
-		set.NewCmdSet(set.RecommendedCommandName, util.GetFullName(fullName, set.RecommendedCommandName)),
-		logs.NewCmdLogs(logs.RecommendedCommandName, util.GetFullName(fullName, logs.RecommendedCommandName)),
+		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName), testClientset),
+		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName), testClientset),
+		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName), testClientset),
+		preference.NewCmdPreference(ctx, preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName), testClientset),
+		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName, testClientset),
+		list.NewCmdList(ctx, list.RecommendedCommandName, util.GetFullName(fullName, list.RecommendedCommandName), testClientset),
+		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName), testClientset),
+		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName), testClientset),
+		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName), testClientset),
+		_delete.NewCmdDelete(ctx, _delete.RecommendedCommandName, util.GetFullName(fullName, _delete.RecommendedCommandName), testClientset),
+		add.NewCmdAdd(add.RecommendedCommandName, util.GetFullName(fullName, add.RecommendedCommandName), testClientset),
+		remove.NewCmdRemove(remove.RecommendedCommandName, util.GetFullName(fullName, remove.RecommendedCommandName), testClientset),
+		dev.NewCmdDev(ctx, dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName), testClientset),
+		alizer.NewCmdAlizer(alizer.RecommendedCommandName, util.GetFullName(fullName, alizer.RecommendedCommandName), testClientset),
+		describe.NewCmdDescribe(ctx, describe.RecommendedCommandName, util.GetFullName(fullName, describe.RecommendedCommandName), testClientset),
+		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName), testClientset),
+		create.NewCmdCreate(create.RecommendedCommandName, util.GetFullName(fullName, create.RecommendedCommandName), testClientset),
+		set.NewCmdSet(set.RecommendedCommandName, util.GetFullName(fullName, set.RecommendedCommandName), testClientset),
+		logs.NewCmdLogs(logs.RecommendedCommandName, util.GetFullName(fullName, logs.RecommendedCommandName), testClientset),
 		completion.NewCmdCompletion(completion.RecommendedCommandName, util.GetFullName(fullName, completion.RecommendedCommandName)),
+		run.NewCmdRun(run.RecommendedCommandName, util.GetFullName(fullName, run.RecommendedCommandName), testClientset),
 	)
+	if feature.IsExperimentalModeEnabled(ctx) {
+		rootCmdList = append(rootCmdList, apiserver.NewCmdApiServer(ctx, apiserver.RecommendedCommandName, util.GetFullName(fullName, apiserver.RecommendedCommandName), testClientset))
+	}
 
 	// Add all subcommands to base commands
 	rootCmd.AddCommand(rootCmdList...)
 
 	visitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
-	return rootCmd
+	return rootCmd, nil
 }
 
 // capitalizeFlagDescriptions adds capitalizations

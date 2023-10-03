@@ -1,0 +1,35 @@
+schemaVersion: 2.2.0
+metadata: {}
+commands:
+- exec:
+    commandLine: ./build.sh
+    component: container1
+    hotReloadCapable: false
+    workingDir: /projects
+  id: command1
+- exec:
+      commandLine: echo command2
+      component: container1
+      hotReloadCapable: true
+      workingDir: /projects
+  id: command2
+- exec:
+      commandLine: echo command3
+      component: container1
+      hotReloadCapable: true
+      workingDir: /projects
+  id: command3
+components:
+- container:
+    args:
+    - with
+    - arg
+    command:
+    - the
+    - command
+    - to
+    - run
+    dedicatedPod: false
+    image: nginx
+    mountSources: true
+  name: container1

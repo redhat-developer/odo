@@ -369,6 +369,10 @@ func Test_kubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			name: "no process children killed if no children file found",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", getPidFileForCommand(cmdDef))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("an error which should be ignored"))
+				kclient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(ctx context.Context, containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
@@ -396,6 +400,10 @@ func Test_kubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 		{
 			name: "process children should get killed",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", getPidFileForCommand(cmdDef))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("an error which should be ignored"))
 				kclient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -426,6 +434,10 @@ func Test_kubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 		{
 			name: "error if any child process could not be killed",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", getPidFileForCommand(cmdDef))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("an error which should be ignored"))
 				kclient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -460,10 +472,6 @@ func Test_kubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := kclient.NewMockClientInterface(ctrl)
-			kubeClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Eq(_containerName), gomock.Eq(_podName),
-				gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", getPidFileForCommand(cmdDef))}),
-				gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(errors.New("an error which should be ignored"))
 			if tt.kubeClientCustomizer != nil {
 				tt.kubeClientCustomizer(kubeClient)
 			}

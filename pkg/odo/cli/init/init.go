@@ -12,6 +12,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 
+	"k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -30,9 +32,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/version"
-
-	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -63,6 +62,9 @@ var initExample = templates.Examples(`
 
   # Bootstrap a new component and download a starter project
   %[1]s --name my-app --devfile nodejs --starter nodejs-starter
+
+  # Bootstrap a new component with a specific devfile from registry for a specific architecture
+  %[1]s --name my-app --devfile nodejs --architecture s390x
   `)
 
 type InitOptions struct {
@@ -83,6 +85,10 @@ func NewInitOptions() *InitOptions {
 
 func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
+}
+
+func (o *InitOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
 }
 
 // Complete will build the parameters for init, using different backends based on the flags set,
@@ -161,9 +167,13 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	if err != nil {
 		return nil, err
 	}
+	devfileData, err := api.GetDevfileData(devfileObj)
+	if err != nil {
+		return nil, err
+	}
 	return api.Component{
 		DevfilePath:       devfilePath,
-		DevfileData:       api.GetDevfileData(devfileObj),
+		DevfileData:       devfileData,
 		DevForwardedPorts: []api.ForwardedPort{},
 		RunningIn:         api.NewRunningModes(),
 		ManagedBy:         "odo",
@@ -201,7 +211,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 	} else if len(o.flags) == 0 {
 		infoOutput = messages.SourceCodeDetected
 	}
-	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Title(messages.InitializingNewComponent, infoOutput)
 	log.Println()
 	if len(o.flags) == 0 {
 		log.Info(messages.InteractiveModeEnabled)
@@ -260,7 +270,7 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 }
 
 // NewCmdInit implements the odo command
-func NewCmdInit(name, fullName string) *cobra.Command {
+func NewCmdInit(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 
 	o := NewInitOptions()
 	initCmd := &cobra.Command{
@@ -270,7 +280,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(initExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(initCmd, clientset.PREFERENCE, clientset.FILESYSTEM, clientset.REGISTRY, clientset.INIT)
@@ -281,6 +291,8 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_VERSION, "", "version of the devfile stack; use \"latest\" to dowload the latest stack")
+	initCmd.Flags().StringArray(backend.FLAG_ARCHITECTURE, []string{}, "Architecture supported. Can be one or multiple values from amd64, arm64, ppc64le, s390x. Default is amd64.")
+	initCmd.Flags().StringArray(backend.FLAG_RUN_PORT, []string{}, "ports used by the application (via the 'run' command)")
 
 	commonflags.UseOutputFlag(initCmd)
 	// Add a defined annotation in order to appear in the help menu

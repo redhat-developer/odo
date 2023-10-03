@@ -2,7 +2,7 @@ PROJECT := github.com/redhat-developer/odo
 ifdef GITCOMMIT
         GITCOMMIT := $(GITCOMMIT)
 else
-        GITCOMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
+        GITCOMMIT := $(shell git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
 endif
 
 COMMON_GOFLAGS := -mod=vendor
@@ -77,16 +77,27 @@ default: bin
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+.PHONY: ui-static
+ui-static: ## build static files for UI to be served by embedded API server
+	podman run --rm \
+		-v ${PWD}:/local \
+		-t docker.io/library/node:18 \
+		/bin/sh -c "cd /local && (cd ui && npm install && npm run build) && rm -rf pkg/apiserver-impl/ui/* && mv ui/dist/devfile-builder/* pkg/apiserver-impl/ui/"
+
+.PHONY: prebuild
+prebuild: ## Step to place go embedded files into Go sources before to build the go executable
+	cp ododevapispec.yaml pkg/apiserver-impl/swagger-ui/swagger.yaml
+
 .PHONY: bin
-bin: ## build the odo binary
+bin: prebuild ## build the odo binary
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: release-bin
-release-bin: ## build the odo binary
+release-bin: prebuild ## build the odo binary
 	go build ${RELEASE_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: install
-install:
+install: prebuild
 	go install ${BUILD_FLAGS} ./cmd/odo/
 
 .PHONY: validate
@@ -150,10 +161,6 @@ cross: ## compile for multiple platforms
 .PHONY: generate-cli-structure
 generate-cli-structure:
 	go run cmd/cli-doc/cli-doc.go structure
-
-.PHONY: generate-cli-reference
-generate-cli-reference:
-	go run cmd/cli-doc/cli-doc.go reference > docs/cli-reference.adoc
 
 # run make cross before this!
 .PHONY: prepare-release
@@ -232,3 +239,38 @@ test-e2e:
 .PHONY: test-doc-automation
 test-doc-automation:
 	$(RUN_GINKGO) $(GINKGO_FLAGS_ONE) --junit-report="test-doc-automation.xml"  tests/documentation/...
+
+
+# Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; this will only generate interfaces
+# Actual implementation must be done inside pkg/apiserver-impl
+# Apart from generating the files, this target also formats the generated files
+# and removes openapi.yaml to avoid any confusion regarding ododevapispec.yaml file and which file to use.
+.PHONY: generate-apiserver
+generate-apiserver: ## Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen
+	podman run --rm \
+    		-v ${PWD}:/local \
+    		docker.io/openapitools/openapi-generator-cli:v6.6.0 \
+    		generate \
+    		-i /local/ododevapispec.yaml \
+    		-g go-server \
+    		-o /local/pkg/apiserver-gen \
+    		--additional-properties=outputAsLibrary=true,onlyInterfaces=true,hideGenerationTimestamp=true && \
+    		echo "Formatting generated files:" && go fmt ./pkg/apiserver-gen/... && \
+    		echo "Removing pkg/apiserver-gen/api/openapi.yaml" && rm ./pkg/apiserver-gen/api/openapi.yaml
+
+.PHONY: generate-apifront
+generate-apifront: ## Generate OpenAPISpec library based on ododevapispec.yaml inside ui/src/app
+	podman run --rm \
+    		-v ${PWD}:/local \
+    		docker.io/openapitools/openapi-generator-cli:v6.6.0 \
+    		generate \
+    		-i /local/ododevapispec.yaml \
+    		-g typescript-angular \
+    		-o /local/ui/src/app/api-gen
+
+.PHONY: generate-api
+generate-api: generate-apiserver generate-apifront ## Generate code based on ododevapispec.yaml
+
+.PHONY: copy-swagger-ui
+copy-swagger-ui:
+	./scripts/copy-swagger-ui.sh

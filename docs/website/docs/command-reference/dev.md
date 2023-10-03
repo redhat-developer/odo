@@ -523,6 +523,24 @@ $ ODO_CONTAINER_BACKEND_GLOBAL_ARGS='--root=/tmp/podman/root;--storage-driver=ov
 ```
 </details>
 
+### Running with no commands
+
+The `--no-commands` flag allows to start the Dev Session without implicitly executing any `build`, `run` or `debug` commands.
+
+Specifying this flag will simply create all the resources necessary for the Dev Session, then set up file synchronization and port forwarding.
+In detail, it will:
+1. eventually build and push any `Image` Components defined in the Devfile, if they have the `autoBuild` flag set to `true`
+2. eventually apply any `Kubernetes` or `OpenShift` Components defined in the Devfile, if they have the `deployByDefault` flag set to `true`
+3. Start the Dev container(s), taking care of executing any commands that are bound to [Devfile lifecycle events](../user-guides/advanced/using-devfile-lifecycle-events.md), like [`postStart`](../user-guides/advanced/using-devfile-lifecycle-events.md#poststart)
+4. Synchronize the local files to the Dev environment
+5. Start the port forwarding logic if needed
+
+This gives users complete control over the Dev session, for example by leveraging the [`odo run` command](./run.md) to manually run any command defined in the Devfile.
+
+Note that this is the default behavior of `odo dev` if the Devfile does not define any Build, Run or Debug commands.
+The difference is that if any of those commands is added during the Dev session, a Dev session started via `odo dev` will automatically pick them up and run them,
+while a Dev session started via `odo dev --no-commands` will purposely not run them.
+
 
 ## Devfile (Advanced Usage)
 

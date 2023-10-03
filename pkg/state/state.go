@@ -10,23 +10,30 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/mitchellh/go-ps"
+	"k8s.io/klog"
+
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	fcontext "github.com/redhat-developer/odo/pkg/odo/commonflags/context"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/system"
 )
 
 type State struct {
 	content Content
 	fs      filesystem.Filesystem
+	system  system.System
 }
 
 var _ Client = (*State)(nil)
 
-func NewStateClient(fs filesystem.Filesystem) *State {
+func NewStateClient(fs filesystem.Filesystem, system system.System) *State {
 	return &State{
-		fs: fs,
+		fs:     fs,
+		system: system,
 	}
 }
 
@@ -85,11 +92,59 @@ func (o *State) SaveExit(ctx context.Context) error {
 	o.content.ForwardedPorts = nil
 	o.content.PID = 0
 	o.content.Platform = ""
+	o.content.APIServerPort = 0
 	err := o.delete(pid)
 	if err != nil {
 		return err
 	}
 	return o.saveCommonIfOwner(pid)
+}
+
+func (o *State) SetAPIServerPort(ctx context.Context, port int) error {
+	var (
+		pid      = odocontext.GetPID(ctx)
+		platform = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
+	)
+
+	o.content.APIServerPort = port
+	o.content.Platform = platform
+	return o.save(ctx, pid)
+}
+
+func (o *State) GetAPIServerPorts(ctx context.Context) ([]api.DevControlPlane, error) {
+	var (
+		result    []api.DevControlPlane
+		platforms []string
+		platform  = fcontext.GetPlatform(ctx, "")
+	)
+	if platform == "" {
+		platforms = []string{commonflags.PlatformCluster, commonflags.PlatformPodman}
+	} else {
+		platforms = []string{platform}
+	}
+
+	for _, platform = range platforms {
+		content, err := o.read(platform)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue // if the state file does not exist, no API Servers are listening
+			}
+			return nil, err
+		}
+		if content.APIServerPort == 0 {
+			continue
+		}
+		controlPlane := api.DevControlPlane{
+			Platform:      platform,
+			LocalPort:     content.APIServerPort,
+			APIServerPath: "/api/v1/",
+		}
+		if feature.IsEnabled(ctx, feature.UIServer) {
+			controlPlane.WebInterfacePath = "/"
+		}
+		result = append(result, controlPlane)
+	}
+	return result, nil
 }
 
 // save writes the content structure in json format in file
@@ -197,7 +252,7 @@ func (o *State) isFreeOrOwnedBy(pid int) (bool, error) {
 		return true, nil
 	}
 
-	exists, err := pidExists(savedContent.PID)
+	exists, err := o.system.PidExists(savedContent.PID)
 	if err != nil {
 		return false, err
 	}
@@ -243,14 +298,99 @@ func (o *State) checkFirstInPlatform(ctx context.Context) error {
 		if content.PID == pid {
 			continue
 		}
-		exists, err := pidExists(content.PID)
+		exists, err := o.system.PidExists(content.PID)
 		if err != nil {
 			return err
 		}
 		if exists {
+			var process ps.Process
+			process, err = o.system.FindProcess(content.PID)
+			if err != nil {
+				klog.V(4).Infof("process %d exists but is not accessible, ignoring", content.PID)
+				continue
+			}
+			if process.Executable() != "odo" && process.Executable() != "odo.exe" {
+				klog.V(4).Infof("process %d exists but is not odo, ignoring", content.PID)
+				continue
+			}
 			// Process exists => problem
 			return NewErrAlreadyRunningOnPlatform(platform, content.PID)
 		}
 	}
 	return nil
+}
+
+func (o *State) GetOrphanFiles(ctx context.Context) ([]string, error) {
+	var (
+		pid    = odocontext.GetPID(ctx)
+		result []string
+	)
+
+	re := regexp.MustCompile(`^devstate\.?[0-9]*\.json$`)
+	entries, err := o.fs.ReadDir(_dirpath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// No file found => no orphan files
+			return nil, nil
+		}
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !re.MatchString(entry.Name()) {
+			continue
+		}
+		filename, err := getFullFilename(entry)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonContent, err := o.fs.ReadFile(filepath.Join(_dirpath, entry.Name()))
+		if err != nil {
+			return nil, err
+		}
+		var content Content
+		// Ignore error, to handle empty file
+		_ = json.Unmarshal(jsonContent, &content)
+
+		if content.PID == pid {
+			continue
+		}
+		if content.PID == 0 {
+			// This is devstate.json with pid=0
+			continue
+		}
+		exists, err := o.system.PidExists(content.PID)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			var process ps.Process
+			process, err = o.system.FindProcess(content.PID)
+			if err != nil {
+				klog.V(4).Infof("process %d exists but is not accessible => orphan", content.PID)
+				result = append(result, filename)
+				continue
+			}
+			if process == nil {
+				klog.V(4).Infof("process %d does not exist => orphan", content.PID)
+				result = append(result, filename)
+				continue
+			}
+			if process.Executable() != "odo" && process.Executable() != "odo.exe" {
+				klog.V(4).Infof("process %d exists but is not odo => orphan", content.PID)
+				result = append(result, filename)
+				continue
+			}
+			// Process exists => not orphan
+			klog.V(4).Infof("process %d exists and is odo => not orphan", content.PID)
+			continue
+		}
+		klog.V(4).Infof("process %d does not exist => orphan", content.PID)
+		result = append(result, filename)
+	}
+	return result, nil
+}
+
+func getFullFilename(entry fs.FileInfo) (string, error) {
+	return filepath.Abs(filepath.Join(_dirpath, entry.Name()))
 }

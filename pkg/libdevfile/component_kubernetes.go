@@ -25,8 +25,8 @@ func (e *kubernetesComponent) CheckValidity() error {
 	return nil
 }
 
-func (e *kubernetesComponent) Apply(handler Handler) error {
-	return handler.ApplyKubernetes(e.component)
+func (e *kubernetesComponent) Apply(handler Handler, kind v1alpha2.CommandGroupKind) error {
+	return handler.ApplyKubernetes(e.component, kind)
 }
 
 // GetK8sAndOcComponentsToPush returns the list of Kubernetes and OpenShift components to push,
@@ -68,11 +68,11 @@ func GetK8sAndOcComponentsToPush(devfileObj parser.DevfileObj, allowApply bool) 
 			k = comp.Openshift.K8sLikeComponent
 		}
 		var add bool
-		if allowApply && isComponentReferenced(allApplyCommands, comp.Name) {
+		if allowApply && IsComponentReferenced(allApplyCommands, comp.Name) {
 			add = true
 		} else if k.DeployByDefault == nil {
 			// auto-created only if not referenced by any apply command
-			if !isComponentReferenced(allApplyCommands, comp.Name) {
+			if !IsComponentReferenced(allApplyCommands, comp.Name) {
 				add = true
 			}
 		} else if *k.DeployByDefault {

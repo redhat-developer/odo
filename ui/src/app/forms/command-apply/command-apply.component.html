@@ -1,0 +1,26 @@
+<div class="main">
+    <h2 *ngIf="!command">Add an Apply Command</h2>
+    <h2 *ngIf="command">Edit apply command <i>{{command.name}}</i></h2>
+        <div class="description">An Apply command "applies" a resource to the cluster. Equivalent to <code>kubectl apply -f ...</code></div>
+    <form [formGroup]="form">
+        <mat-form-field appearance="outline" class="mid-width">
+            <mat-label><span>Name</span></mat-label>
+            <mat-error>Lowercase words separated by dashes. Ex: my-command</mat-error>
+            <input placeholder="unique name to identify the command" data-cy="command-apply-name" matInput formControlName="name">
+        </mat-form-field>
+        <div><app-select-container
+            formControlName="component"
+            label="Resource"
+            [containers]="resourceList"
+            (createNew)="onCreateNewContainer($event)"></app-select-container></div>
+    </form>
+
+    <app-resource
+        *ngIf="showNewResource"
+        (created)="onNewResourceCreated($event)"
+        ></app-resource>
+
+    <button *ngIf="!command" data-cy="command-apply-create" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="create new Apply Command" (click)="create()">Create</button>
+    <button *ngIf="command" data-cy="command-apply-save" [disabled]="form.invalid" mat-flat-button color="primary" matTooltip="save Apply Command" (click)="save()">Save</button>
+    <button mat-flat-button (click)="cancel()">Cancel</button>
+</div>

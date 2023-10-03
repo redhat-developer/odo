@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -52,6 +53,10 @@ func (o *SetOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *SetOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = strings.ToLower(args[0])
@@ -70,7 +75,12 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 	if !o.forceFlag {
 		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {
 			// TODO: could add a logic to check if the new value set by the user is not same as the current value
-			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
+			var proceed bool
+			proceed, err = ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName))
+			if err != nil {
+				return err
+			}
+			if !proceed {
 				log.Info("Aborted by the user")
 				return nil
 			}
@@ -83,11 +93,13 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 	}
 
 	log.Successf("Value of '%s' preference was set to '%s'", o.paramName, o.paramValue)
+
+	scontext.SetPreferenceParameter(ctx, o.paramName, &o.paramValue)
 	return nil
 }
 
 // NewCmdSet implements the config set odo command
-func NewCmdSet(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdSet(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewSetOptions()
 	preferenceSetCmd := &cobra.Command{
 		Use:   name,
@@ -107,7 +119,7 @@ func NewCmdSet(ctx context.Context, name, fullName string) *cobra.Command {
 		}(setExample, fullName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(preferenceSetCmd, clientset.PREFERENCE)

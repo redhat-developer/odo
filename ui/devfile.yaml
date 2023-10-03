@@ -1,0 +1,36 @@
+commands:
+- exec:
+    commandLine: npm run start
+    component: node
+    group:
+      isDefault: true
+      kind: run
+    hotReloadCapable: true
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+- exec:
+    commandLine: npm install
+    component: node
+    hotReloadCapable: false
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      isDefault: true
+      kind: build
+  id: angular-install
+components:
+- container:
+    args:
+    - tail
+    - -f
+    - /dev/null
+    dedicatedPod: false
+    endpoints:
+    - name: http-angular
+      secure: false
+      targetPort: 4200
+    image: registry.access.redhat.com/ubi8/nodejs-16:latest
+    memoryLimit: 4096Mi
+    mountSources: true
+  name: node
+metadata: {}
+schemaVersion: 2.2.0

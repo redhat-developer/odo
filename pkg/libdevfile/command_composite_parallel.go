@@ -42,20 +42,23 @@ func (o *parallelCompositeCommand) CheckValidity() error {
 }
 
 // Execute loops over each command and executes them in parallel
-func (o *parallelCompositeCommand) Execute(ctx context.Context, handler Handler) error {
+func (o *parallelCompositeCommand) Execute(ctx context.Context, handler Handler, parentGroup *v1alpha2.CommandGroup) error {
 	allCommands, err := allCommandsMap(o.devfileObj)
 	if err != nil {
 		return err
 	}
+	if parentGroup == nil {
+		parentGroup = o.command.Composite.Group
+	}
 	commandExecs := util.NewConcurrentTasks(len(o.command.Composite.Commands))
 	for _, devfileCmd := range o.command.Composite.Commands {
-		cmd, err2 := newCommand(o.devfileObj, allCommands[devfileCmd])
+		cmd, err2 := newCommand(o.devfileObj, allCommands[strings.ToLower(devfileCmd)])
 		if err2 != nil {
 			return err2
 		}
 		commandExecs.Add(util.ConcurrentTask{
 			ToRun: func(errChannel chan error) {
-				err3 := cmd.Execute(ctx, handler)
+				err3 := cmd.Execute(ctx, handler, parentGroup)
 				if err3 != nil {
 					errChannel <- err3
 				}

@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +15,11 @@ var _ = Describe("odo remove binding command tests", func() {
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
+		skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+		if skipLogin == "true" {
+			Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+		}
+
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 		// Note: We do not add any operators here because `odo remove binding` is simply about removing the ServiceBinding from devfile.
@@ -52,20 +58,20 @@ var _ = Describe("odo remove binding command tests", func() {
 			})
 
 			When("odo dev is running", func() {
-				var session helper.DevSession
+				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					session, _, _, _, err = helper.StartDevMode(helper.DevSessionOpts{})
+					devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
-					session.Stop()
-					session.WaitEnd()
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 				When("binding is removed", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
-						_, _, _, err := session.WaitSync()
+						err := devSession.WaitSync()
 						Expect(err).ToNot(HaveOccurred())
 					})
 					It("should have led odo dev to delete ServiceBinding from the cluster", func() {

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -17,8 +18,8 @@ const (
 var registryDesc = ktemplates.LongDesc(`Remove value from an array of items`)
 
 // NewCmdRemove implements the registry configuration command
-func NewCmdRemove(name, fullName string) *cobra.Command {
-	registryCmd := NewCmdRegistry(registryCommandName, util.GetFullName(fullName, registryCommandName))
+func NewCmdRemove(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
+	registryCmd := NewCmdRegistry(registryCommandName, util.GetFullName(fullName, registryCommandName), testClientset)
 
 	removeCmd := &cobra.Command{
 		Use:   name,

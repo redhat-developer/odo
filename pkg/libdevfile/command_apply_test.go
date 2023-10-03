@@ -59,7 +59,7 @@ func Test_applyCommand_Execute(t *testing.T) {
 				devfileObj: tt.fields.devfileObj(),
 			}
 			// TODO handler
-			if err := o.Execute(context.Background(), nil); (err != nil) != tt.wantErr {
+			if err := o.Execute(context.Background(), nil, nil); (err != nil) != tt.wantErr {
 				t.Errorf("applyCommand.Execute() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

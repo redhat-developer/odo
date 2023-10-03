@@ -14,7 +14,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // runPreInit executes the Init command before running the main command
@@ -33,7 +32,7 @@ func runPreInit(ctx context.Context, workingDir string, deps *clientset.Clientse
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
-				log.Title(msg, messages.SourceCodeDetected, "odo version: "+version.VERSION)
+				log.Title(msg, messages.SourceCodeDetected)
 				log.Info("\n" + messages.InteractiveModeEnabled)
 			}
 		},

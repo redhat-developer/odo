@@ -49,6 +49,20 @@ func (mr *MockClientMockRecorder) CleanupResources(ctx, out interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupResources", reflect.TypeOf((*MockClient)(nil).CleanupResources), ctx, out)
 }
 
+// Run mocks base method.
+func (m *MockClient) Run(ctx context.Context, commandName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Run", ctx, commandName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Run indicates an expected call of Run.
+func (mr *MockClientMockRecorder) Run(ctx, commandName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockClient)(nil).Run), ctx, commandName)
+}
+
 // Start mocks base method.
 func (m *MockClient) Start(ctx context.Context, options StartOptions) error {
 	m.ctrl.T.Helper()

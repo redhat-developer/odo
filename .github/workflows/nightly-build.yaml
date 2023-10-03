@@ -1,0 +1,76 @@
+name: Nightly builds
+
+on:
+  # workflow_dispatch so that it can be triggered manually if needed
+  workflow_dispatch:
+
+  schedule:
+    - cron: "34 21 * * *"
+
+concurrency: ${{ github.workflow }}
+
+jobs:
+
+  nightly_build:
+    runs-on: ubuntu-latest
+
+    env:
+      IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY_NIGHTLY_BUILDS }}
+      IBM_CLOUD_RESOURCE_GROUP: ${{ secrets.IBM_CLOUD_RESOURCE_GROUP }}
+      IBM_CLOUD_REGION: eu-de
+      IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE: ${{ secrets.IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE }}
+      IBM_CLOUD_OBJECT_STORAGE_BUCKET: ${{ secrets.IBM_CLOUD_OBJECT_STORAGE_BUCKET }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Install IBM Cloud CLI
+        run: |
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+          ibmcloud --version
+          ibmcloud config --check-version=false
+          ibmcloud plugin install -f cloud-object-storage
+
+      - name: Authenticate with IBM Cloud CLI
+        run: |
+          ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" -g "${IBM_CLOUD_RESOURCE_GROUP}" --quiet
+
+      - name: Set CRN
+        run: |
+          CRN=$(ibmcloud resource service-instance "${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}" --output json | jq -r '.[0].guid | values')
+          if [[ -z "$CRN" ]]; then
+            echo "Unable to determine CRN for service instance ${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}"
+            exit 1
+          fi
+          ibmcloud cos config crn --crn "${CRN}"
+
+      - name: Check if bucket exists
+        run: |
+          if ! ibmcloud cos buckets | grep "${IBM_CLOUD_OBJECT_STORAGE_BUCKET}"; then
+            echo "Bucket not found: ${IBM_CLOUD_OBJECT_STORAGE_BUCKET}"
+            exit 1
+          fi
+
+      - name: Cross-compile odo
+        run: |
+          export GITCOMMIT="$(git describe --no-match --always --abbrev=9 --dirty --broken)-nightly"
+          make cross
+
+      - name: Upload binaries
+        run: |
+          baseUrl="https://s3.${IBM_CLOUD_REGION}.cloud-object-storage.appdomain.cloud/${IBM_CLOUD_OBJECT_STORAGE_BUCKET}"
+          for f in `find ./dist/bin -type f -name 'odo*'`; do 
+            bin=$(realpath "$f")
+            targetName=$(basename "$f" .exe)-$(basename $(dirname "$f"))
+            if [[ "${targetName}" == "odo-windows-"* ]]; then
+              targetName="${targetName}.exe"
+            fi
+            ibmcloud cos upload --bucket "${IBM_CLOUD_OBJECT_STORAGE_BUCKET}" --key "${targetName}" --file "${bin}"
+            echo "Binary $bin uploaded successfully and available at: ${baseUrl}/${targetName}"
+          done

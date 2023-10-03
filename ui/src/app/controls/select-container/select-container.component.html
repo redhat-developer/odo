@@ -1,0 +1,7 @@
+<mat-form-field appearance="fill">
+    <mat-label>{{label}}</mat-label>
+    <mat-select [formControl]="formCtrl" data-cy="select-container" (selectionChange)="onSelectChange($event.value)">
+        <mat-option *ngFor="let container of containers" [value]="container">{{container}}</mat-option>
+        <mat-option value="!">(New {{label}})</mat-option>
+    </mat-select>
+</mat-form-field>

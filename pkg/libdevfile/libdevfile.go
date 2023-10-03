@@ -22,9 +22,10 @@ const DebugEndpointNamePrefix = "debug"
 
 type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
-	ApplyKubernetes(kubernetes v1alpha2.Component) error
-	ApplyOpenShift(openshift v1alpha2.Component) error
-	Execute(ctx context.Context, command v1alpha2.Command) error
+	ApplyKubernetes(kubernetes v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
+	ApplyOpenShift(openshift v1alpha2.Component, kind v1alpha2.CommandGroupKind) error
+	ExecuteNonTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
+	ExecuteTerminatingCommand(ctx context.Context, command v1alpha2.Command) error
 }
 
 // Deploy executes the default deploy command of the devfile.
@@ -65,17 +66,38 @@ func ExecuteCommandByNameAndKind(ctx context.Context, devfileObj parser.DevfileO
 	return executeCommand(ctx, devfileObj, cmd, handler)
 }
 
+// ExecuteCommandByName executes the specified command cmdName in the Devfile.
+// If ignoreCommandNotFound is true, nothing is executed if the command is not found and no error is returned.
+func ExecuteCommandByName(ctx context.Context, devfileObj parser.DevfileObj, cmdName string, handler Handler, ignoreCommandNotFound bool) error {
+	commands, err := devfileObj.Data.GetCommands(
+		common.DevfileOptions{
+			FilterByName: cmdName,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	if len(commands) != 1 {
+		return NewNoCommandFoundError("", cmdName)
+	}
+
+	cmd := commands[0]
+	return executeCommand(ctx, devfileObj, cmd, handler)
+}
+
 // executeCommand executes a specific command of a devfile using handler as backend
 func executeCommand(ctx context.Context, devfileObj parser.DevfileObj, command v1alpha2.Command, handler Handler) error {
 	cmd, err := newCommand(devfileObj, command)
 	if err != nil {
 		return err
 	}
-	return cmd.Execute(ctx, handler)
+	return cmd.Execute(ctx, handler, nil)
 }
 
 // GetCommand iterates through the devfile commands and returns the devfile command with the specified name and group kind.
-// If commandName is empty, it returns the default command for the group kind or returns an error if there is no default command.
+// If commandName is empty, it returns the default command for the group kind; or, if there is only one command for the specified kind, it will return that
+// (even if it is not marked as the default).
+// It returns an error if there is more than one default command.
 func GetCommand(
 	devfileObj parser.DevfileObj,
 	commandName string,
@@ -123,6 +145,8 @@ func getDefaultCommand(devfileObj parser.DevfileObj, groupType v1alpha2.CommandG
 	if len(defaultCmds) > 1 {
 		return v1alpha2.Command{}, false, NewMoreThanOneDefaultCommandFoundError(groupType)
 	}
+	// #nosec
+	// gosec:G602 -> This is safe since we checked the length before
 	return defaultCmds[0], true, nil
 }
 
@@ -263,7 +287,7 @@ func execDevfileEvent(ctx context.Context, devfileObj parser.DevfileObj, events 
 				return err
 			}
 			// Execute command in container
-			err = c.Execute(ctx, handler)
+			err = c.Execute(ctx, handler, nil)
 			if err != nil {
 				return fmt.Errorf("unable to execute devfile command %q: %w", commandName, err)
 			}
@@ -429,6 +453,20 @@ func GetContainerComponentsForCommand(devfileObj parser.DevfileObj, cmd v1alpha2
 	default:
 		return nil, fmt.Errorf("type not handled for command %q: %v", cmd.Id, commandType)
 	}
+}
+
+// FindComponentByName returns the Devfile component that matches the specified name.
+func FindComponentByName(d data.DevfileData, n string) (v1alpha2.Component, bool, error) {
+	comps, err := d.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return v1alpha2.Component{}, false, err
+	}
+	for _, c := range comps {
+		if c.Name == n {
+			return c, true, nil
+		}
+	}
+	return v1alpha2.Component{}, false, nil
 }
 
 // GetK8sManifestsWithVariablesSubstituted returns the full content of either a Kubernetes or an Openshift

@@ -1,0 +1,39 @@
+main { min-height: calc(100vh - 100px); }
+
+div.mermaid {
+    /* font-family: 'trebuchet ms', verdana, arial; */
+    font-family: 'Courier New', Courier, monospace !important;
+}
+
+.flex-container {
+    display: flex;
+}
+
+.flex-child {
+    flex: 1;
+}  
+
+.flex-child:first-child {
+    margin-right: 20px;
+} 
+
+#input {
+    width: 99%;
+}
+
+button {
+    margin-top: 20px;
+}
+
+mat-form-field.full-width { width: 100%; }
+
+div.tab-content { padding: 16px; }
+
+div.error-message {
+    font-size: large;
+    margin: 16px;
+}
+
+.toplink {
+    color: white;
+}

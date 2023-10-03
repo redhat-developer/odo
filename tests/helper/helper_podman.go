@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/pkg/podman"
 )
 
@@ -28,7 +29,7 @@ func GenerateAndSetContainersConf(dir string) {
 	if !useNamespaces {
 		return
 	}
-	ns := GetProjectName()
+	ns := GenerateProjectName()
 	containersConfPath := filepath.Join(dir, "containers.conf")
 	err := CreateFileWithContent(containersConfPath, fmt.Sprintf(`
 [engine]
@@ -47,9 +48,8 @@ func ExtractK8sAndOcComponentsFromOutputOnPodman(out string) []string {
 	// Example lines to match:
 	// ⚠ Kubernetes components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced, k8s-deploybydefault-true-and-not-referenced.
 	// ⚠ OpenShift components are not supported on Podman. Skipping: ocp-deploybydefault-true-and-referenced.
-	// ⚠  Apply OpenShift components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced.
-	// ⚠  Apply OpenShift components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced.
-	re := regexp.MustCompile(`(?:Kubernetes|OpenShift) components are not supported on Podman\.\s*Skipping:\s*([^\n]+)\.`)
+	// ⚠  Apply Kubernetes/Openshift components are not supported on Podman. Skipping: k8s-deploybydefault-true-and-referenced.
+	re := regexp.MustCompile(`(?:Kubernetes|OpenShift|Kubernetes/Openshift) components are not supported on Podman\.\s*Skipping:\s*([^\n]+)\.`)
 	for _, l := range lines {
 		matches := re.FindStringSubmatch(l)
 		if len(matches) > 1 {
@@ -74,4 +74,19 @@ func GetPodmanVersion() string {
 	err = json.Unmarshal(out, &result)
 	Expect(err).ToNot(HaveOccurred())
 	return result.Client.Version
+}
+
+// GenerateDelayedPodman returns a podman cmd that sleeps for delaySecond before responding;
+// this function is usually used in combination with PODMAN_CMD_INIT_TIMEOUT odo preference
+func GenerateDelayedPodman(commonVarContext string, delaySecond int) string {
+	delayer := filepath.Join(commonVarContext, "podman-cmd-delayer")
+	fileContent := fmt.Sprintf(`#!/bin/bash
+
+echo Delaying command execution... >&2
+sleep %d
+echo "$@"
+`, delaySecond)
+	err := CreateFileWithContentAndPerm(delayer, fileContent, 0755)
+	Expect(err).ToNot(HaveOccurred())
+	return delayer
 }

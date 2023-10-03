@@ -256,33 +256,10 @@ func createAndStat(fileName, tempDirectoryName string, fs filesystem.Filesystem)
 	return file, stat, nil
 }
 
-func createGitFolderAndFiles(tempDirectoryName string, fs filesystem.Filesystem) error {
-	err := fs.MkdirAll(filepath.Join(tempDirectoryName, ".git"), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = fs.MkdirAll(filepath.Join(tempDirectoryName, DotOdoDirectory), 0755)
-	if err != nil {
-		return err
-	}
-
-	_, err = fs.Create(filepath.Join(tempDirectoryName, ".git", "someFile.txt"))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func Test_recursiveChecker(t *testing.T) {
 	fs := filesystem.DefaultFs{}
 
 	tempDirectoryName, err := fs.TempDir(os.TempDir(), "dir0")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	err = createGitFolderAndFiles(tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -1175,11 +1152,6 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 	fs := filesystem.DefaultFs{}
 
 	tempDirectoryName, err := fs.TempDir(os.TempDir(), "dir0")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	err = createGitFolderAndFiles(tempDirectoryName, fs)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

@@ -25,7 +25,7 @@ func (e *imageComponent) CheckValidity() error {
 	return nil
 }
 
-func (e *imageComponent) Apply(handler Handler) error {
+func (e *imageComponent) Apply(handler Handler, kind v1alpha2.CommandGroupKind) error {
 	return handler.ApplyImage(e.component)
 }
 
@@ -52,7 +52,7 @@ func GetImageComponentsToPushAutomatically(devfileObj parser.DevfileObj) ([]v1al
 		var add bool
 		if comp.Image.AutoBuild == nil {
 			// auto-created only if not referenced by any apply command
-			if !isComponentReferenced(allApplyCommands, comp.Name) {
+			if !IsComponentReferenced(allApplyCommands, comp.Name) {
 				add = true
 			}
 		} else if *comp.Image.AutoBuild {

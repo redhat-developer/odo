@@ -1,0 +1,123 @@
+<div class="main">
+    <mat-card data-cy="container-info" *ngFor="let container of containers">
+        <mat-card-header class="colored-title">
+            <mat-card-title>{{container.name}}</mat-card-title>
+            <mat-card-subtitle>Container</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <table class="aligned">
+                <tr>
+                    <td>Image:</td>
+                    <td><code>{{container.image}}</code></td>
+                </tr>
+                <tr *ngIf="container.command != null && container.command.length > 0">
+                    <td>Command:</td>
+                    <td><code>{{container.command.join(" ")}}</code></td>
+                </tr>
+                <tr *ngIf="container.args != null && container.args.length > 0">
+                    <td>Args:</td>
+                    <td><code>{{container.args.join(" ")}}</code></td>
+                </tr>
+                <tr *ngIf="container.env.length">
+                    <td>Environment variables:</td>
+                    <td>
+                        <div *ngFor="let env of container.env">
+                            {{env.name}}: {{env.value}}
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="container.volumeMounts.length > 0">
+                    <td>Volume Mounts:</td>
+                    <td>
+                        <div class="volume-mount" *ngFor="let vm of container.volumeMounts">
+                            <mat-chip disableRipple>
+                                <mat-icon matChipAvatar class="material-icons-outlined">storage</mat-icon>
+                                {{vm.name}}
+                            </mat-chip><span class="path"> in <code>{{vm.path}}</code></span></div>
+                    </td>
+                </tr>
+                <tr *ngIf="container.memoryRequest != null && container.memoryRequest.length > 0">
+                    <td>Memory Request:</td>
+                    <td><code>{{container.memoryRequest}}</code></td>
+                </tr>
+                <tr *ngIf="container.memoryLimit != null && container.memoryLimit.length > 0">
+                    <td>Memory Limit:</td>
+                    <td><code>{{container.memoryLimit}}</code></td>
+                </tr>
+                <tr *ngIf="container.cpuRequest != null && container.cpuRequest.length > 0">
+                    <td>CPU Request:</td>
+                    <td><code>{{container.cpuRequest}}</code></td>
+                </tr>
+                <tr *ngIf="container.cpuLimit != null && container.cpuLimit.length > 0">
+                    <td>CPU Limit:</td>
+                    <td><code>{{container.cpuLimit}}</code></td>
+                </tr>
+                <tr *ngIf="container.annotation.deployment">
+                    <td>Deployment Annotations:</td>
+                    <td>
+                        <div *ngFor="let anno of container.annotation.deployment | keyvalue">
+                            {{anno.key}}: {{anno.value}}
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="container.annotation.service">
+                    <td>Service Annotations:</td>
+                    <td>
+                        <div *ngFor="let anno of container.annotation.service | keyvalue">
+                            {{anno.key}}: {{anno.value}}
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="container.configureSources">
+                    <td>Mount Sources:</td>
+                    <td><code>{{container.mountSources ? "Yes" : "No"}}</code></td>
+                </tr>
+                <tr *ngIf="container.configureSources && container.mountSources && container.sourceMapping">
+                    <td>Mount Sources Into:</td>
+                    <td><code>{{container.sourceMapping}}</code></td>
+                </tr>
+                <tr *ngIf="container.endpoints.length">
+                    <td>Endpoints:</td>
+                    <td class="container-list">
+                        <mat-card class="endpoint" *ngFor="let ep of container.endpoints">
+                            <mat-card-header>
+                                <mat-card-title>{{ep.name}}</mat-card-title>
+                                <mat-card-subtitle>{{ep.targetPort}}</mat-card-subtitle>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <div>exposure: {{ep.exposure ?? 'public'}}</div>
+                                <div>protocol: {{ep.protocol ?? 'http'}}</div>
+                                <div *ngIf="ep.secure">secure</div>
+                                <div *ngIf="ep.path">path: {{ep.path}}</div>
+                            </mat-card-content>
+                        </mat-card>
+                    </td>
+                </tr>
+            </table>
+
+        </mat-card-content>
+
+        <mat-card-actions>
+            <button mat-button color="warn" (click)="delete(container.name)">Delete</button>
+            <button data-cy="container-edit" mat-button (click)="edit(container)">Edit</button>
+        </mat-card-actions>
+
+    </mat-card>
+
+    <app-container 
+        *ngIf="forceDisplayForm || containers == undefined || containers.length == 0"
+        [volumeNames]="volumeNames ?? []"
+        [cancelable]="forceDisplayForm"
+        (canceled)="undisplayAddForm()"
+        (created)="onCreated($event)"
+        [container]="editingContainer"
+        (saved)="onSaved($event)"
+        ></app-container>
+</div>
+
+
+<ng-container *ngIf="!forceDisplayForm && containers != undefined && containers.length > 0">
+    <button data-cy="add" class="fab" mat-fab color="primary" (click)="displayAddForm()">
+        <mat-icon class="material-icons-outlined">add</mat-icon>
+    </button>
+</ng-container>

@@ -12,6 +12,7 @@ import (
 
 	"github.com/blang/semver"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	apidevfile "github.com/devfile/api/v2/pkg/devfile"
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	"github.com/devfile/registry-support/registry-library/library"
@@ -282,14 +283,37 @@ func (o RegistryClient) ListDevfileStacks(ctx context.Context, registryName, dev
 
 		devfiles := []api.DevfileStack{}
 
+	devfileLoop:
 		for _, devfile := range registryDevfiles {
 
 			// Add the "priority" of the registry to the devfile
 			devfile.Registry.Priority = priorityNumber
 
 			if filterFlag != "" {
-				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) {
-					continue
+				filters := strings.Split(filterFlag, ",")
+				for _, filter := range filters {
+					filter = strings.TrimSpace(filter)
+					archs := append(make([]string, 0, len(devfile.Architectures)), devfile.Architectures...)
+					if len(archs) == 0 {
+						// Devfiles with no architectures are compatible with all architectures.
+						archs = append(archs,
+							string(apidevfile.AMD64),
+							string(apidevfile.ARM64),
+							string(apidevfile.PPC64LE),
+							string(apidevfile.S390X),
+						)
+					}
+					containsArch := func(s string) bool {
+						for _, arch := range archs {
+							if strings.Contains(arch, s) {
+								return true
+							}
+						}
+						return false
+					}
+					if !strings.Contains(devfile.Name, filter) && !strings.Contains(devfile.Description, filter) && !containsArch(filter) {
+						continue devfileLoop
+					}
 				}
 			}
 
@@ -366,6 +390,7 @@ func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Sc
 			ProjectType:            devfileIndexEntry.ProjectType,
 			DefaultStarterProjects: devfileIndexEntry.StarterProjects,
 			DefaultVersion:         devfileIndexEntry.Version,
+			Architectures:          devfileIndexEntry.Architectures,
 		}
 		for _, v := range devfileIndexEntry.Versions {
 			if v.Default {
@@ -435,7 +460,7 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 	}
 
 	// Get the devfile yaml file from the directory
-	devfileYamlFile := location.DevfileFilenamesProvider(tmpFile)
+	devfileYamlFile := location.DevfileFilenamesProvider(o.fsys, tmpFile)
 
 	// Parse and validate the file and return the devfile data
 	devfileObj, err := devfile.ParseAndValidateFromFile(path.Join(tmpFile, devfileYamlFile), "", true)
@@ -445,5 +470,10 @@ func (o RegistryClient) retrieveDevfileDataFromRegistry(ctx context.Context, reg
 
 	// Convert DevfileObj to DevfileData
 	// use api.GetDevfileData to get supported features
-	return *api.GetDevfileData(devfileObj), nil
+	devfileData, err := api.GetDevfileData(devfileObj)
+	if err != nil {
+		return api.DevfileData{}, err
+	}
+
+	return *devfileData, nil
 }

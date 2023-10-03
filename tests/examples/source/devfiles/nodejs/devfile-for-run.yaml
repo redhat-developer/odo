@@ -1,0 +1,88 @@
+schemaVersion: 2.2.0
+metadata:
+  name: nodejs
+  projectType: nodejs
+  language: nodejs
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+      mountSources: true
+  - name: other-container
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      command: ["tail"]
+      args: ["-f", "/dev/null"]
+      memoryLimit: 1024Mi
+  - name: config
+    kubernetes:
+      inlined: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: my-config
+  - name: image
+    image:
+      imageName: my-image
+      dockerfile:
+        uri: ./Dockerfile
+        buildContext: ${PROJECTS_ROOT}
+        rootRequired: false
+commands:
+  - id: devbuild
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: true
+  - id: build
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+  - id: devrun
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+  - id: list-files
+    exec:
+      component: runtime
+      commandLine: ls /
+  - id: list-files-in-other-container
+    exec:
+      component: other-container
+      commandLine: ls /
+  - id: deploy-config
+    apply:
+      component: config
+  - id: build-image
+    apply:
+      component: image
+  - id: error-cmd
+    exec:
+      component: runtime
+      commandLine: ls /not-found

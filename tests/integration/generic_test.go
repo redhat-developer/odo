@@ -35,10 +35,13 @@ var _ = Describe("odo generic", func() {
 				BeforeEach(func() {
 					output = helper.Cmd("odo", "--help").ShouldPass().Out()
 				})
-				It("retuns full help contents including usage, examples, commands, utility commands, component shortcuts, and flags sections", func() {
+				It("returns full help contents including usage, examples, commands, utility commands, component shortcuts, and flags sections", func() {
 					helper.MatchAllInOutput(output, []string{"Usage:", "Examples:", "Main Commands:", "OpenShift Commands:", "Utility Commands:", "Flags:"})
+					helper.DontMatchAllInOutput(output, []string{"--kubeconfig"})
 				})
-
+				It("does not support the --kubeconfig flag", func() {
+					helper.DontMatchAllInOutput(output, []string{"--kubeconfig"})
+				})
 			})
 
 			When("running odo without subcommand and flags", func() {
@@ -112,27 +115,104 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	When("executing odo version command", func() {
-		var odoVersion string
-		BeforeEach(func() {
-			odoVersion = helper.Cmd("odo", "version").ShouldPass().Out()
+	Context("executing odo version command", func() {
+		const (
+			reOdoVersion        = `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+(-\w+)?\)`
+			reKubernetesVersion = `Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
+			rePodmanVersion     = `Podman Client:\s*[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
+			reJSONVersion       = `^v{0,1}[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
+		)
+		When("executing the complete command with server info", func() {
+			var odoVersion string
+			BeforeEach(func() {
+				odoVersion = helper.Cmd("odo", "version").ShouldPass().Out()
+			})
+			for _, podman := range []bool{true, false} {
+				podman := podman
+				It("should show the version of odo major components including server login URL", helper.LabelPodmanIf(podman, func() {
+					By("checking the human readable output", func() {
+						Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
+
+						// odo tests setup (CommonBeforeEach) is designed in a way that if a test is labelled with 'podman', it will not have cluster configuration
+						// so we only test podman info on podman labelled test, and clsuter info otherwise
+						// TODO (pvala): Change this behavior when we write tests that should be tested on both podman and cluster simultaneously
+						// Ref: https://github.com/redhat-developer/odo/issues/6719
+						if podman {
+							Expect(odoVersion).Should(MatchRegexp(rePodmanVersion))
+							Expect(odoVersion).To(ContainSubstring(helper.GetPodmanVersion()))
+						} else {
+							Expect(odoVersion).Should(MatchRegexp(reKubernetesVersion))
+							serverURL := oc.GetCurrentServerURL()
+							Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+							if !helper.IsKubernetesCluster() {
+								ocpMatcher := ContainSubstring("OpenShift: ")
+								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion == "" {
+									// Might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
+									ocpMatcher = Not(ocpMatcher)
+								}
+								Expect(odoVersion).Should(ocpMatcher)
+							}
+						}
+					})
+
+					By("checking the JSON output", func() {
+						odoVersion = helper.Cmd("odo", "version", "-o", "json").ShouldPass().Out()
+						Expect(helper.IsJSON(odoVersion)).To(BeTrue())
+						helper.JsonPathSatisfiesAll(odoVersion, "version", MatchRegexp(reJSONVersion))
+						helper.JsonPathExist(odoVersion, "gitCommit")
+						if podman {
+							helper.JsonPathSatisfiesAll(odoVersion, "podman.client.version", MatchRegexp(reJSONVersion), Equal(helper.GetPodmanVersion()))
+						} else {
+							helper.JsonPathSatisfiesAll(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
+							serverURL := oc.GetCurrentServerURL()
+							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
+							if !helper.IsKubernetesCluster() {
+								m := BeEmpty()
+								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion != "" {
+									// A blank serverVersion might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
+									m = Not(m)
+								}
+								helper.JsonPathSatisfiesAll(odoVersion, "cluster.openshift", m)
+							}
+						}
+					})
+				}))
+			}
+
+			for _, label := range []string{helper.LabelNoCluster, helper.LabelUnauth} {
+				label := label
+				It("should show the version of odo major components", Label(label), func() {
+					Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
+				})
+			}
 		})
 
-		It("should show the version of odo major components including server login URL", func() {
-			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
-			rekubernetesVersion := `Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`
-			Expect(odoVersion).Should(SatisfyAll(MatchRegexp(reOdoVersion), MatchRegexp(rekubernetesVersion)))
-			serverURL := oc.GetCurrentServerURL()
-			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+		When("podman client is bound to delay and odo version is run", Label(helper.LabelPodman), func() {
+			var odoVersion string
+			BeforeEach(func() {
+				delayer := helper.GenerateDelayedPodman(commonVar.Context, 2)
+				odoVersion = helper.Cmd("odo", "version").WithEnv("PODMAN_CMD="+delayer, "PODMAN_CMD_INIT_TIMEOUT=1s").ShouldPass().Out()
+			})
+			It("should not print podman version if podman cmd timeout has been reached", func() {
+				Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
+				Expect(odoVersion).ToNot(ContainSubstring("Podman Client:"))
+			})
 		})
+		It("should only print client info when using --client flag", func() {
+			By("checking human readable output", func() {
+				odoVersion := helper.Cmd("odo", "version", "--client").ShouldPass().Out()
+				Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
+				Expect(odoVersion).ToNot(SatisfyAll(ContainSubstring("Server"), ContainSubstring("Kubernetes"), ContainSubstring("Podman Client")))
+			})
 
-		It("should show the version of odo major components", Label(helper.LabelNoCluster), func() {
-			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
-			Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
-		})
-		It("should show the version of odo major components", Label(helper.LabelUnauth), func() {
-			reOdoVersion := `^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`
-			Expect(odoVersion).Should(MatchRegexp(reOdoVersion))
+			By("checking JSON output", func() {
+				odoVersion := helper.Cmd("odo", "version", "--client", "-o", "json").ShouldPass().Out()
+				Expect(helper.IsJSON(odoVersion)).To(BeTrue())
+				helper.JsonPathSatisfiesAll(odoVersion, "version", MatchRegexp(reJSONVersion))
+				helper.JsonPathExist(odoVersion, "gitCommit")
+				helper.JsonPathSatisfiesAll(odoVersion, "cluster", BeEmpty())
+				helper.JsonPathSatisfiesAll(odoVersion, "podman", BeEmpty())
+			})
 		})
 	})
 

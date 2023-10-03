@@ -47,7 +47,16 @@ func (o *TelemetryOptions) Validate(ctx context.Context) (err error) {
 }
 
 func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
-	if !scontext.GetTelemetryStatus(ctx) {
+	// Telemetry is sent only if it was enabled previously (GetPreviousTelemetryStatus) or if it is currently enabled (GetTelemetryStatus).
+	// For example, if it was enabled previously, and user disables telemetry, we still want the event disabling it to be recorded.
+	// And if it was disabled, and now it is enabled, we want to track this event as well.
+	var wasTelemetryEnabled bool
+	val, ok := o.telemetryData.Properties.CmdProperties[scontext.PreviousTelemetryStatus]
+	if ok {
+		wasTelemetryEnabled = val.(bool)
+	}
+	if !(wasTelemetryEnabled || segment.IsTelemetryEnabled(o.clientset.PreferenceClient, envcontext.GetEnvConfig(ctx))) {
+		klog.V(2).Infof("Telemetry not enabled!")
 		return nil
 	}
 
@@ -71,7 +80,7 @@ func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
 	return segmentClient.Close()
 }
 
-func NewCmdTelemetry(name string) *cobra.Command {
+func NewCmdTelemetry(name string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewTelemetryOptions()
 	telemetryCmd := &cobra.Command{
 		Use:                    name,
@@ -86,9 +95,9 @@ func NewCmdTelemetry(name string) *cobra.Command {
 		DisableSuggestions:     true,
 		FParseErrWhitelist:     cobra.FParseErrWhitelist{},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
-	clientset.Add(telemetryCmd)
+	clientset.Add(telemetryCmd, clientset.PREFERENCE)
 	return telemetryCmd
 }

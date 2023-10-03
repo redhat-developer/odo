@@ -3,10 +3,12 @@ package namespace
 import (
 	"context"
 	"fmt"
-	"os"
-
+	"github.com/redhat-developer/odo/pkg/project"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"k8s.io/klog"
+	"os"
+	"time"
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	"github.com/spf13/cobra"
@@ -80,39 +82,58 @@ func (nco *NamespaceCreateOptions) Validate(ctx context.Context) error {
 
 // Run runs the namespace create command
 func (nco *NamespaceCreateOptions) Run(ctx context.Context) (err error) {
-	// Create the "spinner"
-	s := &log.Status{}
-
-	// If the --wait parameter has been passed, we add a spinner..
-	if nco.waitFlag {
-		s = log.Spinnerf("Waiting for %s to come up", nco.commandName)
-		defer s.End(false)
-	}
+	createSpinner := log.Spinnerf("Creating the %s %q", nco.commandName, nco.namespaceName)
+	defer createSpinner.End(false)
 
 	// Create the namespace & end the spinner (if there is any..)
 	err = nco.clientset.ProjectClient.Create(nco.namespaceName, nco.waitFlag)
 	if err != nil {
 		return err
 	}
-	s.End(true)
+	createSpinner.End(true)
 
-	caser := cases.Title(language.Und)
-	successMessage := fmt.Sprintf(`%s %q is ready for use`, caser.String(nco.commandName), nco.namespaceName)
-	log.Successf(successMessage)
+	// If the --wait parameter has been passed, we add a spinner..
+	if nco.waitFlag {
+		waitSpinner := log.Spinnerf("Waiting for the %s to come up", nco.commandName)
+		defer waitSpinner.End(false)
+		timeOut := time.After(nco.clientset.PreferenceClient.GetTimeout())
+	L:
+		for {
+			select {
+			case <-timeOut:
+				return fmt.Errorf("timeout while waiting for %s %q to be ready; you can change the timeout preference by running `odo preference set timeout <duration>`", nco.commandName, nco.namespaceName)
+			default:
+				var nsList project.ProjectList
+				nsList, err = nco.clientset.ProjectClient.List()
+				if err != nil {
+					klog.V(4).Infof("Failed to list %ss", nco.commandName)
+				}
+				for _, ns := range nsList.Items {
+					if ns.Name == nco.namespaceName {
+						break L
+					}
+				}
+				time.Sleep(50 * time.Millisecond)
+			}
+		}
+		waitSpinner.End(true)
+	}
 
 	// Set the current namespace when created
 	err = nco.clientset.ProjectClient.SetCurrent(nco.namespaceName)
 	if err != nil {
 		return err
 	}
-
+	caser := cases.Title(language.Und)
+	successMessage := fmt.Sprintf(`%s %q is ready for use`, caser.String(nco.commandName), nco.namespaceName)
+	log.Successf(successMessage)
 	log.Successf("New %[1]s created and now using %[1]s: %v", nco.commandName, nco.namespaceName)
 
 	return nil
 }
 
 // NewCmdNamespaceCreate creates the namespace create command
-func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
+func NewCmdNamespaceCreate(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewNamespaceCreateOptions()
 	// To help the UI messages deal better with namespace vs project
 	o.commandName = name
@@ -127,14 +148,14 @@ func NewCmdNamespaceCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(createExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 		Aliases: []string{"project"},
 	}
 
 	namespaceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the namespace is ready")
 
-	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT)
+	clientset.Add(namespaceCreateCmd, clientset.KUBERNETES, clientset.PROJECT, clientset.PREFERENCE)
 	util.SetCommandGroup(namespaceCreateCmd, util.MainGroup)
 
 	return namespaceCreateCmd

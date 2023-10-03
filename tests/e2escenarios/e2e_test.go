@@ -69,6 +69,9 @@ var _ = Describe("E2E Test", func() {
 			command := []string{"odo", "init"}
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
+				helper.ExpectString(ctx, "Select architectures")
+				helper.SendLine(ctx, "")
+
 				helper.ExpectString(ctx, "Select language")
 				helper.SendLine(ctx, "JavaScript")
 
@@ -98,27 +101,26 @@ var _ = Describe("E2E Test", func() {
 
 			// "execute odo dev and add changes to application"
 			var devSession helper.DevSession
-			var ports map[string]string
 
-			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints["3000"], "Hello from Node.js Starter Application!")
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
 			waitRemoteApp("http://127.0.0.1:3000", "Hello from updated Node.js Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints["3000"], "Hello from updated Node.js Starter Application!")
 
 			// "changes are made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
 			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v2 Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints["3000"], "Hello from Node.js app v2 Starter Application!")
 
 			// "running odo list"
 			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
@@ -140,7 +142,7 @@ var _ = Describe("E2E Test", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
 				path.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(componentName))
+				componentName)
 
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
@@ -150,16 +152,16 @@ var _ = Describe("E2E Test", func() {
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
 
 			// start dev mode again
-			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// making changes to the project again
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
 			waitRemoteApp("http://127.0.0.1:3000", "Hello from Node.js app v3 Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints["3000"], "Hello from Node.js app v3 Starter Application!")
 
 			// should list both dev,deploy
 			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
@@ -226,28 +228,26 @@ var _ = Describe("E2E Test", func() {
 
 			// "execute odo dev and add changes to application"
 			var devSession helper.DevSession
-			var ports map[string]string
-			var out []byte
-			devSession, out, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(out).ToNot(BeEmpty())
+			Expect(devSession.StdOut).ToNot(BeEmpty())
 			waitRemoteApp(AppLocalURL, "Hello World!", "tools")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello World!")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello World!")
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "com", "example", "demo", "DemoApplication.java"), "Hello World!", "Hello updated World!")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
 			waitRemoteApp(AppLocalURL, "Hello updated World!", "tools")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello updated World!")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello updated World!")
 
 			// "changes are made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "com", "example", "demo", "DemoApplication.java"), "Hello updated World!", "Hello from an updated World!")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
 			waitRemoteApp(AppLocalURL, "Hello from an updated World!", "tools")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello from an updated World!")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello from an updated World!")
 
 			// "running odo list"
 			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
@@ -269,7 +269,7 @@ var _ = Describe("E2E Test", func() {
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "springboot", "devfile-deploy.yaml"),
 				path.Join(commonVar.Context, "devfile.yaml"),
-				helper.DevfileMetadataNameSetter(componentName))
+				componentName)
 
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
@@ -279,17 +279,17 @@ var _ = Describe("E2E Test", func() {
 			helper.MatchAllInOutput(stdout, []string{componentName, "springboot", "Deploy"})
 
 			// start dev mode again
-			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// making changes to the project again
 			helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "com", "example", "demo", "DemoApplication.java"), "Hello from an updated World!", "Hello from an updated v2 World!")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 
 			// "should update the changes"
 			waitRemoteApp(AppLocalURL, "Hello from an updated v2 World!", "tools")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello from an updated v2 World!")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello from an updated v2 World!")
 
 			// should list both dev,deploy
 			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
@@ -371,34 +371,33 @@ var _ = Describe("E2E Test", func() {
 
 			// "execute odo dev and add changes to application"
 			var devSession helper.DevSession
-			var ports map[string]string
-			var out []byte
-			devSession, out, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{
+
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{
 				CmdlineArgs: []string{"--debug"},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(out).ToNot(BeEmpty())
+			Expect(devSession.StdOut).ToNot(BeEmpty())
 
 			waitRemoteApp(LocalAppURL, "Hello from Node.js Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js Starter Application!")
-			checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello from Node.js Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints[DebugPort], "WebSockets request was expected")
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
 			waitRemoteApp(LocalAppURL, "Hello from updated Node.js Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello from updated Node.js Starter Application!")
-			checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello from updated Node.js Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints[DebugPort], "WebSockets request was expected")
 
 			// "changes are made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
 			waitRemoteApp(LocalAppURL, "Hello from Node.js app v2 Starter Application!", "runtime")
-			checkIfDevEnvIsUp(ports[AppPort], "Hello from Node.js app v2 Starter Application!")
-			checkIfDevEnvIsUp(ports[DebugPort], "WebSockets request was expected")
+			checkIfDevEnvIsUp(devSession.Endpoints[AppPort], "Hello from Node.js app v2 Starter Application!")
+			checkIfDevEnvIsUp(devSession.Endpoints[DebugPort], "WebSockets request was expected")
 
 			// "running odo list"
 			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
@@ -488,29 +487,28 @@ var _ = Describe("E2E Test", func() {
 
 			// // "execute odo dev and add changes to application"
 			var devSession helper.DevSession
-			var ports map[string]string
 
-			devSession, _, _, ports, err = helper.StartDevMode(helper.DevSessionOpts{})
+			devSession, err = helper.StartDevMode(helper.DevSessionOpts{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// "send data"
-			_, err = receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			_, err = receiveData(fmt.Sprintf(devSession.Endpoints["8080"] + "/api/user"))
 			Expect(err).ToNot(BeNil()) // should fail as application is not connected to DB
 
 			//add binding information (binding as ENV)
 			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-example-initdb", "--bind-as-files=false").ShouldPass()
 
 			// Get new random port after restart
-			_, _, ports, err = devSession.WaitRestartPortforward()
+			err = devSession.WaitRestartPortforward()
 			Expect(err).ToNot(HaveOccurred())
 
 			// "send data"
 			waitRemoteApp("http://127.0.0.1:8080/ping", "pong", "runtime")
-			data := sendDataEntry(ports["8080"])
+			data := sendDataEntry(devSession.Endpoints["8080"])
 			Expect(data["message"]).To(Equal("User created successfully"))
 
 			// "get all data"
-			rec, err := receiveData(fmt.Sprintf(ports["8080"] + "/api/user"))
+			rec, err := receiveData(fmt.Sprintf(devSession.Endpoints["8080"] + "/api/user"))
 			Expect(err).To(BeNil())
 			helper.MatchAllInOutput(rec, []string{"id", "1", "name", "joe", "location", "tokyo", "age", "23"})
 
@@ -525,7 +523,7 @@ var _ = Describe("E2E Test", func() {
 			// remove bindings and check devfile to not contain binding info
 			helper.Cmd("odo", "remove", "binding", "--name", bindingName).ShouldPass()
 
-			_, _, _, err = devSession.WaitSync()
+			err = devSession.WaitSync()
 			Expect(err).To(BeNil())
 			Eventually(func() string { return helper.Cmd("odo", "describe", "binding").ShouldRun().Out() }).
 				WithTimeout(120 * time.Second).

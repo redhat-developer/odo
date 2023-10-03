@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/config"
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
-	"k8s.io/klog"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
 
 var (
@@ -34,6 +34,7 @@ Examples:
   init         Init bootstraps a new project
   logs         Show logs of all containers of the component
   registry     List all components from the Devfile registry
+  run          Run a specific command in the Dev mode
 
 `
 
@@ -68,9 +69,13 @@ func TestOdoHelp(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx = envcontext.WithEnvConfig(ctx, *envConfig)
-	klog.InitFlags(nil)
 
-	root := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName)
+	resetGlobalFlags()
+
+	root, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, nil, clientset.Clientset{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var stdoutB, stderrB bytes.Buffer
 	root.SetOut(&stdoutB)

@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/exec"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/log"
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/podman"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -24,13 +25,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	corev1 "k8s.io/api/core/v1"
-)
-
-const (
-	promptMessage = `
-[Ctrl+c] - Exit and delete resources from podman
-     [p] - Manually apply local changes to the application on podman
-`
 )
 
 type DevClient struct {
@@ -90,7 +84,6 @@ func (o *DevClient) Start(
 		StartOptions:        options,
 		DevfileWatchHandler: o.watchHandler,
 		WatchCluster:        false,
-		PromptMessage:       promptMessage,
 	}
 
 	return o.watchClient.WatchAndPush(ctx, watchParameters, componentStatus)
@@ -114,16 +107,31 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
+	s := log.Spinner("Syncing files into the container")
+	defer s.End(false)
 
-	cmdKind := devfilev1.RunCommandGroupKind
-	cmdName := options.RunCommand
-	if options.Debug {
-		cmdKind = devfilev1.DebugCommandGroupKind
-		cmdName = options.DebugCommand
-	}
-	devfileCmd, err := libdevfile.ValidateAndGetCommand(*devfileObj, cmdName, cmdKind)
-	if err != nil {
-		return false, err
+	syncFilesMap := make(map[string]string)
+	var devfileCmd devfilev1.Command
+	innerLoopWithCommands := !options.SkipCommands
+	if innerLoopWithCommands {
+		var (
+			cmdKind = devfilev1.RunCommandGroupKind
+			cmdName = options.RunCommand
+		)
+		if options.Debug {
+			cmdKind = devfilev1.DebugCommandGroupKind
+			cmdName = options.DebugCommand
+		}
+		var hasCmd bool
+		devfileCmd, hasCmd, err = libdevfile.GetCommand(*devfileObj, cmdName, cmdKind)
+		if err != nil {
+			return false, err
+		}
+		if hasCmd {
+			syncFilesMap = common.GetSyncFilesFromAttributes(devfileCmd)
+		} else {
+			klog.V(2).Infof("no command found with name %q and kind %v, syncing files without command attributes", cmdName, cmdKind)
+		}
 	}
 
 	syncParams := sync.SyncParameters{
@@ -135,12 +143,13 @@ func (o *DevClient) syncFiles(ctx context.Context, options dev.StartOptions, pod
 
 		CompInfo:  compInfo,
 		ForcePush: true,
-		Files:     common.GetSyncFilesFromAttributes(devfileCmd),
+		Files:     syncFilesMap,
 	}
 	execRequired, err := o.syncClient.SyncFiles(ctx, syncParams)
 	if err != nil {
 		return false, err
 	}
+	s.End(true)
 	return execRequired, nil
 }
 
@@ -165,7 +174,7 @@ func (o *DevClient) checkVolumesFree(pod *corev1.Pod) error {
 
 func (o *DevClient) watchHandler(ctx context.Context, pushParams common.PushParameters, componentStatus *watch.ComponentStatus) error {
 
-	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), pushParams.StartOptions.Variables, o.prefClient.GetImageRegistry(), true)
+	devObj, err := devfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(o.fs, ""), pushParams.StartOptions.Variables, o.prefClient.GetImageRegistry(), true)
 	if err != nil {
 		return fmt.Errorf("unable to read devfile: %w", err)
 	}

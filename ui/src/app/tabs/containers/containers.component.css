@@ -1,0 +1,39 @@
+.main { padding: 16px; }
+mat-card { margin-bottom: 16px; }
+mat-card-content { padding: 16px; }
+.volume-mount {
+    margin-top: 4px;
+}
+.volume-mount > mat-chip {
+    top: -11px;
+}
+.volume-mount > span.path {
+    position: relative;
+    top: -14px;
+}
+table.aligned > tr > td {
+    vertical-align: top;
+}
+
+div.endpoint-list {
+    display: float;
+}
+mat-card.endpoint {
+    width: fit-content;
+    float: left;
+    margin: 0 8px; 
+}
+mat-card.endpoint mat-card-header {
+    padding: 8px 8px 0 8px;
+}
+mat-card.endpoint mat-card-title {
+    font-size: 16px;
+    line-height: 24px;
+}
+mat-card.endpoint mat-card-subtitle {
+    font-size: 12px;
+    line-height: 24px;
+}
+mat-card.endpoint mat-card-content {
+    padding: 8px;
+}

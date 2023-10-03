@@ -41,6 +41,10 @@ func (o *ViewOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
+func (o *ViewOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return false
+}
+
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
 	return
@@ -81,7 +85,7 @@ func HumanReadableOutput(preferenceList api.PreferenceList, registryList []api.R
 	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
 	for _, pref := range preferenceList.Items {
 		value := showBlankIfNil(pref.Value)
-		if reflect.DeepEqual(value, pref.Default) {
+		if value != "" && reflect.DeepEqual(value, pref.Default) {
 			value = fmt.Sprintf("%v (default)", value)
 		}
 		preferenceT.AppendRow(table.Row{pref.Name, value})
@@ -125,7 +129,7 @@ func showBlankIfNil(intf interface{}) interface{} {
 }
 
 // NewCmdView implements the config view odo command
-func NewCmdView(name, fullName string) *cobra.Command {
+func NewCmdView(name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewViewOptions()
 	preferenceViewCmd := &cobra.Command{
 		Use:     name,
@@ -135,7 +139,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	clientset.Add(preferenceViewCmd, clientset.PREFERENCE, clientset.REGISTRY)

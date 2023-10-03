@@ -7,15 +7,14 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/v2/pkg/devfile/generator"
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/component/describe"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -26,7 +25,6 @@ import (
 	odocontext "github.com/redhat-developer/odo/pkg/odo/context"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/podman"
 )
 
 // ComponentRecommendedCommandName is the recommended component sub-command name
@@ -61,6 +59,10 @@ func NewComponentOptions() *ComponentOptions {
 
 func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
+}
+
+func (o *ComponentOptions) UseDevfile(ctx context.Context, cmdline cmdline.Cmdline, args []string) bool {
+	return o.nameFlag == ""
 }
 
 func (o *ComponentOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) (err error) {
@@ -128,232 +130,9 @@ func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{
 
 func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 	if o.nameFlag != "" {
-		return o.describeNamedComponent(ctx, o.nameFlag)
+		return describe.DescribeNamedComponent(ctx, o.nameFlag, o.clientset.KubernetesClient, o.clientset.PodmanClient)
 	}
-	return o.describeDevfileComponent(ctx)
-}
-
-// describeNamedComponent describes a component given its name
-func (o *ComponentOptions) describeNamedComponent(ctx context.Context, name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
-	var (
-		kubeClient   = o.clientset.KubernetesClient
-		podmanClient = o.clientset.PodmanClient
-	)
-
-	isPlatformFeatureEnabled := feature.IsEnabled(ctx, feature.GenericPlatformFlag)
-	platform := fcontext.GetPlatform(ctx, "")
-	switch platform {
-	case "":
-		if isPlatformFeatureEnabled {
-			//Get info from all platforms
-			if kubeClient == nil {
-				log.Warning(kclient.NewNoConnectionError())
-			}
-			if podmanClient == nil {
-				log.Warning(podman.NewPodmanNotFoundError(nil))
-			}
-		} else {
-			if kubeClient == nil {
-				return api.Component{}, nil, kclient.NewNoConnectionError()
-			}
-			podmanClient = nil
-		}
-	case commonflags.PlatformCluster:
-		if kubeClient == nil {
-			return api.Component{}, nil, kclient.NewNoConnectionError()
-		}
-		podmanClient = nil
-	case commonflags.PlatformPodman:
-		if podmanClient == nil {
-			return api.Component{}, nil, podman.NewPodmanNotFoundError(nil)
-		}
-		kubeClient = nil
-	}
-
-	runningOn, err := getRunningOn(ctx, name, kubeClient, podmanClient)
-	if err != nil {
-		return api.Component{}, nil, err
-	}
-
-	devfile, err := component.GetDevfileInfo(ctx, kubeClient, podmanClient, name)
-	if err != nil {
-		return api.Component{}, nil, err
-	}
-
-	var ingresses []api.ConnectionData
-	var routes []api.ConnectionData
-	if kubeClient != nil {
-		ingresses, routes, err = component.ListRoutesAndIngresses(kubeClient, name, odocontext.GetApplication(ctx))
-		if err != nil {
-			return api.Component{}, nil, fmt.Errorf("failed to get ingresses/routes: %w", err)
-		}
-	}
-
-	cmp := api.Component{
-		DevfileData: &api.DevfileData{
-			Devfile: devfile.Data,
-		},
-		RunningIn: api.MergeRunningModes(runningOn),
-		RunningOn: runningOn,
-		ManagedBy: "odo",
-		Ingresses: ingresses,
-		Routes:    routes,
-	}
-	if !feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
-		// Display RunningOn field only if the feature is enabled
-		cmp.RunningOn = nil
-	}
-
-	return cmp, &devfile, nil
-}
-
-// describeDevfileComponent describes the component defined by the devfile in the current directory
-func (o *ComponentOptions) describeDevfileComponent(ctx context.Context) (result api.Component, devfile *parser.DevfileObj, err error) {
-	var (
-		devfileObj    = odocontext.GetEffectiveDevfileObj(ctx)
-		devfilePath   = odocontext.GetDevfilePath(ctx)
-		componentName = odocontext.GetComponentName(ctx)
-	)
-	var (
-		kubeClient   = o.clientset.KubernetesClient
-		podmanClient = o.clientset.PodmanClient
-	)
-
-	isPlatformFeatureEnabled := feature.IsEnabled(ctx, feature.GenericPlatformFlag)
-	platform := fcontext.GetPlatform(ctx, "")
-	switch platform {
-	case "":
-		if kubeClient == nil {
-			log.Warning(kclient.NewNoConnectionError())
-		}
-		if isPlatformFeatureEnabled && podmanClient == nil {
-			log.Warning(podman.NewPodmanNotFoundError(nil))
-		}
-	case commonflags.PlatformCluster:
-		if kubeClient == nil {
-			return api.Component{}, nil, kclient.NewNoConnectionError()
-		}
-		podmanClient = nil
-	case commonflags.PlatformPodman:
-		if podmanClient == nil {
-			return api.Component{}, nil, podman.NewPodmanNotFoundError(nil)
-		}
-		kubeClient = nil
-	}
-
-	// TODO(feloy) Pass PID with `--pid` flag
-	allFwdPorts, err := o.clientset.StateClient.GetForwardedPorts(ctx)
-	if err != nil {
-		return api.Component{}, nil, err
-	}
-	if isPlatformFeatureEnabled {
-		for i := range allFwdPorts {
-			if allFwdPorts[i].Platform == "" {
-				allFwdPorts[i].Platform = commonflags.PlatformCluster
-			}
-		}
-	}
-	var forwardedPorts []api.ForwardedPort
-	switch platform {
-	case "":
-		if isPlatformFeatureEnabled {
-			// Read ports from all platforms
-			forwardedPorts = allFwdPorts
-		} else {
-			// Limit to cluster ports only
-			for _, p := range allFwdPorts {
-				if p.Platform == "" || p.Platform == commonflags.PlatformCluster {
-					forwardedPorts = append(forwardedPorts, p)
-				}
-			}
-		}
-	case commonflags.PlatformCluster:
-		for _, p := range allFwdPorts {
-			if p.Platform == "" || p.Platform == commonflags.PlatformCluster {
-				forwardedPorts = append(forwardedPorts, p)
-			}
-		}
-	case commonflags.PlatformPodman:
-		for _, p := range allFwdPorts {
-			if p.Platform == commonflags.PlatformPodman {
-				forwardedPorts = append(forwardedPorts, p)
-			}
-		}
-	}
-
-	runningOn, err := getRunningOn(ctx, componentName, kubeClient, podmanClient)
-	if err != nil {
-		return api.Component{}, nil, err
-	}
-
-	var ingresses []api.ConnectionData
-	var routes []api.ConnectionData
-	if kubeClient != nil {
-		ingresses, routes, err = component.ListRoutesAndIngresses(kubeClient, componentName, odocontext.GetApplication(ctx))
-		if err != nil {
-			err = clierrors.NewWarning("failed to get ingresses/routes", err)
-			// Do not return the error yet, as it is only a warning
-		}
-	}
-
-	cmp := api.Component{
-		DevfilePath:       devfilePath,
-		DevfileData:       api.GetDevfileData(*devfileObj),
-		DevForwardedPorts: forwardedPorts,
-		RunningIn:         api.MergeRunningModes(runningOn),
-		RunningOn:         runningOn,
-		ManagedBy:         "odo",
-		Ingresses:         ingresses,
-		Routes:            routes,
-	}
-	if !isPlatformFeatureEnabled {
-		// Display RunningOn field only if the feature is enabled
-		cmp.RunningOn = nil
-	}
-	updateWithRemoteSourceLocation(&cmp)
-	return cmp, devfileObj, err
-}
-
-func updateWithRemoteSourceLocation(cmp *api.Component) {
-	components, err := cmp.DevfileData.Devfile.GetComponents(common.DevfileOptions{
-		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
-	if err != nil {
-		return
-	}
-	for _, comp := range components {
-		if comp.Container.GetMountSources() {
-			if comp.Container.SourceMapping == "" {
-				comp.Container.SourceMapping = generator.DevfileSourceVolumeMount
-				err = cmp.DevfileData.Devfile.UpdateComponent(comp)
-				if err != nil {
-					klog.V(2).Infof("error occurred while updating the component %s; cause: %s", comp.Name, err)
-				}
-			}
-		}
-	}
-}
-
-func getRunningOn(ctx context.Context, n string, kubeClient kclient.ClientInterface, podmanClient podman.Client) (map[string]api.RunningModes, error) {
-	var runningOn map[string]api.RunningModes
-	runningModesMap, err := component.GetRunningModes(ctx, kubeClient, podmanClient, n)
-	if err != nil {
-		if !errors.As(err, &component.NoComponentFoundError{}) {
-			return nil, err
-		}
-		// it is ok if the component is not deployed
-		runningModesMap = nil
-	}
-	if runningModesMap != nil {
-		runningOn = make(map[string]api.RunningModes, len(runningModesMap))
-		if kubeClient != nil && runningModesMap[kubeClient] != nil {
-			runningOn[commonflags.PlatformCluster] = runningModesMap[kubeClient]
-		}
-		if podmanClient != nil && runningModesMap[podmanClient] != nil {
-			runningOn[commonflags.PlatformPodman] = runningModesMap[podmanClient]
-		}
-	}
-	return runningOn, nil
+	return describe.DescribeDevfileComponent(ctx, o.clientset.KubernetesClient, o.clientset.PodmanClient, o.clientset.StateClient)
 }
 
 func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj *parser.DevfileObj) error {
@@ -377,6 +156,22 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 		log.Info("Running on:")
 		for p, r := range cmp.RunningOn {
 			log.Printf("%s: %s", p, r)
+		}
+		fmt.Println()
+	}
+
+	if len(cmp.DevControlPlane) != 0 {
+		var webui string
+		if feature.IsEnabled(ctx, feature.UIServer) {
+			webui = "\n      Web UI: http://%[2]s:%[3]d/"
+		}
+		const ctrlPlaneHost = "localhost"
+		log.Info("Dev Control Plane:")
+		for _, dcp := range cmp.DevControlPlane {
+			log.Printf(`%[1]s
+      API: http://%[2]s:%[3]d/%[4]s`+webui,
+				log.Sbold(dcp.Platform),
+				ctrlPlaneHost, dcp.LocalPort, strings.TrimPrefix(dcp.APIServerPath, "/"))
 		}
 		fmt.Println()
 	}
@@ -415,6 +210,36 @@ func printHumanReadableOutput(ctx context.Context, cmp api.Component, devfileObj
 		log.Printf("Dev: Unknown")
 		log.Printf("Deploy: Unknown")
 		log.Printf("Debug: Unknown")
+	}
+	fmt.Println()
+
+	if cmp.DevfileData != nil && len(cmp.DevfileData.Commands) != 0 {
+		log.Info("Commands:")
+		for _, cmd := range cmp.DevfileData.Commands {
+			item := cmd.Name
+			if pointer.BoolDeref(cmd.IsDefault, false) {
+				item = log.Sbold(cmd.Name)
+			}
+			if cmd.Type != "" {
+				item += fmt.Sprintf("\n      Type: %s", cmd.Type)
+			}
+			if cmd.Group != "" {
+				item += fmt.Sprintf("\n      Group: %s", cmd.Group)
+			}
+			if cmd.CommandLine != "" {
+				item += fmt.Sprintf("\n      Command Line: %q", cmd.CommandLine)
+			}
+			if cmd.Component != "" {
+				item += fmt.Sprintf("\n      Component: %s", cmd.Component)
+			}
+			if cmd.ComponentType != "" {
+				item += fmt.Sprintf("\n      Component Type: %s", cmd.ComponentType)
+			}
+			if cmd.ImageName != "" {
+				item += fmt.Sprintf("\n      Image Name: %s", cmd.ImageName)
+			}
+			log.Printf(item)
+		}
 	}
 	fmt.Println()
 
@@ -493,7 +318,7 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 }
 
 // NewCmdComponent implements the component odo sub-command
-func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command {
+func NewCmdComponent(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
@@ -503,12 +328,12 @@ func NewCmdComponent(ctx context.Context, name, fullName string) *cobra.Command 
 		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(describeExample, fullName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
-	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE)
+	clientset.Add(componentCmd, clientset.KUBERNETES_NULLABLE, clientset.STATE, clientset.FILESYSTEM)
 	if feature.IsEnabled(ctx, feature.GenericPlatformFlag) {
 		clientset.Add(componentCmd, clientset.PODMAN_NULLABLE)
 	}

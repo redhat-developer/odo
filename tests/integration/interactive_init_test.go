@@ -13,14 +13,13 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	"k8s.io/utils/pointer"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
-	"github.com/redhat-developer/odo/pkg/util"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
+	"github.com/redhat-developer/odo/pkg/util"
+
 	odolog "github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -55,6 +54,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					By("showing the interactive mode notice message", func() {
 						helper.ExpectString(ctx, messages.InteractiveModeEnabled)
 					})
+
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
@@ -92,74 +94,67 @@ var _ = Describe("odo init interactive command tests", func() {
 						hasMultipleVersions = true
 					}
 				})
-				It("should allow for personalizing configurations", func() {
-					command := []string{"odo", "init"}
-					output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+				Context("personalizing configuration", func() {
+					It("should allow to add and delete a port ", func() {
+						command := []string{"odo", "init"}
+						output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
-						helper.ExpectString(ctx, "Select language")
-						helper.SendLine(ctx, "Javascript")
-
-						helper.ExpectString(ctx, "Select project type")
-						helper.SendLine(ctx, "")
-
-						if hasMultipleVersions {
-							helper.ExpectString(ctx, "Select version")
+							helper.ExpectString(ctx, "Select architectures")
 							helper.SendLine(ctx, "")
-						}
 
-						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-						helper.ExpectString(ctx, "runtime")
-						helper.SendLine(ctx, "runtime")
+							helper.ExpectString(ctx, "Select language")
+							helper.SendLine(ctx, "Javascript")
 
-						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "Add new port")
+							helper.ExpectString(ctx, "Select project type")
+							helper.SendLine(ctx, "")
 
-						helper.ExpectString(ctx, "Enter port number:")
-						helper.SendLine(ctx, "5000")
+							if hasMultipleVersions {
+								helper.ExpectString(ctx, "Select version")
+								helper.SendLine(ctx, "")
+							}
 
-						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "Delete port \"3000\"")
+							helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+							helper.ExpectString(ctx, "runtime")
+							helper.SendLine(ctx, "runtime")
 
-						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "Add new environment variable")
+							helper.ExpectString(ctx, "What configuration do you want change")
+							helper.SendLine(ctx, "Delete port \"3000\"")
 
-						helper.ExpectString(ctx, "Enter new environment variable name:")
-						helper.SendLine(ctx, "DEBUG_PROJECT_PORT")
+							helper.ExpectString(ctx, "What configuration do you want change")
+							helper.SendLine(ctx, "Add new port")
+							helper.ExpectString(ctx, "Enter port number:")
+							helper.SendLine(ctx, "3000")
 
-						helper.ExpectString(ctx, "Enter value for \"DEBUG_PROJECT_PORT\" environment variable:")
-						helper.SendLine(ctx, "5858")
+							helper.ExpectString(ctx, "What configuration do you want change")
+							// Default option is NOTHING - configuration is correct
+							helper.SendLine(ctx, "")
 
-						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "Delete environment variable \"DEBUG_PORT\"")
+							helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+							helper.SendLine(ctx, "")
 
-						helper.ExpectString(ctx, "What configuration do you want change")
-						helper.SendLine(ctx, "NOTHING - configuration is correct")
+							helper.ExpectString(ctx, "Which starter project do you want to use")
+							helper.SendLine(ctx, "nodejs-starter")
 
-						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-						helper.SendLine(ctx, "")
+							helper.ExpectString(ctx, "Enter component name:")
+							helper.SendLine(ctx, "my-nodejs-app")
 
-						helper.ExpectString(ctx, "Which starter project do you want to use")
-						helper.SendLine(ctx, "nodejs-starter")
+							helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
 
-						helper.ExpectString(ctx, "Enter component name:")
-						helper.SendLine(ctx, "my-nodejs-app")
-
-						helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
-
+						})
+						Expect(err).To(BeNil())
+						Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
+						Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+						helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
 					})
-					Expect(err).To(BeNil())
-					Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
-					Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
-					helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "5000")
-					helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
-					helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "DEBUG_PROJECT_PORT")
-					helper.FileShouldNotContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "DEBUG_PORT")
 				})
 			})
 
 			It("should ask to re-enter the component name when an invalid value is passed", func() {
 				command := []string{"odo", "init"}
 				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
@@ -205,6 +200,9 @@ var _ = Describe("odo init interactive command tests", func() {
 
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
 
@@ -243,6 +241,9 @@ var _ = Describe("odo init interactive command tests", func() {
 						helper.ExpectString(ctx, messages.InteractiveModeEnabled)
 					})
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
 
@@ -277,6 +278,9 @@ var _ = Describe("odo init interactive command tests", func() {
 				devfileVersion := "2.0.0"
 
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Go")
@@ -313,6 +317,9 @@ var _ = Describe("odo init interactive command tests", func() {
 					By("showing the interactive mode notice message", func() {
 						helper.ExpectString(ctx, messages.InteractiveModeEnabled)
 					})
+
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "java")
@@ -405,9 +412,16 @@ var _ = Describe("odo init interactive command tests", func() {
 						language := "java"
 
 						// The first output is welcoming message / paragraph / banner output
-						welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.NoSourceCodeDetected, "odo version: "+version.VERSION), "\n")
-
+						odoVersion, gitCommit := helper.GetOdoVersion()
+						welcomingMsgs := strings.Split(
+							odolog.StitleWithVersion(messages.InitializingNewComponent,
+								messages.NoSourceCodeDetected,
+								fmt.Sprintf("odo version: %s (%s)", odoVersion, gitCommit)),
+							"\n")
 						output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
+							helper.ExpectString(ctx, "Select architectures")
+							helper.SendLine(ctx, "")
+
 							helper.ExpectString(ctx, "Select language")
 							helper.SendLine(ctx, language)
 
@@ -444,7 +458,12 @@ var _ = Describe("odo init interactive command tests", func() {
 						language := "Python"
 						projectType := "Python"
 						versionedDevfileName := "python:2.1.0"
-						welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
+						odoVersion, gitCommit := helper.GetOdoVersion()
+						welcomingMsgs := strings.Split(
+							odolog.StitleWithVersion(messages.InitializingNewComponent,
+								messages.SourceCodeDetected,
+								fmt.Sprintf("odo version: %s (%s)", odoVersion, gitCommit)),
+							"\n")
 
 						output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 							helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -560,6 +579,9 @@ var _ = Describe("odo init interactive command tests", func() {
 
 				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, ".NET")
 
@@ -653,27 +675,13 @@ var _ = Describe("odo init interactive command tests", func() {
 				})
 
 				It("should not fail but fallback to the interactive mode", func() {
-					output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+					_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 						helper.ExpectString(ctx, "Could not determine a Devfile based on the files in the current directory")
 
-						helper.ExpectString(ctx, "Select language")
-						helper.SendLine(ctx, "PHP")
-
-						helper.ExpectString(ctx, "Select project type")
-						helper.SendLine(ctx, "")
-
-						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-						helper.SendLine(ctx, "")
-
-						helper.ExpectString(ctx, "Enter component name")
-						helper.SendLine(ctx, "my-php-app")
-
-						helper.ExpectString(ctx, "Your new component 'my-php-app' is ready in the current directory")
+						helper.ExpectString(ctx, "Select architectures")
+						ctx.StopCommand()
 					})
-
-					Expect(err).ShouldNot(HaveOccurred())
-					Expect(output).ShouldNot(ContainSubstring("Which starter project do you want to use"))
-					Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
+					Expect(err).Should(HaveOccurred())
 				})
 			})
 		})
@@ -716,6 +724,9 @@ spec:
 				}
 
 				output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Select architectures")
+					helper.SendLine(ctx, "")
+
 					helper.ExpectString(ctx, "Select language")
 					helper.SendLine(ctx, "Java")
 

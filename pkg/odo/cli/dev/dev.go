@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -21,9 +23,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
-	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
@@ -36,7 +38,6 @@ import (
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -70,6 +71,11 @@ type DevOptions struct {
 	forwardLocalhostFlag bool
 	portForwardFlag      []string
 	addressFlag          string
+	noCommandsFlag       bool
+	apiServerFlag        bool
+	apiServerPortFlag    int
+	syncGitDirFlag       bool
+	logsFlag             bool
 }
 
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
@@ -107,17 +113,15 @@ func (o *DevOptions) PreInit() string {
 func (o *DevOptions) Complete(ctx context.Context, cmdline cmdline.Cmdline, args []string) error {
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(ctx)
-
 	return nil
 }
 
 func (o *DevOptions) Validate(ctx context.Context) error {
 	devfileObj := *odocontext.GetEffectiveDevfileObj(ctx)
-	if !o.debugFlag && !libdevfile.HasRunCommand(devfileObj.Data) {
-		return clierrors.NewNoCommandInDevfileError("run")
-	}
-	if o.debugFlag && !libdevfile.HasDebugCommand(devfileObj.Data) {
-		return clierrors.NewNoCommandInDevfileError("debug")
+	if o.noCommandsFlag {
+		if o.buildCommandFlag != "" || o.runCommandFlag != "" {
+			return errors.New("--no-commands cannot be used with --build-command or --run-command")
+		}
 	}
 
 	platform := fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
@@ -174,6 +178,19 @@ func (o *DevOptions) Validate(ctx context.Context) error {
 		return err
 	}
 
+	if !o.apiServerFlag && o.apiServerPortFlag != 0 {
+		return errors.New("--api-server-port makes sense only if --api-server is enabled")
+	}
+
+	if o.apiServerFlag && o.apiServerPortFlag != 0 {
+		if o.randomPortsFlag {
+			return errors.New("--random-ports and --api-server-port cannot be used together")
+		}
+		if !util.IsPortFree(o.apiServerPortFlag, "") {
+			return fmt.Errorf("port %d is not free; please try another port", o.apiServerPortFlag)
+		}
+	}
+
 	return nil
 }
 
@@ -185,10 +202,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		componentName = odocontext.GetComponentName(ctx)
 		variables     = fcontext.GetVariables(ctx)
 		platform      = fcontext.GetPlatform(ctx, commonflags.PlatformCluster)
+		dest          string
+		deployingTo   string
 	)
 
-	var dest string
-	var deployingTo string
 	switch platform {
 	case commonflags.PlatformPodman:
 		dest = "Platform: podman"
@@ -201,9 +218,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	}
 
 	// Output what the command is doing / information
-	log.Title("Developing using the \""+componentName+"\" Devfile",
-		dest,
-		"odo version: "+version.VERSION)
+	log.Title("Developing using the \""+componentName+"\" Devfile", dest)
 	if platform == commonflags.PlatformCluster {
 		genericclioptions.WarnIfDefaultNamespace(odocontext.GetNamespace(ctx), o.clientset.KubernetesClient)
 	}
@@ -230,6 +245,10 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	// Ignore the devfile, as it will be handled independently
 	o.ignorePaths = ignores
 
+	if o.syncGitDirFlag {
+		o.ignorePaths = removeGitDir(o.ignorePaths)
+	}
+
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
@@ -243,6 +262,44 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
+	var apiServer apiserver_impl.ApiServer
+	if o.apiServerFlag {
+		var devfileFiles []string
+		devfileFiles, err = libdevfile.GetReferencedLocalFiles(*devFileObj)
+		if err != nil {
+			return err
+		}
+		devfileFiles = append(devfileFiles, devfilePath)
+		// Start the server here; it will be shutdown when context is cancelled; or if the server encounters an error
+		apiServer, err = apiserver_impl.StartServer(
+			ctx,
+			o.cancel,
+			o.randomPortsFlag,
+			o.apiServerPortFlag,
+			devfilePath,
+			devfileFiles,
+			o.clientset.FS,
+			o.clientset.KubernetesClient,
+			o.clientset.PodmanClient,
+			o.clientset.StateClient,
+			o.clientset.PreferenceClient,
+			o.clientset.InformerClient,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	if o.logsFlag {
+		go func() {
+			_ = o.followLogs(ctx)
+		}()
+	}
+
+	o.clientset.InformerClient.AppendInfo(log.Sbold("Keyboard Commands:") + "\n" +
+		"[Ctrl+c] - Exit and delete resources from " + deployingTo + "\n" +
+		"     [p] - Manually apply local changes to the application on " + deployingTo + "\n")
+
 	return o.clientset.DevClient.Start(
 		o.ctx,
 		dev.StartOptions{
@@ -250,6 +307,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Debug:                o.debugFlag,
 			BuildCommand:         o.buildCommandFlag,
 			RunCommand:           o.runCommandFlag,
+			SkipCommands:         o.noCommandsFlag,
 			RandomPorts:          o.randomPortsFlag,
 			WatchFiles:           !o.noWatchFlag,
 			IgnoreLocalhost:      o.ignoreLocalhostFlag,
@@ -257,10 +315,45 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			Variables:            variables,
 			CustomForwardedPorts: o.forwardedPorts,
 			CustomAddress:        o.addressFlag,
+			PushWatcher:          apiServer.PushWatcher,
 			Out:                  o.out,
 			ErrOut:               o.errOut,
 		},
 	)
+}
+
+func (o *DevOptions) followLogs(
+	ctx context.Context,
+) error {
+	var (
+		componentName = odocontext.GetComponentName(ctx)
+	)
+
+	ns := ""
+	if o.clientset.KubernetesClient != nil {
+		ns = odocontext.GetNamespace(ctx)
+	}
+
+	return o.clientset.LogsClient.DisplayLogs(
+		ctx,
+		odolabels.ComponentDevMode,
+		componentName,
+		ns,
+		true,
+		o.out,
+	)
+}
+
+// removeGitDir removes the `.git` entry from the list of paths to ignore
+// and adds `!.git`, to force the sync of all files into the .git directory
+func removeGitDir(ignores []string) []string {
+	ignores = append(ignores, "!.git")
+	for i, entry := range ignores {
+		if entry == ".git" {
+			return append(ignores[0:i], ignores[i+1:]...)
+		}
+	}
+	return ignores
 }
 
 func (o *DevOptions) HandleSignal(ctx context.Context, cancelFunc context.CancelFunc) error {
@@ -270,19 +363,34 @@ func (o *DevOptions) HandleSignal(ctx context.Context, cancelFunc context.Cancel
 	select {}
 }
 
-func (o *DevOptions) Cleanup(ctx context.Context, commandError error) {
+func (o *DevOptions) Cleanup(ctx context.Context, commandError error) error {
 	if errors.As(commandError, &state.ErrAlreadyRunningOnPlatform{}) {
 		klog.V(4).Info("session already running, no need to cleanup")
-		return
+		return commandError
 	}
-	if commandError != nil {
-		_ = o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
+	defer func() {
+		err := o.clientset.StateClient.SaveExit(ctx)
+		if err != nil {
+			klog.V(1).Infof("unable to persist dev state: %v", err)
+		}
+	}()
+
+	wrapWithCmdErr := func(err error) error {
+		if err == nil {
+			return commandError
+		}
+		if commandError != nil {
+			return fmt.Errorf("command error: %v and error durring cleanup: %w", commandError.Error(), err)
+		}
+		return err
 	}
-	_ = o.clientset.StateClient.SaveExit(ctx)
+
+	err := o.clientset.DevClient.CleanupResources(ctx, log.GetStdout())
+	return wrapWithCmdErr(err)
 }
 
 // NewCmdDev implements the odo dev command
-func NewCmdDev(name, fullName string) *cobra.Command {
+func NewCmdDev(ctx context.Context, name, fullName string, testClientset clientset.Clientset) *cobra.Command {
 	o := NewDevOptions()
 	devCmd := &cobra.Command{
 		Use:   name,
@@ -292,7 +400,7 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 		Example: fmt.Sprintf(devExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genericclioptions.GenericRun(o, cmd, args)
+			return genericclioptions.GenericRun(o, testClientset, cmd, args)
 		},
 	}
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
@@ -309,13 +417,21 @@ It forwards endpoints with any exposure values ('public', 'internal' or 'none') 
 	devCmd.Flags().StringArrayVar(&o.portForwardFlag, "port-forward", nil,
 		"Define custom port mapping for port forwarding. Acceptable formats: LOCAL_PORT:REMOTE_PORT, LOCAL_PORT:CONTAINER_NAME:REMOTE_PORT.")
 	devCmd.Flags().StringVar(&o.addressFlag, "address", "127.0.0.1", "Define custom address for port forwarding.")
+	devCmd.Flags().BoolVar(&o.noCommandsFlag, "no-commands", false, "Do not run any commands; just start the development environment.")
+	devCmd.Flags().BoolVar(&o.syncGitDirFlag, "sync-git-dir", false, "Synchronize the .git directory to the container. By default, this directory is not synchronized.")
+	devCmd.Flags().BoolVar(&o.logsFlag, "logs", false, "Follow logs of component")
+	devCmd.Flags().BoolVar(&o.apiServerFlag, "api-server", true, "Start the API Server")
+	devCmd.Flags().IntVar(&o.apiServerPortFlag, "api-server-port", 0, "Define custom port for API Server; this flag should be used in combination with --api-server flag.")
+
 	clientset.Add(devCmd,
 		clientset.BINDING,
 		clientset.DEV,
 		clientset.EXEC,
 		clientset.FILESYSTEM,
+		clientset.INFORMER,
 		clientset.INIT,
 		clientset.KUBERNETES_NULLABLE,
+		clientset.LOGS,
 		clientset.PODMAN_NULLABLE,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,

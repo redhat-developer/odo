@@ -20,6 +20,11 @@ var _ = Describe("odo add binding interactive command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
+		skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
+		if skipLogin == "true" {
+			Skip("Skipping service binding tests as SKIP_SERVICE_BINDING_TESTS is true")
+		}
+
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 

@@ -24,6 +24,6 @@ func (e *volumeComponent) CheckValidity() error {
 	return nil
 }
 
-func (e *volumeComponent) Apply(handler Handler) error {
+func (e *volumeComponent) Apply(handler Handler, kind v1alpha2.CommandGroupKind) error {
 	return nil
 }

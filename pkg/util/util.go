@@ -190,8 +190,8 @@ func removeNonAlphaSuffix(input string) string {
 
 // CheckPathExists checks if a path exists or not
 // TODO(feloy) use from devfile library?
-func CheckPathExists(path string) bool {
-	if _, err := filesystem.Get().Stat(path); !os.IsNotExist(err) {
+func CheckPathExists(fsys filesystem.Filesystem, path string) bool {
+	if _, err := fsys.Stat(path); !errors.Is(err, fs.ErrNotExist) {
 		// path to file does exist
 		return true
 	}
@@ -640,8 +640,6 @@ func StartSignalWatcher(watchSignals []os.Signal, handle func(receivedSignal os.
 
 	receivedSignal := <-signals
 	handle(receivedSignal)
-	// exit here to stop spinners from rotating
-	os.Exit(1)
 }
 
 // cleanDir cleans the original folder during events like interrupted copy etc

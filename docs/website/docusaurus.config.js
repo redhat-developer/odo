@@ -1,15 +1,14 @@
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/oceanicNext');
+const prismReactRenderer = require('prism-react-renderer');
 const path = require('path');
 
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: 'odo',
-  tagline: 'odo - Fast iterative Kubernetes and OpenShift development',
+  tagline: 'odo - Fast iterative container-based application development',
   url: 'https://odo.dev',
   baseUrl: '/',
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenMarkdownLinks: 'throw',
   favicon: 'img/favicon.ico',
   organizationName: 'redhat-developer', // Usually your GitHub org/user name.
   projectName: 'odo', // Usually your repo name.
@@ -116,8 +115,9 @@ module.exports = {
       copyright: `Copyright © ${new Date().getFullYear()} odo Authors -- All Rights Reserved <br> Apache License 2.0 open source project`,
     },
     prism: {
-      theme: lightCodeTheme,
-      darkTheme: darkCodeTheme,
+      theme: prismReactRenderer.themes.github,
+      darkTheme: prismReactRenderer.themes.oceanicNext,
+      additionalLanguages: ['docker'],
     },
     algolia: {
       appId: '7RBQSTPIA4',

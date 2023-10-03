@@ -32,6 +32,9 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 		It("Empty directory", func() {
 			args := []string{"odo", "init"}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
+				helper.ExpectString(ctx, "Select architectures")
+				helper.SendLine(ctx, "")
+
 				helper.ExpectString(ctx, "Select language")
 				helper.SendLine(ctx, "Java")
 
@@ -53,6 +56,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			got := helper.StripAnsi(out)
 			got = helper.StripInteractiveQuestion(got)
 			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
+			got = helper.StripGitCommitFromVersion(got)
 			file := "interactive_mode_empty_directory_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
@@ -84,6 +88,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				got := helper.StripAnsi(out)
 				got = helper.StripInteractiveQuestion(got)
 				got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
+				got = helper.StripGitCommitFromVersion(got)
 				file := "interactive_mode_directory_with_sources_output.mdx"
 				want := helper.GetMDXContent(filepath.Join(commonPath, file))
 				diff := cmp.Diff(want, got)
@@ -97,6 +102,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "2.0.0"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			got = helper.StripGitCommitFromVersion(got)
 			file := "versioned_devfile_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
@@ -107,6 +113,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "latest"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			got = helper.StripGitCommitFromVersion(got)
 			file := "latest_versioned_devfile_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
@@ -117,6 +124,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			got = helper.StripGitCommitFromVersion(got)
 			file := "devfile_from_url_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
@@ -167,6 +175,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 						args := []string{"init", "--name", "my-spring-app", "--devfile", "java-springboot", "--devfile-registry", "DefaultDevfileRegistry", "--starter", "springbootproject"}
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+						got = helper.StripGitCommitFromVersion(got)
 						file := "devfile_from_specific_registry_output.mdx"
 						want := helper.GetMDXContent(filepath.Join(commonPath, file))
 						diff := cmp.Diff(want, got)
@@ -193,6 +202,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 						args := []string{"init", "--devfile", "nodejs-react", "--name", "my-nr-app"}
 						out := helper.Cmd("odo", args...).ShouldPass().Out()
 						got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+						got = helper.StripGitCommitFromVersion(got)
 						file := "devfile_from_any_registry_output.mdx"
 						want := helper.GetMDXContent(filepath.Join(commonPath, file))
 						diff := cmp.Diff(want, got)
@@ -207,7 +217,19 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			got = helper.StripGitCommitFromVersion(got)
 			file := "devfile_from_url_output.mdx"
+			want := helper.GetMDXContent(filepath.Join(commonPath, file))
+			diff := cmp.Diff(want, got)
+			Expect(diff).To(BeEmpty(), file)
+		})
+
+		It("set application ports after fetching Devfile", func() {
+			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--run-port", "3456", "--run-port", "9876"}
+			out := helper.Cmd("odo", args...).ShouldPass().Out()
+			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			got = helper.StripGitCommitFromVersion(got)
+			file := "devfile_with_run-port_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
 			Expect(diff).To(BeEmpty(), file)

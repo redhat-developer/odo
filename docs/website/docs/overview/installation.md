@@ -5,6 +5,9 @@ toc_min_heading_level: 2
 toc_max_heading_level: 4
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 `odo` can be used as either a [CLI tool](#cli-installation) or an [IDE plugin](#ide-installation) on [Mac](#macos), [Windows](#windows) or [Linux](#linux).
 
 Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/).
@@ -14,9 +17,6 @@ For more information on the changes of each release, they can be viewed either o
 ## CLI Installation
 
 ### Linux
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 <Tabs
 defaultValue="amd64"
@@ -33,12 +33,12 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -64,12 +64,12 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -95,12 +95,12 @@ Installing `odo` on `ppc64le` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-ppc64le -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-ppc64le -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-ppc64le.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -126,12 +126,12 @@ Installing `odo` on `s390x` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-s390x -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-s390x -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-linux-s390x.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -190,12 +190,12 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-darwin-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-darwin-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -222,12 +222,12 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-darwin-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-darwin-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -258,12 +258,12 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 2. Download the latest release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-windows-amd64.exe -o odo.exe
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-windows-amd64.exe -o odo.exe
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.10.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
 Get-FileHash odo.exe
 type odo.exe.sha256
@@ -333,7 +333,7 @@ The download can be executed using the `download` goal which automatically retri
 ```shell
 mvn software.tnb:odo-downloader-maven-plugin:0.1.3:download \
   -Dodo.target.file=$HOME/bin/odo \
-  -Dodo.version=v3.10.0
+  -Dodo.version=v3.15.0
 ```
 
 ### asdf
@@ -341,6 +341,201 @@ The [asdf version manager](https://asdf-vm.com/) is a tool for managing multiple
 With `asdf` installed, the [asdf plugin for odo](https://github.com/rm3l/asdf-odo) can be used to install any released version of `odo`:
 ```
 asdf plugin add odo
-asdf install odo 3.10.0
-asdf global odo 3.10.0
+asdf install odo 3.15.0
+asdf global odo 3.15.0
 ```
+
+## Nightly builds
+
+Nightly builds of `odo` are also available. Note that these builds are provided as is and can be highly unstable.
+
+### Linux
+
+<Tabs
+defaultValue="amd64"
+values={[
+{label: 'Intel / AMD 64', value: 'amd64'},
+{label: 'ARM 64', value: 'arm64'},
+{label: 'PowerPC', value: 'ppc64le'},
+{label: 'IBM Z', value: 's390x'},
+]}>
+
+<TabItem value="amd64">
+
+Installing `odo` on `amd64` architecture:
+
+1. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64 -o odo
+```
+
+2. Install odo:
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+3. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="arm64">
+
+Installing `odo` on `arm64` architecture:
+
+1. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64 -o odo
+```
+
+2. Install odo:
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+3(Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="ppc64le">
+
+Installing `odo` on `ppc64le` architecture:
+
+1. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le -o odo
+```
+
+2. Install odo:
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+3(Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="s390x">
+
+Installing `odo` on `s390x` architecture:
+
+1. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x -o odo
+```
+
+2. Install odo:
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+3. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+</Tabs>
+
+---
+
+### MacOS
+
+<Tabs
+defaultValue="intel"
+values={[
+{label: 'Intel', value: 'intel'},
+{label: 'Apple Silicon', value: 'arm'},
+]}>
+
+<TabItem value="intel">
+
+Installing `odo` on `amd64` architecture:
+
+1. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64 -o odo
+```
+
+2. Install odo:
+```shell
+chmod +x ./odo
+sudo mv ./odo /usr/local/bin/odo
+```
+
+3(Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="arm">
+
+Installing `odo` on `arm64` architecture:
+
+1. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64 -o odo
+```
+
+2. Install odo:
+```shell
+chmod +x ./odo
+sudo mv ./odo /usr/local/bin/odo
+```
+
+3. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+</Tabs>
+
+---
+
+### Windows
+
+1. Open a PowerShell terminal
+
+2. Download the latest nightly build:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe -o odo.exe
+```
+
+3. Add the binary to your `PATH`

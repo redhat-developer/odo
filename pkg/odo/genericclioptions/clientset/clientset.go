@@ -12,6 +12,8 @@
 package clientset
 
 import (
+	"io"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
@@ -19,6 +21,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev/kubedev"
 	"github.com/redhat-developer/odo/pkg/dev/podmandev"
 	"github.com/redhat-developer/odo/pkg/exec"
+	"github.com/redhat-developer/odo/pkg/informer"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/odo/commonflags"
 	"github.com/redhat-developer/odo/pkg/podman"
@@ -40,6 +44,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/system"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -60,6 +65,8 @@ const (
 	EXEC = "DEP_EXEC"
 	// FILESYSTEM instantiates client for pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
+	// INFORMER instantiates client for pkg/informer
+	INFORMER = "DEP_INFORMER"
 	// INIT instantiates client for pkg/init
 	INIT = "DEP_INIT"
 	// KUBERNETES_NULLABLE instantiates client for pkg/kclient, can be nil
@@ -84,6 +91,8 @@ const (
 	STATE = "DEP_STATE"
 	// SYNC instantiates client for pkg/sync
 	SYNC = "DEP_SYNC"
+	// SYSTEM instantiates client for pkg/testingutil/system
+	SYSTEM = "DEP_SYSTEM"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
 	/* Add key for new package here */
@@ -94,7 +103,7 @@ const (
 var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	CONFIG_AUTOMOUNT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE},
-	DELETE_COMPONENT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE, EXEC},
+	DELETE_COMPONENT: {KUBERNETES_NULLABLE, PODMAN_NULLABLE, EXEC, CONFIG_AUTOMOUNT},
 	DEPLOY:           {KUBERNETES, FILESYSTEM, CONFIG_AUTOMOUNT},
 	DEV: {
 		BINDING,
@@ -116,14 +125,17 @@ var subdeps map[string][]string = map[string][]string{
 	PORT_FORWARD: {KUBERNETES_NULLABLE, EXEC, STATE},
 	PROJECT:      {KUBERNETES},
 	REGISTRY:     {FILESYSTEM, PREFERENCE, KUBERNETES_NULLABLE},
-	STATE:        {FILESYSTEM},
+	STATE:        {FILESYSTEM, SYSTEM},
 	SYNC:         {EXEC},
-	WATCH:        {KUBERNETES_NULLABLE},
+	WATCH:        {INFORMER, KUBERNETES_NULLABLE},
 	BINDING:      {PROJECT, KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
+	Stdout io.Writer
+	Stderr io.Writer
+
 	AlizerClient          alizer.Client
 	BindingClient         binding.Client
 	ConfigAutomountClient configAutomount.Client
@@ -132,6 +144,7 @@ type Clientset struct {
 	DevClient             dev.Client
 	ExecClient            exec.Client
 	FS                    filesystem.Filesystem
+	InformerClient        *informer.InformerClient
 	InitClient            _init.Client
 	KubernetesClient      kclient.ClientInterface
 	LogsClient            logs.Client
@@ -142,6 +155,7 @@ type Clientset struct {
 	RegistryClient        registry.Client
 	StateClient           state.Client
 	SyncClient            sync.Client
+	systemClient          system.System
 	WatchClient           watch.Client
 	/* Add client by alphabetic order */
 }
@@ -165,38 +179,70 @@ func isDefined(command *cobra.Command, dependency string) bool {
 	return ok
 }
 
-func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
+func Fetch(command *cobra.Command, platform string, testClientset Clientset) (*Clientset, error) {
 	var (
 		err error
 		dep = Clientset{}
 		ctx = command.Context()
 	)
 
+	if testClientset.Stdout != nil {
+		dep.Stdout = testClientset.Stdout
+	} else {
+		dep.Stdout = log.GetStdout()
+	}
+	if testClientset.Stderr != nil {
+		dep.Stderr = testClientset.Stderr
+	} else {
+		dep.Stderr = log.GetStderr()
+	}
+
 	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {
-		dep.FS = filesystem.DefaultFs{}
+		if testClientset.FS != nil {
+			dep.FS = testClientset.FS
+		} else {
+			dep.FS = filesystem.DefaultFs{}
+		}
+	}
+	if isDefined(command, SYSTEM) {
+		if testClientset.systemClient != nil {
+			dep.systemClient = testClientset.systemClient
+		} else {
+			dep.systemClient = system.Default{}
+		}
+	}
+	if isDefined(command, INFORMER) {
+		dep.InformerClient = informer.NewInformerClient()
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
-		dep.KubernetesClient, err = kclient.New()
-		if err != nil {
-			// only return error is KUBERNETES_NULLABLE is not defined in combination with KUBERNETES
-			if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
-				return nil, err
+		if testClientset.KubernetesClient != nil {
+			dep.KubernetesClient = testClientset.KubernetesClient
+		} else {
+			dep.KubernetesClient, err = kclient.New()
+			if err != nil {
+				// only return error is KUBERNETES_NULLABLE is not defined in combination with KUBERNETES
+				if isDefined(command, KUBERNETES) && !isDefined(command, KUBERNETES_NULLABLE) {
+					return nil, err
+				}
+				klog.V(3).Infof("no Kubernetes client initialized: %v", err)
+				dep.KubernetesClient = nil
 			}
-			klog.V(3).Infof("no Kubernetes client initialized: %v", err)
-			dep.KubernetesClient = nil
 		}
-
 	}
 	if isDefined(command, PODMAN) || isDefined(command, PODMAN_NULLABLE) {
-		dep.PodmanClient, err = podman.NewPodmanCli(ctx)
-		if err != nil {
-			// send error in case the command is to run on podman platform or if PODMAN clientset is required.
-			if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
-				return nil, podman.NewPodmanNotFoundError(err)
+		if testClientset.PodmanClient != nil {
+			dep.PodmanClient = testClientset.PodmanClient
+		} else {
+			dep.PodmanClient, err = podman.NewPodmanCli(ctx)
+			if err != nil {
+				// send error in case the command is to run on podman platform or if PODMAN clientset is required.
+				if isDefined(command, PODMAN) || platform == commonflags.PlatformPodman {
+					return nil, podman.NewPodmanNotFoundError(err)
+				}
+				klog.V(3).Infof("no Podman client initialized: %v", err)
+				dep.PodmanClient = nil
 			}
-			klog.V(3).Infof("no Podman client initialized: %v", err)
-			dep.PodmanClient = nil
 		}
 	}
 	if isDefined(command, PREFERENCE) {
@@ -211,7 +257,11 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 
 	/* With sub-dependencies */
 	if isDefined(command, ALIZER) {
-		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+		if testClientset.AlizerClient != nil {
+			dep.AlizerClient = testClientset.AlizerClient
+		} else {
+			dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+		}
 	}
 	if isDefined(command, EXEC) {
 		switch platform {
@@ -230,7 +280,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, DELETE_COMPONENT) {
-		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.PodmanClient, dep.ExecClient)
+		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient, dep.PodmanClient, dep.ExecClient, dep.ConfigAutomountClient)
 	}
 	if isDefined(command, DEPLOY) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient, dep.ConfigAutomountClient, dep.FS)
@@ -250,7 +300,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
 	if isDefined(command, STATE) {
-		dep.StateClient = state.NewStateClient(dep.FS)
+		dep.StateClient = state.NewStateClient(dep.FS, dep.systemClient)
 	}
 	if isDefined(command, SYNC) {
 		switch platform {
@@ -261,7 +311,7 @@ func Fetch(command *cobra.Command, platform string) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient)
+		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.InformerClient)
 	}
 	if isDefined(command, BINDING) {
 		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)

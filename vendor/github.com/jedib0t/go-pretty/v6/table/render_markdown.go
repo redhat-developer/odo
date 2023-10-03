@@ -54,12 +54,8 @@ func (t *Table) markdownRenderRow(out *strings.Builder, row rowStr, hint renderH
 				colStr = row[colIdx]
 			}
 			out.WriteRune(' ')
-			if strings.Contains(colStr, "|") {
-				colStr = strings.Replace(colStr, "|", "\\|", -1)
-			}
-			if strings.Contains(colStr, "\n") {
-				colStr = strings.Replace(colStr, "\n", "<br/>", -1)
-			}
+			colStr = strings.ReplaceAll(colStr, "|", "\\|")
+			colStr = strings.ReplaceAll(colStr, "\n", "<br/>")
 			out.WriteString(colStr)
 			out.WriteRune(' ')
 		}
@@ -94,7 +90,6 @@ func (t *Table) markdownRenderRows(out *strings.Builder, rows []rowStr, hint ren
 
 func (t *Table) markdownRenderRowsFooter(out *strings.Builder) {
 	t.markdownRenderRows(out, t.rowsFooter, renderHint{isFooterRow: true})
-
 }
 
 func (t *Table) markdownRenderRowsHeader(out *strings.Builder) {

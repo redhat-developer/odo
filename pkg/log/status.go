@@ -36,6 +36,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/redhat-developer/odo/pkg/log/fidget"
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // Spacing for logging
@@ -238,10 +239,25 @@ func Printf(format string, a ...interface{}) {
 	}
 }
 
+// Fprintf will output in an appropriate "information" manner; for e.g.
+// • <message>
+func Fprintf(w io.Writer, format string, a ...interface{}) {
+	if !IsJSON() {
+		fmt.Fprintf(w, "%s%s%s%s\n", prefixSpacing, getSpacingString(), suffixSpacing, fmt.Sprintf(format, a...))
+	}
+}
+
 // Println will output a new line when applicable
 func Println() {
 	if !IsJSON() {
 		fmt.Fprintln(GetStdout())
+	}
+}
+
+// Fprintln will output a new line when applicable
+func Fprintln(w io.Writer) {
+	if !IsJSON() {
+		fmt.Fprintln(w)
 	}
 }
 
@@ -276,8 +292,7 @@ func Warning(a ...interface{}) {
 //	⚠ <message>
 func Fwarning(out io.Writer, a ...interface{}) {
 	if !IsJSON() {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(out, "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+		Fwarningf(out, "%s", a...)
 	}
 }
 
@@ -285,10 +300,35 @@ func Fwarning(out io.Writer, a ...interface{}) {
 //
 //	⚠ <message>
 func Warningf(format string, a ...interface{}) {
+	Fwarningf(GetStderr(), format, a...)
+}
+
+// Fwarningf will output in an appropriate "warning" manner
+//
+//	⚠ <message>
+func Fwarningf(w io.Writer, format string, a ...interface{}) {
 	if !IsJSON() {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+		fullMessage := fmt.Sprintf("%s%s%s", getWarningString(), suffixSpacing, fmt.Sprintf(format, a...))
+		fmt.Fprintln(w, yellow(wrapWarningMessage(fullMessage)))
 	}
+}
+
+func wrapWarningMessage(fullMessage string) string {
+	if fullMessage == "" || strings.TrimSpace(fullMessage) == "" {
+		return fullMessage
+	}
+	split := strings.Split(fullMessage, "\n")
+	max := 0
+	for _, s := range split {
+		if len(s) > max {
+			max = len(s)
+		}
+	}
+	h := strings.Repeat("=", max)
+	return fmt.Sprintf(`%[1]s
+%[2]s
+%[1]s`, h, fullMessage, h)
 }
 
 // Fsuccess will output in an appropriate "progress" manner in out writer
@@ -304,38 +344,47 @@ func Fsuccess(out io.Writer, a ...interface{}) {
 // DisplayExperimentalWarning displays the experimental mode warning message.
 func DisplayExperimentalWarning() {
 	if !IsJSON() {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		h := "============================================================================"
-		fmt.Fprintln(GetStdout(), yellow(fmt.Sprintf(`%[1]s
-%s Experimental mode enabled. Use at your own risk.
-More details on https://odo.dev/docs/user-guides/advanced/experimental-mode
-%[1]s
-`, h, getWarningString())))
+		msg := `Experimental mode enabled. Use at your own risk.
+More details on https://odo.dev/docs/user-guides/advanced/experimental-mode`
+		Fwarningf(GetStdout(), msg)
 	}
 }
 
-// Title Prints the logo as well as the first line being BLUE (indicator of the command information)
-// the second and third lines are optional and provide information with regards to what is being ran
+// Title Prints the logo as well as the first line being BLUE (indicator of the command information);
+// the second line is optional and provides information in regard to what is being run.
+// The last line displays information about the current odo version.
 //
-//		 __
-//	 /  \__     **First line**
-//	 \__/  \    Second line
-//	 /  \__/    Third line
-//	 \__/
-func Title(firstLine, secondLine, thirdLine string) {
+//	 __
+//	/  \__     **First line**
+//	\__/  \    Second line
+//	/  \__/    odo version: <VERSION>
+//	\__/
+func Title(firstLine, secondLine string) {
 	if !IsJSON() {
-		fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine, thirdLine))
+		fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine))
 	}
 }
 
 // Stitle is the same as Title but returns the string instead
-func Stitle(firstLine, secondLine, thirdLine string) string {
+func Stitle(firstLine, secondLine string) string {
+	var versionMsg string
+	if version.VERSION != "" {
+		versionMsg = "odo version: " + version.VERSION
+	}
+	if version.GITCOMMIT != "" {
+		versionMsg += " (" + version.GITCOMMIT + ")"
+	}
+	return StitleWithVersion(firstLine, secondLine, versionMsg)
+}
+
+// StitleWithVersion is the same as Stitle, but it allows to customize the version message line
+func StitleWithVersion(firstLine, secondLine, versionLine string) string {
 	blue := color.New(color.FgBlue).SprintFunc()
 	return fmt.Sprintf(`  __
  /  \__     %s
  \__/  \    %s
  /  \__/    %s
- \__/%s`, blue(firstLine), secondLine, thirdLine, "\n")
+ \__/%s`, blue(firstLine), secondLine, versionLine, "\n")
 }
 
 // Sectionf outputs a title in BLUE and underlined for separating a section (such as building a container, deploying files, etc.)
@@ -384,12 +433,30 @@ func Errorf(format string, a ...interface{}) {
 	}
 }
 
+// Ferrorf will output in an appropriate "progress" manner
+// ✗ <message>
+func Ferrorf(w io.Writer, format string, a ...interface{}) {
+	if !IsJSON() {
+		red := color.New(color.FgRed).SprintFunc()
+		fmt.Fprintf(w, " %s%s%s\n", red(getErrString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
+}
+
 // Error will output in an appropriate "progress" manner
 // ✗ <message>
 func Error(a ...interface{}) {
 	if !IsJSON() {
 		red := color.New(color.FgRed).SprintFunc()
 		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
+	}
+}
+
+// Frror will output in an appropriate "progress" manner
+// ✗ <message>
+func Ferror(w io.Writer, a ...interface{}) {
+	if !IsJSON() {
+		red := color.New(color.FgRed).SprintFunc()
+		fmt.Fprintf(w, "%s%s%s%s", prefixSpacing, red(getErrString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 
@@ -475,6 +542,16 @@ func Spinner(status string) *Status {
 // for situations where spinning isn't viable (debug)
 func Spinnerf(format string, a ...interface{}) *Status {
 	s := NewStatus(GetStdout())
+	s.Start(fmt.Sprintf(format, a...), IsDebug())
+	return s
+}
+
+// Fspinnerf creates a spinner, sets the prefix then returns it.
+// Remember to use .End(bool) to stop the spin / when you're done.
+// For example: defer s.End(false)
+// for situations where spinning isn't viable (debug)
+func Fspinnerf(w io.Writer, format string, a ...interface{}) *Status {
+	s := NewStatus(w)
 	s.Start(fmt.Sprintf(format, a...), IsDebug())
 	return s
 }
