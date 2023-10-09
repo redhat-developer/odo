@@ -21,7 +21,7 @@
     "@mdx-js/react": "^1.6.21",
     "@segment/snippet": "^4.16.2",
     "@svgr/webpack": "^8.1.0",
-    "browserslist": "^4.21.10",
+    "browserslist": "^4.22.1",
     "clsx": "^2.0.0",
     "css-what": "^6.1.0",
     "docusaurus-odo-plugin-segment": "file:docusaurus-odo-plugin-segment",
