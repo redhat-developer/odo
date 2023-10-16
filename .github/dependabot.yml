@@ -40,6 +40,11 @@ updates:
     # and it does not necessarily make sense to run all the Prow tests here.
     - "area/dependency"
     - "kind/task"
+  groups:
+    # See https://github.blog/changelog/2023-06-30-grouped-version-updates-for-dependabot-public-beta/
+    docusaurus:
+      patterns:
+        - "@docusaurus*"
 
 ## Feel free to add other package managers here if needed.
 ## See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem
