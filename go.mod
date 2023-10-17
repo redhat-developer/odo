@@ -13,7 +13,7 @@ require (
 	github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0
 	github.com/devfile/registry-support/index/generator v0.0.0-20230322155332-33914affc83b
 	github.com/devfile/registry-support/registry-library v0.0.0-20221201200738-19293ac0b8ab
-	github.com/fatih/color v1.14.1
+	github.com/fatih/color v1.15.0
 	github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.6.0
