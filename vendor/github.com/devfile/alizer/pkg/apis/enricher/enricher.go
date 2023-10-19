@@ -19,18 +19,14 @@ package enricher
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/devfile/alizer/pkg/apis/model"
 	"github.com/devfile/alizer/pkg/utils"
 	"github.com/devfile/alizer/pkg/utils/langfiles"
-	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"gopkg.in/yaml.v3"
 )
 
@@ -93,6 +89,7 @@ func getEnrichers() []Enricher {
 		&DotNetEnricher{},
 		&GoEnricher{},
 		&PHPEnricher{},
+		&DockerEnricher{},
 	}
 }
 
@@ -123,7 +120,7 @@ func GetDefaultProjectName(path string) string {
 
 // GetPortsFromDockerFile returns a slice of port numbers from Dockerfiles in the given directory.
 func GetPortsFromDockerFile(root string) []int {
-	locations := getLocations(root)
+	locations := utils.GetLocations(root)
 	for _, location := range locations {
 		filePath := filepath.Join(root, location)
 		cleanFilePath := filepath.Clean(filePath)
@@ -135,55 +132,10 @@ func GetPortsFromDockerFile(root string) []int {
 				}
 				return nil
 			}()
-			return getPortsFromReader(file)
+			return utils.ReadPortsFromDockerfile(file)
 		}
 	}
 	return []int{}
-}
-
-func getLocations(root string) []string {
-	locations := []string{"Dockerfile", "Containerfile"}
-	dirItems, err := ioutil.ReadDir(root)
-	if err != nil {
-		return locations
-	}
-	for _, item := range dirItems {
-		if strings.HasPrefix(item.Name(), ".") {
-			continue
-		}
-		tmpPath := fmt.Sprintf("%s%s", root, item.Name())
-		fileInfo, err := os.Stat(tmpPath)
-		if err != nil {
-			continue
-		}
-		if fileInfo.IsDir() {
-			locations = append(locations, fmt.Sprintf("%s/%s", item.Name(), "Dockerfile"))
-			locations = append(locations, fmt.Sprintf("%s/%s", item.Name(), "Containerfile"))
-		}
-	}
-	return locations
-}
-
-// getPortsFromReader returns a slice of port numbers.
-func getPortsFromReader(file io.Reader) []int {
-	var ports []int
-	res, err := parser.Parse(file)
-	if err != nil {
-		return ports
-	}
-
-	for _, child := range res.AST.Children {
-		// check for the potential port number in a Dockerfile/Containerfile
-		if strings.ToLower(child.Value) == "expose" {
-			for n := child.Next; n != nil; n = n.Next {
-				if port, err := strconv.Atoi(n.Value); err == nil {
-					ports = append(ports, port)
-				}
-
-			}
-		}
-	}
-	return ports
 }
 
 // GetPortsFromDockerComposeFile returns a slice of port numbers from a compose file.

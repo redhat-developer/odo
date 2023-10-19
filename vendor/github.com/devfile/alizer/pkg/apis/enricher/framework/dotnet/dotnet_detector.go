@@ -15,7 +15,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +29,11 @@ type DotNetDetector struct{}
 
 func (d DotNetDetector) GetSupportedFrameworks() []string {
 	return []string{""}
+}
+
+func (d DotNetDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	// not implemented yet
+	return []model.ApplicationFileInfo{}
 }
 
 // DoFrameworkDetection uses configFilePath to check for the name of the framework
@@ -52,6 +57,7 @@ func (d DotNetDetector) DoFrameworkDetection(language *model.Language, configFil
 }
 
 func (d DotNetDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
+	// not implemented yet
 }
 
 func getFrameworks(configFilePath string) string {
@@ -60,7 +66,7 @@ func getFrameworks(configFilePath string) string {
 	if err != nil {
 		return ""
 	}
-	byteValue, _ := ioutil.ReadAll(xmlFile)
+	byteValue, _ := io.ReadAll(xmlFile)
 
 	var proj schema.DotNetProject
 	err = xml.Unmarshal(byteValue, &proj)

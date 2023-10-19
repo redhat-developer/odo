@@ -25,6 +25,12 @@ func (r ReactJsDetector) GetSupportedFrameworks() []string {
 	return []string{"React"}
 }
 
+func (r ReactJsDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	// React.js enricher does not apply source code detection.
+	// It only detects ports from start script or env vars
+	return nil
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (r ReactJsDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "react") {
@@ -46,6 +52,14 @@ func (r ReactJsDetector) DoPortsDetection(component *model.Component, ctx *conte
 		component.Ports = []int{port}
 		return
 	}
+
+	// check if port is set on as env var inside a dockerfile
+	ports, err := utils.GetEnvVarPortValueFromDockerfile(component.Path, []string{"PORT"})
+	if err == nil {
+		component.Ports = ports
+		return
+	}
+
 	// check if port is set in start script in package.json
 	port = getPortFromStartScript(component.Path, []string{`PORT=(\d*)`})
 	if utils.IsValidPort(port) {

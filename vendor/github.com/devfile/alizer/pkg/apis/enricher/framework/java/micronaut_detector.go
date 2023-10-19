@@ -22,20 +22,25 @@ import (
 
 type MicronautDetector struct{}
 
-type MicronautApplicationProps struct {
-	Micronaut struct {
-		Server struct {
-			Port int `yaml:"port,omitempty"`
-			SSL  struct {
-				Enabled bool `yaml:"enabled,omitempty"`
-				Port    int  `yaml:"port,omitempty"`
-			} `yaml:"ssl,omitempty"`
-		} `yaml:"server,omitempty"`
-	} `yaml:"micronaut,omitempty"`
-}
-
 func (m MicronautDetector) GetSupportedFrameworks() []string {
 	return []string{"Micronaut"}
+}
+
+func (m MicronautDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "src/main/resources",
+			File:    "application.yml",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "src/main/resources",
+			File:    "application.yaml",
+		},
+	}
 }
 
 // DoFrameworkDetection uses the groupId to check for the framework name
@@ -54,28 +59,36 @@ func (m MicronautDetector) DoPortsDetection(component *model.Component, ctx *con
 		return
 	}
 
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "src/main/resources",
-			File: "application.yml",
-		},
-		{
-			Dir:  "src/main/resources",
-			File: "application.yaml",
-		},
-	}, ctx)
-	if err != nil {
-		return
-	}
-	ports = getMicronautPortsFromBytes(bytes)
+	// check if port is set on dockerfile as env var
+	ports = getMicronautPortsFromEnvDockerfile(component.Path)
 	if len(ports) > 0 {
 		component.Ports = ports
+		return
+	}
+
+	// check source code
+	appFileInfos := m.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
+		return
+	}
+
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
+
+		ports = getMicronautPortsFromBytes(fileBytes)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }
 
 func getMicronautPortsFromBytes(bytes []byte) []int {
 	var ports []int
-	var data MicronautApplicationProps
+	var data model.MicronautApplicationProps
 	err := yaml.Unmarshal(bytes, &data)
 	if err != nil {
 		return []int{}
@@ -96,4 +109,25 @@ func getMicronautPortsFromEnvs() []int {
 		envs = append(envs, "MICRONAUT_SERVER_SSL_PORT")
 	}
 	return utils.GetValidPortsFromEnvs(envs)
+}
+
+func getMicronautPortsFromEnvDockerfile(path string) []int {
+	envVars, err := utils.GetEnvVarsFromDockerFile(path)
+	if err != nil {
+		return nil
+	}
+	sslEnabled := ""
+	envs := []string{"MICRONAUT_SERVER_PORT"}
+	for _, envVar := range envVars {
+		if envVar.Name == "MICRONAUT_SERVER_SSL_ENABLED" {
+			sslEnabled = envVar.Value
+			break
+		}
+	}
+
+	if sslEnabled == "true" {
+		envs = append(envs, "MICRONAUT_SERVER_SSL_PORT")
+	}
+
+	return utils.GetValidPortsFromEnvDockerfile(envs, envVars)
 }

@@ -25,6 +25,17 @@ func (v VueDetector) GetSupportedFrameworks() []string {
 	return []string{"Vue"}
 }
 
+func (v VueDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "vue.config.js",
+		},
+	}
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (v VueDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "vue") {
@@ -35,6 +46,7 @@ func (v VueDetector) DoFrameworkDetection(language *model.Language, config strin
 // DoPortsDetection searches for the port in package.json, .env file, and vue.config.js
 func (v VueDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`--port (\d*)`, `PORT=(\d*)`}
+	ports := []int{}
 	// check if --port or PORT is set in start script in package.json
 	port := getPortFromStartScript(component.Path, regexes)
 	if utils.IsValidPort(port) {
@@ -54,16 +66,30 @@ func (v VueDetector) DoPortsDetection(component *model.Component, ctx *context.C
 		return
 	}
 
-	//check inside the vue.config.js file
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "",
-			File: "vue.config.js",
-		},
-	}, ctx)
-	if err != nil {
+	// check if port is set on as env var inside a dockerfile
+	ports, err := utils.GetEnvVarPortValueFromDockerfile(component.Path, []string{"PORT"})
+	if err == nil {
+		component.Ports = ports
 		return
 	}
-	re := regexp.MustCompile(`port:\s*(\d+)*`)
-	component.Ports = utils.FindAllPortsSubmatch(re, string(bytes), 1)
+
+	//check inside the vue.config.js file
+	appFileInfos := v.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
+		return
+	}
+
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
+
+		re := regexp.MustCompile(`port:\s*(\d+)*`)
+		ports = utils.FindAllPortsSubmatch(re, string(fileBytes), 1)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
+	}
 }

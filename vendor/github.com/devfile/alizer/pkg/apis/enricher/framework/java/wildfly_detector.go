@@ -13,19 +13,30 @@ package enricher
 
 import (
 	"context"
+	"encoding/xml"
 
 	"github.com/devfile/alizer/pkg/apis/model"
+	"github.com/devfile/alizer/pkg/schema"
 	"github.com/devfile/alizer/pkg/utils"
 )
 
 type WildFlyDetector struct{}
 
-func (o WildFlyDetector) GetSupportedFrameworks() []string {
+func (w WildFlyDetector) GetSupportedFrameworks() []string {
 	return []string{"WildFly"}
 }
 
+func (w WildFlyDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	files, err := utils.GetCachedFilePathsFromRoot(componentPath, ctx)
+	if err != nil {
+		return []model.ApplicationFileInfo{}
+	}
+	pomXML := utils.GetFile(&files, "pom.xml")
+	return utils.GenerateApplicationFileFromFilters([]string{pomXML}, componentPath, "", ctx)
+}
+
 // DoFrameworkDetection uses the groupId and artifactId to check for the framework name
-func (o WildFlyDetector) DoFrameworkDetection(language *model.Language, config string) {
+func (w WildFlyDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFwk, _ := hasFramework(config, "org.wildfly.plugins", "wildfly-maven-plugin"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "WildFly")
 	}
@@ -33,25 +44,38 @@ func (o WildFlyDetector) DoFrameworkDetection(language *model.Language, config s
 
 // DoPortsDetection for wildfly fetches the pom.xml and tries to find any javaOpts under
 // the wildfly-maven-plugin profiles. If there is one it looks if jboss.http.port is defined.
-func (o WildFlyDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
+func (w WildFlyDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	ports := []int{}
 	// Fetch the content of xml for this component
-	paths, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
-	if err != nil {
-		return
-	}
-	pomXML := utils.GetFile(&paths, "pom.xml")
-	portPlaceholder := GetPortsForJBossFrameworks(pomXML, "wildfly-maven-plugin", "org.wildfly.plugins")
-	if portPlaceholder == "" {
+	appFileInfos := w.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
 		return
 	}
 
-	if port, err := utils.GetValidPort(portPlaceholder); err == nil {
-		ports = append(ports, port)
-	}
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
 
-	if len(ports) > 0 {
-		component.Ports = ports
-		return
+		var pom schema.Pom
+		err = xml.Unmarshal(fileBytes, &pom)
+		if err != nil {
+			continue
+		}
+
+		portPlaceholder := GetPortsForJBossFrameworks(pom, "wildfly-maven-plugin", "org.wildfly.plugins")
+		if portPlaceholder == "" {
+			continue
+		}
+
+		if port, err := utils.GetValidPort(portPlaceholder); err == nil {
+			ports = append(ports, port)
+		}
+
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }

@@ -26,6 +26,17 @@ func (b BeegoDetector) GetSupportedFrameworks() []string {
 	return []string{"Beego"}
 }
 
+func (b BeegoDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "conf",
+			File:    "app.conf",
+		},
+	}
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (b BeegoDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/beego/beego") {
@@ -40,15 +51,16 @@ type ApplicationPropertiesFile struct {
 
 // DoPortsDetection searches for the port in conf/app.conf
 func (b BeegoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "conf",
-			File: "app.conf",
-		},
-	}, ctx)
+	fileContents, err := utils.GetApplicationFileContents(b.GetApplicationFileInfos(component.Path, ctx))
 	if err != nil {
 		return
 	}
-	re := regexp.MustCompile(`httpport\s*=\s*(\d+)`)
-	component.Ports = utils.FindAllPortsSubmatch(re, string(bytes), 1)
+	for _, fileContent := range fileContents {
+		re := regexp.MustCompile(`httpport\s*=\s*(\d+)`)
+		ports := utils.FindAllPortsSubmatch(re, fileContent, 1)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
+	}
 }

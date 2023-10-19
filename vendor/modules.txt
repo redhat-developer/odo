@@ -150,7 +150,7 @@ github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/devfile/alizer v1.0.1
+# github.com/devfile/alizer v1.2.1
 ## explicit; go 1.19
 github.com/devfile/alizer/pkg/apis/enricher
 github.com/devfile/alizer/pkg/apis/enricher/framework/dotnet

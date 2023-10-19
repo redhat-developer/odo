@@ -22,27 +22,89 @@ import (
 
 type FlaskDetector struct{}
 
-func (d FlaskDetector) GetSupportedFrameworks() []string {
+func (f FlaskDetector) GetSupportedFrameworks() []string {
 	return []string{"Flask"}
+}
+
+func (f FlaskDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "app.py",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "wsgi.py",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "app",
+			File:    "__init__.py",
+		},
+	}
+}
+
+func (f FlaskDetector) GetFlaskFilenames() []string {
+	return []string{"app.py", "wsgi.py"}
+}
+
+func (f FlaskDetector) GetConfigFlaskFilenames() []string {
+	return []string{"requirements.txt", "pyproject.toml"}
 }
 
 // DoFrameworkDetection uses a tag to check for the framework name
 // with flask files and flask config files
-func (d FlaskDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
-	appPy := utils.GetFile(files, "app.py")
-	wsgiPy := utils.GetFile(files, "wsgi.py")
-	requirementsTxt := utils.GetFile(files, "requirements.txt")
-	projectToml := utils.GetFile(files, "pyproject.toml")
+func (f FlaskDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
+	var flaskFiles []string
+	var configFlaskFiles []string
 
-	flaskFiles := []string{}
-	configFlaskFiles := []string{}
-	utils.AddToArrayIfValueExist(&flaskFiles, appPy)
-	utils.AddToArrayIfValueExist(&flaskFiles, wsgiPy)
-	utils.AddToArrayIfValueExist(&configFlaskFiles, requirementsTxt)
-	utils.AddToArrayIfValueExist(&configFlaskFiles, projectToml)
+	for _, filename := range f.GetFlaskFilenames() {
+		filePy := utils.GetFile(files, filename)
+		utils.AddToArrayIfValueExist(&flaskFiles, filePy)
+	}
+
+	for _, filename := range f.GetConfigFlaskFilenames() {
+		configFile := utils.GetFile(files, filename)
+		utils.AddToArrayIfValueExist(&configFlaskFiles, configFile)
+	}
 
 	if hasFramework(&flaskFiles, "from flask ") || hasFramework(&configFlaskFiles, "Flask") || hasFramework(&configFlaskFiles, "flask") {
 		language.Frameworks = append(language.Frameworks, "Flask")
+	}
+}
+
+// DoPortsDetection searches for the port in app/__init__.py, app.py or /wsgi.py
+func (f FlaskDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
+	appFileInfos := f.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
+		return
+	}
+
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
+
+		matchIndexRegexes := []model.PortMatchRule{
+			{
+				Regex:     regexp.MustCompile(`.run\([^)]*`),
+				ToReplace: ".run(",
+			},
+		}
+		if err != nil {
+			continue
+		}
+		ports := getPortFromFileFlask(matchIndexRegexes, string(fileBytes))
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }
 
@@ -98,37 +160,4 @@ func getPortWithMatchIndexesFlask(content string, matchIndexes []int, toBeReplac
 	}
 
 	return -1
-}
-
-// DoPortsDetection searches for the port in app/__init__.py, app.py or /wsgi.py
-func (d FlaskDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "",
-			File: "app.py",
-		},
-		{
-			Dir:  "",
-			File: "wsgi.py",
-		},
-		{
-			Dir:  "app",
-			File: "__init__.py",
-		},
-	}, ctx)
-
-	matchIndexRegexes := []model.PortMatchRule{
-		{
-			Regex:     regexp.MustCompile(`.run\([^)]*`),
-			ToReplace: ".run(",
-		},
-	}
-	if err != nil {
-		return
-	}
-	ports := getPortFromFileFlask(matchIndexRegexes, string(bytes))
-	if len(ports) > 0 {
-		component.Ports = ports
-		return
-	}
 }

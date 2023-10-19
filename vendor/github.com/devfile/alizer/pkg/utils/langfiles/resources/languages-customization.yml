@@ -6,6 +6,13 @@ C#:
     - ".*\\.\\w+proj"
     - "appsettings.json"
   component: true
+Dockerfile:
+  aliases:
+    - "Containerfile"
+  configuration_files:
+    - "[Dd]ockerfile(\\.\\w+)?$"
+    - "[Cc]ontainerfile(\\.\\w+)?$"
+  container_component: true
 F#:
   aliases:
     - "dotnet"
@@ -33,12 +40,12 @@ JavaScript:
   exclude_folders:
     - "node_modules"
   configuration_files:
-    - "[^-]package.json"
+    - "package.json"
   component: true
 PHP:
   configuration_files:
     - "composer.json"
-    - "[^-]package.json"
+    - "package.json"
   component: true
 Python:
   configuration_files:
@@ -55,7 +62,7 @@ TypeScript:
   exclude_folders:
     - "node_modules"
   configuration_files:
-    - "[^-]package.json"
+    - "package.json"
   component: true
 Visual Basic .NET:
   aliases:

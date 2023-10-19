@@ -24,6 +24,12 @@ func (n NextDetector) GetSupportedFrameworks() []string {
 	return []string{"Next"}
 }
 
+func (a NextDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	// Next.js enricher does not apply source code detection.
+	// It only detects ports from start/dev script
+	return []model.ApplicationFileInfo{}
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (n NextDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "next") {
