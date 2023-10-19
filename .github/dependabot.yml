@@ -46,6 +46,21 @@ updates:
       patterns:
         - "@docusaurus*"
 
+# Maintain dependencies for GitHub Actions
+- package-ecosystem: "github-actions"
+  directory: "/"
+  # Set this to 0 to disable version updates
+  open-pull-requests-limit: 1
+  commit-message:
+    prefix: "GitHub Actions"
+  schedule:
+    interval: "weekly"
+  reviewers:
+  - "redhat-developer/odo-mantainers"
+  labels:
+  - "area/dependency"
+  - "kind/task"
+
 ## Feel free to add other package managers here if needed.
 ## See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem
 ## for the full list of supported ecosystems.
