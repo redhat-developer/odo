@@ -3,6 +3,7 @@ package alizer
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
@@ -56,7 +57,8 @@ func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, 
 	workingDir := odocontext.GetWorkingDirectory(ctx)
 	detected, err := o.clientset.AlizerClient.DetectFramework(ctx, workingDir)
 	if err != nil {
-		return nil, err
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return nil, fmt.Errorf("No valid devfile found for project in %s: %w", workingDir, err)
 	}
 	appPorts, err := o.clientset.AlizerClient.DetectPorts(workingDir)
 	if err != nil {
