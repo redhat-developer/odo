@@ -28,6 +28,7 @@ type LanguageItem struct {
 	ConfigurationFiles []string
 	ExcludeFolders     []string
 	Component          bool
+	ContainerComponent bool
 	disabled           bool
 }
 
@@ -87,6 +88,7 @@ func customizeLanguage(languageItem *LanguageItem) {
 		(*languageItem).ConfigurationFiles = customization.ConfigurationFiles
 		(*languageItem).ExcludeFolders = customization.ExcludeFolders
 		(*languageItem).Component = customization.Component
+		(*languageItem).ContainerComponent = customization.ContainerComponent
 		(*languageItem).Aliases = appendSlice((*languageItem).Aliases, customization.Aliases)
 		(*languageItem).disabled = customization.Disabled
 	}

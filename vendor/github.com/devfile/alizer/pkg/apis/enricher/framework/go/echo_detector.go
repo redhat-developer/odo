@@ -26,6 +26,14 @@ func (e EchoDetector) GetSupportedFrameworks() []string {
 	return []string{"Echo"}
 }
 
+func (e EchoDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	files, err := utils.GetCachedFilePathsFromRoot(componentPath, ctx)
+	if err != nil {
+		return []model.ApplicationFileInfo{}
+	}
+	return utils.GenerateApplicationFileFromFilters(files, componentPath, ".go", ctx)
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (e EchoDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/labstack/echo") {
@@ -34,11 +42,10 @@ func (e EchoDetector) DoFrameworkDetection(language *model.Language, goMod *modf
 }
 
 func (e EchoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
+	fileContents, err := utils.GetApplicationFileContents(e.GetApplicationFileInfos(component.Path, ctx))
 	if err != nil {
 		return
 	}
-
 	matchRegexRules := model.PortMatchRules{
 		MatchIndexRegexes: []model.PortMatchRule{
 			{
@@ -58,8 +65,11 @@ func (e EchoDetector) DoPortsDetection(component *model.Component, ctx *context.
 		},
 	}
 
-	ports := GetPortFromFilesGo(matchRegexRules, files)
-	if len(ports) > 0 {
-		component.Ports = ports
+	for _, fileContent := range fileContents {
+		ports := GetPortFromFileGo(matchRegexRules, fileContent)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }

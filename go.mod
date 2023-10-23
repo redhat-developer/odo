@@ -8,7 +8,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.5
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/devfile/alizer v1.0.1
+	github.com/devfile/alizer v1.2.1
 	github.com/devfile/api/v2 v2.2.1-alpha.0.20230413012049-a6c32fca0dbd
 	github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0
 	github.com/devfile/registry-support/index/generator v0.0.0-20230322155332-33914affc83b

@@ -21,15 +21,25 @@ import (
 
 type OpenLibertyDetector struct{}
 
-type ServerXml struct {
-	HttpEndpoint struct {
-		HttpPort  string `xml:"httpPort,attr"`
-		HttpsPort string `xml:"httpsPort,attr"`
-	} `xml:"httpEndpoint"`
-}
-
 func (o OpenLibertyDetector) GetSupportedFrameworks() []string {
 	return []string{"OpenLiberty"}
+}
+
+func (o OpenLibertyDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "server.xml",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "src/main/liberty/config",
+			File:    "server.xml",
+		},
+	}
 }
 
 // DoFrameworkDetection uses the groupId to check for the framework name
@@ -41,26 +51,26 @@ func (o OpenLibertyDetector) DoFrameworkDetection(language *model.Language, conf
 
 // DoPortsDetection searches for the port in src/main/liberty/config/server.xml and /server.xml
 func (o OpenLibertyDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "",
-			File: "server.xml",
-		},
-		{
-			Dir:  "src/main/liberty/config",
-			File: "server.xml",
-		},
-	}, ctx)
-	if err != nil {
+	appFileInfos := o.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
 		return
 	}
-	var data ServerXml
-	err = xml.Unmarshal(bytes, &data)
-	if err != nil {
-		return
-	}
-	ports := utils.GetValidPorts([]string{data.HttpEndpoint.HttpPort, data.HttpEndpoint.HttpsPort})
-	if len(ports) > 0 {
-		component.Ports = ports
+
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
+
+		var data model.OpenLibertyServerXml
+		err = xml.Unmarshal(fileBytes, &data)
+		if err != nil {
+			continue
+		}
+		ports := utils.GetValidPorts([]string{data.HttpEndpoint.HttpPort, data.HttpEndpoint.HttpsPort})
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }

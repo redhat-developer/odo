@@ -13,8 +13,10 @@ package enricher
 
 import (
 	"context"
+	"encoding/xml"
 
 	"github.com/devfile/alizer/pkg/apis/model"
+	"github.com/devfile/alizer/pkg/schema"
 	"github.com/devfile/alizer/pkg/utils"
 )
 
@@ -22,6 +24,17 @@ type JBossEAPDetector struct{}
 
 func (o JBossEAPDetector) GetSupportedFrameworks() []string {
 	return []string{"JBoss EAP"}
+}
+
+func (o JBossEAPDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "pom.xml",
+		},
+	}
 }
 
 // DoFrameworkDetection uses the groupId and artifactId to check for the framework name
@@ -34,22 +47,35 @@ func (o JBossEAPDetector) DoFrameworkDetection(language *model.Language, config 
 func (o JBossEAPDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	ports := []int{}
 	// Fetch the content of xml for this component
-	paths, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
-	if err != nil {
-		return
-	}
-	pomXML := utils.GetFile(&paths, "pom.xml")
-	portPlaceholder := GetPortsForJBossFrameworks(pomXML, "eap-maven-plugin", "org.jboss.eap.plugins")
-	if portPlaceholder == "" {
+	appFileInfos := o.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
 		return
 	}
 
-	if port, err := utils.GetValidPort(portPlaceholder); err == nil {
-		ports = append(ports, port)
-	}
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
 
-	if len(ports) > 0 {
-		component.Ports = ports
-		return
+		var pom schema.Pom
+		err = xml.Unmarshal(fileBytes, &pom)
+		if err != nil {
+			continue
+		}
+
+		portPlaceholder := GetPortsForJBossFrameworks(pom, "eap-maven-plugin", "org.jboss.eap.plugins")
+		if portPlaceholder == "" {
+			continue
+		}
+
+		if port, err := utils.GetValidPort(portPlaceholder); err == nil {
+			ports = append(ports, port)
+		}
+
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }

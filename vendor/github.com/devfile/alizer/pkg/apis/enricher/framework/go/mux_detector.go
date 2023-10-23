@@ -26,6 +26,14 @@ func (m MuxDetector) GetSupportedFrameworks() []string {
 	return []string{"Mux"}
 }
 
+func (m MuxDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	files, err := utils.GetCachedFilePathsFromRoot(componentPath, ctx)
+	if err != nil {
+		return []model.ApplicationFileInfo{}
+	}
+	return utils.GenerateApplicationFileFromFilters(files, componentPath, ".go", ctx)
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (m MuxDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gorilla/mux") {
@@ -34,7 +42,7 @@ func (m MuxDetector) DoFrameworkDetection(language *model.Language, goMod *modfi
 }
 
 func (m MuxDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
+	fileContents, err := utils.GetApplicationFileContents(m.GetApplicationFileInfos(component.Path, ctx))
 	if err != nil {
 		return
 	}
@@ -54,8 +62,11 @@ func (m MuxDetector) DoPortsDetection(component *model.Component, ctx *context.C
 		},
 	}
 
-	ports := GetPortFromFilesGo(matchRegexRules, files)
-	if len(ports) > 0 {
-		component.Ports = ports
+	for _, fileContent := range fileContents {
+		ports := GetPortFromFileGo(matchRegexRules, fileContent)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }

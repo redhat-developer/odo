@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/devfile/alizer/pkg/schema"
 	"github.com/devfile/alizer/pkg/utils"
 )
 
@@ -36,13 +37,8 @@ func hasFramework(configFile, groupId, artifactId string) (bool, error) {
 
 // GetPortsForJBossFrameworks tries to detect any port information inside javaOpts of configuration
 // of a given profiles plugin
-func GetPortsForJBossFrameworks(pomFilePath, pluginArtifactId, pluginGroupId string) string {
+func GetPortsForJBossFrameworks(pom schema.Pom, pluginArtifactId string, pluginGroupId string) string {
 	portPlaceholder := ""
-	pom, err := utils.GetPomFileContent(pomFilePath)
-	if err != nil {
-		return portPlaceholder
-	}
-
 	re := regexp.MustCompile(`jboss.https?.port=\d*`)
 	// Check for port configuration inside profiles
 	for _, profile := range pom.Profiles.Profile {

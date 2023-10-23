@@ -14,12 +14,12 @@ package enricher
 import (
 	"context"
 	"errors"
-	"io/ioutil"
-
 	framework "github.com/devfile/alizer/pkg/apis/enricher/framework/go"
 	"github.com/devfile/alizer/pkg/apis/model"
 	"github.com/devfile/alizer/pkg/utils"
 	"golang.org/x/mod/modfile"
+	"os"
+	"path/filepath"
 )
 
 type GoEnricher struct{}
@@ -108,7 +108,7 @@ func (g GoEnricher) IsConfigValidForComponentDetection(language string, config s
 }
 
 func getGoModFile(filePath string) (*modfile.File, error) {
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, errors.New("unable to read go.mod file")
 	}

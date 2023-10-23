@@ -38,6 +38,11 @@ func DetectComponents(path string) ([]model.Component, error) {
 	return detectComponentsWithPathAndPortStartegy(path, []model.PortDetectionAlgorithm{model.DockerFile, model.Compose, model.Source}, &ctx)
 }
 
+func DetectComponentsWithoutPortDetection(path string) ([]model.Component, error) {
+	ctx := context.Background()
+	return detectComponentsWithPathAndPortStartegy(path, []model.PortDetectionAlgorithm{}, &ctx)
+}
+
 func DetectComponentsInRootWithPathAndPortStartegy(path string, portDetectionStrategy []model.PortDetectionAlgorithm) ([]model.Component, error) {
 	ctx := context.Background()
 	return detectComponentsInRootWithPathAndPortStartegy(path, portDetectionStrategy, &ctx)
@@ -182,6 +187,17 @@ func isAnyComponentInPath(path string, components []model.Component) bool {
 	return false
 }
 
+// isAnyComponentInDirectPath checks if a component is present in the exact path.
+// Search starts from path and will return true if a component is found.
+func isAnyComponentInDirectPath(path string, components []model.Component) bool {
+	for _, component := range components {
+		if strings.Contains(path, component.Path) {
+			return true
+		}
+	}
+	return false
+}
+
 // isFirstPathParentOfSecond check if first path is parent (direct or not) of second path.
 func isFirstPathParentOfSecond(firstPath string, secondPath string) bool {
 	return strings.Contains(secondPath, firstPath)
@@ -194,6 +210,7 @@ func DetectComponentsFromFilesList(files []string, settings model.DetectionSetti
 	alizerLogger.V(0).Info(fmt.Sprintf("Detecting components for %d fetched file paths", len(files)))
 	configurationPerLanguage := langfiles.Get().GetConfigurationPerLanguageMapping()
 	var components []model.Component
+	var containerComponents []model.Component
 	for _, file := range files {
 		alizerLogger.V(1).Info(fmt.Sprintf("Accessing %s", file))
 		languages, err := getLanguagesByConfigurationFile(configurationPerLanguage, file)
@@ -210,8 +227,20 @@ func DetectComponentsFromFilesList(files []string, settings model.DetectionSetti
 			alizerLogger.V(1).Info(err.Error())
 			continue
 		}
-		alizerLogger.V(0).Info(fmt.Sprintf("Component %s found", component.Name))
-		components = appendIfMissing(components, component)
+		if component.Languages[0].CanBeComponent {
+			alizerLogger.V(0).Info(fmt.Sprintf("Component %s found", component.Name))
+			components = appendIfMissing(components, component)
+		}
+		if component.Languages[0].CanBeContainerComponent {
+			alizerLogger.V(0).Info(fmt.Sprintf("Container component %s found", component.Name))
+			containerComponents = appendIfMissing(containerComponents, component)
+		}
+	}
+
+	for _, component := range containerComponents {
+		if !isAnyComponentInDirectPath(component.Path, components) {
+			components = appendIfMissing(components, component)
+		}
 	}
 	return components
 }
@@ -226,8 +255,9 @@ func appendIfMissing(components []model.Component, component model.Component) []
 }
 
 func getLanguagesByConfigurationFile(configurationPerLanguage map[string][]string, file string) ([]string, error) {
+	filename := filepath.Base(file)
 	for regex, languages := range configurationPerLanguage {
-		if match, _ := regexp.MatchString(regex, file); match {
+		if match, _ := regexp.MatchString(regex, filename); match {
 			return languages, nil
 		}
 	}

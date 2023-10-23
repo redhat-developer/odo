@@ -25,46 +25,66 @@ func (d DjangoDetector) GetSupportedFrameworks() []string {
 	return []string{"Django"}
 }
 
+func (d DjangoDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "manage.py",
+		},
+	}
+}
+
+func (d DjangoDetector) GetDjangoFilenames() []string {
+	return []string{"manage.py", "urls.py", "wsgi.py", "asgi.py"}
+}
+
+func (d DjangoDetector) GetConfigDjangoFilenames() []string {
+	return []string{"requirements.txt", "pyproject.toml"}
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 // with django files and django config files
 func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
-	managePy := utils.GetFile(files, "manage.py")
-	urlsPy := utils.GetFile(files, "urls.py")
-	wsgiPy := utils.GetFile(files, "wsgi.py")
-	asgiPy := utils.GetFile(files, "asgi.py")
-	requirementsTxt := utils.GetFile(files, "requirements.txt")
-	projectToml := utils.GetFile(files, "pyproject.toml")
-
 	var djangoFiles []string
 	var configDjangoFiles []string
-	utils.AddToArrayIfValueExist(&djangoFiles, managePy)
-	utils.AddToArrayIfValueExist(&djangoFiles, urlsPy)
-	utils.AddToArrayIfValueExist(&djangoFiles, wsgiPy)
-	utils.AddToArrayIfValueExist(&djangoFiles, asgiPy)
-	utils.AddToArrayIfValueExist(&configDjangoFiles, requirementsTxt)
-	utils.AddToArrayIfValueExist(&configDjangoFiles, projectToml)
+
+	for _, filename := range d.GetDjangoFilenames() {
+		filePy := utils.GetFile(files, filename)
+		utils.AddToArrayIfValueExist(&djangoFiles, filePy)
+	}
+
+	for _, filename := range d.GetConfigDjangoFilenames() {
+		configFile := utils.GetFile(files, filename)
+		utils.AddToArrayIfValueExist(&configDjangoFiles, configFile)
+	}
 
 	if hasFramework(&djangoFiles, "from django.") || hasFramework(&configDjangoFiles, "django") || hasFramework(&configDjangoFiles, "Django") {
 		language.Frameworks = append(language.Frameworks, "Django")
 	}
 }
 
-type ApplicationPropertiesFile struct {
-	Dir  string
-	File string
-}
-
 // DoPortsDetection searches for the port in /manage.py
 func (d DjangoDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "",
-			File: "manage.py",
-		},
-	}, ctx)
-	if err != nil {
+	ports := []int{}
+	appFileInfos := d.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
 		return
 	}
-	re := regexp.MustCompile(`.default_port\s*=\s*"([^"]*)`)
-	component.Ports = utils.FindAllPortsSubmatch(re, string(bytes), 1)
+
+	for _, appFileInfo := range appFileInfos {
+		fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+		if err != nil {
+			continue
+		}
+
+		re := regexp.MustCompile(`.default_port\s*=\s*"([^"]*)`)
+		component.Ports = utils.FindAllPortsSubmatch(re, string(fileBytes), 1)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
+	}
+
 }

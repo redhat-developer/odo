@@ -14,7 +14,7 @@ package enricher
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/devfile/alizer/pkg/apis/model"
@@ -24,17 +24,31 @@ import (
 
 type SpringDetector struct{}
 
-type ApplicationProsServer struct {
-	Server struct {
-		Port int `yaml:"port,omitempty"`
-		Http struct {
-			Port int `yaml:"port,omitempty"`
-		} `yaml:"http,omitempty"`
-	} `yaml:"server,omitempty"`
-}
-
 func (s SpringDetector) GetSupportedFrameworks() []string {
 	return []string{"Spring", "Spring Boot"}
+}
+
+func (s SpringDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "src/main/resources",
+			File:    "application.properties",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "src/main/resources",
+			File:    "application.yml",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "src/main/resources",
+			File:    "application.yaml",
+		},
+	}
 }
 
 // DoFrameworkDetection uses the groupId to check for the framework name
@@ -47,30 +61,31 @@ func (s SpringDetector) DoFrameworkDetection(language *model.Language, config st
 // DoPortsDetection searches for ports in the env var and
 // src/main/resources/application.properties, or src/main/resources/application.yaml
 func (s SpringDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	// check if port is set on env var
+	// case: port is set on env var
 	ports := getSpringPortsFromEnvs()
 	if len(ports) > 0 {
 		component.Ports = ports
 		return
 	}
 
-	applicationFile := utils.GetAnyApplicationFilePath(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "src/main/resources",
-			File: "application.properties",
-		},
-		{
-			Dir:  "src/main/resources",
-			File: "application.yml",
-		},
-		{
-			Dir:  "src/main/resources",
-			File: "application.yaml",
-		},
-	}, ctx)
+	// check if port is set on env var of dockerfile
+	ports = getSpringPortsFromEnvDockerfile(component.Path)
+	if len(ports) > 0 {
+		component.Ports = ports
+		return
+	}
+
+	// check if port is set inside application file
+	appFileInfos := s.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
+		return
+	}
+
+	applicationFile := utils.GetAnyApplicationFilePath(component.Path, appFileInfos, ctx)
 	if applicationFile == "" {
 		return
 	}
+
 	var err error
 	if filepath.Ext(applicationFile) == ".yml" || filepath.Ext(applicationFile) == ".yaml" {
 		ports, err = getServerPortsFromYamlFile(applicationFile)
@@ -86,6 +101,15 @@ func (s SpringDetector) DoPortsDetection(component *model.Component, ctx *contex
 
 func getSpringPortsFromEnvs() []int {
 	return utils.GetValidPortsFromEnvs([]string{"SERVER_PORT", "SERVER_HTTP_PORT"})
+}
+
+func getSpringPortsFromEnvDockerfile(path string) []int {
+	envVars, err := utils.GetEnvVarsFromDockerFile(path)
+	if err != nil {
+		return nil
+	}
+	envs := []string{"SERVER_PORT", "SERVER_HTTP_PORT"}
+	return utils.GetValidPortsFromEnvDockerfile(envs, envVars)
 }
 
 func getServerPortsFromPropertiesFile(file string) ([]int, error) {
@@ -122,11 +146,11 @@ func getPortFromMap(props map[string]string, key string) int {
 }
 
 func getServerPortsFromYamlFile(file string) ([]int, error) {
-	yamlFile, err := ioutil.ReadFile(file)
+	yamlFile, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
 		return []int{}, err
 	}
-	var data ApplicationProsServer
+	var data model.SpringApplicationProsServer
 	err = yaml.Unmarshal(yamlFile, &data)
 	if err != nil {
 		return []int{}, err

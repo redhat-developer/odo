@@ -16,7 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -28,192 +28,219 @@ import (
 
 const MinimumAllowedVersion = "2.0.0"
 
-func SelectDevFilesFromTypes(path string, devFileTypes []model.DevFileType) ([]int, error) {
+// DEPRECATION WARNING: This function is deprecated, please use devfile_recognizer.MatchDevfiles
+// instead.
+// func SelectDevFilesFromTypes: Returns a list of devfiles matched for the given application
+func SelectDevFilesFromTypes(path string, devfileTypes []model.DevfileType) ([]int, error) {
 	alizerLogger := utils.GetOrCreateLogger()
 	ctx := context.Background()
 	alizerLogger.V(0).Info("Applying component detection to match a devfile")
-	devFilesIndexes := selectDevFilesFromComponentsDetectedInPath(path, devFileTypes)
-	if len(devFilesIndexes) > 0 {
-		alizerLogger.V(0).Info(fmt.Sprintf("Found %d potential matches", len(devFilesIndexes)))
-		return devFilesIndexes, nil
+	devfilesIndexes := selectDevfilesFromComponentsDetectedInPath(path, devfileTypes)
+	if len(devfilesIndexes) > 0 {
+		alizerLogger.V(0).Info(fmt.Sprintf("Found %d potential matches", len(devfilesIndexes)))
+		return devfilesIndexes, nil
 	}
 	alizerLogger.V(0).Info("No components found, applying language analysis for devfile matching")
 	languages, err := analyze(path, &ctx)
 	if err != nil {
 		return []int{}, err
 	}
-	devfile, err := SelectDevFileUsingLanguagesFromTypes(languages, devFileTypes)
+	mainLanguage, err := getMainLanguage(languages)
+	if err != nil {
+		return []int{}, err
+	}
+	devfiles, err := selectDevfilesByLanguage(mainLanguage, devfileTypes)
 	if err != nil {
 		return []int{}, errors.New("No valid devfile found for project in " + path)
 	}
-	return []int{devfile}, nil
+	return devfiles, nil
 }
 
-func selectDevFilesFromComponentsDetectedInPath(path string, devFileTypes []model.DevFileType) []int {
+func getMainLanguage(languages []model.Language) (model.Language, error) {
+	if len(languages) == 0 {
+		return model.Language{}, fmt.Errorf("cannot detect main language due to empty languages list")
+	}
+
+	mainLanguage := languages[0]
+	for _, language := range languages {
+		if language.Weight > mainLanguage.Weight {
+			mainLanguage = language
+		}
+	}
+	return mainLanguage, nil
+}
+
+func selectDevfilesFromComponentsDetectedInPath(path string, devfileTypes []model.DevfileType) []int {
 	components, _ := DetectComponentsInRoot(path)
-	devFilesIndexes := selectDevFilesFromComponents(components, devFileTypes)
-	if len(devFilesIndexes) > 0 {
-		return devFilesIndexes
+	devfilesIndexes := selectDevfilesFromComponents(components, devfileTypes)
+	if len(devfilesIndexes) > 0 {
+		return devfilesIndexes
 	}
 
 	components, _ = DetectComponents(path)
-	return selectDevFilesFromComponents(components, devFileTypes)
+	return selectDevfilesFromComponents(components, devfileTypes)
 }
 
-func selectDevFilesFromComponents(components []model.Component, devFileTypes []model.DevFileType) []int {
-	var devFilesIndexes []int
+func selectDevfilesFromComponents(components []model.Component, devfileTypes []model.DevfileType) []int {
+	var devfilesIndexes []int
 	for _, component := range components {
-		devFiles, err := selectDevFilesByLanguage(component.Languages[0], devFileTypes)
+		devfiles, err := selectDevfilesByLanguage(component.Languages[0], devfileTypes)
 		if err == nil {
-			devFilesIndexes = append(devFilesIndexes, devFiles...)
+			devfilesIndexes = append(devfilesIndexes, devfiles...)
 		}
 	}
-	return devFilesIndexes
+	return devfilesIndexes
 }
 
-func SelectDevFileFromTypes(path string, devFileTypes []model.DevFileType) (int, error) {
-	devfiles, err := SelectDevFilesFromTypes(path, devFileTypes)
+// DEPRECATION WARNING: This function is deprecated, please use devfile_recognizer.MatchDevfiles
+// instead.
+// func SelectDevFileFromTypes: Returns the first devfile from the list of devfiles returned
+// from SelectDevFilesFromTypes func. It also returns an error if exists.
+func SelectDevFileFromTypes(path string, devfileTypes []model.DevfileType) (int, error) {
+	devfiles, err := SelectDevFilesFromTypes(path, devfileTypes)
 	if err != nil {
 		return -1, err
 	}
 	return devfiles[0], nil
 }
 
-func SelectDevFilesUsingLanguagesFromTypes(languages []model.Language, devFileTypes []model.DevFileType) ([]int, error) {
-	var devFilesIndexes []int
+func SelectDevfilesUsingLanguagesFromTypes(languages []model.Language, devfileTypes []model.DevfileType) ([]int, error) {
+	var devfilesIndexes []int
 	alizerLogger := utils.GetOrCreateLogger()
 	alizerLogger.V(1).Info("Searching potential matches from detected languages")
 	for _, language := range languages {
 		alizerLogger.V(1).Info(fmt.Sprintf("Accessing %s language", language.Name))
-		devFiles, err := selectDevFilesByLanguage(language, devFileTypes)
+		devfiles, err := selectDevfilesByLanguage(language, devfileTypes)
 		if err == nil {
-			alizerLogger.V(1).Info(fmt.Sprintf("Found %d potential matches for language %s", len(devFiles), language.Name))
-			devFilesIndexes = append(devFilesIndexes, devFiles...)
+			alizerLogger.V(1).Info(fmt.Sprintf("Found %d potential matches for language %s", len(devfiles), language.Name))
+			devfilesIndexes = append(devfilesIndexes, devfiles...)
 		}
 	}
-	if len(devFilesIndexes) > 0 {
-		return devFilesIndexes, nil
+	if len(devfilesIndexes) > 0 {
+		return devfilesIndexes, nil
 	}
 	return []int{}, errors.New("no valid devfile found by using those languages")
 }
 
-func SelectDevFileUsingLanguagesFromTypes(languages []model.Language, devFileTypes []model.DevFileType) (int, error) {
-	devFilesIndexes, err := SelectDevFilesUsingLanguagesFromTypes(languages, devFileTypes)
+func SelectDevfileUsingLanguagesFromTypes(languages []model.Language, devfileTypes []model.DevfileType) (int, error) {
+	devfilesIndexes, err := SelectDevfilesUsingLanguagesFromTypes(languages, devfileTypes)
 	if err != nil {
 		return -1, err
 	}
-	return devFilesIndexes[0], nil
+	return devfilesIndexes[0], nil
 }
 
-func MatchDevfiles(path string, url string, filter model.DevfileFilter) ([]model.DevFileType, error) {
+func MatchDevfiles(path string, url string, filter model.DevfileFilter) ([]model.DevfileType, error) {
 	alizerLogger := utils.GetOrCreateLogger()
 	alizerLogger.V(0).Info("Starting devfile matching")
 	alizerLogger.V(1).Info(fmt.Sprintf("Downloading devfiles from registry %s", url))
-	devFileTypesFromRegistry, err := downloadDevFileTypesFromRegistry(url, filter)
+	devfileTypesFromRegistry, err := DownloadDevfileTypesFromRegistry(url, filter)
 	if err != nil {
-		return []model.DevFileType{}, err
+		return []model.DevfileType{}, err
 	}
 
-	return selectDevfiles(path, devFileTypesFromRegistry)
+	return selectDevfiles(path, devfileTypesFromRegistry)
 }
 
-func SelectDevFilesFromRegistry(path string, url string) ([]model.DevFileType, error) {
+func SelectDevfilesFromRegistry(path string, url string) ([]model.DevfileType, error) {
 	alizerLogger := utils.GetOrCreateLogger()
 	alizerLogger.V(0).Info("Starting devfile matching")
 	alizerLogger.V(1).Info(fmt.Sprintf("Downloading devfiles from registry %s", url))
-	devFileTypesFromRegistry, err := downloadDevFileTypesFromRegistry(url, model.DevfileFilter{MinVersion: "", MaxVersion: ""})
+	devfileTypesFromRegistry, err := DownloadDevfileTypesFromRegistry(url, model.DevfileFilter{MinSchemaVersion: "", MaxSchemaVersion: ""})
 	if err != nil {
-		return []model.DevFileType{}, err
+		return []model.DevfileType{}, err
 	}
 
-	return selectDevfiles(path, devFileTypesFromRegistry)
+	return selectDevfiles(path, devfileTypesFromRegistry)
 }
 
-func selectDevfiles(path string, devFileTypesFromRegistry []model.DevFileType) ([]model.DevFileType, error) {
-	indexes, err := SelectDevFilesFromTypes(path, devFileTypesFromRegistry)
+// selectDevfiles is exposed as global var in the purpose of mocking tests
+var selectDevfiles = func(path string, devfileTypesFromRegistry []model.DevfileType) ([]model.DevfileType, error) {
+	indexes, err := SelectDevFilesFromTypes(path, devfileTypesFromRegistry)
 	if err != nil {
-		return []model.DevFileType{}, err
+		return []model.DevfileType{}, err
 	}
 
-	var devFileTypes []model.DevFileType
+	var devfileTypes []model.DevfileType
 	for _, index := range indexes {
-		devFileTypes = append(devFileTypes, devFileTypesFromRegistry[index])
+		devfileTypes = append(devfileTypes, devfileTypesFromRegistry[index])
 	}
 
-	return devFileTypes, nil
+	return devfileTypes, nil
 
 }
 
-func SelectDevFileFromRegistry(path string, url string) (model.DevFileType, error) {
-	devFileTypes, err := downloadDevFileTypesFromRegistry(url, model.DevfileFilter{MinVersion: "", MaxVersion: ""})
+func SelectDevfileFromRegistry(path string, url string) (model.DevfileType, error) {
+	devfileTypes, err := DownloadDevfileTypesFromRegistry(url, model.DevfileFilter{MinSchemaVersion: "", MaxSchemaVersion: ""})
 	if err != nil {
-		return model.DevFileType{}, err
+		return model.DevfileType{}, err
 	}
 
-	index, err := SelectDevFileFromTypes(path, devFileTypes)
+	index, err := SelectDevFileFromTypes(path, devfileTypes)
 	if err != nil {
-		return model.DevFileType{}, err
+		return model.DevfileType{}, err
 	}
-	return devFileTypes[index], nil
+	return devfileTypes[index], nil
 }
 
-func GetUrlWithVersions(url, minVersion, maxVersion string) (string, error) {
+func GetUrlWithVersions(url, minSchemaVersion, maxSchemaVersion string) (string, error) {
 	minAllowedVersion, err := version.NewVersion(MinimumAllowedVersion)
 	if err != nil {
 		return "", nil
 	}
 
-	if minVersion != "" && maxVersion != "" {
-		minV, err := version.NewVersion(minVersion)
+	if minSchemaVersion != "" && maxSchemaVersion != "" {
+		minV, err := version.NewVersion(minSchemaVersion)
 		if err != nil {
 			return url, nil
 		}
-		maxV, err := version.NewVersion(maxVersion)
+		maxV, err := version.NewVersion(maxSchemaVersion)
 		if err != nil {
 			return url, nil
 		}
 		if maxV.LessThan(minV) {
-			return "", fmt.Errorf("max-version cannot be lower than min-version")
+			return "", fmt.Errorf("max-schema-version cannot be lower than min-schema-version")
 		}
 		if maxV.LessThan(minAllowedVersion) || minV.LessThan(minAllowedVersion) {
 			return "", fmt.Errorf("min and/or max version are lower than the minimum allowed version (2.0.0)")
 		}
 
-		return fmt.Sprintf("%s?minSchemaVersion=%s&maxSchemaVersion=%s", url, minVersion, maxVersion), nil
-	} else if minVersion != "" {
-		minV, err := version.NewVersion(minVersion)
+		return fmt.Sprintf("%s?minSchemaVersion=%s&maxSchemaVersion=%s", url, minSchemaVersion, maxSchemaVersion), nil
+	} else if minSchemaVersion != "" {
+		minV, err := version.NewVersion(minSchemaVersion)
 		if err != nil {
 			return "", nil
 		}
 		if minV.LessThan(minAllowedVersion) {
 			return "", fmt.Errorf("min version is lower than the minimum allowed version (2.0.0)")
 		}
-		return fmt.Sprintf("%s?minSchemaVersion=%s", url, minVersion), nil
-	} else if maxVersion != "" {
-		maxV, err := version.NewVersion(maxVersion)
+		return fmt.Sprintf("%s?minSchemaVersion=%s", url, minSchemaVersion), nil
+	} else if maxSchemaVersion != "" {
+		maxV, err := version.NewVersion(maxSchemaVersion)
 		if err != nil {
 			return "", nil
 		}
 		if maxV.LessThan(minAllowedVersion) {
 			return "", fmt.Errorf("max version is lower than the minimum allowed version (2.0.0)")
 		}
-		return fmt.Sprintf("%s?maxSchemaVersion=%s", url, maxVersion), nil
+		return fmt.Sprintf("%s?maxSchemaVersion=%s", url, maxSchemaVersion), nil
 	} else {
 		return url, nil
 	}
 }
 
-func downloadDevFileTypesFromRegistry(url string, filter model.DevfileFilter) ([]model.DevFileType, error) {
+// DownloadDevfileTypesFromRegistry is exposed as a global variable for the purpose of running mock tests
+var DownloadDevfileTypesFromRegistry = func(url string, filter model.DevfileFilter) ([]model.DevfileType, error) {
 	url = adaptUrl(url)
 	tmpUrl := appendIndexPath(url)
-	url, err := GetUrlWithVersions(tmpUrl, filter.MinVersion, filter.MaxVersion)
+	url, err := GetUrlWithVersions(tmpUrl, filter.MinSchemaVersion, filter.MaxSchemaVersion)
 	if err != nil {
 		return nil, err
 	}
 	// This value is set by the user in order to configure the registry
 	resp, err := http.Get(url) // #nosec G107
 	if err != nil {
-		return []model.DevFileType{}, err
+		return []model.DevfileType{}, err
 	}
 	defer func() error {
 		if err := resp.Body.Close(); err != nil {
@@ -224,21 +251,21 @@ func downloadDevFileTypesFromRegistry(url string, filter model.DevfileFilter) ([
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
-		return []model.DevFileType{}, errors.New("unable to fetch devfiles from the registry")
+		return []model.DevfileType{}, errors.New("unable to fetch devfiles from the registry")
 	}
 
-	body, err2 := ioutil.ReadAll(resp.Body)
+	body, err2 := io.ReadAll(resp.Body)
 	if err2 != nil {
-		return []model.DevFileType{}, errors.New("unable to fetch devfiles from the registry")
+		return []model.DevfileType{}, errors.New("unable to fetch devfiles from the registry")
 	}
 
-	var devFileTypes []model.DevFileType
-	err = json.Unmarshal(body, &devFileTypes)
+	var devfileTypes []model.DevfileType
+	err = json.Unmarshal(body, &devfileTypes)
 	if err != nil {
-		return []model.DevFileType{}, errors.New("unable to fetch devfiles from the registry")
+		return []model.DevfileType{}, errors.New("unable to fetch devfiles from the registry")
 	}
 
-	return devFileTypes, nil
+	return devfileTypes, nil
 }
 
 func appendIndexPath(url string) string {
@@ -261,7 +288,7 @@ func adaptUrl(url string) string {
 	return url
 }
 
-// selectDevFilesByLanguage detects devfiles that fit best with a project.
+// selectDevfilesByLanguage detects devfiles that fit best with a project.
 //
 // Performs a search in two steps looping through all devfiles available.
 // When a framework is detected, this is stored in a map but still not saved. A check is made eventually as there could be that a future or
@@ -270,21 +297,21 @@ func adaptUrl(url string) string {
 //
 // At the end, if some framework is supported by some devfile, they are returned. Otherwise, Alizer was not able to find any
 // specific devfile for the frameworks detected and returned the devfiles which got the largest score.
-func selectDevFilesByLanguage(language model.Language, devFileTypes []model.DevFileType) ([]int, error) {
-	var devFileIndexes []int
-	frameworkPerDevFile := make(map[string]model.DevFileScore)
+func selectDevfilesByLanguage(language model.Language, devfileTypes []model.DevfileType) ([]int, error) {
+	var devfileIndexes []int
+	frameworkPerDevfile := make(map[string]model.DevfileScore)
 	scoreTarget := 0
 
-	for index, devFile := range devFileTypes {
+	for index, devfile := range devfileTypes {
 		score := 0
 		frameworkPerDevfileTmp := make(map[string]interface{})
-		if strings.EqualFold(devFile.Language, language.Name) || matches(language.Aliases, devFile.Language) != "" {
+		if strings.EqualFold(devfile.Language, language.Name) || matches(language.Aliases, devfile.Language) != "" {
 			score++
-			if frw := matchesFormatted(language.Frameworks, devFile.ProjectType); frw != "" {
+			if frw := matchesFormatted(language.Frameworks, devfile.ProjectType); frw != "" {
 				frameworkPerDevfileTmp[frw] = nil
 				score += utils.FRAMEWORK_WEIGHT
 			}
-			for _, tag := range devFile.Tags {
+			for _, tag := range devfile.Tags {
 				if frw := matchesFormatted(language.Frameworks, tag); frw != "" {
 					frameworkPerDevfileTmp[frw] = nil
 					score += utils.FRAMEWORK_WEIGHT
@@ -295,37 +322,37 @@ func selectDevFilesByLanguage(language model.Language, devFileTypes []model.DevF
 			}
 
 			for framework := range frameworkPerDevfileTmp {
-				devFileObj := frameworkPerDevFile[framework]
-				if score > devFileObj.Score {
-					frameworkPerDevFile[framework] = model.DevFileScore{
-						DevFileIndex: index,
+				devfileObj := frameworkPerDevfile[framework]
+				if score > devfileObj.Score {
+					frameworkPerDevfile[framework] = model.DevfileScore{
+						DevfileIndex: index,
 						Score:        score,
 					}
 				}
 			}
 
-			if len(frameworkPerDevFile) == 0 {
+			if len(frameworkPerDevfile) == 0 {
 				if score == scoreTarget {
-					devFileIndexes = append(devFileIndexes, index)
+					devfileIndexes = append(devfileIndexes, index)
 				} else if score > scoreTarget {
 					scoreTarget = score
-					devFileIndexes = []int{index}
+					devfileIndexes = []int{index}
 				}
 			}
 		}
 	}
 
-	if len(frameworkPerDevFile) > 0 {
-		devFileIndexes = []int{}
-		for _, val := range frameworkPerDevFile {
-			devFileIndexes = append(devFileIndexes, val.DevFileIndex)
+	if len(frameworkPerDevfile) > 0 {
+		devfileIndexes = []int{}
+		for _, val := range frameworkPerDevfile {
+			devfileIndexes = append(devfileIndexes, val.DevfileIndex)
 		}
 	}
 
-	if len(devFileIndexes) == 0 {
-		return devFileIndexes, errors.New("No valid devfile found for current language " + language.Name)
+	if len(devfileIndexes) == 0 {
+		return devfileIndexes, errors.New("No valid devfile found for current language " + language.Name)
 	}
-	return devFileIndexes, nil
+	return devfileIndexes, nil
 }
 
 func matchesFormatted(values []string, valueToFind string) string {

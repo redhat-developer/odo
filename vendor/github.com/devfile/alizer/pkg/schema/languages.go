@@ -29,6 +29,7 @@ type LanguagesProperties map[string]LanguageProperties
 type LanguageCustomization struct {
 	ConfigurationFiles []string `yaml:"configuration_files"`
 	Component          bool     `yaml:"component"`
+	ContainerComponent bool     `yaml:"container_component"`
 	ExcludeFolders     []string `yaml:"exclude_folders,omitempty"`
 	Aliases            []string `yaml:"aliases"`
 	Disabled           bool     `default:"false" yaml:"disable_detection"`

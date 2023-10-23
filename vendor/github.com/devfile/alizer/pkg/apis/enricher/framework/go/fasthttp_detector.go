@@ -26,6 +26,14 @@ func (f FastHttpDetector) GetSupportedFrameworks() []string {
 	return []string{"FastHttp"}
 }
 
+func (f FastHttpDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	files, err := utils.GetCachedFilePathsFromRoot(componentPath, ctx)
+	if err != nil {
+		return []model.ApplicationFileInfo{}
+	}
+	return utils.GenerateApplicationFileFromFilters(files, componentPath, ".go", ctx)
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (f FastHttpDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/valyala/fasthttp") {
@@ -34,7 +42,7 @@ func (f FastHttpDetector) DoFrameworkDetection(language *model.Language, goMod *
 }
 
 func (f FastHttpDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
+	fileContents, err := utils.GetApplicationFileContents(f.GetApplicationFileInfos(component.Path, ctx))
 	if err != nil {
 		return
 	}
@@ -47,8 +55,11 @@ func (f FastHttpDetector) DoPortsDetection(component *model.Component, ctx *cont
 			},
 		},
 	}
-	ports := GetPortFromFilesGo(matchRegexRules, files)
-	if len(ports) > 0 {
-		component.Ports = ports
+	for _, fileContent := range fileContents {
+		ports := GetPortFromFileGo(matchRegexRules, fileContent)
+		if len(ports) > 0 {
+			component.Ports = ports
+			return
+		}
 	}
 }

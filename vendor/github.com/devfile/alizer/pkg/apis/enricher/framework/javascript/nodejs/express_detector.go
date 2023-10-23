@@ -14,7 +14,6 @@ package enricher
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -28,6 +27,14 @@ func (e ExpressDetector) GetSupportedFrameworks() []string {
 	return []string{"Express"}
 }
 
+func (e ExpressDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	files, err := utils.GetCachedFilePathsFromRoot(componentPath, ctx)
+	if err != nil {
+		return []model.ApplicationFileInfo{}
+	}
+	return utils.GenerateApplicationFileFromFilters(files, componentPath, ".js", ctx)
+}
+
 // DoFrameworkDetection uses a tag to check for the framework name
 func (e ExpressDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "express") {
@@ -36,25 +43,19 @@ func (e ExpressDetector) DoFrameworkDetection(language *model.Language, config s
 }
 
 func (e ExpressDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
-	files, err := utils.GetCachedFilePathsFromRoot(component.Path, ctx)
+	fileContents, err := utils.GetApplicationFileContents(e.GetApplicationFileInfos(component.Path, ctx))
 	if err != nil {
 		return
 	}
 
 	re := regexp.MustCompile(`\.listen\([^,)]*`)
 	var ports []int
-	for _, file := range files {
-		cleanFile := filepath.Clean(file)
-		bytes, err := os.ReadFile(cleanFile)
-		if err != nil {
-			continue
-		}
-		content := string(bytes)
+	for _, content := range fileContents {
 		matchesIndexes := re.FindAllStringSubmatchIndex(content, -1)
 		for _, matchIndexes := range matchesIndexes {
-			port := getPort(content, matchIndexes)
-			if port != -1 {
-				ports = append(ports, port)
+			portList := getPorts(content, matchIndexes, component.Path)
+			if len(portList) != 0 {
+				ports = append(ports, portList...)
 			}
 		}
 		if len(ports) > 0 {
@@ -82,14 +83,39 @@ func GetEnvPort(envPlaceholder string) int {
 	return -1
 }
 
-func getPort(content string, matchIndexes []int) int {
+// GetEnvPortFromDockerfile returns a port value from the Dockerfile (locations provided by the 'utils.GetLocations' function)
+// matching the specified 'envPlaceHolder'.
+// It first extracts the environment variable name to lookup from 'envPlaceholder' by removing any 'process.env.' prefix.
+// It then searches through all environment variables detected from the Dockerfile (as determined by 'utils.GetEnvVarsFromDockerFile').
+// And if the environment variable specified via 'envPlaceholder' is found in the Dockerfile environment variables
+// and its corresponding value is a valid port (as determined by 'utils.GetValidPort'), it returns this valid port value.
+//
+// If there is an error reading the Dockerfile or if the environment variable specified via 'envPlaceholder' is not found among
+// the Dockerfile environment variables, the function returns -1.
+func GetEnvPortFromDockerfile(envPlaceholder string, path string) int {
+	envPlaceholder = strings.Replace(envPlaceholder, "process.env.", "", -1)
+	envVars, err := utils.GetEnvVarsFromDockerFile(path)
+	if err != nil {
+		return -1
+	}
+	for _, envVar := range envVars {
+		if envVar.Name == envPlaceholder {
+			if port, err := utils.GetValidPort(envVar.Value); err == nil {
+				return port
+			}
+		}
+	}
+	return -1
+}
+
+func getPorts(content string, matchIndexes []int, path string) []int {
 	// Express configures its port with app.listen()
 	portPlaceholder := content[matchIndexes[0]:matchIndexes[1]]
 	portPlaceholder = strings.Replace(portPlaceholder, ".listen(", "", -1)
 
 	// Case: Raw port value -> return it directly
 	if port, err := utils.GetValidPort(portPlaceholder); err == nil {
-		return port
+		return []int{port}
 	}
 
 	// Case: Env var given as value in app.listen -> Get env value
@@ -115,13 +141,20 @@ func getPort(content string, matchIndexes []int) int {
 			}
 		}
 	}
+	var result []int
 	// After double-checking for env vars try to get the value of this port
 	if len(envMatchIndexes) > 1 {
 		envPlaceholder := envPortValue[envMatchIndexes[0]:envMatchIndexes[1]]
 		port := GetEnvPort(envPlaceholder)
 		// The port will be return only if a value was found for the given env var
 		if port > 0 {
-			return port
+			result = append(result, port)
+		} else {
+			// If no env var was found on system try to find one in a root dockerfile
+			port = GetEnvPortFromDockerfile(envPlaceholder, path)
+			if port > 0 {
+				result = append(result, port)
+			}
 		}
 	}
 	// Case: No env var or raw value found -> check for raw value into a var
@@ -131,9 +164,10 @@ func getPort(content string, matchIndexes []int) int {
 		portValues := strings.Split(potentialPortGroup, " || ")
 		for _, portValue := range portValues {
 			if port, err := utils.GetValidPort(portValue); err == nil {
-				return port
+				result = append(result, port)
+				break
 			}
 		}
 	}
-	return -1
+	return result
 }

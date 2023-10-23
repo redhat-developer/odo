@@ -19,33 +19,27 @@ import (
 	"github.com/devfile/alizer/pkg/utils"
 )
 
-type AngularCliJson struct {
-	Defaults struct {
-		Serve HostPort `json:"serve"`
-	} `json:"defaults"`
-}
-
-type AngularJson struct {
-	Projects map[string]ProjectBody `json:"projects"`
-}
-
-type ProjectBody struct {
-	Architect struct {
-		Serve struct {
-			Options HostPort `json:"options"`
-		} `json:"serve"`
-	} `json:"architect"`
-}
-
-type HostPort struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
-}
-
 type AngularDetector struct{}
 
 func (a AngularDetector) GetSupportedFrameworks() []string {
 	return []string{"Angular"}
+}
+
+func (a AngularDetector) GetApplicationFileInfos(componentPath string, ctx *context.Context) []model.ApplicationFileInfo {
+	return []model.ApplicationFileInfo{
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "angular.json",
+		},
+		{
+			Context: ctx,
+			Root:    componentPath,
+			Dir:     "",
+			File:    "angular-cli.json",
+		},
+	}
 }
 
 // DoFrameworkDetection uses a tag to check for the framework name
@@ -58,17 +52,26 @@ func (a AngularDetector) DoFrameworkDetection(language *model.Language, config s
 // DoPortsDetection searches for the port in angular.json, package.json, and angular-cli.json
 func (a AngularDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	// check if port is set on angular.json file
-	bytes, err := utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "",
-			File: "angular.json",
-		},
-	}, ctx)
+	appFileInfos := a.GetApplicationFileInfos(component.Path, ctx)
+	if len(appFileInfos) == 0 {
+		return
+	}
+
+	appFileInfo, err := utils.GetApplicationFileInfo(appFileInfos, "angular.json")
 	if err != nil {
 		return
 	}
-	var data AngularJson
-	err = json.Unmarshal(bytes, &data)
+
+	fileBytes, err := utils.GetApplicationFileBytes(appFileInfo)
+	if err != nil {
+		return
+	}
+
+	if err != nil {
+		return
+	}
+	var data model.AngularJson
+	err = json.Unmarshal(fileBytes, &data)
 	if err != nil {
 		return
 	}
@@ -89,17 +92,18 @@ func (a AngularDetector) DoPortsDetection(component *model.Component, ctx *conte
 	}
 
 	// check if port is set on angular-cli.json file
-	bytes, err = utils.ReadAnyApplicationFile(component.Path, []model.ApplicationFileInfo{
-		{
-			Dir:  "",
-			File: "angular-cli.json",
-		},
-	}, ctx)
+	appFileInfoCli, err := utils.GetApplicationFileInfo(appFileInfos, "angular-cli.json")
 	if err != nil {
 		return
 	}
-	var dataCli AngularCliJson
-	err = json.Unmarshal(bytes, &dataCli)
+
+	fileBytesCli, err := utils.GetApplicationFileBytes(appFileInfoCli)
+	if err != nil {
+		return
+	}
+
+	var dataCli model.AngularCliJson
+	err = json.Unmarshal(fileBytesCli, &dataCli)
 	if err != nil {
 		return
 	}
