@@ -162,7 +162,7 @@ jobs:
             "${{ env.PR_PREVIEW_URL }}" || exit 1
 
       - name: Add PR comment with preview URL
-        uses: thollander/actions-comment-pull-request@v1
+        uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
             ### <span aria-hidden="true">✅</span> Deploy Preview on internal cluster ready!
@@ -226,7 +226,7 @@ jobs:
       - run: echo "PR_PREVIEW_URL=https://$DEPLOY_RESOURCE_NAME.$DEPLOY_INGRESS_DOMAIN/" >> "$GITHUB_ENV"
 
       - name: Update PR comment about preview URL
-        uses: thollander/actions-comment-pull-request@v1
+        uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
             ### <span aria-hidden="true">🔨</span> Deploy Preview deleted from internal cluster!
