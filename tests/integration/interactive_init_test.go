@@ -604,19 +604,23 @@ var _ = Describe("odo init interactive command tests", func() {
 
 				lines, err := helper.ExtractLines(output)
 				Expect(err).To(BeNil())
-				Expect(len(lines)).To(BeNumerically(">", 2))
-				Expect(lines[len(lines)-1]).To(Equal("Your new component 'my-dotnet-app' is ready in the current directory"))
+				Expect(len(lines)).To(BeNumerically(">", 2), output)
+				Expect(lines[len(lines)-1]).To(Equal("Your new component 'my-dotnet-app' is ready in the current directory"), output)
 
 				componentNameQuestionIdx, ok := helper.FindFirstElementIndexMatchingRegExp(lines, ".*Enter component name:.*")
-				Expect(ok).To(BeTrue())
+				Expect(ok).To(BeTrue(),
+					fmt.Sprintf("'Enter component name:' not found in output below:\n===OUTPUT===\n%s============\n", output))
 				starterProjectDownloadActionIdx, found := helper.FindFirstElementIndexMatchingRegExp(lines,
 					".*Downloading starter project \"([^\\s]+)\" \\[.*")
-				Expect(found).To(BeTrue())
-				Expect(starterProjectDownloadActionIdx).To(SatisfyAll(
-					Not(BeZero()),
-					// #5495: component name question should be displayed before starter project is actually downloaded
-					BeNumerically(">", componentNameQuestionIdx),
-				), "Action 'Downloading starter project' should have been displayed after the last interactive question ('Enter component name')")
+				Expect(found).To(BeTrue(),
+					fmt.Sprintf("'Downloading starter project \"([^\\s]+)\"' not found in output below:\n===OUTPUT===\n%s============\n", output))
+				Expect(starterProjectDownloadActionIdx).To(
+					SatisfyAll(
+						Not(BeZero()),
+						// #5495: component name question should be displayed before starter project is actually downloaded
+						BeNumerically(">", componentNameQuestionIdx)),
+					fmt.Sprintf("Action 'Downloading starter project' should have been displayed after the last interactive question ('Enter component name').\n===OUTPUT===\n%s============\n",
+						output))
 
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
