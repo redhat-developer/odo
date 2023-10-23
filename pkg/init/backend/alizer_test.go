@@ -95,7 +95,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(alizer.DetectedFramework{
-						Type: model.DevFileType{
+						Type: model.DevfileType{
 							Name: "a-devfile-name",
 						},
 						DefaultVersion: "1.0.0",
@@ -124,7 +124,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(alizer.DetectedFramework{
-						Type: model.DevFileType{
+						Type: model.DevfileType{
 							Name: "a-devfile-name",
 						},
 						DefaultVersion: "1.0.0",
@@ -178,7 +178,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any(), gomock.Any()).Return(alizer.DetectedFramework{
-						Type: model.DevFileType{
+						Type: model.DevfileType{
 							Name: "a-devfile-name",
 						},
 						DefaultVersion: "1.0.0",

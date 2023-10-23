@@ -53,7 +53,7 @@ func TestOdoAlizer(t *testing.T) {
 				path := "/"
 				alizerClient.EXPECT().DetectFramework(gomock.Any(), path).
 					Return(alizer.DetectedFramework{
-						Type: model.DevFileType{
+						Type: model.DevfileType{
 							Name: "framework-name",
 						},
 						DefaultVersion: "1.1.1",
@@ -94,7 +94,7 @@ func TestOdoAlizer(t *testing.T) {
 				path := "/"
 				alizerClient.EXPECT().DetectFramework(gomock.Any(), path).
 					Return(alizer.DetectedFramework{
-						Type: model.DevFileType{
+						Type: model.DevfileType{
 							Name: "framework-name",
 						},
 						DefaultVersion: "1.1.1",

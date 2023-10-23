@@ -30,13 +30,13 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 // DetectFramework uses the alizer library in order to detect the devfile
 // to use depending on the files in the path
 func (o *Alizer) DetectFramework(ctx context.Context, path string) (DetectedFramework, error) {
-	types := []model.DevFileType{}
+	types := []model.DevfileType{}
 	components, err := o.registryClient.ListDevfileStacks(ctx, "", "", "", false, false)
 	if err != nil {
 		return DetectedFramework{}, err
 	}
 	for _, component := range components.Items {
-		types = append(types, model.DevFileType{
+		types = append(types, model.DevfileType{
 			Name:        component.Name,
 			Language:    component.Language,
 			ProjectType: component.ProjectType,
@@ -144,7 +144,7 @@ func (o *Alizer) DetectPorts(path string) ([]int, error) {
 	return components[0].Ports, nil
 }
 
-func NewDetectionResult(typ model.DevFileType, registry api.Registry, appPorts []int, devfileVersion, name string) *api.DetectionResult {
+func NewDetectionResult(typ model.DevfileType, registry api.Registry, appPorts []int, devfileVersion, name string) *api.DetectionResult {
 	return &api.DetectionResult{
 		Devfile:          typ.Name,
 		DevfileRegistry:  registry.Name,

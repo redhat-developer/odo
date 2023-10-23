@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/devfile/alizer/pkg/apis/model"
+
 	"github.com/redhat-developer/odo/pkg/api"
 )
 
 type DetectedFramework struct {
-	Type           model.DevFileType
+	Type           model.DevfileType
 	DefaultVersion string
 	Registry       api.Registry
 	Architectures  []string
