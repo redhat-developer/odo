@@ -405,6 +405,7 @@ func GetDevfileRegistryURL() string {
 	if customReg != "" {
 		registryURL = customReg
 	}
+	fmt.Printf("Using Devfile Registry URL at: %q\n", registryURL)
 	return registryURL
 }
 
