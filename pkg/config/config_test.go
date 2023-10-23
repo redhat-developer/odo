@@ -18,7 +18,6 @@ func TestDefaultValues(t *testing.T) {
 	checkDefaultBoolValue(t, "OdoExperimentalMode", cfg.OdoExperimentalMode, false)
 
 	// Use noinit to set non initialized value as nil instead of zero-value
-	checkNilString(t, "DevfileProxy", cfg.DevfileProxy)
 	checkNilString(t, "Globalodoconfig", cfg.Globalodoconfig)
 	checkNilString(t, "Globalodoconfig", cfg.Globalodoconfig)
 	checkNilString(t, "OdoDebugTelemetryFile", cfg.OdoDebugTelemetryFile)

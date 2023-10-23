@@ -401,10 +401,6 @@ func SetDefaultDevfileRegistryAsStaging() {
 
 func GetDevfileRegistryURL() string {
 	registryURL := "https://registry.stage.devfile.io"
-	proxy := os.Getenv("DEVFILE_PROXY")
-	if proxy != "" {
-		registryURL = "http://" + proxy
-	}
 	customReg := os.Getenv("DEVFILE_REGISTRY")
 	if customReg != "" {
 		registryURL = customReg

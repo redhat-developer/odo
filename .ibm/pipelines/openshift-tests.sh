@@ -16,8 +16,6 @@ cleanup_namespaces
 
 (
     set -e
-    export DEVFILE_PROXY="$(kubectl get svc -n devfile-proxy nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' || true)"
-    echo Using Devfile proxy: ${DEVFILE_PROXY}
     make install
     make test-integration-cluster
     make test-e2e

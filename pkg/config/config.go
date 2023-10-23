@@ -8,7 +8,6 @@ import (
 )
 
 type Configuration struct {
-	DevfileProxy                  *string       `env:"DEVFILE_PROXY,noinit"`
 	DockerCmd                     string        `env:"DOCKER_CMD,default=docker"`
 	Globalodoconfig               *string       `env:"GLOBALODOCONFIG,noinit"`
 	OdoDebugTelemetryFile         *string       `env:"ODO_DEBUG_TELEMETRY_FILE,noinit"`
