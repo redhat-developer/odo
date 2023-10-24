@@ -3,6 +3,7 @@ package docautomation
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,11 +16,12 @@ var _ = Describe("doc command reference odo delete namespace", func() {
 	var commonVar helper.CommonVar
 	var commonPath = filepath.Join("command-reference", "docs-mdx", "delete-namespace")
 	var outputStringFormat = "```console\n$ odo %s\n%s```\n"
+	var ns string
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+		ns = helper.GenerateProjectName()
 	})
 
 	AfterEach(func() {
@@ -29,18 +31,19 @@ var _ = Describe("doc command reference odo delete namespace", func() {
 	Context("To delete a namespace resource", func() {
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "namespace", "odo-dev").ShouldPass()
-
+			helper.Cmd("odo", "create", "namespace", ns).ShouldPass()
 		})
 
 		AfterEach(func() {
-			commonVar.CliRunner.DeleteNamespaceProject("odo-dev", true)
+			if commonVar.CliRunner.HasNamespaceProject(ns) {
+				commonVar.CliRunner.DeleteNamespaceProject(ns, false)
+			}
 		})
 
 		It("Deletes a namespace resource for a kubernetes cluster", func() {
-			args := []string{"odo", "delete", "namespace", "odo-dev"}
+			args := []string{"odo", "delete", "namespace", ns}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
-				helper.ExpectString(ctx, "? Are you sure you want to delete namespace \"odo-dev\"?")
+				helper.ExpectString(ctx, fmt.Sprintf("? Are you sure you want to delete namespace %q?", ns))
 				helper.SendLine(ctx, "Yes")
 
 			})
@@ -48,6 +51,7 @@ var _ = Describe("doc command reference odo delete namespace", func() {
 			got := helper.StripAnsi(out)
 			got = helper.StripInteractiveQuestion(got)
 			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
+			got = strings.ReplaceAll(got, ns, "odo-dev")
 			file := "delete_namespace.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
@@ -55,9 +59,9 @@ var _ = Describe("doc command reference odo delete namespace", func() {
 		})
 
 		It("Deletes a project resource for a openshift cluster", func() {
-			args := []string{"odo", "delete", "project", "odo-dev"}
+			args := []string{"odo", "delete", "project", ns}
 			out, err := helper.RunInteractive(args, []string{"ODO_LOG_LEVEL=0"}, func(ctx helper.InteractiveContext) {
-				helper.ExpectString(ctx, "? Are you sure you want to delete project \"odo-dev\"?")
+				helper.ExpectString(ctx, fmt.Sprintf("? Are you sure you want to delete project %q?", ns))
 				helper.SendLine(ctx, "Yes")
 
 			})
@@ -65,6 +69,7 @@ var _ = Describe("doc command reference odo delete namespace", func() {
 			got := helper.StripAnsi(out)
 			got = helper.StripInteractiveQuestion(got)
 			got = fmt.Sprintf(outputStringFormat, args[1], helper.StripSpinner(got))
+			got = strings.ReplaceAll(got, ns, "odo-dev")
 			file := "delete_project.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)

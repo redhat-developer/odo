@@ -233,6 +233,7 @@ func CommonBeforeEach() CommonVar {
 		}
 	}
 	commonVar.OriginalWorkingDirectory = Getwd()
+	Chdir(commonVar.Context)
 
 	configPath := filepath.Join(commonVar.ConfigDir, "preference.yaml")
 	os.Setenv("GLOBALODOCONFIG", configPath)

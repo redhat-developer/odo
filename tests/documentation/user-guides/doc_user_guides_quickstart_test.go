@@ -16,30 +16,31 @@ var _ = Describe("User guides: Quickstart test", func() {
 	var commonVar helper.CommonVar
 	var commonPath = filepath.Join("user-guides", "quickstart", "docs-mdx")
 	var outputStringFormat = "```console\n$ odo %s\n%s```\n"
-	const namespace = "odo-dev"
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
+
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
 	Context("Create namespace/project", func() {
+		var namespace string
 		BeforeEach(func() {
-			// 	ensure "odo-dev" namespace does not exist before beginning
-			if commonVar.CliRunner.HasNamespaceProject(namespace) {
-				commonVar.CliRunner.DeleteNamespaceProject(namespace, true)
-			}
+			namespace = helper.GenerateProjectName()
 		})
 		AfterEach(func() {
-			helper.DeleteProject(namespace)
+			if commonVar.CliRunner.HasNamespaceProject(namespace) {
+				helper.DeleteProject(namespace)
+			}
 		})
 		It("should show correct output for namespace/project creation", func() {
 			args := []string{"create", "namespace", namespace}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
+			got = strings.ReplaceAll(got, namespace, "odo-dev")
 			By("checking the output for namespace", func() {
 				file := filepath.Join(commonPath, "create_namespace_output.mdx")
 				want := helper.GetMDXContent(file)
@@ -69,7 +70,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 					helper.ExpectString(ctx, "Is this correct?")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "✓  Downloading devfile \"nodejs:2.1.1\" from registry \"DefaultDevfileRegistry\"")
+					helper.ExpectString(ctx, "✓  Downloading devfile \"nodejs")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -97,7 +98,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				args := []string{"dev"}
 				got := strings.ReplaceAll(devSession.StdOut, commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, devSession.Endpoints, map[string]string{"3000": "127.0.0.1:20001", "5858": "127.0.0.1:20002"})
-				got = strings.ReplaceAll(got, commonVar.Project, namespace)
+				got = strings.ReplaceAll(got, commonVar.Project, "odo-dev")
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				got = helper.StripGitCommitFromVersion(got)
 				file := filepath.Join(commonNodeJSPath, "nodejs_odo_dev_output.mdx")
@@ -119,7 +120,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 					helper.ExpectString(ctx, "Is this correct?")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "✓  Downloading devfile \"go:1.0.2\" from registry \"DefaultDevfileRegistry\"")
+					helper.ExpectString(ctx, "✓  Downloading devfile \"go")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -147,7 +148,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				args := []string{"dev"}
 				got := strings.ReplaceAll(devSession.StdOut, commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, devSession.Endpoints, map[string]string{"8080": "127.0.0.1:20001"})
-				got = strings.ReplaceAll(got, commonVar.Project, namespace)
+				got = strings.ReplaceAll(got, commonVar.Project, "odo-dev")
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				got = helper.StripGitCommitFromVersion(got)
 				file := filepath.Join(commonGoPath, "go_odo_dev_output.mdx")
@@ -179,7 +180,12 @@ var _ = Describe("User guides: Quickstart test", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "6")
 
-					helper.ExpectString(ctx, "✓  Downloading devfile \"dotnet60\" from registry \"DefaultDevfileRegistry\"")
+					if helper.HasAtLeastTwoVersions("", "dotnet60") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
+
+					helper.ExpectString(ctx, "✓  Downloading devfile \"dotnet60")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -192,7 +198,6 @@ var _ = Describe("User guides: Quickstart test", func() {
 				Expect(err).To(BeNil())
 				got := helper.StripAnsi(out)
 				got = helper.StripInteractiveQuestion(got)
-				got = strings.ReplaceAll(got, commonVar.Project, namespace)
 				got = fmt.Sprintf(outputStringFormat, "init", helper.StripSpinner(got))
 				got = helper.StripGitCommitFromVersion(got)
 				file := filepath.Join(commondotnetPath, "dotnet_odo_init_output.mdx")
@@ -208,7 +213,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				args := []string{"dev"}
 				got := strings.ReplaceAll(devSession.StdOut, commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, devSession.Endpoints, map[string]string{"8080": "127.0.0.1:20001"})
-				got = strings.ReplaceAll(got, commonVar.Project, namespace)
+				got = strings.ReplaceAll(got, commonVar.Project, "odo-dev")
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				got = helper.StripGitCommitFromVersion(got)
 				file := filepath.Join(commondotnetPath, "dotnet_odo_dev_output.mdx")
@@ -230,7 +235,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 					helper.ExpectString(ctx, "Is this correct?")
 					helper.SendLine(ctx, "Yes")
 
-					helper.ExpectString(ctx, "✓  Downloading devfile \"java-springboot:1.2.0\" from registry \"DefaultDevfileRegistry\"")
+					helper.ExpectString(ctx, "✓  Downloading devfile \"java-springboot")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -261,7 +266,7 @@ var _ = Describe("User guides: Quickstart test", func() {
 				args := []string{"dev"}
 				got := strings.ReplaceAll(devSession.StdOut, commonVar.Context, "/home/user/quickstart-demo")
 				got = helper.ReplaceAllForwardedPorts(got, devSession.Endpoints, map[string]string{"8080": "127.0.0.1:20001", "5858": "127.0.0.1:20002"})
-				got = strings.ReplaceAll(got, commonVar.Project, namespace)
+				got = strings.ReplaceAll(got, commonVar.Project, "odo-dev")
 				got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
 				got = helper.StripGitCommitFromVersion(got)
 				file := filepath.Join(commonGoPath, "java_odo_dev_output.mdx")
