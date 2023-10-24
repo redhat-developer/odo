@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
-	"regexp"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -48,18 +47,6 @@ var _ = Describe("E2E Test", func() {
 	}
 
 	Context("starting with empty Directory", func() {
-		var hasMultipleVersions bool
-		var _ = BeforeEach(func() {
-			helper.Chdir(commonVar.Context)
-			Expect(helper.ListFilesInDir(commonVar.Context)).To(BeEmpty())
-			out := helper.Cmd("odo", "registry", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
-			// Version pattern has always been in the form of X.X.X
-			vMatch := regexp.MustCompile(`(?:\d.\d.\d)`)
-			if matches := vMatch.FindAll([]byte(out), -1); len(matches) > 1 {
-				hasMultipleVersions = true
-			}
-		})
-
 		It("should verify developer workflow from empty Directory", func() {
 			deploymentName := "my-component"
 			serviceName := "my-cs"
@@ -78,7 +65,7 @@ var _ = Describe("E2E Test", func() {
 				helper.ExpectString(ctx, "Select project type")
 				helper.SendLine(ctx, "Node.js")
 
-				if hasMultipleVersions {
+				if helper.HasAtLeastTwoVersions("", "nodejs") {
 					helper.ExpectString(ctx, "Select version: ")
 					helper.SendLine(ctx, "")
 				}
