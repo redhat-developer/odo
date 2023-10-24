@@ -238,7 +238,7 @@ test-e2e:
 
 .PHONY: test-doc-automation
 test-doc-automation:
-	$(RUN_GINKGO) $(GINKGO_FLAGS_ONE) --junit-report="test-doc-automation.xml"  tests/documentation/...
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-doc-automation.xml"  tests/documentation/...
 
 
 # Generate OpenAPISpec library based on ododevapispec.yaml inside pkg/apiserver-gen; this will only generate interfaces
