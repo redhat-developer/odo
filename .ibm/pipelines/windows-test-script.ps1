@@ -60,7 +60,6 @@ function Run-Test {
     [Environment]::SetEnvironmentVariable("SKIP_SERVICE_BINDING_TESTS","$SKIP_SERVICE_BINDING_TESTS" )
     # Integration tests detecting key press when running DevSession are not working on Windows
     [Environment]::SetEnvironmentVariable("SKIP_KEY_PRESS","true")
-    [Environment]::SetEnvironmentVariable("DEVFILE_REGISTRY", "$DEVFILE_REGISTRY") 
 
     Shout "Login IBMcloud"
     ibmcloud login --apikey ${API_KEY}
@@ -101,8 +100,7 @@ $LOGFILE=$args[4]
 $REPO=$args[5]
 $CLUSTER_ID=$args[6]
 $TEST_EXEC_NODES=$args[7]
-$DEVFILE_REGISTRY=$args[8]
-$SKIP_SERVICE_BINDING_TESTS=$args[9]
+$SKIP_SERVICE_BINDING_TESTS=$args[8]
 Shout "Args Recived"
 
 

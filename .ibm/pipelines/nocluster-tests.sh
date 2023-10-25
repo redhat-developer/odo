@@ -13,7 +13,6 @@ ibmcloud target -r "${IBM_REGION}"
 (
     set -e
     make install
-    echo Using Devfile Registry ${DEVFILE_REGISTRY}
     make test-integration-no-cluster
 ) |& tee "/tmp/${LOGFILE}"
 
