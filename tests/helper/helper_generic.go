@@ -233,6 +233,7 @@ func CommonBeforeEach() CommonVar {
 		}
 	}
 	commonVar.OriginalWorkingDirectory = Getwd()
+	Chdir(commonVar.Context)
 
 	configPath := filepath.Join(commonVar.ConfigDir, "preference.yaml")
 	os.Setenv("GLOBALODOCONFIG", configPath)
@@ -401,14 +402,11 @@ func SetDefaultDevfileRegistryAsStaging() {
 
 func GetDevfileRegistryURL() string {
 	registryURL := "https://registry.stage.devfile.io"
-	proxy := os.Getenv("DEVFILE_PROXY")
-	if proxy != "" {
-		registryURL = "http://" + proxy
-	}
 	customReg := os.Getenv("DEVFILE_REGISTRY")
 	if customReg != "" {
 		registryURL = customReg
 	}
+	fmt.Printf("Using Devfile Registry URL at: %q\n", registryURL)
 	return registryURL
 }
 

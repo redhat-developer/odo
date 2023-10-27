@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -37,15 +36,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 			const registryName string = "RegistryName"
 
 			// Use staging OCI-based registry for tests to avoid overload
-			var addRegistryURL string = "https://registry.stage.devfile.io"
-			proxy := os.Getenv("DEVFILE_PROXY")
-			if proxy != "" {
-				addRegistryURL = "http://" + proxy
-			}
-			customDevfileRegistry := os.Getenv("DEVFILE_REGISTRY")
-			if customDevfileRegistry != "" {
-				addRegistryURL = customDevfileRegistry
-			}
+			addRegistryURL := helper.GetDevfileRegistryURL()
 
 			It("Should list all default registries", func() {
 				output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()

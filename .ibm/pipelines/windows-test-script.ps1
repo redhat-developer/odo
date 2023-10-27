@@ -60,7 +60,6 @@ function Run-Test {
     [Environment]::SetEnvironmentVariable("SKIP_SERVICE_BINDING_TESTS","$SKIP_SERVICE_BINDING_TESTS" )
     # Integration tests detecting key press when running DevSession are not working on Windows
     [Environment]::SetEnvironmentVariable("SKIP_KEY_PRESS","true")
-    [Environment]::SetEnvironmentVariable("DEVFILE_REGISTRY", "$DEVFILE_REGISTRY") 
 
     Shout "Login IBMcloud"
     ibmcloud login --apikey ${API_KEY}
@@ -70,14 +69,6 @@ function Run-Test {
     Shout "Login Openshift"
     oc login -u apikey -p ${API_KEY} ${IBM_OPENSHIFT_ENDPOINT}
     Check-ExitCode $LASTEXITCODE
-
-    Shout "Getting Devfile proxy address"
-    $DEVFILE_PROXY=$(oc get svc -n devfile-proxy nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-    if ( $LASTEXITCODE -eq 0 )
-    {
-        Shout "Using Devfile proxy: $DEVFILE_PROXY"
-        [Environment]::SetEnvironmentVariable("DEVFILE_PROXY", "$DEVFILE_PROXY")
-    }
 
     Shout "Create Binary"
     make install 
@@ -109,8 +100,7 @@ $LOGFILE=$args[4]
 $REPO=$args[5]
 $CLUSTER_ID=$args[6]
 $TEST_EXEC_NODES=$args[7]
-$DEVFILE_REGISTRY=$args[8]
-$SKIP_SERVICE_BINDING_TESTS=$args[9]
+$SKIP_SERVICE_BINDING_TESTS=$args[8]
 Shout "Args Recived"
 
 

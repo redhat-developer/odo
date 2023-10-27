@@ -41,6 +41,11 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 				helper.ExpectString(ctx, "Select project type")
 				helper.SendLine(ctx, "")
 
+				if helper.HasAtLeastTwoVersions("", "java-maven") {
+					helper.ExpectString(ctx, "Select version")
+					helper.SendLine(ctx, "")
+				}
+
 				helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 				helper.SendLine(ctx, "")
 

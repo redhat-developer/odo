@@ -15,8 +15,6 @@ cleanup_namespaces
 export SKIP_USER_LOGIN_TESTS=true
 (
     set -e
-    export DEVFILE_PROXY="$(kubectl get svc -n devfile-proxy nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' || true)"
-    echo Using Devfile proxy: ${DEVFILE_PROXY}
     make install
     make test-integration-cluster
 ) |& tee "/tmp/${LOGFILE}"

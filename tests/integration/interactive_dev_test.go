@@ -174,8 +174,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "Python")
 
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
+					if helper.HasAtLeastTwoVersions("", "python") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")

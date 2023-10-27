@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -64,8 +63,10 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
+					if helper.HasAtLeastTwoVersions("", "go") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -84,68 +85,57 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 
-			Context("personalizing Devfile configuration", func() {
-				var hasMultipleVersions bool
-				BeforeEach(func() {
-					out := helper.Cmd("odo", "registry", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
-					// Version pattern has always been in the form of X.X.X
-					vMatch := regexp.MustCompile(`(\d.\d.\d)`)
-					if matches := vMatch.FindAll([]byte(out), -1); len(matches) > 1 {
-						hasMultipleVersions = true
-					}
-				})
-				Context("personalizing configuration", func() {
-					It("should allow to add and delete a port ", func() {
-						command := []string{"odo", "init"}
-						output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+			Context("personalizing configuration", func() {
+				It("should allow to add and delete a port", func() {
+					command := []string{"odo", "init"}
+					output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
-							helper.ExpectString(ctx, "Select architectures")
+						helper.ExpectString(ctx, "Select architectures")
+						helper.SendLine(ctx, "")
+
+						helper.ExpectString(ctx, "Select language")
+						helper.SendLine(ctx, "Javascript")
+
+						helper.ExpectString(ctx, "Select project type")
+						helper.SendLine(ctx, "")
+
+						if helper.HasAtLeastTwoVersions("", "nodejs") {
+							helper.ExpectString(ctx, "Select version")
 							helper.SendLine(ctx, "")
+						}
 
-							helper.ExpectString(ctx, "Select language")
-							helper.SendLine(ctx, "Javascript")
+						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+						helper.ExpectString(ctx, "runtime")
+						helper.SendLine(ctx, "runtime")
 
-							helper.ExpectString(ctx, "Select project type")
-							helper.SendLine(ctx, "")
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Delete port \"3000\"")
 
-							if hasMultipleVersions {
-								helper.ExpectString(ctx, "Select version")
-								helper.SendLine(ctx, "")
-							}
+						helper.ExpectString(ctx, "What configuration do you want change")
+						helper.SendLine(ctx, "Add new port")
+						helper.ExpectString(ctx, "Enter port number:")
+						helper.SendLine(ctx, "3000")
 
-							helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-							helper.ExpectString(ctx, "runtime")
-							helper.SendLine(ctx, "runtime")
+						helper.ExpectString(ctx, "What configuration do you want change")
+						// Default option is NOTHING - configuration is correct
+						helper.SendLine(ctx, "")
 
-							helper.ExpectString(ctx, "What configuration do you want change")
-							helper.SendLine(ctx, "Delete port \"3000\"")
+						helper.ExpectString(ctx, "Select container for which you want to change configuration?")
+						helper.SendLine(ctx, "")
 
-							helper.ExpectString(ctx, "What configuration do you want change")
-							helper.SendLine(ctx, "Add new port")
-							helper.ExpectString(ctx, "Enter port number:")
-							helper.SendLine(ctx, "3000")
+						helper.ExpectString(ctx, "Which starter project do you want to use")
+						helper.SendLine(ctx, "nodejs-starter")
 
-							helper.ExpectString(ctx, "What configuration do you want change")
-							// Default option is NOTHING - configuration is correct
-							helper.SendLine(ctx, "")
+						helper.ExpectString(ctx, "Enter component name:")
+						helper.SendLine(ctx, "my-nodejs-app")
 
-							helper.ExpectString(ctx, "Select container for which you want to change configuration?")
-							helper.SendLine(ctx, "")
+						helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
 
-							helper.ExpectString(ctx, "Which starter project do you want to use")
-							helper.SendLine(ctx, "nodejs-starter")
-
-							helper.ExpectString(ctx, "Enter component name:")
-							helper.SendLine(ctx, "my-nodejs-app")
-
-							helper.ExpectString(ctx, "Your new component 'my-nodejs-app' is ready in the current directory.")
-
-						})
-						Expect(err).To(BeNil())
-						Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
-						Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
-						helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
 					})
+					Expect(err).To(BeNil())
+					Expect(output).To(ContainSubstring("Your new component 'my-nodejs-app' is ready in the current directory."))
+					Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+					helper.FileShouldContainSubstring(filepath.Join(commonVar.Context, "devfile.yaml"), "3000")
 				})
 			})
 
@@ -162,8 +152,10 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
+					if helper.HasAtLeastTwoVersions("", "go") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -209,8 +201,10 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
+					if helper.HasAtLeastTwoVersions("", "go") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -250,8 +244,10 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, "")
+					if helper.HasAtLeastTwoVersions("", "go") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -288,8 +284,10 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
-					helper.ExpectString(ctx, "Select version")
-					helper.SendLine(ctx, devfileVersion)
+					if helper.HasAtLeastTwoVersions("", "go") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, devfileVersion)
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -326,6 +324,11 @@ var _ = Describe("odo init interactive command tests", func() {
 
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "Vert.x Java")
+
+					if helper.HasAtLeastTwoVersions("", "java-vertx") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
@@ -427,6 +430,11 @@ var _ = Describe("odo init interactive command tests", func() {
 
 							helper.ExpectString(ctx, "Select project type")
 							helper.SendLine(ctx, "")
+
+							if helper.HasAtLeastTwoVersions("", "java-maven") {
+								helper.ExpectString(ctx, "Select version")
+								helper.SendLine(ctx, "")
+							}
 
 							helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 							helper.SendLine(ctx, "")
@@ -588,6 +596,11 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
+					if helper.HasAtLeastTwoVersions("", "dotnet50") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
+
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
 
@@ -737,6 +750,11 @@ spec:
 					helper.ExpectString(ctx, "Select project type")
 					helper.SendLine(ctx, "")
 
+					if helper.HasAtLeastTwoVersions("", "java-maven") {
+						helper.ExpectString(ctx, "Select version")
+						helper.SendLine(ctx, "")
+					}
+
 					helper.ExpectString(ctx, "Select container for which you want to change configuration?")
 					helper.SendLine(ctx, "")
 
@@ -751,8 +769,12 @@ spec:
 				Expect(err).ShouldNot(HaveOccurred())
 
 				By("displaying automation command with the in-cluster registry", func() {
-					Expect(output).Should(ContainSubstring(
-						"odo init --name my-java-maven-app --devfile java-maven --devfile-registry %s --starter springbootproject", devfileRegistryName))
+					Expect(output).Should(
+						ContainSubstring(
+							"odo init --name my-java-maven-app --devfile java-maven --devfile-registry %s --devfile-version 1.2.0 --starter springbootproject",
+							devfileRegistryName,
+						),
+						output)
 				})
 				By("actually downloading the Devfile", func() {
 					Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))

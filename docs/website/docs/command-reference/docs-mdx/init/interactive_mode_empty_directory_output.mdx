@@ -15,7 +15,8 @@ Interactive mode enabled, please answer the following questions:
 ? Select architectures to filter by: amd64
 ? Select language: Java
 ? Select project type: Maven Java
- ✓  Downloading devfile "java-maven" from registry "DefaultDevfileRegistry" [4s]
+? Select version:  1.2.0
+ ✓  Downloading devfile "java-maven:1.2.0" from registry "DefaultDevfileRegistry" [4s]
 
 ↪ Container Configuration "tools":
   OPEN PORTS:
@@ -30,7 +31,7 @@ Interactive mode enabled, please answer the following questions:
  ✓  Downloading starter project "springbootproject" [1s]
 
 You can automate this command by executing:
-   odo init --name my-java-maven-app --devfile java-maven --devfile-registry DefaultDevfileRegistry --starter springbootproject
+   odo init --name my-java-maven-app --devfile java-maven --devfile-registry DefaultDevfileRegistry --devfile-version 1.2.0 --starter springbootproject
 
 Your new component 'my-java-maven-app' is ready in the current directory.
 To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
