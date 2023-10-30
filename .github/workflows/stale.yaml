@@ -23,6 +23,7 @@ jobs:
     - uses: actions/stale@v8
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+        operations-per-run: 100
         stale-issue-message: 'A friendly reminder that this issue had no activity for 90 days. Stale issues will be closed after an additional 30 days of inactivity.'
         stale-pr-message: 'A friendly reminder that this PR had no activity for 90 days. Stale PRs will be closed after an additional 30 days of inactivity.'
         stale-issue-label: 'lifecycle/stale'
