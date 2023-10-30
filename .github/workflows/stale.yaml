@@ -4,6 +4,7 @@ name: Mark and close stale issues and pull requests
 # to see all config knobs of the stale action.
 
 on:
+  workflow_dispatch:
   schedule:
   - cron: "0 0 * * *"
 
