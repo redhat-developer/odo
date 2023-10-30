@@ -4,6 +4,7 @@ name: Mark and close stale issues and pull requests
 # to see all config knobs of the stale action.
 
 on:
+  workflow_dispatch:
   schedule:
   - cron: "0 0 * * *"
 
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/stale@v4
+    - uses: actions/stale@v8
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'A friendly reminder that this issue had no activity for 90 days. Stale issues will be closed after an additional 30 days of inactivity.'
