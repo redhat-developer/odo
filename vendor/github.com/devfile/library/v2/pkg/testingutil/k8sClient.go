@@ -28,9 +28,13 @@ type FakeK8sClient struct {
 	client.Client         // To satisfy interface; override all used methods
 	DevWorkspaceResources map[string]v1alpha2.DevWorkspaceTemplate
 	Errors                map[string]string
+	ExpectedNamespace     string
 }
 
 func (client *FakeK8sClient) Get(_ context.Context, namespacedName client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
+	if client.ExpectedNamespace != "" && client.ExpectedNamespace != namespacedName.Namespace {
+		return fmt.Errorf("expected namespace %s, got %s", client.ExpectedNamespace, namespacedName.Namespace)
+	}
 	template, ok := obj.(*v1alpha2.DevWorkspaceTemplate)
 	if !ok {
 		return fmt.Errorf("called Get() in fake client with non-DevWorkspaceTemplate")

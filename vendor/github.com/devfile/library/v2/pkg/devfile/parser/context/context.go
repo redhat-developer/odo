@@ -16,11 +16,7 @@
 package parser
 
 import (
-	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/devfile/library/v2/pkg/util"
@@ -36,7 +32,10 @@ type DevfileCtx struct {
 	// absolute path of devfile
 	absPath string
 
-	// relative path of devfile
+	// relative path of devfile.
+	// It can also be a relative or absolute path to a folder containing one or more devfiles,
+	// in which case the library will try to pick an existing one, based on the following priority order:
+	// devfile.yaml > .devfile.yaml > devfile.yml > .devfile.yml
 	relPath string
 
 	// raw content of the devfile
@@ -96,23 +95,16 @@ func (d *DevfileCtx) populateDevfile() (err error) {
 
 // Populate fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) Populate() (err error) {
-	if !strings.HasSuffix(d.relPath, ".yaml") {
-		if _, err := os.Stat(filepath.Join(d.relPath, "devfile.yaml")); os.IsNotExist(err) {
-			if _, err := os.Stat(filepath.Join(d.relPath, ".devfile.yaml")); os.IsNotExist(err) {
-				return fmt.Errorf("the provided path is not a valid yaml filepath, and devfile.yaml or .devfile.yaml not found in the provided path : %s", d.relPath)
-			} else {
-				d.relPath = filepath.Join(d.relPath, ".devfile.yaml")
-			}
-		} else {
-			d.relPath = filepath.Join(d.relPath, "devfile.yaml")
-		}
+	d.relPath, err = lookupDevfileFromPath(d.fs, d.relPath)
+	if err != nil {
+		return err
 	}
-	if err := d.SetAbsPath(); err != nil {
+	if err = d.SetAbsPath(); err != nil {
 		return err
 	}
 	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
 	// Read and save devfile content
-	if err := d.SetDevfileContent(); err != nil {
+	if err = d.SetDevfileContent(); err != nil {
 		return err
 	}
 	return d.populateDevfile()

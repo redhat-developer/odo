@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package git
+package util
 
 import (
 	"fmt"
@@ -29,12 +29,12 @@ type MockGitUrl struct {
 	Repo     string // name of the repo
 	Revision string // branch name, tag name, or commit id
 	Path     string // path to a directory or file in the repo
-	token    string // used for authenticating a private repo
+	Token    string // used for authenticating a private repo
 	IsFile   bool   // defines if the URL points to a file in the repo
 }
 
 func (m *MockGitUrl) GetToken() string {
-	return m.token
+	return m.Token
 }
 
 var mockExecute = func(baseDir string, cmd CommandType, args ...string) ([]byte, error) {
@@ -131,7 +131,7 @@ func (m *MockGitUrl) CloneGitRepo(destDir string) error {
 }
 
 func (m *MockGitUrl) SetToken(token string) error {
-	m.token = token
+	m.Token = token
 	return nil
 }
 

@@ -164,7 +164,7 @@ github.com/devfile/alizer/pkg/apis/recognizer
 github.com/devfile/alizer/pkg/schema
 github.com/devfile/alizer/pkg/utils
 github.com/devfile/alizer/pkg/utils/langfiles
-# github.com/devfile/api/v2 v2.2.1-alpha.0.20230413012049-a6c32fca0dbd
+# github.com/devfile/api/v2 v2.2.1
 ## explicit; go 1.18
 github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/v2/pkg/attributes
@@ -173,7 +173,7 @@ github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
-# github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0
+# github.com/devfile/library/v2 v2.2.2-0.20231102090733-57a7da8b8392
 ## explicit; go 1.18
 github.com/devfile/library/v2/pkg/devfile
 github.com/devfile/library/v2/pkg/devfile/generator
@@ -186,7 +186,6 @@ github.com/devfile/library/v2/pkg/devfile/parser/data/v2/2.1.0
 github.com/devfile/library/v2/pkg/devfile/parser/data/v2/2.2.0
 github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common
 github.com/devfile/library/v2/pkg/devfile/validate
-github.com/devfile/library/v2/pkg/git
 github.com/devfile/library/v2/pkg/testingutil
 github.com/devfile/library/v2/pkg/testingutil/filesystem
 github.com/devfile/library/v2/pkg/util
