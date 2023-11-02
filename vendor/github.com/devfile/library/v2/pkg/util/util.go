@@ -21,10 +21,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
+	"github.com/devfile/library/v2/pkg/git"
 	gitpkg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/gregjones/httpcache"
-	"github.com/gregjones/httpcache/diskcache"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -48,6 +47,8 @@ import (
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
+	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -886,8 +887,8 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 
 // IsGitProviderRepo checks if the url matches a repo from a supported git provider
 func IsGitProviderRepo(url string) bool {
-	if strings.Contains(url, RawGitHubHost) || strings.Contains(url, GitHubHost) ||
-		strings.Contains(url, GitLabHost) || strings.Contains(url, BitbucketHost) {
+	if strings.Contains(url, git.RawGitHubHost) || strings.Contains(url, git.GitHubHost) ||
+		strings.Contains(url, git.GitLabHost) || strings.Contains(url, git.BitbucketHost) {
 		return true
 	}
 	return false
@@ -1099,11 +1100,11 @@ func DownloadInMemory(params HTTPRequestParams) ([]byte, error) {
 		ResponseHeaderTimeout: HTTPRequestResponseTimeout,
 	}, Timeout: HTTPRequestResponseTimeout}
 
-	var g GitUrl
+	var g git.GitUrl
 	var err error
 
 	if IsGitProviderRepo(params.URL) {
-		g, err = NewGitUrlWithURL(params.URL)
+		g, err = git.NewGitUrlWithURL(params.URL)
 		if err != nil {
 			return nil, errors.Errorf("failed to parse git repo. error: %v", err)
 		}
@@ -1112,7 +1113,7 @@ func DownloadInMemory(params HTTPRequestParams) ([]byte, error) {
 	return downloadInMemoryWithClient(params, httpClient, g)
 }
 
-func downloadInMemoryWithClient(params HTTPRequestParams, httpClient HTTPClient, g GitUrl) ([]byte, error) {
+func downloadInMemoryWithClient(params HTTPRequestParams, httpClient HTTPClient, g git.GitUrl) ([]byte, error) {
 	var url string
 	url = params.URL
 	req, err := http.NewRequest("GET", url, nil)
@@ -1126,8 +1127,12 @@ func downloadInMemoryWithClient(params HTTPRequestParams, httpClient HTTPClient,
 		if err != nil {
 			return nil, err
 		}
-
-		if params.Token != "" {
+		if !g.IsPublic(params.Timeout) {
+			// check that the token is valid before adding to the header
+			err = g.SetToken(params.Token, params.Timeout)
+			if err != nil {
+				return nil, err
+			}
 			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", params.Token))
 		}
 	}

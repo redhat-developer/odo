@@ -26,7 +26,7 @@ import (
 	"k8s.io/klog"
 )
 
-// WriteYamlDevfile writes the content of the Devfile data to its absolute path on the filesystem.
+// WriteYamlDevfile creates a devfile.yaml file
 func (d *DevfileObj) WriteYamlDevfile() error {
 
 	// Check kubernetes components, and restore original uri content
@@ -41,7 +41,7 @@ func (d *DevfileObj) WriteYamlDevfile() error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal devfile object into yaml")
 	}
-	// Write to the absolute path
+	// Write to devfile.yaml
 	fs := d.Ctx.GetFs()
 	if fs == nil {
 		fs = filesystem.DefaultFs{}
@@ -52,7 +52,7 @@ func (d *DevfileObj) WriteYamlDevfile() error {
 	}
 
 	// Successful
-	klog.V(2).Infof("devfile written to: '%s'", d.Ctx.GetAbsPath())
+	klog.V(2).Infof("devfile yaml created at: '%s'", OutputDevfileYamlPath)
 	return nil
 }
 

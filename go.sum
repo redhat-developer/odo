@@ -367,11 +367,13 @@ github.com/devfile/alizer v1.2.1/go.mod h1:kRCsbXuzCwXIbnSR4xpVZDr8Pl8j01rl+gPfk
 github.com/devfile/api/v2 v2.0.0-20211021164004-dabee4e633ed/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.2.0/go.mod h1:dN7xFrOVG+iPqn4UKGibXLd5oVsdE8XyK9OEb5JL3aI=
-github.com/devfile/api/v2 v2.2.1 h1:VSX297YqY4C4j4uhn7M0RdZeBaeWqyVi4NnagzEmxu0=
-github.com/devfile/api/v2 v2.2.1/go.mod h1:qp8jcw12y1JdCsxjK/7LJ7uWaJOxcY1s2LUk5PhbkbM=
+github.com/devfile/api/v2 v2.2.1-alpha.0.20230413012049-a6c32fca0dbd h1:HpGR728CfB6BB9ZuFtQb0UeTIYNFgpuGsuoMOJNMUTM=
+github.com/devfile/api/v2 v2.2.1-alpha.0.20230413012049-a6c32fca0dbd/go.mod h1:qp8jcw12y1JdCsxjK/7LJ7uWaJOxcY1s2LUk5PhbkbM=
 github.com/devfile/library v1.2.1-0.20211104222135-49d635cb492f/go.mod h1:uFZZdTuRqA68FVe/JoJHP92CgINyQkyWnM2Qyiim+50=
 github.com/devfile/library v1.2.1-0.20220308191614-f0f7e11b17de/go.mod h1:GSPfJaBg0+bBjBHbwBE5aerJLH6tWGQu2q2rHYd9czM=
 github.com/devfile/library/v2 v2.0.1/go.mod h1:paJ0PARAVy0br13VpBEQ4fO3rZVDxWtooQ29+23PNBk=
+github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0 h1:cZPTQyQqZD6zTbrNhS5MU1j/tE+kyDIOgYqeBCu+2to=
+github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0/go.mod h1:7oEhkC6GW6OKmAP8HbxbaQ+nFbnACQuU7anYhJroltQ=
 github.com/devfile/registry-support/index/generator v0.0.0-20220222194908-7a90a4214f3e/go.mod h1:iRPBxs+ZjfLEduVXpCCIOzdD2588Zv9OCs/CcXMcCCY=
 github.com/devfile/registry-support/index/generator v0.0.0-20220527155645-8328a8a883be/go.mod h1:1fyDJL+fPHtcrYA6yjSVWeLmXmjCNth0d5Rq1rvtryc=
 github.com/devfile/registry-support/index/generator v0.0.0-20221018203505-df96d34d4273/go.mod h1:ZJnaSLjTKCvGJhWmYgQoQ1O3g78qBe4Va6ZugLmi4dE=
@@ -1105,8 +1107,6 @@ github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7
 github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3/go.mod h1:pODWh91lgIyjf2n9ZqWYb1EBrLTmvKnjusKw0eG4vcE=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
-github.com/rm3l/devfile-library/v2 v2.0.0-20231031181312-728befe3ea37 h1:/Czvn40nSCa8yoqqT95zX8JDZ0GdtYjDiK7hj2/wcj8=
-github.com/rm3l/devfile-library/v2 v2.0.0-20231031181312-728befe3ea37/go.mod h1:WiAmCfdTLHk9Nzn/JMmRZK6Qv8e2GmnI5hE6kA2GgAA=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
