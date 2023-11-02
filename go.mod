@@ -9,7 +9,7 @@ require (
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/alizer v1.2.1
-	github.com/devfile/api/v2 v2.2.1-alpha.0.20230413012049-a6c32fca0dbd
+	github.com/devfile/api/v2 v2.2.1
 	github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0
 	github.com/devfile/registry-support/index/generator v0.0.0-20230322155332-33914affc83b
 	github.com/devfile/registry-support/registry-library v0.0.0-20221201200738-19293ac0b8ab
@@ -237,3 +237,6 @@ replace (
 	github.com/docker/cli => github.com/docker/cli v20.10.13+incompatible
 	github.com/docker/docker => github.com/docker/docker v20.10.24+incompatible
 )
+
+// TODO(rm3l): TEMPORARY - just for testing
+replace github.com/devfile/library/v2 v2.2.1-0.20230524160049-04a8b3fc66c0 => github.com/rm3l/devfile-library/v2 v2.0.0-20231031181312-728befe3ea37
