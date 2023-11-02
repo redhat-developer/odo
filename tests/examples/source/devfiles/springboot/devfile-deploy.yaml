@@ -53,7 +53,7 @@ components:
     env:
     - name: DEBUG_PORT
       value: "5858"
-    image: registry.access.redhat.com/ubi8/openjdk-11:latest
+    image: registry.access.redhat.com/ubi9/openjdk-17:1.16-1.1696518670
     memoryLimit: 768Mi
     mountSources: true
     volumeMounts:

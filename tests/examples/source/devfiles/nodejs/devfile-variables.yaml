@@ -26,7 +26,7 @@ components:
 
   - name: runtime
     container:
-      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      image: registry.access.redhat.com/ubi8/nodejs-16:latest
       memoryLimit: 100Mi
       endpoints:
         - name: "3000-tcp"

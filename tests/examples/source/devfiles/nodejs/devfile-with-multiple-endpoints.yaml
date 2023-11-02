@@ -49,7 +49,7 @@ components:
     - name: debug-1
       targetPort: 5006
       exposure: none
-    image: registry.access.redhat.com/ubi8/nodejs-14:latest
+    image: registry.access.redhat.com/ubi8/nodejs-16:latest
     memoryLimit: 1024Mi
     mountSources: true
   name: runtime

@@ -11,7 +11,7 @@ starterProjects:
 components:
   - name: tools
     container:
-      image: registry.access.redhat.com/ubi8/openjdk-11:latest
+      image: registry.access.redhat.com/ubi9/openjdk-17:1.16-1.1696518670
       memoryLimit: 768Mi
       command: ['tail']
       args: [ '-f', '/dev/null']
@@ -21,7 +21,7 @@ components:
       mountSources: true
   - name: runtime
     container:
-      image: registry.access.redhat.com/ubi8/openjdk-11:latest
+      image: registry.access.redhat.com/ubi9/openjdk-17:1.16-1.1696518670
       memoryLimit: 768Mi
       endpoints:
         - name: "8080-tcp"

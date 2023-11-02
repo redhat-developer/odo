@@ -14,7 +14,7 @@ components:
       env:
       - name: DEBUG_PORT_PROJECT
         value: "5858"
-      image: registry.access.redhat.com/ubi8/nodejs-14:latest
+      image: registry.access.redhat.com/ubi8/nodejs-16:latest
     name: runtime
 
   - name: image-build-component

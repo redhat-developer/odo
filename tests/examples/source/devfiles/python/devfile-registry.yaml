@@ -27,7 +27,7 @@ components:
     endpoints:
     - name: web
       targetPort: 8080
-    image: quay.io/eclipse/che-python-3.7:nightly
+    image: registry.access.redhat.com/ubi9/python-39:1-143.1697559877
     mountSources: true
   name: py-web
 metadata:
