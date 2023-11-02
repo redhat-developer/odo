@@ -24,7 +24,7 @@ func (o *DevfileState) GetContent() (DevfileContent, error) {
 	if err != nil {
 		return DevfileContent{}, errors.New("error writing file")
 	}
-	result, err := o.FS.ReadFile("/devfile.yaml")
+	result, err := o.FS.ReadFile(o.Devfile.Ctx.GetAbsPath())
 	if err != nil {
 		return DevfileContent{}, errors.New("error reading file")
 	}
