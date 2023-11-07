@@ -1,6 +1,10 @@
 ---
 name: Documentation
 about: Report mistakes or request for documentation
+title: ''
+labels: ''
+assignees: ''
+
 ---
 
 /area documentation
@@ -26,5 +30,3 @@ Thanks for understanding, and for contributing to the project!
 
 
 ## What is the relevance of it?
-
-

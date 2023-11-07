@@ -1,6 +1,10 @@
 ---
 name: Bug report
 about: Report a bug with odo
+title: ''
+labels: ''
+assignees: ''
+
 ---
 
 /kind bug
@@ -34,5 +38,3 @@ Thanks for understanding, and for contributing to the project!
 
 
 ## Any logs, error output, etc?
-
-

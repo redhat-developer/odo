@@ -1,6 +1,10 @@
 ---
 name: User Story
 about: New User Story
+title: ''
+labels: ''
+assignees: ''
+
 ---
 
 /kind user-story

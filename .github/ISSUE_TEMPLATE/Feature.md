@@ -1,6 +1,10 @@
 ---
 name: Feature request
 about: Suggest a new feature for odo
+title: ''
+labels: ''
+assignees: ''
+
 ---
 
 /kind feature
@@ -22,4 +26,3 @@ Thanks for understanding, and for contributing to the project!
 
 
 ## Why is this needed?
-
