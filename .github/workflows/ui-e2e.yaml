@@ -30,7 +30,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Cypress run
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         env:
           ODO_EXPERIMENTAL_MODE: "true"
           ODO_TRACKING_CONSENT: "no"
