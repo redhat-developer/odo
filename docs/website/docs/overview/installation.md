@@ -36,7 +36,7 @@ Installing `odo` on `amd64` architecture:
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-amd64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -67,7 +67,7 @@ Installing `odo` on `arm64` architecture:
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-arm64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -98,7 +98,7 @@ Installing `odo` on `ppc64le` architecture:
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-ppc64le -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -129,7 +129,7 @@ Installing `odo` on `s390x` architecture:
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-s390x -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -193,7 +193,7 @@ Installing `odo` on `amd64` architecture:
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-amd64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -225,7 +225,7 @@ Installing `odo` on `arm64` architecture:
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-arm64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -261,7 +261,7 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-windows-amd64.exe -o odo.exe
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v3.15.0/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
@@ -369,7 +369,7 @@ Installing `odo` on `amd64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -400,7 +400,7 @@ Installing `odo` on `arm64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -431,7 +431,7 @@ Installing `odo` on `ppc64le` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -462,7 +462,7 @@ Installing `odo` on `s390x` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -506,7 +506,7 @@ Installing `odo` on `amd64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -538,7 +538,7 @@ Installing `odo` on `arm64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64 -o odo
 ```
 
-2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
@@ -574,7 +574,7 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe -o odo.exe
 ```
 
-3. (Optional) Verify the downloaded binary with the SHA-256 sum:
+3. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
