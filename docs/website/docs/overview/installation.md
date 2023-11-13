@@ -369,12 +369,18 @@ Installing `odo` on `amd64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64 -o odo
 ```
 
-2. Install odo:
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
 
-3. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
 ```shell
 mkdir -p $HOME/bin 
@@ -394,12 +400,18 @@ Installing `odo` on `arm64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64 -o odo
 ```
 
-2. Install odo:
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
 
-3(Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
 ```shell
 mkdir -p $HOME/bin 
@@ -419,12 +431,18 @@ Installing `odo` on `ppc64le` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le -o odo
 ```
 
-2. Install odo:
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
 
-3(Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
 ```shell
 mkdir -p $HOME/bin 
@@ -444,12 +462,18 @@ Installing `odo` on `s390x` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x -o odo
 ```
 
-2. Install odo:
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
 
-3. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
 ```shell
 mkdir -p $HOME/bin 
@@ -482,13 +506,19 @@ Installing `odo` on `amd64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64 -o odo
 ```
 
-2. Install odo:
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo:
 ```shell
 chmod +x ./odo
 sudo mv ./odo /usr/local/bin/odo
 ```
 
-3(Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
 ```shell
 mkdir -p $HOME/bin 
@@ -508,13 +538,19 @@ Installing `odo` on `arm64` architecture:
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64 -o odo
 ```
 
-2. Install odo:
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo:
 ```shell
 chmod +x ./odo
 sudo mv ./odo /usr/local/bin/odo
 ```
 
-3. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
 ```shell
 mkdir -p $HOME/bin 
@@ -538,4 +574,12 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe -o odo.exe
 ```
 
-3. Add the binary to your `PATH`
+3. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+# Visually compare the output of both files
+Get-FileHash odo.exe
+type odo.exe.sha256
+```
+
+4. Add the binary to your `PATH`
