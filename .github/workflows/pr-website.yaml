@@ -171,7 +171,7 @@ jobs:
             |---------------------------------|------------------------|
             |<span aria-hidden="true">🔨</span> Latest commit | ${{ env.PR_HEAD_SHA }} |
             |<span aria-hidden="true">😎</span> Deploy Preview | [${{ env.PR_PREVIEW_URL }}](${{ env.PR_PREVIEW_URL }}) |
-          comment_includes: 'Deploy Preview'
+          comment_tag: 'Deploy Preview'
           pr_number: ${{ env.PR_NUMBER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           reactions: rocket
@@ -235,7 +235,7 @@ jobs:
             |---------------------------------|------------------------|
             |<span aria-hidden="true">🔨</span> Latest commit | ${{ env.PR_HEAD_SHA }} |
             |<span aria-hidden="true">😎</span> Deploy Preview | ~[${{ env.PR_PREVIEW_URL }}](${{ env.PR_PREVIEW_URL }})~ |
-          comment_includes: 'Deploy Preview'
+          comment_tag: 'Deploy Preview'
           pr_number: ${{ env.PR_NUMBER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           reactions: recycle
