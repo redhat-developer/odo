@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 
@@ -26,7 +27,7 @@ func NewRegistry(url string) Registry {
 }
 
 func (o Registry) GetIndex() ([]api.DevfileStack, error) {
-	url, err := url.JoinPath(o.url, "v2index")
+	url, err := url.JoinPath(strings.TrimSuffix(o.url, "/"), "/v2index")
 	if err != nil {
 		return nil, err
 	}
@@ -81,4 +82,11 @@ func GetVersions(registryName string, stackName string) []string {
 // Note that the registry name is optional, and defaults to DefaultDevfileRegistry if not set.
 func HasAtLeastTwoVersions(registryName string, stackName string) bool {
 	return len(GetVersions(registryName, stackName)) >= 2
+}
+
+type RegistryServer interface {
+	Start() (url string, err error)
+	Stop() error
+	IsStarted() bool
+	GetUrl() string
 }

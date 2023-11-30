@@ -22,6 +22,7 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
+	"github.com/redhat-developer/odo/tests/helper/registry_server"
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 
@@ -179,6 +180,8 @@ type CommonVar struct {
 	// original values to get restored after the test is done
 	OriginalWorkingDirectory string
 	OriginalKubeconfig       string
+	registryServer           RegistryServer
+	registryUrl              string
 	// Ginkgo test realted
 	testFileName string
 	testCase     string
@@ -256,7 +259,7 @@ func CommonBeforeEach() CommonVar {
 	// Use ephemeral volumes (emptyDir) in tests to make test faster
 	err = cfg.SetConfiguration(preference.EphemeralSetting, "true")
 	Expect(err).To(BeNil())
-	SetDefaultDevfileRegistryAsStaging()
+	SetDefaultDevfileRegistry(&commonVar)
 	return commonVar
 }
 
@@ -297,6 +300,15 @@ func CommonAfterEach(commonVar CommonVar) {
 		if err = f.Close(); err != nil {
 			fmt.Println("Error when closing file: ", err)
 		}
+	}
+
+	if commonVar.registryServer != nil {
+		err = commonVar.registryServer.Stop()
+		if err != nil {
+			fmt.Fprintf(GinkgoWriter, "[warn] failed to stop mock registry server at %q: %v\n", commonVar.registryServer.GetUrl(), err)
+		}
+		commonVar.registryServer = nil
+		commonVar.registryUrl = ""
 	}
 
 	if commonVar.Project != "" && commonVar.CliRunner.HasNamespaceProject(commonVar.Project) {
@@ -394,20 +406,23 @@ type ResourceInfo struct {
 	Namespace    string
 }
 
-func SetDefaultDevfileRegistryAsStaging() {
+func SetDefaultDevfileRegistry(commonVar *CommonVar) {
+	commonVar.registryUrl = os.Getenv("DEVFILE_REGISTRY")
+	if commonVar.registryUrl == "" {
+		commonVar.registryServer = registry_server.NewMockRegistryServer()
+		var err error
+		commonVar.registryUrl, err = commonVar.registryServer.Start()
+		Expect(err).ShouldNot(HaveOccurred())
+	}
+	fmt.Printf("Using Devfile Registry URL at: %q\n", commonVar.registryUrl)
+
 	const registryName string = "DefaultDevfileRegistry"
 	Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
-	Cmd("odo", "preference", "add", "registry", registryName, GetDevfileRegistryURL()).ShouldPass()
+	Cmd("odo", "preference", "add", "registry", registryName, commonVar.registryUrl).ShouldPass()
 }
 
-func GetDevfileRegistryURL() string {
-	registryURL := "https://registry.stage.devfile.io"
-	customReg := os.Getenv("DEVFILE_REGISTRY")
-	if customReg != "" {
-		registryURL = customReg
-	}
-	fmt.Printf("Using Devfile Registry URL at: %q\n", registryURL)
-	return registryURL
+func (c CommonVar) GetDevfileRegistryURL() string {
+	return c.registryUrl
 }
 
 func GetOdoVersion() (version string, gitCommit string) {

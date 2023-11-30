@@ -1,0 +1,56 @@
+schemaVersion: 2.1.0
+metadata:
+  name: dotnet50
+  displayName: .NET 5.0
+  description: .NET 5.0 application
+  icon: https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png
+  tags:
+    - .NET
+    - .NET 5.0
+  projectType: dotnet
+  language: .NET
+  version: 1.0.3
+starterProjects:
+  - name: dotnet50-example
+    git:
+      checkoutFrom:
+        remote: origin
+        revision: dotnet-5.0
+      remotes:
+        origin: https://github.com/redhat-developer/s2i-dotnetcore-ex
+    subDir: app
+components:
+  - name: dotnet
+    container:
+      image: registry.access.redhat.com/ubi8/dotnet-50:5.0-39
+      args: ["tail", "-f", "/dev/null"]
+      mountSources: true
+      env:
+        - name: CONFIGURATION
+          value: Debug
+        - name: STARTUP_PROJECT
+          value: app.csproj
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://*:8080
+      endpoints:
+        - name: http-dotnet50
+          targetPort: 8080
+commands:
+  - id: build
+    exec:
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: kill $(pidof dotnet); dotnet build -c $CONFIGURATION $STARTUP_PROJECT /p:UseSharedCompilation=false
+      component: dotnet
+      group:
+        isDefault: true
+        kind: build
+  - id: run
+    exec:
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: dotnet run -c $CONFIGURATION --no-build --project $STARTUP_PROJECT --no-launch-profile
+      component: dotnet
+      group:
+        isDefault: true
+        kind: run

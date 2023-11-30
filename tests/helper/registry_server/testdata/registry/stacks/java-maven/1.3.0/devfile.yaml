@@ -1,0 +1,63 @@
+schemaVersion: 2.1.0
+metadata:
+  name: java-maven
+  displayName: Maven Java
+  description: Java application based on Maven 3.6 and OpenJDK 17
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg
+  tags:
+    - Java
+    - Maven
+  projectType: Maven
+  language: Java
+  version: 1.3.0
+starterProjects:
+  - name: springbootproject
+    git:
+      remotes:
+        origin: 'https://github.com/odo-devfiles/springboot-ex.git'
+components:
+  - name: tools
+    container:
+      image: registry.access.redhat.com/ubi9/openjdk-17:1.17-1
+      command: ["tail", "-f", "/dev/null"]
+      memoryLimit: 512Mi
+      mountSources: true
+      endpoints:
+        - name: http-maven
+          targetPort: 8080
+        - exposure: none
+          name: debug
+          targetPort: 5858
+      volumeMounts:
+        - name: m2
+          path: /home/user/.m2
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+  - name: m2
+    volume: {}
+commands:
+  - id: mvn-package
+    exec:
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: 'mvn -Dmaven.repo.local=/home/user/.m2/repository package'
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: 'java -jar target/*.jar'
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: 'java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar target/*.jar'
+      group:
+        kind: debug
+        isDefault: true

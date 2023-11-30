@@ -1,0 +1,50 @@
+schemaVersion: 2.1.0
+metadata:
+  name: nodejs-angular
+  displayName: Angular
+  description: "Angular is a development platform, built on TypeScript. As a platform, Angular includes:
+    A component-based framework for building scalable web applications
+    A collection of well-integrated libraries that cover a wide variety of features, including routing, forms management, client-server communication, and more
+    A suite of developer tools to help you develop, build, test, and update your code"
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/angular.svg
+  tags:
+    - Node.js
+    - Angular
+  projectType: Angular
+  language: TypeScript
+  provider: Red Hat
+  version: 2.0.2
+starterProjects:
+  - name: nodejs-angular-starter
+    git:
+      checkoutFrom:
+        revision: main
+      remotes:
+        origin: https://github.com/devfile-samples/devfile-stack-nodejs-angular.git
+components:
+  - container:
+      endpoints:
+        - name: http-angular
+          targetPort: 4200
+      image: registry.access.redhat.com/ubi8/nodejs-16:1-139
+      args: ["tail", "-f", "/dev/null"]
+      memoryLimit: 1024Mi
+    name: runtime
+commands:
+  - exec:
+      commandLine: npm install
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: install
+  - exec:
+      commandLine: npm run start
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      hotReloadCapable: true
+      workingDir: ${PROJECT_SOURCE}
+    id: run

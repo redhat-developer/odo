@@ -274,3 +274,11 @@ generate-api: generate-apiserver generate-apifront ## Generate code based on odo
 .PHONY: copy-swagger-ui
 copy-swagger-ui:
 	./scripts/copy-swagger-ui.sh
+
+generate-test-registry-build: ## Rebuild the local registry artifacts. Only for testing
+	mkdir -p "${PWD}"/tests/helper/registry_server/testdata/registry-build
+	rm -rf "${PWD}"/tests/helper/registry_server/testdata/registry-build/*
+	podman container run --rm \
+		-v "${PWD}"/tests/helper/registry_server/testdata:/code \
+		-t docker.io/golang:1.19 \
+		bash /code/build-registry.sh /code/registry/ /code/registry-build/
