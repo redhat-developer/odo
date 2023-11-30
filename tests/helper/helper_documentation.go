@@ -154,3 +154,8 @@ func ReplaceAllForwardedPorts(docString string, cmdEndpointsMap map[string]strin
 	}
 	return
 }
+
+// ReplaceRegistryUrl replaces the registry URL used for testing by a more static one
+func ReplaceRegistryUrl(commonVar CommonVar, docString string) string {
+	return strings.ReplaceAll(docString, commonVar.GetDevfileRegistryURL(), "https://registry.stage.devfile.io")
+}
