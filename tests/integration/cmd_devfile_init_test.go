@@ -43,7 +43,7 @@ var _ = Describe("odo devfile init command tests", func() {
 		label := label
 		var _ = Context("label "+label, Label(label), func() {
 
-			It("should fail", func() {
+			It("odo init should fail", func() {
 				By("running odo init with incomplete flags", func() {
 					helper.Cmd("odo", "init", "--name", "aname").ShouldFail()
 				})
@@ -76,25 +76,19 @@ var _ = Describe("odo devfile init command tests", func() {
 				By("using an invalid devfile name", func() {
 					helper.Cmd("odo", "init", "--name", "aname", "--devfile", "invalid").ShouldFail()
 				})
-				By("running odo init in a directory containing a devfile.yaml", func() {
-					helper.CopyExampleDevFile(
-						filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"),
-						filepath.Join(commonVar.Context, "devfile.yaml"),
-						"")
-					defer os.Remove(filepath.Join(commonVar.Context, "devfile.yaml"))
-					err := helper.Cmd("odo", "init").ShouldFail().Err()
-					Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
-				})
 
-				By("running odo init in a directory containing a .devfile.yaml", func() {
-					helper.CopyExampleDevFile(
-						filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"),
-						filepath.Join(commonVar.Context, ".devfile.yaml"),
-						"")
-					defer helper.DeleteFile(filepath.Join(commonVar.Context, ".devfile.yaml"))
-					err := helper.Cmd("odo", "init").ShouldFail().Err()
-					Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
-				})
+				for _, devfileName := range []string{"devfile.yaml", ".devfile.yaml", "devfile.yml", ".devfile.yml"} {
+					devfileName := devfileName
+					By("running odo init in a directory containing a "+devfileName, func() {
+						helper.CopyExampleDevFile(
+							filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"),
+							filepath.Join(commonVar.Context, devfileName),
+							"")
+						defer os.Remove(filepath.Join(commonVar.Context, devfileName))
+						err := helper.Cmd("odo", "init").ShouldFail().Err()
+						Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
+					})
+				}
 
 				By("running odo init with wrong local file path given to --devfile-path", func() {
 					err := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "/some/path/devfile.yaml").ShouldFail().Err()

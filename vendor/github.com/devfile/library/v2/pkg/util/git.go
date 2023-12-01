@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package git
+package util
 
 import (
 	"fmt"
@@ -38,8 +38,18 @@ type GitUrl struct {
 	Repo     string // name of the repo
 	Revision string // branch name, tag name, or commit id
 	Path     string // path to a directory or file in the repo
-	token    string // authenticates private repo actions for parent devfiles
+	Token    string // authenticates private repo actions for parent devfiles
 	IsFile   bool   // defines if the URL points to a file in the repo
+}
+
+// NewGitURL NewGitUrl creates a GitUrl from a string url and token.  Will eventually replace NewGitUrlWithURL
+func NewGitURL(url string, token string) (*GitUrl, error) {
+	gitUrl, err := ParseGitUrl(url)
+	if err != nil {
+		return &gitUrl, err
+	}
+	gitUrl.Token = token
+	return &gitUrl, nil
 }
 
 // NewGitUrlWithURL NewGitUrl creates a GitUrl from a string url
@@ -83,7 +93,7 @@ func ParseGitUrl(fullUrl string) (GitUrl, error) {
 }
 
 func (g *GitUrl) GetToken() string {
-	return g.token
+	return g.Token
 }
 
 type CommandType string
@@ -300,18 +310,20 @@ func (g *GitUrl) parseBitbucketUrl(url *url.URL) error {
 
 // SetToken validates the token with a get request to the repo before setting the token
 // Defaults token to empty on failure.
+// Deprecated.  Avoid using since this will cause rate limiting issues
 func (g *GitUrl) SetToken(token string, httpTimeout *int) error {
 	err := g.validateToken(HTTPRequestParams{Token: token, Timeout: httpTimeout})
 	if err != nil {
-		g.token = ""
+		g.Token = ""
 		return fmt.Errorf("failed to set token. error: %v", err)
 	}
-	g.token = token
+	g.Token = token
 	return nil
 }
 
 // IsPublic checks if the GitUrl is public with a get request to the repo using an empty token
 // Returns true if the request succeeds
+// Deprecated.  Avoid using since this will cause rate limiting issues
 func (g *GitUrl) IsPublic(httpTimeout *int) bool {
 	err := g.validateToken(HTTPRequestParams{Token: "", Timeout: httpTimeout})
 	if err != nil {

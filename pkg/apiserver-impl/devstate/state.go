@@ -9,6 +9,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	context "github.com/devfile/library/v2/pkg/devfile/parser/context"
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
+
 	. "github.com/redhat-developer/odo/pkg/apiserver-gen/go"
 
 	"k8s.io/utils/pointer"
@@ -42,7 +43,7 @@ func (o *DevfileState) SetDevfileContent(content string) (DevfileContent, error)
 		return DevfileContent{}, fmt.Errorf("error parsing devfile YAML: %w", err)
 	}
 	o.Devfile = devfile
-	o.Devfile.Ctx = context.FakeContext(o.FS, "/devfile.yaml")
+	o.Devfile.Ctx = context.FakeContext(o.FS, o.Devfile.Ctx.GetAbsPath())
 	return o.GetContent()
 }
 
