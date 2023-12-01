@@ -271,7 +271,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				command := []string{"odo", "init"}
 				starter := "go-starter"
 				componentName := "my-go-app"
-				devfileVersion := "2.0.0"
+				devfileVersion := "2.2.0"
 
 				output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
@@ -728,7 +728,7 @@ spec:
   devfileRegistries:
     - name: %s
       url: %q
-`, devfileRegistryName, helper.GetDevfileRegistryURL()))
+`, devfileRegistryName, commonVar.GetDevfileRegistryURL()))
 				Expect(err).ToNot(HaveOccurred())
 				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
 				Expect(command.ExitCode()).To(BeEquivalentTo(0))

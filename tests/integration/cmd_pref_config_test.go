@@ -391,7 +391,7 @@ OdoSettings:
 
 			BeforeEach(func() {
 				manifestFilePath := filepath.Join(commonVar.ConfigDir, "devfileRegistryListCR.yaml")
-				registryURL = helper.GetDevfileRegistryURL()
+				registryURL = commonVar.GetDevfileRegistryURL()
 				// NOTE: Use reachable URLs as we might be on a cluster with the registry operator installed, which would perform validations.
 				err := helper.CreateFileWithContent(manifestFilePath, fmt.Sprintf(`
 apiVersion: registry.devfile.io/v1alpha1

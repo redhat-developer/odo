@@ -1,0 +1,737 @@
+[
+  {
+    "name": "dotnet50",
+    "displayName": ".NET 5.0",
+    "description": ".NET 5.0 application",
+    "type": "stack",
+    "tags": [
+      ".NET",
+      ".NET 5.0"
+    ],
+    "icon": "https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png",
+    "projectType": "dotnet",
+    "language": ".NET",
+    "versions": [
+      {
+        "version": "1.0.3",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": ".NET 5.0 application",
+        "tags": [
+          ".NET",
+          ".NET 5.0"
+        ],
+        "icon": "https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png",
+        "links": {
+          "self": "devfile-catalog/dotnet50:1.0.3"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "dotnet50-example"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "dotnet60",
+    "displayName": ".NET 6.0",
+    "description": ".NET 6.0 application",
+    "type": "stack",
+    "tags": [
+      ".NET",
+      ".NET 6.0"
+    ],
+    "icon": "https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png",
+    "projectType": "dotnet",
+    "language": ".NET",
+    "versions": [
+      {
+        "version": "1.0.2",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": ".NET 6.0 application",
+        "tags": [
+          ".NET",
+          ".NET 6.0"
+        ],
+        "icon": "https://github.com/dotnet/brand/raw/main/logo/dotnet-logo.png",
+        "links": {
+          "self": "devfile-catalog/dotnet60:1.0.2"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "dotnet60-example"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "go",
+    "displayName": "Go Runtime",
+    "description": "Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+    "type": "stack",
+    "tags": [
+      "Go",
+      "Deprecated"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+    "projectType": "Go",
+    "language": "Go",
+    "provider": "Red Hat",
+    "versions": [
+      {
+        "version": "2.2.0",
+        "schemaVersion": "2.2.0",
+        "description": "Go (version 1.19.x) is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+        "tags": [
+          "Go"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+        "links": {
+          "self": "devfile-catalog/go:2.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": true,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "archive.tar",
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "go-starter"
+        ]
+      },
+      {
+        "version": "1.2.0",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Go (version 1.19.x) is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+        "tags": [
+          "Go"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+        "links": {
+          "self": "devfile-catalog/go:1.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "go-starter"
+        ]
+      },
+      {
+        "version": "1.0.2",
+        "schemaVersion": "2.1.0",
+        "description": "Go (version 1.18.x) is an open source programming language that makes it easy to build simple, reliable, and efficient software.",
+        "tags": [
+          "Go",
+          "Deprecated"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg",
+        "links": {
+          "self": "devfile-catalog/go:1.0.2"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "go-starter"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java-maven",
+    "displayName": "Maven Java",
+    "description": "Java application based on Maven and OpenJDK",
+    "type": "stack",
+    "tags": [
+      "Java",
+      "Maven"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg",
+    "projectType": "Maven",
+    "language": "Java",
+    "versions": [
+      {
+        "version": "1.3.0",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Java application based on Maven 3.6 and OpenJDK 17",
+        "tags": [
+          "Java",
+          "Maven"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg",
+        "links": {
+          "self": "devfile-catalog/java-maven:1.3.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "springbootproject"
+        ]
+      },
+      {
+        "version": "1.2.0",
+        "schemaVersion": "2.1.0",
+        "description": "Java application based on Maven 3.6 and OpenJDK 11",
+        "tags": [
+          "Java",
+          "Maven"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/java-maven.jpg",
+        "links": {
+          "self": "devfile-catalog/java-maven:1.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "springbootproject"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java-openliberty",
+    "displayName": "Open Liberty Maven",
+    "description": "Java application based on Java 11 and Maven 3.8, using the Open Liberty runtime 22.0.0.1",
+    "type": "stack",
+    "tags": [
+      "Java",
+      "Maven"
+    ],
+    "architectures": [
+      "amd64",
+      "ppc64le",
+      "s390x"
+    ],
+    "icon": "https://raw.githubusercontent.com/OpenLiberty/logos/7fbb132949b9b2589e18c8d5665c1b107028a21d/logomark/svg/OL_logomark.svg",
+    "projectType": "Open Liberty",
+    "language": "Java",
+    "versions": [
+      {
+        "version": "0.9.0",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Java application based on Java 11 and Maven 3.8, using the Open Liberty runtime 22.0.0.1",
+        "tags": [
+          "Java",
+          "Maven"
+        ],
+        "architectures": [
+          "amd64",
+          "ppc64le",
+          "s390x"
+        ],
+        "icon": "https://raw.githubusercontent.com/OpenLiberty/logos/7fbb132949b9b2589e18c8d5665c1b107028a21d/logomark/svg/OL_logomark.svg",
+        "links": {
+          "self": "devfile-catalog/java-openliberty:0.9.0"
+        },
+        "commandGroups": {
+          "build": false,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": true
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "rest"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java-springboot",
+    "displayName": "Spring Boot",
+    "description": "Spring Boot using Java",
+    "type": "stack",
+    "tags": [
+      "Java",
+      "Spring"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/spring.svg",
+    "projectType": "springboot",
+    "language": "Java",
+    "versions": [
+      {
+        "version": "2.1.0",
+        "schemaVersion": "2.2.0",
+        "description": "Java application using Spring Boot® and OpenJDK 11",
+        "tags": [
+          "Java",
+          "Spring"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/spring.svg",
+        "links": {
+          "self": "devfile-catalog/java-springboot:2.1.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": true,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "archive.tar",
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "springbootproject"
+        ]
+      },
+      {
+        "version": "1.3.0",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Java application using Spring Boot® and OpenJDK 11",
+        "tags": [
+          "Java",
+          "Spring"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/spring.svg",
+        "links": {
+          "self": "devfile-catalog/java-springboot:1.3.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "springbootproject"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java-vertx",
+    "displayName": "Vert.x Java",
+    "description": "Java application using Vert.x and OpenJDK 11",
+    "type": "stack",
+    "tags": [
+      "Java",
+      "Vert.x"
+    ],
+    "icon": "https://raw.githubusercontent.com/vertx-web-site/vertx-logo/master/vertx-logo.svg",
+    "projectType": "Vert.x",
+    "language": "Java",
+    "versions": [
+      {
+        "version": "1.2.0",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Java application using Vert.x and OpenJDK 11",
+        "tags": [
+          "Java",
+          "Vert.x"
+        ],
+        "icon": "https://raw.githubusercontent.com/vertx-web-site/vertx-logo/master/vertx-logo.svg",
+        "links": {
+          "self": "devfile-catalog/java-vertx:1.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "vertx-http-example",
+          "vertx-istio-circuit-breaker-booster",
+          "vertx-istio-routing-booster",
+          "vertx-secured-http-example-redhat",
+          "vertx-crud-example-redhat",
+          "vertx-istio-security-booster",
+          "vertx-crud-example",
+          "vertx-circuit-breaker-example",
+          "vertx-configmap-example",
+          "vertx-circuit-breaker-example-redhat",
+          "vertx-cache-example-redhat",
+          "vertx-cache-example",
+          "vertx-secured-http-example",
+          "vertx-health-checks-example-redhat",
+          "vertx-http-example-redhat",
+          "vertx-health-checks-example",
+          "vertx-configmap-example-redhat",
+          "vertx-messaging-work-queue-booster",
+          "vertx-istio-distributed-tracing-booster"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nodejs",
+    "displayName": "Node.js Runtime",
+    "description": "Node.js application",
+    "type": "stack",
+    "tags": [
+      "Node.js",
+      "Express",
+      "ubi8"
+    ],
+    "icon": "https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg",
+    "projectType": "Node.js",
+    "language": "JavaScript",
+    "versions": [
+      {
+        "version": "2.2.0",
+        "schemaVersion": "2.1.0",
+        "description": "Node.js 18 application",
+        "tags": [
+          "Node.js",
+          "Express",
+          "ubi8"
+        ],
+        "icon": "https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs:2.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": true
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-starter"
+        ]
+      },
+      {
+        "version": "2.1.1",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Node.js 16 application",
+        "tags": [
+          "Node.js",
+          "Express",
+          "ubi8"
+        ],
+        "icon": "https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs:2.1.1"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": true
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-starter"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nodejs-angular",
+    "displayName": "Angular",
+    "description": "Angular is a development platform, built on TypeScript. As a platform, Angular includes: A component-based framework for building scalable web applications A collection of well-integrated libraries that cover a wide variety of features, including routing, forms management, client-server communication, and more A suite of developer tools to help you develop, build, test, and update your code",
+    "type": "stack",
+    "tags": [
+      "Node.js",
+      "Angular"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/angular.svg",
+    "projectType": "Angular",
+    "language": "TypeScript",
+    "provider": "Red Hat",
+    "versions": [
+      {
+        "version": "2.2.0",
+        "schemaVersion": "2.2.0",
+        "description": "Angular is a development platform, built on TypeScript. As a platform, Angular includes: A component-based framework for building scalable web applications A collection of well-integrated libraries that cover a wide variety of features, including routing, forms management, client-server communication, and more A suite of developer tools to help you develop, build, test, and update your code",
+        "tags": [
+          "Node.js",
+          "Angular"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/angular.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs-angular:2.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-angular-starter"
+        ]
+      },
+      {
+        "version": "2.1.0",
+        "schemaVersion": "2.1.0",
+        "description": "Angular is a development platform, built on TypeScript. As a platform, Angular includes: A component-based framework for building scalable web applications A collection of well-integrated libraries that cover a wide variety of features, including routing, forms management, client-server communication, and more A suite of developer tools to help you develop, build, test, and update your code",
+        "tags": [
+          "Node.js",
+          "Angular"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/angular.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs-angular:2.1.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-angular-starter"
+        ]
+      },
+      {
+        "version": "2.0.2",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Angular is a development platform, built on TypeScript. As a platform, Angular includes: A component-based framework for building scalable web applications A collection of well-integrated libraries that cover a wide variety of features, including routing, forms management, client-server communication, and more A suite of developer tools to help you develop, build, test, and update your code",
+        "tags": [
+          "Node.js",
+          "Angular"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/angular.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs-angular:2.0.2"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-angular-starter"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nodejs-react",
+    "displayName": "React",
+    "description": "React is a free and open-source front-end JavaScript library for building user interfaces based on UI components. It is maintained by Meta and a community of individual developers and companies.",
+    "type": "stack",
+    "tags": [
+      "Node.js",
+      "React"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/react.svg",
+    "projectType": "React",
+    "language": "TypeScript",
+    "provider": "Red Hat",
+    "versions": [
+      {
+        "version": "2.2.0",
+        "schemaVersion": "2.2.0",
+        "description": "React is a free and open-source front-end JavaScript library for building user interfaces based on UI components. It is maintained by Meta and a community of individual developers and companies.",
+        "tags": [
+          "Node.js",
+          "React"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/react.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs-react:2.2.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-react-starter"
+        ]
+      },
+      {
+        "version": "2.0.2",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "React is a free and open-source front-end JavaScript library for building user interfaces based on UI components. It is maintained by Meta and a community of individual developers and companies.",
+        "tags": [
+          "Node.js",
+          "React"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/react.svg",
+        "links": {
+          "self": "devfile-catalog/nodejs-react:2.0.2"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": false,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "nodejs-react-starter"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "python",
+    "displayName": "Python",
+    "description": "Python is an interpreted, object-oriented, high-level programming language with dynamic semantics. Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together.",
+    "type": "stack",
+    "tags": [
+      "Python",
+      "Pip",
+      "Flask"
+    ],
+    "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg",
+    "projectType": "Python",
+    "language": "Python",
+    "provider": "Red Hat",
+    "versions": [
+      {
+        "version": "3.0.0",
+        "schemaVersion": "2.2.0",
+        "description": "Python (version 3.9.x) is an interpreted, object-oriented, high-level programming language with dynamic semantics. Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together.",
+        "tags": [
+          "Python",
+          "Pip",
+          "Flask"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg",
+        "links": {
+          "self": "devfile-catalog/python:3.0.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": true,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "archive.tar",
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "flask-example"
+        ]
+      },
+      {
+        "version": "2.1.0",
+        "schemaVersion": "2.1.0",
+        "default": true,
+        "description": "Python (version 3.9.x) is an interpreted, object-oriented, high-level programming language with dynamic semantics. Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together.",
+        "tags": [
+          "Python",
+          "Pip",
+          "Flask"
+        ],
+        "icon": "https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg",
+        "links": {
+          "self": "devfile-catalog/python:2.1.0"
+        },
+        "commandGroups": {
+          "build": true,
+          "debug": true,
+          "deploy": false,
+          "run": true,
+          "test": false
+        },
+        "resources": [
+          "devfile.yaml"
+        ],
+        "starterProjects": [
+          "flask-example"
+        ]
+      }
+    ]
+  }
+]

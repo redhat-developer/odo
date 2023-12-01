@@ -283,6 +283,9 @@ github.com/exponent-io/jsonpath
 # github.com/fatih/color v1.15.0
 ## explicit; go 1.17
 github.com/fatih/color
+# github.com/felixge/httpsnoop v1.0.3
+## explicit; go 1.13
+github.com/felixge/httpsnoop
 # github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778
 ## explicit; go 1.19
 github.com/feloy/devfile-lifecycle/pkg/dftools
@@ -449,6 +452,9 @@ github.com/google/uuid
 # github.com/gookit/color v1.5.4
 ## explicit; go 1.18
 github.com/gookit/color
+# github.com/gorilla/handlers v1.5.1
+## explicit; go 1.14
+github.com/gorilla/handlers
 # github.com/gorilla/mux v1.8.0
 ## explicit; go 1.12
 github.com/gorilla/mux

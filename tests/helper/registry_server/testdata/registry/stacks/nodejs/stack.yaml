@@ -1,0 +1,8 @@
+name: nodejs
+description: 'Node.js application'
+displayName: Node.js Runtime
+icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+versions:
+  - version: 2.1.1
+    default: true # should have one and only one default version
+  - version: 2.2.0

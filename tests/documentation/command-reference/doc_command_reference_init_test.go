@@ -104,7 +104,7 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 	Context("Non Interactive Mode", func() {
 
 		It("Fetch Devfile of a specific version", func() {
-			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "2.0.0"}
+			args := []string{"init", "--devfile", "go", "--name", "my-go-app", "--devfile-version", "2.2.0"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
 			got = helper.StripGitCommitFromVersion(got)
@@ -126,10 +126,11 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 		})
 
 		It("Fetch Devfile from a URL", func() {
-			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
+			args := []string{"init", "--devfile-path", fmt.Sprintf("%s/devfiles/nodejs-angular", commonVar.GetDevfileRegistryURL()), "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
 			got = helper.StripGitCommitFromVersion(got)
+			got = helper.ReplaceRegistryUrl(commonVar, got)
 			file := "devfile_from_url_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)
@@ -139,21 +140,19 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 		Context("fetching devfile from a registry", func() {
 			When("setting up the registry", func() {
 				const (
-					defaultReg    = "DefaultDevfileRegistry"
-					defaultRegURL = "https://registry.devfile.io"
-					stagingReg    = "StagingRegistry"
-					stagingRegURL = "https://registry.stage.devfile.io"
+					defaultReg = "DefaultDevfileRegistry"
+					stagingReg = "StagingRegistry"
 				)
 				BeforeEach(func() {
 					helper.Cmd("odo", "preference", "remove", "registry", defaultReg, "-f").ShouldPass()
-					helper.Cmd("odo", "preference", "add", "registry", defaultReg, defaultRegURL).ShouldPass()
-
-					helper.Cmd("odo", "preference", "add", "registry", stagingReg, stagingRegURL).ShouldPass()
+					devfileRegistryURL := commonVar.GetDevfileRegistryURL()
+					helper.Cmd("odo", "preference", "add", "registry", defaultReg, devfileRegistryURL).ShouldPass()
+					helper.Cmd("odo", "preference", "add", "registry", stagingReg, devfileRegistryURL).ShouldPass()
 				})
 
 				AfterEach(func() {
 					helper.Cmd("odo", "preference", "remove", "registry", stagingReg, "-f").ShouldPass()
-					helper.SetDefaultDevfileRegistryAsStaging()
+					helper.SetDefaultDevfileRegistry(&commonVar)
 				})
 
 				removePreferenceKeys := func(docString string) string {
@@ -165,10 +164,26 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 					got := helper.StripAnsi(out)
 					got = removePreferenceKeys(got)
 					got = fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(got))
+					got = helper.ReplaceRegistryUrl(commonVar, got)
 					file := "registry_output.mdx"
 					want := helper.GetMDXContent(filepath.Join(commonPath, file))
-					diff := cmp.Diff(want, got)
-					Expect(diff).To(BeEmpty(), file)
+					want = helper.ReplaceRegistryUrl(commonVar, want)
+					wantLines, err := helper.ExtractLines(want)
+					Expect(err).ShouldNot(HaveOccurred())
+					gotLines, err := helper.ExtractLines(got)
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(gotLines).ShouldNot(BeEmpty())
+					Expect(gotLines).Should(HaveLen(len(wantLines)),
+						fmt.Sprintf("%s: unexpected number of lines:\n==want:\n%s\n\n==got:\n%s", file, want, got))
+					for i, line := range wantLines {
+						if strings.Contains(line, "SECURE") {
+							continue
+						}
+						wantFields := strings.Fields(line)
+						gotFields := strings.Fields(gotLines[i])
+						Expect(gotFields).Should(HaveExactElements(wantFields),
+							fmt.Sprintf("%s: mismatch at line %d:\n==want line:\n%s\n\n==got line:\n%s", file, i, line, gotLines[i]))
+					}
 				}
 
 				It("Fetch Devfile from a specific registry of the list", func() {
@@ -219,10 +234,11 @@ var _ = Describe("doc command reference odo init", Label(helper.LabelNoCluster),
 		})
 
 		It("Fetch Devfile from a URL", func() {
-			args := []string{"init", "--devfile-path", "https://registry.devfile.io/devfiles/nodejs-angular", "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
+			args := []string{"init", "--devfile-path", fmt.Sprintf("%s/devfiles/nodejs-angular", commonVar.GetDevfileRegistryURL()), "--name", "my-nodejs-app", "--starter", "nodejs-angular-starter"}
 			out := helper.Cmd("odo", args...).ShouldPass().Out()
 			got := fmt.Sprintf(outputStringFormat, strings.Join(args, " "), helper.StripSpinner(out))
 			got = helper.StripGitCommitFromVersion(got)
+			got = helper.ReplaceRegistryUrl(commonVar, got)
 			file := "devfile_from_url_output.mdx"
 			want := helper.GetMDXContent(filepath.Join(commonPath, file))
 			diff := cmp.Diff(want, got)

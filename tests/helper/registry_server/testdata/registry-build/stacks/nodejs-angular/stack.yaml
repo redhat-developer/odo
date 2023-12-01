@@ -1,0 +1,13 @@
+name: nodejs-angular
+description:
+  "Angular is a development platform, built on TypeScript. As a platform, Angular includes:
+  A component-based framework for building scalable web applications
+  A collection of well-integrated libraries that cover a wide variety of features, including routing, forms management, client-server communication, and more
+  A suite of developer tools to help you develop, build, test, and update your code"
+displayName: Angular
+icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/angular.svg
+versions:
+  - version: 2.0.2
+    default: true # should have one and only one default version
+  - version: 2.1.0
+  - version: 2.2.0

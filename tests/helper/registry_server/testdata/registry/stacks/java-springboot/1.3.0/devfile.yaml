@@ -1,0 +1,65 @@
+schemaVersion: 2.1.0
+metadata:
+  name: java-springboot
+  displayName: Spring Boot®
+  description: Java application using Spring Boot® and OpenJDK 11
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/spring.svg
+  tags:
+    - Java
+    - Spring
+  projectType: springboot
+  language: Java
+  version: 1.3.0
+  globalMemoryLimit: 2674Mi
+starterProjects:
+  - name: springbootproject
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/springboot-ex.git"
+components:
+  - name: tools
+    container:
+      image: registry.access.redhat.com/ubi9/openjdk-17:1.17-1
+      command: ["tail", "-f", "/dev/null"]
+      memoryLimit: 768Mi
+      mountSources: true
+      endpoints:
+        - name: http-springboot
+          targetPort: 8080
+        - exposure: none
+          name: debug
+          targetPort: 5858
+      volumeMounts:
+        - name: m2
+          path: /home/user/.m2
+      env:
+        - name: DEBUG_PORT
+          value: "5858"
+  - name: m2
+    volume:
+      size: 3Gi
+commands:
+  - id: build
+    exec:
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: "mvn clean -Dmaven.repo.local=/home/user/.m2/repository package -Dmaven.test.skip=true"
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: "mvn -Dmaven.repo.local=/home/user/.m2/repository spring-boot:run"
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: tools
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: "java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n -jar target/*.jar"
+      group:
+        kind: debug
+        isDefault: true

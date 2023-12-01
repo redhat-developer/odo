@@ -1,0 +1,41 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-go-svc
+spec:
+  ports:
+    - name: http-8081
+      port: 8081
+      protocol: TCP
+      targetPort: 8081
+  selector:
+    app: go-app
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: my-go
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-app
+  template:
+    metadata:
+      labels:
+        app: go-app
+    spec:
+      containers:
+        - name: my-go
+          image: go-image:latest
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          resources:
+            requests:
+              memory: "10Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"

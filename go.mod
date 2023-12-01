@@ -23,6 +23,7 @@ require (
 	github.com/go-openapi/spec v0.20.8
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jedib0t/go-pretty/v6 v6.4.7
 	github.com/kubernetes-sigs/service-catalog v0.3.1
@@ -110,6 +111,7 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect

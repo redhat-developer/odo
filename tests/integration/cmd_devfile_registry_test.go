@@ -35,9 +35,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 			const registryName string = "RegistryName"
 
-			// Use staging OCI-based registry for tests to avoid overload
-			addRegistryURL := helper.GetDevfileRegistryURL()
-
 			It("Should list all default registries", func() {
 				output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
@@ -165,12 +162,12 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 			When("adding a registry", func() {
 				BeforeEach(func() {
-					helper.Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldPass()
+					helper.Cmd("odo", "preference", "add", "registry", registryName, commonVar.GetDevfileRegistryURL()).ShouldPass()
 				})
 
 				It("should list newly added registry", func() {
 					output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
-					helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
+					helper.MatchAllInOutput(output, []string{registryName, commonVar.GetDevfileRegistryURL()})
 				})
 
 				It("should pass, when doing odo init with --devfile-registry flag", func() {
@@ -179,7 +176,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 				})
 
 				It("should fail, when adding same registry", func() {
-					helper.Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldFail()
+					helper.Cmd("odo", "preference", "add", "registry", registryName, commonVar.GetDevfileRegistryURL()).ShouldFail()
 				})
 
 				It("should successfully delete registry", func() {
@@ -197,11 +194,10 @@ var _ = Describe("odo devfile registry command tests", func() {
 						output := helper.Cmd("odo", "preference", "view", "-o", "json").ShouldPass().Out()
 						Expect(helper.IsJSON(output)).To(BeTrue())
 						helper.JsonPathContentIs(output, "registries.0.name", registryName)
-						helper.JsonPathContentIs(output, "registries.0.url", addRegistryURL)
+						helper.JsonPathContentIs(output, "registries.0.url", commonVar.GetDevfileRegistryURL())
 						helper.JsonPathContentIs(output, "registries.1.name", "DefaultDevfileRegistry")
-						helper.JsonPathContentIs(output, "registries.1.url", addRegistryURL) // as we are using its updated in case of Proxy
+						helper.JsonPathContentIs(output, "registries.1.url", commonVar.GetDevfileRegistryURL()) // as we are using its updated in case of Proxy
 					})
-
 				})
 			})
 
@@ -235,7 +231,7 @@ spec:
   devfileRegistries:
     - name: ns-devfile-reg
       url: %q
-`, helper.GetDevfileRegistryURL()))
+`, commonVar.GetDevfileRegistryURL()))
 				Expect(err).ToNot(HaveOccurred())
 				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
 				Expect(command.ExitCode()).To(BeEquivalentTo(0))

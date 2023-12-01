@@ -1,0 +1,62 @@
+schemaVersion: 2.1.0
+metadata:
+  name: python
+  displayName: Python
+  description: "Python (version 3.9.x) is an interpreted, object-oriented, high-level programming language with dynamic semantics.
+    Its high-level built in data structures, combined with dynamic typing and dynamic binding, make it very attractive for Rapid Application Development, as well as for use as a scripting or glue language to connect existing components together."
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg
+  tags:
+    - Python
+    - Pip
+    - Flask
+  projectType: Python
+  language: Python
+  provider: Red Hat
+  version: 2.1.0
+starterProjects:
+  - name: flask-example
+    description:
+      'Flask is a web framework, it’s a Python module that lets you develop web applications easily.
+      It’s has a small and easy-to-extend core: it’s a microframework that doesn’t include an ORM (Object Relational Manager) or such features.'
+    git:
+      remotes:
+        origin: https://github.com/devfile-samples/python-ex
+components:
+  - name: py
+    container:
+      image: registry.access.redhat.com/ubi9/python-39:1-153.1699551718
+      args: ['tail', '-f', '/dev/null']
+      mountSources: true
+      endpoints:
+        - name: http-python
+          targetPort: 8080
+        - exposure: none
+          name: debug
+          targetPort: 5858
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+commands:
+  - id: pip-install-requirements
+    exec:
+      commandLine: pip install -r requirements.txt
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+      component: py
+  - id: run-app
+    exec:
+      commandLine: 'python app.py'
+      workingDir: ${PROJECT_SOURCE}
+      component: py
+      group:
+        kind: run
+        isDefault: true
+  - id: debug-py
+    exec:
+      commandLine: 'pip install debugpy && python -m debugpy --listen 0.0.0.0:${DEBUG_PORT} app.py'
+      workingDir: ${PROJECT_SOURCE}
+      component: py
+      group:
+        kind: debug

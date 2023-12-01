@@ -156,7 +156,7 @@ var _ = Describe("odo devfile init command tests", func() {
 						helper.JsonPathContentIs(stdout, "devfilePath", filepath.Join(commonVar.Context, "devfile.yaml"))
 						helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.name", compName)
 						helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.dev", "true")
-						helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.debug", "false")
+						helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.debug", "true")
 						helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.deploy", "false")
 						helper.JsonPathContentIs(stdout, "managedBy", "odo")
 					})
@@ -173,7 +173,7 @@ var _ = Describe("odo devfile init command tests", func() {
 						title:          "to download the latest version",
 						devfileVersion: "latest",
 						checkVersion: func(metadataVersion string) {
-							reg := helper.NewRegistry(helper.GetDevfileRegistryURL())
+							reg := helper.NewRegistry(commonVar.GetDevfileRegistryURL())
 							stack, err := reg.GetStack(devfileName)
 							Expect(err).ToNot(HaveOccurred())
 							Expect(len(stack.Versions)).ToNot(BeZero())
@@ -604,7 +604,7 @@ spec:
   devfileRegistries:
     - name: ns-devfile-reg
       url: %q
-`, helper.GetDevfileRegistryURL()))
+`, commonVar.GetDevfileRegistryURL()))
 				Expect(err).ToNot(HaveOccurred())
 				command := commonVar.CliRunner.Run("-n", commonVar.Project, "apply", "-f", manifestFilePath)
 				Expect(command.ExitCode()).To(BeEquivalentTo(0))

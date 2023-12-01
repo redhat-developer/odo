@@ -1,0 +1,103 @@
+# Copyright (c) 2021,2022 IBM Corporation and others
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# You may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+schemaVersion: 2.1.0
+metadata:
+  name: java-openliberty
+  displayName: Open Liberty Maven
+  description: Java application based on Java 11 and Maven 3.8, using the Open Liberty runtime 22.0.0.1
+  icon: https://raw.githubusercontent.com/OpenLiberty/logos/7fbb132949b9b2589e18c8d5665c1b107028a21d/logomark/svg/OL_logomark.svg
+  tags:
+    - Java
+    - Maven
+  architectures:
+    - amd64
+    - ppc64le
+    - s390x
+  projectType: Open Liberty
+  language: Java
+  version: 0.9.0
+  alpha.build-dockerfile: https://github.com/OpenLiberty/devfile-stack/releases/download/open-liberty-maven-0.8.1/Dockerfile
+  alpha.deployment-manifest: https://github.com/OpenLiberty/devfile-stack/releases/download/open-liberty-maven-0.8.1/app-deploy.yaml
+starterProjects:
+  - name: rest
+    git:
+      remotes:
+        origin: https://github.com/OpenLiberty/devfile-stack-starters.git
+variables:
+  # Liberty runtime version. Minimum recommended: 21.0.0.9
+  liberty-version: '22.0.0.1'
+  liberty-plugin-version: '3.5.1'
+  mvn-cmd: 'mvn'
+components:
+  - name: dev
+    container:
+      # In the original upstream of this devfile, the image used is openliberty/devfile-stack:<x.y.z>, which is built from the repository: https://github.com/OpenLiberty/devfile-stack
+      image: icr.io/appcafe/open-liberty-devfile-stack:{{liberty-version}}
+      args: ['tail', '-f', '/dev/null']
+      memoryLimit: 768Mi
+      mountSources: true
+      endpoints:
+        - exposure: public
+          path: /
+          name: http-openlib
+          targetPort: 9080
+          protocol: http
+        - exposure: none
+          name: debug
+          targetPort: 5858
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+commands:
+  - id: run
+    exec:
+      component: dev
+      commandLine: echo "run command "; {{mvn-cmd}} -DinstallDirectory=/opt/ol/wlp -Ddebug=false -DhotTests=true -DcompileWait=3 io.openliberty.tools:liberty-maven-plugin:{{liberty-plugin-version}}:dev
+      workingDir: ${PROJECT_SOURCE}
+      hotReloadCapable: true
+      group:
+        kind: run
+        isDefault: true
+  - id: run-test-off
+    exec:
+      component: dev
+      commandLine: echo "run-test-off command "; {{mvn-cmd}} -DinstallDirectory=/opt/ol/wlp -Ddebug=false io.openliberty.tools:liberty-maven-plugin:{{liberty-plugin-version}}:dev
+      workingDir: ${PROJECT_SOURCE}
+      hotReloadCapable: true
+      group:
+        kind: run
+        isDefault: false
+  - id: debug
+    exec:
+      component: dev
+      commandLine: echo "debug command "; {{mvn-cmd}} -DinstallDirectory=/opt/ol/wlp -DdebugPort=${DEBUG_PORT} io.openliberty.tools:liberty-maven-plugin:{{liberty-plugin-version}}:dev -Dliberty.env.WLP_DEBUG_REMOTE=y
+      workingDir: ${PROJECT_SOURCE}
+      hotReloadCapable: true
+      group:
+        kind: debug
+        isDefault: true
+  - id: test
+    # The 'test' command requires an already active container. Multi-module apps require compilation prior to test processing.
+    exec:
+      component: dev
+      commandLine: echo "test command "; {{mvn-cmd}} compiler:compile failsafe:integration-test failsafe:verify
+      workingDir: ${PROJECT_SOURCE}
+      hotReloadCapable: true
+      group:
+        kind: test
+        isDefault: true

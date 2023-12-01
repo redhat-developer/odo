@@ -1,0 +1,41 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-java-springboot-svc
+spec:
+  ports:
+    - name: http-8081
+      port: 8081
+      protocol: TCP
+      targetPort: 8081
+  selector:
+    app: java-springboot-app
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: my-java-springboot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-springboot-app
+  template:
+    metadata:
+      labels:
+        app: java-springboot-app
+    spec:
+      containers:
+        - name: my-java-springboot
+          image: java-springboot-image:latest
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          resources:
+            requests:
+              memory: "180Mi"
+              cpu: "10m"
+            limits:
+              memory: "300Mi"
+              cpu: "100m"

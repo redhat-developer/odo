@@ -1,0 +1,76 @@
+schemaVersion: 2.1.0
+metadata:
+  name: go
+  displayName: Go Runtime
+  description: Go (version 1.19.x) is an open source programming language that makes it easy to build simple, reliable, and efficient software.
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
+  tags:
+    - Go
+  projectType: Go
+  language: Go
+  provider: Red Hat
+  version: 1.2.0
+starterProjects:
+  - name: go-starter
+    description: A Go project with a simple HTTP server
+    git:
+      checkoutFrom:
+        revision: main
+      remotes:
+        origin: https://github.com/devfile-samples/devfile-stack-go.git
+components:
+  - container:
+      endpoints:
+        - name: http-go
+          targetPort: 8080
+        - exposure: none
+          name: debug
+          targetPort: 5858
+      image: registry.access.redhat.com/ubi9/go-toolset:1.19.13-4.1697647145
+      args: ["tail", "-f", "/dev/null"]
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+commands:
+  - exec:
+      env:
+        - name: GOPATH
+          value: ${PROJECT_SOURCE}/.go
+        - name: GOCACHE
+          value: ${PROJECT_SOURCE}/.cache
+      commandLine: go build main.go
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: ${PROJECT_SOURCE}
+    id: build
+  - exec:
+      commandLine: ./main
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: ${PROJECT_SOURCE}
+    id: run
+
+  - exec:
+      commandLine: |
+        GOPATH=${PROJECT_SOURCE}/.go \
+        GOCACHE=${PROJECT_SOURCE}/.cache \
+        dlv \
+          --listen=127.0.0.1:${DEBUG_PORT} \
+          --only-same-user=false \
+          --headless=true \
+          --api-version=2 \
+          --accept-multiclient \
+          debug --continue main.go
+      component: runtime
+      group:
+        isDefault: true
+        kind: debug
+      workingDir: ${PROJECT_SOURCE}
+    id: debug

@@ -1,0 +1,10 @@
+name: nodejs-react
+description:
+  'React is a free and open-source front-end JavaScript library for building user interfaces based on UI components.
+    It is maintained by Meta and a community of individual developers and companies.'
+displayName: React
+icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/react.svg
+versions:
+  - version: 2.0.2
+    default: true # should have one and only one default version
+  - version: 2.2.0

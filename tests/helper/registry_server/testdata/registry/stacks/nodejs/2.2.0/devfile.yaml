@@ -1,0 +1,67 @@
+schemaVersion: 2.1.0
+metadata:
+  name: nodejs
+  displayName: Node.js Runtime
+  description: Node.js 18 application
+  icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+  tags:
+    - Node.js
+    - Express
+    - ubi8
+  projectType: Node.js
+  language: JavaScript
+  version: 2.2.0
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: 'https://github.com/odo-devfiles/nodejs-ex.git'
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-18:1-32
+      args: ['tail', '-f', '/dev/null']
+      memoryLimit: 1024Mi
+      mountSources: true
+      env:
+        - name: DEBUG_PORT
+          value: '5858'
+      endpoints:
+        - name: http-node
+          targetPort: 3000
+        - exposure: none
+          name: debug
+          targetPort: 5858
+commands:
+  - id: install
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: debug
+        isDefault: true
+  - id: test
+    exec:
+      component: runtime
+      commandLine: npm test
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: test
+        isDefault: true

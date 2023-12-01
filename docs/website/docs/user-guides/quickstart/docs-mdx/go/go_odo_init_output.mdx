@@ -13,20 +13,22 @@ Supported architectures: all
 Language: Go
 Project type: Go
 Application ports: 8080
-The devfile "go:1.0.2" from the registry "DefaultDevfileRegistry" will be downloaded.
+The devfile "go:1.2.0" from the registry "DefaultDevfileRegistry" will be downloaded.
 ? Is this correct? Yes
- ✓  Downloading devfile "go:1.0.2" from registry "DefaultDevfileRegistry" [3s]
+ ✓  Downloading devfile "go:1.2.0" from registry "DefaultDevfileRegistry" [3s]
 
 ↪ Container Configuration "runtime":
   OPEN PORTS:
     - 8080
+    - 5858
   ENVIRONMENT VARIABLES:
+    - DEBUG_PORT = 5858
 
 ? Select container for which you want to change configuration? NONE - configuration is correct
 ? Enter component name: my-go-app
 
 You can automate this command by executing:
-   odo init --name my-go-app --devfile go --devfile-registry DefaultDevfileRegistry --devfile-version 1.0.2
+   odo init --name my-go-app --devfile go --devfile-registry DefaultDevfileRegistry --devfile-version 1.2.0
 
 Your new component 'my-go-app' is ready in the current directory.
 To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
