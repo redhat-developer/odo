@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IBM_CLOUD_API_KEY: ${{ secrets.IC_API_KEY }}
+  IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
   IBM_CLOUD_REGION: 'eu-de'
   CLUSTER_NAME: "odo-tests-openshift-cluster-tmp-pr-${{ github.event.number }}"
   PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
