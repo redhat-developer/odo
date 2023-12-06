@@ -78,7 +78,7 @@ jobs:
           ibmcloud config --check-version=false
           ibmcloud plugin install -f kubernetes-service
       - name: Authenticate with IBM Cloud CLI
-        run: ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "$IBM_CLOUD_REGION" --quiet
+        run: ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" --no-region --quiet
       - name: Download odo from previous job
         uses: actions/download-artifact@v3
         with:
