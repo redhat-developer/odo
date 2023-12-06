@@ -22,7 +22,9 @@ jobs:
     - name: Create Stageing Cluster
       uses: dawidd6/action-ansible-playbook@v2
       env:
-        IC_API_KEY: ${{ secrets.IC_API_KEY }}
+        #IC_API_KEY: ${{ secrets.IC_API_KEY }}
+        # TODO: Changed by rm3l - IC_API_KEY secret does not seem to exist in the repo
+        IC_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
         IC_REGION: 'eu-de'
         SSHKEY: './ssh_key'
       with:
