@@ -213,6 +213,14 @@ openshiftci-presubmit-unittests:
 test-integration-cluster:
 	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!unauth && !nocluster && !podman" tests/integration
 
+.PHONY: test-integration-cluster-no-service-binding
+test-integration-cluster-no-service-binding:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!unauth && !nocluster && !podman &&!servicebinding" tests/integration
+
+.PHONY: test-integration-service-binding
+test-integration-cluster-service-binding:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="servicebinding" tests/integration
+
 .PHONY: test-integration-openshift-unauth
 test-integration-openshift-unauth:
 	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration-unauth.xml" --label-filter="unauth" tests/integration
@@ -230,6 +238,14 @@ test-integration-podman:
 
 .PHONY: test-integration
 test-integration: test-integration-no-cluster test-integration-cluster
+
+.PHONY: test-e2e-no-service-binding
+test-e2e-no-service-binding:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-e2e.xml" --label-filter="!servicebinding" tests/e2escenarios
+
+.PHONY: test-e2e-service-binding
+test-e2e-service-binding:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-e2e.xml" --label-filter="servicebinding" tests/e2escenarios
 
 .PHONY: test-e2e
 test-e2e:

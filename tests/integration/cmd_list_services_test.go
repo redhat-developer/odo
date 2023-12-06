@@ -5,11 +5,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/tidwall/gjson"
+
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo list services tests", func() {
+var _ = Describe("odo list services tests", Label(helper.LabelServiceBinding), func() {
 	var commonVar helper.CommonVar
 	var randomProject string
 

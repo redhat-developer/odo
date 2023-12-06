@@ -11,7 +11,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo remove binding command tests", func() {
+var _ = Describe("odo remove binding command tests", Label(helper.LabelServiceBinding), func() {
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {

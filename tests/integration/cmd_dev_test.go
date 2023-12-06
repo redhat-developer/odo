@@ -1811,7 +1811,7 @@ ComponentSettings:
 			})
 		})
 
-		When("Starting a PostgreSQL service", func() {
+		When("Starting a PostgreSQL service", Label(helper.LabelServiceBinding), func() {
 			BeforeEach(func() {
 				skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")
 				if skipLogin == "true" {

@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("odo add binding interactive command tests", func() {
+var _ = Describe("odo add binding interactive command tests", Label(helper.LabelServiceBinding), func() {
 
 	var commonVar helper.CommonVar
 	var serviceName string
