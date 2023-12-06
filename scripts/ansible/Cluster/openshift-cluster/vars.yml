@@ -1,6 +1,6 @@
 ---
 total_ipv4_address_count: 256
 kube_version: 4.12.13_openshift      # command to list all supported k8s/openshift `ibmcloud ks versions`
-node_flavor: bx2.4x16
+node_flavor: b3c.4x16
 workers: 3
 nfs_image: ibm-ubuntu-20-04-2-minimal-amd64-1
