@@ -11,7 +11,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo add binding command tests", func() {
+var _ = Describe("odo add binding command tests", Label(helper.LabelServiceBinding), func() {
 	// TODO: Add integration tests for the following cases when SBO is not installed
 	// * servicebinding with envvars does not send `odo dev` in an infinite loop
 	// * `odo dev` deletes service binding secrets for SB that is not present locally

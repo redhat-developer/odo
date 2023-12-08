@@ -5,9 +5,10 @@ import (
 )
 
 const (
-	LabelNoCluster = "nocluster"
-	LabelUnauth    = "unauth"
-	LabelPodman    = "podman"
+	LabelNoCluster      = "nocluster"
+	LabelUnauth         = "unauth"
+	LabelPodman         = "podman"
+	LabelServiceBinding = "servicebinding"
 )
 
 func NeedsCluster(labels []string) bool {

@@ -1,0 +1,345 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Install tools
+        run: make goget-tools
+      - name: Validate
+        run: make validate
+
+  unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Unit Tests
+        run: make test
+
+  build_odo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Build odo
+        run: make bin
+      - run: |
+          chmod +x ./odo
+          ./odo version
+      - name: 'Upload odo'
+        uses: actions/upload-artifact@v3
+        with:
+          name: odo_bin
+          path: odo
+          retention-days: 1
+          if-no-files-found: error
+
+  nocluster_tests:
+    name: "No-Cluster Tests"
+    runs-on: ubuntu-latest
+    needs: build_odo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Download odo from previous job
+        uses: actions/download-artifact@v3
+        with:
+          name: odo_bin
+      - name: Set odo in system path
+        run: |
+          chmod a+x ./odo
+          sudo mv ./odo /usr/local/bin/odo
+      - run: odo version
+      - name: NoCluster Integration Tests
+        run: make test-integration-no-cluster
+
+  podman_tests:
+    name: "Podman Tests"
+    runs-on: ubuntu-latest
+    needs: build_odo
+    timeout-minutes: 60
+    steps:
+      - run: cat /etc/os-release || true
+      - run: podman info
+      # TODO(rm3l): workaround for https://github.com/actions/runner-images/issues/7753
+      #   (caused by https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394).
+      #   Remove this when this issue is fixed and available in the ubuntu runner image
+      - run: |
+          sudo apt install podman=3.4.4+ds1-1ubuntu1 --allow-downgrades
+          podman info
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Download odo from previous job
+        uses: actions/download-artifact@v3
+        with:
+          name: odo_bin
+      - name: Set odo in system path
+        run: |
+          chmod a+x ./odo
+          sudo mv ./odo /usr/local/bin/odo
+      - run: odo version
+      - name: Run Integration tests
+        env:
+          # This should ideally be a configuration in the GH repo (secret or variable).
+          # This is currently hard-coded because GH won't expose secrets or variables to PRs created from forks.
+          # Hopefully, variables (which are non-sensible by definition) will be passed to workflows triggered by PRs from forks.
+          # See https://github.com/community/community/discussions/44322
+          PODMAN_EXEC_NODES: 10
+        run: make test-integration-podman
+      - name: List and stop remaining containers
+        if: ${{ always() }}
+        run: |
+          podman pod ls --format '{{.Name}}' | xargs -I '{}' podman pod inspect '{}' || true
+          podman pod ls --format '{{.Name}}' | xargs podman pod stop || true
+
+  kubernetes_tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s_version: [v1.28.0, v1.27.3, v1.26.6]
+        service_binding: ["false", "true"]
+    name: "K8s Tests (${{ matrix.k8s_version }}/ServiceBinding=${{ matrix.service_binding }})"
+    runs-on: ubuntu-latest
+    needs: build_odo
+    timeout-minutes: 90
+    env:
+      KUBERNETES: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Download odo from previous job
+        uses: actions/download-artifact@v3
+        with:
+          name: odo_bin
+      - name: Set odo in system path
+        run: |
+          chmod a+x ./odo
+          sudo mv ./odo /usr/local/bin/odo
+      - name: Create kind cluster
+        uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 # v1.8.0
+        with:
+          node_image: "kindest/node:${{ matrix.k8s_version }}"
+          cluster_name: "odo-ci-kind-cluster"
+          ignore_failed_clean: "true"
+      - run: odo version
+      - id: set_service_binding
+        run: echo "service_binding=${{ matrix.service_binding }}" >> "$GITHUB_OUTPUT"
+      - name: Install Operator Lifecycle Manager (OLM)
+        if: ${{ steps.set_service_binding.outputs.service_binding == 'true' }}
+        run: |
+          export olm_version="0.26.0"
+          if ! kubectl get deployment olm-operator -n olm > /dev/null 2>&1; then
+            curl -sL "https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v$olm_version/install.sh" | bash -s "v$olm_version"
+            echo -n "Wait for pod app.kubernetes.io/component=controller to be created."
+            while : ; do
+              [ ! -z "`kubectl -n olm get pod --selector=app=olm-operator 2> /dev/null`" ] && echo && break
+              sleep 2
+              echo -n "."
+            done
+            echo -n "Waiting for OLM Operator pod to be ready (timeout in 600s)..."
+            kubectl wait --namespace olm \
+              --for=condition=ready pod \
+              --selector=app=olm-operator \
+              --timeout=600s
+          fi
+      - name: Install ServiceBinding Operator
+        if: ${{ steps.set_service_binding.outputs.service_binding == 'true' }}
+        run: |
+          echo Installing Service Binding Operator
+          kubectl apply -f https://operatorhub.io/install/service-binding-operator.yaml
+          echo -n "Wait for SBO Pod to be created."
+          while : ; do
+            [ ! -z "`kubectl -n operators get pod --selector=control-plane=service-binding-controller-manager 2> /dev/null`" ] && echo && break
+            sleep 2
+            echo -n "."
+          done
+          echo -n "Waiting for SBO Pod pod to be ready (timeout in 600s)..."
+          kubectl wait --namespace operators \
+            --for=condition=ready pod \
+            --selector=control-plane=service-binding-controller-manager \
+            --timeout=600s
+          echo "Installing Cloud Native PostgreSQL Operator"
+          kubectl apply -f https://operatorhub.io/install/stable-v1.19/cloud-native-postgresql.yaml
+          echo -n "Wait for Cloud Native PostgreSQL Controller Manager to be created."
+          while : ; do
+            [ ! -z "`kubectl -n operators get pod --selector=app.kubernetes.io/name=cloud-native-postgresql 2> /dev/null`" ] && echo && break
+            sleep 2
+            echo -n "."
+          done
+          echo -n "Waiting for Cloud Native PostgreSQL Controller Manager pod to be ready (timeout in 600s)..."
+          kubectl wait --namespace operators \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/name=cloud-native-postgresql \
+            --timeout=600s
+      - name: Service Binding Integration Tests
+        if: ${{ steps.set_service_binding.outputs.service_binding == 'true' }}
+        run: make test-integration-cluster-service-binding
+      - name: Cluster Integration Tests (w/o Service Binding)
+        if: ${{ steps.set_service_binding.outputs.service_binding != 'true' }}
+        run: make test-integration-cluster-no-service-binding
+      - name: Doc Automation tests
+        if: ${{ steps.set_service_binding.outputs.service_binding != 'true' }}
+        run:  make test-doc-automation
+
+  openshift_tests:
+#    # Disabled for now - does not work
+    if: false
+    # TODO(rm3l): Also run unauth tests
+    runs-on: ubuntu-latest
+    name: "OpenShift Tests"
+    needs: build_odo
+    timeout-minutes: 60
+    env:
+      KUBERNETES: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Download odo from previous job
+        uses: actions/download-artifact@v3
+        with:
+          name: odo_bin
+      - name: Set odo in system path
+        run: |
+          chmod a+x ./odo
+          sudo mv ./odo /usr/local/bin/odo
+      - name: Install oc
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          sudo tar xzvf oc.tar.gz -C /usr/local/bin
+#      - name: Install crc
+#        run: |
+#          wget https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/crc/2.29.0/crc-linux-amd64.tar.xz
+#          tar xvf crc-linux-amd64.tar.xz
+#          sudo cp -vr crc-linux-*-amd64/crc /usr/local/bin
+#          sudo chmod a+x /usr/local/bin/crc
+#      - name: Enable KVM group perms
+#        run: |
+#          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+#          sudo udevadm control --reload-rules
+#          sudo udevadm trigger --name-match=kvm
+#          sudo apt-get update
+#          sudo apt-get install -y libvirt-clients libvirt-daemon-system libvirt-daemon virtinst bridge-utils qemu qemu-system-x86
+#          sudo usermod -a -G kvm,libvirt $USER
+#      - name: Run a MicroShift cluster (backed by OpenShift Local, a.k.a. CRC)
+#        run: |
+#          crc config set consent-telemetry no
+#          crc config set preset microshift
+#          crc setup
+#          crc start
+#          eval $(crc oc-env)
+#          oc whoami
+      - name: Run a MicroShift cluster (backed by microshift-aio)
+        run: |
+          sudo podman run -d --rm --name microshift \
+               --privileged -v microshift-data:/var/lib -p 6443:6443 \
+               quay.io/microshift/microshift-aio:latest
+          # get kubeconfig
+          sudo podman exec microshift bash -c \
+               'while ! test -f "/var/lib/microshift/resources/kubeadmin/kubeconfig";
+               do
+                   echo "Waiting for kubeconfig..."
+                   sleep 5
+               done'
+          mkdir ${HOME}/.kube
+          sudo podman cp \
+               microshift:/var/lib/microshift/resources/kubeadmin/kubeconfig \
+               ${HOME}/.kube/config
+          sudo chown ${USER} ${HOME}/.kube/config
+          chmod 600 ${HOME}/.kube/config
+          # wait for the cluster to become available
+          sleep 10
+          kubectl wait --for=condition=available apiservice --all --timeout 300s
+#      - name: Install Operator Lifecycle Manager (OLM)
+#        run: |
+#          eval $(crc oc-env)
+#          export olm_version="0.26.0"
+#          if ! oc get deployment olm-operator -n olm > /dev/null 2>&1; then
+#            curl -sL "https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v$olm_version/install.sh" | bash -s "v$olm_version"
+#            echo -n "Wait for pod app.kubernetes.io/component=controller to be created."
+#            while : ; do
+#              [ ! -z "`oc -n olm get pod --selector=app=olm-operator 2> /dev/null`" ] && echo && break
+#              sleep 2
+#              echo -n "."
+#            done
+#            echo -n "Waiting for OLM Operator pod to be ready (timeout in 600s)..."
+#            oc wait --namespace olm \
+#              --for=condition=ready pod \
+#              --selector=app=olm-operator \
+#              --timeout=600s
+#          fi
+#      - name: Install ServiceBinding Operator
+#        run: |
+#          eval $(crc oc-env)
+#          echo Installing Service Binding Operator
+#          oc apply -f https://operatorhub.io/install/service-binding-operator.yaml
+#          echo -n "Wait for SBO Pod to be created."
+#          while : ; do
+#            [ ! -z "`oc -n operators get pod --selector=control-plane=service-binding-controller-manager 2> /dev/null`" ] && echo && break
+#            sleep 2
+#            echo -n "."
+#          done
+#          echo -n "Waiting for SBO Pod pod to be ready (timeout in 600s)..."
+#          oc wait --namespace operators \
+#            --for=condition=ready pod \
+#            --selector=control-plane=service-binding-controller-manager \
+#            --timeout=600s
+#          echo "Installing Cloud Native PostgreSQL Operator"
+#          oc apply -f https://operatorhub.io/install/stable-v1.19/cloud-native-postgresql.yaml
+#          echo -n "Wait for Cloud Native PosgreSQL Controller Manager to be created."
+#          while : ; do
+#            [ ! -z "`oc -n operators get pod --selector=app.kubernetes.io/name=cloud-native-postgresql 2> /dev/null`" ] && echo && break
+#            sleep 2
+#            echo -n "."
+#          done
+#          echo -n "Waiting for Cloud Native PostgreSQL Controller Manager pod to be ready (timeout in 600s)..."
+#          oc wait --namespace operators \
+#            --for=condition=ready pod \
+#            --selector=app.kubernetes.io/name=cloud-native-postgresql \
+#            --timeout=600s
+#      - name: E2E Tests
+#        run: |
+#          # eval $(crc oc-env)
+#          make test-e2e
+#      - if: ${{ always() }}
+#        run: crc delete --force
+#      - name: Setup OpenShift
+#        uses: manusa/actions-setup-openshift@f510517d09cf75af3ad9724b70895471662a4d77
+#        with:
+#          oc version: ${{ matrix.openshift_version }}
+#          github token: ${{ secrets.GITHUB_TOKEN }}
+      - run: odo version
+      - name: E2E tests
+        run: make test-e2e

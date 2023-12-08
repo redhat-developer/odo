@@ -405,7 +405,7 @@ var _ = Describe("E2E Test", func() {
 		})
 	})
 
-	Context("starting with non-empty Directory add Binding", func() {
+	Context("starting with non-empty Directory add Binding", Label(helper.LabelServiceBinding), func() {
 		sendDataEntry := func(url string) map[string]interface{} {
 			values := map[string]interface{}{"name": "joe",
 				"location": "tokyo",
