@@ -467,7 +467,8 @@ spec:
 
 ##### Image Pull Policy
 
-At this time, the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) for all containers is fixed to `Always` and cannot be modified.
+At this time, the [image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) for all containers is hard-coded to `Always`.
+But it can be modified using a [`container-overrides`](https://devfile.io/docs/2.2.0/overriding-pod-and-container-attributes#container-overrides) attribute, as depicted in the [Troubleshooting Guide](/docs/troubleshooting#the-image-pull-policy-of-the-dev-container-is-always-and-i-cannot-change-it).
 
 ##### Resources Limits and Requests
 
