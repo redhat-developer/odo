@@ -134,6 +134,8 @@ module.exports = {
           breadcrumbs: true,
           sidebarCollapsible: true,
           lastVersion: 'current',
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: false,
           exclude: [
               '**/docs-mdx/**',
               '**/_*.{js,jsx,ts,tsx,md,mdx}',
