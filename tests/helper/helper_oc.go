@@ -35,6 +35,17 @@ func (oc OcRunner) Run(args ...string) *gexec.Session {
 	return session
 }
 
+// GetCurrentProject get currently active project in oc
+// returns empty string if there no active project, or no access to the project
+func (oc OcRunner) GetCurrentProject() string {
+	session := CmdRunner(oc.path, "project", "-q")
+	session.Wait()
+	if session.ExitCode() == 0 {
+		return strings.TrimSpace(string(session.Out.Contents()))
+	}
+	return ""
+}
+
 // GetCurrentServerURL retrieves the URL of the server we're currently connected to
 // returns empty if not connected or an error occurred
 func (oc OcRunner) GetCurrentServerURL() string {
@@ -300,13 +311,12 @@ func (oc OcRunner) createAndSetRandNamespaceProject(projectName string) string {
 		fmt.Fprintf(GinkgoWriter, "Project %q already exists\n", projectName)
 	} else {
 		fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-		session := Cmd(oc.path, "create", "namespace", projectName).ShouldPass().Out()
+		session := Cmd(oc.path, "new-project", projectName).ShouldPass().Out()
 		Expect(session).To(ContainSubstring(projectName))
 	}
 	// ListNamespaceProject makes sure that project eventually appears in the list of all namespaces/projects.
 	oc.ListNamespaceProject(projectName)
 	oc.addConfigMapForCleanup(projectName)
-	oc.SetProject(projectName)
 	return projectName
 }
 
@@ -319,7 +329,7 @@ func (oc OcRunner) SetProject(namespace string) string {
 // DeleteNamespaceProject deletes a specified project in oc cluster
 func (oc OcRunner) DeleteNamespaceProject(projectName string, wait bool) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	Cmd(oc.path, "delete", "namespace", projectName, "--wait="+strconv.FormatBool(wait)).ShouldPass()
+	Cmd(oc.path, "delete", "project", projectName, "--wait="+strconv.FormatBool(wait)).ShouldPass()
 }
 
 func (oc OcRunner) GetAllPVCNames(namespace string) []string {
@@ -550,18 +560,18 @@ func (oc OcRunner) EnsureOperatorIsInstalled(partialOperatorName string) {
 }
 
 func (oc OcRunner) GetNamespaceProject() string {
-	return Cmd(oc.path, "get", "namespace").ShouldPass().Out()
+	return Cmd(oc.path, "get", "project").ShouldPass().Out()
 }
 
 func (oc OcRunner) HasNamespaceProject(name string) bool {
-	out := Cmd(oc.path, "get", "namespace", name, "-o", "jsonpath={.metadata.name}").
+	out := Cmd(oc.path, "get", "project", name, "-o", "jsonpath={.metadata.name}").
 		ShouldRun().Out()
 	return strings.Contains(out, name)
 }
 
 func (oc OcRunner) ListNamespaceProject(name string) {
 	Eventually(func() string {
-		return Cmd(oc.path, "get", "namespace").ShouldRun().Out()
+		return Cmd(oc.path, "get", "project").ShouldRun().Out()
 	}, 30, 1).Should(ContainSubstring(name))
 }
 
@@ -570,7 +580,7 @@ func (oc OcRunner) GetActiveNamespace() string {
 }
 
 func (oc OcRunner) GetAllNamespaceProjects() []string {
-	output := Cmd(oc.path, "get", "namespaces",
+	output := Cmd(oc.path, "get", "projects",
 		"-o", "custom-columns=NAME:.metadata.name",
 		"--no-headers").ShouldPass().Out()
 	result, err := ExtractLines(output)
