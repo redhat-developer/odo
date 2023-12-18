@@ -41,7 +41,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       - name: Build odo
@@ -68,7 +68,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       - name: Install IBM Cloud CLI
