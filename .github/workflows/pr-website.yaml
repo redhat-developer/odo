@@ -108,7 +108,7 @@ jobs:
           echo "DEPLOY_INGRESS_DOMAIN=$ingressDomain" >> "$GITHUB_ENV"
 
       - name: Download odo from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: odo_bin
 
@@ -187,7 +187,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Download odo from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: odo_bin
 
