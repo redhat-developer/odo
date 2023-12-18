@@ -31,7 +31,7 @@ jobs:
           ./scripts/changelog-script.sh ${{ steps.get_previous_tag.outputs.prev_tag }} ${TAG_NAME}
 
       - name: Upload Release Notes Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-changelog
           path: release-changelog.md
@@ -78,7 +78,7 @@ jobs:
           echo "blogFileName=${blogFileName}" >> $GITHUB_OUTPUT
 
       - name: Upload Release Notes Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-blog-post-draft
           path: ${{ steps.generate_draft_blog_post.outputs.blogFileName }}

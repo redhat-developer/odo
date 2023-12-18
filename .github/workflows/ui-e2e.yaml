@@ -44,7 +44,7 @@ jobs:
           wait-on-timeout: 180
 
       # after the test run completes, store videos and any screenshots only upon a failure
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: cypress-artifacts

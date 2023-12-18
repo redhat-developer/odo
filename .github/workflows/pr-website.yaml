@@ -62,7 +62,7 @@ jobs:
           ./odo version
 
       - name: 'Upload odo'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: odo_bin
           path: odo
