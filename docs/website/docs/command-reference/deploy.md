@@ -17,7 +17,7 @@ The `deploy` command is typically a *composite* command, composed of several *ap
 - With the following example `devfile.yaml` file, a container image will be built by using the `Dockerfile` present in the directory,
 the image will be pushed to its registry and a Kubernetes Deployment will be created in the cluster, using this freshly built image.
 
-```
+```yaml
 schemaVersion: 2.2.0
 [...]
 variables:
@@ -76,6 +76,7 @@ components:
 
 :::note
 The `uri` for the Dockerfile could also be an HTTP or HTTPS URL.
+It may also point to a [`Containerfile`](https://www.mankier.com/5/Containerfile).
 :::
 
 import Note from '../_imageregistrynote.mdx';
