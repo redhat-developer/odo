@@ -60,6 +60,12 @@ updates:
   labels:
   - "area/dependency"
   - "kind/task"
+  groups:
+    # See https://github.blog/changelog/2023-06-30-grouped-version-updates-for-dependabot-public-beta/
+    artifact-management-actions:
+      patterns:
+        - "actions/upload-artifact"
+        - "actions/download-artifact"
 
 ## Feel free to add other package managers here if needed.
 ## See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem

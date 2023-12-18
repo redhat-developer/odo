@@ -48,7 +48,7 @@ jobs:
           chmod +x ./odo
           ./odo version
       - name: 'Upload odo'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: odo_bin
           path: odo
@@ -65,7 +65,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Download odo from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: odo_bin
       - name: Set odo in system path
@@ -97,7 +97,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Download odo from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: odo_bin
       - name: Set odo in system path
@@ -138,7 +138,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Download odo from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: odo_bin
       - name: Set odo in system path
@@ -228,7 +228,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Download odo from previous job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: odo_bin
       - name: Set odo in system path
