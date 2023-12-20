@@ -16,7 +16,7 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778
 	github.com/frapposelli/wwhrd v0.4.0
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-git/v5 v5.10.1
 	github.com/go-openapi/jsonpointer v0.20.0
 	github.com/go-openapi/jsonreference v0.20.2

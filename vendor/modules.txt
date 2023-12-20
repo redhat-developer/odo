@@ -295,8 +295,8 @@ github.com/feloy/devfile-lifecycle/pkg/graph
 # github.com/frapposelli/wwhrd v0.4.0
 ## explicit; go 1.15
 github.com/frapposelli/wwhrd
-# github.com/fsnotify/fsnotify v1.6.0
-## explicit; go 1.16
+# github.com/fsnotify/fsnotify v1.7.0
+## explicit; go 1.17
 github.com/fsnotify/fsnotify
 # github.com/go-errors/errors v1.0.1
 ## explicit
