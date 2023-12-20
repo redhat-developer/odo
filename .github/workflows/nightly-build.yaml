@@ -83,9 +83,9 @@ jobs:
       - name: Cross-compile
         run: |
           export GITCOMMIT="$(git describe --no-match --always --abbrev=9 --dirty --broken)-nightly"
-          binName = "odo-$GOOS-$GOARCH"
+          binName="odo-$GOOS-$GOARCH"
           if [ $GOOS == "windows" ]; then
-            binName = "${binName}.exe"
+            binName="${binName}.exe"
           fi
           go build -o "$binName" ./cmd/odo/
 
