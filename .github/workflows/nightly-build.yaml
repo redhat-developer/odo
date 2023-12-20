@@ -81,13 +81,19 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Cross-compile
+        env:
+          PROJECT: "github.com/redhat-developer/odo"
+          RELEASE_SEGMENT_WRITE_KEY: ${{ secrets.RELEASE_SEGMENT_WRITE_KEY }}
         run: |
-          export GITCOMMIT="$(git describe --no-match --always --abbrev=9 --dirty --broken)-nightly"
+          version="$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)-nightly"
           binName="odo-$GOOS-$GOARCH"
           if [ $GOOS == "windows" ]; then
             binName="${binName}.exe"
           fi
-          go build -o "$binName" ./cmd/odo/
+          go build -o "$binName" \
+            -mod=vendor \
+            -ldflags="-s -w -X ${PROJECT}/pkg/segment.writeKey=${RELEASE_SEGMENT_WRITE_KEY} -X ${PROJECT}/pkg/version.GITCOMMIT=${version}" \
+            ./cmd/odo/
 
       - name: Generate archive
         run: |
