@@ -39,8 +39,9 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 		})
 
 		It("should list the new namespace when listing namespace", func() {
-			out := helper.Cmd("odo", "list", "namespace").ShouldPass().Out()
-			Expect(out).To(ContainSubstring(namespace))
+			Eventually(func() string {
+				return helper.Cmd("odo", "list", "namespace").ShouldPass().Out()
+			}, 60, 3).Should(ContainSubstring(namespace))
 		})
 	})
 
@@ -56,8 +57,10 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 				defer func(ns string) {
 					commonVar.CliRunner.DeleteNamespaceProject(ns, false)
 				}(namespace)
-				Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
-				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(namespace))
+				Eventually(func(g Gomega) {
+					g.Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
+					g.Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(namespace))
+				}, 60, 3).Should(Succeed())
 			})
 
 			It(fmt.Sprintf("should fail to create %s", commandName), func() {
