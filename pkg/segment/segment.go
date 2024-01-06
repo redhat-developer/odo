@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/config"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"k8s.io/klog"
@@ -215,11 +216,12 @@ func GetUserIdentity(telemetryFilePath string) (string, error) {
 	}
 
 	// check if the id is a valid uuid, if not, nil is returned
-	if uuid.Parse(strings.TrimSpace(string(id))) == nil {
-		id = []byte(uuid.NewRandom().String())
-		if err := os.WriteFile(telemetryFilePath, id, 0600); err != nil {
+	if _, err := uuid.ParseBytes(bytes.TrimSpace(id)); err != nil {
+		uid := uuid.New()
+		if err := os.WriteFile(telemetryFilePath, uid[:], 0o600); err != nil {
 			return "", err
 		}
+		id = uid[:]
 	}
 	return strings.TrimSpace(string(id)), nil
 }
