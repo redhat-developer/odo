@@ -9,7 +9,7 @@ require (
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/alizer v1.2.1
-	github.com/devfile/api/v2 v2.2.1
+	github.com/devfile/api/v2 v2.2.2
 	github.com/devfile/library/v2 v2.2.2-0.20231102090733-57a7da8b8392
 	github.com/devfile/registry-support/index/generator v0.0.0-20230322155332-33914affc83b
 	github.com/devfile/registry-support/registry-library v0.0.0-20221201200738-19293ac0b8ab

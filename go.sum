@@ -369,8 +369,8 @@ github.com/devfile/alizer v1.2.1/go.mod h1:kRCsbXuzCwXIbnSR4xpVZDr8Pl8j01rl+gPfk
 github.com/devfile/api/v2 v2.0.0-20211021164004-dabee4e633ed/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.2.0/go.mod h1:dN7xFrOVG+iPqn4UKGibXLd5oVsdE8XyK9OEb5JL3aI=
-github.com/devfile/api/v2 v2.2.1 h1:VSX297YqY4C4j4uhn7M0RdZeBaeWqyVi4NnagzEmxu0=
-github.com/devfile/api/v2 v2.2.1/go.mod h1:qp8jcw12y1JdCsxjK/7LJ7uWaJOxcY1s2LUk5PhbkbM=
+github.com/devfile/api/v2 v2.2.2 h1:DXRCPWFlZhTIE38Of2jzTRjQHadfbxBC8GS+m+EjoCU=
+github.com/devfile/api/v2 v2.2.2/go.mod h1:qp8jcw12y1JdCsxjK/7LJ7uWaJOxcY1s2LUk5PhbkbM=
 github.com/devfile/library v1.2.1-0.20211104222135-49d635cb492f/go.mod h1:uFZZdTuRqA68FVe/JoJHP92CgINyQkyWnM2Qyiim+50=
 github.com/devfile/library v1.2.1-0.20220308191614-f0f7e11b17de/go.mod h1:GSPfJaBg0+bBjBHbwBE5aerJLH6tWGQu2q2rHYd9czM=
 github.com/devfile/library/v2 v2.0.1/go.mod h1:paJ0PARAVy0br13VpBEQ4fO3rZVDxWtooQ29+23PNBk=

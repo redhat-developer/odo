@@ -167,7 +167,7 @@ github.com/devfile/alizer/pkg/apis/recognizer
 github.com/devfile/alizer/pkg/schema
 github.com/devfile/alizer/pkg/utils
 github.com/devfile/alizer/pkg/utils/langfiles
-# github.com/devfile/api/v2 v2.2.1
+# github.com/devfile/api/v2 v2.2.2
 ## explicit; go 1.18
 github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/v2/pkg/attributes

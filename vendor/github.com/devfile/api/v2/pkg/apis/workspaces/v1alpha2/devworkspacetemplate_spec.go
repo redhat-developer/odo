@@ -79,6 +79,14 @@ type DevWorkspaceTemplateSpecContent struct {
 	// +devfile:toplevellist
 	StarterProjects []StarterProject `json:"starterProjects,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
+	// Additional projects related to the main project in the devfile, contianing names and sources locations
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +devfile:overrides:include:omitInPlugin=true,description=Overrides of dependentProjects encapsulated in a parent devfile.
+	// +devfile:toplevellist
+	DependentProjects []Project `json:"dependentProjects,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
 	// Predefined, ready-to-use, devworkspace-related commands
 	// +optional
 	// +patchMergeKey=id
