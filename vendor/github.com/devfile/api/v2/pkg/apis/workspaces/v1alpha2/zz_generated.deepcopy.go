@@ -1818,6 +1818,13 @@ func (in *DevWorkspaceTemplateSpecContent) DeepCopyInto(out *DevWorkspaceTemplat
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.DependentProjects != nil {
+		in, out := &in.DependentProjects, &out.DependentProjects
+		*out = make([]Project, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.Commands != nil {
 		in, out := &in.Commands, &out.Commands
 		*out = make([]Command, len(*in))
@@ -3539,6 +3546,13 @@ func (in *ParentOverrides) DeepCopyInto(out *ParentOverrides) {
 	if in.StarterProjects != nil {
 		in, out := &in.StarterProjects, &out.StarterProjects
 		*out = make([]StarterProjectParentOverride, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.DependentProjects != nil {
+		in, out := &in.DependentProjects, &out.DependentProjects
+		*out = make([]ProjectParentOverride, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

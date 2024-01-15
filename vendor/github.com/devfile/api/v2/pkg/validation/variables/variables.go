@@ -39,6 +39,9 @@ type VariableWarning struct {
 
 	// StarterProjects stores a map of starter project names to the invalid variable references
 	StarterProjects map[string][]string
+
+	// DependentProjects stores a map of dependent project names to invalid variable references
+	DependentProjects map[string][]string
 }
 
 // ValidateAndReplaceGlobalVariable validates the workspace template spec data for global variable references and replaces them with the variable value
@@ -58,6 +61,9 @@ func ValidateAndReplaceGlobalVariable(workspaceTemplateSpec *v1alpha2.DevWorkspa
 
 		// Validate the starter projects and replace for global variable
 		variableWarning.StarterProjects = ValidateAndReplaceForStarterProjects(workspaceTemplateSpec.Variables, workspaceTemplateSpec.StarterProjects)
+
+		// Validate the starter projects and replace for global variable
+		variableWarning.DependentProjects = ValidateAndReplaceForProjects(workspaceTemplateSpec.Variables, workspaceTemplateSpec.DependentProjects)
 	}
 
 	return variableWarning

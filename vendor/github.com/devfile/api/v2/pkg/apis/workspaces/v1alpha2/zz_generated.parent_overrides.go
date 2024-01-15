@@ -47,6 +47,14 @@ type ParentOverrides struct {
 	// +devfile:toplevellist
 	StarterProjects []StarterProjectParentOverride `json:"starterProjects,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
+	// Overrides of dependentProjects encapsulated in a parent devfile.
+	// Overriding is done according to K8S strategic merge patch standard rules.
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +devfile:toplevellist
+	DependentProjects []ProjectParentOverride `json:"dependentProjects,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
 	// Overrides of commands encapsulated in a parent devfile or a plugin.
 	// Overriding is done according to K8S strategic merge patch standard rules.
 	// +optional
