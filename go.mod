@@ -13,7 +13,7 @@ require (
 	github.com/devfile/library/v2 v2.2.2-0.20231102090733-57a7da8b8392
 	github.com/devfile/registry-support/index/generator v0.0.0-20230322155332-33914affc83b
 	github.com/devfile/registry-support/registry-library v0.0.0-20221201200738-19293ac0b8ab
-	github.com/fatih/color v1.15.0
+	github.com/fatih/color v1.16.0
 	github.com/feloy/devfile-lifecycle v0.0.0-20230703133341-1c1589018778
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.7.0
@@ -152,7 +152,7 @@ require (
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
