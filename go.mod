@@ -48,7 +48,7 @@ require (
 	github.com/segmentio/backo-go v1.0.1
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/afero v1.6.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/gjson v1.17.0
 	github.com/zalando/go-keyring v0.2.3
