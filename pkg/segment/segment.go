@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/config"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"k8s.io/klog"
@@ -214,14 +215,18 @@ func GetUserIdentity(telemetryFilePath string) (string, error) {
 		}
 	}
 
-	// check if the id is a valid uuid, if not, nil is returned
-	if uuid.Parse(strings.TrimSpace(string(id))) == nil {
-		id = []byte(uuid.NewRandom().String())
-		if err := os.WriteFile(telemetryFilePath, id, 0600); err != nil {
+	// check if the id is a valid uuid, if not, generates a new one and writes to file
+	if _, err := uuid.ParseBytes(bytes.TrimSpace(id)); err != nil {
+		u, uErr := uuid.NewRandom()
+		if uErr != nil {
+			return "", fmt.Errorf("failed to generate anonymous ID for telemetry: %w", uErr)
+		}
+		id = []byte(u.String())
+		if err := os.WriteFile(telemetryFilePath, id, 0o600); err != nil {
 			return "", err
 		}
 	}
-	return strings.TrimSpace(string(id)), nil
+	return string(bytes.TrimSpace(id)), nil
 }
 
 // SetError sanitizes any PII(Personally Identifiable Information) from the error
