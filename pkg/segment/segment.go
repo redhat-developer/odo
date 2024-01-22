@@ -215,15 +215,18 @@ func GetUserIdentity(telemetryFilePath string) (string, error) {
 		}
 	}
 
-	// check if the id is a valid uuid, if not, nil is returned
+	// check if the id is a valid uuid, if not, generates a new one and writes to file
 	if _, err := uuid.ParseBytes(bytes.TrimSpace(id)); err != nil {
-		uid := uuid.New()
-		if err := os.WriteFile(telemetryFilePath, uid[:], 0o600); err != nil {
+		u, uErr := uuid.NewRandom()
+		if uErr != nil {
+			return "", fmt.Errorf("failed to generate anonymous ID for telemetry: %w", uErr)
+		}
+		id = []byte(u.String())
+		if err := os.WriteFile(telemetryFilePath, id, 0o600); err != nil {
 			return "", err
 		}
-		id = uid[:]
 	}
-	return strings.TrimSpace(string(id)), nil
+	return string(bytes.TrimSpace(id)), nil
 }
 
 // SetError sanitizes any PII(Personally Identifiable Information) from the error
