@@ -1973,10 +1973,10 @@
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.21.tgz#5de5a2385a35309427f6011992b544514d559aa1"
   integrity sha512-a5Sab1C4/icpTZVzZc5Ghpz88yQtGOyNqYXcZgOssB2uuAr+wF/MvN6bgtW32q7HHrvBki+BsZ0OuNv6EV3K9g==
 
-"@segment/snippet@^4.16.2":
-  version "4.16.2"
-  resolved "https://registry.yarnpkg.com/@segment/snippet/-/snippet-4.16.2.tgz#22b71737ce9ab56036aeae90208a9bbca31e8522"
-  integrity sha512-2fgsrt4U+vKv14ohOAsViCEzeZotaawF2Il7YUbmYVrhPn8Hq7xuGznHKRdZeoxScQ87X36xDX2Fzh5bAYRN7g==
+"@segment/snippet@^5.2.1":
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/@segment/snippet/-/snippet-5.2.1.tgz#1e5ebdc730a6f8a985381d96cfe3e760a61d2847"
+  integrity sha512-2K0AJVWbajA91/GyizfurTnRYinWusGiFNEMqVAh6vHnbR3b4tFwb8lEMdpPMyGe07XH0Upfx+naQIpiGFnJQQ==
   dependencies:
     "@ndhoule/map" "^2.0.1"
 
