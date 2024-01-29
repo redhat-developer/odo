@@ -35,7 +35,11 @@ func GetConfiguration() (*Configuration, error) {
 // typically in unit tests.
 func GetConfigurationWith(lookuper envconfig.Lookuper) (*Configuration, error) {
 	var s Configuration
-	err := envconfig.ProcessWith(context.Background(), &s, lookuper)
+	c := envconfig.Config{
+		Target:   &s,
+		Lookuper: lookuper,
+	}
+	err := envconfig.ProcessWith(context.Background(), &c)
 	if err != nil {
 		return nil, err
 	}
