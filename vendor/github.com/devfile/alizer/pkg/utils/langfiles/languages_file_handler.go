@@ -184,9 +184,7 @@ func (l *LanguageFile) GetConfigurationPerLanguageMapping() map[string][]string 
 func (l *LanguageFile) GetExcludedFolders() []string {
 	var excludedFolders []string
 	for _, langItem := range l.languages {
-		for _, exclude := range langItem.ExcludeFolders {
-			excludedFolders = append(excludedFolders, exclude)
-		}
+		excludedFolders = append(excludedFolders, langItem.ExcludeFolders...)
 	}
 	excludedFolders = removeDuplicates(excludedFolders)
 	return excludedFolders

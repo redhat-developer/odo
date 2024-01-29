@@ -64,20 +64,23 @@ func getFrameworks(configFilePath string) string {
 	cleanConfigPath := filepath.Clean(configFilePath)
 	xmlFile, err := os.Open(cleanConfigPath)
 	if err != nil {
+		fmt.Printf("error opening file: %s", err)
 		return ""
 	}
-	byteValue, _ := io.ReadAll(xmlFile)
-
+	byteValue, err := io.ReadAll(xmlFile)
+	if err != nil {
+		fmt.Printf("error reading file: %s", err)
+		return ""
+	}
 	var proj schema.DotNetProject
 	err = xml.Unmarshal(byteValue, &proj)
 	if err != nil {
 		return ""
 	}
-	defer func() error {
+	defer func(){
 		if err := xmlFile.Close(); err != nil {
-			return fmt.Errorf("error closing file: %s", err)
+			fmt.Printf("error closing file: %s", err)
 		}
-		return nil
 	}()
 	if proj.PropertyGroup.TargetFramework != "" {
 		return proj.PropertyGroup.TargetFramework

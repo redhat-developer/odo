@@ -242,12 +242,8 @@ var DownloadDevfileTypesFromRegistry = func(url string, filter model.DevfileFilt
 	if err != nil {
 		return []model.DevfileType{}, err
 	}
-	defer func() error {
-		if err := resp.Body.Close(); err != nil {
-			return fmt.Errorf("error closing file: %s", err)
-		}
-		return nil
-	}()
+
+	defer utils.CloseHttpResponseBody(resp)
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {

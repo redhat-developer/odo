@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"net/http"
 
 	"github.com/devfile/alizer/pkg/apis/model"
 	"github.com/devfile/alizer/pkg/schema"
@@ -134,19 +135,18 @@ func GetPomFileContent(pomFilePath string) (schema.Pom, error) {
 	if err != nil {
 		return schema.Pom{}, err
 	}
-	byteValue, _ := io.ReadAll(xmlFile)
-
+	byteValue, err := io.ReadAll(xmlFile)
+	if err != nil {
+		return schema.Pom{}, err
+	}
+	
 	var pom schema.Pom
 	err = xml.Unmarshal(byteValue, &pom)
 	if err != nil {
 		return schema.Pom{}, err
 	}
-	defer func() error {
-		if err := xmlFile.Close(); err != nil {
-			return fmt.Errorf("error closing file: %s", err)
-		}
-		return nil
-	}()
+
+	defer CloseFile(xmlFile)
 	return pom, nil
 }
 
@@ -353,12 +353,7 @@ func GetEnvVarsFromDockerFile(root string) ([]model.EnvVar, error) {
 		cleanFilePath := filepath.Clean(filePath)
 		file, err := os.Open(cleanFilePath)
 		if err == nil {
-			defer func() error {
-				if err := file.Close(); err != nil {
-					return fmt.Errorf("error closing file: %s", err)
-				}
-				return nil
-			}()
+			defer CloseFile(file)
 			return readEnvVarsFromDockerfile(file)
 		}
 	}
@@ -750,4 +745,16 @@ func NormalizeSplit(file string) (string, string) {
 		dir = "./"
 	}
 	return dir, fileName
+}
+
+func CloseHttpResponseBody(resp *http.Response){
+	if err := resp.Body.Close(); err != nil {
+		fmt.Printf("error closing file: %s", err)
+	}
+}
+
+func CloseFile(file *os.File){
+	if err := file.Close(); err != nil {
+		fmt.Printf("error closing file: %s", err)
+	}
 }
