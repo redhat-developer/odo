@@ -46,7 +46,7 @@ func (v VueDetector) DoFrameworkDetection(language *model.Language, config strin
 // DoPortsDetection searches for the port in package.json, .env file, and vue.config.js
 func (v VueDetector) DoPortsDetection(component *model.Component, ctx *context.Context) {
 	regexes := []string{`--port (\d*)`, `PORT=(\d*)`}
-	ports := []int{}
+	var ports []int
 	// check if --port or PORT is set in start script in package.json
 	port := getPortFromStartScript(component.Path, regexes)
 	if utils.IsValidPort(port) {

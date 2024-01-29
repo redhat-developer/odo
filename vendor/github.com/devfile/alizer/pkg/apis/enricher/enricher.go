@@ -126,11 +126,10 @@ func GetPortsFromDockerFile(root string) []int {
 		cleanFilePath := filepath.Clean(filePath)
 		file, err := os.Open(cleanFilePath)
 		if err == nil {
-			defer func() error {
+			defer func(){
 				if err := file.Close(); err != nil {
-					return fmt.Errorf("error closing file: %s", err)
+					fmt.Printf("error closing file: %s", err)
 				}
-				return nil
 			}()
 			return utils.ReadPortsFromDockerfile(file)
 		}

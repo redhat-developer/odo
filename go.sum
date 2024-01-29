@@ -365,8 +365,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/daviddengcn/go-colortext v0.0.0-20160507010035-511bcaf42ccd/go.mod h1:dv4zxwHi5C/8AeI+4gX4dCWOIvNi7I6JCSX0HvlKPgE=
 github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
-github.com/devfile/alizer v1.2.1 h1:0CrHYGjT0xTw5CYoK/U1pYGmcpKxw9YUUVaqJWF3pZM=
-github.com/devfile/alizer v1.2.1/go.mod h1:kRCsbXuzCwXIbnSR4xpVZDr8Pl8j01rl+gPfkukbf/c=
+github.com/devfile/alizer v1.3.1 h1:1uT/Eb0ZKZzr/AhaKD87EVIKk5EQIb2q8Lcv7Vu7mpQ=
+github.com/devfile/alizer v1.3.1/go.mod h1:RFp2nrQwm0VVrNCr1PTaUkvIp8S5KAKZLmxY+l+pGjI=
 github.com/devfile/api/v2 v2.0.0-20211021164004-dabee4e633ed/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.2.0/go.mod h1:dN7xFrOVG+iPqn4UKGibXLd5oVsdE8XyK9OEb5JL3aI=

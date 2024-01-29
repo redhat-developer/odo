@@ -32,19 +32,16 @@ func (d DockerEnricher) GetSupportedLanguages() []string {
 
 func (d DockerEnricher) DoEnrichLanguage(language *model.Language, _ *[]string) {
 	// The Dockerfile language does not contain frameworks
-	return
 }
 
 func (d DockerEnricher) DoEnrichComponent(component *model.Component, _ model.DetectionSettings, _ *context.Context) {
 	projectName := GetDefaultProjectName(component.Path)
 	component.Name = projectName
 
-	var ports []int
-	ports = GetPortsFromDockerFile(component.Path)
+	ports := GetPortsFromDockerFile(component.Path)
 	if len(ports) > 0 {
 		component.Ports = ports
 	}
-	return
 }
 
 func (d DockerEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
