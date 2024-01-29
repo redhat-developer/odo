@@ -25,7 +25,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/handlers v1.5.2
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/jedib0t/go-pretty/v6 v6.4.7
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/mattn/go-colorable v0.1.13
