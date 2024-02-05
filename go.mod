@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/ActiveState/termtest v0.7.2
 	github.com/ActiveState/termtest/expect v0.7.0
-	github.com/AlecAivazis/survey/v2 v2.3.5
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/alizer v1.3.1
