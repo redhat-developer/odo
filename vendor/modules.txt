@@ -19,7 +19,7 @@ github.com/ActiveState/termtest/xpty
 # github.com/ActiveState/vt10x v1.3.1
 ## explicit; go 1.13
 github.com/ActiveState/vt10x
-# github.com/AlecAivazis/survey/v2 v2.3.5
+# github.com/AlecAivazis/survey/v2 v2.3.7
 ## explicit; go 1.13
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core
