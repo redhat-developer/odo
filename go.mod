@@ -20,7 +20,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/go-openapi/jsonpointer v0.20.2
 	github.com/go-openapi/jsonreference v0.20.4
-	github.com/go-openapi/spec v0.20.8
+	github.com/go-openapi/spec v0.20.14
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.4.0
