@@ -10,7 +10,7 @@ updates:
 - package-ecosystem: "gomod"
   directory: "/"
   # Set this to 0 to disable version updates
-  open-pull-requests-limit: 5
+  open-pull-requests-limit: 0
   commit-message:
     prefix: "Go"
   schedule:
@@ -28,7 +28,7 @@ updates:
 - package-ecosystem: "npm"
   directory: "/docs/website"
   # Set this to 0 to disable version updates
-  open-pull-requests-limit: 5
+  open-pull-requests-limit: 0
   commit-message:
     prefix: "Website"
   schedule:
@@ -50,7 +50,7 @@ updates:
 - package-ecosystem: "github-actions"
   directory: "/"
   # Set this to 0 to disable version updates
-  open-pull-requests-limit: 5
+  open-pull-requests-limit: 0
   commit-message:
     prefix: "GitHub Actions"
   schedule:
