@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -33,13 +32,12 @@ import (
 	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/reference"
 	"github.com/containerd/containerd/remotes"
-	"github.com/containerd/containerd/remotes/docker/schema1"
+	"github.com/containerd/containerd/remotes/docker/schema1" //nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	remoteerrors "github.com/containerd/containerd/remotes/errors"
+	"github.com/containerd/containerd/tracing"
 	"github.com/containerd/containerd/version"
-	digest "github.com/opencontainers/go-digest"
+	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 var (
@@ -72,6 +70,9 @@ type Authorizer interface {
 	// unmodified. It may also add an `Authorization` header as
 	//  "bearer <some bearer token>"
 	//  "basic <base64 encoded credentials>"
+	//
+	// It may return remotes/errors.ErrUnexpectedStatus, which for example,
+	// can be used by the caller to find out the status code returned by the registry.
 	Authorize(context.Context, *http.Request) error
 
 	// AddResponses adds a 401 response for the authorizer to consider when
@@ -147,9 +148,6 @@ func NewResolver(options ResolverOptions) remotes.Resolver {
 
 	if options.Headers == nil {
 		options.Headers = make(http.Header)
-	} else {
-		// make a copy of the headers to avoid race due to concurrent map write
-		options.Headers = options.Headers.Clone()
 	}
 	if _, ok := options.Headers["User-Agent"]; !ok {
 		options.Headers.Set("User-Agent", "containerd/"+version.Version)
@@ -162,7 +160,8 @@ func NewResolver(options ResolverOptions) remotes.Resolver {
 			images.MediaTypeDockerSchema2Manifest,
 			images.MediaTypeDockerSchema2ManifestList,
 			ocispec.MediaTypeImageManifest,
-			ocispec.MediaTypeImageIndex, "*/*"}, ", "))
+			ocispec.MediaTypeImageIndex, "*/*",
+		}, ", "))
 	} else {
 		resolveHeader["Accept"] = options.Headers["Accept"]
 		delete(options.Headers, "Accept")
@@ -350,26 +349,31 @@ func (r *dockerResolver) Resolve(ctx context.Context, ref string) (string, ocisp
 				if err != nil {
 					return "", ocispec.Descriptor{}, err
 				}
-				defer resp.Body.Close()
 
 				bodyReader := countingReader{reader: resp.Body}
 
 				contentType = getManifestMediaType(resp)
-				if dgst == "" {
+				err = func() error {
+					defer resp.Body.Close()
+					if dgst != "" {
+						_, err = io.Copy(io.Discard, &bodyReader)
+						return err
+					}
+
 					if contentType == images.MediaTypeDockerSchema1Manifest {
 						b, err := schema1.ReadStripSignature(&bodyReader)
 						if err != nil {
-							return "", ocispec.Descriptor{}, err
+							return err
 						}
 
 						dgst = digest.FromBytes(b)
-					} else {
-						dgst, err = digest.FromReader(&bodyReader)
-						if err != nil {
-							return "", ocispec.Descriptor{}, err
-						}
+						return nil
 					}
-				} else if _, err := io.Copy(io.Discard, &bodyReader); err != nil {
+
+					dgst, err = digest.FromReader(&bodyReader)
+					return err
+				}()
+				if err != nil {
 					return "", ocispec.Descriptor{}, err
 				}
 				size = bodyReader.bytesRead
@@ -535,14 +539,13 @@ type request struct {
 
 func (r *request) do(ctx context.Context) (*http.Response, error) {
 	u := r.host.Scheme + "://" + r.host.Host + r.path
-	req, err := http.NewRequest(r.method, u, nil)
+	req, err := http.NewRequestWithContext(ctx, r.method, u, nil)
 	if err != nil {
 		return nil, err
 	}
-	if r.header == nil {
-		req.Header = http.Header{}
-	} else {
-		req.Header = r.header.Clone() // headers need to be copied to avoid concurrent map access
+	req.Header = http.Header{} // headers need to be copied to avoid concurrent map access
+	for k, v := range r.header {
+		req.Header[k] = v
 	}
 	if r.body != nil {
 		body, err := r.body()
@@ -562,7 +565,7 @@ func (r *request) do(ctx context.Context) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to authorize: %w", err)
 	}
 
-	var client = &http.Client{}
+	client := &http.Client{}
 	if r.host.Client != nil {
 		*client = *r.host.Client
 	}
@@ -577,11 +580,18 @@ func (r *request) do(ctx context.Context) (*http.Response, error) {
 			return nil
 		}
 	}
-
-	resp, err := ctxhttp.Do(ctx, client, req)
+	_, httpSpan := tracing.StartSpan(
+		ctx,
+		tracing.Name("remotes.docker.resolver", "HTTPRequest"),
+		tracing.WithHTTPRequest(req),
+	)
+	defer httpSpan.End()
+	resp, err := client.Do(req)
 	if err != nil {
+		httpSpan.SetStatus(err)
 		return nil, fmt.Errorf("failed to do request: %w", err)
 	}
+	httpSpan.SetAttributes(tracing.HTTPStatusCodeAttributes(resp.StatusCode)...)
 	log.G(ctx).WithFields(responseFields(resp)).Debug("fetch response received")
 	return resp, nil
 }
@@ -641,7 +651,7 @@ func (r *request) String() string {
 	return r.host.Scheme + "://" + r.host.Host + r.path
 }
 
-func requestFields(req *http.Request) logrus.Fields {
+func requestFields(req *http.Request) log.Fields {
 	fields := map[string]interface{}{
 		"request.method": req.Method,
 	}
@@ -659,10 +669,10 @@ func requestFields(req *http.Request) logrus.Fields {
 		}
 	}
 
-	return logrus.Fields(fields)
+	return log.Fields(fields)
 }
 
-func responseFields(resp *http.Response) logrus.Fields {
+func responseFields(resp *http.Response) log.Fields {
 	fields := map[string]interface{}{
 		"response.status": resp.Status,
 	}
@@ -677,7 +687,7 @@ func responseFields(resp *http.Response) logrus.Fields {
 		}
 	}
 
-	return logrus.Fields(fields)
+	return log.Fields(fields)
 }
 
 // IsLocalhost checks if the registry host is local.
@@ -692,28 +702,4 @@ func IsLocalhost(host string) bool {
 
 	ip := net.ParseIP(host)
 	return ip.IsLoopback()
-}
-
-// HTTPFallback is an http.RoundTripper which allows fallback from https to http
-// for registry endpoints with configurations for both http and TLS, such as
-// defaulted localhost endpoints.
-type HTTPFallback struct {
-	http.RoundTripper
-}
-
-func (f HTTPFallback) RoundTrip(r *http.Request) (*http.Response, error) {
-	resp, err := f.RoundTripper.RoundTrip(r)
-	var tlsErr tls.RecordHeaderError
-	if errors.As(err, &tlsErr) && string(tlsErr.RecordHeader[:]) == "HTTP/" {
-		// server gave HTTP response to HTTPS client
-		plainHTTPUrl := *r.URL
-		plainHTTPUrl.Scheme = "http"
-
-		plainHTTPRequest := *r
-		plainHTTPRequest.URL = &plainHTTPUrl
-
-		return f.RoundTripper.RoundTrip(&plainHTTPRequest)
-	}
-
-	return resp, err
 }
