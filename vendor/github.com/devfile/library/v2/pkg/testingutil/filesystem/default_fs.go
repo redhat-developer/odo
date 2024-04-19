@@ -22,13 +22,12 @@ limitations under the License.
 package filesystem
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 )
 
-// DefaultFs implements Filesystem using same-named functions from "os" and "io/ioutil"
+// DefaultFs implements Filesystem using same-named functions from "os"
 type DefaultFs struct{}
 
 var _ Filesystem = DefaultFs{}
@@ -97,33 +96,64 @@ func (DefaultFs) Getwd() (dir string, err error) {
 	return os.Getwd()
 }
 
-// ReadFile via ioutil.ReadFile
+// ReadFile via os.ReadFile
 func (DefaultFs) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
+	return os.ReadFile(filename)
 }
 
-// WriteFile via ioutil.WriteFile
+// WriteFile via os.WriteFile
 func (DefaultFs) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
+}
+
+// MkdirTemp via os.MkdirTemp
+func (DefaultFs) MkdirTemp(dir, prefix string) (string, error) {
+	return os.MkdirTemp(dir, prefix)
 }
 
 // TempDir via ioutil.TempDir
-func (DefaultFs) TempDir(dir, prefix string) (string, error) {
-	return ioutil.TempDir(dir, prefix)
+// Deprecated: as ioutil.TempDir is deprecated TempDir is replaced by MkdirTemp which uses os.MkdirTemp.
+// TempDir now uses MkdirTemp.
+func (fs DefaultFs) TempDir(dir, prefix string) (string, error) {
+	return fs.MkdirTemp(dir, prefix)
 }
 
-// TempFile via ioutil.TempFile
-func (DefaultFs) TempFile(dir, prefix string) (File, error) {
-	file, err := ioutil.TempFile(dir, prefix)
+// CreateTemp via os.CreateTemp
+func (DefaultFs) CreateTemp(dir, prefix string) (File, error) {
+	file, err := os.CreateTemp(dir, prefix)
 	if err != nil {
 		return nil, err
 	}
 	return &defaultFile{file}, nil
 }
 
-// ReadDir via ioutil.ReadDir
+// TempFile via ioutil.TempFile
+// Deprecated: as ioutil.TempFile is deprecated TempFile is replaced by CreateTemp which uses os.CreateTemp.
+// TempFile now uses CreateTemp.
+func (fs DefaultFs) TempFile(dir, prefix string) (File, error) {
+	return fs.CreateTemp(dir, prefix)
+}
+
+// ReadDir via os.ReadDir
 func (DefaultFs) ReadDir(dirname string) ([]os.FileInfo, error) {
-	return ioutil.ReadDir(dirname)
+	dirEntries, err := os.ReadDir(dirname)
+
+	if err != nil {
+		return []os.FileInfo{}, err
+	}
+
+	dirsInfo := make([]os.FileInfo, 0, len(dirEntries))
+	for _, dirEntry := range dirEntries {
+		info, err := dirEntry.Info()
+
+		if err != nil {
+			return dirsInfo, err
+		}
+
+		dirsInfo = append(dirsInfo, info)
+	}
+
+	return dirsInfo, nil
 }
 
 // Walk via filepath.Walk

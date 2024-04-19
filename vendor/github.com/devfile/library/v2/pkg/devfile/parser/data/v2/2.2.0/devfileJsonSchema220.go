@@ -15,11 +15,11 @@
 
 package version220
 
-// https://raw.githubusercontent.com/devfile/api/main/schemas/latest/devfile.json
+// https://raw.githubusercontent.com/devfile/api/v2.2.0/schemas/latest/devfile.json
 const JsonSchema220 = `{
   "description": "Devfile describes the structure of a cloud-native devworkspace and development environment.",
   "type": "object",
-  "title": "Devfile schema - Version 2.2.1-alpha",
+  "title": "Devfile schema - Version 2.2.0",
   "required": [
     "schemaVersion"
   ],
@@ -212,7 +212,7 @@ const JsonSchema220 = `{
                 "additionalProperties": false
               },
               "hotReloadCapable": {
-                "description": "Specify whether the command is restarted or not when the source code changes. If set to 'true' the command won't be restarted. A *hotReloadCapable* 'run' or 'debug' command is expected to handle file changes on its own and won't be restarted. A *hotReloadCapable* 'build' command is expected to be executed only once and won't be executed again. This field is taken into account only for commands 'build', 'run' and 'debug' with 'isDefault' set to 'true'.\n\nDefault value is 'false'",
+                "description": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'",
                 "type": "boolean"
               },
               "label": {
@@ -1104,7 +1104,7 @@ const JsonSchema220 = `{
                     "additionalProperties": false
                   },
                   "hotReloadCapable": {
-                    "description": "Specify whether the command is restarted or not when the source code changes. If set to 'true' the command won't be restarted. A *hotReloadCapable* 'run' or 'debug' command is expected to handle file changes on its own and won't be restarted. A *hotReloadCapable* 'build' command is expected to be executed only once and won't be executed again. This field is taken into account only for commands 'build', 'run' and 'debug' with 'isDefault' set to 'true'.\n\nDefault value is 'false'",
+                    "description": "Whether the command is capable to reload itself when source code changes. If set to 'true' the command won't be restarted and it is expected to handle file changes on its own.\n\nDefault value is 'false'",
                     "type": "boolean"
                   },
                   "label": {

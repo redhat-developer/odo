@@ -1,5 +1,5 @@
 //
-// Copyright 2022-2023 Red Hat, Inc.
+// Copyright Red Hat
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,74 +17,12 @@ package parser
 
 import (
 	"fmt"
-	"github.com/devfile/library/v2/pkg/util"
-	"github.com/hashicorp/go-multierror"
-	"os"
-	"path"
 	"reflect"
-	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 )
-
-type DevfileUtilsClient struct {
-}
-
-func NewDevfileUtilsClient() DevfileUtilsClient {
-	return DevfileUtilsClient{}
-}
-
-type DevfileUtils interface {
-	DownloadGitRepoResources(url string, destDir string, token string) error
-}
-
-// DownloadGitRepoResources mock implementation of the real method.
-func (gc DevfileUtilsClient) DownloadGitRepoResources(url string, destDir string, token string) error {
-	var returnedErr error
-	if util.IsGitProviderRepo(url) {
-		gitUrl, err := util.NewGitURL(url, token)
-		if err != nil {
-			return err
-		}
-
-		if !gitUrl.IsFile || gitUrl.Revision == "" || !strings.Contains(gitUrl.Path, OutputDevfileYamlPath) {
-			return fmt.Errorf("error getting devfile from url: failed to retrieve %s", url)
-		}
-
-		stackDir, err := os.MkdirTemp("", fmt.Sprintf("git-resources"))
-		if err != nil {
-			return fmt.Errorf("failed to create dir: %s, error: %v", stackDir, err)
-		}
-
-		defer func(path string) {
-			err := os.RemoveAll(path)
-			if err != nil {
-				returnedErr = multierror.Append(returnedErr, err)
-			}
-		}(stackDir)
-
-		gitUrl.Token = token
-
-		err = gitUrl.CloneGitRepo(stackDir)
-		if err != nil {
-			returnedErr = multierror.Append(returnedErr, err)
-			return returnedErr
-		}
-
-		dir := path.Dir(path.Join(stackDir, gitUrl.Path))
-		err = util.CopyAllDirFiles(dir, destDir)
-		if err != nil {
-			returnedErr = multierror.Append(returnedErr, err)
-			return returnedErr
-		}
-	} else {
-		return fmt.Errorf("Failed to download resources from parent devfile.  Unsupported Git Provider for %s ", url)
-	}
-
-	return nil
-}
 
 // GetDeployComponents gets the default deploy command associated components
 func GetDeployComponents(devfileData data.DevfileData) (map[string]string, error) {

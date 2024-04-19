@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright Red Hat
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package data
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"k8s.io/klog"
@@ -51,6 +52,7 @@ func GetDevfileJSONSchema(version string) (string, error) {
 		for version := range devfileApiVersionToJSONSchema {
 			supportedVersions = append(supportedVersions, string(version))
 		}
+		sort.Strings(supportedVersions)
 		return "", fmt.Errorf("unable to find schema for version %q. The parser supports devfile schema for version %s", version, strings.Join(supportedVersions, ", "))
 	}
 	klog.V(4).Infof("devfile apiVersion '%s' is supported", version)
