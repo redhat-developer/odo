@@ -10,7 +10,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/alizer v1.3.1
 	github.com/devfile/api/v2 v2.2.2
-	github.com/devfile/library/v2 v2.2.2-0.20240328200253-1d563eb5de06
+	github.com/devfile/library/v2 v2.2.2
 	github.com/devfile/registry-support/index/generator v0.0.0-20240311135803-6215550f93d4
 	github.com/devfile/registry-support/registry-library v0.0.0-20240328155806-7c89891a72ce
 	github.com/fatih/color v1.16.0
