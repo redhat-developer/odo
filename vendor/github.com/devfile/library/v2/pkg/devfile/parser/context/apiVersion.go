@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright Red Hat
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
-	"github.com/pkg/errors"
+	errPkg "github.com/devfile/library/v2/pkg/devfile/parser/errors"
 	"k8s.io/klog"
 )
 
@@ -32,7 +32,7 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 	var r map[string]interface{}
 	err := json.Unmarshal(d.rawContent, &r)
 	if err != nil {
-		return errors.Wrapf(err, "failed to decode devfile json")
+		return &errPkg.NonCompliantDevfile{Err: err.Error()}
 	}
 
 	// Get "schemaVersion" value from map for devfile V2
@@ -47,10 +47,10 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 	if okSchema {
 		// SchemaVersion cannot be empty
 		if schemaVersion.(string) == "" {
-			return fmt.Errorf("schemaVersion in devfile: %s cannot be empty", devfilePath)
+			return &errPkg.NonCompliantDevfile{Err: fmt.Sprintf("schemaVersion in devfile: %s cannot be empty", devfilePath)}
 		}
 	} else {
-		return fmt.Errorf("schemaVersion not present in devfile: %s", devfilePath)
+		return &errPkg.NonCompliantDevfile{Err: fmt.Sprintf("schemaVersion not present in devfile: %s", devfilePath)}
 	}
 
 	// Successful

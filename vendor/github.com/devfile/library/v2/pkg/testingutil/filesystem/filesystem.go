@@ -41,13 +41,13 @@ type Filesystem interface {
 	Remove(name string) error
 	Chmod(name string, mode os.FileMode) error
 	Getwd() (dir string, err error)
-
-	// from "io/ioutil"
 	ReadFile(filename string) ([]byte, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 	TempDir(dir, prefix string) (string, error)
 	TempFile(dir, prefix string) (File, error)
 	ReadDir(dirname string) ([]os.FileInfo, error)
+
+	// from "filepath"
 	Walk(root string, walkFn filepath.WalkFunc) error
 }
 

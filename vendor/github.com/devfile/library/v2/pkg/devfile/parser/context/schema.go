@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Red Hat, Inc.
+// Copyright Red Hat
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
+	errPkg "github.com/devfile/library/v2/pkg/devfile/parser/errors"
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
 	"k8s.io/klog"
@@ -30,7 +31,7 @@ func (d *DevfileCtx) SetDevfileJSONSchema() error {
 	// Check if json schema is present for the given apiVersion
 	jsonSchema, err := data.GetDevfileJSONSchema(d.apiVersion)
 	if err != nil {
-		return err
+		return &errPkg.NonCompliantDevfile{Err: err.Error()}
 	}
 	d.jsonSchema = jsonSchema
 	return nil
@@ -54,7 +55,7 @@ func (d *DevfileCtx) ValidateDevfileSchema() error {
 		for _, desc := range result.Errors() {
 			errMsg = errMsg + fmt.Sprintf("- %s\n", desc)
 		}
-		return fmt.Errorf(errMsg)
+		return &errPkg.NonCompliantDevfile{Err: errMsg}
 	}
 
 	// Sucessful
