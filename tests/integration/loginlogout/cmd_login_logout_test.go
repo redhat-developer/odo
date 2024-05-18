@@ -2,6 +2,7 @@ package integration
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -46,6 +47,9 @@ var _ = Describe("odo login and logout command tests", func() {
 
 	Context("when running login tests", func() {
 		It("should successful with correct credentials and fails with incorrect token", func() {
+			if strings.ToLower(os.Getenv("CI")) != "openshift" {
+				Skip("Skipping if not running on OpenShift. Set CI environment variable to openshift.")
+			}
 			// skip if requested
 			skipLogin := os.Getenv("SKIP_USER_LOGIN_TESTS")
 			if skipLogin == "true" {

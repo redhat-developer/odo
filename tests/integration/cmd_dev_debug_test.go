@@ -36,7 +36,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
-		When("a component is bootstrapped", func() {
+		When("a component is bootstrapped", Label(helper.LabelSkipOnOpenShift), func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
@@ -132,7 +132,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
-		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", helper.LabelPodmanIf(podman, func() {
+		When("creating nodejs component, doing odo dev and run command has dev.odo.push.path attribute", Label(helper.LabelSkipOnOpenShift), helper.LabelPodmanIf(podman, func() {
 			var devSession helper.DevSession
 			var devStarted bool
 			BeforeEach(func() {
@@ -191,7 +191,7 @@ var _ = Describe("odo dev debug command tests", func() {
 		devfileHandlerCtx := devfileHandlerCtx
 		for _, podman := range []bool{false, true} {
 			podman := podman
-			When("a composite command is used as debug command - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+			When("a composite command is used as debug command - "+devfileHandlerCtx.name, Label(helper.LabelSkipOnOpenShift), helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
 				var devSession helper.DevSession
 
@@ -264,7 +264,7 @@ var _ = Describe("odo dev debug command tests", func() {
 		}
 	}
 
-	When("a composite apply command is used as debug command", func() {
+	When("a composite apply command is used as debug command", Label(helper.LabelSkipOnOpenShift), func() {
 		deploymentNames := []string{"my-openshift-component", "my-k8s-component"}
 		var devSession helper.DevSession
 
@@ -350,7 +350,7 @@ var _ = Describe("odo dev debug command tests", func() {
 		devfileHandlerCtx := devfileHandlerCtx
 		for _, podman := range []bool{false, true} {
 			podman := podman
-			When("running build and debug commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, helper.LabelPodmanIf(podman, func() {
+			When("running build and debug commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, Label(helper.LabelSkipOnOpenShift), helper.LabelPodmanIf(podman, func() {
 				var devfileCmpName string
 				var devSession helper.DevSession
 
@@ -434,7 +434,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 	for _, podman := range []bool{false, true} {
 		podman := podman
-		When("a component without debug command is bootstrapped", helper.LabelPodmanIf(podman, func() {
+		When("a component without debug command is bootstrapped", Label(helper.LabelSkipOnOpenShift), helper.LabelPodmanIf(podman, func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-without-debugrun.yaml")).ShouldPass()

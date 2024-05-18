@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo delete command tests", func() {
+var _ = Describe("odo delete command tests", Label(helper.LabelSkipOnOpenShift), func() {
 	var commonVar helper.CommonVar
 	var cmpName, deploymentName, serviceName string
 	var getDeployArgs, getSVCArgs []string

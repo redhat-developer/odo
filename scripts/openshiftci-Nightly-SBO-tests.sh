@@ -28,7 +28,12 @@ oc login -u developer -p password@123 --insecure-skip-tls-verify
 oc whoami
 
 # Cluster related integration tests
-make test-integration-cluster
-make test-e2e
+make test-integration-openshift || error=true
+
+make test-e2e || error=true
+
+if [ $error ]; then
+    exit -1
+fi
 
 oc logout

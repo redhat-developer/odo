@@ -36,32 +36,22 @@ oc whoami
 
 # We want to use a stable Devfile registry for InterOP testing, and so we use the custom Devfile Registry setup on IBM cloud
 source ./scripts/openshiftci-config.sh
-if [ "${ARCH}" == "s390x" ]; then
-    # Integration tests
-    make test-integration
-    # E2e tests
-    make test-e2e
-elif [ "${ARCH}" == "ppc64le" ]; then
-    # Integration tests
-    make test-integration
-    # E2e tests
-    make test-e2e
-else
-    # Integration tests
-    make test-integration || error=true
 
-    # E2e tests
-    make test-e2e || error=true
+# Integration tests
+make test-integration-openshift || error=true
 
-    # Fail the build if there is any error while test execution
-    if [ $error ]; then
-        exit -1
-    fi
+# E2e tests
+make test-e2e || error=true
+
+# Fail the build if there is any error while test execution
+if [ $error ]; then
+    exit -1
 fi
 
 if [ ! -z "$ARTIFACT_DIR" ]
 then
     #copy artifact to $ARTIFACT_DIR if ARTIFACT_DIR var is exposed
-    cp -r test-*.xml $ARTIFACT_DIR
+    cp -vr test-*.xml $ARTIFACT_DIR || true
 fi
+
 oc logout

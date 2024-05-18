@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/plugins"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var sampleScript = []byte(`
@@ -18,7 +19,7 @@ var sampleScript = []byte(`
 echo 'hello'
 `)
 
-var _ = Describe("odo plugin functionality", func() {
+var _ = Describe("odo plugin functionality", Label(helper.LabelSkipOnOpenShift), func() {
 	var tempDir string
 	var origPath = os.Getenv("PATH")
 	var handler plugins.PluginHandler

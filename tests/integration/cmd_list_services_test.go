@@ -10,7 +10,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo list services tests", Label(helper.LabelServiceBinding), func() {
+var _ = Describe("odo list services tests", Label(helper.LabelServiceBinding), Label(helper.LabelSkipOnOpenShift), func() {
 	var commonVar helper.CommonVar
 	var randomProject string
 

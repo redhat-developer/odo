@@ -17,7 +17,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo dev command with api server tests", func() {
+var _ = Describe("odo dev command with api server tests", Label(helper.LabelSkipOnOpenShift), func() {
 	var cmpName string
 	var commonVar helper.CommonVar
 

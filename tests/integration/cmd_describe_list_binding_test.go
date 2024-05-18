@@ -12,7 +12,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo describe/list binding command tests", Label(helper.LabelServiceBinding), func() {
+var _ = Describe("odo describe/list binding command tests", Label(helper.LabelServiceBinding), Label(helper.LabelSkipOnOpenShift), func() {
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)

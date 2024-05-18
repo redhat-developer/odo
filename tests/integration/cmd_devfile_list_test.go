@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("odo list with devfile", func() {
+var _ = Describe("odo list with devfile", Label(helper.LabelSkipOnOpenShift), func() {
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)

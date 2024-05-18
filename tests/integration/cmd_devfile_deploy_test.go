@@ -382,7 +382,7 @@ ComponentSettings:
 		})
 	}
 
-	When("deploying a ServiceBinding k8s resource", Label(helper.LabelServiceBinding), func() {
+	When("deploying a ServiceBinding k8s resource", Label(helper.LabelServiceBinding), Label(helper.LabelSkipOnOpenShift), func() {
 		const serviceBindingName = "my-nodejs-app-cluster-sample" // hard-coded from devfile-deploy-with-SB.yaml
 		BeforeEach(func() {
 			skipLogin := os.Getenv("SKIP_SERVICE_BINDING_TESTS")

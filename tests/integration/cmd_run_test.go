@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("odo run command tests", func() {
+var _ = Describe("odo run command tests", Label(helper.LabelSkipOnOpenShift), func() {
 	var cmpName string
 	var commonVar helper.CommonVar
 

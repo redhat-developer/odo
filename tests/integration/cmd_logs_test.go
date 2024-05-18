@@ -24,7 +24,7 @@ func getLogCommand(podman bool, otherArgs ...string) *helper.CmdWrapper {
 	return cmd
 }
 
-var _ = Describe("odo logs command tests", func() {
+var _ = Describe("odo logs command tests", Label(helper.LabelSkipOnOpenShift), func() {
 	var componentName string
 	var commonVar helper.CommonVar
 

@@ -7,7 +7,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo generic", func() {
+var _ = Describe("odo generic", Label(helper.LabelSkipOnOpenShift), func() {
 	// TODO: A neater way to provide odo path. Currently we assume \
 	// odo and oc in $PATH already
 	var oc helper.OcRunner

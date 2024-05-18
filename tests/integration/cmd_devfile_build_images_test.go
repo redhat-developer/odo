@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo devfile build-images command tests", func() {
+var _ = Describe("odo devfile build-images command tests", Label(helper.LabelSkipOnOpenShift), func() {
 
 	var commonVar helper.CommonVar
 	var cmpName string

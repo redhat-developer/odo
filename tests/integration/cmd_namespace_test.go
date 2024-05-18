@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
+var _ = Describe("odo create/delete/list/set namespace/project tests", Label(helper.LabelSkipOnOpenShift), func() {
 	var commonVar helper.CommonVar
 
 	BeforeEach(func() {
