@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -186,10 +187,18 @@ func (c *Client) GetPodsMatchingSelector(selector string) (*corev1.PodList, erro
 
 func (c *Client) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
 	ns := c.GetCurrentNamespace()
-	return c.GetClient().CoreV1().Pods(ns).
+	w, err := c.GetClient().CoreV1().Pods(ns).
 		Watch(ctx, metav1.ListOptions{
 			LabelSelector: selector,
 		})
+	if err != nil {
+		return nil, err
+	}
+	if w == nil {
+		return nil, errors.New("got a nil pod watcher, which can happen in some edge cases, " +
+			"such as when there is a configuration issue or network failure during the creation of the watcher object")
+	}
+	return w, nil
 }
 
 func (c *Client) IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error) {
