@@ -80,27 +80,38 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Get commit ID
+        run: |
+          sha=$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+          echo "SHORT_SHA=${sha}" >> "$GITHUB_ENV"
+
       - name: Cross-compile
         env:
           PROJECT: "github.com/redhat-developer/odo"
           RELEASE_SEGMENT_WRITE_KEY: ${{ secrets.RELEASE_SEGMENT_WRITE_KEY }}
         run: |
-          version="$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)-nightly"
-          binName="odo-$GOOS-$GOARCH"
+          version="${{ env.SHORT_SHA }}-nightly"
+          binNameNoExt="odo-$GOOS-$GOARCH"
+          binName="${binNameNoExt}"
+          binNameWithSha="${binNameNoExt}-${{ env.SHORT_SHA }}"
           if [ $GOOS == "windows" ]; then
             binName="${binName}.exe"
+            binNameWithSha="${binNameWithSha}.exe"
           fi
           go build -o "$binName" \
             -mod=vendor \
             -ldflags="-s -w -X ${PROJECT}/pkg/segment.writeKey=${RELEASE_SEGMENT_WRITE_KEY} -X ${PROJECT}/pkg/version.GITCOMMIT=${version}" \
             ./cmd/odo/
+          cp -vr "$binName" "${binNameWithSha}"
 
       - name: Generate archive
         run: |
           if [ $GOOS == "windows" ]; then
             zip -9 -y -r -q "odo-${GOOS}-${GOARCH}.zip" "odo-${GOOS}-${GOARCH}.exe"
+            zip -9 -y -r -q "odo-${GOOS}-${GOARCH}-${{ env.SHORT_SHA }}.zip" "odo-${GOOS}-${GOARCH}-${{ env.SHORT_SHA }}.exe"
           else
             tar -czvf "odo-${GOOS}-${GOARCH}.tar.gz" "odo-${GOOS}-${GOARCH}"
+            tar -czvf "odo-${GOOS}-${GOARCH}-${{ env.SHORT_SHA }}.tar.gz" "odo-${GOOS}-${GOARCH}-${{ env.SHORT_SHA }}"
           fi
 
       - name: Generate SHA-256 checksums
