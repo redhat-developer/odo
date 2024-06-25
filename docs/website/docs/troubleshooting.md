@@ -416,7 +416,7 @@ $ ODO_PUSH_IMAGES=false odo dev --platform podman
   __
  /  \__     Developing using the "helloworld" Devfile
  \__/  \    Platform: podman
- /  \__/    odo version: v3.15.0 (b403a1bfb)
+ /  \__/    odo version: v3.16.1 (b403a1bfb)
  \__/
 
 ↪ Running on podman in Dev mode
@@ -490,7 +490,7 @@ $ odo dev --platform podman
   __
  /  \__     Developing using the "helloworld" Devfile
  \__/  \    Platform: podman
- /  \__/    odo version: v3.15.0 (b403a1bfb)
+ /  \__/    odo version: v3.16.1 (b403a1bfb)
  \__/
 
 ↪ Running on podman in Dev mode
