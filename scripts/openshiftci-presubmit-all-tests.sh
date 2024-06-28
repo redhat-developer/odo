@@ -30,7 +30,6 @@ export KUBECONFIG=$TMP_DIR/kubeconfig
 
 # Login as developer
 oc login -u developer -p password@123 --insecure-skip-tls-verify
-
 # Check login user name for debugging purpose
 oc whoami
 
@@ -39,6 +38,10 @@ source ./scripts/openshiftci-config.sh
 
 # Integration tests
 make test-integration-openshift || error=true
+
+# Login again (in case the token expires for some reason)
+oc login -u developer -p password@123 --insecure-skip-tls-verify || true
+oc whoami
 
 # E2e tests
 make test-e2e || error=true

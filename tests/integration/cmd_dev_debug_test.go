@@ -460,6 +460,7 @@ var _ = Describe("odo dev debug command tests", func() {
 	for _, podman := range []bool{false, true} {
 		podman := podman
 		When("starting with Devfile with autoBuild or deployByDefault components",
+			Label(helper.LabelSkipOnOpenShift), // No need to repeat this test on OCP, as it is already covered on vanilla K8s
 			helper.LabelPodmanIf(podman, func() {
 				BeforeEach(func() {
 					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)

@@ -286,9 +286,8 @@ ComponentSettings:
 				Expect(td.Properties.CmdProperties[segment.Platform]).To(Equal("openshift"))
 			}
 			serverVersion := commonVar.CliRunner.GetVersion()
-			if serverVersion == "" {
-				Expect(td.Properties.CmdProperties[segment.PlatformVersion]).To(BeNil())
-			} else {
+			// Result may or may not be empty, because sometimes `oc version` may not return the OpenShift Server version
+			if serverVersion != "" {
 				Expect(td.Properties.CmdProperties[segment.PlatformVersion]).To(ContainSubstring(serverVersion))
 			}
 		})
