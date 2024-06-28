@@ -346,56 +346,58 @@ CMD ["npm", "start"]
 	}
 
 	// More details on https://github.com/devfile/api/issues/852#issuecomment-1211928487
-	When("starting with Devfile with autoBuild or deployByDefault components", func() {
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"),
-				cmpName)
-		})
-
-		When("building images", func() {
-			var stdout string
-
+	When("starting with Devfile with autoBuild or deployByDefault components",
+		Label(helper.LabelSkipOnOpenShift), // No need to repeat this test on OCP, as it is already covered on vanilla K8s
+		func() {
 			BeforeEach(func() {
-				stdout = helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-autobuild-deploybydefault.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"),
+					cmpName)
 			})
 
-			It("should build all Image components regardless of autoBuild", func() {
-				for _, tag := range []string{
-					"autobuild-true-and-referenced",
-					"autobuild-true-and-not-referenced",
-					"autobuild-false-and-referenced",
-					"autobuild-false-and-not-referenced",
-					"autobuild-not-set-and-referenced",
-					"autobuild-not-set-and-not-referenced",
-				} {
-					Expect(stdout).Should(ContainSubstring("Building Image: localhost:5000/odo-dev/node:%s", tag))
-				}
+			When("building images", func() {
+				var stdout string
+
+				BeforeEach(func() {
+					stdout = helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				})
+
+				It("should build all Image components regardless of autoBuild", func() {
+					for _, tag := range []string{
+						"autobuild-true-and-referenced",
+						"autobuild-true-and-not-referenced",
+						"autobuild-false-and-referenced",
+						"autobuild-false-and-not-referenced",
+						"autobuild-not-set-and-referenced",
+						"autobuild-not-set-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Building Image: localhost:5000/odo-dev/node:%s", tag))
+					}
+				})
+			})
+
+			When("building and pushing images", func() {
+				var stdout string
+
+				BeforeEach(func() {
+					stdout = helper.Cmd("odo", "build-images", "--push").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				})
+
+				It("should build and push all Image components regardless of autoBuild", func() {
+					for _, tag := range []string{
+						"autobuild-true-and-referenced",
+						"autobuild-true-and-not-referenced",
+						"autobuild-false-and-referenced",
+						"autobuild-false-and-not-referenced",
+						"autobuild-not-set-and-referenced",
+						"autobuild-not-set-and-not-referenced",
+					} {
+						Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:%s", tag))
+					}
+				})
 			})
 		})
-
-		When("building and pushing images", func() {
-			var stdout string
-
-			BeforeEach(func() {
-				stdout = helper.Cmd("odo", "build-images", "--push").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-			})
-
-			It("should build and push all Image components regardless of autoBuild", func() {
-				for _, tag := range []string{
-					"autobuild-true-and-referenced",
-					"autobuild-true-and-not-referenced",
-					"autobuild-false-and-referenced",
-					"autobuild-false-and-not-referenced",
-					"autobuild-not-set-and-referenced",
-					"autobuild-not-set-and-not-referenced",
-				} {
-					Expect(stdout).Should(ContainSubstring("Building & Pushing Image: localhost:5000/odo-dev/node:%s", tag))
-				}
-			})
-		})
-	})
 
 	When("using a Devfile with variable image names", func() {
 		BeforeEach(func() {
