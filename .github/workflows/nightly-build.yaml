@@ -85,10 +85,7 @@ jobs:
           sha=$(git describe --no-match --always --abbrev=9 --dirty --broken 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
           echo "SHORT_SHA=${sha}" >> "$GITHUB_ENV"
 
-      - name: Cross-compile
-        env:
-          PROJECT: "github.com/redhat-developer/odo"
-          RELEASE_SEGMENT_WRITE_KEY: ${{ secrets.RELEASE_SEGMENT_WRITE_KEY }}
+      - name: Determine bin info
         run: |
           version="${{ env.SHORT_SHA }}-nightly"
           binNameNoExt="odo-$GOOS-$GOARCH"
@@ -98,6 +95,29 @@ jobs:
             binName="${binName}.exe"
             binNameWithSha="${binNameWithSha}.exe"
           fi
+          echo "BIN_NAME=${binName}" >> "$GITHUB_ENV"
+          echo "BIN_NAME_WITH_SHA=${binNameWithSha}" >> "$GITHUB_ENV"
+
+      - name: Determine if binary exists for commit ID
+        id: check_bin
+        run: |
+          baseUrl="https://s3.${IBM_CLOUD_REGION}.cloud-object-storage.appdomain.cloud/${IBM_CLOUD_OBJECT_STORAGE_BUCKET}"
+          binNameWithSha="${{ env.BIN_NAME_WITH_SHA }}"
+          binExists="false"
+          if curl -sfILo /dev/null "${baseUrl}/${binNameWithSha}"; then
+            binExists="true"
+          fi
+          echo "binExists=${binExists}" >> "$GITHUB_OUTPUT"
+
+      - name: Cross-compile
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
+        env:
+          PROJECT: "github.com/redhat-developer/odo"
+          RELEASE_SEGMENT_WRITE_KEY: ${{ secrets.RELEASE_SEGMENT_WRITE_KEY }}
+        run: |
+          version="${{ env.SHORT_SHA }}-nightly"
+          binName="${{ env.BIN_NAME }}"
+          binNameWithSha="${{ env.BIN_NAME_WITH_SHA }}"
           go build -o "$binName" \
             -mod=vendor \
             -ldflags="-s -w -X ${PROJECT}/pkg/segment.writeKey=${RELEASE_SEGMENT_WRITE_KEY} -X ${PROJECT}/pkg/version.GITCOMMIT=${version}" \
@@ -105,6 +125,7 @@ jobs:
           cp -vr "$binName" "${binNameWithSha}"
 
       - name: Generate archive
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
           if [ $GOOS == "windows" ]; then
             zip -9 -y -r -q "odo-${GOOS}-${GOARCH}.zip" "odo-${GOOS}-${GOARCH}.exe"
@@ -115,6 +136,7 @@ jobs:
           fi
 
       - name: Generate SHA-256 checksums
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
           for f in `find . -type f -name 'odo-${{ matrix.os }}-${{ matrix.arch }}*'`; do
             bin=$(realpath "$f")
@@ -122,6 +144,7 @@ jobs:
           done
 
       - name: Install IBM Cloud CLI
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
           curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
           ibmcloud --version
@@ -129,10 +152,12 @@ jobs:
           ibmcloud plugin install -f cloud-object-storage
 
       - name: Authenticate with IBM Cloud CLI
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
           ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" -g "${IBM_CLOUD_RESOURCE_GROUP}" --quiet
 
       - name: Set CRN
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
           CRN=$(ibmcloud resource service-instance "${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}" --output json | jq -r '.[0].guid | values')
           if [[ -z "$CRN" ]]; then
@@ -142,6 +167,7 @@ jobs:
           ibmcloud cos config crn --crn "${CRN}"
 
       - name: Upload binaries
+        if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
           baseUrl="https://s3.${IBM_CLOUD_REGION}.cloud-object-storage.appdomain.cloud/${IBM_CLOUD_OBJECT_STORAGE_BUCKET}"
           for f in `find . -type f -name 'odo-${{ matrix.os }}-${{ matrix.arch }}*'`; do
