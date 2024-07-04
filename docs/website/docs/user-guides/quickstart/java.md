@@ -13,14 +13,9 @@ For Java, we will use the [Spring Initializr](https://start.spring.io/) to gener
 
 1. Navigate to [start.spring.io](https://start.spring.io/).
 2. Select **Maven** under **Project**.
-3. Under **Spring Boot** select **2.7.\*** version.
-:::caution
-For now, don't use SpringBoot 3. Currently there is no Devfile in [registry.devfile.io](https://registry.devfile.io/) with Java 17.
-:::
-4. Select **11** under **Java**.
-5. Click on "Add" under "Dependencies".
-6. Select "Spring Web".
-7. Click "Generate" to generate and download the source code.
+3. Click on "Add" under "Dependencies".
+4. Select "Spring Web".
+5. Click "Generate" to generate and download the source code.
 
 Finally, extract the downloaded source code archive in the 'quickstart-demo' directory.
 
