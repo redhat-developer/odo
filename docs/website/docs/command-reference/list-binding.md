@@ -2,7 +2,7 @@
 title: odo list binding
 ---
 
-:::warning
+:::caution
 
 As of February 2024, the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/), which this command relies on, has been deprecated. See [Deprecation Notice](https://redhat-developer.github.io/service-binding-operator/userguide/intro.html).
 `odo list binding` may therefore not work as expected.
