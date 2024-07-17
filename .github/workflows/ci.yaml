@@ -1,7 +1,12 @@
 name: CI
 
 on:
+  # workflow_dispatch so that it can be triggered manually if needed
+  workflow_dispatch:
+
   pull_request:
+    branches: [ main ]
+  push:
     branches: [ main ]
 
 concurrency:
