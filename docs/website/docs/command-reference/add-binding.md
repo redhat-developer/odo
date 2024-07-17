@@ -2,6 +2,13 @@
 title: odo add binding
 ---
 
+:::warning
+
+As of February 2024, the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/), which this command relies on, has been deprecated. See [Deprecation Notice](https://redhat-developer.github.io/service-binding-operator/userguide/intro.html).
+`odo add binding` may therefore not work as expected.
+
+:::
+
 The `odo add binding` command adds a link between an Operator-backed service and a component. odo uses the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/) to create this link. 
 
 Running this command from a directory containing a Devfile will modify the Devfile, and once pushed (using `odo dev`) to the cluster, it creates an instance of the `ServiceBinding` resource.

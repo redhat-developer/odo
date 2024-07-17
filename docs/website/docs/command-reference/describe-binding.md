@@ -2,6 +2,13 @@
 title: odo describe binding
 ---
 
+:::warning
+
+As of February 2024, the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/), which this command relies on, has been deprecated. See [Deprecation Notice](https://redhat-developer.github.io/service-binding-operator/userguide/intro.html).
+`odo describe binding` may therefore not work as expected.
+
+:::
+
 `odo describe binding` command is useful for getting information about service bindings.
 
 This command supports the service bindings added with the command `odo add binding` and bindings added manually to the Devfile, using a `ServiceBinding` resource from one of these apiVersion:

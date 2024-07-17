@@ -2,7 +2,7 @@
 title: odo list
 ---
 
-`odo list` command combines the `odo list binding` and `odo list component` commands.
+`odo list` command combines the [`odo list binding`](./list-binding.md) and [`odo list component`](./list-component.md) commands.
 
 ## Running the command
 

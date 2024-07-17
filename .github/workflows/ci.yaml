@@ -124,7 +124,9 @@ jobs:
       fail-fast: false
       matrix:
         k8s_version: [v1.28.0, v1.27.3, v1.26.6]
-        service_binding: ["false", "true"]
+        service_binding:
+          - "false"
+          # - "true" # Service Binding Operator deprecated as of Feb 2024
     name: "K8s Tests (${{ matrix.k8s_version }}/ServiceBinding=${{ matrix.service_binding }})"
     runs-on: ubuntu-latest
     needs: build_odo

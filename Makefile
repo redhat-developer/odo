@@ -225,6 +225,14 @@ test-integration-cluster-no-service-binding:
 test-integration-cluster-service-binding:
 	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="servicebinding" tests/integration
 
+.PHONY: test-integration-openshift-no-service-binding
+test-integration-openshift-no-service-binding:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!unauth && !nocluster && !podman && !servicebinding && !skiponopenshift" tests/integration
+
+.PHONY: test-integration-openshift-service-binding
+test-integration-openshift-service-binding:
+	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration.xml" --label-filter="!unauth && !nocluster && !podman && servicebinding && !skiponopenshift" tests/integration
+
 .PHONY: test-integration-openshift-unauth
 test-integration-openshift-unauth:
 	$(RUN_GINKGO) $(GINKGO_FLAGS) --junit-report="test-integration-unauth.xml" --label-filter="unauth" tests/integration

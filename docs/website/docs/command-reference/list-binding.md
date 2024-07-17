@@ -2,6 +2,12 @@
 title: odo list binding
 ---
 
+:::warning
+
+As of February 2024, the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/), which this command relies on, has been deprecated. See [Deprecation Notice](https://redhat-developer.github.io/service-binding-operator/userguide/intro.html).
+`odo list binding` may therefore not work as expected.
+
+:::
 
 You can use `odo list binding` to list all the Service Bindings declared in the current namespace and, if present, 
 in the Devfile of the current directory.

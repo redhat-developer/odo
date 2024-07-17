@@ -37,14 +37,16 @@ oc whoami
 source ./scripts/openshiftci-config.sh
 
 # Integration tests
-make test-integration-openshift || error=true
+# Service Binding Operator deprecated as of Feb 2024
+make test-integration-openshift-no-service-binding || error=true
 
 # Login again (in case the token expires for some reason)
 oc login -u developer -p password@123 --insecure-skip-tls-verify || true
 oc whoami
 
 # E2e tests
-make test-e2e || error=true
+# Service Binding Operator deprecated as of Feb 2024
+make test-e2e-no-service-binding || error=true
 
 # Fail the build if there is any error while test execution
 if [ $error ]; then
