@@ -34,8 +34,12 @@ func (o *PodmanCli) PodInspect(podname string) (PodInspectData, error) {
 		return PodInspectData{}, err
 	}
 
-	var result PodInspectData
+	var result []PodInspectData
+	if err := json.Unmarshal(out, &result); err != nil {
+		var singleResult PodInspectData
+		err = json.Unmarshal(out, &singleResult)
+		return singleResult, err
+	}
 
-	err = json.Unmarshal(out, &result)
-	return result, err
+	return result[0], err
 }
