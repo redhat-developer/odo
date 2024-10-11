@@ -42,5 +42,8 @@ func (o *PodmanCli) PodInspect(podname string) (PodInspectData, error) {
 		return singleResult, err
 	}
 
-	return result[0], err
+	if len(result) == 0 {
+		return PodInspectData{}, nil
+	}
+	return result[0], nil
 }
