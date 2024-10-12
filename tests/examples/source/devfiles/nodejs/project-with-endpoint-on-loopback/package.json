@@ -8,6 +8,6 @@
     "debug": "node --inspect=${DEBUG_PORT} server.js"
   },
   "dependencies": {
-    "express": "^4.21.0"
+    "express": "^4.21.1"
   }
 }
