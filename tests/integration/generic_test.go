@@ -142,9 +142,9 @@ var _ = Describe("odo generic", Label(helper.LabelSkipOnOpenShift), func() {
 							Expect(odoVersion).To(ContainSubstring(helper.GetPodmanVersion()))
 						} else {
 							Expect(odoVersion).Should(MatchRegexp(reKubernetesVersion))
-							serverURL := oc.GetCurrentServerURL()
-							Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 							if !helper.IsKubernetesCluster() {
+								serverURL := oc.GetCurrentServerURL()
+								Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 								ocpMatcher := ContainSubstring("OpenShift: ")
 								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion == "" {
 									// Might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)
@@ -164,9 +164,9 @@ var _ = Describe("odo generic", Label(helper.LabelSkipOnOpenShift), func() {
 							helper.JsonPathSatisfiesAll(odoVersion, "podman.client.version", MatchRegexp(reJSONVersion), Equal(helper.GetPodmanVersion()))
 						} else {
 							helper.JsonPathSatisfiesAll(odoVersion, "cluster.kubernetes.version", MatchRegexp(reJSONVersion))
-							serverURL := oc.GetCurrentServerURL()
-							helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
 							if !helper.IsKubernetesCluster() {
+								serverURL := oc.GetCurrentServerURL()
+								helper.JsonPathContentIs(odoVersion, "cluster.serverURL", serverURL)
 								m := BeEmpty()
 								if serverVersion := commonVar.CliRunner.GetVersion(); serverVersion != "" {
 									// A blank serverVersion might indicate a user permission error on certain clusters (observed with a developer account on Prow nightly jobs)

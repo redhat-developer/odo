@@ -25,7 +25,7 @@ func getBooleanValueFromEnvVar(envvar string, defaultValue bool) bool {
 }
 
 func GenerateAndSetContainersConf(dir string) {
-	useNamespaces := getBooleanValueFromEnvVar("PODMAN_USE_NAMESPACES", true)
+	useNamespaces := getBooleanValueFromEnvVar("PODMAN_USE_NAMESPACES", false)
 	if !useNamespaces {
 		return
 	}

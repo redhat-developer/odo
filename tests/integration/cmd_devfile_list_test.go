@@ -228,7 +228,7 @@ var _ = Describe("odo list with devfile", Label(helper.LabelSkipOnOpenShift), fu
 			})
 		})
 
-		When("dev is running on podman", Label(helper.LabelPodman), func() {
+		When("dev is running on podman", Serial, Label(helper.LabelPodman), func() {
 			BeforeEach(func() {
 				var err error
 				devSession, err = helper.StartDevMode(helper.DevSessionOpts{

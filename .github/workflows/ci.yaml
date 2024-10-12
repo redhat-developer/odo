@@ -106,12 +106,6 @@ jobs:
     steps:
       - run: cat /etc/os-release || true
       - run: podman info
-      # TODO(rm3l): workaround for https://github.com/actions/runner-images/issues/7753
-      #   (caused by https://bugs.launchpad.net/ubuntu/+source/libpod/+bug/2024394).
-      #   Remove this when this issue is fixed and available in the ubuntu runner image
-      - run: |
-          sudo apt install podman=3.4.4+ds1-1ubuntu1 --allow-downgrades
-          podman info
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Go
@@ -133,7 +127,10 @@ jobs:
           # This is currently hard-coded because GH won't expose secrets or variables to PRs created from forks.
           # Hopefully, variables (which are non-sensible by definition) will be passed to workflows triggered by PRs from forks.
           # See https://github.com/community/community/discussions/44322
-          PODMAN_EXEC_NODES: 10
+          PODMAN_EXEC_NODES: 1
+          # Namespacing feature removed from Podman v4.5.0: https://github.com/containers/podman/pull/17586
+          # TODO(rm3l): ideally, we could separate Podman root to isolate tests and run them in parallel
+          PODMAN_USE_NAMESPACES: 'false'
         run: make test-integration-podman
       - name: List and stop remaining containers
         if: ${{ always() }}
