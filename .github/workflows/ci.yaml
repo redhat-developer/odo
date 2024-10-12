@@ -39,6 +39,21 @@ jobs:
 
   build_odo:
     runs-on: ubuntu-latest
+    name: Build (Go ${{ matrix.go-version }})
+    strategy:
+      matrix:
+        go-version: [ '1.19' ]
+        # experimental: [false]
+        upload: [true]
+        include:
+          - go-version: '1.20'
+            upload: false
+          - go-version: '1.21'
+            upload: false
+          - go-version: '1.22'
+            upload: false
+          - go-version: '1.23'
+            upload: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,7 +61,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          # go-version-file: 'go.mod'
+          go-version: ${{ matrix.go-version }}
       - name: Build odo
         run: make bin
       - run: |
@@ -54,6 +70,7 @@ jobs:
           ./odo version
       - name: 'Upload odo'
         uses: actions/upload-artifact@v4
+        if: ${{ matrix.upload }}
         with:
           name: odo_bin
           path: odo
