@@ -142,7 +142,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        k8s_version: [v1.28.0, v1.27.3, v1.26.6]
+        k8s_version: [v1.31.0, v1.30.4, v1.29.8, v1.28.13, v1.27.16, v1.26.15]
         service_binding:
           - "false"
           # - "true" # Service Binding Operator deprecated as of Feb 2024
@@ -167,7 +167,7 @@ jobs:
           chmod a+x ./odo
           sudo mv ./odo /usr/local/bin/odo
       - name: Create kind cluster
-        uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 # v1.8.0
+        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde # v1.10.0
         with:
           node_image: "kindest/node:${{ matrix.k8s_version }}"
           cluster_name: "odo-ci-kind-cluster"
