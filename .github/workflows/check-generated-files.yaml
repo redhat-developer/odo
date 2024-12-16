@@ -17,7 +17,7 @@ jobs:
     # TODO(rm3l): list of authorized users that do not require manual review comes from the maintainers team and various robot accounts that handle automation in the repo => find a better way not to hardcode this list!
     environment:
       ${{ (github.event.pull_request.head.repo.full_name == github.repository ||
-      contains(fromJSON('["odo-robot[bot]", "dependabot[bot]", "openshift-ci[bot]", "openshift-merge-robot", "openshift-ci-robot", "feloy", "kadel", "rm3l", "valaparthvi", "ritudes"]'), github.actor)) &&
+      contains(fromJSON('["odo-robot[bot]", "dependabot[bot]", "openshift-ci[bot]", "openshift-merge-robot", "openshift-ci-robot", "kadel", "rm3l"]'), github.actor)) &&
       'internal' || 'external' }}
     runs-on: ubuntu-latest
     steps:
