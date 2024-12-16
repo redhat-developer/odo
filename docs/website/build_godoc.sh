@@ -2,8 +2,8 @@
 
 cd ../..
 
-go install golang.org/x/tools/cmd/godoc@latest
-go install gitlab.com/tslocum/godoc-static@latest
+go install golang.org/x/tools/cmd/godoc@v0.24.0
+go install code.rocket9labs.com/tslocum/godoc-static@v0.2.2
 
 export GOPATH=$(go env GOPATH)
 PATH=$PATH:${GOPATH}/bin
