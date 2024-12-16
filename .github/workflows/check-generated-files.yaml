@@ -1,15 +1,40 @@
 name: check-generated-files
 on:
-  pull_request:
+  # pull_request_target needed to be able to commit and push bundle diffs to external fork PRs.
+  # But we included a manual authorization safeguard to prevent PWN requests. See the 'authorize' job below.
+  pull_request_target:
     branches:    
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
 jobs:
+  authorize:
+    # The 'external' environment is configured with the odo-maintainers team as required reviewers.
+    # All the subsequent jobs in this workflow 'need' this job, which will require manual approval for PRs coming from external forks.
+    # TODO(rm3l): list of authorized users that do not require manual review comes from the maintainers team and various robot accounts that handle automation in the repo => find a better way not to hardcode this list!
+    environment:
+      ${{ (github.event.pull_request.head.repo.full_name == github.repository ||
+      contains(fromJSON('["odo-robot[bot]", "dependabot[bot]", "openshift-ci[bot]", "openshift-merge-robot", "openshift-ci-robot", "feloy", "kadel", "rm3l", "valaparthvi", "ritudes"]'), github.actor)) &&
+      'internal' || 'external' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ✓
+
   check-ui-static-files:
+    needs: authorize
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Generate static files for UI
         run: make ui-static
@@ -22,7 +47,28 @@ jobs:
         id: verify-changed-files
       
       - name: Some files have changed
-        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        if: ${{ !cancelled() && steps.verify-changed-files.outputs.files_changed == 'true' }}
         run: |
-          echo "::error Changed files: ${{ steps.verify-changed-files.outputs.changed_files }} -- Please regenerate with make ui-static / make prebuild"
-          exit 1
+          echo "::warning Changed files: ${{ steps.verify-changed-files.outputs.changed_files }} -- Regenerating with make ui-static / make prebuild"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git fetch --prune
+          git pull --rebase --autostash
+          git add -A .
+          git commit \
+            -m "Regenerate static UI files" \
+            -m "Co-authored-by: $GITHUB_ACTOR <$GITHUB_ACTOR@users.noreply.github.com>"
+          git push
+
+      - name: Comment on PR if bundle manifests were updated
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        if: ${{ !cancelled() && steps.verify-changed-files.outputs.files_changed == 'true' }}
+        continue-on-error: true
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ <b>Static UI files regenerated!</b><br/><br/>Those changes should have been pushed automatically to your PR branch.'
+            })
