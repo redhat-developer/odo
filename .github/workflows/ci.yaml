@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build (Go ${{ matrix.go-version }})
     strategy:
+      fail-fast: false
       matrix:
         go-version: [ '1.19' ]
         # experimental: [false]
