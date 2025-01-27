@@ -22,6 +22,8 @@ import (
 	"golang.org/x/tools/internal/typesinternal"
 )
 
+type unit struct{}
+
 //// Sanity checking utilities
 
 // assert panics with the mesage msg if p is false.
@@ -43,6 +45,13 @@ func isBlankIdent(e ast.Expr) bool {
 	return ok && id.Name == "_"
 }
 
+// rangePosition is the position to give for the `range` token in a RangeStmt.
+var rangePosition = func(rng *ast.RangeStmt) token.Pos {
+	// Before 1.20, this is unreachable.
+	// rng.For is a close, but incorrect position.
+	return rng.For
+}
+
 //// Type utilities.  Some of these belong in go/types.
 
 // isNonTypeParamInterface reports whether t is an interface type but not a type parameter.
@@ -51,8 +60,9 @@ func isNonTypeParamInterface(t types.Type) bool {
 }
 
 // isBasic reports whether t is a basic type.
+// t is assumed to be an Underlying type (not Named or Alias).
 func isBasic(t types.Type) bool {
-	_, ok := aliases.Unalias(t).(*types.Basic)
+	_, ok := t.(*types.Basic)
 	return ok
 }
 
@@ -100,24 +110,22 @@ func isBasicConvTypes(tset termList) bool {
 	return all && basics >= 1 && tset.Len()-basics <= 1
 }
 
-// deptr returns a pointer's element type and true; otherwise it returns (typ, false).
-// This function is oblivious to core types and is not suitable for generics.
-//
-// TODO: Deprecate this function once all usages have been audited.
-func deptr(typ types.Type) (types.Type, bool) {
-	if p, ok := typ.Underlying().(*types.Pointer); ok {
-		return p.Elem(), true
-	}
-	return typ, false
+// isPointer reports whether t's underlying type is a pointer.
+func isPointer(t types.Type) bool {
+	return is[*types.Pointer](t.Underlying())
 }
 
-// deref returns the element type of a type with a pointer core type and true;
-// otherwise it returns (typ, false).
-func deref(typ types.Type) (types.Type, bool) {
-	if p, ok := typeparams.CoreType(typ).(*types.Pointer); ok {
-		return p.Elem(), true
-	}
-	return typ, false
+// isPointerCore reports whether t's core type is a pointer.
+//
+// (Most pointer manipulation is related to receivers, in which case
+// isPointer is appropriate. tecallers can use isPointer(t).
+func isPointerCore(t types.Type) bool {
+	return is[*types.Pointer](typeparams.CoreType(t))
+}
+
+func is[T any](x any) bool {
+	_, ok := x.(T)
+	return ok
 }
 
 // recvType returns the receiver type of method obj.
@@ -141,6 +149,26 @@ func isUntyped(typ types.Type) bool {
 	// No Underlying/Unalias: untyped constant types cannot be Named or Alias.
 	b, ok := typ.(*types.Basic)
 	return ok && b.Info()&types.IsUntyped != 0
+}
+
+// declaredWithin reports whether an object is declared within a function.
+//
+// obj must not be a method or a field.
+func declaredWithin(obj types.Object, fn *types.Func) bool {
+	if obj.Pos() != token.NoPos {
+		return fn.Scope().Contains(obj.Pos()) // trust the positions if they exist.
+	}
+	if fn.Pkg() != obj.Pkg() {
+		return false // fast path for different packages
+	}
+
+	// Traverse Parent() scopes for fn.Scope().
+	for p := obj.Parent(); p != nil; p = p.Parent() {
+		if p == fn.Scope() {
+			return true
+		}
+	}
+	return false
 }
 
 // logStack prints the formatted "start" message to stderr and
@@ -263,13 +291,40 @@ func (c *canonizer) List(ts []types.Type) *typeList {
 		return nil
 	}
 
+	unaliasAll := func(ts []types.Type) []types.Type {
+		// Is there some top level alias?
+		var found bool
+		for _, t := range ts {
+			if _, ok := t.(*aliases.Alias); ok {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return ts // no top level alias
+		}
+
+		cp := make([]types.Type, len(ts)) // copy with top level aliases removed.
+		for i, t := range ts {
+			cp[i] = aliases.Unalias(t)
+		}
+		return cp
+	}
+	l := unaliasAll(ts)
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.lists.rep(ts)
+	return c.lists.rep(l)
 }
 
 // Type returns a canonical representative of type T.
+// Removes top-level aliases.
+//
+// For performance, reasons the canonical instance is order-dependent,
+// and may contain deeply nested aliases.
 func (c *canonizer) Type(T types.Type) types.Type {
+	T = aliases.Unalias(T) // remove the top level alias.
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
