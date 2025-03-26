@@ -12,7 +12,6 @@ import (
 	"go/token"
 	"go/types"
 
-	"golang.org/x/tools/internal/aliases"
 	"golang.org/x/tools/internal/typeparams"
 )
 
@@ -47,7 +46,7 @@ func emitNew(f *Function, typ types.Type, pos token.Pos, comment string) *Alloc 
 // emits an Alloc instruction for it.
 //
 // (Use this function or emitNew for synthetic variables;
-// for source-level variables, use emitLocalVar.)
+// for source-level variables in the same function, use emitLocalVar.)
 func emitLocal(f *Function, t types.Type, pos token.Pos, comment string) *Alloc {
 	local := emitAlloc(f, t, pos, comment)
 	f.Locals = append(f.Locals, local)
@@ -249,7 +248,7 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 		// Record the types of operands to MakeInterface, if
 		// non-parameterized, as they are the set of runtime types.
 		t := val.Type()
-		if f.typeparams.Len() == 0 || !f.Prog.parameterized.isParameterized(t) {
+		if f.typeparams.Len() == 0 || !f.Prog.isParameterized(t) {
 			addRuntimeType(f.Prog, t)
 		}
 
@@ -277,18 +276,20 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 		sliceTo0ArrayPtr
 		convert
 	)
-	classify := func(s, d types.Type) conversionCase {
+	// classify the conversion case of a source type us to a destination type ud.
+	// us and ud are underlying types (not *Named or *Alias)
+	classify := func(us, ud types.Type) conversionCase {
 		// Just a change of type, but not value or representation?
-		if isValuePreserving(s, d) {
+		if isValuePreserving(us, ud) {
 			return changeType
 		}
 
 		// Conversion from slice to array or slice to array pointer?
-		if slice, ok := aliases.Unalias(s).(*types.Slice); ok {
+		if slice, ok := us.(*types.Slice); ok {
 			var arr *types.Array
 			var ptr bool
 			// Conversion from slice to array pointer?
-			switch d := aliases.Unalias(d).(type) {
+			switch d := ud.(type) {
 			case *types.Array:
 				arr = d
 			case *types.Pointer:
@@ -313,8 +314,8 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 
 		// The only remaining case in well-typed code is a representation-
 		// changing conversion of basic types (possibly with []byte/[]rune).
-		if !isBasic(s) && !isBasic(d) {
-			panic(fmt.Sprintf("in %s: cannot convert term %s (%s [within %s]) to type %s [within %s]", f, val, val.Type(), s, typ, d))
+		if !isBasic(us) && !isBasic(ud) {
+			panic(fmt.Sprintf("in %s: cannot convert term %s (%s [within %s]) to type %s [within %s]", f, val, val.Type(), us, typ, ud))
 		}
 		return convert
 	}
@@ -523,8 +524,8 @@ func emitTailCall(f *Function, call *Call) {
 // value of a field.
 func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) Value {
 	for _, index := range indices {
-		if st, vptr := deref(v.Type()); vptr {
-			fld := fieldOf(st, index)
+		if isPointerCore(v.Type()) {
+			fld := fieldOf(typeparams.MustDeref(v.Type()), index)
 			instr := &FieldAddr{
 				X:     v,
 				Field: index,
@@ -533,7 +534,7 @@ func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) 
 			instr.setType(types.NewPointer(fld.Type()))
 			v = f.emit(instr)
 			// Load the field's value iff indirectly embedded.
-			if _, fldptr := deref(fld.Type()); fldptr {
+			if isPointerCore(fld.Type()) {
 				v = emitLoad(f, v)
 			}
 		} else {
@@ -557,8 +558,8 @@ func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) 
 // field's value.
 // Ident id is used for position and debug info.
 func emitFieldSelection(f *Function, v Value, index int, wantAddr bool, id *ast.Ident) Value {
-	if st, vptr := deref(v.Type()); vptr {
-		fld := fieldOf(st, index)
+	if isPointerCore(v.Type()) {
+		fld := fieldOf(typeparams.MustDeref(v.Type()), index)
 		instr := &FieldAddr{
 			X:     v,
 			Field: index,
@@ -602,20 +603,11 @@ func createRecoverBlock(f *Function) {
 	f.currentBlock = f.Recover
 
 	var results []Value
-	if f.namedResults != nil {
-		// Reload NRPs to form value tuple.
-		for _, r := range f.namedResults {
-			results = append(results, emitLoad(f, r))
-		}
-	} else {
-		R := f.Signature.Results()
-		for i, n := 0, R.Len(); i < n; i++ {
-			T := R.At(i).Type()
-
-			// Return zero value of each result type.
-			results = append(results, zeroConst(T))
-		}
+	// Reload NRPs to form value tuple.
+	for _, nr := range f.results {
+		results = append(results, emitLoad(f, nr))
 	}
+
 	f.emit(&Return{Results: results})
 
 	f.currentBlock = saved
