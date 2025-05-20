@@ -10,11 +10,14 @@ on:
 concurrency: ${{ github.workflow }}
 
 env:
-  IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY_NIGHTLY_BUILDS }}
+  #IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY_NIGHTLY_BUILDS }}
+  IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY_NIGHTLY_BUILDS_2 }}
   IBM_CLOUD_RESOURCE_GROUP: ${{ secrets.IBM_CLOUD_RESOURCE_GROUP }}
-  IBM_CLOUD_REGION: eu-de
+  IBM_CLOUD_REGION: us-south
   IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE: ${{ secrets.IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE }}
-  IBM_CLOUD_OBJECT_STORAGE_BUCKET: ${{ secrets.IBM_CLOUD_OBJECT_STORAGE_BUCKET }}
+  #IBM_CLOUD_OBJECT_STORAGE_BUCKET: ${{ secrets.IBM_CLOUD_OBJECT_STORAGE_BUCKET }}
+  IBM_CLOUD_OBJECT_STORAGE_BUCKET: "odo-nightly"
+  IBM_CLOUD_OBJET_STORAGE_CRN: ${{ secrets.IBM_CLOUD_OBJET_STORAGE_CRN }}
 
 jobs:
 
@@ -30,16 +33,11 @@ jobs:
 
       - name: Authenticate with IBM Cloud CLI
         run: |
-          ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" -g "${IBM_CLOUD_RESOURCE_GROUP}" --quiet
+          ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" --quiet
 
       - name: Set CRN
         run: |
-          CRN=$(ibmcloud resource service-instance "${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}" --output json | jq -r '.[0].guid | values')
-          if [[ -z "$CRN" ]]; then
-            echo "Unable to determine CRN for service instance ${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}"
-            exit 1
-          fi
-          ibmcloud cos config crn --crn "${CRN}"
+          ibmcloud cos config crn --crn "${IBM_CLOUD_OBJET_STORAGE_CRN}"
 
       - name: Check if bucket exists
         run: |
@@ -154,17 +152,12 @@ jobs:
       - name: Authenticate with IBM Cloud CLI
         if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
-          ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" -g "${IBM_CLOUD_RESOURCE_GROUP}" --quiet
+          ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" --quiet
 
       - name: Set CRN
         if: ${{ steps.check_bin.outputs.binExists != 'true' }}
         run: |
-          CRN=$(ibmcloud resource service-instance "${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}" --output json | jq -r '.[0].guid | values')
-          if [[ -z "$CRN" ]]; then
-            echo "Unable to determine CRN for service instance ${IBM_CLOUD_OBJET_STORAGE_SERVICE_INSTANCE}"
-            exit 1
-          fi
-          ibmcloud cos config crn --crn "${CRN}"
+          ibmcloud cos config crn --crn "${IBM_CLOUD_OBJET_STORAGE_CRN}"
 
       - name: Upload binaries
         if: ${{ steps.check_bin.outputs.binExists != 'true' }}
