@@ -366,23 +366,23 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64 -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-amd64 -o odo
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64-${gitCommitId} -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-amd64-${gitCommitId} -o odo
 ```
 
 2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-amd64-${gitCommitId}.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-amd64-${gitCommitId}.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -408,23 +408,23 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64 -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-arm64 -o odo
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64-${gitCommitId} -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-arm64-${gitCommitId} -o odo
 ```
 
 2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-arm64-${gitCommitId}.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-arm64-${gitCommitId}.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -450,23 +450,23 @@ Installing `odo` on `ppc64le` architecture:
 
 1. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-ppc64le -o odo
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le-${gitCommitId} -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-ppc64le-${gitCommitId} -o odo
 ```
 
 2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-ppc64le-${gitCommitId}.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-ppc64le-${gitCommitId}.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -492,23 +492,23 @@ Installing `odo` on `s390x` architecture:
 
 1. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-s390x -o odo
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x-${gitCommitId} -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-s390x-${gitCommitId} -o odo
 ```
 
 2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-linux-s390x-${gitCommitId}.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-linux-s390x-${gitCommitId}.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -547,23 +547,23 @@ Installing `odo` on `amd64` architecture:
 
 1. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64 -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-amd64 -o odo
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64-${gitCommitId} -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-amd64-${gitCommitId} -o odo
 ```
 
 2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-amd64-${gitCommitId}.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-amd64-${gitCommitId}.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -590,23 +590,23 @@ Installing `odo` on `arm64` architecture:
 
 1. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64 -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-arm64 -o odo
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64-${gitCommitId} -o odo
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-arm64-${gitCommitId} -o odo
 ```
 
 2. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-darwin-arm64-${gitCommitId}.sha256 -o odo.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-darwin-arm64-${gitCommitId}.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -637,18 +637,18 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 2. Download the latest nightly build:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe -o odo.exe
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-windows-amd64.exe -o odo.exe
 ```
 
 To download a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64-${gitCommitId}.exe -o odo.exe
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-windows-amd64-${gitCommitId}.exe -o odo.exe
 ```
 
 
 3. (Recommended) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
 Get-FileHash odo.exe
 type odo.exe.sha256
@@ -656,7 +656,7 @@ type odo.exe.sha256
 
 To verify a download for a specific commit instead, run:
 ```shell
-curl -L https://s3.eu-de.cloud-object-storage.appdomain.cloud/odo-nightly-builds/odo-windows-amd64-${gitCommitId}.exe.sha256 -o odo.exe.sha256
+curl -L https://s3.us-south.cloud-object-storage.appdomain.cloud/odo-nightly/odo-windows-amd64-${gitCommitId}.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
 Get-FileHash odo.exe
 type odo.exe.sha256
