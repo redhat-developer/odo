@@ -1,6 +1,15 @@
 `odo` - Fast, Iterative and Simplified container-based application development
 ---
 
+> [!CAUTION]
+>
+> 📣 The `odo` project is being **officially deprecated**. 📣
+>
+> You can find more information and dates in "[The odo CLI is deprecated: What developers need to know](https://developers.redhat.com/articles/2025/10/23/odo-cli-deprecated-what-developers-need-know)".
+>
+
+---
+
 [![GitHub release](https://img.shields.io/github/v/release/redhat-developer/odo?style=for-the-badge)](https://github.com/redhat-developer/odo/releases/latest)
 ![License](https://img.shields.io/github/license/redhat-developer/odo?style=for-the-badge)
 [![Godoc](https://img.shields.io/badge/godoc-reference-007d9c?logo=go&logoColor=white&style=for-the-badge)](https://odo.dev/godoc)
