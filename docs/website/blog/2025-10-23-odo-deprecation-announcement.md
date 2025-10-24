@@ -1,5 +1,5 @@
 ---
-title: odo is deprecated
+title: 📣 odo is deprecated 📣
 author: The odo Team
 image: https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/static/img/logo.png
 tags: ["deprecation"]
