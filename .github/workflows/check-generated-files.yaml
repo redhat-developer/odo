@@ -27,11 +27,15 @@ jobs:
 
       - name: Fail if generated files are out of sync
         if: steps.verify-changed-files.outputs.files_changed == 'true'
+        # SECURITY: Map untrusted input to an environment variable.
+        # This prevents the shell from interpreting special characters in filenames as commands.
+        env:
+          CHANGED_FILES: ${{ steps.verify-changed-files.outputs.changed_files }}
         run: |
           echo "::error::Generated files are out of sync!"
           echo ""
           echo "The following files need to be regenerated:"
-          echo "${{ steps.verify-changed-files.outputs.changed_files }}"
+          echo "$CHANGED_FILES"
           echo ""
           echo "Please run the following commands locally and commit the changes:"
           echo "  make ui-static"
