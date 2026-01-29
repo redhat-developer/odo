@@ -8,6 +8,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}
   cancel-in-progress: true
 
+# SECURITY: Enforce least privilege.
+# This workflow only needs to checkout code; it does not need write access.
+permissions:
+  contents: read
+
 jobs:
   check-ui-static-files:
     runs-on: ubuntu-22.04
