@@ -9,7 +9,7 @@ import (
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/version"
 )

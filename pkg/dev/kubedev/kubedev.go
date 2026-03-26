@@ -21,7 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/watch"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type DevClient struct {

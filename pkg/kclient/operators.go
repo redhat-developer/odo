@@ -16,7 +16,7 @@ import (
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster

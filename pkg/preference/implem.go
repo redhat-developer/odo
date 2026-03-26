@@ -19,7 +19,7 @@ import (
 	dfutil "github.com/devfile/library/v2/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	kpointer "k8s.io/utils/pointer"
 )
 

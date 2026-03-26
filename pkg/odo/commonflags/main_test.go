@@ -10,7 +10,7 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 
 	"github.com/spf13/pflag"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func TestMain(m *testing.M) {

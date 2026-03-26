@@ -20,7 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/segment"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/state"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // DefaultApiService is a service that implements the logic for the DefaultApiServicer

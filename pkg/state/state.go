@@ -11,7 +11,7 @@ import (
 	"regexp"
 
 	"github.com/mitchellh/go-ps"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"

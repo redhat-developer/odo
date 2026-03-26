@@ -9,7 +9,7 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 

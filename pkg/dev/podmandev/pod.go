@@ -23,7 +23,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // See https://github.com/devfile/developer-images and https://quay.io/repository/devfile/base-developer-image?tab=tags

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/redhat-developer/odo/pkg/dev/common"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (o *DevClient) Run(

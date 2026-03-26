@@ -4,7 +4,7 @@ import (
 	"io"
 	"os/exec"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // GetPodLogs returns the logs of the specified pod container.

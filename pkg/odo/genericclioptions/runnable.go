@@ -24,7 +24,7 @@ import (
 
 	"gopkg.in/AlecAivazis/survey.v1"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/feature"
