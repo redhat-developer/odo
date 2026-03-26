@@ -1,6 +1,8 @@
 module github.com/redhat-developer/odo
 
-go 1.19
+go 1.21
+
+toolchain go1.24.6
 
 require (
 	github.com/ActiveState/termtest v0.7.2
@@ -65,8 +67,7 @@ require (
 	k8s.io/apimachinery v0.27.3
 	k8s.io/cli-runtime v0.24.0
 	k8s.io/client-go v0.27.2
-	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.100.1
+	k8s.io/klog/v2 v2.140.0
 	k8s.io/kubectl v0.24.0
 	k8s.io/pod-security-admission v0.26.10
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
@@ -218,6 +219,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/apiserver v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
+	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

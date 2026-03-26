@@ -32,7 +32,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 var httpCacheDir = filepath.Join(os.TempDir(), "odohttpcache")

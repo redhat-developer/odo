@@ -17,7 +17,7 @@ import (
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"

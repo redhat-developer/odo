@@ -9,7 +9,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // FormatTime returns time in UTC Unix Epoch Seconds and then the microsecond portion of that time.

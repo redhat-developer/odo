@@ -5,7 +5,7 @@ import (
 	devfileParser "github.com/devfile/library/v2/pkg/devfile/parser"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/storage"

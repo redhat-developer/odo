@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/fsnotify/fsnotify"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (n *Notifier) watchDevfileChanges(ctx context.Context, devfileFiles []string) error {

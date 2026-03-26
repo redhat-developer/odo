@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	apiserver_impl "github.com/redhat-developer/odo/pkg/apiserver-impl"
 	"github.com/redhat-developer/odo/pkg/libdevfile"

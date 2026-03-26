@@ -18,7 +18,7 @@ import (
 	dfutil "github.com/devfile/library/v2/pkg/util"
 	gitignore "github.com/sabhiram/go-gitignore"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.

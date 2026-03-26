@@ -6,7 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"os"
 	"time"
 

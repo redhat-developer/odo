@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type Version struct {

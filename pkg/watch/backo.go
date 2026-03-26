@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/segmentio/backo-go"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type ExpBackoff struct {

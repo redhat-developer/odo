@@ -12,7 +12,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/v2/pkg/util"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"

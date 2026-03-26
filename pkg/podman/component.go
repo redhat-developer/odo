@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"

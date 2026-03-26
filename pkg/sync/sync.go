@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/platform"
 	"github.com/redhat-developer/odo/pkg/util"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // SyncClient is a platform-agnostic implementation for sync

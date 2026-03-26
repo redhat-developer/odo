@@ -13,7 +13,7 @@ import (
 	"github.com/devfile/library/v2/pkg/devfile/parser/data"
 	"github.com/devfile/library/v2/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/v2/pkg/testingutil/filesystem"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/util"
 )

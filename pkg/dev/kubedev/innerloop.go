@@ -20,7 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/watch"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (o *DevClient) innerloop(ctx context.Context, parameters common.PushParameters, componentStatus *watch.ComponentStatus) error {

@@ -18,7 +18,7 @@ import (
 
 	dfutil "github.com/devfile/library/v2/pkg/util"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/devfile/library/v2/pkg/devfile/parser"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
