@@ -34,13 +34,12 @@ import (
 // See the Example tests for simple examples.
 func NewProgram(fset *token.FileSet, mode BuilderMode) *Program {
 	return &Program{
-		Fset:          fset,
-		imported:      make(map[string]*Package),
-		packages:      make(map[*types.Package]*Package),
-		mode:          mode,
-		canon:         newCanonizer(),
-		ctxt:          types.NewContext(),
-		parameterized: tpWalker{seen: make(map[types.Type]bool)},
+		Fset:     fset,
+		imported: make(map[string]*Package),
+		packages: make(map[*types.Package]*Package),
+		mode:     mode,
+		canon:    newCanonizer(),
+		ctxt:     types.NewContext(),
 	}
 }
 
@@ -97,8 +96,9 @@ func memberFromObject(pkg *Package, obj types.Object, syntax ast.Node, goversion
 			pkg.ninit++
 			name = fmt.Sprintf("init#%d", pkg.ninit)
 		}
-		fn := createFunction(pkg.Prog, obj, name, syntax, pkg.info, goversion, &pkg.created)
+		fn := createFunction(pkg.Prog, obj, name, syntax, pkg.info, goversion)
 		fn.Pkg = pkg
+		pkg.created = append(pkg.created, fn)
 		pkg.objects[obj] = fn
 		if name != "_" && sig.Recv() == nil {
 			pkg.Members[name] = fn // package-level function
@@ -112,7 +112,7 @@ func memberFromObject(pkg *Package, obj types.Object, syntax ast.Node, goversion
 // createFunction creates a function or method. It supports both
 // CreatePackage (with or without syntax) and the on-demand creation
 // of methods in non-created packages based on their types.Func.
-func createFunction(prog *Program, obj *types.Func, name string, syntax ast.Node, info *types.Info, goversion string, cr *creator) *Function {
+func createFunction(prog *Program, obj *types.Func, name string, syntax ast.Node, info *types.Info, goversion string) *Function {
 	sig := obj.Type().(*types.Signature)
 
 	// Collect type parameters.
@@ -144,7 +144,6 @@ func createFunction(prog *Program, obj *types.Func, name string, syntax ast.Node
 	if tparams.Len() > 0 {
 		fn.generic = new(generic)
 	}
-	cr.Add(fn)
 	return fn
 }
 
@@ -185,19 +184,6 @@ func membersFromDecl(pkg *Package, decl ast.Decl, goversion string) {
 	}
 }
 
-// creator tracks functions that have finished their CREATE phases.
-//
-// All Functions belong to the same Program. May have differing packages.
-//
-// creators are not thread-safe.
-type creator []*Function
-
-func (c *creator) Add(fn *Function) {
-	*c = append(*c, fn)
-}
-func (c *creator) At(i int) *Function { return (*c)[i] }
-func (c *creator) Len() int           { return len(*c) }
-
 // CreatePackage creates and returns an SSA Package from the
 // specified type-checked, error-free file ASTs, and populates its
 // Members mapping.
@@ -207,11 +193,7 @@ func (c *creator) Len() int           { return len(*c) }
 //
 // The real work of building SSA form for each function is not done
 // until a subsequent call to Package.Build.
-//
-// CreatePackage should not be called after building any package in
-// the program.
 func (prog *Program) CreatePackage(pkg *types.Package, files []*ast.File, info *types.Info, importable bool) *Package {
-	// TODO(adonovan): assert that no package has yet been built.
 	if pkg == nil {
 		panic("nil pkg") // otherwise pkg.Scope below returns types.Universe!
 	}
@@ -239,7 +221,7 @@ func (prog *Program) CreatePackage(pkg *types.Package, files []*ast.File, info *
 		goversion: "", // See Package.build for details.
 	}
 	p.Members[p.init.name] = p.init
-	p.created.Add(p.init)
+	p.created = append(p.created, p.init)
 
 	// Allocate all package members: vars, funcs, consts and types.
 	if len(files) > 0 {
@@ -301,7 +283,7 @@ func (prog *Program) CreatePackage(pkg *types.Package, files []*ast.File, info *
 var printMu sync.Mutex
 
 // AllPackages returns a new slice containing all packages created by
-// prog.CreatePackage in in unspecified order.
+// prog.CreatePackage in unspecified order.
 func (prog *Program) AllPackages() []*Package {
 	pkgs := make([]*Package, 0, len(prog.packages))
 	for _, pkg := range prog.packages {
@@ -329,4 +311,15 @@ func (prog *Program) AllPackages() []*Package {
 // view of its dependencies.
 func (prog *Program) ImportedPackage(path string) *Package {
 	return prog.imported[path]
+}
+
+// SetNoReturn sets the predicate used when building the ssa.Program
+// prog that reports whether a given function cannot return.
+// This may be used to prune spurious control flow edges
+// after (e.g.) log.Fatal, improving the precision of analyses.
+//
+// A typical implementation is the [ctrlflow.CFGs.NoReturn] method from
+// [golang.org/x/tools/go/analysis/passes/ctrlflow].
+func (prog *Program) SetNoReturn(noReturn func(*types.Func) bool) {
+	prog.noReturn = noReturn
 }
