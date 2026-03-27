@@ -13,7 +13,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/scheme"
 )
 
@@ -81,7 +81,7 @@ func (o *PodmanCli) PlayKube(pod *corev1.Pod) error {
 		return err
 	}
 
-	if klog.V(4) {
+	if klog.V(4).Enabled() {
 		var sb strings.Builder
 		_ = serializer.Encode(pod, &sb)
 		klog.Infof("Pod spec to play: \n---\n%s\n---\n", sb.String())

@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func Logger(inner http.Handler, name string) http.Handler {

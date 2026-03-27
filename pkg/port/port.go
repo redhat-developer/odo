@@ -12,7 +12,7 @@ import (
 
 	"github.com/segmentio/backo-go"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/exec"

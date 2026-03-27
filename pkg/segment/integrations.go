@@ -10,7 +10,7 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // getTelemetryForDevfileRegistry returns a populated TelemetryData object that contains some odo telemetry (with client consent), such as the anonymous ID and

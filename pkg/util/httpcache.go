@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/devfile/library/v2/pkg/testingutil/filesystem"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // CleanDefaultHTTPCacheDir cleans the default directory used for HTTP caching

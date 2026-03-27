@@ -21,7 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func main() {
@@ -41,6 +41,8 @@ func main() {
 
 	// create the complete command
 	klog.InitFlags(nil)
+	_ = flag.Set("legacy_stderr_threshold_behavior", "false")
+	_ = flag.Set("stderrthreshold", "INFO")
 
 	root, err := cli.NewCmdOdo(ctx, cli.OdoRecommendedName, cli.OdoRecommendedName, func(err error) {
 		util.LogErrorAndExit(err, "")

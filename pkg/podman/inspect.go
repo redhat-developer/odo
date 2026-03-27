@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // PodInspectData originates from From https://github.com/containers/podman/blob/main/libpod/define/pod_inspect.go

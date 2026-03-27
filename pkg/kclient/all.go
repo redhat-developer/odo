@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Code into this file is heavily inspired from https://github.com/ahmetb/kubectl-tree

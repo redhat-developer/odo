@@ -6,7 +6,7 @@ import (
 	"io"
 	"os/exec"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (o *PodmanCli) ExecCMDInContainer(ctx context.Context, containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {

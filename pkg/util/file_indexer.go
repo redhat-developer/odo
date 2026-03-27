@@ -14,7 +14,7 @@ import (
 
 	gitignore "github.com/sabhiram/go-gitignore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const DotOdoDirectory = ".odo"

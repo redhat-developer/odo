@@ -2,7 +2,7 @@ package watch
 
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type State string

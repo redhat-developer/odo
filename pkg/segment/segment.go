@@ -22,7 +22,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/preference"

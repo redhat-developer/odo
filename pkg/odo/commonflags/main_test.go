@@ -10,7 +10,7 @@ import (
 	envcontext "github.com/redhat-developer/odo/pkg/config/context"
 
 	"github.com/spf13/pflag"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func TestMain(m *testing.M) {
@@ -18,6 +18,8 @@ func TestMain(m *testing.M) {
 	cfg := config.Configuration{}
 	ctx = envcontext.WithEnvConfig(ctx, cfg)
 	klog.InitFlags(nil)
+	_ = flag.Set("legacy_stderr_threshold_behavior", "false")
+	_ = flag.Set("stderrthreshold", "INFO")
 	AddOutputFlag()
 	AddPlatformFlag(ctx)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)

@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type PortWriter struct {
