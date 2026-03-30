@@ -12,14 +12,13 @@ import (
 	"go/token"
 	"go/types"
 
-	"golang.org/x/tools/internal/aliases"
 	"golang.org/x/tools/internal/typeparams"
 )
 
 // emitAlloc emits to f a new Alloc instruction allocating a variable
 // of type typ.
 //
-// The caller must set Alloc.Heap=true (for an heap-allocated variable)
+// The caller must set Alloc.Heap=true (for a heap-allocated variable)
 // or add the Alloc to f.Locals (for a frame-allocated variable).
 //
 // During building, a variable in f.Locals may have its Heap flag
@@ -47,7 +46,7 @@ func emitNew(f *Function, typ types.Type, pos token.Pos, comment string) *Alloc 
 // emits an Alloc instruction for it.
 //
 // (Use this function or emitNew for synthetic variables;
-// for source-level variables, use emitLocalVar.)
+// for source-level variables in the same function, use emitLocalVar.)
 func emitLocal(f *Function, t types.Type, pos token.Pos, comment string) *Alloc {
 	local := emitAlloc(f, t, pos, comment)
 	f.Locals = append(f.Locals, local)
@@ -82,7 +81,7 @@ func emitDebugRef(f *Function, e ast.Expr, v Value, isAddr bool) {
 		panic("nil")
 	}
 	var obj types.Object
-	e = unparen(e)
+	e = ast.Unparen(e)
 	if id, ok := e.(*ast.Ident); ok {
 		if isBlankIdent(id) {
 			return
@@ -249,21 +248,14 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 		// Record the types of operands to MakeInterface, if
 		// non-parameterized, as they are the set of runtime types.
 		t := val.Type()
-		if f.typeparams.Len() == 0 || !f.Prog.parameterized.isParameterized(t) {
-			addRuntimeType(f.Prog, t)
+		if f.typeparams.Len() == 0 || !f.Prog.isParameterized(t) {
+			addMakeInterfaceType(f.Prog, t)
 		}
 
 		mi := &MakeInterface{X: val}
 		mi.setType(typ)
 		return f.emit(mi)
 	}
-
-	// In the common case, the typesets of src and dst are singletons
-	// and we emit an appropriate conversion. But if either contains
-	// a type parameter, the conversion may represent a cross product,
-	// in which case which we emit a MultiConvert.
-	dst_terms := typeSetOf(ut_dst)
-	src_terms := typeSetOf(ut_src)
 
 	// conversionCase describes an instruction pattern that maybe emitted to
 	// model d <- s for d in dst_terms and s in src_terms.
@@ -277,18 +269,20 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 		sliceTo0ArrayPtr
 		convert
 	)
-	classify := func(s, d types.Type) conversionCase {
+	// classify the conversion case of a source type us to a destination type ud.
+	// us and ud are underlying types (not *Named or *Alias)
+	classify := func(us, ud types.Type) conversionCase {
 		// Just a change of type, but not value or representation?
-		if isValuePreserving(s, d) {
+		if isValuePreserving(us, ud) {
 			return changeType
 		}
 
 		// Conversion from slice to array or slice to array pointer?
-		if slice, ok := aliases.Unalias(s).(*types.Slice); ok {
+		if slice, ok := us.(*types.Slice); ok {
 			var arr *types.Array
 			var ptr bool
 			// Conversion from slice to array pointer?
-			switch d := aliases.Unalias(d).(type) {
+			switch d := ud.(type) {
 			case *types.Array:
 				arr = d
 			case *types.Pointer:
@@ -313,20 +307,21 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 
 		// The only remaining case in well-typed code is a representation-
 		// changing conversion of basic types (possibly with []byte/[]rune).
-		if !isBasic(s) && !isBasic(d) {
-			panic(fmt.Sprintf("in %s: cannot convert term %s (%s [within %s]) to type %s [within %s]", f, val, val.Type(), s, typ, d))
+		if !isBasic(us) && !isBasic(ud) {
+			panic(fmt.Sprintf("in %s: cannot convert term %s (%s [within %s]) to type %s [within %s]", f, val, val.Type(), us, typ, ud))
 		}
 		return convert
 	}
 
 	var classifications conversionCase
-	for _, s := range src_terms {
-		us := s.Type().Underlying()
-		for _, d := range dst_terms {
-			ud := d.Type().Underlying()
-			classifications |= classify(us, ud)
-		}
-	}
+	underIs(ut_src, func(us types.Type) bool {
+		return underIs(ut_dst, func(ud types.Type) bool {
+			if us != nil && ud != nil {
+				classifications |= classify(us, ud)
+			}
+			return classifications != 0
+		})
+	})
 	if classifications == 0 {
 		panic(fmt.Sprintf("in %s: cannot convert %s (%s) to %s", f, val, val.Type(), typ))
 	}
@@ -380,8 +375,8 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 		c.setType(typ)
 		return f.emit(c)
 
-	default: // multiple conversion
-		c := &MultiConvert{X: val, from: src_terms, to: dst_terms}
+	default: // The conversion represents a cross product.
+		c := &MultiConvert{X: val, from: t_src, to: typ}
 		c.setType(typ)
 		return f.emit(c)
 	}
@@ -501,7 +496,7 @@ func emitTailCall(f *Function, call *Call) {
 	case 1:
 		ret.Results = []Value{tuple}
 	default:
-		for i := 0; i < nr; i++ {
+		for i := range nr {
 			v := emitExtract(f, tuple, i)
 			// TODO(adonovan): in principle, this is required:
 			//   v = emitConv(f, o.Type, f.Signature.Results[i].Type)
@@ -523,8 +518,8 @@ func emitTailCall(f *Function, call *Call) {
 // value of a field.
 func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) Value {
 	for _, index := range indices {
-		if st, vptr := deref(v.Type()); vptr {
-			fld := fieldOf(st, index)
+		if isPointerCore(v.Type()) {
+			fld := fieldOf(typeparams.MustDeref(v.Type()), index)
 			instr := &FieldAddr{
 				X:     v,
 				Field: index,
@@ -533,7 +528,7 @@ func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) 
 			instr.setType(types.NewPointer(fld.Type()))
 			v = f.emit(instr)
 			// Load the field's value iff indirectly embedded.
-			if _, fldptr := deref(fld.Type()); fldptr {
+			if isPointerCore(fld.Type()) {
 				v = emitLoad(f, v)
 			}
 		} else {
@@ -557,8 +552,8 @@ func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) 
 // field's value.
 // Ident id is used for position and debug info.
 func emitFieldSelection(f *Function, v Value, index int, wantAddr bool, id *ast.Ident) Value {
-	if st, vptr := deref(v.Type()); vptr {
-		fld := fieldOf(st, index)
+	if isPointerCore(v.Type()) {
+		fld := fieldOf(typeparams.MustDeref(v.Type()), index)
 		instr := &FieldAddr{
 			X:     v,
 			Field: index,
@@ -602,20 +597,11 @@ func createRecoverBlock(f *Function) {
 	f.currentBlock = f.Recover
 
 	var results []Value
-	if f.namedResults != nil {
-		// Reload NRPs to form value tuple.
-		for _, r := range f.namedResults {
-			results = append(results, emitLoad(f, r))
-		}
-	} else {
-		R := f.Signature.Results()
-		for i, n := 0, R.Len(); i < n; i++ {
-			T := R.At(i).Type()
-
-			// Return zero value of each result type.
-			results = append(results, zeroConst(T))
-		}
+	// Reload NRPs to form value tuple.
+	for _, nr := range f.results {
+		results = append(results, emitLoad(f, nr))
 	}
+
 	f.emit(&Return{Results: results})
 
 	f.currentBlock = saved
