@@ -48,7 +48,12 @@ func (s *IndexStorage) Index() (i *index.Index, err error) {
 
 	defer ioutil.CheckClose(f, &err)
 
-	d := index.NewDecoder(bufio.NewReader(f))
+	fi, statErr := s.dir.Fs().Stat(f.Name())
+	if statErr == nil {
+		idx.ModTime = fi.ModTime()
+	}
+
+	d := index.NewDecoder(f)
 	err = d.Decode(idx)
 	return idx, err
 }
